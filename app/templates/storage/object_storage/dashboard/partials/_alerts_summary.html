@@ -2,7 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 {% call operational_section_card.render(
     'Alerts Summary',
-    'KAORI-processed recommendation-origin alert cases.',
+    'Active KAORI AlertCase posture and recent cases.',
     'bell-ring',
     id='object-storage-dashboard-alerts-summary',
     action_href=url_for('alert_intelligence.index', domain='object_storage', asset=dashboard.selected_system_id, tab='active'),
@@ -58,59 +58,55 @@
             {% include 'components/states/_blocked_state.html' %}
         {% endif %}
     </div>
-    <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div class="flex items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if dashboard.alerts.critical > 0 %}bg-status-critical-soft text-status-critical{% elif dashboard.alerts.warning > 0 %}bg-status-warning-soft text-status-warning{% elif total_alerts > 0 %}bg-status-info-soft text-status-info{% else %}bg-status-normal-soft text-status-normal{% endif %}"
-                      aria-hidden="true">
-                    <i data-lucide="radio-tower" class="h-4 w-4"></i>
-                </span>
-                <div class="min-w-0">
-                    <h3 class="text-sm font-semibold text-content-primary">Alert Insight</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">
-                        {% if dashboard.alerts.critical > 0 %}
-                            Critical alert signals are present. Prioritize incident triage before routine capacity or forecast review.
-                        {% elif dashboard.alerts.warning > 0 %}
-                            Warning alerts are active. Review recurring signals and affected Object Storage scope before escalation.
-                        {% elif total_alerts > 0 %}
-                            The committed alert evidence contains informational signals only.
-                        {% elif not dashboard.alerts.available %}
-                            Select an Object Storage system to view KAORI alert cases.
-                        {% else %}
-                            No active KAORI alert case is currently open for this system.
-                        {% endif %}
-                    </p>
-                </div>
+    <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-elevated p-4"
+         data-kaori-alert-insight="stacked">
+        <div class="flex items-start gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if dashboard.alerts.critical > 0 %}bg-status-critical-soft text-status-critical{% elif dashboard.alerts.warning > 0 %}bg-status-warning-soft text-status-warning{% elif total_alerts > 0 %}bg-status-info-soft text-status-info{% else %}bg-status-normal-soft text-status-normal{% endif %}"
+                  aria-hidden="true">
+                <i data-lucide="radio-tower" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0">
+                <h3 class="text-sm font-semibold text-content-primary">Alert Insight</h3>
+                <p class="mt-1 text-xs leading-5 text-content-muted">
+                    {% if dashboard.alerts.critical > 0 %}
+                        Critical alert signals are present. Prioritize incident triage before routine capacity or forecast review.
+                    {% elif dashboard.alerts.warning > 0 %}
+                        Warning alerts are active. Review recurring signals and affected Object Storage scope before escalation.
+                    {% elif total_alerts > 0 %}
+                        Active AlertCase evidence contains informational signals only.
+                    {% elif not dashboard.alerts.available %}
+                        Select an Object Storage system to view KAORI alert cases.
+                    {% else %}
+                        No active KAORI alert case is currently open for this system.
+                    {% endif %}
+                </p>
             </div>
-            <dl class="grid grid-cols-3 gap-3 text-xs lg:min-w-[360px]">
-                <div>
-                    <dt class="text-content-muted">Total</dt>
-                    <dd class="mt-1 text-base font-semibold text-content-primary">
-                        {{ total_alerts }}
-                    </dd>
-                </div>
-                <div>
-                    <dt class="text-content-muted">Highest</dt>
-                    <dd class="mt-1 text-base font-semibold text-content-primary">
-                        {% if dashboard.alerts.critical > 0 %}
-                            Critical
-                        {% elif dashboard.alerts.warning > 0 %}
-                            Warning
-                        {% elif total_alerts > 0 %}
-                            Info
-                        {% else %}
-                            None
-                        {% endif %}
-                    </dd>
-                </div>
-                <div>
-                    <dt class="text-content-muted">Source</dt>
-                    <dd class="mt-1 break-words whitespace-normal text-sm font-semibold leading-5 text-content-primary">
-                        Alert Intelligence
-                    </dd>
-                </div>
-            </dl>
         </div>
+        <dl class="mt-4 grid gap-3 border-t border-outline-subtle pt-4 text-xs sm:grid-cols-[7rem_9rem_minmax(12rem,1fr)]"
+            data-kaori-alert-insight-metrics="dedicated-row">
+            <div>
+                <dt class="text-content-muted">Total</dt>
+                <dd class="mt-1 text-base font-semibold text-content-primary">{{ total_alerts }}</dd>
+            </div>
+            <div>
+                <dt class="text-content-muted">Highest</dt>
+                <dd class="mt-1 text-base font-semibold {% if dashboard.alerts.critical > 0 %}text-status-critical-text{% elif dashboard.alerts.warning > 0 %}text-status-warning-text{% elif total_alerts > 0 %}text-status-info-text{% else %}text-status-normal-text{% endif %}">
+                    {% if dashboard.alerts.critical > 0 %}
+                        Critical
+                    {% elif dashboard.alerts.warning > 0 %}
+                        Warning
+                    {% elif total_alerts > 0 %}
+                        Info
+                    {% else %}
+                        None
+                    {% endif %}
+                </dd>
+            </div>
+            <div>
+                <dt class="text-content-muted">Source</dt>
+                <dd class="mt-1 whitespace-nowrap text-sm font-semibold leading-5 text-content-primary">Alert Intelligence</dd>
+            </div>
+        </dl>
         <div class="mt-3 flex flex-wrap gap-2">
             {{ table_label.status_indicator_label('KAORI Alert Cases Available' if dashboard.alerts.available else 'Alert Scope Required', 'normal' if dashboard.alerts.available else 'warning') }}
             {{ table_label.metadata_label('KAORI Alert Intelligence', icon='brain-circuit') }}

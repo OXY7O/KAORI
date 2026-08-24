@@ -9,7 +9,6 @@ from app.storage.object_storage.analytics.analysis import (
     performance_posture,
     summarize_trend,
 )
-
 from app.storage.object_storage.analytics.recommendations import (
     build_capacity_recommendations,
     build_forecast_recommendations,

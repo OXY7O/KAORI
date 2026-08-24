@@ -1,8 +1,12 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from app.storage.object_storage.analytics.alert_sources import build_alert_posture, resolve_materialized_alert_stream
+
+
+def _as_dict(value: Any) -> dict[str, Any]:
+    return cast(dict[str, Any], value) if isinstance(value, dict) else {}
 
 
 def _anomaly_tone(signals: list[dict[str, Any]]) -> str:
@@ -27,18 +31,18 @@ def build_overview_alert_summary(
     or durable Intelligence recommendations.
     """
 
-    streams = payload.get('alert_streams') if isinstance(payload.get('alert_streams'), dict) else {}
+    streams = _as_dict(payload.get('alert_streams'))
     stream = resolve_materialized_alert_stream(streams, selected_source=selected_source)
     posture = build_alert_posture(stream)
 
-    page_metrics = payload.get('page_metrics') if isinstance(payload.get('page_metrics'), dict) else {}
-    alerts_metrics = page_metrics.get('alerts') if isinstance(page_metrics.get('alerts'), dict) else {}
-    signals = [item for item in alerts_metrics.get('signals') or [] if isinstance(item, dict)]
+    page_metrics = _as_dict(payload.get('page_metrics'))
+    alerts_metrics = _as_dict(page_metrics.get('alerts'))
+    signals = [_as_dict(item) for item in alerts_metrics.get('signals') or [] if isinstance(item, dict)]
     actionable_signals = [
         item for item in signals if str(item.get('severity') or '').strip().lower() in {'critical', 'warning'}
     ]
 
-    metrics_source = payload.get('metrics_source') if isinstance(payload.get('metrics_source'), dict) else {}
+    metrics_source = _as_dict(payload.get('metrics_source'))
     metrics_runtime_state = str(metrics_source.get('runtime_state') or '').strip().lower()
     metrics_operational = metrics_runtime_state in {'operational', 'degraded'}
     provider_operational = bool(stream.get('connected'))

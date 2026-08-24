@@ -24,7 +24,7 @@ def test_notification_progress_fill_remains_proportional_to_actual_job_progress(
     assert 'data-progress="{{ safe_value }}"' in progress
     assert 'style="width: {{ safe_value }}%"' in progress
     assert 'w-full min-w-0' in progress
-    assert "notification_progress(job.progress, label=label)" in progress
+    assert 'notification_progress(job.progress, label=label)' in progress
 
 
 def test_notification_deck_does_not_override_shared_progress_track_width() -> None:

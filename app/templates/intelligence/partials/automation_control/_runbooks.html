@@ -119,7 +119,7 @@
                                               aria-hidden="true">
                                             <i data-lucide="files" class="h-4 w-4"></i>
                                         </span>
-                                        {{ intelligence_ui.field('Required Evidence', row.required_evidence|join(', ')) }}
+                                        {{ intelligence_ui.field('Required Evidence', row.required_evidence|join(', ') ) }}
                                     </div>
                                 </div>
                                 <div class="rounded-xl border border-outline-subtle bg-surface-elevated px-4 py-3">
@@ -128,7 +128,7 @@
                                               aria-hidden="true">
                                             <i data-lucide="shield-check" class="h-4 w-4"></i>
                                         </span>
-                                        {{ intelligence_ui.field('Compatibility', row.compatibility_profiles|join(', ')) }}
+                                        {{ intelligence_ui.field('Compatibility', row.compatibility_profiles|join(', ') ) }}
                                     </div>
                                 </div>
                             </dl>
@@ -189,7 +189,6 @@
                             {% endif %}
                         </aside>
                     </div>
-
                 {% endcall %}
             {% else %}
                 <tr>

@@ -18,8 +18,8 @@ def test_object_storage_dashboard_uses_kaori_alert_cases_not_raw_source_rows() -
     assert "AlertCase.source_state.in_(('firing', 'unknown'))" in shared
     assert "AlertCase.workflow_state != 'closed'" in shared
     assert "'source_label': 'Alert Intelligence'" in service
-    assert "'source_detail': 'Recommendation-origin durable alert cases'" in service
-    assert 'KAORI-processed recommendation-origin alert cases.' in alerts
+    assert "'source_detail': 'Active AlertCase records'" in service
+    assert 'Active KAORI AlertCase posture and recent cases.' in alerts
     assert "url_for('alert_intelligence.index'" in alerts
     actions = read('app/templates/storage/object_storage/dashboard/partials/_recommended_actions.html')
     assert "url_for('intelligence.recommendation_details'" in actions
@@ -34,10 +34,10 @@ def test_dashboard_response_guidance_explains_alert_provenance() -> None:
     object_storage = read('app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html')
 
     for content in (kubernetes, object_storage):
-        assert 'Alert Source' in content
-        assert 'KAORI Alert Intelligence' in content
-        assert 'Recommendation-origin durable alert cases' in content
-        assert 'Raw source alerts remain in Analytics' in content
+        assert 'Alert Data Source' in content
+        assert 'KAORI Alert Intelligence · Active AlertCase records' in content
+        assert 'Recommendation-origin durable alert cases' not in content
+        assert 'Raw source alerts remain in Analytics' not in content
 
 
 def test_topology_details_matches_notification_deck_width() -> None:

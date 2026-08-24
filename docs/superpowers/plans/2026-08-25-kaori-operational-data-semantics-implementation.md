@@ -213,8 +213,7 @@ def get_dashboard_recommendation_findings(
     domain: str,
     asset_key: str | None,
     limit: int = MAX_DASHBOARD_RECOMMENDATIONS,
-) -> list[dict[str, Any]]:
-    ...
+) -> list[dict[str, Any]]: ...
 ```
 
 - Consumes: `app.intelligence.service.get_active_recommendation_findings` only inside the new Intelligence-owned helper.
@@ -384,8 +383,7 @@ def build_overview_alert_summary(
     *,
     payload: dict[str, Any],
     selected_source: str,
-) -> dict[str, Any]:
-    ...
+) -> dict[str, Any]: ...
 ```
 
 Return keys:
@@ -430,7 +428,7 @@ Use the committed snapshot only:
 streams = payload.get('alert_streams') if isinstance(payload.get('alert_streams'), dict) else {}
 stream = resolve_materialized_alert_stream(streams, selected_source=selected_source)
 posture = build_alert_posture(stream)
-alerts_metrics = ((payload.get('page_metrics') or {}).get('alerts') or {})
+alerts_metrics = (payload.get('page_metrics') or {}).get('alerts') or {}
 signals = list(alerts_metrics.get('signals') or [])
 ```
 
@@ -855,6 +853,7 @@ Use explicit canonical redirect semantics:
 
 ```python
 from urllib.parse import urlencode
+
 
 @permission_required('object_storage_analytics.view')
 def object_storage_recommendations() -> ResponseReturnValue:

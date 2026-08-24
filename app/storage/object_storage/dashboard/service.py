@@ -390,7 +390,7 @@ def _alerts(selected: ObjectStorageSystem | None) -> dict[str, Any]:
             'info': 0,
             'total': 0,
             'source_label': 'Alert Intelligence',
-            'source_detail': 'Recommendation-origin durable alert cases',
+            'source_detail': 'Active AlertCase records',
             'rows': [],
         }
     posture = _kaori_alert_posture(selected)
@@ -400,9 +400,7 @@ def _alerts(selected: ObjectStorageSystem | None) -> dict[str, Any]:
             'severity': case.severity,
             'summary': case.summary or case.target or 'KAORI recommendation alert case.',
             'state': (
-                'Source Unknown'
-                if case.source_state == 'unknown'
-                else case.workflow_state.replace('_', ' ').title()
+                'Source Unknown' if case.source_state == 'unknown' else case.workflow_state.replace('_', ' ').title()
             ),
             'case_id': case.public_id,
         }
@@ -415,7 +413,7 @@ def _alerts(selected: ObjectStorageSystem | None) -> dict[str, Any]:
         'info': int(posture['info']),
         'total': int(posture['total']),
         'source_label': 'Alert Intelligence',
-        'source_detail': 'Recommendation-origin durable alert cases',
+        'source_detail': 'Active AlertCase records',
         'rows': rows,
     }
 

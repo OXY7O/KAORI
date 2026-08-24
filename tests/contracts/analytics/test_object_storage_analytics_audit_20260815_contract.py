@@ -10,7 +10,7 @@ def read(relative: str) -> str:
 
 
 def test_object_storage_hero_copy_is_specific_without_becoming_verbose() -> None:
-    service = read('app/storage/object_storage/analytics/service.py')
+    pages = read('app/storage/object_storage/analytics/pages.py')
 
     expected = (
         'Review usable capacity, consumption trends, bucket pressure, quota posture, and growth across the selected system.',
@@ -19,7 +19,7 @@ def test_object_storage_hero_copy_is_specific_without_becoming_verbose() -> None
         'Rank buckets by storage consumption, objects, request activity, error pressure, and concentration within the selected system.',
     )
     for copy in expected:
-        assert copy in service
+        assert copy in pages
         assert len(copy.split()) <= 16
 
 

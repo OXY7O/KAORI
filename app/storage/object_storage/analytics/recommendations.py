@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 from app.storage.object_storage.analytics.analysis import (
     CAPACITY_CRITICAL_PERCENT,
@@ -28,6 +28,10 @@ _CONTEXT_LABELS = {
     'top_consumers': 'Top Consumers',
     'alerts': 'Alerts & Anomalies',
 }
+
+
+def _as_dict(value: Any) -> dict[str, Any]:
+    return cast(dict[str, Any], value) if isinstance(value, dict) else {}
 
 
 def _optional_float(value: Any) -> float | None:
@@ -105,8 +109,8 @@ def _context(page_key: str, cards: list[AnalyticsRecommendation]) -> dict[str, A
 def build_capacity_recommendations(metrics: dict[str, Any]) -> list[AnalyticsRecommendation]:
     cards: list[AnalyticsRecommendation] = []
     utilization = _optional_float(metrics.get('utilization'))
-    capacity_usage = metrics.get('capacity_usage') if isinstance(metrics.get('capacity_usage'), dict) else {}
-    trend = metrics.get('usage_trend_summary') if isinstance(metrics.get('usage_trend_summary'), dict) else {}
+    capacity_usage = _as_dict(metrics.get('capacity_usage'))
+    trend = _as_dict(metrics.get('usage_trend_summary'))
 
     if not capacity_usage.get('capacity_evidence_available') and utilization is None:
         cards.append(
@@ -208,7 +212,7 @@ def build_performance_recommendations(metrics: dict[str, Any]) -> list[Analytics
     error_ratio = _optional_float(metrics.get('error_ratio'))
     waiting = _optional_float(metrics.get('waiting'))
     offline_nodes = _optional_float(metrics.get('offline_nodes'))
-    performance = metrics.get('performance') if isinstance(metrics.get('performance'), dict) else {}
+    performance = _as_dict(metrics.get('performance'))
 
     if offline_nodes is not None and offline_nodes > 0:
         cards.append(
@@ -307,8 +311,8 @@ def build_forecast_recommendations(
         ]
 
     cards: list[AnalyticsRecommendation] = []
-    forecast = metrics.get('forecast') if isinstance(metrics.get('forecast'), dict) else {}
-    posture = metrics.get('forecast_posture') if isinstance(metrics.get('forecast_posture'), dict) else {}
+    forecast = _as_dict(metrics.get('forecast'))
+    posture = _as_dict(metrics.get('forecast_posture'))
     days_to_capacity = _optional_float(forecast.get('days_to_capacity'))
     growth_per_day = _optional_float(forecast.get('growth_per_day'))
     tone = str(posture.get('tone') or 'unknown')
@@ -318,7 +322,11 @@ def build_forecast_recommendations(
                 priority='P1',
                 tone='critical',
                 title='Prepare Near-Term Capacity Remediation',
-                description=f'Projected capacity exhaustion is {days_to_capacity:.1f} days away.' if days_to_capacity is not None else 'Forecast posture is critical. Validate the projected exhaustion boundary and prepare capacity remediation.',
+                description=(
+                    f'Projected capacity exhaustion is {days_to_capacity:.1f} days away.'
+                    if days_to_capacity is not None
+                    else 'Forecast posture is critical. Validate the projected exhaustion boundary and prepare capacity remediation.'
+                ),
                 source_label='Forecast Outlook',
                 icon='timer',
                 target_tab='outlook',
@@ -330,7 +338,11 @@ def build_forecast_recommendations(
                 priority='P2',
                 tone='warning',
                 title='Review Forecast Capacity Window',
-                description=f'Projected capacity exhaustion is {days_to_capacity:.1f} days away.' if days_to_capacity is not None else 'Forecast posture requires review. Validate growth on a longer history window before scheduling remediation.',
+                description=(
+                    f'Projected capacity exhaustion is {days_to_capacity:.1f} days away.'
+                    if days_to_capacity is not None
+                    else 'Forecast posture requires review. Validate growth on a longer history window before scheduling remediation.'
+                ),
                 source_label='Forecast Outlook',
                 icon='chart-spline',
                 target_tab='outlook',
@@ -350,7 +362,7 @@ def build_forecast_recommendations(
             )
         )
 
-    summary = metrics.get('bucket_forecast_summary') if isinstance(metrics.get('bucket_forecast_summary'), dict) else {}
+    summary = _as_dict(metrics.get('bucket_forecast_summary'))
     critical = int(summary.get('critical_count') or 0)
     warning = int(summary.get('warning_count') or 0)
     gaps = int(summary.get('history_gap_count') or 0)
@@ -396,7 +408,7 @@ def build_forecast_recommendations(
 
 def build_top_consumer_recommendations(metrics: dict[str, Any]) -> list[AnalyticsRecommendation]:
     cards: list[AnalyticsRecommendation] = []
-    analysis = metrics.get('bucket_analysis') if isinstance(metrics.get('bucket_analysis'), dict) else {}
+    analysis = _as_dict(metrics.get('bucket_analysis'))
     bucket_count = int(analysis.get('bucket_count') or 0)
     if bucket_count == 0:
         return [
@@ -517,7 +529,7 @@ def build_alert_recommendations(
             )
         )
 
-    signals = [item for item in metrics.get('signals') or [] if isinstance(item, dict)]
+    signals = [_as_dict(item) for item in metrics.get('signals') or [] if isinstance(item, dict)]
     signal_critical = sum(str(item.get('severity') or '').lower() == 'critical' for item in signals)
     signal_warning = sum(str(item.get('severity') or '').lower() == 'warning' for item in signals)
     if signal_critical:
@@ -586,12 +598,8 @@ def apply_recommendation_context(context: dict[str, Any], *, page_key: str) -> N
     context.update(
         build_page_recommendation_context(
             page_key=page_key,
-            metrics=context.get('metrics') if isinstance(context.get('metrics'), dict) else {},
-            forecast_materialization=(
-                context.get('forecast_materialization')
-                if isinstance(context.get('forecast_materialization'), dict)
-                else {}
-            ),
-            alert_posture=context.get('alert_posture') if isinstance(context.get('alert_posture'), dict) else {},
+            metrics=_as_dict(context.get('metrics')),
+            forecast_materialization=_as_dict(context.get('forecast_materialization')),
+            alert_posture=_as_dict(context.get('alert_posture')),
         )
     )

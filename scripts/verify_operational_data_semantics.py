@@ -56,16 +56,22 @@ def main() -> None:
         'Alert Intelligence',
         'Recommended Actions',
     ):
-        _require(token not in inventory_source, f'Inventory must remain factual asset truth; found ownership token: {token}.')
+        _require(
+            token not in inventory_source, f'Inventory must remain factual asset truth; found ownership token: {token}.'
+        )
 
     for relative in (
         'app/templates/kubernetes/dashboard/partials/_alerts_summary.html',
         'app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html',
     ):
         source = _read(relative)
-        _require('Alert Intelligence' in source, f'{relative} must identify Alert Intelligence as the Dashboard source.')
+        _require(
+            'Alert Intelligence' in source, f'{relative} must identify Alert Intelligence as the Dashboard source.'
+        )
         _require('KAORI Alert Cases Available' in source, f'{relative} must expose canonical AlertCase availability.')
-        _require('KAORI Alert Intelligence' in source, f'{relative} must expose canonical Alert Intelligence provenance.')
+        _require(
+            'KAORI Alert Intelligence' in source, f'{relative} must expose canonical Alert Intelligence provenance.'
+        )
         _require('Top 3 Cases' not in source, f'{relative} must not use domain-specific Top N metadata.')
 
     print('PASS — KAORI Operational Data Semantics · Inventory/Dashboard/Analytics/Intelligence authority boundaries')

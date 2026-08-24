@@ -72,11 +72,14 @@ def test_cluster_health_reads_capacity_and_alert_snapshots_only(monkeypatch) -> 
         '_capacity_signal',
         lambda _cluster: (CapacitySnapshot(source_status='Available'), SimpleNamespace(state='fresh')),
     )
-    monkeypatch.setattr(
-        service,
-        '_alerts_signal',
-        lambda _cluster: (AlertsSnapshot(critical=1, source_status='Available'), SimpleNamespace(state='fresh')),
+    alert_case = SimpleNamespace(
+        severity='critical',
+        alert_name='Capacity pressure',
+        summary='Review capacity pressure.',
+        target='cluster-1',
+        first_seen_at=None,
     )
+    monkeypatch.setattr(service, '_alert_cases_by_asset', lambda _cluster_ids: {'cluster-1': [alert_case]})
 
     def unexpected_read(*_args, **_kwargs):
         raise AssertionError('Cluster health must not read top-consumer or forecast snapshots.')
@@ -322,11 +325,7 @@ def test_cluster_health_preloads_visible_inventory_with_two_set_queries(monkeypa
         '_capacity_signal',
         lambda _cluster: (CapacitySnapshot(source_status='Available'), SimpleNamespace(state='fresh')),
     )
-    monkeypatch.setattr(
-        service,
-        '_alerts_signal',
-        lambda _cluster: (AlertsSnapshot(source_status='Available'), SimpleNamespace(state='fresh')),
-    )
+    monkeypatch.setattr(service, '_alert_cases_by_asset', lambda _cluster_ids: {})
     query_calls: list[tuple[object, list[str]]] = []
 
     def capture_query(model, cluster_ids):
@@ -355,7 +354,7 @@ def test_cluster_health_snapshot_reads_are_bounded_to_visible_page(monkeypatch) 
     monkeypatch.setattr(service, '_scope', lambda _selected: (clusters, options, None, None))
     monkeypatch.setattr(service, 'query_for_clusters', lambda _model, _cluster_ids: [])
     capacity_reads: list[str] = []
-    alert_reads: list[str] = []
+    alert_case_reads: list[list[str]] = []
     monkeypatch.setattr(
         service,
         '_capacity_signal',
@@ -363,8 +362,8 @@ def test_cluster_health_snapshot_reads_are_bounded_to_visible_page(monkeypatch) 
     )
     monkeypatch.setattr(
         service,
-        '_alerts_signal',
-        lambda cluster: (alert_reads.append(cluster.id) or AlertsSnapshot(), SimpleNamespace(state='fresh')),
+        '_alert_cases_by_asset',
+        lambda cluster_ids: alert_case_reads.append(list(cluster_ids)) or {},
     )
     monkeypatch.setattr(service, 'build_cluster_health', lambda **_kwargs: [])
 
@@ -372,7 +371,7 @@ def test_cluster_health_snapshot_reads_are_bounded_to_visible_page(monkeypatch) 
 
     expected = [f'cluster-{index}' for index in range(5, 10)]
     assert capacity_reads == expected
-    assert alert_reads == expected
+    assert alert_case_reads == [expected]
     assert dashboard.cluster_health_pagination.page == 2
     assert dashboard.cluster_health_pagination.per_page == 5
 

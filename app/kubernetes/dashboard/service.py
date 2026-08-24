@@ -136,6 +136,7 @@ def _alerts_signal(cluster: Any):
     ), result
 
 
+
 def _alerts_snapshot_from_cases(cases: list[Any]) -> AlertsSnapshot:
     return AlertsSnapshot(
         critical=sum(str(case.severity or '').lower() == 'critical' for case in cases),
@@ -144,14 +145,14 @@ def _alerts_snapshot_from_cases(cases: list[Any]) -> AlertsSnapshot:
         items=[
             AlertItem(
                 title=str(case.alert_name or 'KAORI Alert Case'),
-                description=str(case.summary or case.target or 'Recommendation-origin KAORI AlertCase.'),
+                description=str(case.summary or case.target or 'KAORI AlertCase.'),
                 severity=str(case.severity or 'info'),
                 age=case.first_seen_at.isoformat() if case.first_seen_at is not None else '',
             )
             for case in cases[:3]
         ],
         source_status='Available',
-        message='KAORI Alert Intelligence recommendation-origin cases.',
+        message='KAORI Alert Intelligence active AlertCase records.',
     )
 
 
@@ -161,6 +162,13 @@ def _kaori_alert_snapshot(cluster: Any) -> AlertsSnapshot:
         asset_key=str(cluster.id),
     )
     return _alerts_snapshot_from_cases(cases)
+
+
+def _alert_cases_by_asset(asset_keys: list[str]) -> dict[str, list[Any]]:
+    return active_recommendation_alert_cases_by_asset(
+        domain='kubernetes',
+        asset_keys=asset_keys,
+    )
 
 
 def _top_consumers_signal(cluster: Any):
@@ -275,10 +283,7 @@ def get_dashboard_section(
         node_rows = query_for_clusters(NodeInventory, visible_cluster_ids)
         pod_rows = query_for_clusters(PodInventory, visible_cluster_ids)
         capacities = {}
-        alert_cases = active_recommendation_alert_cases_by_asset(
-            domain='kubernetes',
-            asset_keys=visible_cluster_ids,
-        )
+        alert_cases = _alert_cases_by_asset(visible_cluster_ids)
         alerts = {}
         for cluster in visible:
             capacity, _ = _capacity_signal(cluster)

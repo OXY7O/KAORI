@@ -167,10 +167,7 @@ def test_object_storage_metrics_readiness_is_validation_owned_and_provider_quali
     assert 'self.client.series(metrics)' in audit
     assert 'self.client.query(definition.expression)' in audit
     assert 'Operational Metrics Contract' in readiness_template
-    assert (
-        'Runtime reachability and samples are evaluated when the worker commits a snapshot.'
-        in readiness_template
-    )
+    assert 'Runtime reachability and samples are evaluated when the worker commits a snapshot.' in readiness_template
 
 
 def test_object_storage_query_profile_classifies_required_recommended_and_optional_evidence() -> None:
@@ -397,13 +394,14 @@ def test_object_storage_bucket_records_use_shared_kaori_table_contract() -> None
 def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contract() -> None:
     index = read('app/templates/storage/object_storage/analytics/index.html')
     service = read('app/storage/object_storage/analytics/service.py')
+    pages = read('app/storage/object_storage/analytics/pages.py')
     hero = read('app/templates/storage/object_storage/analytics/partials/_hero.html')
     hero_posture = read('app/templates/storage/object_storage/analytics/partials/_hero_posture.html')
     hero_blocked = read('app/templates/storage/object_storage/analytics/partials/_hero_blocked_posture.html')
     workspace = read('app/templates/storage/object_storage/analytics/partials/_overview_workspace.html')
     layout = read('app/templates/layouts/app.html')
 
-    assert "'Analytics Overview'" in service
+    assert "'Analytics Overview'" in pages
     assert 'partials/_hero_posture.html' in hero
     assert 'partials/_hero_blocked_posture.html' in hero
     assert "'Operational Posture'" in hero_posture
@@ -458,6 +456,7 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
 def test_object_storage_capacity_and_performance_match_shared_analytics_hero_and_tab_contract() -> None:
     index = read('app/templates/storage/object_storage/analytics/index.html')
     service = read('app/storage/object_storage/analytics/service.py')
+    pages = read('app/storage/object_storage/analytics/pages.py')
     hero_posture = read('app/templates/storage/object_storage/analytics/partials/_hero_posture.html')
     controls = read('app/templates/storage/object_storage/analytics/partials/_controls.html')
     capacity_workspace = read('app/templates/storage/object_storage/analytics/partials/_capacity_workspace.html')
@@ -465,8 +464,8 @@ def test_object_storage_capacity_and_performance_match_shared_analytics_hero_and
     table_service = read('app/storage/object_storage/analytics/bucket_table.py')
     javascript = read('app/static/js/storage/object_storage/analytics.js')
 
-    assert "'Object Storage Capacity & Usage'" in service
-    assert "'Object Storage Performance'" in service
+    assert "'Object Storage Capacity & Usage'" in pages
+    assert "'Object Storage Performance'" in pages
     assert "'Capacity Posture'" in hero_posture
     assert "'Capacity Status'" in hero_posture
     assert "'Performance Posture'" in hero_posture

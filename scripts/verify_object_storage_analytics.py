@@ -14,6 +14,7 @@ def main() -> int:
     routes = read('app/storage/object_storage/analytics/routes.py')
     analysis = read('app/storage/object_storage/analytics/analysis.py')
     service = read('app/storage/object_storage/analytics/service.py')
+    pages = read('app/storage/object_storage/analytics/pages.py')
     runtime = read('app/storage/object_storage/analytics/runtime.py')
     materialization = read('app/storage/object_storage/analytics/materialization.py')
     forecast_task = read('app/storage/object_storage/analytics/tasks.py')
@@ -133,7 +134,11 @@ def main() -> int:
     ):
         assert f'def {endpoint}' in routes
         assert "@permission_required('object_storage_analytics.view')" in routes
-        if endpoint not in {'object_storage_recommendations', 'object_storage_bucket_table', 'object_storage_alert_table'}:
+        if endpoint not in {
+            'object_storage_recommendations',
+            'object_storage_bucket_table',
+            'object_storage_alert_table',
+        }:
             assert f'analytics.{endpoint}' in menu
 
     assert 'profile_key: object-storage-metrics-v1' in metrics_catalog
@@ -297,21 +302,21 @@ def main() -> int:
     assert "'Analytics Readiness'" in hero_blocked
     assert 'readiness_step_count = 3' in hero_blocked
     assert "step_labels = {1: 'Object Storage', 2: 'Metrics', 3: 'Analytics Snapshot'}" in hero_blocked
-    assert "'Analytics Overview'" in service
+    assert "'Analytics Overview'" in pages
     for copy in (
         'Review usable capacity, consumption trends, bucket pressure, quota posture, and growth across the selected system.',
         'Review S3 request activity, error pressure, queue depth, in-flight demand, and traffic across the selected system.',
         'Project storage growth, future utilization, and capacity exhaustion from committed operational metric history.',
         'Rank buckets by storage consumption, objects, request activity, error pressure, and concentration within the selected system.',
     ):
-        assert copy in service
+        assert copy in pages
     assert "'Operational Posture'" in hero_posture
     assert "'Analytics Status'" in hero_posture
     assert 'components/content_tabs.html' in overview_workspace
     assert 'data-analytics-tabset' in overview_workspace
     assert 'data-analytics-preserve-tab' in controls
-    assert "'Object Storage Capacity & Usage'" in service
-    assert "'Object Storage Performance'" in service
+    assert "'Object Storage Capacity & Usage'" in pages
+    assert "'Object Storage Performance'" in pages
     assert "'Capacity Posture'" in hero_posture
     assert "'Capacity Status'" in hero_posture
     assert "'Performance Posture'" in hero_posture

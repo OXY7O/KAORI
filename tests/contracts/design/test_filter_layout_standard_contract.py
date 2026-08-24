@@ -60,7 +60,10 @@ def test_action_aware_filter_keeps_actions_compact_and_search_fills_remainder() 
 
     assert 'class="block min-w-0 flex-1" for="object-storage-bucket-search"' in bucket
     assert 'class="flex flex-none flex-wrap items-center gap-2"' in bucket
-    assert bucket.index('clear_filters_action(') < bucket.index('Apply Filter')
+    assert "keyup[event.target.name === 'bucket_q'] changed delay:450ms" in bucket
+    assert "search[event.target.name === 'bucket_q']" in bucket
+    assert 'clear_filters_action(' in bucket
+    assert 'Apply Filter' not in bucket
     assert 'sm:max-w-md' not in bucket
 
     assert 'table_ui.filter_layout_classes()' in forecast

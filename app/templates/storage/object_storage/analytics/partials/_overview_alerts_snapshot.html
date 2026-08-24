@@ -16,7 +16,7 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                {{ table_label.status_label(posture.status|default('Unknown'), posture.tone|default('unknown'), size='compact') }}
+                {{ table_label.status_label(posture.status|default('Unknown') , posture.tone|default('unknown'), size='compact') }}
                 {{ table_label.metadata_label(source.resolved_label|default('Unavailable') ~ ' Source', 'radio-tower', size='compact') }}
             </div>
         </div>

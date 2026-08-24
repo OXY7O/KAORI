@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, cast
 
 from celery.exceptions import CeleryError
@@ -48,7 +47,7 @@ from app.storage.object_storage.analytics.materialization import (
     read_analytics_snapshot,
 )
 from app.storage.object_storage.analytics.overview_alerts import build_overview_alert_summary
-from app.storage.object_storage.analytics.recommendations import apply_recommendation_context, empty_recommendation_context
+from app.storage.object_storage.analytics.pages import PAGES
 from app.storage.object_storage.analytics.presentation import (
     PerformanceEvidence,
     build_bucket_analysis,
@@ -65,6 +64,10 @@ from app.storage.object_storage.analytics.presentation import (
     utilization_percent,
     utilization_tone,
 )
+from app.storage.object_storage.analytics.recommendations import (
+    apply_recommendation_context,
+    empty_recommendation_context,
+)
 from app.storage.object_storage.analytics.runtime import (
     EvidenceReader,
     runtime_source_state,
@@ -72,53 +75,6 @@ from app.storage.object_storage.analytics.runtime import (
     waiting_metrics_readiness,
     waiting_metrics_source,
 )
-
-@dataclass(frozen=True)
-class PageDefinition:
-    title: str
-    description: str
-    icon: str
-    eyebrow: str
-
-
-PAGES: dict[str, PageDefinition] = {
-    'overview': PageDefinition(
-        'Analytics Overview',
-        'Review consolidated capacity, request health, consumer concentration, forecast, and evidence posture.',
-        'layout-dashboard',
-        'Object Storage Analytics',
-    ),
-    'capacity': PageDefinition(
-        'Object Storage Capacity & Usage',
-        'Review usable capacity, consumption trends, bucket pressure, quota posture, and growth across the selected system.',
-        'database',
-        'Object Storage Analytics',
-    ),
-    'performance': PageDefinition(
-        'Object Storage Performance',
-        'Review S3 request activity, error pressure, queue depth, in-flight demand, and traffic across the selected system.',
-        'activity',
-        'Object Storage Analytics',
-    ),
-    'forecast': PageDefinition(
-        'Forecast',
-        'Project storage growth, future utilization, and capacity exhaustion from committed operational metric history.',
-        'line-chart',
-        'Object Storage Analytics',
-    ),
-    'top_consumers': PageDefinition(
-        'Top Consumers',
-        'Rank buckets by storage consumption, objects, request activity, error pressure, and concentration within the selected system.',
-        'users',
-        'Object Storage Analytics',
-    ),
-    'alerts': PageDefinition(
-        'Alerts & Anomalies',
-        'Review active alerts from Alertmanager or Metrics Source alongside metric-derived operating signals.',
-        'triangle-alert',
-        'Object Storage Analytics',
-    ),
-}
 
 
 FORECAST_HISTORY_WINDOWS = (

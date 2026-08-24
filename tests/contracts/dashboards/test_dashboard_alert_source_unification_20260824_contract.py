@@ -20,7 +20,7 @@ def test_dashboard_family_reads_recommendation_origin_alert_cases_from_alert_int
     assert 'active_recommendation_alert_cases' in kubernetes
     assert "domain='kubernetes'" in kubernetes
     assert 'def _kaori_alert_snapshot(' in kubernetes
-    assert 'dashboard.alerts_snapshot, _ = _alerts_signal(selected)' not in kubernetes
+    assert "dashboard.alerts_snapshot, _ = _alerts_signal(selected)" not in kubernetes
 
     assert 'active_recommendation_alert_cases' in object_storage
     assert "domain='object_storage'" in object_storage
@@ -31,17 +31,15 @@ def test_dashboard_family_explains_kaori_alert_intelligence_as_primary_alert_sou
     kubernetes = read('app/templates/kubernetes/dashboard/partials/_alerts_summary.html')
     kubernetes_guidance = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     object_storage = read('app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html')
-    object_storage_guidance = read(
-        'app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html'
-    )
+    object_storage_guidance = read('app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html')
 
     for content in (kubernetes, object_storage):
         assert 'KAORI Alert Intelligence' in content
-        assert 'recommendation-origin' in content.lower()
+        assert 'Active KAORI AlertCase posture and recent cases.' in content
 
     for content in (kubernetes_guidance, object_storage_guidance):
-        assert 'KAORI Alert Intelligence' in content
-        assert 'Raw source alerts remain in Analytics' in content
+        assert 'Alert Data Source' in content
+        assert 'KAORI Alert Intelligence · Active AlertCase records' in content
 
     assert 'Active Alertmanager and Metrics Source alert signals.' not in kubernetes
     assert "action_href=url_for('alert_intelligence.index'" in kubernetes
