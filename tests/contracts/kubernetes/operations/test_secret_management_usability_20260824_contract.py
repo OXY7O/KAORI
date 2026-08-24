@@ -79,7 +79,8 @@ def test_tls_rotate_copy_and_fingerprint_space_are_balanced() -> None:
         in routes
     )
     assert (
-        'Validate parsing, key matching, host coverage, and the replacement before Update TLS Secret is enabled.' in page
+        'Validate parsing, key matching, host coverage, and the replacement before Update TLS Secret is enabled.'
+        in page
     )
     assert 'lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]' in page
     assert 'lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.55fr)]' not in page

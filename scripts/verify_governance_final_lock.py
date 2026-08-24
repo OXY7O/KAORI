@@ -192,7 +192,7 @@ def main() -> int:
     require(
         'md:grid-cols-3' in rotate
         and 'sm:grid-cols-2 xl:grid-cols-4' in rotate
-        and 'lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.55fr)]' in rotate
+        and 'lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]' in rotate
         and 'xl:grid-cols-[minmax(20rem,0.72fr)_minmax(0,1.28fr)]' not in rotate,
         'Single TLS rotation must retain the compact target identity strip and posture evidence grid.',
         errors,

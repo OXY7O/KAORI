@@ -146,7 +146,7 @@ def main() -> int:
     require(
         'md:grid-cols-3' in single_rotation
         and 'sm:grid-cols-2 xl:grid-cols-4' in single_rotation
-        and 'lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.55fr)]' in single_rotation,
+        and 'lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]' in single_rotation,
         'Single TLS rotation target identity and posture must use the compact identity-strip/evidence-grid layout.',
         errors,
     )
