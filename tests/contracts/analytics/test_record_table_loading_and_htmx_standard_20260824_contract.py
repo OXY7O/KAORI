@@ -36,8 +36,8 @@ def test_object_storage_bucket_record_filters_refresh_with_htmx_without_apply_bu
     bucket_table = read('app/templates/storage/object_storage/analytics/partials/_bucket_table.html')
 
     assert (
-        "hx-trigger=\"keyup[event.target.name === 'bucket_q'] changed delay:450ms, "
-        "search[event.target.name === 'bucket_q']\"" in bucket_table
+        'hx-trigger="keyup[event.target.name === \'bucket_q\'] changed delay:450ms, '
+        'search[event.target.name === \'bucket_q\']"' in bucket_table
     )
     assert 'Apply Filter' not in bucket_table
     assert 'object-storage-bucket-table-loading-indicator' in bucket_table

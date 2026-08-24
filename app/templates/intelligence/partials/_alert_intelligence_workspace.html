@@ -13,7 +13,7 @@
 ] %}
 {% call intelligence_ui.section(
     'Alert Operations Workspace',
-    'Manage alert ownership, delivery, suppression, recovery evidence, resolved incidents, and policy without duplicating Notification Channel credentials.',
+    'Manage alert ownership, delivery, suppression, recovery evidence, and resolved incidents without duplicating channel credentials.',
     'shield-alert',
     payload.summary.active ~ ' Active',
     'warning' if payload.summary.active else 'normal'

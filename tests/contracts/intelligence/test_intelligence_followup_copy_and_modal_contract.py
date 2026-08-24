@@ -31,8 +31,10 @@ def test_resolved_modal_uses_simpler_active_alert_aligned_sections() -> None:
 
 def test_copy_is_shortened_on_routing_catalog_and_automation_control() -> None:
     routing = read('app/templates/intelligence/partials/_alert_ops_routing.html')
+    alert_workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
     catalog_summary = read('app/templates/intelligence/partials/_catalog_summary.html')
     catalog_page = read('app/templates/intelligence/rule_catalog.html')
+    automation_overview = read('app/templates/intelligence/partials/automation_control/_overview.html')
     automation = read('app/intelligence/automation_control/overview.py')
 
     assert (
@@ -40,12 +42,20 @@ def test_copy_is_shortened_on_routing_catalog_and_automation_control() -> None:
         in routing
     )
     assert (
+        'Manage alert ownership, delivery, suppression, recovery evidence, and resolved incidents without duplicating channel credentials.'
+        in alert_workspace
+    )
+    assert (
         'Review the current catalog scope before scanning definitions, evaluator readiness, and imported-signal coverage.'
         in catalog_summary
     )
     assert (
-        'Search rule ownership, provider coverage, evaluator readiness, source boundaries, severity, and operator response.'
+        'Search rule ownership, provider coverage, readiness, severity, and response. View Rule expands below the selected record.'
         in catalog_page
+    )
+    assert (
+        'Evidence moves through runbook matching, decision review, execution admission, and verification. Later gates never bypass earlier ones.'
+        in automation_overview
     )
     assert 'Governance stays writable while infrastructure execution remains fail-closed.' in automation
     assert 'lifecycle events are covered; ' in automation
