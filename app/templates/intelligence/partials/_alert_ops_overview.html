@@ -14,27 +14,34 @@
                         size='compact') }}
         </header>
         <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
-            {{ intelligence_ui.metric('siren',
-                        'Open Cases',
-                        payload.summary.active,
-                        payload.summary.critical ~ ' critical',
-                        'critical' if payload.summary.critical else ('warning' if payload.summary.active else 'normal')
+            {{ intelligence_ui.metric(
+                'siren',
+                'Open Cases',
+                payload.summary.active,
+                payload.summary.critical ~ ' critical',
+                'critical' if payload.summary.critical else ('warning' if payload.summary.active else 'normal')
             ) }}
-            {{ intelligence_ui.metric('badge-check',
-                        'Verification Pending',
-                        payload.summary.verification_pending,
-                        'Resolved source awaiting evidence',
-                        'warning' if payload.summary.verification_pending else 'normal') }}
-            {{ intelligence_ui.metric('send-horizontal',
-                        'Delivery Failures',
-                        payload.summary.delivery_failures,
-                        'Firing or resolved delivery',
-                        'warning' if payload.summary.delivery_failures else 'normal') }}
-            {{ intelligence_ui.metric('file-warning',
-                        'Postmortem Required',
-                        payload.summary.postmortem_required,
-                        'Closed cases awaiting learning record',
-                        'warning' if payload.summary.postmortem_required else 'normal') }}
+            {{ intelligence_ui.metric(
+                'badge-check',
+                'Verification Pending',
+                payload.summary.verification_pending,
+                'Resolved source awaiting evidence',
+                'warning' if payload.summary.verification_pending else 'normal'
+            ) }}
+            {{ intelligence_ui.metric(
+                'send-horizontal',
+                'Delivery Failures',
+                payload.summary.delivery_failures,
+                'Firing or resolved delivery',
+                'warning' if payload.summary.delivery_failures else 'normal'
+            ) }}
+            {{ intelligence_ui.metric(
+                'file-warning',
+                'Postmortem Required',
+                payload.summary.postmortem_required,
+                'Closed cases awaiting learning record',
+                'warning' if payload.summary.postmortem_required else 'normal'
+            ) }}
         </div>
     </section>
     <div class="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.65fr)]">
