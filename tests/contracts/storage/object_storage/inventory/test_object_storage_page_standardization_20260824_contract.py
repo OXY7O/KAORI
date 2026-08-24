@@ -64,7 +64,9 @@ def test_inventory_heroes_follow_copy_budget_and_shared_hero_contract() -> None:
     systems = read('app/templates/storage/object_storage/inventory/systems/partials/_hero.html')
     buckets = read('app/templates/storage/object_storage/inventory/buckets/partials/_hero.html')
 
-    expected = 'Review committed fleet posture across managed systems and inventory assets.'
+    expected = (
+        'Review committed fleet posture, inventory coverage, and managed asset readiness across Object Storage systems.'
+    )
     assert expected in overview
     assert len(expected.rstrip('.').split()) <= 16
 

@@ -53,7 +53,7 @@ def test_overview_final_lock_keeps_resource_details_out_of_summary_surface() -> 
     assert 'resource_detail_modal.detail_button(' in systems_table
     assert 'data-kaori-inventory-detail="v10"' in detail
     assert 'Authority Boundary' in detail
-    assert 'Provider configuration and live runtime health remain integration-owned.' in detail
+    assert 'provider configuration and live health remain integration-owned.' in detail
     assert 'system.guidance.title' in detail
 
 

@@ -56,7 +56,7 @@
     relative min-h-[38rem]
 {%- endmacro %}
 {% macro drawer_pane_classes(side='left') -%}
-    fixed inset-y-0 {{ 'left-0 border-r max-w-sm' if side == 'left' else 'right-0 border-l max-w-md' }} z-50 hidden w-full overflow-y-auto border-outline-default bg-surface-card shadow-xl
+    fixed inset-y-0 {{ 'left-0 border-r max-w-sm' if side == 'left' else 'right-0 border-l max-w-lg' }} z-50 hidden w-full overflow-y-auto border-outline-default bg-surface-card shadow-xl
 {%- endmacro %}
 {% macro canvas_classes() -%}
     kaori-visualization-canvas relative min-w-0 overflow-hidden bg-surface-card

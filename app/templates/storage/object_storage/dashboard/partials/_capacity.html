@@ -17,7 +17,7 @@
             <div class="{{ peer_content_grid.column_classes('primary') }}">
                 {% call operational_section_card.render(
                     'Capacity Snapshot',
-                    'Committed capacity, usage, headroom, and response path for this Object Storage system.',
+                    'Committed capacity, usage, headroom, and response path.',
                     'gauge',
                     action_href=url_for('analytics.object_storage_capacity', system_id=dashboard.selected_system_id),
                     action_label='View Capacity & Usage',

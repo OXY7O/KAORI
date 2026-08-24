@@ -19,7 +19,7 @@
         {% set reporting_metrics = [
                     ('Generated Reports', reporting.generated_reports, 'files', 'Stored Object Storage report artifacts in the active scope.'),
                     ('Report Templates', reporting.templates, 'layout-template', 'Reusable approved Object Storage report definitions.'),
-                    ('Report Schedules', reporting.schedules, 'calendar-clock', 'Configured recurring generation plans.')
+                    ('Report Schedules', reporting.schedules, 'calendar-clock', 'Configured recurring plans that define when reports are generated automatically.')
                 ] %}
         {% for label, value, icon, description in reporting_metrics %}
             <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">

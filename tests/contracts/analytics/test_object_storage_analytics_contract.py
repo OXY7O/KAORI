@@ -157,10 +157,7 @@ def test_object_storage_metrics_readiness_is_validation_owned_and_provider_quali
     assert 'self.client.series(metrics)' in audit
     assert 'self.client.query(definition.expression)' in audit
     assert 'Operational Metrics Contract' in readiness_template
-    assert (
-        'Runtime reachability and samples are evaluated when the worker commits a snapshot.'
-        in readiness_template
-    )
+    assert 'Runtime reachability and samples are evaluated when the worker commits a snapshot.' in readiness_template
 
 
 def test_object_storage_query_profile_classifies_required_recommended_and_optional_evidence() -> None:

@@ -19,7 +19,10 @@ def test_object_storage_overview_is_high_level_fleet_composition() -> None:
     assert '_systems_snapshot.html' not in index
     assert 'resource_detail_modal.inventory_host(' not in index
     assert 'Object Storage Overview' in hero
-    assert 'Review committed fleet posture across managed systems and inventory assets.' in hero
+    assert (
+        'Review committed fleet posture, inventory coverage, and managed asset readiness across Object Storage systems.'
+        in hero
+    )
     assert 'Systems Registered' in hero
     assert 'Inventory Assets' in hero
     assert 'Inventory Coverage' in hero
@@ -73,7 +76,9 @@ def test_overview_snapshot_and_signals_are_committed_inventory_only() -> None:
     assert 'Inventory Not Collected' in presentation
     assert 'Stale Snapshot' in presentation
     assert 'Provider Attention' in presentation
-    assert 'This detail reads committed Object Storage Inventory data.' in detail
+    assert (
+        'Committed Object Storage Inventory; provider configuration and live health remain integration-owned.' in detail
+    )
     assert 'client.list_buckets' not in presentation
 
 

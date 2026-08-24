@@ -87,7 +87,7 @@ def test_node_v10_preserves_snapshot_and_operational_boundaries() -> None:
 
     assert "operational_callout.render('Committed Snapshot Boundary'" in node
     assert 'operational_callout.render(node.operational_context.title' in node
-    assert 'does not query the Kubernetes API live' in node
+    assert 'no live Kubernetes API query' in node
     assert "extra_classes='xl:col-span-5'" in node
     assert "extra_classes='xl:col-span-7'" in node
 

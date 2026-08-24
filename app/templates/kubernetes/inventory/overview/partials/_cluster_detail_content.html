@@ -69,7 +69,7 @@
                 {% endcall %}
             {% endcall %}
             <div class="grid min-w-0 gap-4 xl:grid-cols-12">
-                {{ operational_callout.render('Data Boundary', 'This detail reads the latest committed database snapshot. It does not query the Kubernetes API live.', icon='database', tone='info', extra_classes='xl:col-span-5') }}
+                {{ operational_callout.render('Data Boundary', 'Latest committed inventory snapshot; no live Kubernetes API query.', icon='database', tone='info', extra_classes='xl:col-span-5') }}
                 {{ operational_callout.render(cluster.guidance.title, cluster.guidance.description, icon=cluster.guidance.icon, tone=cluster.guidance.tone, variant='semantic', extra_classes='xl:col-span-7') }}
             </div>
         </div>

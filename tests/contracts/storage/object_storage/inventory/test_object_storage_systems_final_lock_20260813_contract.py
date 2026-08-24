@@ -31,7 +31,7 @@ def test_system_detail_has_operational_guidance_and_authority_boundary() -> None
     table_card = read('app/templates/storage/object_storage/inventory/systems/partials/_table_card.html')
 
     assert 'Authority Boundary' in detail
-    assert 'reads committed Object Storage Inventory data' in detail
+    assert 'Committed Object Storage Inventory' in detail
     assert 'system.guidance.title' in detail
     assert 'system.guidance.description' in detail
     assert "detail.inventory_section('Inventory Snapshot'" in detail

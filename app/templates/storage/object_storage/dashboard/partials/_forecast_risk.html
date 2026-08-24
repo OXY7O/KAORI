@@ -46,7 +46,7 @@
                     <p class="text-xl font-semibold text-content-primary">{{ dashboard.forecast.attention_count }} of {{ dashboard.forecast.bucket_count }}</p>
                     {{ table_label.status_label(dashboard.forecast.posture.label, dashboard.forecast.posture.tone) }}
                 </div>
-                <p class="mt-1 text-xs text-content-muted">Inside the 90-day attention boundary</p>
+                <p class="mt-1 text-xs text-content-muted">Within the 90-day attention window</p>
             </article>
             <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
                 <div class="flex items-center gap-2 text-xs font-semibold text-content-muted">
@@ -74,7 +74,7 @@
             <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 {% for label, value, helper in [
                     ('Current Usage', dashboard.forecast.current_display, dashboard.forecast.current_percent_display ~ ' utilized'),
-                    ('Growth / Day', dashboard.forecast.growth_per_day_display, 'Linear growth from committed history'),
+                    ('Growth / Day', dashboard.forecast.growth_per_day_display, 'Linear growth from history'),
                     ('Projected 30d', dashboard.forecast.projected_30d_display, dashboard.forecast.projected_percent_display ~ ' utilized'),
                     ('Capacity ETA', dashboard.forecast.days_to_capacity_display, dashboard.forecast.sample_count ~ ' history samples')
                     ] %}

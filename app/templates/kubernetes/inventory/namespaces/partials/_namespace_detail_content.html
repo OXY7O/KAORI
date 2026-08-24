@@ -157,7 +157,7 @@
                 <h4 class="text-sm font-semibold text-content-primary">Operational Context</h4>
                 <div class="grid gap-3 lg:grid-cols-2">
                     {{ operational_callout.render('Committed Snapshot Boundary',
-                                        'This detail reads the latest committed database snapshot. It does not query the Kubernetes API live.',
+                                        'Latest committed inventory snapshot; no live Kubernetes API query.',
                                         'database',
                                         'info') }}
                     {{ operational_callout.render(namespace.operational_context.title,

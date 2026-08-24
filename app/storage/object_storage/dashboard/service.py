@@ -8,6 +8,7 @@ from sqlalchemy.orm import selectinload
 
 from app.common.pagination import paginate_sequence
 from app.models import Report, ReportSchedule, ReportTemplate
+from app.models.alert_ops import AlertCase
 from app.models.object_storage import ObjectStorageSystem
 from app.storage.object_storage.analytics.alert_sources import (
     build_alert_posture,
@@ -109,6 +110,33 @@ def _alert_view(payload: dict[str, Any] | None) -> tuple[dict[str, Any], dict[st
     return stream, build_alert_posture(stream)
 
 
+def _active_kaori_alert_cases(system: ObjectStorageSystem | None) -> list[AlertCase]:
+    if system is None:
+        return []
+    return (
+        AlertCase.query.filter(
+            AlertCase.domain == 'object_storage',
+            AlertCase.asset_key == str(system.id),
+            AlertCase.source_type == 'recommendation',
+            AlertCase.source_state.in_(('firing', 'unknown')),
+            AlertCase.workflow_state != 'closed',
+        )
+        .order_by(AlertCase.first_seen_at.desc(), AlertCase.id.desc())
+        .all()
+    )
+
+
+def _kaori_alert_posture(system: ObjectStorageSystem | None) -> dict[str, Any]:
+    cases = _active_kaori_alert_cases(system)
+    return {
+        'cases': cases,
+        'critical': sum(case.severity == 'critical' for case in cases),
+        'warning': sum(case.severity == 'warning' for case in cases),
+        'info': sum(case.severity not in {'critical', 'warning'} for case in cases),
+        'total': len(cases),
+    }
+
+
 def _inventory_summary(systems: list[ObjectStorageSystem]) -> dict[str, Any]:
     buckets = [bucket for system in systems for bucket in (system.buckets or ())]
     observed_systems = [system for system in systems if system.inventory_observed_at is not None]
@@ -140,7 +168,8 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
     for system in systems:
         payload, snapshot_state = _snapshot_payload(system)
         overview = _page_metrics(payload, 'overview')
-        stream, posture = _alert_view(payload)
+        stream, _source_posture = _alert_view(payload)
+        posture = _kaori_alert_posture(system)
         buckets = list(system.buckets or ())
         inventory_usage_values = [float(bucket.size_bytes) for bucket in buckets if bucket.size_bytes is not None]
         snapshot_usage = overview.get('usage_total')
@@ -209,7 +238,6 @@ def _dashboard_kpis(systems: list[ObjectStorageSystem], selected: ObjectStorageS
     scoped = [selected] if selected is not None else systems
     inventory = _inventory_summary(scoped)
     active_alerts = 0
-    alert_sources_ready = 0
     analytics_ready = 0
     operational_usage: float | None = None
     selected_utilization: str | None = None
@@ -217,10 +245,7 @@ def _dashboard_kpis(systems: list[ObjectStorageSystem], selected: ObjectStorageS
         payload, state = _snapshot_payload(system)
         analytics_ready += int(bool(state.get('usable')))
         overview = _page_metrics(payload, 'overview')
-        stream, posture = _alert_view(payload)
-        if stream.get('connected'):
-            alert_sources_ready += 1
-            active_alerts += int(posture.get('total') or 0)
+        active_alerts += int(_kaori_alert_posture(system).get('total') or 0)
         if selected is not None:
             operational_usage = overview.get('usage_total')
             selected_utilization = str(overview.get('utilization_display') or 'N/A')
@@ -250,8 +275,8 @@ def _dashboard_kpis(systems: list[ObjectStorageSystem], selected: ObjectStorageS
             },
             {
                 'label': 'Active Alerts',
-                'value': str(active_alerts) if alert_sources_ready else 'N/A',
-                'description': 'Committed alert evidence',
+                'value': str(active_alerts),
+                'description': 'KAORI Alert Intelligence cases',
                 'icon': 'bell-ring',
             },
         ]
@@ -381,21 +406,32 @@ def _alerts(selected: ObjectStorageSystem | None) -> dict[str, Any]:
             'warning': 0,
             'info': 0,
             'total': 0,
-            'source_label': 'Unavailable',
+            'source_label': 'KAORI Alert Intelligence',
+            'source_detail': 'Recommendation-origin durable alert cases',
             'rows': [],
         }
-    payload, state = _snapshot_payload(selected)
-    stream, posture = _alert_view(payload)
-    rows = [row for row in stream.get('rows') or [] if isinstance(row, dict)]
+    posture = _kaori_alert_posture(selected)
+    rows = [
+        {
+            'name': case.alert_name,
+            'severity': case.severity,
+            'summary': case.summary or case.target or 'KAORI recommendation alert case.',
+            'state': (
+                'Source Unknown' if case.source_state == 'unknown' else case.workflow_state.replace('_', ' ').title()
+            ),
+            'case_id': case.public_id,
+        }
+        for case in posture['cases'][:3]
+    ]
     return {
-        'available': bool(stream.get('connected')),
-        'snapshot': state,
-        'critical': int(posture.get('critical') or 0),
-        'warning': int(posture.get('warning') or 0),
-        'info': int(posture.get('info') or 0),
-        'total': int(posture.get('total') or 0),
-        'source_label': str(stream.get('resolved_label') or stream.get('label') or 'Unavailable'),
-        'rows': rows[:3],
+        'available': True,
+        'critical': int(posture['critical']),
+        'warning': int(posture['warning']),
+        'info': int(posture['info']),
+        'total': int(posture['total']),
+        'source_label': 'KAORI Alert Intelligence',
+        'source_detail': 'Recommendation-origin durable alert cases',
+        'rows': rows,
     }
 
 

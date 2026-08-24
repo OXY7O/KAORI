@@ -2,11 +2,11 @@
 {% import "components/table_label.html" as table_label %}
 {% call operational_section_card.render(
     'Alerts Summary',
-    'Active Alertmanager and Metrics Source Object Storage alert signals.',
+    'KAORI-processed active alert cases.',
     'bell-ring',
     id='object-storage-dashboard-alerts-summary',
-    action_href=url_for('analytics.object_storage_alerts', system_id=dashboard.selected_system_id),
-    action_label='Open Alerts & Anomalies',
+    action_href=url_for('alert_intelligence.index', domain='object_storage', asset=dashboard.selected_system_id, tab='active'),
+    action_label='Open Alert Intelligence',
     body_classes='p-5',
     extra_classes='h-full'
     ) %}
@@ -43,15 +43,15 @@
             {% set empty_state_label = "Healthy" %}
             {% set empty_state_tone = "normal" %}
             {% set empty_state_title = "No Active Alerts" %}
-            {% set empty_state_description = "The committed alert source is available and contains no active Object Storage alert signals." %}
+            {% set empty_state_description = "KAORI has no active Object Storage alert cases for this system." %}
             {% set empty_state_variant = "panel" %}
             {% set empty_state_min_height = "min-h-[170px]" %}
             {% include 'components/states/_empty_state.html' %}
         {% else %}
             {% set blocked_state_icon = "wifi-off" %}
-            {% set blocked_state_label = "Source Unavailable" %}
-            {% set blocked_state_title = "Alert Evidence Unavailable" %}
-            {% set blocked_state_description = "Run Object Storage Analytics Data Refresh after the Alertmanager or Metrics Source binding is ready." %}
+            {% set blocked_state_label = "System Required" %}
+            {% set blocked_state_title = "Select Object Storage System" %}
+            {% set blocked_state_description = "Select an Object Storage system to view KAORI Alert Intelligence cases." %}
             {% set blocked_state_tone = "warning" %}
             {% set blocked_state_variant = "table" %}
             {% set blocked_state_min_height = "min-h-[170px]" %}
@@ -75,9 +75,9 @@
                         {% elif total_alerts > 0 %}
                             The committed alert evidence contains informational signals only.
                         {% elif not dashboard.alerts.available %}
-                            Alert evidence is unavailable in the committed analytics snapshot.
+                            Select an Object Storage system to view KAORI alert cases.
                         {% else %}
-                            No active alert was returned by the committed alert source.
+                            No active KAORI alert case is currently open for this system.
                         {% endif %}
                     </p>
                 </div>
@@ -112,8 +112,8 @@
             </dl>
         </div>
         <div class="mt-3 flex flex-wrap gap-2">
-            {{ table_label.status_indicator_label('Alert Evidence Available' if dashboard.alerts.available else 'Alert Evidence Unavailable', 'normal' if dashboard.alerts.available else 'warning') }}
-            {{ table_label.metadata_label(dashboard.alerts.source_label, icon='radio-tower') }}
+            {{ table_label.status_indicator_label('KAORI Alert Cases Available' if dashboard.alerts.available else 'Alert Scope Required', 'normal' if dashboard.alerts.available else 'warning') }}
+            {{ table_label.metadata_label(dashboard.alerts.source_label, icon='brain-circuit') }}
         </div>
     </div>
 {% endcall %}

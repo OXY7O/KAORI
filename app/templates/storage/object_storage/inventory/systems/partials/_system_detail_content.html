@@ -56,7 +56,7 @@
                 {% endcall %}
             {% endcall %}
             <div class="grid min-w-0 gap-4 xl:grid-cols-12">
-                {{ operational_callout.render('Authority Boundary', 'This detail reads committed Object Storage Inventory data. Provider configuration and live runtime health remain integration-owned.', icon='database', tone='info', extra_classes='xl:col-span-5', action_href=url_for('integrations.storage') , action_label='Open Storage Integrations', action_icon='arrow-up-right') }}
+                {{ operational_callout.render('Authority Boundary', 'Committed Object Storage Inventory; provider configuration and live health remain integration-owned.', icon='database', tone='info', extra_classes='xl:col-span-5', action_href=url_for('integrations.storage') , action_label='Open Storage Integrations', action_icon='arrow-up-right') }}
                 {{ operational_callout.render(system.guidance.title, system.guidance.description, icon=system.guidance.icon, tone=system.guidance.tone, variant='semantic', extra_classes='xl:col-span-7', action_href=url_for('jobs.configuration', job_key='object_storage.inventory.sync') , action_label='Open Inventory Job', action_icon='arrow-up-right') }}
             </div>
         </div>

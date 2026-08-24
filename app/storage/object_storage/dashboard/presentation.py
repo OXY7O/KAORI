@@ -229,7 +229,10 @@ def _consumer_insight(
     top_share = _optional_float(ordered_usage[0].get('usage_share')) if ordered_usage else None
     if top_share is not None and top_share >= 50:
         title = 'Usage Concentration Requires Review'
-        description = f'The leading bucket owns {format_percent(top_share)} of committed storage usage.'
+        description = (
+            f'The leading bucket accounts for {format_percent(top_share)} of committed storage usage, '
+            'showing how much usage is concentrated in the largest consumer.'
+        )
     elif missing_activity_count:
         title = 'Request Activity Evidence Incomplete'
         description = f'{missing_activity_count} bucket(s) do not have committed request-rate evidence.'
@@ -314,8 +317,8 @@ def build_recommended_actions(
                 description='Validate active critical signals, affected buckets or systems, routing ownership, and the approved response runbook.',
                 icon='siren',
                 severity='critical',
-                source='Committed Alert Evidence',
-                endpoint='analytics.object_storage_alerts',
+                source='KAORI Alert Intelligence',
+                endpoint='alert_intelligence.index',
             )
         )
     utilization = _optional_float(capacity.get('utilization'))
@@ -368,8 +371,8 @@ def build_recommended_actions(
                 description='Warning signals are active. Confirm recurrence, ownership, and supporting metrics before they become operational incidents.',
                 icon='triangle-alert',
                 severity='info',
-                source='Committed Alert Evidence',
-                endpoint='analytics.object_storage_alerts',
+                source='KAORI Alert Intelligence',
+                endpoint='alert_intelligence.index',
             )
         )
     return actions[:5]

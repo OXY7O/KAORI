@@ -92,10 +92,14 @@
                                     <div>
                                         <p class="{{ analysis_surface.metric_label_classes() }}">Peak Projected Utilization</p>
                                         <p class="mt-1 text-3xl font-semibold tabular-nums {{ 'text-content-primary' if item.projected_percent is not none else analysis_surface.unavailable_value_classes() }}">{{ (item.peak_projected_percent ~ '%') if item.peak_projected_percent is not none else 'N/A' }}</p>
-                                        <ul class="mt-2 space-y-1 text-xs leading-5 text-content-muted" aria-label="Projected capacity details">
-                                            <li class="flex items-start gap-2"><span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-outline-strong" aria-hidden="true"></span><span><span class="font-medium text-content-secondary">Peak:</span> {{ item.peak_projected_display }} of {{ item.capacity_display }}</span></li>
-                                            <li class="flex items-start gap-2"><span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-outline-strong" aria-hidden="true"></span><span><span class="font-medium text-content-secondary">Horizon endpoint:</span> {{ item.projected_display }}</span></li>
-                                            <li class="flex items-start gap-2"><span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-outline-strong" aria-hidden="true"></span><span><span class="font-medium text-content-secondary">Baseline:</span> {{ item.capacity_label }}</span></li>
+                                        <ul class="mt-2 space-y-1 text-xs leading-5 text-content-muted"
+                                            aria-label="Projected capacity details">
+                                            <li class="flex items-start gap-2"><span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-outline-strong"
+      aria-hidden="true"></span><span><span class="font-medium text-content-secondary">Peak:</span> {{ item.peak_projected_display }} of {{ item.capacity_display }}</span></li>
+                                            <li class="flex items-start gap-2"><span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-outline-strong"
+      aria-hidden="true"></span><span><span class="font-medium text-content-secondary">Horizon endpoint:</span> {{ item.projected_display }}</span></li>
+                                            <li class="flex items-start gap-2"><span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-outline-strong"
+      aria-hidden="true"></span><span><span class="font-medium text-content-secondary">Baseline:</span> {{ item.capacity_label }}</span></li>
                                         </ul>
                                         {% if item.peak_projected_percent is not none %}
                                             {{ progress_bar.semantic_bar(item.peak_projected_percent, tone, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-hover', label=item.label ~ ' projected utilization status') }}

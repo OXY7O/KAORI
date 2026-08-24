@@ -18,9 +18,7 @@ def test_requested_object_storage_analytics_copy_is_concise_and_keeps_boundaries
     performance = read('app/templates/storage/object_storage/analytics/partials/_performance_analysis.html')
     traffic = read('app/templates/storage/object_storage/analytics/partials/_performance_traffic.html')
     forecasts = read('app/templates/storage/object_storage/analytics/partials/_bucket_forecasts.html')
-    forecast_table = read(
-        'app/templates/storage/object_storage/analytics/partials/_bucket_forecast_table.html'
-    )
+    forecast_table = read('app/templates/storage/object_storage/analytics/partials/_bucket_forecast_table.html')
     alerts = read('app/templates/storage/object_storage/analytics/partials/_alert_records.html')
     materialization = read('app/storage/object_storage/analytics/materialization.py')
 
@@ -68,9 +66,7 @@ def test_requested_object_storage_analytics_copy_is_concise_and_keeps_boundaries
 
 
 def test_object_storage_analytics_visual_standard_uses_shared_tokens_and_primitives() -> None:
-    templates = '\n'.join(
-        path.read_text(encoding='utf-8') for path in TEMPLATE_ROOT.rglob('*.html')
-    )
+    templates = '\n'.join(path.read_text(encoding='utf-8') for path in TEMPLATE_ROOT.rglob('*.html'))
 
     for forbidden in (
         'violet-50',
@@ -92,14 +88,10 @@ def test_object_storage_analytics_visual_standard_uses_shared_tokens_and_primiti
     index = read('app/templates/storage/object_storage/analytics/index.html')
     overview = read('app/templates/storage/object_storage/analytics/partials/_overview_workspace.html')
     bucket_table = read('app/templates/storage/object_storage/analytics/partials/_bucket_table.html')
-    forecast_table = read(
-        'app/templates/storage/object_storage/analytics/partials/_bucket_forecast_table.html'
-    )
+    forecast_table = read('app/templates/storage/object_storage/analytics/partials/_bucket_forecast_table.html')
     alert_records = read('app/templates/storage/object_storage/analytics/partials/_alert_records.html')
 
-    assert 'components/page_hero.html' in read(
-        'app/templates/storage/object_storage/analytics/partials/_hero.html'
-    )
+    assert 'components/page_hero.html' in read('app/templates/storage/object_storage/analytics/partials/_hero.html')
     assert 'components/content_tabs.html' in overview
     assert "filename='js/storage/object_storage/analytics.js'" in index
     assert '<script>' not in index

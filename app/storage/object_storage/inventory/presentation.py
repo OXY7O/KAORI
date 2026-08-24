@@ -665,7 +665,7 @@ def _bucket_row(bucket: ObjectStorageBucket) -> dict[str, Any]:
         'quota_source': bucket.quota_source,
         'quota_checked_at': bucket.quota_checked_at,
         'quota_observed_at': bucket.quota_observed_at,
-        'data_boundary': 'Latest committed Object Storage Inventory Sync snapshot; no live provider query is issued.',
+        'data_boundary': 'Latest committed Inventory Sync snapshot; no live provider query.',
         'recommended_action': (
             _quota_evidence_view(
                 bucket.quota_evidence_code,
