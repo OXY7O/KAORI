@@ -4,12 +4,14 @@ from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
 
+from app.common.alert_case_source_state import (
+    SYSTEM_ROUTING_SUPPRESSION_REASONS,
+    mark_asset_alert_cases_source_unknown as _mark_asset_alert_cases_source_unknown,
+    mark_case_source_unknown as _mark_case_source_unknown,
+)
 from app.extensions.db import db
 from app.models.alert_ops import AlertCase, AlertCaseEvent, RecommendationAlertState
 from app.models.audit import AuditEvent
-
-SYSTEM_ROUTING_SUPPRESSION_REASONS = {'source_unavailable', 'source_deleted', 'policy_ineligible'}
-
 
 def mark_case_source_unknown(
     case: AlertCase,
@@ -19,33 +21,14 @@ def mark_case_source_unknown(
     now: datetime | None = None,
     metadata: Mapping[str, Any] | None = None,
 ) -> bool:
-    """Hold an open case when fresh source evidence is unavailable or deleted."""
-
-    if case.workflow_state == 'closed' or case.source_state == 'resolved':
-        return False
-    current = now or datetime.now(UTC)
-    normalized_reason = str(reason or 'source_unavailable').strip().lower()[:64]
-    changed = case.source_state != 'unknown' or case.source_state_reason != normalized_reason
-    previous_state = case.source_state
-    case.source_state = 'unknown'
-    case.source_state_reason = normalized_reason
-    case.source_state_changed_at = current
-    case.source_resolved_at = None
-    if case.routing_state == 'enabled' or case.routing_override_reason in SYSTEM_ROUTING_SUPPRESSION_REASONS:
-        _apply_system_routing_suppression(case, reason=normalized_reason, now=current)
-    if changed:
-        _event(
-            case,
-            'source_unknown',
-            None,
-            source_summary,
-            {
-                'previous_source_state': previous_state,
-                'reason': normalized_reason,
-                **dict(metadata or {}),
-            },
-        )
-    return changed
+    """Preserve the Alert Intelligence API while delegating the shared source-state transition."""
+    return _mark_case_source_unknown(
+        case,
+        reason=reason,
+        source_summary=source_summary,
+        now=now,
+        metadata=metadata,
+    )
 
 
 def restore_case_source_firing(
@@ -368,26 +351,13 @@ def mark_asset_alert_cases_source_unknown(
     reason: str = 'source_deleted',
     source_kind: str | None = None,
 ) -> int:
-    """Mark open recommendation-origin cases Unknown before a managed asset is removed."""
-
-    rows = AlertCase.query.filter(
-        AlertCase.source_type == 'recommendation',
-        AlertCase.domain == str(domain),
-        AlertCase.asset_key == str(asset_key),
-        AlertCase.workflow_state != 'closed',
-        AlertCase.source_state != 'resolved',
-    ).all()
-    changed = 0
-    for case in rows:
-        changed += int(
-            mark_case_source_unknown(
-                case,
-                reason=reason,
-                source_summary='The managed source was removed; KAORI no longer has fresh evidence to evaluate this alert.',
-                metadata={'source_kind': source_kind or domain},
-            )
-        )
-    return changed
+    """Preserve the Alert Intelligence API for callers already inside this domain."""
+    return _mark_asset_alert_cases_source_unknown(
+        domain=domain,
+        asset_key=asset_key,
+        reason=reason,
+        source_kind=source_kind,
+    )
 
 
 def restore_system_routing(

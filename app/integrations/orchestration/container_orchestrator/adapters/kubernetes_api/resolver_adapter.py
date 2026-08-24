@@ -12,7 +12,7 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
     resolve_kubernetes_for_cluster,
 )
-from app.intelligence.resolver.contracts import (
+from app.common.resolver_contracts import (
     DryRunResult,
     ResolverContext,
     ResolverError,

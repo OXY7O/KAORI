@@ -156,6 +156,7 @@ def _logical_domain(module: str) -> str | None:
         ('app.kubernetes.governance', 'governance'),
         ('app.kubernetes.operations', 'kubernetes_operations'),
         ('app.intelligence.alert_intelligence', 'alert_intelligence'),
+        ('app.intelligence.recommendation_alert_commands', 'alert_intelligence'),
         ('app.intelligence.automation_control', 'automation_control'),
         ('app.intelligence.knowledge', 'knowledge'),
         ('app.intelligence.resolver', 'resolver'),

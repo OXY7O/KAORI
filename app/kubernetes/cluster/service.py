@@ -704,7 +704,7 @@ def delete_cluster(cluster: Cluster) -> dict[str, int]:
 
     # Source deletion is not technical resolution. Preserve any open KAORI AlertCase
     # as Unknown before removing the managed asset so operators retain incident evidence.
-    from app.intelligence.alert_intelligence.case_state import mark_asset_alert_cases_source_unknown
+    from app.common.alert_case_source_state import mark_asset_alert_cases_source_unknown
 
     alert_cases_marked_unknown = mark_asset_alert_cases_source_unknown(
         domain='kubernetes',
