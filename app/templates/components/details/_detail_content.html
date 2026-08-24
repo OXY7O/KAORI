@@ -12,21 +12,6 @@
 {% macro expanded_workspace_icon_classes() -%}
     flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary ring-1 ring-inset ring-brand-outline/60
 {%- endmacro %}
-{% macro inventory_band_grid_classes() -%}
-    grid min-w-0 xl:grid-cols-[minmax(0,1fr)_minmax(0,3fr)]
-{%- endmacro %}
-{% macro inventory_copy_button(label) -%}
-    <button type="button"
-            data-kaori-copy-button
-            data-copy-label="Copy"
-            data-copied-label="Copied"
-            class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-outline-subtle bg-surface-card text-content-muted transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
-            aria-label="Copy {{ label }}"
-            title="Copy {{ label }}">
-        <i data-lucide="copy" data-kaori-copy-icon class="h-3.5 w-3.5" aria-hidden="true"></i>
-        <span class="sr-only" data-kaori-copy-label>Copy</span>
-    </button>
-{%- endmacro %}
 {% macro header_identity_row() -%}
     <div data-resource-detail-header-identity
          class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5">{{ caller() }}</div>
@@ -50,6 +35,9 @@
 {%- endmacro %}
 {% macro inline_detail_shell_classes() -%}
     overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm
+{%- endmacro %}
+{% macro inventory_band_grid_classes() -%}
+    grid min-w-0 xl:grid-cols-[minmax(0,1fr)_minmax(0,3fr)]
 {%- endmacro %}
 {% macro detail_row(label, value='-', break_all=False, nowrap=False) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
@@ -165,19 +153,12 @@
               title="{{ display_value }}">{{ display_value }}</span>
     </div>
 {%- endmacro %}
-{% macro inventory_technical_row(label, value='-', break_all=false, nowrap=false, class_name='', copyable=false) -%}
+{% macro inventory_technical_row(label, value='-', break_all=false, nowrap=false, class_name='') -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     {% set technical_classes = 'font-medium xl:whitespace-nowrap' if nowrap else 'font-medium' %}
-    {% set can_copy = copyable and display_value not in ['-', 'Not Reported', 'Not Configured', 'Not Applicable'] %}
-    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 sm:grid-cols-[minmax(10rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5 {{ class_name }}"
-         {% if can_copy %}data-kaori-copy-root{% endif %}>
+    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 sm:grid-cols-[minmax(10rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5 {{ class_name }}">
         <span class="min-w-0 break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</span>
-        <span class="flex min-w-0 items-center gap-2 text-left text-sm font-medium leading-5 text-content-primary">
-            <span class="min-w-0" {% if can_copy %}data-kaori-copy-source{% endif %}>{{ technical_value.render(display_value, align='left', break_all=break_all, class_name=technical_classes, monospace=false, size='body') }}</span>
-            {% if can_copy %}
-                {{ inventory_copy_button(label) }}
-            {% endif %}
-        </span>
+        <span class="min-w-0 text-left text-sm font-medium leading-5 text-content-primary">{{ technical_value.render(display_value, align='left', break_all=break_all, class_name=technical_classes, monospace=false, size='body') }}</span>
     </div>
 {%- endmacro %}
 {% macro inventory_status_row(label, value, tone='unknown', icon=None, size='compact', class_name='') -%}
@@ -213,19 +194,9 @@
             {% set label = row.label if row.label is defined else row[0] %}
             {% set value = row.value if row.value is defined else row[1] %}
             {% set supporting = row.supporting if row.supporting is defined else (row[2] if row|length > 2 else none) %}
-            {% set copyable = row.copyable if row.copyable is defined else false %}
-            {% set display_value = value if value not in [None, ''] else '-' %}
-            {% set can_copy = copyable and display_value not in ['-', 'Not Reported', 'Not Configured', 'Not Applicable'] %}
-            <article class="min-w-0 border-b border-outline-subtle py-3"
-                     {% if can_copy %}data-kaori-copy-root{% endif %}>
+            <article class="min-w-0 border-b border-outline-subtle py-3">
                 <p class="text-sm font-normal leading-5 text-content-secondary">{{ label }}</p>
-                <div class="mt-0.5 flex min-w-0 items-center gap-2">
-                    <p class="min-w-0 break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]"
-                       {% if can_copy %}data-kaori-copy-source{% endif %}>{{ display_value }}</p>
-                    {% if can_copy %}
-                        {{ inventory_copy_button(label) }}
-                    {% endif %}
-                </div>
+                <p class="mt-0.5 break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</p>
                 {% if supporting %}
                     <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ supporting }}</p>
                 {% endif %}
@@ -327,18 +298,13 @@
         </dd>
     </div>
 {%- endmacro %}
-{% macro inspector_technical_row(label, value='-', nowrap=false, class_name='', copyable=false) -%}
+{% macro inspector_technical_row(label, value='-', nowrap=false, class_name='') -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     {% set technical_classes = 'font-medium xl:whitespace-nowrap' if nowrap else 'font-medium' %}
-    {% set can_copy = copyable and display_value not in ['-', 'Not Reported', 'Not Configured', 'Not Applicable'] %}
-    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 sm:grid-cols-[minmax(10rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5 {{ class_name }}"
-         {% if can_copy %}data-kaori-copy-root{% endif %}>
+    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 sm:grid-cols-[minmax(10rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5 {{ class_name }}">
         <dt class="min-w-0 break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</dt>
-        <dd class="flex min-w-0 items-center gap-2 text-left text-sm font-medium leading-5 text-content-primary">
-            <span class="min-w-0" {% if can_copy %}data-kaori-copy-source{% endif %}>{{ technical_value.render(display_value, align='left', break_all=false, class_name=technical_classes, monospace=false, size='body') }}</span>
-            {% if can_copy %}
-                {{ inventory_copy_button(label) }}
-            {% endif %}
+        <dd class="min-w-0 text-left text-sm font-medium leading-5 text-content-primary">
+            {{ technical_value.render(display_value, align='left', break_all=false, class_name=technical_classes, monospace=false, size='body') }}
         </dd>
     </div>
 {%- endmacro %}
