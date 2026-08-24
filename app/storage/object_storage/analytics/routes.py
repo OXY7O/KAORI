@@ -45,6 +45,11 @@ def object_storage_top_consumers() -> ResponseReturnValue:
 
 
 @permission_required('object_storage_analytics.view')
+def object_storage_recommendations() -> ResponseReturnValue:
+    return _render('recommendations')
+
+
+@permission_required('object_storage_analytics.view')
 def object_storage_alerts() -> ResponseReturnValue:
     return _render('alerts')
 

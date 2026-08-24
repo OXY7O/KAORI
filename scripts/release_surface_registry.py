@@ -124,6 +124,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
             'analytics.object_storage_performance',
             'analytics.object_storage_forecast',
             'analytics.object_storage_top_consumers',
+            'analytics.object_storage_recommendations',
             'analytics.object_storage_alerts',
         ),
         blueprint_vars=('analytics_bp',),

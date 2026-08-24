@@ -72,6 +72,19 @@
     url_for('object_storage_inventory.overview'),
     'database'
     ) }}
+{% elif page_key == 'recommendations' %}
+    {{ page_hero.context_card_body('Recommendation Posture',
+        'Intelligence Findings',
+        recommendation_summary.highest|default('None') ,
+    recommendation_summary.tone|default('normal'),
+    [
+    ('sparkles', 'Active Findings', recommendation_summary.total|default(0), 'Central Intelligence findings for this system'),
+    ('triangle-alert', 'Critical', recommendation_summary.critical|default(0), 'Critical findings requiring review')
+    ],
+    'Open Intelligence',
+    url_for('intelligence.recommendations', domain='object_storage'),
+    'brain-circuit'
+    ) }}
 {% elif page_key == 'alerts' %}
     {% set alerts = alert_posture|default({}) %}
     {% set alert_action_endpoint = 'integrations.alertmanager' if alert_source.resolved_source == 'alertmanager' else 'integrations.metrics_sources' %}

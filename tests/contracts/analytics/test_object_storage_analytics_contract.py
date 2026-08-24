@@ -61,6 +61,7 @@ def test_object_storage_analytics_exposes_kubernetes_style_surface_set() -> None
         'object_storage_performance',
         'object_storage_forecast',
         'object_storage_top_consumers',
+        'object_storage_recommendations',
         'object_storage_alerts',
     ):
         assert f"endpoint='{endpoint}'" in routes
@@ -80,7 +81,7 @@ def test_object_storage_analytics_uses_dedicated_rbac_and_sidebar_visibility() -
     permissions = {item['key']: item for item in access['permissions']}
     object_storage_permission = permissions['object_storage_analytics.view']
 
-    assert routes.count("@permission_required('object_storage_analytics.view')") == 9
+    assert routes.count("@permission_required('object_storage_analytics.view')") == 10
     assert object_storage_permission['module'] == 'storage_analytics'
     assert "load_definition_document('access/rbac/access.yaml'" in defaults
     assert "has_permission('object_storage_analytics.view')" in sidebar

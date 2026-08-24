@@ -60,7 +60,7 @@ def test_object_storage_runtime_boundary_stays_provider_neutral_and_fail_fast() 
     runtime = read('app/storage/object_storage/analytics/runtime.py')
     materialization = read('app/storage/object_storage/analytics/materialization.py')
 
-    assert routes.count("@permission_required('object_storage_analytics.view')") == 9
+    assert routes.count("@permission_required('object_storage_analytics.view')") == 10
     for forbidden in ('MetricsConsumer(', 'MinioClient(', 'boto3', 'minio.client'):
         assert forbidden not in routes
         assert forbidden not in service

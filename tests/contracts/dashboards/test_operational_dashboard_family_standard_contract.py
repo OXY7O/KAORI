@@ -88,7 +88,7 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert 'No immediate scaling required.' in capacity
     assert 'Worker-node CPU, memory, and pod headroom; control-plane nodes excluded.' in kubernetes_capacity
     assert 'Apply the approved capacity/workload change' in kubernetes_capacity
-    assert 'Alert collection unavailable. KAORI retains integrations and retries automatically.' in kubernetes_alerts
+    assert 'KAORI Alert Intelligence case evidence is temporarily unavailable.' in kubernetes_alerts
     assert 'Validate reporting activity and follow the governed KAORI workflow.' in kubernetes_reporting
     assert 'Validate reporting activity and follow the governed KAORI workflow.' in object_reporting
     assert "operational_callout.render('Reporting Control'" in kubernetes_reporting

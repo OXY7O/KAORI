@@ -3,6 +3,10 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
+from app.intelligence.alert_intelligence.dashboard_cases import (
+    active_recommendation_alert_cases,
+    active_recommendation_alert_cases_by_asset,
+)
 from app.kubernetes.analytics.materialization.keys import (
     CAPACITY_DATASET_KEY,
     DASHBOARD_ALERTS_DATASET_KEY,
@@ -17,6 +21,8 @@ from app.kubernetes.dashboard.repository import (
     query_for_clusters,
 )
 from app.kubernetes.dashboard.schema import (
+    AlertItem,
+    AlertsSnapshot,
     DashboardClusterOption,
     DashboardKpiContext,
     DashboardOverview,
@@ -128,6 +134,33 @@ def _alerts_signal(cluster: Any):
         context=result.context,
         unavailable_reason=unavailable_message('Alerts', result),
     ), result
+
+
+def _alerts_snapshot_from_cases(cases: list[Any]) -> AlertsSnapshot:
+    return AlertsSnapshot(
+        critical=sum(str(case.severity or '').lower() == 'critical' for case in cases),
+        warning=sum(str(case.severity or '').lower() == 'warning' for case in cases),
+        info=sum(str(case.severity or '').lower() not in {'critical', 'warning'} for case in cases),
+        items=[
+            AlertItem(
+                title=str(case.alert_name or 'KAORI Alert Case'),
+                description=str(case.summary or case.target or 'Recommendation-origin KAORI AlertCase.'),
+                severity=str(case.severity or 'info'),
+                age=case.first_seen_at.isoformat() if case.first_seen_at is not None else '',
+            )
+            for case in cases[:3]
+        ],
+        source_status='Available',
+        message='KAORI Alert Intelligence recommendation-origin cases.',
+    )
+
+
+def _kaori_alert_snapshot(cluster: Any) -> AlertsSnapshot:
+    cases = active_recommendation_alert_cases(
+        domain='kubernetes',
+        asset_key=str(cluster.id),
+    )
+    return _alerts_snapshot_from_cases(cases)
 
 
 def _top_consumers_signal(cluster: Any):
@@ -242,12 +275,16 @@ def get_dashboard_section(
         node_rows = query_for_clusters(NodeInventory, visible_cluster_ids)
         pod_rows = query_for_clusters(PodInventory, visible_cluster_ids)
         capacities = {}
+        alert_cases = active_recommendation_alert_cases_by_asset(
+            domain='kubernetes',
+            asset_keys=visible_cluster_ids,
+        )
         alerts = {}
         for cluster in visible:
             capacity, _ = _capacity_signal(cluster)
-            alert_snapshot, _ = _alerts_signal(cluster)
-            capacities[str(cluster.id)] = capacity
-            alerts[str(cluster.id)] = alert_snapshot
+            cluster_id = str(cluster.id)
+            capacities[cluster_id] = capacity
+            alerts[cluster_id] = _alerts_snapshot_from_cases(alert_cases.get(cluster_id, []))
         dashboard.cluster_health_snapshot = build_cluster_health(
             clusters_raw=visible,
             selected_cluster_id=None,
@@ -266,7 +303,7 @@ def get_dashboard_section(
     if section == 'kpi_cards':
         if selected is not None:
             dashboard.capacity_snapshot, _ = _capacity_signal(selected)
-            dashboard.alerts_snapshot, _ = _alerts_signal(selected)
+            dashboard.alerts_snapshot = _kaori_alert_snapshot(selected)
         inventory = _inventory_snapshot(selected_cluster_id)
         nodes_total = count_records(NodeInventory, selected_cluster_id)
         nodes_ready = count_records_with_values(
@@ -310,7 +347,7 @@ def get_dashboard_section(
 
     if section == 'alerts_summary':
         if selected is not None:
-            dashboard.alerts_snapshot, _ = _alerts_signal(selected)
+            dashboard.alerts_snapshot = _kaori_alert_snapshot(selected)
         return dashboard
 
     if section == 'top_consumers':

@@ -100,8 +100,8 @@ canonical rule domain remains `object_storage`.
 
 Reusable recommendation callers must scope findings with canonical `domain` + `asset_key`. Kubernetes
 Dashboard explicitly requests `domain='kubernetes'`, preventing Object Storage findings from leaking
-into a Kubernetes-only surface. Future Object Storage Analytics recommendation tabs must consume the
-same Intelligence finding source rather than re-implementing these rule conditions.
+into a Kubernetes-only surface. Object Storage Analytics recommendation tabs consume the same Intelligence finding source rather than
+re-implementing these rule conditions.
 
 ## Object Storage Rule Catalog coverage
 

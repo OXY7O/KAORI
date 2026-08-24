@@ -2,7 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 {% call operational_section_card.render(
     'Alerts Summary',
-    'KAORI-processed active alert cases.',
+    'KAORI-processed recommendation-origin alert cases.',
     'bell-ring',
     id='object-storage-dashboard-alerts-summary',
     action_href=url_for('alert_intelligence.index', domain='object_storage', asset=dashboard.selected_system_id, tab='active'),

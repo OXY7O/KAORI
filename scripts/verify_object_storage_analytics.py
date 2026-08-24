@@ -126,6 +126,7 @@ def main() -> int:
         'object_storage_performance',
         'object_storage_forecast',
         'object_storage_top_consumers',
+        'object_storage_recommendations',
         'object_storage_alerts',
         'object_storage_bucket_table',
         'object_storage_alert_table',

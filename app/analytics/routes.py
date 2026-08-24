@@ -37,6 +37,7 @@ from app.storage.object_storage.analytics.routes import (
     object_storage_forecast,
     object_storage_overview,
     object_storage_performance,
+    object_storage_recommendations,
     object_storage_top_consumers,
 )
 
@@ -492,6 +493,13 @@ analytics_bp.add_url_rule(
     '/object-storage/top-consumers',
     endpoint='object_storage_top_consumers',
     view_func=object_storage_top_consumers,
+    methods=['GET'],
+)
+
+analytics_bp.add_url_rule(
+    '/object-storage/recommendations',
+    endpoint='object_storage_recommendations',
+    view_func=object_storage_recommendations,
     methods=['GET'],
 )
 

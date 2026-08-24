@@ -9,17 +9,17 @@ def read(path: str) -> str:
 
 def test_object_storage_dashboard_uses_kaori_alert_cases_not_raw_source_rows() -> None:
     service = read('app/storage/object_storage/dashboard/service.py')
+    shared = read('app/intelligence/alert_intelligence/dashboard_cases.py')
     alerts = read('app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html')
 
-    assert 'from app.models.alert_ops import AlertCase' in service
-    assert 'def _active_kaori_alert_cases(' in service
-    assert "AlertCase.domain == 'object_storage'" in service
-    assert "AlertCase.source_type == 'recommendation'" in service
-    assert "AlertCase.source_state.in_(('firing', 'unknown'))" in service
-    assert "AlertCase.workflow_state != 'closed'" in service
+    assert 'active_recommendation_alert_cases' in service
+    assert "domain='object_storage'" in service
+    assert "AlertCase.source_type == 'recommendation'" in shared
+    assert "AlertCase.source_state.in_(('firing', 'unknown'))" in shared
+    assert "AlertCase.workflow_state != 'closed'" in shared
     assert "'source_label': 'KAORI Alert Intelligence'" in service
     assert "'source_detail': 'Recommendation-origin durable alert cases'" in service
-    assert 'KAORI-processed active alert cases.' in alerts
+    assert 'KAORI-processed recommendation-origin alert cases.' in alerts
     assert "url_for('alert_intelligence.index'" in alerts
     assert "endpoint='alert_intelligence.index'" in read('app/storage/object_storage/dashboard/presentation.py')
     actions = read('app/templates/storage/object_storage/dashboard/partials/_recommended_actions.html')
@@ -34,13 +34,11 @@ def test_dashboard_response_guidance_explains_alert_provenance() -> None:
     kubernetes = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     object_storage = read('app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html')
 
-    assert 'Alert Source' in kubernetes
-    assert 'Committed Analytics alert snapshot' in kubernetes
-    assert 'Alertmanager preferred; Metrics Source fallback' in kubernetes
-
-    assert 'Alert Source' in object_storage
-    assert 'KAORI Alert Intelligence' in object_storage
-    assert 'Recommendation-origin durable alert cases' in object_storage
+    for content in (kubernetes, object_storage):
+        assert 'Alert Source' in content
+        assert 'KAORI Alert Intelligence' in content
+        assert 'Recommendation-origin durable alert cases' in content
+        assert 'Raw source alerts remain in Analytics' in content
 
 
 def test_topology_details_matches_notification_deck_width() -> None:

@@ -8,9 +8,9 @@ def test_alert_summary_distinguishes_no_alerts_from_source_failure() -> None:
     source = TEMPLATE.read_text()
 
     assert 'No Active Alerts' in source
-    assert 'Alert Sources Temporarily Unavailable' in source
+    assert 'Alert Scope Temporarily Unavailable' in source
     assert 'Automatic Retry Enabled' in source
-    assert 'Recovery Monitoring Active' in source
+    assert 'Alert Scope Unavailable' in source
     assert 'No Active Alert Snapshot' not in source
 
 

@@ -7,8 +7,8 @@ from sqlalchemy import or_
 from sqlalchemy.orm import selectinload
 
 from app.common.pagination import paginate_sequence
+from app.intelligence.alert_intelligence.dashboard_cases import active_recommendation_alert_cases
 from app.models import Report, ReportSchedule, ReportTemplate
-from app.models.alert_ops import AlertCase
 from app.models.object_storage import ObjectStorageSystem
 from app.storage.object_storage.analytics.alert_sources import (
     build_alert_posture,
@@ -110,24 +110,12 @@ def _alert_view(payload: dict[str, Any] | None) -> tuple[dict[str, Any], dict[st
     return stream, build_alert_posture(stream)
 
 
-def _active_kaori_alert_cases(system: ObjectStorageSystem | None) -> list[AlertCase]:
-    if system is None:
-        return []
-    return (
-        AlertCase.query.filter(
-            AlertCase.domain == 'object_storage',
-            AlertCase.asset_key == str(system.id),
-            AlertCase.source_type == 'recommendation',
-            AlertCase.source_state.in_(('firing', 'unknown')),
-            AlertCase.workflow_state != 'closed',
-        )
-        .order_by(AlertCase.first_seen_at.desc(), AlertCase.id.desc())
-        .all()
-    )
-
-
 def _kaori_alert_posture(system: ObjectStorageSystem | None) -> dict[str, Any]:
-    cases = _active_kaori_alert_cases(system)
+    cases = (
+        active_recommendation_alert_cases(domain='object_storage', asset_key=str(system.id))
+        if system is not None
+        else []
+    )
     return {
         'cases': cases,
         'critical': sum(case.severity == 'critical' for case in cases),
@@ -168,7 +156,6 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
     for system in systems:
         payload, snapshot_state = _snapshot_payload(system)
         overview = _page_metrics(payload, 'overview')
-        stream, _source_posture = _alert_view(payload)
         posture = _kaori_alert_posture(system)
         buckets = list(system.buckets or ())
         inventory_usage_values = [float(bucket.size_bytes) for bucket in buckets if bucket.size_bytes is not None]
@@ -183,9 +170,8 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
         )
         provider_status = str(system.status or 'unknown').replace('_', ' ').title()
         analytics_usable = bool(snapshot_state.get('usable'))
-        alert_connected = bool(stream.get('connected'))
-        critical_alerts = int(posture.get('critical') or 0) if alert_connected else 0
-        warning_alerts = int(posture.get('warning') or 0) if alert_connected else 0
+        critical_alerts = int(posture.get('critical') or 0)
+        warning_alerts = int(posture.get('warning') or 0)
 
         if provider_status.lower() not in {'connected', 'ready'}:
             overall_status = 'Critical'
@@ -224,8 +210,8 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
                 'snapshot_ready': analytics_usable,
                 'utilization_display': str(overview.get('utilization_display') or 'N/A'),
                 'utilization_tone': str(overview.get('utilization_tone') or 'unknown'),
-                'active_alerts': int(posture.get('total') or 0) if alert_connected else None,
-                'alerts_connected': alert_connected,
+                'active_alerts': int(posture.get('total') or 0),
+                'alert_cases_available': True,
                 'overall_status': overall_status,
                 'overall_tone': overall_tone,
                 'status_reason': status_reason,

@@ -63,6 +63,10 @@ from app.storage.object_storage.analytics.presentation import (
     utilization_percent,
     utilization_tone,
 )
+from app.storage.object_storage.analytics.recommendations import (
+    build_recommendation_context,
+    empty_recommendation_context,
+)
 from app.storage.object_storage.analytics.runtime import (
     EvidenceReader,
     runtime_source_state,
@@ -109,6 +113,12 @@ PAGES: dict[str, PageDefinition] = {
         'Top Consumers',
         'Rank buckets by storage consumption, objects, request activity, error pressure, and concentration within the selected system.',
         'users',
+        'Object Storage Analytics',
+    ),
+    'recommendations': PageDefinition(
+        'Recommendations',
+        'Review central Intelligence findings for the selected Object Storage system from committed evidence.',
+        'sparkles',
         'Object Storage Analytics',
     ),
     'alerts': PageDefinition(
@@ -616,6 +626,7 @@ def _base_context(page_key: str, query_args: Any) -> tuple[dict[str, Any], Objec
             'detail': 'Select an Object Storage system.',
         },
         'alert_table': None,
+        **empty_recommendation_context(),
         'metrics': {},
         'bucket_table': None,
         'bucket_forecast_table': None,
@@ -726,6 +737,10 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
         return context
     if system.inventory_observed_at is None:
         context['dependency_blocker'] = inventory_required_blocker(system)
+        return context
+
+    if page_key == 'recommendations':
+        context.update(build_recommendation_context(system))
         return context
 
     payload = _attach_committed_analytics_snapshot(context, system=system, time_range=time_range)

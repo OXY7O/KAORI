@@ -2,11 +2,11 @@
 {% import "components/table_label.html" as table_label %}
 {% call operational_section_card.render(
     'Alerts Summary',
-    'Active Alertmanager and Metrics Source alert signals.',
+    'KAORI-processed recommendation-origin alert cases.',
     'bell-ring',
     id='dashboard-alerts-summary',
-    action_href=url_for('analytics.alerts'),
-    action_label='Open Alerts Workspace',
+    action_href=url_for('alert_intelligence.index', domain='kubernetes', asset=dashboard.selected_cluster_id, tab='active'),
+    action_label='Open Alert Intelligence',
     body_classes='p-5',
     extra_classes='h-full'
     ) %}
@@ -14,7 +14,7 @@
         {% set blocked_state_icon = "server-off" %}
         {% set blocked_state_label = "Cluster Required" %}
         {% set blocked_state_title = "Select Cluster" %}
-        {% set blocked_state_description = "Select a cluster to view Alertmanager and Metrics Source alert signals." %}
+        {% set blocked_state_description = "Select a cluster to view KAORI Alert Intelligence cases." %}
         {% set blocked_state_tone = "warning" %}
         {% include 'components/states/_blocked_state.html' %}
     {% else %}
@@ -51,14 +51,14 @@
                 {% set empty_state_label = "Healthy" %}
                 {% set empty_state_tone = "normal" %}
                 {% set empty_state_title = "No Active Alerts" %}
-                {% set empty_state_description = "The selected source is reachable and returned no active alert signals." %}
+                {% set empty_state_description = "KAORI has no active recommendation-origin alert cases for this cluster." %}
                 {% set empty_state_variant = "panel" %}
                 {% set empty_state_min_height = "min-h-[170px]" %}
                 {% include 'components/states/_empty_state.html' %}
             {% else %}
                 {% set blocked_state_icon = "wifi-off" %}
                 {% set blocked_state_label = "Source Unavailable" %}
-                {% set blocked_state_title = "Alert Sources Temporarily Unavailable" %}
+                {% set blocked_state_title = "Alert Scope Temporarily Unavailable" %}
                 {% set blocked_state_description %}
                     {{ dashboard.alerts_snapshot.message }}
                 {% endset %}
@@ -87,9 +87,9 @@
                             {% elif total_alerts > 0 %}
                                 The alert source is available with informational signals only.
                             {% elif dashboard.alerts_snapshot.source_status != 'Available' %}
-                                Alert collection unavailable. KAORI retains integrations and retries automatically.
+                                KAORI Alert Intelligence case evidence is temporarily unavailable.
                             {% else %}
-                                No active alert was returned by the selected alert source.
+                                No active KAORI alert case is currently open for this cluster.
                             {% endif %}
                         </p>
                     </div>
@@ -118,19 +118,19 @@
                     <div>
                         <dt class="text-content-muted">Source</dt>
                         <dd class="mt-1 truncate text-base font-semibold text-content-primary">
-                            {{ dashboard.alerts_snapshot.source_status }}
+                            KAORI Alert Intelligence
                         </dd>
                     </div>
                 </dl>
             </div>
             <div class="mt-3 flex flex-wrap gap-2">
                 {% if dashboard.alerts_snapshot.source_status == 'Available' %}
-                    {{ table_label.status_indicator_label('Source Connected', 'normal') }}
+                    {{ table_label.status_indicator_label('KAORI Alert Cases Available', 'normal') }}
                 {% else %}
-                    {{ table_label.status_indicator_label('Recovery Monitoring Active', 'warning') }}
+                    {{ table_label.status_indicator_label('Alert Scope Unavailable', 'warning') }}
                 {% endif %}
                 {% if dashboard.alerts_snapshot.items %}
-                    {{ table_label.metadata_label('Top ' ~ dashboard.alerts_snapshot.items|length ~ ' Signals', icon='list-filter') }}
+                    {{ table_label.metadata_label('Top ' ~ dashboard.alerts_snapshot.items|length ~ ' Cases', icon='list-filter') }}
                 {% endif %}
             </div>
         </div>
