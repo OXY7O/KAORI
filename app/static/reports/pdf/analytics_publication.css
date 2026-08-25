@@ -326,8 +326,7 @@ body.kaori-analytics-publication.kaori-reporting-v3 .page .content-section {
   margin-top: var(--analytics-rhythm-section);
 }
 body.kaori-analytics-publication.kaori-reporting-v3 .two-column > .content-section,
-body.kaori-analytics-publication.kaori-reporting-v3 .paired-sections > .content-section,
-body.kaori-analytics-publication.kaori-reporting-v3 .trend-interpretation-stack > .content-section {
+body.kaori-analytics-publication.kaori-reporting-v3 .paired-sections > .content-section {
   margin-top: 0;
 }
 body.kaori-analytics-publication.kaori-reporting-v3 .page .content-section h2 {
@@ -379,12 +378,6 @@ body.kaori-analytics-publication.kaori-reporting-v3 .identity-register-subtitle 
 body.kaori-analytics-publication.kaori-reporting-v3 .section-after-pair {
   margin-top: var(--analytics-rhythm-section) !important;
 }
-body.kaori-analytics-publication.kaori-reporting-v3 .trend-interpretation-stack {
-  gap: var(--analytics-rhythm-section);
-}
-body.kaori-analytics-publication.kaori-reporting-v3 .chart-to-section-gap {
-  margin-bottom: 0;
-}
 
 /* Peer blocks are symmetric. Dense narrative belongs below, not in a squeezed column. */
 body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .two-column {
@@ -428,8 +421,7 @@ body.kaori-analytics-publication.kaori-reporting-v3 .page .content-section {
   margin-top: var(--analytics-rhythm-section) !important;
 }
 body.kaori-analytics-publication.kaori-reporting-v3 .two-column > .content-section,
-body.kaori-analytics-publication.kaori-reporting-v3 .paired-sections > .content-section,
-body.kaori-analytics-publication.kaori-reporting-v3 .trend-interpretation-stack > .content-section {
+body.kaori-analytics-publication.kaori-reporting-v3 .paired-sections > .content-section {
   margin-top: 0 !important;
 }
 body.kaori-analytics-publication.kaori-reporting-v3 .page .section-subtitle {
@@ -457,10 +449,6 @@ body.kaori-analytics-publication.kaori-reporting-v3 .two-column > .content-secti
 }
 body.kaori-analytics-publication.kaori-reporting-v3 .section-after-pair {
   margin-top: var(--analytics-rhythm-section) !important;
-}
-body.kaori-analytics-publication.kaori-reporting-v3 .trend-interpretation-stack {
-  display: grid;
-  gap: var(--analytics-rhythm-section);
 }
 
 /* Nested subheadings use one predictable heading-to-content interval. */
@@ -582,8 +570,7 @@ body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .metric-stri
   margin-top: 0 !important;
 }
 body.kaori-analytics-publication.kaori-reporting-v3 .two-column > .content-section,
-body.kaori-analytics-publication.kaori-reporting-v3 .paired-sections > .content-section,
-body.kaori-analytics-publication.kaori-reporting-v3 .trend-interpretation-stack > .content-section {
+body.kaori-analytics-publication.kaori-reporting-v3 .paired-sections > .content-section {
   margin-top: 0 !important;
 }
 
@@ -983,4 +970,25 @@ body.kaori-analytics-publication.kaori-reporting-v3 .page .publication-pair > .c
 body.kaori-analytics-publication.kaori-reporting-v3 .page .publication-pair > .content-section > h2 {
   height: auto !important;
   min-height: 0 !important;
+}
+
+
+/*
+ * KAORI Analytics Publication R11 - top-level flow ownership lock
+ * Page-level groups own their outer section clearance. Child sections own no
+ * outer margin. Chart internals never own the gap to the next publication block.
+ */
+body.kaori-analytics-publication.kaori-reporting-v3 .publication-stack {
+  display: grid;
+  gap: var(--analytics-rhythm-section);
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .publication-stack {
+  margin-top: var(--analytics-rhythm-section) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .page-title-row + .publication-stack,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .metric-strip + .publication-stack {
+  margin-top: 0 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .publication-stack > .content-section {
+  margin-top: 0 !important;
 }

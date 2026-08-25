@@ -161,7 +161,7 @@
                                 <div class="two-column publication-pair chart-assessment-split">
                                     {% call ui.section('Figure 2 - CPU Direction', 'Committed historical utilization for the selected reporting period.') %}
                                         <div class="chart-frame publication-visual is-pair">{{ p.cpu.chart_svg|safe }}</div>
-                                        <div class="chart-legend chart-to-section-gap"><span class="legend-cpu">Committed CPU signal</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
+                                        <div class="chart-legend"><span class="legend-cpu">Committed CPU signal</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
                                     {% endcall %}
                                     {% call ui.section('CPU Operating Assessment', 'Interpretation remains separate from the comparison register.') %}
                                         <div class="interpretation-card tall-card">
@@ -226,7 +226,7 @@
                                 <div class="two-column publication-pair chart-assessment-split">
                                     {% call ui.section('Figure 3 - Memory Direction and Projection', 'Committed memory endpoint and projected planning position.') %}
                                         <div class="chart-frame publication-visual is-pair">{{ p.memory.chart_svg|safe }}</div>
-                                        <div class="chart-legend chart-to-section-gap"><span class="legend-memory">Historical / projected memory</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
+                                        <div class="chart-legend"><span class="legend-memory">Historical / projected memory</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
                                     {% endcall %}
                                     {% call ui.section('Memory Operating Assessment', 'Current posture and planning implication.') %}
                                         <div class="interpretation-card tall-card">
@@ -449,9 +449,9 @@
                                 {{ metric_strip(p.trend.metrics) }}
                                 {% call ui.section('Figure 8 - Resource Trend Outlook', 'Historical and projected endpoints within the committed boundary.') %}
                                     <div class="trend-chart-frame publication-visual is-wide">{{ p.trend.chart_svg|safe }}</div>
-                                    <div class="chart-legend chart-to-section-gap"><span class="legend-memory">Memory</span><span class="legend-pods">Pods</span><span class="legend-cpu">CPU</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
+                                    <div class="chart-legend"><span class="legend-memory">Memory</span><span class="legend-pods">Pods</span><span class="legend-cpu">CPU</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
                                 {% endcall %}
-                                <div class="trend-interpretation-stack">
+                                <div class="publication-stack trend-interpretation-stack">
                                     {% call ui.section('Trend Interpretation', 'Resource-level direction remains explicit.') %}
                                         <table class="report-table trend-register">
                                             <thead>

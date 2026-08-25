@@ -11,9 +11,9 @@ def test_resource_utilization_uses_canonical_post_chart_spacing() -> None:
     template = read('app/templates/reports/pdf/resource_utilization.html')
     css = read('app/static/reports/pdf/resource_utilization.css')
 
-    assert template.count('chart-legend chart-to-section-gap') == 3
-    assert '.chart-to-section-gap' in css
-    assert 'margin-bottom:' in css.split('.chart-to-section-gap', 1)[1].split('}', 1)[0]
+    assert template.count('class="chart-legend"') >= 3
+    assert 'chart-to-section-gap' not in template
+    assert 'chart-to-section-gap' not in css
 
 
 def test_node_participation_card_keeps_labels_and_values_inside_card() -> None:
@@ -78,8 +78,9 @@ def test_resource_utilization_balances_visual_pairs_and_stacks_dense_followups()
     assert 'grid-template-columns:minmax(0,1fr)minmax(0,1fr)!important' in pair_block
     assert '.publication-pair.is-stacked{' in shared_compact
 
-    assert '.trend-interpretation-stack' in shared_css
-    assert '.trend-interpretation-stack{display:grid' in shared_compact
+    assert 'class="publication-stack trend-interpretation-stack"' in template
+    assert '.publication-stack' in shared_css
+    assert '.publication-stack{display:grid' in shared_compact
 
     distribution_pair = template.split('class="two-column publication-pair distribution-split"', 1)[1].split(
         "ui.section('Consumer Reference Register'", 1

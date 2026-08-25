@@ -191,7 +191,7 @@ def test_shared_rhythm_has_single_spacing_owner_without_pair_double_gap() -> Non
     assert 'margin-top:0!important' in compact
     assert '.two-column>.content-section>.section-subtitle' in compact
     assert 'min-height:0!important' in compact
-    assert '.trend-interpretation-stack{display:grid' in compact
+    assert '.publication-stack{display:grid' in compact
     assert '.page-content>.metric-strip+.content-section' in compact
     assert '.publication-pair>.content-section:first-of-type{margin-top:0!important;' in compact
 

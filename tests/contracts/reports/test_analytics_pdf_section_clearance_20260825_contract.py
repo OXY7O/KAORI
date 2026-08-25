@@ -123,7 +123,7 @@ def test_capacity_scheduling_uses_shared_summary_card_structure() -> None:
     assert 'class="summary-box-grid"' in template
     assert '<span>Reported Capacity</span><strong>' in template
     assert '<span>Reported Remaining</span><strong>' in template
-    assert 'class="chart-legend chart-to-section-gap"' in template
+    assert 'class="chart-legend"' in template
 
 
 def test_reusable_summary_and_legend_primitives_are_not_redefined_by_family_css() -> None:
@@ -136,3 +136,56 @@ def test_reusable_summary_and_legend_primitives_are_not_redefined_by_family_css(
             offenders.append(f'{name}: chart-legend')
 
     assert not offenders, 'Shared publication primitives redefined locally:\n' + '\n'.join(offenders)
+
+
+def test_top_level_publication_stack_after_section_keeps_canonical_section_gap() -> None:
+    page = _render(
+        """
+        <html><body class="kaori-analytics-publication kaori-reporting-v3">
+          <article class="page"><div class="page-content">
+            <div class="metric-strip"></div>
+            <section id="figure" class="content-section">
+              <h2>Figure</h2><p class="section-subtitle">Helper.</p>
+              <div class="section-body"><div style="height:24mm">Chart</div><div class="chart-legend"><span>Legend</span></div></div>
+            </section>
+            <div id="stack" class="trend-interpretation-stack publication-stack">
+              <section class="content-section">
+                <h2>Trend Interpretation</h2><p class="section-subtitle">Helper.</p>
+                <div class="section-body"><p>Body</p></div>
+              </section>
+              <section class="content-section">
+                <h2>Evidence Boundary</h2><p class="section-subtitle">Helper.</p>
+                <div class="section-body"><p>Body</p></div>
+              </section>
+            </div>
+          </div></article>
+        </body></html>
+        """
+    )
+    figure = _element_box(page, 'figure')
+    stack = _element_box(page, 'stack')
+    gap = float(stack.border_box_y()) - (float(figure.border_box_y()) + float(figure.border_height()))
+
+    assert gap >= 5.4 * MM_TO_PX
+
+
+def test_publication_stack_owns_outer_clearance_and_internal_section_gap() -> None:
+    compact = ''.join(SHARED_CSS.read_text(encoding='utf-8').split())
+
+    assert '.page-content>.publication-stack{margin-top:var(--analytics-rhythm-section)!important;' in compact
+    assert '.publication-stack{display:grid;gap:var(--analytics-rhythm-section);}' in compact
+    assert '.publication-stack>.content-section{margin-top:0!important;' in compact
+
+
+def test_chart_internals_do_not_own_inter_section_clearance() -> None:
+    shared = SHARED_CSS.read_text(encoding='utf-8')
+    family = (ROOT / 'app/static/reports/pdf/resource_utilization.css').read_text(encoding='utf-8')
+    templates = '\n'.join(
+        (ROOT / 'app/templates/reports/pdf' / name).read_text(encoding='utf-8')
+        for name in ('resource_utilization.html', 'capacity_analysis.html')
+    )
+
+    assert 'chart-to-section-gap' not in shared
+    assert 'chart-to-section-gap' not in family
+    assert 'chart-to-section-gap' not in templates
+    assert '.trend-interpretation-stack {' not in shared

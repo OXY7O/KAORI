@@ -358,7 +358,7 @@
                                 {{ metric_strip(p.forecast.metrics) }}
                                 {% call ui.section('Figure 2 - Capacity Projection Outlook', 'Historical and projected endpoints within the committed boundary.') %}
                                     <div class="forecast-chart-frame publication-visual is-wide">{{ p.forecast.chart_svg|safe }}</div>
-                                    <div class="chart-legend chart-to-section-gap"><span class="legend-memory">Memory</span><span class="legend-pods">Pods</span><span class="legend-cpu">CPU</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
+                                    <div class="chart-legend"><span class="legend-memory">Memory</span><span class="legend-pods">Pods</span><span class="legend-cpu">CPU</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
                                 {% endcall %}
                                 <div class="two-column publication-pair forecast-bottom-split">
                                     {% call ui.section('Forecast Interpretation', 'Resource-level direction remains explicit.') %}

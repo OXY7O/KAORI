@@ -283,6 +283,30 @@ A section is spaced by publication order, not by HTML element type. The first `<
 
 Reusable summary cards and chart legends are family-owned primitives. Summary cards use a structured label -> value -> helper layout with a canonical component gap, while chart legends use explicit swatches and spacing. Report-specific CSS may change domain geometry, but must not collapse these primitives into run-on text.
 
+
+### Top-level flow ownership
+
+Every direct publication block owns exactly one outer gap. A normal section, peer pair, or publication stack starts **5.6 mm** after the preceding publication block unless it is the first content immediately after the page title or metric strip. Child sections inside a pair or stack have **0 mm** outer margin; the parent owns alignment and flow.
+
+A publication stack uses **5.6 mm** from the preceding block and **5.6 mm** between its child sections. Chart internals, legends, SVG frames, and helper classes never own clearance to the next section. The legacy `chart-to-section-gap` pattern is forbidden because it creates competing spacing owners.
+
+This gives one deterministic model:
+
+```text
+FIGURE SECTION
+  chart
+  legend
+
+5.6 mm
+
+PUBLICATION STACK
+  Trend Interpretation
+
+  5.6 mm
+
+  Evidence Boundary
+```
+
 ### Peer section flow
 
 Peer columns use **normal block flow inside each section**. The parent publication grid owns left/right alignment; a report-specific stylesheet must not set `.content-section` to `display:flex`. This avoids WeasyPrint expanding single-line heading boxes and preserves the canonical **1.45 mm title → description** rhythm while the shared helper slot keeps peer content rows aligned.

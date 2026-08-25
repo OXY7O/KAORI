@@ -61,7 +61,6 @@
 .trend-chart-frame { border: .3mm solid #D7DEE8; background: #FCFDFE; padding: 3mm; overflow: hidden; }
 .chart-frame svg,
 .trend-chart-frame svg { display: block; width: 100%; }
-.chart-to-section-gap { margin-bottom: 1.8mm; }
 
 .pod-bars { padding: 1mm 0 3mm; }
 .pod-row { display: grid; grid-template-columns: 34mm minmax(0, 1fr) 15mm; gap: 3mm; align-items: center; margin: 3mm 0; }

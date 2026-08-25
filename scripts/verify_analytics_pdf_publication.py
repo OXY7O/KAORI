@@ -96,6 +96,9 @@ def main() -> int:
         "'peer_helper_slot': '7mm'",
         "'section_spacing_policy': '5.6mm'",
         "'first_section_clearance_policy': 'canonical-gap-even-after-non-section-block'",
+        "'top_level_flow_policy': 'publication-block-owns-outer-gap'",
+        "'publication_stack_policy': 'outer-5.6mm-inner-5.6mm'",
+        "'chart_spacing_policy': 'internal-only-no-next-section-clearance'",
         "'shared_component_spacing_policy': 'summary-cards-and-chart-legends-global'",
         "'paired_section_clearance_policy': 'single-5.6mm-section-gap-no-double-spacing'",
         "'visual_box_policy': 'locked-size-tokens-content-scales-inside'",
@@ -164,6 +167,8 @@ def main() -> int:
         '--analytics-rhythm-section:5.6mm',
         '--analytics-rhythm-component:3.6mm',
         'KAORI Analytics Publication R9 - section clearance lock',
+        'KAORI Analytics Publication R11 - top-level flow ownership lock',
+        '.publication-stack',
         '.summary-box-grid',
         '.chart-legend',
         '--analytics-rhythm-pair-clearance:0mm',
@@ -179,6 +184,13 @@ def main() -> int:
             f'Missing shared publication rhythm token: {token}',
             errors,
         )
+
+    require('chart-to-section-gap' not in shared_css, 'Legacy chart-to-section spacing must not be owned by shared CSS.', errors)
+    require(
+        'chart-to-section-gap' not in (ROOT / 'app/static/reports/pdf/resource_utilization.css').read_text(encoding='utf-8'),
+        'Resource Utilization must not own inter-section clearance through chart internals.',
+        errors,
+    )
 
     require(
         'KAORI Analytics Publication R6 - Clean Sweep' in shared_css,
