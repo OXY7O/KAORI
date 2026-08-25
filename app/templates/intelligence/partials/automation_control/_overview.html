@@ -5,7 +5,7 @@
 {% set control = payload.overview_state %}
 {% call automation_ui.section(
     'Control Path',
-    'Evidence moves through runbook matching, decision review, execution admission, and verification. Later gates never bypass earlier ones.',
+    'Evidence moves through runbook matching, review, execution admission, and verification. Later gates cannot bypass earlier controls.',
     'route',
     control.posture.label,
     control.posture.tone

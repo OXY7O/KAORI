@@ -11,15 +11,17 @@ def test_intelligence_workspace_copy_is_shortened_for_alerts_rules_and_control_p
     automation_overview = read('app/templates/intelligence/partials/automation_control/_overview.html')
 
     assert (
-        'Manage alert ownership, delivery, suppression, recovery evidence, and resolved incidents without duplicating channel credentials.'
+        'Manage alert ownership, delivery, suppression, recovery, and resolution without duplicating '
+        'channel credentials.'
         in alert_workspace
     )
     assert (
-        'Search rule ownership, provider coverage, readiness, severity, and response. View Rule expands below the selected record.'
+        'Search ownership, coverage, readiness, severity, and response. View Rule expands below the selected record.'
         in rule_catalog
     )
     assert (
-        'Evidence moves through runbook matching, decision review, execution admission, and verification. Later gates never bypass earlier ones.'
+        'Evidence moves through runbook matching, review, execution admission, and verification. Later gates cannot '
+        'bypass earlier controls.'
         in automation_overview
     )
 

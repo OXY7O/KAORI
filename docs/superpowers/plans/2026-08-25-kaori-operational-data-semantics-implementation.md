@@ -961,7 +961,7 @@ If `progress_bar.html` is unchanged, omit it from `git add`.
 **Files:**
 - Create or modify: `tests/storage/object_storage/analytics/test_analysis.py`
 - Modify: `tests/kubernetes/dashboard/test_kubernetes_dashboard_characterization.py`
-- Create: `tests/contracts/inventory/test_inventory_operational_semantics_20260825_contract.py`
+- Create: `tests/contracts/architecture/test_inventory_operational_semantics_20260825_contract.py`
 
 **Interfaces:**
 - No production interfaces added.
@@ -1003,7 +1003,7 @@ assert 'get_active_recommendation_findings' not in inventory_services
 pytest -q \
   tests/storage/object_storage/analytics \
   tests/kubernetes/dashboard \
-  tests/contracts/inventory/test_inventory_operational_semantics_20260825_contract.py
+  tests/contracts/architecture/test_inventory_operational_semantics_20260825_contract.py
 ```
 
 Expected in devcontainer: PASS.
@@ -1014,7 +1014,7 @@ Expected in devcontainer: PASS.
 git add \
   tests/storage/object_storage/analytics \
   tests/kubernetes/dashboard \
-  tests/contracts/inventory/test_inventory_operational_semantics_20260825_contract.py
+  tests/contracts/architecture/test_inventory_operational_semantics_20260825_contract.py
 git commit -m "test: prove operational semantics at runtime"
 ```
 

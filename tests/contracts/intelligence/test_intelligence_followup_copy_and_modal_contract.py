@@ -42,7 +42,8 @@ def test_copy_is_shortened_on_routing_catalog_and_automation_control() -> None:
         in routing
     )
     assert (
-        'Manage alert ownership, delivery, suppression, recovery evidence, and resolved incidents without duplicating channel credentials.'
+        'Manage alert ownership, delivery, suppression, recovery, and resolution without duplicating '
+        'channel credentials.'
         in alert_workspace
     )
     assert (
@@ -50,11 +51,12 @@ def test_copy_is_shortened_on_routing_catalog_and_automation_control() -> None:
         in catalog_summary
     )
     assert (
-        'Search rule ownership, provider coverage, readiness, severity, and response. View Rule expands below the selected record.'
+        'Search ownership, coverage, readiness, severity, and response. View Rule expands below the selected record.'
         in catalog_page
     )
     assert (
-        'Evidence moves through runbook matching, decision review, execution admission, and verification. Later gates never bypass earlier ones.'
+        'Evidence moves through runbook matching, review, execution admission, and verification. Later gates cannot '
+        'bypass earlier controls.'
         in automation_overview
     )
     assert 'Governance stays writable while infrastructure execution remains fail-closed.' in automation

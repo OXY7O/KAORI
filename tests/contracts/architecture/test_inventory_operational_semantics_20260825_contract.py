@@ -2,6 +2,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 
+
+def test_inventory_semantics_contract_uses_active_architecture_domain() -> None:
+    assert not (ROOT / 'tests/contracts/inventory').exists()
+
+
 INVENTORY_ROOTS = (
     'app/kubernetes/inventory',
     'app/storage/object_storage/inventory',
