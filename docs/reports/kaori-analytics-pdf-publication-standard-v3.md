@@ -282,3 +282,7 @@ The shared template primitives expose `adaptive_pair()` and `continuation_headin
 A section is spaced by publication order, not by HTML element type. The first `<section>` element on a page may appear after a chart, peer pair, metric block, or other `div`; it still receives the canonical **5.6 mm** section gap unless it immediately follows the page title or metric strip. `:first-of-type` must never zero this gap.
 
 Reusable summary cards and chart legends are family-owned primitives. Summary cards use a structured label -> value -> helper layout with a canonical component gap, while chart legends use explicit swatches and spacing. Report-specific CSS may change domain geometry, but must not collapse these primitives into run-on text.
+
+### Peer section flow
+
+Peer columns use **normal block flow inside each section**. The parent publication grid owns left/right alignment; a report-specific stylesheet must not set `.content-section` to `display:flex`. This avoids WeasyPrint expanding single-line heading boxes and preserves the canonical **1.45 mm title → description** rhythm while the shared helper slot keeps peer content rows aligned.

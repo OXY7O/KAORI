@@ -10,6 +10,23 @@ ROOT = Path(__file__).resolve().parents[3]
 SHARED_CSS = ROOT / 'app/static/reports/pdf/analytics_publication.css'
 
 
+
+
+def _find_text_box(page: object, text: str) -> object:
+    def walk(box: object) -> object | None:
+        if str(getattr(box, 'text', '')).startswith(text):
+            return box
+        for child in getattr(box, 'children', ()):
+            found = walk(child)
+            if found is not None:
+                return found
+        return None
+
+    found = walk(page._page_box)  # type: ignore[attr-defined]
+    assert found is not None, f'Unable to locate rendered text: {text}'
+    return found
+
+
 def _find_text_box_y(page: object, text: str) -> float:
     def walk(box: object) -> float | None:
         if str(getattr(box, 'text', '')).startswith(text):
@@ -138,3 +155,70 @@ def test_every_analytics_family_stylesheet_preserves_peer_row_alignment(
     assert abs(_find_text_box_y(page, 'LEFT TITLE') - _find_text_box_y(page, 'RIGHT TITLE')) < 0.25
     assert abs(_find_text_box_y(page, 'Short helper.') - _find_text_box_y(page, 'Long helper copy')) < 0.25
     assert abs(_find_text_box_y(page, 'LEFT BODY') - _find_text_box_y(page, 'RIGHT BODY')) < 0.25
+
+
+@pytest.mark.parametrize(
+    ('stylesheet_name', 'body_class'),
+    [
+        ('analytics_overview.css', ''),
+        ('resource_utilization.css', 'kaori-resource-utilization-report'),
+        ('capacity_analysis.css', 'kaori-capacity-analysis-report'),
+        ('storage_analysis.css', 'kaori-storage-analysis-report'),
+        ('workload_analysis.css', 'kaori-workload-analysis-report'),
+        ('forecast_analysis.css', 'kaori-forecast-analysis-report'),
+        ('top_consumers_analysis.css', 'kaori-top-consumers-report'),
+        ('alerts_anomalies.css', 'kaori-alerts-anomalies-report'),
+        ('object_storage_analysis.css', 'kaori-object-storage-analysis-report'),
+        ('analytics_unavailable.css', 'kaori-analytics-unavailable-report'),
+    ],
+)
+def test_every_analytics_family_preserves_compact_title_to_description_rhythm(
+    stylesheet_name: str,
+    body_class: str,
+) -> None:
+    html = f'''
+    <html>
+      <body class="kaori-analytics-publication kaori-reporting-v3 {body_class}">
+        <article class="page">
+          <div class="page-content">
+            <div class="metric-strip"></div>
+            <div class="two-column paired-sections publication-pair chart-assessment-split resource-forecast-split is-split">
+              <section class="content-section">
+                <h2>LEFT TITLE GAP</h2>
+                <p class="section-subtitle">Compact helper.</p>
+                <div class="section-body"><p>LEFT CONTENT</p></div>
+              </section>
+              <section class="content-section">
+                <h2>RIGHT TITLE GAP</h2>
+                <p class="section-subtitle">Compact helper.</p>
+                <div class="section-body"><p>RIGHT CONTENT</p></div>
+              </section>
+            </div>
+          </div>
+        </article>
+      </body>
+    </html>
+    '''
+    font_config = FontConfiguration()
+    family_css = ROOT / 'app/static/reports/pdf' / stylesheet_name
+    document = HTML(string=html, base_url=str(ROOT)).render(
+        stylesheets=[
+            CSS(filename=str(family_css), font_config=font_config),
+            CSS(filename=str(SHARED_CSS), font_config=font_config),
+        ],
+        font_config=font_config,
+    )
+    page = document.pages[0]
+
+    for title, helper in (
+        ('LEFT TITLE GAP', 'Compact helper.'),
+        ('RIGHT TITLE GAP', 'Compact helper.'),
+    ):
+        title_box = _find_text_box(page, title)
+        helper_box = _find_text_box(page, helper)
+        vertical_delta = float(getattr(helper_box, 'position_y')) - float(
+            getattr(title_box, 'position_y')
+        )
+        # One title line + canonical 1.45 mm margin. Flex-section regressions
+        # inflate this to roughly 39 pt / 13.6 mm.
+        assert vertical_delta < 27.0, (stylesheet_name, vertical_delta)

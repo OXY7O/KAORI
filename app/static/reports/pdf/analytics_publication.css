@@ -969,3 +969,18 @@ body.kaori-analytics-publication.kaori-reporting-v3 .legend-pods { --legend-colo
 body.kaori-analytics-publication.kaori-reporting-v3 .legend-cpu { --legend-color: #2563EB; }
 body.kaori-analytics-publication.kaori-reporting-v3 .legend-warning { --legend-color: #D97706; }
 body.kaori-analytics-publication.kaori-reporting-v3 .legend-critical { --legend-color: #DC2626; }
+
+
+/*
+ * KAORI Analytics Publication R10 - peer title/description rhythm lock
+ * WeasyPrint inflates single-line heading boxes when peer sections are flex
+ * containers. Peer sections therefore use normal block flow; the parent grid
+ * owns alignment and the helper slot owns body-row synchronization.
+ */
+body.kaori-analytics-publication.kaori-reporting-v3 .page .publication-pair > .content-section {
+  display: block !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .publication-pair > .content-section > h2 {
+  height: auto !important;
+  min-height: 0 !important;
+}

@@ -1,5 +1,5 @@
 /* KAORI Alerts & Anomalies PDF specialization v3.0. */
-.kaori-alerts-anomalies-report .paired-sections > .content-section { display: flex; flex-direction: column; align-self: start; margin-top: 0; }
+.kaori-alerts-anomalies-report .paired-sections > .content-section { align-self: start; margin-top: 0; }
 .kaori-alerts-anomalies-report .executive-split { }
 .kaori-alerts-anomalies-report .severity-split,
 .kaori-alerts-anomalies-report .anomaly-split,

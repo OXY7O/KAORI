@@ -92,6 +92,7 @@ def main() -> int:
         "'section_description_policy': 'concise-helper-max-72'",
         "'paired_layout_policy': 'symmetric-50-50-or-stack'",
         "'peer_alignment_policy': 'shared-title-helper-body-rows'",
+        "'peer_section_flow_policy': 'block-grid-owned-alignment'",
         "'peer_helper_slot': '7mm'",
         "'section_spacing_policy': '5.6mm'",
         "'first_section_clearance_policy': 'canonical-gap-even-after-non-section-block'",

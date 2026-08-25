@@ -132,8 +132,6 @@
 .chart-assessment-split > .content-section,
 .pod-node-split > .content-section,
 .distribution-split > .content-section {
-  display: flex;
-  flex-direction: column;
   align-self: start;
   min-width: 0;
 }

@@ -6,7 +6,7 @@
 .forecast-executive-split > .content-section,
 .resource-forecast-split > .content-section,
 .pod-storage-split > .content-section,
-.exposure-split > .content-section { display: flex; flex-direction: column; align-self: start; margin-top: 0; }
+.exposure-split > .content-section { align-self: start; margin-top: 0; }
 .executive-callout { min-height: 48mm; }
 .empty-row { color: #64748B; text-align: center; }
 
