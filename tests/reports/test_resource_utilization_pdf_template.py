@@ -307,3 +307,20 @@ def test_resource_utilization_payload_uses_committed_forecast_snapshot() -> None
     assert 'read_snapshot' in source
     assert 'ForecastAnalysisService' not in source
     assert 'service.get_trends' in source
+
+
+def test_resource_utilization_distribution_uses_reference_codes_and_svg_center_value() -> None:
+    document, rendered_html, _ = _rendered_html()
+    distribution_html = rendered_html.split('Figure 5 - CPU Concentration', 1)[1].split(
+        'Consumer Reference Register', 1
+    )[0]
+
+    assert 'Figure 5 - Displayed CPU Concentration' not in rendered_html
+    assert 'class="donut-center"' not in rendered_html
+    assert '<strong>C1</strong>' in distribution_html
+    assert '<strong>C2</strong>' in distribution_html
+    assert '<strong>C3</strong>' in distribution_html
+    assert 'warning-marker' not in distribution_html
+    assert 'critical-marker' not in distribution_html
+    assert '<text x="78" y="78"' in document.presentation['distribution']['memory_donut_svg']
+    assert 'GiB displayed' in document.presentation['distribution']['memory_donut_svg']

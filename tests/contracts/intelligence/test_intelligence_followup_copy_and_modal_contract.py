@@ -43,8 +43,7 @@ def test_copy_is_shortened_on_routing_catalog_and_automation_control() -> None:
     )
     assert (
         'Manage alert ownership, delivery, suppression, recovery, and resolution without duplicating '
-        'channel credentials.'
-        in alert_workspace
+        'channel credentials.' in alert_workspace
     )
     assert (
         'Review the current catalog scope before scanning definitions, evaluator readiness, and imported-signal coverage.'
@@ -56,8 +55,7 @@ def test_copy_is_shortened_on_routing_catalog_and_automation_control() -> None:
     )
     assert (
         'Evidence moves through runbook matching, review, execution admission, and verification. Later gates cannot '
-        'bypass earlier controls.'
-        in automation_overview
+        'bypass earlier controls.' in automation_overview
     )
     assert 'Governance stays writable while infrastructure execution remains fail-closed.' in automation
     assert 'lifecycle events are covered; ' in automation

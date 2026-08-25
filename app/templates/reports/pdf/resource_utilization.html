@@ -157,7 +157,7 @@
                                 <div class="two-column chart-assessment-split">
                                     {% call ui.section('Figure 2 - CPU Direction', 'Committed historical utilization for the selected reporting period.') %}
                                         <div class="chart-frame">{{ p.cpu.chart_svg|safe }}</div>
-                                        <div class="chart-legend"><span class="legend-cpu">Committed CPU signal</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
+                                        <div class="chart-legend chart-to-section-gap"><span class="legend-cpu">Committed CPU signal</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
                                     {% endcall %}
                                     {% call ui.section('CPU Operating Assessment', 'Interpretation remains separate from the comparison register.') %}
                                         <div class="interpretation-card tall-card">
@@ -221,7 +221,7 @@
                                 <div class="two-column chart-assessment-split">
                                     {% call ui.section('Figure 3 - Memory Direction and Projection', 'Committed endpoint and projected warning-band entry across the planning horizon.') %}
                                         <div class="chart-frame">{{ p.memory.chart_svg|safe }}</div>
-                                        <div class="chart-legend"><span class="legend-memory">Historical / projected memory</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
+                                        <div class="chart-legend chart-to-section-gap"><span class="legend-memory">Historical / projected memory</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
                                     {% endcall %}
                                     {% call ui.section('Memory Operating Assessment', 'Current posture and planning implication.') %}
                                         <div class="interpretation-card tall-card">
@@ -355,10 +355,7 @@
                                 <div class="two-column distribution-split">
                                     {% call ui.section('Figure 4 - Displayed Memory Concentration', 'Distribution across the top three displayed memory consumers.') %}
                                         <div class="memory-concentration-card">
-                                            <div class="donut-wrap">
-                                                {{ p.distribution.memory_donut_svg|safe }}
-                                                <div class="donut-center"><strong>{{ '%.2f'|format(p.distribution.memory_total) }}</strong><span>GiB displayed</span></div>
-                                            </div>
+                                            <div class="donut-wrap">{{ p.distribution.memory_donut_svg|safe }}</div>
                                             <div class="donut-legend">
                                                 {% for item in p.distribution.memory_consumers %}
                                                     <div><i class="donut-key key-{{ loop.index }}"></i><span>M{{ loop.index }}</span><strong>{{ item.value }}</strong></div>
@@ -368,14 +365,12 @@
                                             </div>
                                         </div>
                                     {% endcall %}
-                                    {% call ui.section('Figure 5 - Displayed CPU Concentration', 'Relative contribution across the top three displayed CPU consumers.') %}
+                                    {% call ui.section('Figure 5 - CPU Concentration', 'Relative contribution across the top three displayed CPU consumers.') %}
                                         <div class="cpu-concentration-bars">
                                             {% for item in p.distribution.cpu_consumers %}
                                                 <div class="concentration-row">
-                                                    <strong>{{ item.namespace }}</strong>
-                                                    <div class="concentration-track">
-                                                        {{ ui.percent_fill(item.share_percent) }}<b class="warning-marker"></b><b class="critical-marker"></b>
-                                                    </div>
+                                                    <strong>C{{ loop.index }}</strong>
+                                                    <div class="concentration-track">{{ ui.percent_fill(item.share_percent) }}</div>
                                                     <span>{{ '%.1f'|format(item.share_percent) }}%</span>
                                                 </div>
                                             {% else %}
@@ -442,7 +437,7 @@
                                 {{ metric_strip(p.trend.metrics) }}
                                 {% call ui.section('Figure 6 - Resource Trend Outlook', 'Historical and projected endpoints remain within the committed report evidence boundary.') %}
                                     <div class="trend-chart-frame">{{ p.trend.chart_svg|safe }}</div>
-                                    <div class="chart-legend"><span class="legend-memory">Memory</span><span class="legend-pods">Pods</span><span class="legend-cpu">CPU</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
+                                    <div class="chart-legend chart-to-section-gap"><span class="legend-memory">Memory</span><span class="legend-pods">Pods</span><span class="legend-cpu">CPU</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
                                 {% endcall %}
                                 <div class="two-column trend-interpretation-split">
                                     {% call ui.section('Trend Interpretation', 'Resource-level direction remains explicit.') %}

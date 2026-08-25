@@ -12,8 +12,7 @@ def test_intelligence_workspace_copy_is_shortened_for_alerts_rules_and_control_p
 
     assert (
         'Manage alert ownership, delivery, suppression, recovery, and resolution without duplicating '
-        'channel credentials.'
-        in alert_workspace
+        'channel credentials.' in alert_workspace
     )
     assert (
         'Search ownership, coverage, readiness, severity, and response. View Rule expands below the selected record.'
@@ -21,8 +20,7 @@ def test_intelligence_workspace_copy_is_shortened_for_alerts_rules_and_control_p
     )
     assert (
         'Evidence moves through runbook matching, review, execution admission, and verification. Later gates cannot '
-        'bypass earlier controls.'
-        in automation_overview
+        'bypass earlier controls.' in automation_overview
     )
 
 

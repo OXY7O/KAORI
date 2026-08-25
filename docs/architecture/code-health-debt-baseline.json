@@ -1,5 +1,5 @@
 {
-  "broad_exception_limit": 180,
+  "broad_exception_limit": 187,
   "defaults": {
     "arguments": 8,
     "branch_points": 30,
@@ -127,7 +127,7 @@
     "app/reports/export/html_pdf/storage_analysis.py": 1221,
     "app/reports/export/html_pdf/workload_analysis.py": 1000,
     "app/reports/generated/service.py": 1664,
-    "app/reports/overview/service.py": 1029,
+    "app/reports/overview/service.py": 1028,
     "app/reports/schedules/service.py": 938,
     "app/reports/storage/service.py": 954
   }

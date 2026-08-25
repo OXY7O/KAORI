@@ -58,7 +58,7 @@ def test_reports_overview_uses_operational_reading_and_contract_boundary_not_gen
     assert 'Automation Boundary' in estate
     assert 'Output Contract' in estate
     assert 'Format Tip' not in estate
-    assert 'Published formats remain family-owned' in estate
+    assert 'Published formats stay family-owned' in estate
     assert 'Published contracts are admitted to Generate' in estate
     assert 'Analytics Reports' in estate and 'PDF · CSV' in estate
     assert 'Inventory Reports' in estate and 'XLSX · CSV' in estate

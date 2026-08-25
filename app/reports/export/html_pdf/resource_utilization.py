@@ -25,6 +25,7 @@ _RESOURCE_UTILIZATION_PAGE_TITLES = (
     'Recommendation Plan',
     'Methodology and Evidence Boundary',
 )
+
 _RESOURCE_COLORS = {
     'cpu': '#2563EB',
     'memory': '#7C3AED',
@@ -746,7 +747,7 @@ def _combined_trend_chart_svg(resources: Mapping[str, Mapping[str, Any]]) -> str
         return _empty_chart_svg('Committed historical trend evidence is not available.', 'Resource trend outlook')
 
     width, height = 800, 280
-    left, right, top, bottom = 58, 170, 20, 45
+    left, right, top, bottom = 58, 92, 20, 45
     inner_w = width - left - right
     inner_h = height - top - bottom
     has_projection = any(item.get('projection') for item in available)
@@ -804,17 +805,16 @@ def _combined_trend_chart_svg(resources: Mapping[str, Mapping[str, Any]]) -> str
     )
     point_y = dict(endpoint_labels)
     label_parts: list[str] = []
-    label_line_x = width - 174
-    label_x = width - 18
+    label_x = width - 70
     for key, label_y in resolved_labels.items():
         end_x, color, end_value = endpoint_meta[key]
         label_parts.append(
-            f'<path d="M {end_x + 3:.1f} {point_y[key]:.1f} L {label_line_x:.1f} {label_y:.1f}" '
+            f'<path d="M {end_x + 3:.1f} {point_y[key]:.1f} L {label_x - 7:.1f} {label_y:.1f}" '
             f'fill="none" stroke="{color}" stroke-width="1" opacity=".75"/>'
         )
         label_parts.append(
             f'<text x="{label_x:.1f}" y="{label_y + 4:.1f}" '
-            f'text-anchor="end" style="font:12px Inter,sans-serif;font-weight:700;fill:{color}">{key.title()} {_percent(end_value)}</text>'
+            f'style="font:12px Inter,sans-serif;font-weight:700;fill:{color}">{key.title()} {_percent(end_value)}</text>'
         )
     label_svg = ''.join(label_parts)
 
@@ -887,7 +887,7 @@ def _donut_svg(items: list[dict[str, Any]]) -> str:
         )
         offset += length
     return f"""<svg viewBox="0 0 156 156" role="img" aria-label="Displayed memory concentration">
-<circle cx="78" cy="78" r="52" fill="none" stroke="#E2E8F0" stroke-width="20"/>{''.join(circles)}</svg>"""
+<circle cx="78" cy="78" r="52" fill="none" stroke="#E2E8F0" stroke-width="20"/>{''.join(circles)}<text x="78" y="78" text-anchor="middle" font-family="Inter, sans-serif" font-size="22" font-weight="700" fill="#1E293B">{total:.2f}</text><text x="78" y="96" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#475569">GiB displayed</text></svg>"""
 
 
 def _empty_donut_svg() -> str:
