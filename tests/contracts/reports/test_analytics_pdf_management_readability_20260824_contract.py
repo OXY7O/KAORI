@@ -37,10 +37,10 @@ def test_multi_series_chart_labels_have_a_reserved_right_gutter() -> None:
     assert 'label_x = width - 18.0' in forecast
     assert 'text-anchor="end" font-size="10.5"' in forecast
 
-    assert 'left, right, top, bottom = 58, 170, 20, 45' in resource
-    assert 'label_line_x = width - 174' in resource
-    assert 'label_x = width - 18' in resource
-    assert 'text-anchor="end" style="font:12px Inter,sans-serif' in resource
+    assert 'left, right, top, bottom = 58, 92, 20, 45' in resource
+    assert 'label_x = width - 70' in resource
+    assert 'L {label_x - 7:.1f} {label_y:.1f}' in resource
+    assert 'style="font:12px Inter,sans-serif;font-weight:700' in resource
 
     assert 'left, right, top, bottom = 58, 165, 22, 40' in capacity
     assert 'label_line_x = width - 166' in capacity
