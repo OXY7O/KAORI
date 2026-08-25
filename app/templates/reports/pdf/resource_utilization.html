@@ -134,16 +134,20 @@
                                             {% endfor %}
                                         </tbody>
                                     </table>
-                                    <div class="reference-grid executive-references">
-                                        {% for item in p.executive.findings %}
-                                            <div class="reference-item">
-                                                <span class="reference-code">{{ item.ref }}</span>
-                                                <div>
-                                                    <strong>{{ item.title }}</strong>
-                                                    <p>{{ item.description }}</p>
+                                    <div class="reference-notes executive-reference-notes">
+                                        <h3>Priority Finding References</h3>
+                                        <p class="reference-helper">Reference notes expand the fixed findings without widening the comparison table.</p>
+                                        <div class="reference-grid executive-references">
+                                            {% for item in p.executive.findings %}
+                                                <div class="reference-item">
+                                                    <span class="reference-code">{{ item.ref }}</span>
+                                                    <div>
+                                                        <strong>{{ item.title }}</strong>
+                                                        <p>{{ item.description }}</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        {% endfor %}
+                                            {% endfor %}
+                                        </div>
                                     </div>
                                 {% endcall %}
                             </div>
@@ -167,7 +171,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Leading CPU Consumers', 'The comparison register stays concise; complete technical identities are maintained by reference.') %}
+                                {% call ui.section('Leading CPU Consumers', 'The comparison register stays concise; complete technical identities are maintained by reference.', 'section-after-pair') %}
                                     <table class="report-table consumer-summary-table">
                                         <thead>
                                             <tr>
@@ -194,6 +198,7 @@
                                     </table>
                                     <div class="identity-register">
                                         <h3>CPU Consumer References</h3>
+                                        <p class="identity-register-subtitle">Stable reference codes map to complete CPU consumer identities and observed values.</p>
                                         <div class="identity-grid single-column">
                                             {% for item in p.cpu.consumers %}
                                                 <div class="identity-item">
@@ -231,7 +236,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Leading Memory Consumers', 'The comparison register stays concise; complete technical identities are maintained by reference.') %}
+                                {% call ui.section('Leading Memory Consumers', 'The comparison register stays concise; complete technical identities are maintained by reference.', 'section-after-pair') %}
                                     <table class="report-table consumer-summary-table">
                                         <thead>
                                             <tr>
@@ -258,6 +263,7 @@
                                     </table>
                                     <div class="identity-register">
                                         <h3>Memory Consumer References</h3>
+                                        <p class="identity-register-subtitle">Stable reference codes map to complete memory consumer identities and observed values.</p>
                                         <div class="identity-grid single-column">
                                             {% for item in p.memory.consumers %}
                                                 <div class="identity-item">
@@ -283,7 +289,7 @@
                                 {{ page_title(4, 'Pod and Node Utilization', 'Schedulable pod use and node participation at the committed cut-off.') }}
                                 {{ metric_strip(p.pod_node.metrics) }}
                                 <div class="two-column pod-node-split">
-                                    {% call ui.section('Pod Scheduling Position', 'Committed utilization and remaining scheduling capacity.') %}
+                                    {% call ui.section('Figure 4 - Pod Scheduling Position', 'Committed utilization and remaining scheduling capacity.') %}
                                         <div class="pod-bars">
                                             <div class="pod-row">
                                                 <strong>Pods Used</strong>
@@ -306,7 +312,7 @@
                                         </div>
                                         <p class="source-note">The percentage signal and reported count values retain the source scope returned by the committed payload.</p>
                                     {% endcall %}
-                                    {% call ui.section('Node Participation', 'Ready nodes participating in current capacity assumptions.') %}
+                                    {% call ui.section('Figure 5 - Node Participation', 'Ready nodes participating in current capacity assumptions.') %}
                                         <div class="node-card">
                                             <div class="node-donut">{{ p.pod_node.node_donut_svg|safe }}</div>
                                             <div class="node-legend">
@@ -317,7 +323,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Utilization Register', 'Fixed comparison fields remain in the table; operational interpretation is maintained below.') %}
+                                {% call ui.section('Utilization Register', 'Fixed comparison fields remain in the table; operational interpretation is maintained below.', 'section-after-pair') %}
                                     <table class="report-table utilization-register">
                                         <thead>
                                             <tr>
@@ -353,7 +359,7 @@
                             <div class="page-content">
                                 {{ page_title(5, 'Utilization Distribution', 'Concentration of displayed resource signals by namespace and resource identity.') }}
                                 <div class="two-column distribution-split">
-                                    {% call ui.section('Figure 4 - Displayed Memory Concentration', 'Distribution across the top three displayed memory consumers.') %}
+                                    {% call ui.section('Figure 6 - Displayed Memory Concentration', 'Distribution across the top three displayed memory consumers.') %}
                                         <div class="memory-concentration-card">
                                             <div class="donut-wrap">{{ p.distribution.memory_donut_svg|safe }}</div>
                                             <div class="donut-legend">
@@ -365,26 +371,30 @@
                                             </div>
                                         </div>
                                     {% endcall %}
-                                    {% call ui.section('Figure 5 - CPU Concentration', 'Relative contribution across the top three displayed CPU consumers.') %}
-                                        <div class="cpu-concentration-bars">
-                                            {% for item in p.distribution.cpu_consumers %}
-                                                <div class="concentration-row">
-                                                    <strong>C{{ loop.index }}</strong>
-                                                    <div class="concentration-track">{{ ui.percent_fill(item.share_percent) }}</div>
-                                                    <span>{{ '%.1f'|format(item.share_percent) }}%</span>
-                                                </div>
-                                            {% else %}
-                                                <div class="empty-inline">No CPU consumer evidence</div>
-                                            {% endfor %}
-                                        </div>
-                                        <div class="interpretation-card distribution-note">
-                                            <strong>Distribution is limited to the displayed top-consumer set.</strong>
-                                            <p>It must not be interpreted as a complete namespace utilization allocation.</p>
-                                            <small>The production report retains denominator and ranking scope beside every distribution chart.</small>
+                                    {% call ui.section('Figure 7 - CPU Concentration', 'Relative contribution across the top three displayed CPU consumers.') %}
+                                        <div class="cpu-concentration-card">
+                                            <div class="cpu-concentration-bars">
+                                                {% for item in p.distribution.cpu_consumers %}
+                                                    <div class="concentration-row">
+                                                        <strong>C{{ loop.index }}</strong>
+                                                        <div class="concentration-track">{{ ui.percent_fill(item.share_percent) }}</div>
+                                                        <span>{{ '%.1f'|format(item.share_percent) }}%</span>
+                                                    </div>
+                                                {% else %}
+                                                    <div class="empty-inline">No CPU consumer evidence</div>
+                                                {% endfor %}
+                                            </div>
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Consumer Reference Register', 'Chart labels use stable reference codes; complete identities are listed below the concise comparison register.') %}
+                                <div class="distribution-boundary-note">
+                                    <div class="interpretation-card">
+                                        <strong>Distribution is limited to the displayed top-consumer set.</strong>
+                                        <p>It must not be interpreted as a complete namespace utilization allocation.</p>
+                                        <small>The production report retains denominator and ranking scope beside every distribution chart.</small>
+                                    </div>
+                                </div>
+                                {% call ui.section('Consumer Reference Register', 'Chart labels use stable reference codes; complete identities are listed below the concise comparison register.', 'section-after-pair') %}
                                     <table class="report-table distribution-summary-register">
                                         <thead>
                                             <tr>
@@ -411,6 +421,7 @@
                                     </table>
                                     <div class="identity-register">
                                         <h3>Complete Consumer Identities</h3>
+                                        <p class="identity-register-subtitle">Stable reference codes map to complete technical identities without widening the comparison register.</p>
                                         <div class="identity-grid">
                                             {% for row in p.distribution.register %}
                                                 <div class="identity-item">
@@ -435,11 +446,11 @@
                             <div class="page-content">
                                 {{ page_title(6, 'Trend Evidence', 'Committed historical direction and planning signals across the selected period.') }}
                                 {{ metric_strip(p.trend.metrics) }}
-                                {% call ui.section('Figure 6 - Resource Trend Outlook', 'Historical and projected endpoints remain within the committed report evidence boundary.') %}
+                                {% call ui.section('Figure 8 - Resource Trend Outlook', 'Historical and projected endpoints remain within the committed report evidence boundary.') %}
                                     <div class="trend-chart-frame">{{ p.trend.chart_svg|safe }}</div>
                                     <div class="chart-legend chart-to-section-gap"><span class="legend-memory">Memory</span><span class="legend-pods">Pods</span><span class="legend-cpu">CPU</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
                                 {% endcall %}
-                                <div class="two-column trend-interpretation-split">
+                                <div class="trend-interpretation-stack">
                                     {% call ui.section('Trend Interpretation', 'Resource-level direction remains explicit.') %}
                                         <table class="report-table trend-register">
                                             <thead>

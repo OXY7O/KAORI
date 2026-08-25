@@ -42,7 +42,7 @@ def test_memory_concentration_center_value_is_owned_by_svg() -> None:
 
 def test_cpu_concentration_uses_reference_codes_without_utilization_threshold_markers() -> None:
     template = read('app/templates/reports/pdf/resource_utilization.html')
-    distribution = template.split("ui.section('Figure 5 - CPU Concentration'", 1)[1].split(
+    distribution = template.split("ui.section('Figure 7 - CPU Concentration'", 1)[1].split(
         "ui.section('Consumer Reference Register'", 1
     )[0]
 
@@ -50,7 +50,7 @@ def test_cpu_concentration_uses_reference_codes_without_utilization_threshold_ma
     assert 'item.namespace' not in distribution
     assert 'warning-marker' not in distribution
     assert 'critical-marker' not in distribution
-    assert 'Figure 5 - Displayed CPU Concentration' not in template
+    assert 'Figure 7 - Displayed CPU Concentration' not in template
 
 
 def test_reports_overview_copy_is_compact_without_losing_publication_boundary() -> None:
@@ -63,3 +63,105 @@ def test_reports_overview_copy_is_compact_without_losing_publication_boundary() 
     assert 'Published contracts, templates, and schedules approved for governed generation.' in estate
     assert 'candidate domains stay non-executable' not in estate
     assert 'recurring schedules that are admitted to the governed generation workflow' not in estate
+
+
+def test_resource_utilization_balances_visual_pairs_and_stacks_dense_followups() -> None:
+    template = read('app/templates/reports/pdf/resource_utilization.html')
+    css = read('app/static/reports/pdf/resource_utilization.css')
+    compact = ''.join(css.split())
+
+    balanced_group = (
+        'body.kaori-analytics-publication.two-column.primary-split,'
+        'body.kaori-analytics-publication.two-column.chart-assessment-split,'
+        'body.kaori-analytics-publication.two-column.pod-node-split,'
+        'body.kaori-analytics-publication.two-column.distribution-split{'
+    )
+    assert balanced_group in compact
+    block = compact.split(balanced_group, 1)[1].split('}', 1)[0]
+    assert 'grid-template-columns:minmax(0,1fr)minmax(0,1fr)' in block
+
+    assert '.trend-interpretation-stack' in css
+    trend_block = compact.split('.trend-interpretation-stack{', 1)[1].split('}', 1)[0]
+    assert 'display:grid' in trend_block
+    assert 'grid-template-columns:minmax(0,1fr)' in trend_block
+
+    distribution_pair = template.split('class="two-column distribution-split"', 1)[1].split(
+        "ui.section('Consumer Reference Register'", 1
+    )[0]
+    assert 'distribution-note' not in distribution_pair
+    assert 'cpu-concentration-card' in distribution_pair
+    assert 'distribution-boundary-note' in template
+    assert '.cpu-concentration-card' in css
+    memory_card = compact.split('.memory-concentration-card{', 1)[1].split('}', 1)[0]
+    cpu_card = compact.split('.cpu-concentration-card{', 1)[1].split('}', 1)[0]
+    assert 'min-height:60mm' in memory_card
+    assert 'min-height:60mm' in cpu_card
+
+
+def test_resource_utilization_figure_numbering_is_contiguous_for_visuals_only() -> None:
+    template = read('app/templates/reports/pdf/resource_utilization.html')
+
+    expected = [
+        'Figure 1 - Shared Resource Utilization',
+        'Figure 2 - CPU Direction',
+        'Figure 3 - Memory Direction and Projection',
+        'Figure 4 - Pod Scheduling Position',
+        'Figure 5 - Node Participation',
+        'Figure 6 - Displayed Memory Concentration',
+        'Figure 7 - CPU Concentration',
+        'Figure 8 - Resource Trend Outlook',
+    ]
+    for title in expected:
+        assert title in template
+
+    assert "ui.section('Pod Scheduling Position'" not in template
+    assert "ui.section('Node Participation'" not in template
+    assert 'Figure 4 - Displayed Memory Concentration' not in template
+    assert 'Figure 5 - CPU Concentration' not in template
+    assert 'Figure 6 - Resource Trend Outlook' not in template
+
+
+def test_resource_utilization_reference_blocks_follow_title_description_content_hierarchy() -> None:
+    template = read('app/templates/reports/pdf/resource_utilization.html')
+
+    assert '<h3>Priority Finding References</h3>' in template
+    assert (
+        '<p class="reference-helper">Reference notes expand the fixed findings without widening the comparison table.</p>'
+        in template
+    )
+    assert '<h3>CPU Consumer References</h3>' in template
+    assert (
+        '<p class="identity-register-subtitle">Stable reference codes map to complete CPU consumer identities and observed values.</p>'
+        in template
+    )
+    assert '<h3>Memory Consumer References</h3>' in template
+    assert (
+        '<p class="identity-register-subtitle">Stable reference codes map to complete memory consumer identities and observed values.</p>'
+        in template
+    )
+    assert '<h3>Complete Consumer Identities</h3>' in template
+    assert (
+        '<p class="identity-register-subtitle">Stable reference codes map to complete technical identities without widening the comparison register.</p>'
+        in template
+    )
+
+    css = read('app/static/reports/pdf/resource_utilization.css')
+    compact = ''.join(css.split())
+    assert '.reference-helper{' in compact
+    helper_block = compact.split('.reference-helper{', 1)[1].split('}', 1)[0]
+    assert 'color:#64748B' in helper_block
+    assert 'font-size:6.35pt' in helper_block
+
+
+def test_resource_utilization_sections_after_paired_content_use_explicit_vertical_rhythm() -> None:
+    template = read('app/templates/reports/pdf/resource_utilization.html')
+    css = read('app/static/reports/pdf/resource_utilization.css')
+    compact = ''.join(css.split())
+
+    assert "ui.section('Leading CPU Consumers', 'The comparison register stays concise; complete technical identities are maintained by reference.', 'section-after-pair')" in template
+    assert "ui.section('Leading Memory Consumers', 'The comparison register stays concise; complete technical identities are maintained by reference.', 'section-after-pair')" in template
+    assert "ui.section('Utilization Register', 'Fixed comparison fields remain in the table; operational interpretation is maintained below.', 'section-after-pair')" in template
+    assert "ui.section('Consumer Reference Register', 'Chart labels use stable reference codes; complete identities are listed below the concise comparison register.', 'section-after-pair')" in template
+
+    block = compact.split('.section-after-pair{', 1)[1].split('}', 1)[0]
+    assert 'margin-top:' in block

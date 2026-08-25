@@ -1,11 +1,18 @@
 /* KAORI Resource Utilization PDF specialization v3.0. */
-.primary-split { grid-template-columns: 1.08fr .92fr; }
-.chart-assessment-split { grid-template-columns: 1.14fr .86fr; }
-.pod-node-split { grid-template-columns: 1fr 1fr; }
-.distribution-split { grid-template-columns: 1fr 1fr; }
-.trend-interpretation-split { grid-template-columns: 1.04fr .96fr; }
+body.kaori-analytics-publication .two-column.primary-split,
+body.kaori-analytics-publication .two-column.chart-assessment-split,
+body.kaori-analytics-publication .two-column.pod-node-split,
+body.kaori-analytics-publication .two-column.distribution-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+body.kaori-analytics-publication .two-column.primary-split > .content-section,
+body.kaori-analytics-publication .two-column.chart-assessment-split > .content-section,
+body.kaori-analytics-publication .two-column.pod-node-split > .content-section,
+body.kaori-analytics-publication .two-column.distribution-split > .content-section { margin-top: 0; }
+.trend-interpretation-stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 5.5mm; }
+.trend-interpretation-stack > .content-section { margin-top: 0; }
+.section-after-pair { margin-top: 6.4mm !important; }
 .tall-card { min-height: 52mm; }
 .empty-row { color: #64748B; text-align: center; }
+.reference-helper { margin: 1mm 0 2.4mm; color: #64748B; font-size: 6.35pt; line-height: 1.38; }
 
 .findings-register th:nth-child(1) { width: 9%; }
 .findings-register th:nth-child(2) { width: 12%; }
@@ -96,8 +103,8 @@
 .participation-key { background: #7C3AED; }
 .node-legend strong { text-align: right; }
 
-.memory-concentration-card { min-height: 72mm; border: .3mm solid #E2E8F0; display: grid; grid-template-columns: 1fr 1fr; align-items: center; padding: 5mm; }
-.donut-wrap { width: 42mm; height: 42mm; margin: auto; }
+.memory-concentration-card { min-height: 60mm; border: .3mm solid #E2E8F0; display: grid; grid-template-columns: 1fr 1fr; align-items: center; padding: 5mm; }
+.donut-wrap { width: 36mm; height: 36mm; margin: auto; }
 .donut-wrap svg { width: 100%; height: 100%; display: block; }
 .donut-legend > div { display: grid; grid-template-columns: 4mm 8mm 1fr; gap: 2mm; align-items: center; margin: 4mm 0; font-size: 6.7pt; }
 .donut-legend strong { text-align: right; white-space: nowrap; }
@@ -105,12 +112,14 @@
 .key-1 { background: #7C3AED; }
 .key-2 { background: #9B7AF5; }
 .key-3 { background: #B8A8FF; }
+.cpu-concentration-card { min-height: 60mm; border: .3mm solid #E2E8F0; display: flex; flex-direction: column; justify-content: center; padding: 5mm; }
 .cpu-concentration-bars { padding-top: 1mm; }
 .concentration-row { display: grid; grid-template-columns: 10mm minmax(0, 1fr) 16mm; gap: 3mm; align-items: center; margin: 4mm 0; }
 .concentration-row strong { color: #7C3AED; font-size: 6.7pt; line-height: 1.25; white-space: nowrap; }
 .concentration-row span { text-align: right; font-size: 6.7pt; font-weight: 700; }
 .concentration-track { height: 5mm; }
-.distribution-note { min-height: 43mm; margin-top: 7mm; }
+.distribution-boundary-note { margin-top: 5.2mm; }
+.distribution-boundary-note .interpretation-card { min-height: 0; }
 .empty-inline { color: #64748B; font-size: 6.5pt; }
 .page-cpu .identity-item,
 .page-memory .identity-item,
