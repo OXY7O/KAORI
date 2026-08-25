@@ -128,3 +128,33 @@ def test_publication_verifier_is_a_static_quality_gate() -> None:
 
     assert 'python scripts/verify_analytics_pdf_publication.py' in quality_gate
     assert 'KAORI Analytics PDF Publication v3 audit passed' in verifier
+
+
+def test_overview_management_and_reference_sections_have_descriptive_helpers() -> None:
+    template = read('app/templates/reports/pdf/analytics_overview.html')
+
+    for expected in (
+        "ui.section('What Management Should Know','Primary management signals and the review focus at the committed cut-off.')",
+        "ui.section('Management Interpretation','Management conclusion for shared-resource pressure and committed capacity headroom.')",
+        "ui.section('Forecast Signal','Highest projected resource signal and threshold exposure within the committed planning horizon.')",
+        "ui.section('Forecast Interpretation','Planning conclusion and evidence limits for the committed forecast.')",
+        "ui.section('Management Interpretation','Management conclusion for displayed resource concentration and ownership.')",
+        "ui.section('Operational Interpretation and Actions','Capacity pressure translated into accountable review actions.')",
+        "ui.section('Alert Intelligence Summary','Operational ownership summary for active alert severity at the report cut-off.')",
+        "ui.section('Top Resource Counts','Additional Kubernetes resource counts from the committed inventory snapshot.')",
+        "ui.section('Inventory Health Summary','Coverage, freshness, and inventory usability at the committed snapshot.')",
+        '<h3>Anomaly Scope References</h3>\n                                        <p class="reference-helper">Stable reference codes preserve anomaly scope without overloading the comparison table.</p>',
+        '<h3>Methodology References</h3>\n                                        <p class="reference-helper">Reference notes define forecast, severity, and priority interpretation rules.</p>',
+    ):
+        assert expected in template
+
+
+def test_methodology_reference_grid_keeps_divider_under_priority_interpretation() -> None:
+    css = read('app/static/reports/pdf/analytics_overview.css')
+    compact = ''.join(css.split())
+
+    assert (
+        'body.kaori-analytics-publication.kaori-reporting-v3'
+        '.page-methodology.methodology-reference-grid.reference-item:last-child'
+        '{border-bottom:.2mmsolid#E5E7EB;}'
+    ) in compact

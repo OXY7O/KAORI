@@ -775,3 +775,8 @@ body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .report-us
   font-size: 7.4pt;
   line-height: 1.38;
 }
+
+/* Keep all three methodology reference cards visually balanced in the parallel grid. */
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .methodology-reference-grid .reference-item:last-child {
+  border-bottom: .2mm solid #E5E7EB;
+}

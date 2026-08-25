@@ -91,7 +91,7 @@
                             <div class="page-content">
                                 {{ page_title(1, 'Executive Brief', 'Management position at the report cut-off.') }}
                                 {{ metric_strip(p.executive.metrics) }}
-                                {% call ui.section('What Management Should Know') %}
+                                {% call ui.section('What Management Should Know','Primary management signals and the review focus at the committed cut-off.') %}
                                     <p class="lead-paragraph">{{ p.executive.management_summary or p.executive.summary }}</p>
                                 {% endcall %}
                                 {% call ui.section('Priority Findings and Decisions','The register stays concise; full decisions are listed in the reference notes below.') %}
@@ -197,7 +197,7 @@
                                         {% for row in p.resource_posture.capacity_rows %}{{ reference_item('C' ~ loop.index, row.resource, row.interpretation, 'Interpretation') }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Management Interpretation') %}
+                                {% call ui.section('Management Interpretation','Management conclusion for shared-resource pressure and committed capacity headroom.') %}
                                     <p class="narrative-copy">{{ p.resource_posture.interpretation }}</p>
                                 {% endcall %}
                             </div>
@@ -207,7 +207,7 @@
                             {{ report_header() }}
                             <div class="page-content">
                                 {{ page_title(3, 'Trend & Forecast', 'Historical direction and projected threshold pressure.') }}
-                                {% call ui.section('Forecast Signal') %}
+                                {% call ui.section('Forecast Signal','Highest projected resource signal and threshold exposure within the committed planning horizon.') %}
                                     <p class="lead-paragraph">{{ p.trend_forecast.headline }} {{ p.trend_forecast.summary }}</p>
                                 {% endcall %}
                                 {% call ui.section('Figure 1 - Memory Demand Forecast','Historical memory P95 and projected demand across the configured planning window.') %}
@@ -245,7 +245,7 @@
                                         {% for row in p.trend_forecast.resource_rows %}{{ reference_item('P' ~ loop.index, row.resource, row.assessment, 'Assessment') }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Forecast Interpretation') %}
+                                {% call ui.section('Forecast Interpretation','Planning conclusion and evidence limits for the committed forecast.') %}
                                     <p class="narrative-copy">{{ p.trend_forecast.interpretation }} {{ p.trend_forecast.limitation }}</p>
                                 {% endcall %}
                             </div>
@@ -333,7 +333,7 @@
                                         </div>
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Management Interpretation') %}
+                                {% call ui.section('Management Interpretation','Management conclusion for displayed resource concentration and ownership.') %}
                                     <p class="narrative-copy">{{ p.top_consumers.insight }}</p>
                                 {% endcall %}
                             </div>
@@ -395,7 +395,7 @@
                                         {% for item in p.capacity_pressure.risk_highlights[:3] %}{{ reference_item('R' ~ loop.index, item.title, item.summary|default(item.description) , 'Operational Focus') }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Operational Interpretation and Actions') %}
+                                {% call ui.section('Operational Interpretation and Actions','Capacity pressure translated into accountable review actions.') %}
                                     <p>{{ p.capacity_pressure.interpretation }}</p>
                                     <ul class="action-list">
                                         {% for item in p.capacity_pressure.actions[:3] %}
@@ -482,6 +482,7 @@
                                     </table>
                                     <div class="identity-register compact-identities">
                                         <h3>Anomaly Scope References</h3>
+                                        <p class="reference-helper">Stable reference codes preserve anomaly scope without overloading the comparison table.</p>
                                         <div class="identity-grid">
                                             {% for item in p.alerts.anomalies[:2] %}
                                                 <div class="identity-item">
@@ -495,7 +496,7 @@
                                         </div>
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Alert Intelligence Summary') %}
+                                {% call ui.section('Alert Intelligence Summary','Operational ownership summary for active alert severity at the report cut-off.') %}
                                     <p class="narrative-copy">{{ p.alerts.summary }}</p>
                                 {% endcall %}
                             </div>
@@ -620,14 +621,14 @@
                                         <div><strong>{{ ((p.inventory.total_nodes - p.inventory.not_ready_nodes) / p.inventory.total_nodes * 100)|round|int if p.inventory.total_nodes else 0 }}%</strong><span>Readiness</span></div>
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Top Resource Counts') %}
+                                {% call ui.section('Top Resource Counts','Additional Kubernetes resource counts from the committed inventory snapshot.') %}
                                     <div class="count-strip">
                                         {% for item in p.inventory.top_counts %}
                                             <div><span>{{ item.label }}</span><strong>{{ item.value }}</strong></div>
                                         {% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Inventory Health Summary') %}
+                                {% call ui.section('Inventory Health Summary','Coverage, freshness, and inventory usability at the committed snapshot.') %}
                                     <p>{{ p.inventory.health_summary }}</p>
                                     <p class="spaced">{{ p.inventory.notes|join(" ") }}</p>
                                 {% endcall %}
@@ -818,6 +819,7 @@
                                     </div>
                                     <div class="reference-notes methodology-references">
                                         <h3>Methodology References</h3>
+                                        <p class="reference-helper">Reference notes define forecast, severity, and priority interpretation rules.</p>
                                         <div class="methodology-reference-grid">
                                             {% for row in p.methodology.methodology[2:5] %}{{ reference_item('M' ~ (loop.index + 2) , row.label, row.value, 'Definition') }}{% endfor %}
                                         </div>
