@@ -10,7 +10,7 @@
             </span>
             <div class="min-w-0">
                 <h2 id="reporting-estate-capability-title"
-                    class="text-base font-bold text-content-primary">Report Coverage &amp; Artifact Estate</h2>
+                    class="text-base font-semibold leading-6 text-content-primary">Report Coverage &amp; Artifact Estate</h2>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Separate published report contracts from candidate and planned domains, then review the retained artifact estate and reusable automation.</p>
             </div>
         </div>
@@ -33,7 +33,7 @@
             <div class="mb-4 flex items-center justify-between gap-3">
                 <div>
                     <h3 id="report-domain-coverage-title"
-                        class="text-sm font-bold text-content-primary">Reporting Domain Coverage</h3>
+                        class="text-sm font-semibold leading-5 text-content-primary">Reporting Domain Coverage</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Publication state by infrastructure domain. Only Published contracts are selectable in Generate.</p>
                 </div>
                 <i data-lucide="network"
@@ -51,7 +51,7 @@
                                 <i data-lucide="{{ domain.icon }}" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
-                                <p class="text-sm font-bold text-content-primary">{{ domain.label }}</p>
+                                <p class="text-sm font-semibold text-content-primary">{{ domain.label }}</p>
                                 <p class="mt-0.5 text-xs leading-5 text-content-secondary">{{ domain.description }}</p>
                             </div>
                         </div>
@@ -76,7 +76,7 @@
                         <i data-lucide="shield-check" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0">
-                        <p class="text-xs font-bold text-content-primary">Publication Boundary</p>
+                        <p class="text-xs font-semibold text-content-primary">Publication Boundary</p>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">
                             Published means both a canonical report contract and renderer are registered. Candidate coverage remains non-executable until those publication controls are complete.
                         </p>
@@ -89,7 +89,7 @@
             <div class="mb-4 flex items-center justify-between gap-3">
                 <div>
                     <h3 id="artifact-estate-title"
-                        class="text-sm font-bold text-content-primary">Artifact Estate</h3>
+                        class="text-sm font-semibold leading-5 text-content-primary">Artifact Estate</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Retained artifact volume, storage footprint, retained mix, and published output boundaries.</p>
                 </div>
                 <i data-lucide="archive"
@@ -108,7 +108,7 @@
                                aria-hidden="true"></i>
                             Retained Artifacts
                         </div>
-                        <p class="mt-2 text-2xl font-bold tracking-tight text-content-primary">{{ retained.value }}</p>
+                        <p class="mt-2 text-2xl font-semibold tracking-tight text-content-primary">{{ retained.value }}</p>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">Ready or archived artifacts retained in the reporting estate.</p>
                     </div>
                     <div class="border-t border-outline-subtle px-4 py-4 sm:border-t-0">
@@ -118,7 +118,7 @@
                                aria-hidden="true"></i>
                             {{ footprint.label }}
                         </div>
-                        <p class="mt-2 text-2xl font-bold tracking-tight text-content-primary">{{ footprint.value }}</p>
+                        <p class="mt-2 text-2xl font-semibold tracking-tight text-content-primary">{{ footprint.value }}</p>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">{{ footprint.caption }}</p>
                     </div>
                 </div>
@@ -127,7 +127,7 @@
                  data-artifact-estate-distribution="true">
                 <div>
                     <div class="flex items-center justify-between gap-3">
-                        <p class="text-xs font-bold uppercase tracking-wide text-content-muted">Retained Artifact Mix</p>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Retained Artifact Mix</p>
                         <i data-lucide="layers-2"
                            class="h-4 w-4 text-kaori-primary"
                            aria-hidden="true"></i>
@@ -148,7 +148,7 @@
                 </div>
                 <div>
                     <div class="flex items-center justify-between gap-3">
-                        <p class="text-xs font-bold uppercase tracking-wide text-content-muted">Output Formats</p>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Output Formats</p>
                         <i data-lucide="file-stack"
                            class="h-4 w-4 text-kaori-primary"
                            aria-hidden="true"></i>
@@ -172,20 +172,20 @@
                             <i data-lucide="file-check-2" class="h-4 w-4"></i>
                         </span>
                         <div class="min-w-0 flex-1">
-                            <p class="text-xs font-bold text-content-primary">Output Contract</p>
+                            <p class="text-xs font-semibold text-content-primary">Output Contract</p>
                             <p class="mt-1 text-xs leading-5 text-content-secondary">Published formats remain family-owned; candidate domains stay non-executable until both contract and renderer are registered.</p>
                             <div class="mt-3 divide-y divide-kaori-primary/10 border-y border-kaori-primary/10">
                                 <div class="flex items-center justify-between gap-3 py-2">
                                     <span class="text-xs font-semibold text-content-secondary">Analytics Reports</span>
-                                    <span class="text-xs font-bold text-content-primary">PDF · CSV</span>
+                                    <span class="text-xs font-semibold text-content-primary">PDF · CSV</span>
                                 </div>
                                 <div class="flex items-center justify-between gap-3 py-2">
                                     <span class="text-xs font-semibold text-content-secondary">Inventory Reports</span>
-                                    <span class="text-xs font-bold text-content-primary">XLSX · CSV</span>
+                                    <span class="text-xs font-semibold text-content-primary">XLSX · CSV</span>
                                 </div>
                                 <div class="flex items-center justify-between gap-3 py-2">
                                     <span class="text-xs font-semibold text-content-secondary">Candidate Domains</span>
-                                    <span class="text-right text-xs font-bold text-kaori-primary">Contract + renderer required</span>
+                                    <span class="text-right text-xs font-semibold text-kaori-primary">Contract + renderer required</span>
                                 </div>
                             </div>
                         </div>
@@ -199,20 +199,20 @@
         <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div class="max-w-2xl">
                 <h3 id="contracts-automation-title"
-                    class="text-sm font-bold text-content-primary">Contracts &amp; Automation</h3>
+                    class="text-sm font-semibold leading-5 text-content-primary">Contracts &amp; Automation</h3>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Published contracts, reusable templates, and recurring schedules that are admitted to the governed generation workflow.</p>
             </div>
             <div class="grid grid-cols-3 gap-2 sm:min-w-[28rem]">
                 <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-3 py-3 text-center">
-                    <p class="text-lg font-bold text-content-primary">{{ payload.automation_summary.available_contracts }}</p>
+                    <p class="text-lg font-semibold text-content-primary">{{ payload.automation_summary.available_contracts }}</p>
                     <p class="mt-0.5 text-xs font-semibold text-content-muted">Published Contracts</p>
                 </div>
                 <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-3 py-3 text-center">
-                    <p class="text-lg font-bold text-content-primary">{{ payload.automation_summary.active_schedules }} / {{ payload.automation_summary.total_schedules }}</p>
+                    <p class="text-lg font-semibold text-content-primary">{{ payload.automation_summary.active_schedules }} / {{ payload.automation_summary.total_schedules }}</p>
                     <p class="mt-0.5 text-xs font-semibold text-content-muted">Active Schedules</p>
                 </div>
                 <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-3 py-3 text-center">
-                    <p class="text-lg font-bold text-content-primary">{{ payload.automation_summary.custom_templates }}</p>
+                    <p class="text-lg font-semibold text-content-primary">{{ payload.automation_summary.custom_templates }}</p>
                     <p class="mt-0.5 text-xs font-semibold text-content-muted">Custom Templates</p>
                 </div>
             </div>
@@ -222,7 +222,7 @@
                  data-contract-family-summary="true">
                 <div class="flex items-center justify-between gap-3">
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-wide text-content-muted">Published Contract Families</p>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Published Contract Families</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Family-level contract counts that are currently published to the Generate workflow.</p>
                     </div>
                     <i data-lucide="folder-tree"
@@ -238,12 +238,12 @@
                                     <i data-lucide="{{ group.icon }}" class="h-4 w-4"></i>
                                 </span>
                                 <div class="min-w-0">
-                                    <p class="text-sm font-bold text-content-primary">{{ group.label }}</p>
+                                    <p class="text-sm font-semibold text-content-primary">{{ group.label }}</p>
                                     <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ group.description }}</p>
                                 </div>
                             </div>
                             <div class="shrink-0 text-right">
-                                <p class="text-lg font-bold tracking-tight text-content-primary">{{ group.contract_count }}</p>
+                                <p class="text-lg font-semibold tracking-tight text-content-primary">{{ group.contract_count }}</p>
                                 <p class="mt-0.5 text-xs font-semibold text-content-muted">Published</p>
                             </div>
                         </div>
@@ -258,20 +258,20 @@
                         <i data-lucide="workflow" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0 flex-1">
-                        <p class="text-xs font-bold text-content-primary">Automation Boundary</p>
+                        <p class="text-xs font-semibold text-content-primary">Automation Boundary</p>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">Published contracts are admitted to Generate, schedules automate only published contracts, and templates stay reusable structure without changing contract availability.</p>
                         <div class="mt-3 divide-y divide-kaori-primary/10 border-y border-kaori-primary/10">
                             <div class="flex items-center justify-between gap-3 py-2">
                                 <span class="text-xs font-semibold text-content-secondary">Published Contracts</span>
-                                <span class="text-xs font-bold text-content-primary">{{ payload.automation_summary.available_contracts }}</span>
+                                <span class="text-xs font-semibold text-content-primary">{{ payload.automation_summary.available_contracts }}</span>
                             </div>
                             <div class="flex items-center justify-between gap-3 py-2">
                                 <span class="text-xs font-semibold text-content-secondary">Recurring Schedules</span>
-                                <span class="text-xs font-bold text-content-primary">{{ payload.automation_summary.active_schedules }} Active · {{ payload.automation_summary.total_schedules }} Total</span>
+                                <span class="text-xs font-semibold text-content-primary">{{ payload.automation_summary.active_schedules }} Active · {{ payload.automation_summary.total_schedules }} Total</span>
                             </div>
                             <div class="flex items-center justify-between gap-3 py-2">
                                 <span class="text-xs font-semibold text-content-secondary">Reusable Templates</span>
-                                <span class="text-xs font-bold text-content-primary">{{ payload.automation_summary.custom_templates }} Custom</span>
+                                <span class="text-xs font-semibold text-content-primary">{{ payload.automation_summary.custom_templates }} Custom</span>
                             </div>
                         </div>
                     </div>

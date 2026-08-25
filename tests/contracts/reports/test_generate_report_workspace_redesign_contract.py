@@ -218,7 +218,7 @@ def test_generate_report_typography_and_summary_are_visually_hierarchical() -> N
         'Report Content',
         'Review &amp; Queue',
     ):
-        assert f'class="text-base font-bold text-content-primary">{heading}</h3>' in source
+        assert f'class="text-base font-semibold leading-6 text-content-primary">{heading}</h3>' in source
 
     assert 'text-[10px]' not in source
     assert 'text-[11px]' not in source

@@ -17,8 +17,7 @@ def test_reports_overview_identity_and_hero_copy_are_explicit() -> None:
     assert "'page_title': 'Reports Overview'" in service
     assert "normalized.setdefault('page_title', 'Reports Overview')" in presentation
     assert '{% block title %}Reports Overview{% endblock title %}' in page
-    assert 'published contract coverage' in service
-    assert 'across Kubernetes, Object Storage, and planned infrastructure domains.' in service
+    assert 'report coverage across managed infrastructure' in service
 
 
 def test_report_workspace_hero_descriptions_keep_consistent_operational_depth() -> None:
@@ -33,13 +32,13 @@ def test_report_workspace_hero_descriptions_keep_consistent_operational_depth() 
     }
 
     expected_fragments = {
-        'overview': 'across Kubernetes, Object Storage, and planned infrastructure domains.',
-        'generate': 'selected scope, reusable sections, and an approved output contract',
-        'generated': 'worker execution, retained artifact delivery, and lifecycle review',
-        'generated_detail': 'selected scope, retained artifact, execution evidence, and delivery readiness',
-        'templates': 'preserving the canonical reporting contract',
-        'schedules': 'timezone-aware contracts with retained execution evidence',
-        'storage': 'retained-reference integrity, and lifecycle ownership',
+        'overview': 'report coverage across managed infrastructure',
+        'generate': 'scope, sections, and an approved output format',
+        'generated': 'worker execution, artifact readiness, and lifecycle state',
+        'generated_detail': 'report scope, artifact evidence, execution state, and delivery readiness',
+        'templates': 'protected system templates and reusable custom report structures',
+        'schedules': 'timezone-aware schedules and retained run evidence',
+        'storage': 'reference integrity, and lifecycle ownership',
     }
     for key, fragment in expected_fragments.items():
         assert fragment in files[key]

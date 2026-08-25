@@ -67,8 +67,7 @@ def get_reports_overview_payload() -> dict[str, Any]:
     return {
         'page_title': 'Reports Overview',
         'page_subtitle': (
-            'Review reporting readiness, retained artifacts, automation, and published contract coverage '
-            'across Kubernetes, Object Storage, and planned infrastructure domains.'
+            'Review reporting readiness, artifacts, automation, and report coverage across managed infrastructure.'
         ),
         'selected_cluster_label': 'All Infrastructure Scopes',
         'report_engine_status': worker_context['label'],

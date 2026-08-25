@@ -8,7 +8,7 @@
             </span>
             <div class="min-w-0">
                 <h2 id="reporting-portfolio-title"
-                    class="text-base font-semibold text-content-primary">Reporting Portfolio</h2>
+                    class="text-base font-semibold leading-6 text-content-primary">Reporting Portfolio</h2>
                 <p class="mt-0.5 text-xs leading-5 text-content-muted">Generated artifact mix, output formats, and automation posture.</p>
             </div>
         </div>
@@ -37,7 +37,7 @@
             <div class="mt-4 grid grid-cols-3 gap-3">
                 {% for item in payload.artifact_portfolio.formats %}
                     <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-3 py-3 text-center">
-                        <p class="text-lg font-bold text-content-primary">{{ item.value }}</p>
+                        <p class="text-lg font-semibold text-content-primary">{{ item.value }}</p>
                         <p class="mt-1 text-xs font-semibold text-content-muted">{{ item.label }}</p>
                     </div>
                 {% endfor %}
@@ -49,19 +49,19 @@
             <dl class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle">
                 <div class="flex items-center justify-between gap-4 py-3">
                     <dt class="text-xs font-semibold text-content-muted">Active Schedules</dt>
-                    <dd class="text-sm font-bold text-content-primary">
+                    <dd class="text-sm font-semibold text-content-primary">
                         {{ payload.automation_summary.active_schedules }} / {{ payload.automation_summary.total_schedules }}
                     </dd>
                 </div>
                 <div class="flex items-center justify-between gap-4 py-3">
                     <dt class="text-xs font-semibold text-content-muted">Custom Templates</dt>
-                    <dd class="text-sm font-bold text-content-primary">
+                    <dd class="text-sm font-semibold text-content-primary">
                         {{ payload.automation_summary.custom_templates }}
                     </dd>
                 </div>
                 <div class="flex items-center justify-between gap-4 py-3">
                     <dt class="text-xs font-semibold text-content-muted">Available Contracts</dt>
-                    <dd class="text-sm font-bold text-content-primary">
+                    <dd class="text-sm font-semibold text-content-primary">
                         {{ payload.automation_summary.available_contracts }}
                     </dd>
                 </div>

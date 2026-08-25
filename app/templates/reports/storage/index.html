@@ -71,7 +71,7 @@
                             <i data-lucide="shield-check" class="h-5 w-5"></i>
                         </span>
                         <div class="min-w-0">
-                            <h2 class="text-base font-semibold text-content-primary">Storage Operations Posture</h2>
+                            <h2 class="text-base font-semibold leading-6 text-content-primary">Storage Operations Posture</h2>
                             <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">Current backend readiness for reading retained artifacts and accepting new report writes.</p>
                         </div>
                     </div>
@@ -83,7 +83,7 @@
                 <section class="border-b border-outline-subtle p-5 sm:p-6 xl:col-span-5 xl:border-b-0 xl:border-r"
                          data-storage-execution-boundary="true">
                     <p class="text-xs font-semibold text-kaori-primary">Storage Decision</p>
-                    <h3 class="mt-1 text-lg font-semibold text-content-primary">{{ posture.title }}</h3>
+                    <h3 class="mt-1 text-lg font-semibold leading-7 text-content-primary">{{ posture.title }}</h3>
                     <p class="mt-2 max-w-xl text-sm leading-6 text-content-muted">{{ posture.description }}</p>
                     <dl class="mt-5 border-y border-outline-subtle"
                         data-storage-decision-list="true">
@@ -120,7 +120,7 @@
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <p class="text-xs font-semibold text-kaori-primary">Readiness Monitor</p>
-                            <h3 class="mt-1 text-base font-semibold text-content-primary">Automatic Storage Readiness</h3>
+                            <h3 class="mt-1 text-base font-semibold leading-6 text-content-primary">Automatic Storage Readiness</h3>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Shared lightweight health evidence for Reports.</p>
                         </div>
                         {{ table_label.status_indicator_label(posture.monitor_label, posture.monitor_tone) }}
@@ -183,7 +183,7 @@
                         <div class="min-w-0">
                             <p class="text-xs font-semibold text-status-warning-text">Storage Connectivity</p>
                             <h2 id="report-storage-connectivity-title"
-                                class="mt-1 text-sm font-semibold text-content-primary">{{ backend_status.title }}</h2>
+                                class="mt-1 text-sm font-semibold leading-5 text-content-primary">{{ backend_status.title }}</h2>
                             <p class="mt-1 max-w-4xl text-xs leading-5 text-content-secondary">{{ backend_status.description }}</p>
                         </div>
                     </div>
@@ -211,7 +211,7 @@
                         <i data-lucide="database-cog" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0">
-                        <h2 class="text-base font-semibold text-content-primary">Storage Operations</h2>
+                        <h2 class="text-base font-semibold leading-6 text-content-primary">Storage Operations</h2>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Inspect backend configuration, verify retained artifact references, and review lifecycle ownership without changing protected storage configuration.</p>
                     </div>
                 </div>
@@ -239,7 +239,7 @@
                                 </span>
                                 <div class="min-w-0">
                                     <p class="text-xs font-semibold text-kaori-primary">Active Backend</p>
-                                    <h3 class="mt-1 text-lg font-semibold text-content-primary">{{ posture.backend_label }}</h3>
+                                    <h3 class="mt-1 text-lg font-semibold leading-7 text-content-primary">{{ posture.backend_label }}</h3>
                                     <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">
                                         {{ 'Object storage target used for generated report artifacts.' if payload.active_backend == 's3' else 'Filesystem target used for generated report artifacts.' }}
                                     </p>
@@ -392,7 +392,7 @@
                             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                 <div>
                                     <p class="text-xs font-semibold text-kaori-primary">Tracked Artifact Evidence</p>
-                                    <h4 class="mt-1 text-sm font-semibold text-content-primary">Report Reference Coverage</h4>
+                                    <h4 class="mt-1 text-sm font-semibold leading-5 text-content-primary">Report Reference Coverage</h4>
                                     <p class="mt-1 text-xs leading-5 text-content-muted">Metadata-first counts from the Reports database; this is not a bucket or filesystem inventory scan.</p>
                                 </div>
                                 {{ table_label.status_indicator_label(payload.artifact_summary.reports_with_files ~ ' References', 'info') }}
@@ -436,7 +436,7 @@
                                        class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
                                        aria-hidden="true"></i>
                                     <div>
-                                        <h3 class="text-sm font-semibold text-content-primary">Strong Backend Verification</h3>
+                                        <h3 class="text-sm font-semibold leading-5 text-content-primary">Strong Backend Verification</h3>
                                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ payload.verification.description }}</p>
                                         <p class="mt-2 text-xs font-medium text-content-secondary">Write → confirm → delete verification object</p>
                                     </div>
@@ -459,7 +459,7 @@
                                        class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
                                        aria-hidden="true"></i>
                                     <div>
-                                        <h3 class="text-sm font-semibold text-content-primary">Artifact Integrity Scan</h3>
+                                        <h3 class="text-sm font-semibold leading-5 text-content-primary">Artifact Integrity Scan</h3>
                                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ payload.integrity_check.description }}</p>
                                         <p class="mt-2 text-xs font-medium text-content-secondary">Read only · Up to {{ payload.integrity_check.max_items }} records</p>
                                     </div>
@@ -491,7 +491,7 @@
                             <header class="border-b border-outline-subtle bg-surface-subtle px-5 py-4">
                                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
-                                        <h3 class="text-sm font-semibold text-content-primary">Integrity Result</h3>
+                                        <h3 class="text-sm font-semibold leading-5 text-content-primary">Integrity Result</h3>
                                         <p class="mt-1 text-xs text-content-muted">Checked {{ integrity.checked_count }} records · {{ integrity.available_count }} available · {{ integrity.missing_count }} missing · {{ integrity.error_count }} errors.</p>
                                     </div>
                                     {{ table_label.status_indicator_label('Healthy' if integrity.is_healthy else 'Needs Review', 'normal' if integrity.is_healthy else 'warning') }}
@@ -538,7 +538,7 @@
                         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                             <div class="max-w-3xl">
                                 <p class="text-xs font-semibold text-kaori-primary">Lifecycle Governance</p>
-                                <h3 class="mt-1 text-base font-semibold text-content-primary">Generated Report Lifecycle Policy</h3>
+                                <h3 class="mt-1 text-base font-semibold leading-6 text-content-primary">Generated Report Lifecycle Policy</h3>
                                 <p class="mt-1 text-sm leading-6 text-content-muted">{{ payload.retention_policy.description }}</p>
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
@@ -586,7 +586,7 @@
                                     <i data-lucide="shield-check"
                                        class="h-4 w-4 text-kaori-primary"
                                        aria-hidden="true"></i>
-                                    <h4 class="text-sm font-semibold text-content-primary">Lifecycle Guardrails</h4>
+                                    <h4 class="text-sm font-semibold leading-5 text-content-primary">Lifecycle Guardrails</h4>
                                 </div>
                                 <div class="mt-3 space-y-2.5">
                                     {% for rule in payload.retention_policy.policy_rules %}
@@ -604,7 +604,7 @@
                                     <i data-lucide="split"
                                        class="h-4 w-4 text-kaori-primary"
                                        aria-hidden="true"></i>
-                                    <h4 class="text-sm font-semibold text-content-primary">Ownership Boundary</h4>
+                                    <h4 class="text-sm font-semibold leading-5 text-content-primary">Ownership Boundary</h4>
                                 </div>
                                 <dl class="mt-3 divide-y divide-outline-subtle border-y border-outline-subtle">
                                     <div class="py-3">
