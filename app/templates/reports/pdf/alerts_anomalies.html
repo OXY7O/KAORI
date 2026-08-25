@@ -115,7 +115,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Priority Alert Findings', 'Decision fields remain concise; complete alert identities are maintained on detail pages.') %}
+                                {% call ui.section('Priority Alert Findings', 'Decision fields stay concise; full identities remain on detail pages.') %}
                                     <table class="report-table decision-register">
                                         <thead>
                                             <tr>
@@ -198,7 +198,7 @@
                         <article class="page page-active-alerts">{{ report_header() }}
                             <div class="page-content">
                                 {{ page_title(3, 'Active Alerts', 'Leading active conditions, namespace scope, duration, and firing state.') }}{{ metric_strip(p.active_alerts.metrics) }}
-                                {% call ui.section('Top Active Alert Register', 'Fixed comparison fields remain in the table; complete alert identities and namespaces are listed by reference.') %}
+                                {% call ui.section('Top Active Alert Register', 'Comparable alert fields stay in-table; identities remain by reference.') %}
                                     <table class="report-table active-alert-summary">
                                         <thead>
                                             <tr>
@@ -238,7 +238,7 @@
                                         </div>
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Alert Interpretation', 'Operational meaning and validation criteria remain outside the fixed register.') %}
+                                {% call ui.section('Alert Interpretation', 'Operational meaning and validation remain outside the register.') %}
                                     <div class="reference-grid alert-references">
                                         {% for item in p.active_alerts.references %}
                                             {{ reference_item(item) }}
@@ -256,7 +256,7 @@
                             <div class="page-content">
                                 {{ page_title(4, 'Anomaly Evidence', 'Detected anomaly count, displayed records, and explicit evidence availability.') }}{{ metric_strip(p.anomalies.metrics) }}
                                 <div class="two-column paired-sections anomaly-split">
-                                    {% call ui.section('Recent Anomaly Register', 'The register preserves comparable evidence fields; namespaces remain in the reference list.') %}
+                                    {% call ui.section('Recent Anomaly Register', 'Comparable anomaly evidence stays in-table; scope remains by reference.') %}
                                         <table class="report-table anomaly-summary-register">
                                             <thead>
                                                 <tr>
@@ -304,7 +304,7 @@
                                         {% endfor %}
                                     </div>
                                 </div>
-                                {% call ui.section('Anomaly Evidence Requirements', 'Minimum committed fields required before an anomaly can support remediation.') %}
+                                {% call ui.section('Anomaly Evidence Requirements', 'Minimum committed evidence required before anomaly remediation.') %}
                                     <table class="report-table requirement-register">
                                         <thead>
                                             <tr>
@@ -348,7 +348,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Ownership Review Register', 'Owner, coverage, and status stay comparable; scope and validation focus are listed by reference.') %}
+                                {% call ui.section('Ownership Review Register', 'Owner, coverage, and validation focus remain comparable.') %}
                                     <table class="report-table ownership-summary-register">
                                         <thead>
                                             <tr>
@@ -390,7 +390,7 @@
                             <div class="page-content">
                                 {{ page_title(6, 'Correlation & Evidence Boundary', 'Cross-signal relationships, evidence gaps, and interpretation limits.') }}{{ metric_strip(p.correlation.metrics) }}
                                 <div class="two-column paired-sections correlation-split">
-                                    {% call ui.section('Potential Cross-Signal Review', 'Shared namespaces and timing can create review leads without proving causality.') %}
+                                    {% call ui.section('Potential Cross-Signal Review', 'Shared namespace and timing can suggest review, not causality.') %}
                                         <div class="interpretation-card warning-card">
                                             <strong>Potential relationships remain unconfirmed.</strong>
                                             <p>Use live events, metrics, change history, and ownership evidence before treating alerts and anomalies as correlated.</p>
@@ -403,7 +403,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Correlation Review Register', 'Relationship and review state stay comparable; complete scope and signal pairs are listed by reference.') %}
+                                {% call ui.section('Correlation Review Register', 'Signal relationship and review state remain comparable.') %}
                                     <table class="report-table correlation-summary-register">
                                         <thead>
                                             <tr>
@@ -442,7 +442,7 @@
                         <article class="page page-alert-recommendations">{{ report_header() }}
                             <div class="page-content">
                                 {{ page_title(7, 'Recommendation Plan', 'Prioritized response actions, accountable owners, target windows, and validation gates.') }}{{ metric_strip(p.recommendations.metrics) }}
-                                {% call ui.section('Priority Recommendations', 'The register contains fixed decision fields. Full context remains in the reference notes.') %}
+                                {% call ui.section('Priority Recommendations', 'Fixed decision fields stay in-table; details remain by reference.') %}
                                     <table class="report-table recommendation-register">
                                         <thead>
                                             <tr>
@@ -471,7 +471,7 @@
                                         {% for item in p.recommendations.rows %}{{ reference_item(item) }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Execution Governance', 'Alert and anomaly actions remain subject to live-state validation and approved change controls.') %}
+                                {% call ui.section('Execution Governance', 'Actions require live-state validation and approved change control.') %}
                                     <table class="report-table governance-register">
                                         <tbody>
                                             {% for item in p.recommendations.governance %}
@@ -488,13 +488,13 @@
                         <article class="page page-alert-methodology">{{ report_header() }}
                             <div class="page-content">
                                 {{ page_title(8, 'Methodology and Evidence Boundary', 'Alert sources, classification rules, anomaly policy, and explicit limitations.') }}{{ metric_strip(p.methodology.metrics) }}
-                                {% call ui.section('Data Sources and Methodology', 'Source names, classification rules, and evidence limitations remain explicit.') %}
+                                {% call ui.section('Data Sources and Methodology', 'Source names, classification rules, and limitations remain explicit.') %}
                                     {{ ui.methodology_register(p.methodology.sources, p.methodology.rules) }}
                                 {% endcall %}
-                                {% call ui.section('Evidence Boundary', 'Included and excluded evidence remain separated by the committed report cut-off.') %}
+                                {% call ui.section('Evidence Boundary', 'Included and excluded evidence at the committed cut-off.') %}
                                     {{ ui.evidence_boundary(p.methodology.included, p.methodology.excluded) }}
                                 {% endcall %}
-                                {% call ui.section('Limitations and Status Language') %}
+                                {% call ui.section('Limitations and Status Language', 'Operational limits and evidence-status definitions.') %}
                                     <div class="limitations-grid">
                                         <div class="limitations-copy">
                                             <h3>Known Limitations and Operational Use</h3>

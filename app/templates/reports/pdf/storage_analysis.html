@@ -101,7 +101,7 @@
                                 {{ page_title(1, 'Executive Brief', 'Management position for storage at the report cut-off.') }}
                                 {{ metric_strip(p.executive.metrics) }}
                                 <div class="two-column storage-executive-split">
-                                    {% call ui.section('Figure 1 - Storage Capacity Posture', 'Committed aggregate use against KAORI warning and critical operating bands.') %}
+                                    {% call ui.section('Figure 1 - Storage Capacity Posture', 'Committed aggregate use against warning and critical bands.') %}
                                         <div class="capacity-bars">
                                             {{ capacity_bar(p.executive.capacity) }}
                                             <div class="capacity-row headroom-row">
@@ -123,7 +123,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Priority Findings Register', 'Fixed decision fields remain concise; full interpretation is maintained by reference.') %}
+                                {% call ui.section('Priority Findings Register', 'Decision fields stay concise; interpretation remains by reference.') %}
                                     <table class="report-table findings-register">
                                         <thead>
                                             <tr>
@@ -203,7 +203,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Aggregate Capacity Register', 'Used, capacity, available, headroom, and evidence boundary remain on one row.') %}
+                                {% call ui.section('Aggregate Capacity Register', 'Used, capacity, available, headroom, and boundary in one row.') %}
                                     <table class="report-table aggregate-register">
                                         <thead>
                                             <tr>
@@ -231,7 +231,7 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Management Decision', 'Keep aggregate capacity separate from localized risk and lifecycle evidence.') %}
+                                {% call ui.section('Management Decision', 'Separate aggregate capacity from localized lifecycle risk.') %}
                                     <p>{{ p.capacity.decision }}</p>
                                 {% endcall %}
                             </div>
@@ -308,7 +308,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Filesystem Evidence Requirements', 'Fields required before pressure, saturation, or cleanup action can be assigned.') %}
+                                {% call ui.section('Filesystem Evidence Requirements', 'Required fields before storage pressure or cleanup action.') %}
                                     <table class="report-table evidence-register">
                                         <thead>
                                             <tr>
@@ -332,7 +332,7 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Operational Interpretation', 'Filesystem conclusions remain limited to the committed evidence returned at the cut-off.') %}
+                                {% call ui.section('Operational Interpretation', 'Filesystem conclusions use only committed cut-off evidence.') %}
                                     <p class="narrative-copy">{{ p.filesystem.interpretation }}</p>
                                 {% endcall %}
                             </div>
@@ -377,7 +377,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Persistent Storage Register', 'Available inventory evidence remains distinct from unavailable utilization evidence.') %}
+                                {% call ui.section('Persistent Storage Register', 'Inventory evidence stays separate from unavailable utilization data.') %}
                                     <table class="report-table persistent-register">
                                         <thead>
                                             <tr>
@@ -402,7 +402,7 @@
                                     </table>
                                 {% endcall %}
                                 <div class="two-column persistent-record-split">
-                                    {% call ui.section('Top PV Lifecycle Records', 'Comparable lifecycle fields remain concise; complete volume identities are listed below.') %}
+                                    {% call ui.section('Top PV Lifecycle Records', 'Lifecycle fields stay concise; full volume identities remain below.') %}
                                         <table class="report-table pv-summary-register">
                                             <thead>
                                                 <tr>
@@ -426,7 +426,7 @@
                                             </tbody>
                                         </table>
                                     {% endcall %}
-                                    {% call ui.section('Top PVC Utilization Records', 'Usage remains comparable; claim and namespace identities are listed below.') %}
+                                    {% call ui.section('Top PVC Utilization Records', 'Comparable usage with claim and namespace identities below.') %}
                                         <table class="report-table pvc-summary-register">
                                             <thead>
                                                 <tr>
@@ -472,7 +472,7 @@
                                         {% endfor %}
                                     </div>
                                 </div>
-                                {% call ui.section('Management Decision', 'Use inventory to establish object scope, not to infer free space or expansion readiness.') %}
+                                {% call ui.section('Management Decision', 'Use inventory for object scope, not free-space or expansion inference.') %}
                                     <p class="narrative-copy">{{ p.persistent.decision }}</p>
                                 {% endcall %}
                             </div>
@@ -532,7 +532,7 @@
                                         {% for item in p.risk.register %}{{ reference_item(item) }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Operational Boundary', 'Storage change remains subject to validation and approved change controls.') %}
+                                {% call ui.section('Operational Boundary', 'Storage changes require live-state validation and change control.') %}
                                     <p>{{ p.risk.interpretation }}</p>
                                 {% endcall %}
                             </div>
@@ -543,7 +543,7 @@
                             <div class="page-content">
                                 {{ page_title(6, 'Trend & Risk Evidence', 'Aggregate direction, threshold exposure, and evidence limitations.') }}
                                 {{ metric_strip(p.trend.metrics) }}
-                                {% call ui.section('Figure 3 - Storage Utilization Direction', 'Only committed historical and forecast observations are plotted; gaps remain visible.') %}
+                                {% call ui.section('Figure 3 - Storage Utilization Direction', 'Plot only committed trend evidence; gaps remain visible.') %}
                                     {% if p.trend.available %}
                                         <div class="storage-trend-frame">{{ p.trend.chart_svg|safe }}</div>
                                     {% else %}
@@ -586,7 +586,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Management Interpretation', 'Current aggregate pressure and evidence completeness remain separate review items.') %}
+                                {% call ui.section('Management Interpretation', 'Aggregate pressure and evidence completeness remain separate.') %}
                                     <p class="narrative-copy">{{ p.trend.interpretation }}</p>
                                 {% endcall %}
                             </div>
@@ -597,7 +597,7 @@
                             <div class="page-content">
                                 {{ page_title(7, 'Recommendation Plan', 'Prioritized actions, accountable owners, target windows, and validation gates.') }}
                                 {{ metric_strip(p.recommendations.metrics) }}
-                                {% call ui.section('Priority Recommendations', 'The register contains fixed decision fields. Full context remains in the reference notes.') %}
+                                {% call ui.section('Priority Recommendations', 'Fixed decision fields stay in-table; details remain by reference.') %}
                                     <table class="report-table recommendation-register">
                                         <thead>
                                             <tr>
@@ -623,12 +623,12 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Recommendation References', 'Descriptions expand below the register without changing table row heights.') %}
+                                {% call ui.section('Recommendation References', 'Descriptions stay below the register to preserve compact rows.') %}
                                     <div class="reference-grid recommendations-grid">
                                         {% for item in p.recommendations['items'] %}{{ reference_item(item) }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Execution Governance', 'Remediation must be validated against live state and approved change controls.') %}
+                                {% call ui.section('Execution Governance', 'Remediation requires live-state validation and change control.') %}
                                     <table class="report-table governance-table">
                                         <tbody>
                                             {% for item in p.recommendations.governance %}
@@ -648,18 +648,18 @@
                             <div class="page-content">
                                 {{ page_title(8, 'Methodology and Evidence Boundary', 'Data sources, storage rules, freshness, and explicit limitations.') }}
                                 {{ metric_strip(p.methodology.metrics) }}
-                                {% call ui.section('Data Sources and Methodology', 'Source names, timestamps, and rules remain explicit and are not merged across boundaries.') %}
+                                {% call ui.section('Data Sources and Methodology', 'Sources, timestamps, and rules remain explicit and separate.') %}
                                     {{ ui.methodology_register(p.methodology.sources, p.methodology.rules, 'data-source-table compact-register', 'compact-register') }}
                                 {% endcall %}
-                                {% call ui.section('Methodology References') %}
+                                {% call ui.section('Methodology References', 'Threshold, lifecycle, and storage-evidence rules.') %}
                                     <div class="reference-grid methodology-reference-grid">
                                         {% for item in p.methodology.references %}{{ reference_item(item) }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Evidence Boundary', 'This report is built strictly within the committed observation boundary defined by the data cut-off.') %}
+                                {% call ui.section('Evidence Boundary', 'Included and excluded evidence at the committed cut-off.') %}
                                     {{ ui.evidence_boundary(p.methodology.included, p.methodology.excluded) }}
                                 {% endcall %}
-                                {% call ui.section('Limitations and Status Language') %}
+                                {% call ui.section('Limitations and Status Language', 'Operational limits and evidence-status definitions.') %}
                                     <div class="limitations-grid">
                                         <div class="limitations-copy">
                                             <h3>Known Limitations and Operational Use</h3>

@@ -89,7 +89,7 @@
                                 {{ page_title(1, 'Executive Brief', 'Management position for resource utilization at the report cut-off.') }}
                                 {{ metric_strip(p.executive.metrics) }}
                                 <div class="two-column primary-split">
-                                    {% call ui.section('Figure 1 - Shared Resource Utilization', 'Current committed utilization against KAORI warning and critical operating bands.') %}
+                                    {% call ui.section('Figure 1 - Shared Resource Utilization', 'Committed utilization against warning and critical bands.') %}
                                         <div class="utilization-bars">
                                             {% for item in p.executive.resources %}
                                                 <div class="utilization-row">
@@ -111,7 +111,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Priority Findings Register', 'The register contains fixed decision fields; supporting explanations are maintained by reference.') %}
+                                {% call ui.section('Priority Findings Register', 'Fixed decision fields stay in-table; explanations remain by reference.') %}
                                     <table class="report-table findings-register">
                                         <thead>
                                             <tr>
@@ -171,7 +171,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Leading CPU Consumers', 'The comparison register stays concise; complete technical identities are maintained by reference.', 'section-after-pair') %}
+                                {% call ui.section('Leading CPU Consumers', 'Concise comparison fields map to full CPU identities by reference.', 'section-after-pair') %}
                                     <table class="report-table consumer-summary-table">
                                         <thead>
                                             <tr>
@@ -212,7 +212,7 @@
                                         </div>
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Management Decision') %}
+                                {% call ui.section('Management Decision', 'Decision boundary for displayed CPU consumer evidence.') %}
                                     <p class="narrative-copy">{{ p.cpu.decision }}</p>
                                 {% endcall %}
                             </div>
@@ -224,7 +224,7 @@
                                 {{ page_title(3, 'Memory Utilization', 'Current memory posture, growth direction, and concentration risk.') }}
                                 {{ metric_strip(p.memory.metrics) }}
                                 <div class="two-column chart-assessment-split">
-                                    {% call ui.section('Figure 3 - Memory Direction and Projection', 'Committed endpoint and projected warning-band entry across the planning horizon.') %}
+                                    {% call ui.section('Figure 3 - Memory Direction and Projection', 'Committed memory endpoint and projected planning position.') %}
                                         <div class="chart-frame">{{ p.memory.chart_svg|safe }}</div>
                                         <div class="chart-legend chart-to-section-gap"><span class="legend-memory">Historical / projected memory</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
                                     {% endcall %}
@@ -236,7 +236,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Leading Memory Consumers', 'The comparison register stays concise; complete technical identities are maintained by reference.', 'section-after-pair') %}
+                                {% call ui.section('Leading Memory Consumers', 'Concise comparison fields map to full memory identities by reference.', 'section-after-pair') %}
                                     <table class="report-table consumer-summary-table">
                                         <thead>
                                             <tr>
@@ -277,7 +277,7 @@
                                         </div>
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Management Decision') %}
+                                {% call ui.section('Management Decision', 'Decision boundary for displayed memory consumer evidence.') %}
                                     <p class="narrative-copy">{{ p.memory.decision }}</p>
                                 {% endcall %}
                             </div>
@@ -323,7 +323,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Utilization Register', 'Fixed comparison fields remain in the table; operational interpretation is maintained below.', 'section-after-pair') %}
+                                {% call ui.section('Utilization Register', 'Comparison fields stay in-table; interpretation follows below.', 'section-after-pair') %}
                                     <table class="report-table utilization-register">
                                         <thead>
                                             <tr>
@@ -349,7 +349,7 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Operational Interpretation', p.pod_node.interpretation) %}
+                                {% call ui.section('Operational Interpretation', 'Scheduling headroom and node participation conclusion.') %}
                                 {% endcall %}
                             </div>
                             {{ footer(5) }}
@@ -394,7 +394,7 @@
                                         <small>The production report retains denominator and ranking scope beside every distribution chart.</small>
                                     </div>
                                 </div>
-                                {% call ui.section('Consumer Reference Register', 'Chart labels use stable reference codes; complete identities are listed below the concise comparison register.', 'section-after-pair') %}
+                                {% call ui.section('Consumer Reference Register', 'Chart references map to complete consumer identities.', 'section-after-pair') %}
                                     <table class="report-table distribution-summary-register">
                                         <thead>
                                             <tr>
@@ -435,7 +435,7 @@
                                         </div>
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Management Interpretation') %}
+                                {% call ui.section('Management Interpretation', 'Management conclusion for displayed concentration evidence.') %}
                                     <p class="narrative-copy">{{ p.distribution.interpretation }}</p>
                                 {% endcall %}
                             </div>
@@ -446,7 +446,7 @@
                             <div class="page-content">
                                 {{ page_title(6, 'Trend Evidence', 'Committed historical direction and planning signals across the selected period.') }}
                                 {{ metric_strip(p.trend.metrics) }}
-                                {% call ui.section('Figure 8 - Resource Trend Outlook', 'Historical and projected endpoints remain within the committed report evidence boundary.') %}
+                                {% call ui.section('Figure 8 - Resource Trend Outlook', 'Historical and projected endpoints within the committed boundary.') %}
                                     <div class="trend-chart-frame">{{ p.trend.chart_svg|safe }}</div>
                                     <div class="chart-legend chart-to-section-gap"><span class="legend-memory">Memory</span><span class="legend-pods">Pods</span><span class="legend-cpu">CPU</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
                                 {% endcall %}
@@ -483,7 +483,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Management Interpretation', p.trend.interpretation) %}
+                                {% call ui.section('Management Interpretation', 'Planning conclusion for the committed trend horizon.') %}
                                 {% endcall %}
                             </div>
                             {{ footer(7) }}
@@ -493,7 +493,7 @@
                             <div class="page-content">
                                 {{ page_title(7, 'Recommendation Plan', 'Prioritized actions, accountable owners, target windows, and validation gates.') }}
                                 {{ metric_strip(p.recommendations.metrics) }}
-                                {% call ui.section('Priority Recommendations', 'The register contains fixed decision fields. Full context remains in the reference notes below.') %}
+                                {% call ui.section('Priority Recommendations', 'Fixed decision fields stay in-table; full context remains by reference.') %}
                                     <table class="report-table recommendation-register">
                                         <thead>
                                             <tr>
@@ -519,12 +519,12 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Recommendation References', 'Descriptions expand below the register without changing table row heights.') %}
+                                {% call ui.section('Recommendation References', 'Descriptions stay below the register to preserve compact rows.') %}
                                     <div class="reference-grid recommendations-grid">
                                         {% for item in p.recommendations['items'] %}{{ reference_item(item) }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Execution Governance', 'Remediation must be validated against live state, ownership, maintenance windows, and approved change controls.') %}
+                                {% call ui.section('Execution Governance', 'Actions require live-state validation and approved change control.') %}
                                     <table class="report-table governance-table">
                                         <tbody>
                                             <tr>
@@ -554,18 +554,18 @@
                             <div class="page-content">
                                 {{ page_title(8, 'Methodology and Evidence Boundary', 'Data sources, utilization rules, freshness, and explicit limitations.') }}
                                 {{ metric_strip(p.methodology.metrics) }}
-                                {% call ui.section('Data Sources and Methodology', 'The source table is wider so technical source names and timestamps remain on one line.') %}
+                                {% call ui.section('Data Sources and Methodology', 'Source names and timestamps remain readable in the wider table.') %}
                                     {{ ui.methodology_register(p.methodology.sources, p.methodology.rules, 'data-source-table compact-register', 'compact-register') }}
                                 {% endcall %}
-                                {% call ui.section('Methodology References') %}
+                                {% call ui.section('Methodology References', 'Threshold, forecast, and utilization-basis rules.') %}
                                     <div class="reference-grid methodology-reference-grid">
                                         {% for item in p.methodology.references %}{{ reference_item(item) }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Evidence Boundary', 'This report is built strictly within the committed observation boundary defined by the data cut-off.') %}
+                                {% call ui.section('Evidence Boundary', 'Included and excluded evidence at the committed cut-off.') %}
                                     {{ ui.evidence_boundary(p.methodology.included, p.methodology.excluded) }}
                                 {% endcall %}
-                                {% call ui.section('Limitations and Status Language') %}
+                                {% call ui.section('Limitations and Status Language', 'Operational constraints and unavailable-evidence states.') %}
                                     <div class="limitations-grid">
                                         <div class="limitations-copy">
                                             <h3>Known Limitations and Operational Use</h3>

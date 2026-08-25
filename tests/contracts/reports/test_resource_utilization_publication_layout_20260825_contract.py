@@ -158,10 +158,10 @@ def test_resource_utilization_sections_after_paired_content_use_explicit_vertica
     css = read('app/static/reports/pdf/resource_utilization.css')
     compact = ''.join(css.split())
 
-    assert "ui.section('Leading CPU Consumers', 'The comparison register stays concise; complete technical identities are maintained by reference.', 'section-after-pair')" in template
-    assert "ui.section('Leading Memory Consumers', 'The comparison register stays concise; complete technical identities are maintained by reference.', 'section-after-pair')" in template
-    assert "ui.section('Utilization Register', 'Fixed comparison fields remain in the table; operational interpretation is maintained below.', 'section-after-pair')" in template
-    assert "ui.section('Consumer Reference Register', 'Chart labels use stable reference codes; complete identities are listed below the concise comparison register.', 'section-after-pair')" in template
+    assert "ui.section('Leading CPU Consumers', 'Concise comparison fields map to full CPU identities by reference.', 'section-after-pair')" in template
+    assert "ui.section('Leading Memory Consumers', 'Concise comparison fields map to full memory identities by reference.', 'section-after-pair')" in template
+    assert "ui.section('Utilization Register', 'Comparison fields stay in-table; interpretation follows below.', 'section-after-pair')" in template
+    assert "ui.section('Consumer Reference Register', 'Chart references map to complete consumer identities.', 'section-after-pair')" in template
 
     block = compact.split('.section-after-pair{', 1)[1].split('}', 1)[0]
     assert 'margin-top:' in block

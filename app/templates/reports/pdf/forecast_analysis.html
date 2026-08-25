@@ -100,7 +100,7 @@
                                 {{ page_title(1, 'Executive Forecast Brief', 'Management position for forecast evidence at the report cut-off.') }}
                                 {{ metric_strip(p.executive.metrics) }}
                                 <div class="two-column forecast-executive-split">
-                                    {% call ui.section('Figure 1 - Forecast Portfolio', 'Current and projected signals against KAORI warning and critical operating bands.') %}
+                                    {% call ui.section('Figure 1 - Forecast Portfolio', 'Current and projected signals against warning and critical bands.') %}
                                         <div class="forecast-bars">{% for item in p.executive.resources %}{{ resource_bar(item) }}{% endfor %}</div>
                                     {% endcall %}
                                     {% call ui.section('Management Interpretation', 'The principal planning signal and the decision required.') %}
@@ -111,7 +111,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Forecast Decision Register', 'Fixed decision fields remain concise; detailed interpretation is maintained by reference.') %}
+                                {% call ui.section('Forecast Decision Register', 'Decision fields stay concise; interpretation remains by reference.') %}
                                     <table class="report-table decision-register">
                                         <thead>
                                             <tr>
@@ -150,7 +150,7 @@
                             <div class="page-content">
                                 {{ page_title(2, 'Forecast Portfolio', 'Resource-level direction, projected position, threshold timing, and confidence.') }}
                                 {{ metric_strip(p.portfolio.metrics) }}
-                                {% call ui.section('Figure 2 - Resource Forecast Outlook', 'Committed current and projected endpoints; missing resource evidence remains explicit.') %}
+                                {% call ui.section('Figure 2 - Resource Forecast Outlook', 'Current and projected endpoints; missing evidence stays explicit.') %}
                                     <div class="chart-frame portfolio-chart">{{ p.portfolio.chart_svg|safe }}</div>
                                 {% endcall %}
                                 {% call ui.section('Projected Resource Register', 'Threshold timing is separated from projected value and confidence.') %}
@@ -204,7 +204,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('CPU Forecast Register', 'Current, projection, threshold timing, confidence, and decision boundary.') %}
+                                {% call ui.section('CPU Forecast Register', 'Current, projection, threshold timing, confidence, and decision.') %}
                                     <table class="report-table resource-register">
                                         <thead>
                                             <tr>
@@ -275,7 +275,7 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Management Decision', 'Use threshold timing as planning evidence, not as an autonomous change trigger.') %}
+                                {% call ui.section('Management Decision', 'Use threshold timing for planning, not autonomous change.') %}
                                     <p>Validate memory growth assumptions and retain the warning ETA in the next capacity planning gate. Confirm live state before remediation.</p>
                                 {% endcall %}
                             </div>
@@ -298,7 +298,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Scheduling and Storage Forecast Register', 'Available scheduling evidence remains separate from the storage evidence gap.') %}
+                                {% call ui.section('Scheduling and Storage Forecast Register', 'Scheduling evidence stays separate from the storage evidence gap.') %}
                                     <table class="report-table pod-storage-register">
                                         <thead>
                                             <tr>
@@ -335,7 +335,7 @@
                             <div class="page-content">
                                 {{ page_title(6, 'Threshold Exposure & Confidence', 'Operating-band exposure, forecast confidence, and evidence quality.') }}
                                 {{ metric_strip(p.exposure.metrics) }}
-                                {% call ui.section('Threshold Exposure Register', 'Threshold state is derived only from available committed forecast evidence.') %}
+                                {% call ui.section('Threshold Exposure Register', 'Threshold state uses only committed forecast evidence.') %}
                                     <table class="report-table exposure-register">
                                         <thead>
                                             <tr>
@@ -379,7 +379,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Management Interpretation', 'Exposure and confidence must remain visible as separate decision dimensions.') %}
+                                {% call ui.section('Management Interpretation', 'Keep exposure and confidence as separate decision signals.') %}
                                     <p>Forecast values support planning only. Confirm source freshness, accountable ownership, and live state before approving capacity or workload changes.</p>
                                 {% endcall %}
                             </div>
@@ -390,7 +390,7 @@
                             <div class="page-content">
                                 {{ page_title(7, 'Recommendation Plan', 'Prioritized forecast actions, accountable owners, target windows, and validation gates.') }}
                                 {{ metric_strip(p.recommendations.metrics) }}
-                                {% call ui.section('Priority Recommendations', 'The register contains fixed decision fields. Full context remains in the reference notes.') %}
+                                {% call ui.section('Priority Recommendations', 'Fixed decision fields stay in-table; details remain by reference.') %}
                                     <table class="report-table recommendation-register">
                                         <thead>
                                             <tr>
@@ -416,12 +416,12 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Recommendation References', 'Descriptions expand below the register without changing table row heights.') %}
+                                {% call ui.section('Recommendation References', 'Descriptions stay below the register to preserve compact rows.') %}
                                     <div class="reference-grid recommendation-references">
                                         {% for item in p.recommendations.rows %}{{ reference_item(item) }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Execution Governance', 'Forecast recommendations remain subject to live-state validation and approved change controls.') %}
+                                {% call ui.section('Execution Governance', 'Forecast actions require live-state validation and change control.') %}
                                     <table class="report-table governance-register">
                                         <tbody>
                                             <tr>
@@ -454,15 +454,15 @@
                                 {% call ui.section('Data Sources and Methodology', 'Source names, timestamps, and model rules remain explicit and separate.') %}
                                     {{ ui.methodology_register(p.methodology.sources, p.methodology.rules, 'source-table', '') }}
                                 {% endcall %}
-                                {% call ui.section('Methodology References') %}
+                                {% call ui.section('Methodology References', 'Forecast, confidence, and threshold interpretation rules.') %}
                                     <div class="reference-grid methodology-references">
                                         {% for item in p.methodology.references %}{{ reference_item(item) }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Evidence Boundary', 'This report is built strictly within the committed observation boundary defined by the data cut-off.') %}
+                                {% call ui.section('Evidence Boundary', 'Included and excluded evidence at the committed cut-off.') %}
                                     {{ ui.evidence_boundary(p.methodology.included, p.methodology.excluded) }}
                                 {% endcall %}
-                                {% call ui.section('Limitations and Status Language') %}
+                                {% call ui.section('Limitations and Status Language', 'Operational limits and evidence-status definitions.') %}
                                     <div class="limitations-grid">
                                         <div class="limitations-copy">
                                             <h3>Known Limitations and Operational Use</h3>

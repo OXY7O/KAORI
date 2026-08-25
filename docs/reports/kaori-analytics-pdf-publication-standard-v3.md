@@ -66,10 +66,10 @@ Canonical family:
 
 | Role | Size | Line height |
 |---|---:|---:|
-| Cover title | 26.5 pt | 1.04 |
-| Page title | 15 pt | 1.08 |
-| Section heading | 10 pt | 1.20 |
-| Subheading | 8.25 pt | 1.25 |
+| Cover title | 25.2 pt | 1.05 |
+| Page title | 14.6 pt | 1.08 |
+| Section heading | 10.2 pt | 1.20 |
+| Subheading | 8.2 pt | 1.24 |
 | Body | 8 pt | 1.44 |
 | Lead paragraph | 8.15 pt | 1.50 |
 | Table body | 7 pt | 1.36 |
@@ -95,24 +95,20 @@ The v3.0 contract is refined with the following mandatory publication rules. Thi
 - Normalize non-breaking and renderer-sensitive dash characters before publication so identifiers and `cut-off` language do not produce broken glyphs.
 
 
-### 4.2 Analytics Overview management typography profile (2026-08-21)
+### 4.2 Family editorial rhythm lock (2026-08-25)
 
-Analytics Overview is the management-facing member of the Analytics publication family. Typography follows a compact A4 publication scale: fixed evidence tables are the smallest readable role, then supporting copy, body narrative, subsection headings, and page headings scale upward in a stable hierarchy.
+Analytics Overview is no longer allowed to carry a separate typography scale from the other Analytics reports. The shared publication stylesheet owns the effective section heading, helper, body, reference, and paragraph rhythm for the entire Analytics PDF family.
 
-| Role | Analytics Overview target |
-|---|---:|
-| Page title | 17.5 pt |
-| Section heading | 14 pt |
-| Subheading / register heading | 10-11 pt |
-| Primary narrative content | 12 pt |
-| Section helper text | 9 pt |
-| Fixed comparison table | 8-8.5 pt |
-| Reference/detail body | 8-9 pt |
-| Source note | 8 pt |
+- Section headings use the shared 10.2 pt role.
+- Section helper text uses the shared 6.65 pt support role and remains visually distinct from source notes.
+- Body narrative remains 8 pt with a 1.44-1.48 line-height range.
+- The fixed evidence tables are the smallest readable role; supporting copy and narrative remain larger.
+- Section helper descriptions should remain at or below 72 characters. Shorter wording is preferred when a 50/50 layout would otherwise wrap unnecessarily.
+- Every major content block follows `title -> description -> content`. A missing description is a publication-contract failure.
+- Peer blocks displayed side by side use a symmetric 50/50 layout. If either side becomes too dense, stack the blocks vertically instead of shrinking type or forcing an asymmetric squeeze.
+- Dense pages remove or relocate detail before changing the canonical typography or rhythm tokens.
 
-Fixed evidence tables intentionally own the smallest readable type so scalar fields can remain on one line inside the A4 content frame. Narrative text must remain visibly larger than tables, and headings must step upward consistently. Tables may never expand beyond the report content margin to preserve a larger font. Short publication labels and reference registers are preferred instead.
-
-Every major register or evidence block should have a one-sentence helper description when the heading alone does not explain the reading purpose. Full-width guidance should use the full content measure rather than an arbitrary narrow paragraph width.
+The family rhythm is fixed at 1.45 mm from title to description, 3 mm from description to content, 2.2 mm between narrative paragraphs, 3.6 mm from concise register to references, and 5.6 mm between primary sections.
 
 ### 4.3 Management readability and canvas safety (2026-08-24)
 

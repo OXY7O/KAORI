@@ -52,6 +52,10 @@ def analytics_layout_contract(
         'table_row_policy': 'fixed-comparison-fields',
         'chart_label_policy': 'collision-safe-gutter',
         'paragraph_rhythm': 'tokenized',
+        'section_description_policy': 'concise-helper-max-72',
+        'paired_layout_policy': 'symmetric-50-50-or-stack',
+        'section_spacing_policy': '5.6mm',
+        'paragraph_spacing_policy': '2.2mm',
         'public_reference_policy': 'family-type-date-fingerprint',
         'visual_style': ANALYTICS_VISUAL_STYLE,
     }

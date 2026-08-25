@@ -116,7 +116,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Priority Findings Register', 'Fixed decision fields remain concise; supporting interpretation is listed below.') %}
+                                {% call ui.section('Priority Findings Register', 'Decision fields stay concise; interpretation follows below.') %}
                                     <table class="report-table findings-register">
                                         <thead>
                                             <tr>
@@ -191,7 +191,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Inventory and Runtime Register', 'Complete workload identities remain in the production register; the review keeps decision fields compact.') %}
+                                {% call ui.section('Inventory and Runtime Register', 'Workload identities stay complete while decision fields remain compact.') %}
                                     <table class="report-table inventory-register">
                                         <thead>
                                             <tr>
@@ -215,7 +215,7 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Management Decision', 'Use committed signals to prioritize review, not to infer configuration compliance.', 'management-decision') %}
+                                {% call ui.section('Management Decision', 'Use committed signals for review, not configuration compliance.', 'management-decision') %}
                                     <p class="narrative-copy">{{ p.inventory.decision }}</p>
                                 {% endcall %}
                             </div>
@@ -254,7 +254,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Tenant Quota Register', 'Up to five committed namespace quota records remain compact and comparable.') %}
+                                {% call ui.section('Tenant Quota Register', 'Committed namespace quota records remain compact and comparable.') %}
                                     <table class="report-table quota-register">
                                         <thead>
                                             <tr>
@@ -314,7 +314,7 @@
                             <div class="page-content">
                                 {{ page_title(4, 'Workload Resource Mapping', 'Workload-to-pod scope, resource evidence, and owner-mapping limitations.') }}
                                 {{ metric_strip(p.mapping.metrics) }}
-                                {% call ui.section('Workload Resource Mapping Register', 'Technical identifiers remain compact; application ownership remains explicit when unavailable.') %}
+                                {% call ui.section('Workload Resource Mapping Register', 'Technical identities stay compact; missing ownership remains explicit.') %}
                                     <table class="report-table mapping-register">
                                         <thead>
                                             <tr>
@@ -384,7 +384,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Workload Configuration Register', 'Up to five committed rows keep requests, limits, QoS, and risk comparable.') %}
+                                {% call ui.section('Workload Configuration Register', 'Committed rows keep requests, limits, QoS, and risk comparable.') %}
                                     <table class="report-table configuration-register">
                                         <thead>
                                             <tr>
@@ -413,7 +413,7 @@
                                     </table>
                                     {{ ui.identity_register('Configuration Identity References', p.configuration.identities, 'Complete workload and namespace identities are preserved outside the fixed-width evidence register.') }}
                                 {% endcall %}
-                                {% call ui.section('Management Decision', 'Review incomplete resource governance before changing capacity or autoscaling.') %}
+                                {% call ui.section('Management Decision', 'Review resource governance before capacity or autoscaling changes.') %}
                                     <p class="narrative-copy">{{ p.configuration.decision }}</p>
                                 {% endcall %}
                             </div>
@@ -424,7 +424,7 @@
                             <div class="page-content">
                                 {{ page_title(6, 'Right-Sizing & Governance Risk', 'Governance findings, workload risk, ownership, and remediation safeguards.') }}
                                 {{ metric_strip(p.governance.metrics) }}
-                                {% call ui.section('Governance Risk Register', 'Risk status distinguishes confirmed findings from missing or partial evidence.') %}
+                                {% call ui.section('Governance Risk Register', 'Separate confirmed findings from missing or partial evidence.') %}
                                     <table class="report-table risk-register">
                                         <thead>
                                             <tr>
@@ -450,7 +450,7 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Governance References', 'Operational meaning and validation criteria remain outside the fixed register.') %}
+                                {% call ui.section('Governance References', 'Operational meaning and validation remain outside the register.') %}
                                     <div class="reference-grid risk-reference-grid">
                                         {% for item in p.governance['items'] %}{{ reference_item(item) }}{% endfor %}
                                     </div>
@@ -464,7 +464,7 @@
                                             <div class="inventory-card"><span>Right-Sizing</span><strong>{{ p.configuration.right_size }}</strong><small>Recommendation text indicates change</small></div>
                                         </div>
                                     {% endcall %}
-                                    {% call ui.section('Operational Boundary', 'Workload changes remain subject to ownership and approved change control.') %}
+                                    {% call ui.section('Operational Boundary', 'Workload changes require ownership and approved change control.') %}
                                         <div class="interpretation-card">
                                             <strong>Governance evidence supports review, not autonomous remediation.</strong>
                                             <p>{{ p.governance.interpretation }}</p>
@@ -480,7 +480,7 @@
                             <div class="page-content">
                                 {{ page_title(7, 'Recommendation Plan', 'Prioritized actions, accountable owners, target windows, and validation gates.') }}
                                 {{ metric_strip(p.recommendations.metrics) }}
-                                {% call ui.section('Priority Recommendations', 'The register contains fixed decision fields. Full context remains in the reference notes.') %}
+                                {% call ui.section('Priority Recommendations', 'Fixed decision fields stay in-table; details remain by reference.') %}
                                     <table class="report-table recommendation-register">
                                         <thead>
                                             <tr>
@@ -506,12 +506,12 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Recommendation References', 'Descriptions expand below the register without changing table row heights.') %}
+                                {% call ui.section('Recommendation References', 'Descriptions stay below the register to preserve compact rows.') %}
                                     <div class="reference-grid recommendations-grid">
                                         {% for item in p.recommendations['items'] %}{{ reference_item(item) }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Execution Governance', 'Remediation must be validated against live state and approved change controls.') %}
+                                {% call ui.section('Execution Governance', 'Remediation requires live-state validation and change control.') %}
                                     <table class="report-table governance-table">
                                         <tbody>
                                             {% for item in p.recommendations.governance %}
@@ -531,18 +531,18 @@
                             <div class="page-content">
                                 {{ page_title(8, 'Methodology and Evidence Boundary', 'Data sources, workload rules, freshness, and explicit limitations.') }}
                                 {{ metric_strip(p.methodology.metrics) }}
-                                {% call ui.section('Data Sources and Methodology', 'Source names, timestamps, and rules remain explicit and are not merged across boundaries.') %}
+                                {% call ui.section('Data Sources and Methodology', 'Sources, timestamps, and rules remain explicit and separate.') %}
                                     {{ ui.methodology_register(p.methodology.sources, p.methodology.rules, 'data-source-table compact-register', 'compact-register') }}
                                 {% endcall %}
-                                {% call ui.section('Methodology References') %}
+                                {% call ui.section('Methodology References', 'Coverage, governance, and evidence interpretation rules.') %}
                                     <div class="reference-grid methodology-reference-grid">
                                         {% for item in p.methodology.references %}{{ reference_item(item) }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Evidence Boundary', 'This report is built strictly within the committed observation boundary defined by the data cut-off.') %}
+                                {% call ui.section('Evidence Boundary', 'Included and excluded evidence at the committed cut-off.') %}
                                     {{ ui.evidence_boundary(p.methodology.included, p.methodology.excluded) }}
                                 {% endcall %}
-                                {% call ui.section('Limitations and Status Language') %}
+                                {% call ui.section('Limitations and Status Language', 'Operational limits and evidence-status definitions.') %}
                                     <div class="limitations-grid">
                                         <div class="limitations-copy">
                                             <h3>Known Limitations and Operational Use</h3>

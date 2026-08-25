@@ -91,10 +91,10 @@
                             <div class="page-content">
                                 {{ page_title(1, 'Executive Brief', 'Management position at the report cut-off.') }}
                                 {{ metric_strip(p.executive.metrics) }}
-                                {% call ui.section('What Management Should Know','Primary management signals and the review focus at the committed cut-off.') %}
+                                {% call ui.section('What Management Should Know','Primary management signals and review focus at the cut-off.') %}
                                     <p class="lead-paragraph">{{ p.executive.management_summary or p.executive.summary }}</p>
                                 {% endcall %}
-                                {% call ui.section('Priority Findings and Decisions','The register stays concise; full decisions are listed in the reference notes below.') %}
+                                {% call ui.section('Priority Findings and Decisions','Concise decisions stay in-table; full context remains by reference.') %}
                                     <table class="report-table priority-table priority-register">
                                         <thead>
                                             <tr>
@@ -125,7 +125,7 @@
                                         {% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Evidence Boundary','All metrics and findings are evaluated at the report cut-off; live state after the cut-off is excluded.') %}
+                                {% call ui.section('Evidence Boundary','Committed evidence ends at the report cut-off; live state is excluded.') %}
                                     <table class="report-table compact-table">
                                         <thead>
                                             <tr>
@@ -152,7 +152,7 @@
                             {{ report_header() }}
                             <div class="page-content">
                                 {{ page_title(2, 'Resource Posture', 'Current utilization and committed capacity headroom.') }}
-                                {% call ui.section('Shared Resource Utilization','Current use is compared with the KAORI warning and critical operating bands.') %}
+                                {% call ui.section('Shared Resource Utilization','Current use against KAORI warning and critical bands.') %}
                                     <div class="utilization-chart">
                                         {% for item in p.resource_posture.shared_rows %}
                                             <div class="util-row">
@@ -166,7 +166,7 @@
                                         <div class="util-axis"><span class="axis-start">0%</span><span class="axis-warning">70%</span><span class="axis-critical">85%</span><span class="axis-end">100%</span></div>
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('PVC, Pod, and Node Capacity','Interpretation is separated from the comparison table to keep every row visually consistent.') %}
+                                {% call ui.section('PVC, Pod, and Node Capacity','Interpretation stays outside the table to preserve compact rows.') %}
                                     <table class="report-table capacity-table capacity-register">
                                         <thead>
                                             <tr>
@@ -197,7 +197,7 @@
                                         {% for row in p.resource_posture.capacity_rows %}{{ reference_item('C' ~ loop.index, row.resource, row.interpretation, 'Interpretation') }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Management Interpretation','Management conclusion for shared-resource pressure and committed capacity headroom.') %}
+                                {% call ui.section('Management Interpretation','Conclusion for shared-resource pressure and capacity headroom.') %}
                                     <p class="narrative-copy">{{ p.resource_posture.interpretation }}</p>
                                 {% endcall %}
                             </div>
@@ -207,14 +207,14 @@
                             {{ report_header() }}
                             <div class="page-content">
                                 {{ page_title(3, 'Trend & Forecast', 'Historical direction and projected threshold pressure.') }}
-                                {% call ui.section('Forecast Signal','Highest projected resource signal and threshold exposure within the committed planning horizon.') %}
+                                {% call ui.section('Forecast Signal','Leading projection and threshold exposure for the planning horizon.') %}
                                     <p class="lead-paragraph">{{ p.trend_forecast.headline }} {{ p.trend_forecast.summary }}</p>
                                 {% endcall %}
-                                {% call ui.section('Figure 1 - Memory Demand Forecast','Historical memory P95 and projected demand across the configured planning window.') %}
+                                {% call ui.section('Figure 1 - Memory Demand Forecast','Historical memory P95 and projected demand across the horizon.') %}
                                     <div class="chart-frame">{{ p.trend_forecast.chart_svg|safe }}</div>
                                     <p class="source-note">Source: committed analytics forecast evidence. Missing observations are shown as gaps, not zero values.</p>
                                 {% endcall %}
-                                {% call ui.section('Projected Capacity Pressure','Projection values remain comparable; resource-level interpretation is listed by reference.') %}
+                                {% call ui.section('Projected Capacity Pressure','Projection fields stay comparable; interpretation remains by reference.') %}
                                     <table class="report-table forecast-register">
                                         <thead>
                                             <tr>
@@ -255,7 +255,7 @@
                             {{ report_header() }}
                             <div class="page-content">
                                 {{ page_title(4, 'Top Consumers', 'Leading resource contributors in the committed observation window.') }}
-                                {% call ui.section('Figure 2 - Leading Consumer Signals','Reference codes keep long technical identities readable; complete names are listed below.') %}
+                                {% call ui.section('Figure 2 - Leading Consumer Signals','Stable references keep long identities out of the visual.') %}
                                     <div class="consumer-chart">
                                         <div class="consumer-group">
                                             <h3>{{ p.top_consumers.primary_label }}</h3>
@@ -279,7 +279,7 @@
                                         </div>
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Consumer Reference Register','The comparison table stays concise; complete identities are listed below by stable reference code.') %}
+                                {% call ui.section('Consumer Reference Register','Concise comparison fields map to full identities by reference.') %}
                                     <table class="report-table resource-key resource-key-compact">
                                         <thead>
                                             <tr>
@@ -333,7 +333,7 @@
                                         </div>
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Management Interpretation','Management conclusion for displayed resource concentration and ownership.') %}
+                                {% call ui.section('Management Interpretation','Conclusion for displayed resource concentration and ownership.') %}
                                     <p class="narrative-copy">{{ p.top_consumers.insight }}</p>
                                 {% endcall %}
                             </div>
@@ -344,7 +344,7 @@
                             <div class="page-content">
                                 {{ page_title(5, 'Capacity Pressure', 'Headroom, saturation risk, and operational response.') }}
                                 {{ metric_strip(p.capacity_pressure.metrics) }}
-                                {% call ui.section('Capacity by Resource','Current utilization, capacity baseline, and remaining headroom are summarized below.') %}
+                                {% call ui.section('Capacity by Resource','Current use, capacity baseline, and remaining headroom.') %}
                                     <table class="report-table capacity-table">
                                         <thead>
                                             <tr>
@@ -368,7 +368,7 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Risk Highlights','The risk register is fixed-width; operational focus is maintained in the reference notes.') %}
+                                {% call ui.section('Risk Highlights','Risk fields stay fixed; operational context remains by reference.') %}
                                     <table class="report-table risk-table risk-register">
                                         <thead>
                                             <tr>
@@ -411,7 +411,7 @@
                             <div class="page-content">
                                 {{ page_title(6, 'Alerts & Anomalies', 'Active conditions and unusual patterns requiring review.') }}
                                 {{ metric_strip(p.alerts.metrics) }}
-                                {% call ui.section('Alert Profile','Severity and category distribution at the report cut-off.') %}
+                                {% call ui.section('Figure 3 - Alert Profile','Severity and category distribution at the report cut-off.') %}
                                     <div class="two-chart-grid">
                                         <div class="severity-chart">{{ p.alerts.severity_svg|safe }}</div>
                                         <div>
@@ -424,7 +424,7 @@
                                         </div>
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Top Active Alerts', 'Fixed comparison fields remain in the table; complete alert identities are retained by reference.') %}
+                                {% call ui.section('Top Active Alerts', 'Comparable alert fields stay in-table; identities remain by reference.') %}
                                     <table class="report-table alert-summary-register">
                                         <thead>
                                             <tr>
@@ -461,7 +461,7 @@
                                         </div>
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Recent Anomalies', 'Anomaly labels remain comparable; namespace scope is listed by reference.') %}
+                                {% call ui.section('Recent Anomalies', 'Comparable anomaly labels with namespace scope by reference.') %}
                                     <table class="report-table anomaly-summary-register">
                                         <thead>
                                             <tr>
@@ -496,7 +496,7 @@
                                         </div>
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Alert Intelligence Summary','Operational ownership summary for active alert severity at the report cut-off.') %}
+                                {% call ui.section('Alert Intelligence Summary','Ownership summary for active alert severity at the cut-off.') %}
                                     <p class="narrative-copy">{{ p.alerts.summary }}</p>
                                 {% endcall %}
                             </div>
@@ -508,7 +508,7 @@
                                 {{ page_title(7, 'Reporting Summary', 'Generation activity, schedules, and storage readiness.') }}
                                 {{ metric_strip(p.reporting.metrics) }}
                                 <div class="two-chart-grid report-overview">
-                                    {% call ui.section('Figure 3 - Report Status Distribution','Status distribution for the latest generated-report records.') %}
+                                    {% call ui.section('Figure 4 - Report Status Distribution','Status distribution for the latest generated-report records.') %}
                                         <div class="activity-bars">
                                             {% for item in p.reporting.activity %}
                                                 <div class="activity-row">
@@ -519,7 +519,7 @@
                                             {% endfor %}
                                         </div>
                                     {% endcall %}
-                                    {% call ui.section('Storage Readiness') %}
+                                    {% call ui.section('Storage Readiness','Artifact storage connectivity and publication readiness.') %}
                                         <div class="readiness-line"><strong>{{ p.reporting.storage.backend|upper }}</strong>{{ status(p.reporting.storage.status,p.reporting.storage.tone) }}</div>
                                         <p>{{ p.reporting.storage.description }}</p>
                                     {% endcall %}
@@ -550,7 +550,7 @@
                                         <p class="empty-state">No active schedule record is included in this overview output.</p>
                                     {% endif %}
                                 {% endcall %}
-                                {% call ui.section('Recent Generated Reports','The latest generated outputs for this report scope are listed with generation status.') %}
+                                {% call ui.section('Recent Generated Reports','Latest generated outputs and their current status.') %}
                                     <table class="report-table reports-table">
                                         <thead>
                                             <tr>
@@ -572,7 +572,7 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Reporting Assessment','Operational notes summarize report-generation posture and storage readiness.') %}
+                                {% call ui.section('Reporting Assessment','Reporting posture and artifact-storage readiness.') %}
                                     <p><strong>Operational Notes.</strong> {{ p.reporting.notes|join(" ") }}</p>
                                     <p class="spaced"><strong>Key Takeaway.</strong> {{ p.reporting.takeaway }}</p>
                                 {% endcall %}
@@ -584,7 +584,7 @@
                             <div class="page-content">
                                 {{ page_title(8, 'Inventory Snapshot', 'Clusters, nodes, workloads, and core Kubernetes resources.') }}
                                 {{ metric_strip(p.inventory.metrics,6) }}
-                                {% call ui.section('Resources by Cluster','Cluster-level inventory counts are summarized for the selected reporting boundary.') %}
+                                {% call ui.section('Resources by Cluster','Cluster inventory counts for the selected reporting boundary.') %}
                                     <table class="report-table cluster-table">
                                         <thead>
                                             <tr>
@@ -613,7 +613,7 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Node Overview','Node readiness and fleet availability are summarized from the committed inventory snapshot.') %}
+                                {% call ui.section('Node Overview','Node readiness comes from the committed inventory snapshot.') %}
                                     <div class="readiness-grid">
                                         <div><strong>{{ p.inventory.total_nodes }}</strong><span>Total Nodes</span></div>
                                         <div><strong>{{ p.inventory.total_nodes - p.inventory.not_ready_nodes }}</strong><span>Ready</span></div>
@@ -621,7 +621,7 @@
                                         <div><strong>{{ ((p.inventory.total_nodes - p.inventory.not_ready_nodes) / p.inventory.total_nodes * 100)|round|int if p.inventory.total_nodes else 0 }}%</strong><span>Readiness</span></div>
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Top Resource Counts','Additional Kubernetes resource counts from the committed inventory snapshot.') %}
+                                {% call ui.section('Top Resource Counts','Additional Kubernetes resource counts from the snapshot.') %}
                                     <div class="count-strip">
                                         {% for item in p.inventory.top_counts %}
                                             <div><span>{{ item.label }}</span><strong>{{ item.value }}</strong></div>
@@ -640,10 +640,10 @@
                             <div class="page-content">
                                 {{ page_title(9, 'Data Freshness & Reliability', 'Observation recency, completeness, and data-quality posture.') }}
                                 {{ metric_strip(p.freshness.metrics[:4]) }}
-                                {% call ui.section('Figure 4 - Freshness Over Time','Committed source freshness trend for the selected reporting boundary.') %}
+                                {% call ui.section('Figure 5 - Freshness Over Time','Committed source freshness trend for the selected reporting boundary.') %}
                                     <div class="freshness-chart freshness-chart-wide">{{ p.freshness.freshness_svg|safe }}</div>
                                 {% endcall %}
-                                {% call ui.section('Data Freshness by Source','Current source freshness, lag, and availability are shown for each contributing dataset.') %}
+                                {% call ui.section('Data Freshness by Source','Source freshness, lag, and availability by dataset.') %}
                                     <table class="report-table fresh-table">
                                         <thead>
                                             <tr>
@@ -667,7 +667,7 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Data Quality Issues','Open data-quality conditions affecting completeness or interpretation are listed below.') %}
+                                {% call ui.section('Data Quality Issues','Open data-quality issues affecting completeness or interpretation.') %}
                                     <table class="report-table quality-table">
                                         <thead>
                                             <tr>
@@ -689,7 +689,7 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Data Reliability Guidance','Use source status and data quality together before relying on affected conclusions.', 'reliability-guidance-section') %}
+                                {% call ui.section('Data Reliability Guidance','Use source status and data quality together before conclusions.', 'reliability-guidance-section') %}
                                     <p class="narrative-copy">{{ p.freshness.meaning|join(" ") }} {{ p.freshness.actions|join(" ") }}</p>
                                 {% endcall %}
                             </div>
@@ -700,7 +700,7 @@
                             <div class="page-content">
                                 {{ page_title(10, 'Recommendation Plan', 'Prioritized actions, owners, and validation gates.') }}
                                 {{ metric_strip(p.recommendations.metrics) }}
-                                {% call ui.section('Priority Recommendations','The register contains only fixed decision fields. Full context remains in the reference notes below.') %}
+                                {% call ui.section('Priority Recommendations','Fixed decision fields stay in-table; full context remains by reference.') %}
                                     <table class="report-table recommendation-table recommendation-register">
                                         <thead>
                                             <tr>
@@ -726,12 +726,12 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Recommendation References','Descriptions expand below the register without changing table row heights.') %}
+                                {% call ui.section('Recommendation References','Descriptions stay below the register to preserve compact rows.') %}
                                     <div class="reference-notes reference-grid recommendation-references">
                                         {% for row in p.recommendations['items'][:5] %}{{ reference_item('R' ~ loop.index, row.title, row.summary|default(row.description, true) , 'Why It Matters') }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Execution Governance','Ownership, validation expectations, and execution controls for the current recommendation set are listed below.') %}
+                                {% call ui.section('Execution Governance','Ownership, validation, and execution controls for the current actions.') %}
                                     <div class="detail-flow">
                                         <div>
                                             <strong>Primary Action</strong>
@@ -764,7 +764,7 @@
                             <div class="page-content">
                                 {{ page_title(11, 'Methodology & Evidence Boundary', 'Data sources, reporting rules, and evidence limits.') }}
                                 {{ metric_strip(p.methodology.metrics) }}
-                                {% call ui.section('Data Sources and Methodology','Source boundaries, reporting settings, and interpretation rules used by this report are defined below.') %}
+                                {% call ui.section('Data Sources and Methodology','Source boundaries and interpretation rules for this report.') %}
                                     <div class="methodology-register-layout">
                                         <div class="methodology-source-block">
                                             <h3>Data Sources and Coverage</h3>
@@ -825,7 +825,7 @@
                                         </div>
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Evidence Boundary') %}
+                                {% call ui.section('Evidence Boundary','Included and excluded evidence at the committed cut-off.') %}
                                     <p>This report is built strictly within the committed observation boundary defined by the data cut-off.</p>
                                     <div class="evidence-columns">
                                         <div>
@@ -846,7 +846,7 @@
                                         </div>
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Limitations and Status Language','Operational constraints and standardized status labels are defined below for consistent interpretation.') %}
+                                {% call ui.section('Limitations and Status Language','Operational limits and standardized status definitions.') %}
                                     <div class="limitations-status-layout">
                                         <div class="limitations-copy">
                                             <h3>Known Limitations and Operational Use</h3>

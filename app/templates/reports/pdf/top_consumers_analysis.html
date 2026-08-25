@@ -121,7 +121,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Priority Consumer Register', 'Decision fields remain concise; supporting interpretation is maintained by reference.') %}
+                                {% call ui.section('Priority Consumer Register', 'Decision fields stay concise; interpretation remains by reference.') %}
                                     <table class="report-table decision-register">
                                         <thead>
                                             <tr>
@@ -215,7 +215,7 @@
                                             </div>
                                         </div>
                                     {% endcall %}
-                                    {% call ui.section('Management Decision', 'Validate ranking evidence before authorizing a workload or capacity change.') %}
+                                    {% call ui.section('Management Decision', 'Validate ranking evidence before workload or capacity change.') %}
                                         <p class="narrative-copy">{{ page_data.assessment_note }}</p>
                                     {% endcall %}
                                 </div>
@@ -288,7 +288,7 @@
                             <div class="page-content">
                                 {{ page_title(5, 'Consumer Comparison', 'Cross-resource ranking, unit boundary, and interpretation guardrails.') }}{{ metric_strip(p.comparison.metrics) }}
                                 <div class="two-column paired-sections comparison-split">
-                                    {% call ui.section('Cross-Resource Comparison Boundary', 'CPU and memory values use different units and cannot be ranked against each other.') %}
+                                    {% call ui.section('Cross-Resource Comparison Boundary', 'CPU and memory use different units and are not directly rankable.') %}
                                         <div class="interpretation-card normal-card">
                                             <strong>CPU and memory rankings are independent.</strong>
                                             <p>Relative contribution is calculated only within each resource signal.</p>
@@ -303,7 +303,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Comparison Register', 'Signal, unit, and evidence remain comparable; complete identities are listed below.') %}
+                                {% call ui.section('Comparison Register', 'Comparable signal fields with full identities listed below.') %}
                                     <table class="report-table comparison-summary-register">
                                         <thead>
                                             <tr>
@@ -346,7 +346,7 @@
                         <article class="page page-consumer-risk">{{ report_header() }}
                             <div class="page-content">
                                 {{ page_title(6, 'Evidence & Risk Register', 'Consumer validation risks, evidence gaps, and accountable review state.') }}{{ metric_strip(p.risk.metrics) }}
-                                {% call ui.section('Consumer Risk Register', 'Risk state distinguishes displayed concentration from aggregate resource pressure.') %}
+                                {% call ui.section('Consumer Risk Register', 'Separate displayed concentration from aggregate resource pressure.') %}
                                     <table class="report-table risk-register">
                                         <thead>
                                             <tr>
@@ -392,7 +392,7 @@
                         <article class="page page-consumer-recommendations">{{ report_header() }}
                             <div class="page-content">
                                 {{ page_title(7, 'Recommendation Plan', 'Prioritized actions, accountable owners, target windows, and validation gates.') }}{{ metric_strip(p.recommendations.metrics) }}
-                                {% call ui.section('Priority Recommendations', 'The register contains fixed decision fields. Full context remains in the reference notes.') %}
+                                {% call ui.section('Priority Recommendations', 'Fixed decision fields stay in-table; details remain by reference.') %}
                                     <table class="report-table recommendation-register">
                                         <thead>
                                             <tr>
@@ -421,7 +421,7 @@
                                         {% for item in p.recommendations.rows %}{{ reference_item(item) }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Execution Governance', 'Consumer actions remain subject to live-state validation and approved change controls.') %}
+                                {% call ui.section('Execution Governance', 'Consumer actions require live-state validation and change control.') %}
                                     <table class="report-table governance-register">
                                         <tbody>
                                             {% for item in p.recommendations.governance %}
@@ -441,10 +441,10 @@
                                 {% call ui.section('Data Sources and Methodology', 'Source names, unit rules, and ranking boundaries remain explicit.') %}
                                     {{ ui.methodology_register(p.methodology.sources, p.methodology.rules) }}
                                 {% endcall %}
-                                {% call ui.section('Evidence Boundary', 'Included and excluded evidence remain separated by the committed report cut-off.') %}
+                                {% call ui.section('Evidence Boundary', 'Included and excluded evidence at the committed cut-off.') %}
                                     {{ ui.evidence_boundary(p.methodology.included, p.methodology.excluded) }}
                                 {% endcall %}
-                                {% call ui.section('Limitations and Status Language') %}
+                                {% call ui.section('Limitations and Status Language', 'Operational limits and evidence-status definitions.') %}
                                     <div class="limitations-grid">
                                         <div class="limitations-copy">
                                             <h3>Known Limitations and Operational Use</h3>

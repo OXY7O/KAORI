@@ -93,7 +93,7 @@
                         </table>
                     {% endcall %}
                 </div>
-                {% call ui.section('Management Decision', 'Treat aggregate posture, governance, reliability, and concentration as separate evidence domains.') %}
+                {% call ui.section('Management Decision', 'Keep posture, governance, reliability, and concentration separate.') %}
                     <p class="narrative-copy">Validate the leading risk and consumer concentration before approving capacity or topology changes. A healthy aggregate denominator does not clear bucket-level governance risk.</p>
                 {% endcall %}
             </div>
@@ -105,7 +105,7 @@
                 {{ page_title(2, 'Capacity & Governance', 'Capacity position, remaining headroom, quota coverage, and governance pressure.') }}
                 {{ ui.metric_strip(p.capacity.metrics, 4) }}
                 <div class="two-column object-storage-analysis-split">
-                    {% call ui.section('Capacity & Quota Register', 'Decision fields stay on one line; detail remains in the inventory workbook.') %}
+                    {% call ui.section('Capacity & Quota Register', 'Decision fields stay concise; Inventory retains full detail.') %}
                         <table class="report-table object-storage-posture-register single-line-register">
                             <thead>
                                 <tr>
@@ -131,7 +131,7 @@
                         {{ ui.interpretation_card(p.capacity.concentration ~ ' consumer concentration', p.capacity.interpretation, 'Review quota pressure and consumer ownership before assuming system headroom is evenly distributed.', p.capacity.concentration_tone) }}
                     {% endcall %}
                 </div>
-                {% call ui.section('Decision Boundary', 'Object Storage Analytics summarizes posture; Object Storage Inventory retains complete object detail.') %}
+                {% call ui.section('Decision Boundary', 'Analytics summarizes posture; Inventory retains full evidence.') %}
                     <p class="narrative-copy">Use aggregate utilization and quota coverage for planning. Use the inventory workbook when a change requires specific bucket identity, quota value, retention, protection, or lifecycle evidence.</p>
                 {% endcall %}
             </div>
@@ -169,7 +169,7 @@
                         {{ ui.interpretation_card('Request and node evidence remain explicit.', p.reliability.interpretation, 'A low request rate does not prove application health; validate service-level evidence before remediation.', 'info') }}
                     {% endcall %}
                 </div>
-                {% call ui.section('Management Decision', 'Escalate only when committed reliability evidence supports an operational condition.') %}
+                {% call ui.section('Management Decision', 'Escalate only when committed reliability evidence supports it.') %}
                     <p class="narrative-copy">Confirm current error ratio, waiting requests, node availability, and traffic direction before changing capacity or routing. Preserve missing evidence as unavailable rather than interpreting it as zero.</p>
                 {% endcall %}
             </div>
@@ -216,7 +216,7 @@
             <div class="page-content">
                 {{ page_title(5, 'Consumer Concentration', 'Top retained consumers and usage concentration without reproducing the full inventory.') }}
                 {{ ui.metric_strip(p.consumers.metrics, 4) }}
-                {% call ui.section('Top Consumer Register', 'Stable references keep long bucket identities out of the comparison table.') %}
+                {% call ui.section('Top Consumer Register', 'Stable references keep long bucket identities out of the table.') %}
                     <table class="report-table object-storage-consumer-register single-line-register">
                         <thead>
                             <tr>
@@ -259,7 +259,7 @@
                         </div>
                     </div>
                 {% endcall %}
-                {% call ui.section('Management Interpretation', 'Concentration indicates ownership and resilience questions, not only capacity pressure.') %}
+                {% call ui.section('Management Interpretation', 'Concentration informs ownership and resilience review.') %}
                     <p class="narrative-copy">{{ p.consumers.interpretation }}</p>
                 {% endcall %}
             </div>
@@ -271,7 +271,7 @@
                 {{ page_title(6, 'Risk & Recommendations', 'Operational findings and accountable follow-up actions for management review.') }}
                 {{ ui.metric_strip(p.risk.metrics, 4) }}
                 <div class="two-column object-storage-risk-split">
-                    {% call ui.section('Risk Register', 'Only the leading committed risk signals are shown in the analytical publication.') %}
+                    {% call ui.section('Risk Register', 'Leading committed risk signals in the analytical publication.') %}
                         <table class="report-table object-storage-risk-register single-line-register">
                             <thead>
                                 <tr>
@@ -334,10 +334,10 @@
             <div class="page-content">
                 {{ page_title(7, 'Methodology & Evidence Boundary', 'Authoritative sources, report cut-off, and analytical limitations.') }}
                 {{ ui.metric_strip(p.methodology.metrics, 4) }}
-                {% call ui.section('Evidence Sources', 'Source ownership and freshness remain explicit for every management conclusion.') %}
+                {% call ui.section('Evidence Sources', 'Source ownership and freshness for each management conclusion.') %}
                     {{ ui.methodology_register(p.methodology.sources, p.methodology.rules) }}
                 {% endcall %}
-                {% call ui.section('Evidence Boundary', 'Analytics summarizes decision posture; inventory preserves detailed object evidence.') %}
+                {% call ui.section('Evidence Boundary', 'Analytics summarizes posture; Inventory retains detailed evidence.') %}
                     {{ ui.evidence_boundary(p.methodology.included, p.methodology.excluded) }}
                 {% endcall %}
                 {% call ui.section('Publication Guidance', 'Keep the report readable for technical and managerial audiences.') %}

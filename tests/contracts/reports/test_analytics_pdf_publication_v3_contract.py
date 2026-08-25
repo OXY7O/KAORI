@@ -134,14 +134,14 @@ def test_overview_management_and_reference_sections_have_descriptive_helpers() -
     template = read('app/templates/reports/pdf/analytics_overview.html')
 
     for expected in (
-        "ui.section('What Management Should Know','Primary management signals and the review focus at the committed cut-off.')",
-        "ui.section('Management Interpretation','Management conclusion for shared-resource pressure and committed capacity headroom.')",
-        "ui.section('Forecast Signal','Highest projected resource signal and threshold exposure within the committed planning horizon.')",
+        "ui.section('What Management Should Know','Primary management signals and review focus at the cut-off.')",
+        "ui.section('Management Interpretation','Conclusion for shared-resource pressure and capacity headroom.')",
+        "ui.section('Forecast Signal','Leading projection and threshold exposure for the planning horizon.')",
         "ui.section('Forecast Interpretation','Planning conclusion and evidence limits for the committed forecast.')",
-        "ui.section('Management Interpretation','Management conclusion for displayed resource concentration and ownership.')",
+        "ui.section('Management Interpretation','Conclusion for displayed resource concentration and ownership.')",
         "ui.section('Operational Interpretation and Actions','Capacity pressure translated into accountable review actions.')",
-        "ui.section('Alert Intelligence Summary','Operational ownership summary for active alert severity at the report cut-off.')",
-        "ui.section('Top Resource Counts','Additional Kubernetes resource counts from the committed inventory snapshot.')",
+        "ui.section('Alert Intelligence Summary','Ownership summary for active alert severity at the cut-off.')",
+        "ui.section('Top Resource Counts','Additional Kubernetes resource counts from the snapshot.')",
         "ui.section('Inventory Health Summary','Coverage, freshness, and inventory usability at the committed snapshot.')",
         '<h3>Anomaly Scope References</h3>\n                                        <p class="reference-helper">Stable reference codes preserve anomaly scope without overloading the comparison table.</p>',
         '<h3>Methodology References</h3>\n                                        <p class="reference-helper">Reference notes define forecast, severity, and priority interpretation rules.</p>',

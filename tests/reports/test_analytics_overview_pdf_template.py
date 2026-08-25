@@ -535,18 +535,20 @@ def test_analytics_overview_r2_management_typography_and_helper_copy_contract() 
         'Node readiness and fleet availability are summarized from the committed inventory snapshot.',
         'Current source freshness, lag, and availability are shown for each contributing dataset.',
         'Open data-quality conditions affecting completeness or interpretation are listed below.',
-        (
-            'Ownership, validation expectations, and execution controls for the current recommendation set '
-            'are listed below.'
-        ),
-        'Source boundaries, reporting settings, and interpretation rules used by this report are defined below.',
-        'Operational constraints and standardized status labels are defined below for consistent interpretation.',
+        'Ownership, validation, and execution controls for the current actions.',
+        'Source boundaries and interpretation rules for this report.',
+        'Operational limits and standardized status definitions.',
     ):
         assert helper in rendered_html
 
-    assert '--aov-type-body: 7.6pt' in stylesheet
-    assert '--aov-type-section: 10.4pt' in stylesheet
-    assert '--aov-type-page: 14.6pt' in stylesheet
+    shared_stylesheet = (
+        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'
+    ).read_text()
+
+    assert '--analytics-type-body: 8pt' in shared_stylesheet
+    assert '--analytics-type-section: 10.2pt' in shared_stylesheet
+    assert '--analytics-type-page: 14.6pt' in shared_stylesheet
+    assert '--analytics-rhythm-section: 5.6mm' in shared_stylesheet
     assert '.report-use-advisory' in stylesheet
     assert 'max-width: 100%' in stylesheet
 

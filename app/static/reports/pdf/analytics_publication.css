@@ -299,3 +299,96 @@ body.kaori-analytics-publication .governance-table { width: 100%; }
 body.kaori-analytics-publication .governance-table th { width: 27%; }
 body.kaori-analytics-publication .recommendations-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 7mm; }
 body.kaori-analytics-publication .empty-state { color: var(--analytics-muted); }
+
+/*
+ * KAORI Analytics Publication Rhythm Lock — 2026-08-25
+ * Final shared owner for editorial hierarchy and paragraph rhythm.
+ * Report-specific styles load first; this block intentionally loads last.
+ */
+body.kaori-analytics-publication.kaori-reporting-v3 {
+  --analytics-type-section: 10.2pt;
+  --analytics-type-subheading: 8.2pt;
+  --analytics-type-body: 8pt;
+  --analytics-type-support: 6.65pt;
+  --analytics-rhythm-title-description: 1.45mm;
+  --analytics-rhythm-description-content: 3mm;
+  --analytics-rhythm-paragraph: 2.2mm;
+  --analytics-rhythm-register-reference: 3.6mm;
+  --analytics-rhythm-section: 5.6mm;
+}
+
+/* title -> description -> content */
+body.kaori-analytics-publication.kaori-reporting-v3 .page .content-section {
+  margin-top: var(--analytics-rhythm-section);
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .content-section:first-of-type,
+body.kaori-analytics-publication.kaori-reporting-v3 .two-column > .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .paired-sections > .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .trend-interpretation-stack > .content-section {
+  margin-top: 0;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .content-section h2 {
+  margin: 0;
+  font-size: var(--analytics-type-section);
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -.008em;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .content-section h3 {
+  margin: 0;
+  font-size: var(--analytics-type-subheading);
+  line-height: 1.24;
+  font-weight: 650;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .section-subtitle {
+  margin: var(--analytics-rhythm-title-description) 0 0;
+  color: var(--analytics-muted);
+  font-size: var(--analytics-type-support);
+  line-height: 1.38;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .section-body {
+  margin-top: var(--analytics-rhythm-description-content);
+  font-size: var(--analytics-type-body);
+  line-height: 1.44;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .section-body p + p {
+  margin-top: var(--analytics-rhythm-paragraph);
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .lead-paragraph,
+body.kaori-analytics-publication.kaori-reporting-v3 .narrative-copy {
+  max-width: 158mm;
+  font-size: var(--analytics-type-body);
+  line-height: 1.48;
+}
+
+/* concise register -> references */
+body.kaori-analytics-publication.kaori-reporting-v3 .reference-notes,
+body.kaori-analytics-publication.kaori-reporting-v3 .identity-register {
+  margin-top: var(--analytics-rhythm-register-reference);
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .reference-helper,
+body.kaori-analytics-publication.kaori-reporting-v3 .identity-register-subtitle {
+  margin: var(--analytics-rhythm-title-description) 0 var(--analytics-rhythm-description-content);
+  color: var(--analytics-muted);
+  font-size: 6.4pt;
+  line-height: 1.38;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .section-after-pair {
+  margin-top: var(--analytics-rhythm-section) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .trend-interpretation-stack {
+  gap: var(--analytics-rhythm-section);
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .chart-to-section-gap {
+  margin-bottom: 0;
+}
+
+/* Peer blocks are symmetric. Dense narrative belongs below, not in a squeezed column. */
+body.kaori-analytics-publication.kaori-reporting-v3 .two-column,
+body.kaori-analytics-publication.kaori-reporting-v3 .two-chart-grid,
+body.kaori-analytics-publication.kaori-reporting-v3 .report-overview,
+body.kaori-analytics-publication.kaori-reporting-v3 .methodology-grid,
+body.kaori-analytics-publication.kaori-reporting-v3 .methodology-tables,
+body.kaori-analytics-publication.kaori-reporting-v3 .limitations-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}

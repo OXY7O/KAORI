@@ -141,7 +141,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Priority Findings Register', 'Decision fields remain concise; full interpretation is maintained by reference.') %}
+                                {% call ui.section('Priority Findings Register', 'Decision fields stay concise; full interpretation remains by reference.') %}
                                     <table class="report-table findings-register">
                                         <thead>
                                             <tr>
@@ -321,7 +321,7 @@
                                         </div>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Storage Evidence Requirements', 'Minimum committed fields required before storage capacity can be assessed.') %}
+                                {% call ui.section('Storage Evidence Requirements', 'Minimum committed fields required for storage assessment.') %}
                                     <table class="report-table storage-register">
                                         <thead>
                                             <tr>
@@ -356,7 +356,7 @@
                             <div class="page-content">
                                 {{ page_title(5, 'Capacity Forecast', 'Projected threshold pressure and planning horizon for committed capacity signals.') }}
                                 {{ metric_strip(p.forecast.metrics) }}
-                                {% call ui.section('Figure 2 - Capacity Projection Outlook', 'Historical and projected endpoints remain within the committed evidence boundary.') %}
+                                {% call ui.section('Figure 2 - Capacity Projection Outlook', 'Historical and projected endpoints within the committed boundary.') %}
                                     <div class="forecast-chart-frame">{{ p.forecast.chart_svg|safe }}</div>
                                     <div class="chart-legend chart-to-section-gap"><span class="legend-memory">Memory</span><span class="legend-pods">Pods</span><span class="legend-cpu">CPU</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
                                 {% endcall %}
@@ -430,7 +430,7 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Risk References', 'Operational meaning and validation criteria remain outside the fixed register.') %}
+                                {% call ui.section('Risk References', 'Operational meaning and validation remain outside the register.') %}
                                     <div class="reference-grid risk-reference-grid">
                                         {% for item in p.risks.rows %}{{ reference_item(item) }}{% endfor %}
                                     </div>
@@ -446,7 +446,7 @@
                             <div class="page-content">
                                 {{ page_title(7, 'Recommendation Plan', 'Prioritized actions, accountable owners, target windows, and validation gates.') }}
                                 {{ metric_strip(p.recommendations.metrics) }}
-                                {% call ui.section('Priority Recommendations', 'The register contains fixed decision fields. Full context remains in the reference notes.') %}
+                                {% call ui.section('Priority Recommendations', 'Fixed decision fields stay in-table; details remain by reference.') %}
                                     <table class="report-table recommendation-register">
                                         <thead>
                                             <tr>
@@ -472,12 +472,12 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Recommendation References', 'Descriptions expand below the register without changing table row heights.') %}
+                                {% call ui.section('Recommendation References', 'Descriptions stay below the register to preserve compact rows.') %}
                                     <div class="reference-grid recommendations-grid">
                                         {% for item in p.recommendations.rows %}{{ reference_item(item) }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Execution Governance', 'Remediation remains subject to live-state validation and approved change controls.') %}
+                                {% call ui.section('Execution Governance', 'Remediation requires live-state validation and change control.') %}
                                     <table class="report-table governance-table">
                                         <tbody>
                                             {% for item in p.recommendations.governance %}
@@ -497,18 +497,18 @@
                             <div class="page-content">
                                 {{ page_title(8, 'Methodology and Evidence Boundary', 'Data sources, capacity rules, freshness, and explicit limitations.') }}
                                 {{ metric_strip(p.methodology.metrics) }}
-                                {% call ui.section('Data Sources and Methodology', 'Source names, timestamps, and rules remain explicit and are not merged across boundaries.') %}
+                                {% call ui.section('Data Sources and Methodology', 'Sources, timestamps, and rules remain explicit and separate.') %}
                                     {{ ui.methodology_register(p.methodology.sources, p.methodology.rules, 'data-source-table compact-register', 'compact-register') }}
                                 {% endcall %}
-                                {% call ui.section('Methodology References') %}
+                                {% call ui.section('Methodology References', 'Threshold, forecast, and capacity-evidence rules.') %}
                                     <div class="reference-grid methodology-reference-grid">
                                         {% for item in p.methodology.references %}{{ reference_item(item) }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Evidence Boundary', 'This report is built strictly within the committed observation boundary defined by the data cut-off.') %}
+                                {% call ui.section('Evidence Boundary', 'Included and excluded evidence at the committed cut-off.') %}
                                     {{ ui.evidence_boundary(p.methodology.included, p.methodology.excluded) }}
                                 {% endcall %}
-                                {% call ui.section('Limitations and Status Language') %}
+                                {% call ui.section('Limitations and Status Language', 'Operational limits and evidence-status definitions.') %}
                                     <div class="limitations-grid">
                                         <div class="limitations-copy">
                                             <h3>Known Limitations and Operational Use</h3>

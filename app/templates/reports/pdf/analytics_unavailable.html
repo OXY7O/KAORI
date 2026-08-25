@@ -64,14 +64,14 @@
                                         {'label': 'Namespace', 'value': p.namespace_scope, 'status': 'Report Boundary', 'tone': 'neutral'},
                                         {'label': 'Conclusion State', 'value': 'Withheld', 'status': 'Insufficient Evidence', 'tone': 'warning'}
                                         ]) }}
-                    {% call ui.section('Availability Statement', 'KAORI records the source limitation without substituting unrelated or stale evidence.') %}
+                    {% call ui.section('Availability Statement', 'Record the source limit without substituting unrelated evidence.') %}
                         <div class="interpretation-card warning-card unavailable-statement">
                             <strong>{{ p.availability.status }}</strong>
                             <p>{{ p.availability.summary }}</p>
                             <small>The selected cluster, namespace, period, and cut-off remain authoritative for this artifact.</small>
                         </div>
                     {% endcall %}
-                    {% call ui.section('Findings and Interpretation', 'Reference notes explain what is known without expanding fixed table rows.') %}
+                    {% call ui.section('Findings and Interpretation', 'Reference notes explain known limits outside fixed table rows.') %}
                         <table class="report-table compact-decision-register">
                             <thead>
                                 <tr>
@@ -113,7 +113,7 @@
                                 {% endfor %}
                             </ol>
                         {% endcall %}
-                        {% call ui.section('Generation Controls', 'The renderer preserves the selected boundary and does not query providers directly.') %}
+                        {% call ui.section('Generation Controls', 'Preserve the selected boundary without direct provider queries.') %}
                             <dl class="control-register">
                                 {% for field, value in p.recovery.controls %}
                                     <div>
@@ -126,7 +126,7 @@
                             </dl>
                         {% endcall %}
                     </div>
-                    {% call ui.section('Operational Use', 'This document is a limitation record, not an operational posture assessment.') %}
+                    {% call ui.section('Operational Use', 'A limitation record, not an operational posture assessment.') %}
                         <div class="interpretation-card info-card">
                             <strong>Do not use unavailable-source output as evidence of a healthy, stable, or clear condition.</strong>
                             <p>Use JobExecution and Activity Log evidence for troubleshooting. Regenerate only after the required source and worker dependencies are ready.</p>

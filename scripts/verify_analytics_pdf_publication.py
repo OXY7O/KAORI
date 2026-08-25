@@ -37,6 +37,8 @@ PRESENTATION_MODULES = (
     'object_storage_analysis.py',
 )
 
+SECTION_DESCRIPTION_MAX_CHARS = 72
+
 REFERENCE_TEMPLATES = (
     'analytics_overview.html',
     'resource_utilization.html',
@@ -86,6 +88,13 @@ def main() -> int:
         'Public reference policy is missing from the shared layout contract.',
         errors,
     )
+    for token in (
+        "'section_description_policy': 'concise-helper-max-72'",
+        "'paired_layout_policy': 'symmetric-50-50-or-stack'",
+        "'section_spacing_policy': '5.6mm'",
+        "'paragraph_spacing_policy': '2.2mm'",
+    ):
+        require(token in standard_source, f'Missing Analytics rhythm policy: {token}', errors)
 
     # Evaluate only the literal registry assignment without importing Flask/app.
     registry: dict[str, str] | None = None
@@ -125,19 +134,34 @@ def main() -> int:
     require('text-overflow:ellipsis' not in compact_css, 'Evidence CSS must not use ellipsis.', errors)
     require('word-break:break-all' not in compact_css, 'Evidence CSS must not use break-all.', errors)
     require('font-size:7pt' in compact_css, 'Canonical report table body size must remain 7pt.', errors)
+    for token in (
+        'KAORI Analytics Publication Rhythm Lock',
+        '--analytics-type-section:10.2pt',
+        '--analytics-type-subheading:8.2pt',
+        '--analytics-type-body:8pt',
+        '--analytics-type-support:6.65pt',
+        '--analytics-rhythm-title-description:1.45mm',
+        '--analytics-rhythm-description-content:3mm',
+        '--analytics-rhythm-paragraph:2.2mm',
+        '--analytics-rhythm-register-reference:3.6mm',
+        '--analytics-rhythm-section:5.6mm',
+    ):
+        require(
+            token.replace(' ', '') in compact_css
+            if token != 'KAORI Analytics Publication Rhythm Lock'
+            else token in shared_css,
+            f'Missing shared publication rhythm token: {token}',
+            errors,
+        )
 
     overview_css = read(PDF_CSS_ROOT / 'analytics_overview.css')
     overview_compact = re.sub(r'\s+', '', overview_css)
     for token in (
-        '--aov-type-table-dense:5.45pt',
-        '--aov-type-body:7.6pt',
-        '--aov-type-section:10.4pt',
-        '--aov-type-page:14.6pt',
         'max-width:100%',
         '.report-use-advisory',
         '.fresh-table',
     ):
-        require(token in overview_compact, f'Missing Analytics Overview R2 typography/layout token: {token}', errors)
+        require(token in overview_compact, f'Missing Analytics Overview layout token: {token}', errors)
 
     component = read(PDF_TEMPLATE_ROOT / 'components' / 'analytics_publication.html')
     require('macro identity_register' in component, 'Shared identity_register macro is missing.', errors)
@@ -164,6 +188,24 @@ def main() -> int:
                 f'{template_name} is missing the Analytics publication root class.',
                 errors,
             )
+            section_pattern = re.compile(
+                r"(?:ui\.)?section\(\s*'([^']+)'(?:\s*,\s*'([^']*)')?",
+                flags=re.MULTILINE,
+            )
+            for title, subtitle in section_pattern.findall(source):
+                require(
+                    bool(subtitle.strip()),
+                    f'Missing section description in {template_name}: {title}',
+                    errors,
+                )
+                require(
+                    len(subtitle) <= SECTION_DESCRIPTION_MAX_CHARS,
+                    (
+                        f'Section description exceeds {SECTION_DESCRIPTION_MAX_CHARS} characters '
+                        f'in {template_name}: {title}'
+                    ),
+                    errors,
+                )
 
     for legacy in (
         PDF_TEMPLATE_ROOT / 'report.html',
@@ -239,6 +281,9 @@ def main() -> int:
         'same evidence series and denominator',
         'Raw ISO timestamps with microseconds are prohibited',
         'fixed evidence tables are the smallest readable role',
+        'Family editorial rhythm lock (2026-08-25)',
+        'Section helper descriptions should remain at or below 72 characters',
+        'stack the blocks vertically',
         'KAORI-{FAMILY}-{TYPE}-{YYYYMMDD}-{FINGERPRINT}',
     ):
         require(value in docs, f'Publication documentation is missing: {value}', errors)
