@@ -108,6 +108,7 @@ def test_publication_verifier_enforces_rhythm_and_concise_descriptions() -> None
     assert 'Missing section description' in verifier
     assert 'Section description exceeds {SECTION_DESCRIPTION_MAX_CHARS} characters' in verifier
     assert '--analytics-rhythm-section:5.6mm' in verifier
+    assert '--analytics-rhythm-pair-clearance:5.6mm' in verifier
     assert 'KAORI Analytics Publication Rhythm Lock' in verifier
 
 
@@ -119,6 +120,7 @@ def test_layout_contract_and_docs_publish_the_family_rhythm_policy() -> None:
         "'section_description_policy': 'concise-helper-max-72'",
         "'paired_layout_policy': 'symmetric-50-50-or-stack'",
         "'section_spacing_policy': '5.6mm'",
+        "'paired_section_clearance_policy': '5.6mm'",
         "'paragraph_spacing_policy': '2.2mm'",
     ):
         assert token in standard
@@ -127,3 +129,34 @@ def test_layout_contract_and_docs_publish_the_family_rhythm_policy() -> None:
     assert 'Section helper descriptions should remain at or below 72 characters' in docs
     assert '50/50' in docs
     assert 'stack the blocks vertically' in docs
+    assert 'Paired sections reserve 5.6mm of clearance' in docs
+
+
+def test_family_pairs_reserve_bottom_clearance_and_align_descriptions() -> None:
+    css = read('app/static/reports/pdf/analytics_publication.css')
+    compact = ''.join(css.split())
+    assert '--analytics-rhythm-pair-clearance:5.6mm' in compact
+    assert 'padding-bottom:var(--analytics-rhythm-pair-clearance)' in compact
+    assert '.page-content>.two-column' in compact
+    assert 'margin-top:var(--analytics-rhythm-section)' in compact
+    assert '.two-column>.content-section>.section-subtitle' in compact
+    assert 'min-height:5.2mm' in compact
+
+
+def test_workload_half_width_signal_register_uses_compact_labels() -> None:
+    presenter = read('app/reports/export/html_pdf/workload_analysis.py')
+    assert "'Missing ResourceQuota'" in presenter
+    assert "'Incomplete Requests'" in presenter
+    assert "'Memory Limit Review'" in presenter
+
+
+def test_storage_trend_avoids_start_and_cutoff_label_collision() -> None:
+    presenter = read('app/reports/export/html_pdf/storage_analysis.py')
+    assert 'compact_axis_labels = cutoff_x - left < 70' in presenter
+    assert "if not compact_axis_labels" in presenter
+
+
+def test_resource_utilization_interpretation_sections_render_body_copy() -> None:
+    template = read('app/templates/reports/pdf/resource_utilization.html')
+    assert '<p>{{ p.pod_node.interpretation }}</p>' in template
+    assert '<p>{{ p.trend.interpretation }}</p>' in template

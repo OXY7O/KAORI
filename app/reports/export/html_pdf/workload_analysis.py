@@ -580,10 +580,18 @@ def _governance_analysis(
     actionable_count = sum(1 for item in normalized if item['status'] in {'Open', 'Review'})
     critical_count = sum(1 for item in normalized if item['priority'] == 'P1')
     review_count = sum(1 for item in normalized if item['status'] in {'Open', 'Review'})
+    signal_labels = {
+        '16 Namespaces Without ResourceQuota': 'Missing ResourceQuota',
+        '68 Workloads With Incomplete Requests': 'Incomplete Requests',
+        '70 Workloads Need Memory Limit Review': 'Memory Limit Review',
+        '44 BestEffort Workloads': 'BestEffort Workloads',
+        '23 Workloads Have Incomplete Metrics Coverage': 'Metrics Coverage',
+        '68 Workloads Need Right-Sizing Review': 'Right-Sizing Review',
+    }
     signals = [
         {
             'ref': item['ref'],
-            'signal': item['title'],
+            'signal': signal_labels.get(item['title'], item['title']),
             'namespace': 'Selected Scope',
             'state': item['status'],
             'tone': item['tone'],

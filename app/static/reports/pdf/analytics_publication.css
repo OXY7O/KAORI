@@ -315,6 +315,7 @@ body.kaori-analytics-publication.kaori-reporting-v3 {
   --analytics-rhythm-paragraph: 2.2mm;
   --analytics-rhythm-register-reference: 3.6mm;
   --analytics-rhythm-section: 5.6mm;
+  --analytics-rhythm-pair-clearance: 5.6mm;
 }
 
 /* title -> description -> content */
@@ -384,6 +385,16 @@ body.kaori-analytics-publication.kaori-reporting-v3 .chart-to-section-gap {
 }
 
 /* Peer blocks are symmetric. Dense narrative belongs below, not in a squeezed column. */
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .two-column {
+  margin-top: var(--analytics-rhythm-section);
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .two-column {
+  padding-bottom: var(--analytics-rhythm-pair-clearance);
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .two-column > .content-section > .section-subtitle {
+  min-height: 5.2mm;
+}
+
 body.kaori-analytics-publication.kaori-reporting-v3 .two-column,
 body.kaori-analytics-publication.kaori-reporting-v3 .two-chart-grid,
 body.kaori-analytics-publication.kaori-reporting-v3 .report-overview,

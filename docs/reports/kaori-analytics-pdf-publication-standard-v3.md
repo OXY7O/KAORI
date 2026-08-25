@@ -106,6 +106,7 @@ Analytics Overview is no longer allowed to carry a separate typography scale fro
 - Section helper descriptions should remain at or below 72 characters. Shorter wording is preferred when a 50/50 layout would otherwise wrap unnecessarily.
 - Every major content block follows `title -> description -> content`. A missing description is a publication-contract failure.
 - Peer blocks displayed side by side use a symmetric 50/50 layout. If either side becomes too dense, stack the blocks vertically instead of shrinking type or forcing an asymmetric squeeze.
+- Paired sections reserve 5.6mm of clearance before the next section so charts, cards, and registers never visually collide.
 - Dense pages remove or relocate detail before changing the canonical typography or rhythm tokens.
 
 The family rhythm is fixed at 1.45 mm from title to description, 3 mm from description to content, 2.2 mm between narrative paragraphs, 3.6 mm from concise register to references, and 5.6 mm between primary sections.

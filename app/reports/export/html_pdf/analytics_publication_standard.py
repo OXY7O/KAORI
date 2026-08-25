@@ -55,6 +55,7 @@ def analytics_layout_contract(
         'section_description_policy': 'concise-helper-max-72',
         'paired_layout_policy': 'symmetric-50-50-or-stack',
         'section_spacing_policy': '5.6mm',
+        'paired_section_clearance_policy': '5.6mm',
         'paragraph_spacing_policy': '2.2mm',
         'public_reference_policy': 'family-type-date-fingerprint',
         'visual_style': ANALYTICS_VISUAL_STYLE,

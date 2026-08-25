@@ -350,6 +350,7 @@
                                     </table>
                                 {% endcall %}
                                 {% call ui.section('Operational Interpretation', 'Scheduling headroom and node participation conclusion.') %}
+                                    <p>{{ p.pod_node.interpretation }}</p>
                                 {% endcall %}
                             </div>
                             {{ footer(5) }}
@@ -484,6 +485,7 @@
                                     {% endcall %}
                                 </div>
                                 {% call ui.section('Management Interpretation', 'Planning conclusion for the committed trend horizon.') %}
+                                    <p>{{ p.trend.interpretation }}</p>
                                 {% endcall %}
                             </div>
                             {{ footer(7) }}

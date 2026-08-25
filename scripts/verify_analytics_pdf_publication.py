@@ -145,6 +145,7 @@ def main() -> int:
         '--analytics-rhythm-paragraph:2.2mm',
         '--analytics-rhythm-register-reference:3.6mm',
         '--analytics-rhythm-section:5.6mm',
+        '--analytics-rhythm-pair-clearance:5.6mm',
     ):
         require(
             token.replace(' ', '') in compact_css
