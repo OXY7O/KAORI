@@ -3,11 +3,11 @@
  * Shared publication geometry and typography are owned by analytics_publication.css.
  */
 
-.primary-split { grid-template-columns: 1.08fr .92fr; }
-.compute-split { grid-template-columns: 1fr 1fr; gap: 6mm; }
-.scheduling-split { grid-template-columns: 1.02fr .98fr; }
-.storage-split { grid-template-columns: 1.22fr .78fr; }
-.forecast-bottom-split { grid-template-columns: 1.04fr .96fr; }
+.primary-split { }
+.compute-split { gap: 6mm; }
+.scheduling-split { }
+.storage-split { }
+.forecast-bottom-split { }
 
 .capacity-bars { padding-top: 1mm; }
 .capacity-row { display: grid; grid-template-columns: 28mm minmax(0, 1fr) 18mm; gap: 3mm; align-items: center; margin: 3mm 0; }
@@ -18,12 +18,6 @@
 .capacity-track > i.node-fill { background: #15803D; }
 .headroom-line { display: flex; align-items: center; justify-content: space-between; margin: 3mm 0 2mm; padding: 2.5mm 3mm; background: #F8FAFC; font-size: 6.5pt; }
 .headroom-line strong { font-size: 7pt; }
-
-.summary-box-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; margin-top: 6mm; }
-.summary-box { min-height: 23mm; border: .3mm solid #E2E8F0; background: #F8FAFC; padding: 4mm; }
-.summary-box span { display: block; color: #64748B; font-size: 6pt; font-weight: 650; letter-spacing: .05em; text-transform: uppercase; }
-.summary-box strong { display: block; margin-top: 2mm; font-size: 11.5pt; line-height: 1.15; }
-.summary-box small { display: block; margin-top: 1.5mm; color: #64748B; font-size: 6pt; line-height: 1.35; }
 
 .allocation-list { margin-top: 3mm; }
 .allocation-row { margin-top: 2.2mm; }
@@ -51,18 +45,16 @@
 .compute-register th:nth-child(5) { width: 14%; }
 .compute-register th:nth-child(6) { width: 32%; }
 
-.node-card { min-height: 69mm; border: .3mm solid #E2E8F0; display: grid; grid-template-columns: 31mm minmax(0, 1fr); column-gap: 2mm; align-items: center; padding: 4mm 3mm; }
-.node-donut { width: 29mm; height: 29mm; margin: auto; }
+.node-card { border: .3mm solid #E2E8F0; display: grid; grid-template-columns: 1fr 1.12fr; align-items: center; padding: 6mm 5mm; }
+.node-donut { width: 38mm; height: 38mm; margin: auto; }
 .node-donut svg { display: block; width: 100%; height: 100%; }
-.node-legend { min-width: 0; }
-.node-legend > div { display: grid; grid-template-columns: 3mm minmax(0, 1fr) 9mm; gap: 1mm; align-items: center; margin: 3mm 0; font-size: 6.3pt; }
-.node-legend span { white-space: normal; overflow-wrap: normal; line-height: 1.25; }
+.node-legend > div { display: grid; grid-template-columns: 4mm 1fr 12mm; gap: 2mm; align-items: center; margin: 4mm 0; font-size: 6.7pt; }
 .node-legend i { width: 3mm; height: 3mm; }
 .ready-key { background: #15803D; }
 .not-ready-key { background: #CBD5E1; }
 .participation-key { background: #7C3AED; }
 .worker-key { background: #2563EB; }
-.node-legend strong { text-align: right; white-space: nowrap; }
+.node-legend strong { text-align: right; }
 .scheduling-register th:nth-child(1) { width: 8%; }
 .scheduling-register th:nth-child(2) { width: 18%; }
 .scheduling-register th:nth-child(3) { width: 19%; }
@@ -86,15 +78,7 @@
 .storage-register th:nth-child(5) { width: 14%; }
 
 .forecast-chart-frame { border: .3mm solid #D7DEE8; background: #FCFDFE; padding: 3mm 4mm 2mm; overflow: hidden; }
-.forecast-chart-frame svg { display: block; width: 100%; height: 59mm; }
-.chart-legend { display: flex; gap: 5mm; flex-wrap: wrap; margin-top: 2mm; color: #475569; font-size: 6.2pt; }
-.chart-to-section-gap { margin-bottom: 1.8mm; }
-.chart-legend span::before { content: ""; display: inline-block; width: 3mm; height: 1.1mm; margin-right: 1.2mm; vertical-align: middle; background: var(--legend-color); }
-.legend-cpu { --legend-color: #2563EB; }
-.legend-memory { --legend-color: #7C3AED; }
-.legend-pods { --legend-color: #15803D; }
-.legend-warning { --legend-color: #D97706; }
-.legend-critical { --legend-color: #DC2626; }
+.forecast-chart-frame svg { display: block; width: 100%; }
 .forecast-register th:nth-child(1) { width: 12%; }
 .forecast-register th:nth-child(2) { width: 24%; }
 .forecast-register th:nth-child(3) { width: 20%; }
@@ -125,15 +109,34 @@
 .methodology-tables .compact-register { font-size: var(--analytics-type-table-dense); }
 .methodology-tables .compact-register td { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; }
 
-.page-executive .content-section { margin-top: 4.8mm; }
-.page-compute .content-section,
-.page-scheduling .content-section,
-.page-storage .content-section,
-.page-forecast .content-section,
-.page-risks .content-section,
-.page-recommendations .content-section { margin-top: 4.6mm; }
-.page-methodology .content-section { margin-top: 4.2mm; }
-.page-methodology .section-body { margin-top: 2.5mm; }
-.page-risks .reference-item p,
-.page-recommendations .reference-item p,
-.page-methodology .reference-item p { font-size: 6.45pt; }
+/* R5 layout cleanup: keep scheduling and compute panels visually balanced. */
+.page-compute .compute-split > .content-section,
+.page-scheduling .scheduling-split > .content-section {
+  min-width: 0;
+}
+.page-compute .allocation-copy {
+  font-size: 6.1pt;
+}
+.page-compute .headroom-line {
+  margin: 2.6mm 0 2mm;
+}
+.page-scheduling .summary-box-grid {
+  margin-top: 4.8mm;
+}
+.page-scheduling .summary-box {
+  min-height: 20mm;
+}
+.page-scheduling .node-card {
+  grid-template-columns: 37mm minmax(0, 1fr);
+  padding: 5mm 4.5mm;
+}
+.page-scheduling .node-donut {
+  width: 34mm;
+  height: 34mm;
+}
+.page-scheduling .node-legend > div {
+  grid-template-columns: 4mm minmax(0, 1fr) 13mm;
+  gap: 1.8mm;
+  margin: 3.1mm 0;
+  font-size: 6.45pt;
+}

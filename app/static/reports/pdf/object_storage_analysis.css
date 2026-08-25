@@ -34,10 +34,8 @@
 
 .kaori-object-storage-analysis-report .object-storage-executive-split,
 .kaori-object-storage-analysis-report .object-storage-analysis-split {
-  grid-template-columns: 1.05fr .95fr;
 }
 .kaori-object-storage-analysis-report .object-storage-risk-split {
-  grid-template-columns: 1.08fr .92fr;
 }
 
 /* Analytical registers stay one-line. Long identities live in reference blocks. */
@@ -80,8 +78,6 @@
   padding-top: 1.5mm;
   padding-bottom: 1.5mm;
 }
-.kaori-object-storage-analysis-report .object-storage-consumer-identities .identity-title { font-size: 6.7pt; }
-.kaori-object-storage-analysis-report .object-storage-consumer-identities .identity-meta { font-size: 6pt; }
 
 .kaori-object-storage-analysis-report .object-storage-risk-register th:nth-child(1) { width: 14%; }
 .kaori-object-storage-analysis-report .object-storage-risk-register th:nth-child(2) { width: 26%; }
@@ -101,4 +97,3 @@
 .kaori-object-storage-analysis-report .page-object-storage-methodology .methodology-register {
   font-size: var(--analytics-type-table-dense);
 }
-.kaori-object-storage-analysis-report .page-object-storage-methodology .content-section { margin-top: 4.8mm; }

@@ -4,12 +4,12 @@
  * and cover treatment are owned by analytics_publication.css.
  */
 
-.workload-executive-split { grid-template-columns: 1.08fr .92fr; }
-.workload-inventory-split { grid-template-columns: 1fr 1fr; }
-.workload-quota-split { grid-template-columns: 1.18fr .82fr; }
-.workload-mapping-split { grid-template-columns: 1fr 1fr; }
-.workload-config-split { grid-template-columns: .9fr 1.1fr; }
-.workload-governance-split { grid-template-columns: 1fr 1fr; }
+.workload-executive-split { }
+.workload-inventory-split { }
+.workload-quota-split { }
+.workload-mapping-split { }
+.workload-config-split { }
+.workload-governance-split { }
 
 .governance-bars { padding-top: 1mm; }
 .governance-row {
@@ -34,9 +34,10 @@
 .inventory-card strong { display: block; margin-top: 2mm; font-size: 12pt; line-height: 1.05; }
 .inventory-card small { display: block; margin-top: 2mm; color: #64748B; font-size: 6pt; line-height: 1.35; }
 
-.signal-table th:nth-child(1) { width: 10%; }
-.signal-table th:nth-child(2) { width: 48%; }
-.signal-table th:nth-child(3) { width: 25%; }
+.signal-table { font-size: 6.65pt; }
+.signal-table th:nth-child(1) { width: 8%; }
+.signal-table th:nth-child(2) { width: 53%; }
+.signal-table th:nth-child(3) { width: 22%; }
 .signal-table th:nth-child(4) { width: 17%; }
 
 .findings-register th:nth-child(1) { width: 9%; }
@@ -104,22 +105,37 @@
 .data-source-table .compact-register th:nth-child(1) { width: 50%; }
 .data-source-table .compact-register th:nth-child(2) { width: 20%; }
 .data-source-table .compact-register th:nth-child(3) { width: 30%; }
-.methodology-tables .report-table { font-size: var(--analytics-type-table-dense); }
 .methodology-tables td { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; }
-
-.page-workload-inventory .content-section,
-.page-workload-quota .content-section,
-.page-workload-mapping .content-section,
-.page-workload-configuration .content-section,
-.page-workload-governance .content-section { margin-top: 4.8mm; }
 .page-workload-mapping .identity-item,
 .page-workload-configuration .identity-item { padding-top: 1.6mm; padding-bottom: 1.6mm; }
 
-/* Keep compact comparison registers single-line; complete identities stay in reference blocks. */
+/* Keep comparison registers compact, but never let the signal text collide. */
 .signal-table th:first-child,
-.signal-table td:first-child { width: 12%; white-space: nowrap; }
-.signal-table th:nth-child(2) { width: 46%; }
-.signal-table th:nth-child(3) { width: 25%; }
-.signal-table th:nth-child(4) { width: 17%; }
-.signal-table th,
-.signal-table td { white-space: nowrap; }
+.signal-table td:first-child,
+.signal-table th:nth-child(3),
+.signal-table td:nth-child(3),
+.signal-table th:nth-child(4),
+.signal-table td:nth-child(4) { white-space: nowrap; }
+.signal-table th:nth-child(2),
+.signal-table td:nth-child(2) {
+  white-space: normal;
+  overflow-wrap: break-word;
+  line-height: 1.26;
+}
+.signal-table td:nth-child(4) {
+  text-align: left;
+}
+.page-workload-inventory .signal-table + .interpretation-card {
+  margin-top: 3.2mm;
+}
+
+/* R5 layout cleanup: governance signal rows must remain readable on one page. */
+.page-workload-inventory .workload-inventory-split > .content-section {
+  min-width: 0;
+}
+.page-workload-inventory .inventory-card-grid {
+  gap: 3.5mm;
+}
+.page-workload-inventory .inventory-card {
+  min-height: 21mm;
+}

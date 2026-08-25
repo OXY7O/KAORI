@@ -283,10 +283,11 @@
     </div>
 {%- endmacro %}
 {% macro identity_register(title, items, subtitle='', extra_class='') -%}
+    {% set columns = publication_reference_columns(items) if publication_reference_columns is defined else (1 if items|length > 6 else 2) %}
     <div class="identity-register {{ extra_class }}">
         <h3>{{ title }}</h3>
         {% if subtitle %}<p class="identity-register-subtitle">{{ subtitle }}</p>{% endif %}
-        <div class="identity-grid{% if items|length <= 3 %} single-column{% endif %}">
+        <div class="identity-grid{% if columns == 1 %} single-column{% endif %}">
             {% for item in items %}
                 <div class="identity-item">
                     <span class="reference-code">{{ item.ref }}</span>
@@ -298,5 +299,18 @@
                 </div>
             {% endfor %}
         </div>
+    </div>
+{%- endmacro %}
+
+{% macro adaptive_pair(mode='split', extra_class='') -%}
+    <div class="two-column paired-sections publication-pair {% if mode == 'stack' %}is-stacked{% else %}is-split{% endif %} {{ extra_class }}">
+        {{ caller() }}
+    </div>
+{%- endmacro %}
+
+{% macro continuation_heading(title, description='Continued evidence for the same publication section.') -%}
+    <div class="publication-continuation">
+        <h2>{{ title }} - Continued</h2>
+        <p>{{ description }}</p>
     </div>
 {%- endmacro %}

@@ -100,7 +100,7 @@
                             <div class="page-content">
                                 {{ page_title(1, 'Executive Brief', 'Management position for storage at the report cut-off.') }}
                                 {{ metric_strip(p.executive.metrics) }}
-                                <div class="two-column storage-executive-split">
+                                <div class="two-column publication-pair storage-executive-split">
                                     {% call ui.section('Figure 1 - Storage Capacity Posture', 'Committed aggregate use against warning and critical bands.') %}
                                         <div class="capacity-bars">
                                             {{ capacity_bar(p.executive.capacity) }}
@@ -158,7 +158,7 @@
                             <div class="page-content">
                                 {{ page_title(2, 'Capacity & Utilization', 'Aggregate storage use, headroom, and operating-band interpretation.') }}
                                 {{ metric_strip(p.capacity.metrics) }}
-                                <div class="two-column aggregate-capacity-split">
+                                <div class="two-column publication-pair aggregate-capacity-split">
                                     {% call ui.section('Figure 2 - Aggregate Storage Utilization', 'Committed used and available capacity within one matching scope.') %}
                                         {% if p.capacity.resource.evidence_available %}
                                             <div class="aggregate-capacity-card">
@@ -242,7 +242,7 @@
                             <div class="page-content">
                                 {{ page_title(3, 'Node Filesystem', 'Filesystem usage evidence, coverage state, and collection requirements.') }}
                                 {{ metric_strip(p.filesystem.metrics) }}
-                                <div class="two-column filesystem-split">
+                                <div class="two-column publication-pair filesystem-split">
                                     {% call ui.section('Node Filesystem Evidence State', 'Unavailable identities remain explicit and are not treated as zero.') %}
                                         {% if p.filesystem.available %}
                                             <table class="report-table filesystem-summary-table">
@@ -343,9 +343,9 @@
                             <div class="page-content">
                                 {{ page_title(4, 'Persistent Storage', 'Persistent volume inventory, claim coverage, and lifecycle interpretation.') }}
                                 {{ metric_strip(p.persistent.metrics) }}
-                                <div class="two-column persistent-split">
+                                <div class="two-column publication-pair persistent-split">
                                     {% call ui.section('Persistent Volume Posture', 'Committed inventory count and lifecycle boundary.') %}
-                                        <div class="persistent-volume-card">
+                                        <div class="persistent-volume-card publication-visual is-pair">
                                             <div class="pv-donut">{{ p.persistent.pv_donut_svg|safe }}</div>
                                             <dl>
                                                 <dt>Provisioned Capacity</dt>
@@ -364,7 +364,7 @@
                                         </div>
                                     {% endcall %}
                                     {% call ui.section('Claim Utilization Coverage', 'What is available and what remains missing.') %}
-                                        <div class="interpretation-card persistent-assessment {% if not p.persistent.pvc.evidence_available %}warning-card{% endif %}">
+                                        <div class="interpretation-card persistent-assessment publication-visual is-pair {% if not p.persistent.pvc.evidence_available %}warning-card{% endif %}">
                                             <strong>
                                                 {% if p.persistent.pvc.evidence_available %}
                                                     Claim utilization evidence is available.
@@ -401,7 +401,7 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                <div class="two-column persistent-record-split">
+                                <div class="two-column publication-pair persistent-record-split">
                                     {% call ui.section('Top PV Lifecycle Records', 'Lifecycle fields stay concise; full volume identities remain below.') %}
                                         <table class="report-table pv-summary-register">
                                             <thead>
@@ -483,7 +483,7 @@
                             <div class="page-content">
                                 {{ page_title(5, 'Expansion & Local Risk', 'Expansion readiness, localized exposure, and remediation safeguards.') }}
                                 {{ metric_strip(p.risk.metrics) }}
-                                <div class="two-column expansion-risk-split">
+                                <div class="two-column publication-pair expansion-risk-split">
                                     {% call ui.section('Local Filesystem Risk', 'Localized risk remains separate from aggregate shared capacity.') %}
                                         <div class="interpretation-card local-risk-card {% if p.risk.local_risks %}warning-card{% endif %}">
                                             <strong>{{ p.risk.local_risk_title }}</strong>
@@ -545,7 +545,7 @@
                                 {{ metric_strip(p.trend.metrics) }}
                                 {% call ui.section('Figure 3 - Storage Utilization Direction', 'Plot only committed trend evidence; gaps remain visible.') %}
                                     {% if p.trend.available %}
-                                        <div class="storage-trend-frame">{{ p.trend.chart_svg|safe }}</div>
+                                        <div class="storage-trend-frame publication-visual is-wide">{{ p.trend.chart_svg|safe }}</div>
                                     {% else %}
                                         <div class="trend-unavailable">
                                             <strong>Committed storage trend evidence is not available.</strong>
@@ -553,7 +553,7 @@
                                         </div>
                                     {% endif %}
                                 {% endcall %}
-                                <div class="two-column trend-storage-split">
+                                <div class="two-column publication-pair trend-storage-split">
                                     {% call ui.section('Trend Interpretation', 'Current endpoint and projection remain explicit.') %}
                                         <table class="report-table trend-register">
                                             <thead>

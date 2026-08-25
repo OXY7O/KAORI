@@ -211,7 +211,7 @@
                                     <p class="lead-paragraph">{{ p.trend_forecast.headline }} {{ p.trend_forecast.summary }}</p>
                                 {% endcall %}
                                 {% call ui.section('Figure 1 - Memory Demand Forecast','Historical memory P95 and projected demand across the horizon.') %}
-                                    <div class="chart-frame">{{ p.trend_forecast.chart_svg|safe }}</div>
+                                    <div class="chart-frame publication-visual is-wide">{{ p.trend_forecast.chart_svg|safe }}</div>
                                     <p class="source-note">Source: committed analytics forecast evidence. Missing observations are shown as gaps, not zero values.</p>
                                 {% endcall %}
                                 {% call ui.section('Projected Capacity Pressure','Projection fields stay comparable; interpretation remains by reference.') %}
@@ -858,17 +858,7 @@
                                         </div>
                                         <div class="status-language-block">
                                             <h3>Status Language</h3>
-                                            <div class="status-legend-grid">
-                                                {% for row in p.methodology.status_language[:4] %}
-                                                    <div class="status-legend-item">
-                                                        <span class="reference-code">S{{ loop.index }}</span>
-                                                        <div>
-                                                            <strong>{{ row.label }}</strong>
-                                                            <p>{{ row.description }}</p>
-                                                        </div>
-                                                    </div>
-                                                {% endfor %}
-                                            </div>
+                                            {{ ui.status_language(p.methodology.status_language) }}
                                         </div>
                                     </div>
                                     <div class="report-use-advisory">

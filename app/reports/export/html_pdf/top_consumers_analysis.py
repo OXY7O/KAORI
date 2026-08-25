@@ -37,18 +37,7 @@ def build_top_consumers_analysis_presentation(
     normalized_rows = [_consumer_row(item) for item in source_rows if isinstance(item, Mapping)]
     normalized_rows = [item for item in normalized_rows if item['resource_type']]
 
-    rows_by_resource: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for item in normalized_rows:
-        rows_by_resource[item['resource_type']].append(item)
-    for resource_rows in rows_by_resource.values():
-        resource_rows.sort(key=lambda row: row['current_usage'], reverse=True)
-        displayed_total = sum(max(row['current_usage'], 0.0) for row in resource_rows[:3])
-        for row in resource_rows[:3]:
-            row['displayed_share'] = (row['current_usage'] / displayed_total * 100.0) if displayed_total > 0 else None
-            row['displayed_share_label'] = (
-                _percent(row['displayed_share']) if row['displayed_share'] is not None else 'Not Available'
-            )
-            row['displayed_share_bar'] = min(max(row['displayed_share'] or 0.0, 0.0), 100.0)
+    rows_by_resource = _prepare_rows_by_resource(normalized_rows)
 
     cpu_rows = rows_by_resource.get('cpu', [])[:3]
     memory_rows = rows_by_resource.get('memory', [])[:3]
@@ -56,7 +45,7 @@ def build_top_consumers_analysis_presentation(
     pvc_rows = rows_by_resource.get('pvc', [])[:3]
 
     cpu_total = sum(row['current_usage'] for row in cpu_rows)
-    memory_total = sum(row['current_usage'] for row in memory_rows)
+    memory_total = sum(_normalized_usage_value(row) for row in memory_rows)
     memory_namespaces = sorted(
         {row['namespace'] for row in memory_rows if row['namespace'] not in {'-', 'Not Available'}}
     )
@@ -70,6 +59,8 @@ def build_top_consumers_analysis_presentation(
 
     recommendations = _recommendations(consumer_payload, cpu_rows, memory_rows)
     namespace_rows = _namespace_rows(cpu_rows, memory_rows)
+    cpu_namespace_rows = [item for item in namespace_rows if item['signal'] == 'CPU']
+    memory_namespace_rows = [item for item in namespace_rows if item['signal'] == 'Memory']
     comparison_rows = [
         _comparison_row(item, index)
         for index, item in enumerate((cpu_rows + memory_rows + pod_rows + pvc_rows)[:8], start=1)
@@ -151,8 +142,8 @@ def build_top_consumers_analysis_presentation(
                 _metric('Displayed Records', str(len(cpu_rows) + len(memory_rows)), 'CPU + Memory', 'info'),
                 _metric('Denominator', 'Partial', 'Displayed set only', 'warning'),
             ],
-            'cpu_rows': _namespace_signal_rows(cpu_rows),
-            'memory_rows': _namespace_signal_rows(memory_rows),
+            'cpu_rows': cpu_namespace_rows,
+            'memory_rows': memory_namespace_rows,
             'register': namespace_rows,
         },
         'comparison': {
@@ -256,6 +247,22 @@ def build_top_consumers_analysis_presentation(
     }
 
 
+
+def _prepare_rows_by_resource(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for item in rows:
+        grouped[item['resource_type']].append(item)
+    for resource_rows in grouped.values():
+        resource_rows.sort(key=lambda row: row['current_usage'], reverse=True)
+        displayed = resource_rows[:3]
+        total = sum(max(_normalized_usage_value(row), 0.0) for row in displayed)
+        for row in displayed:
+            share = _normalized_usage_value(row) / total * 100.0 if total > 0 else None
+            row['displayed_share'] = share
+            row['displayed_share_label'] = _percent(share) if share is not None else 'Not Available'
+            row['displayed_share_bar'] = min(max(share or 0.0, 0.0), 100.0)
+    return grouped
+
 def _consumer_row(value: Mapping[str, Any]) -> dict[str, Any]:
     identity = _mapping(value.get('identity'))
     resource_type = sanitize_text(value.get('resource_type'), fallback='').lower()
@@ -298,7 +305,7 @@ def _consumer_row(value: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _resource_page(label: str, rows: list[dict[str, Any]], top: dict[str, Any] | None, color: str) -> dict[str, Any]:
-    total = sum(row['current_usage'] for row in rows)
+    total = sum(_normalized_usage_value(row) for row in rows)
     namespaces = sorted({row['namespace'] for row in rows})
     return {
         'metrics': [
@@ -356,7 +363,7 @@ def _namespace_rows(cpu_rows: list[dict[str, Any]], memory_rows: list[dict[str, 
         grouped: dict[str, dict[str, Any]] = {}
         for row in rows:
             bucket = grouped.setdefault(row['namespace'], {'value': 0.0, 'share': 0.0, 'unit': row['unit']})
-            bucket['value'] += row['current_usage']
+            bucket['value'] += _normalized_usage_value(row)
             bucket['share'] += row.get('displayed_share') or 0.0
         for namespace, bucket in sorted(grouped.items(), key=lambda item: item[1]['value'], reverse=True):
             result.append(
@@ -365,7 +372,8 @@ def _namespace_rows(cpu_rows: list[dict[str, Any]], memory_rows: list[dict[str, 
                     'namespace': namespace,
                     'signal': resource,
                     'value': _format_with_unit(bucket['value'], bucket['unit']),
-                    'share': _percent(bucket['share']),
+                    'share': bucket['share'],
+                    'share_label': _percent(bucket['share']),
                     'status': 'Review',
                     'tone': 'warning',
                 }
@@ -584,10 +592,23 @@ def _metric(label: str, value: str, status: str, tone: str) -> dict[str, str]:
     return {'label': label, 'value': value, 'status': status, 'tone': tone}
 
 
+def _normalized_usage_value(row: Mapping[str, Any]) -> float:
+    value = _float(row.get('current_usage')) or 0.0
+    unit = sanitize_text(row.get('unit'), fallback='')
+    if unit == 'GiB' and value > 1024**2:
+        return value / (1024**3)
+    if unit == 'MiB' and value > 1024:
+        return value / (1024**2)
+    if unit == 'KiB' and value > 1024:
+        return value / 1024
+    return value
+
+
 def _display_total(rows: list[dict[str, Any]], total: float) -> str:
     if not rows:
         return 'Not Available'
-    return _format_with_unit(total, _unit(rows, fallback=''))
+    normalized_total = sum(_normalized_usage_value(row) for row in rows)
+    return _format_with_unit(normalized_total, _unit(rows, fallback=''))
 
 
 def _format_usage(resource_type: str, value: float) -> str:

@@ -92,7 +92,19 @@ def main() -> int:
         "'section_description_policy': 'concise-helper-max-72'",
         "'paired_layout_policy': 'symmetric-50-50-or-stack'",
         "'section_spacing_policy': '5.6mm'",
+        "'paired_section_clearance_policy': 'single-5.6mm-section-gap-no-double-spacing'",
+        "'visual_box_policy': 'locked-size-tokens-content-scales-inside'",
+        "'footer_safe_zone': '18mm'",
         "'paragraph_spacing_policy': '2.2mm'",
+        "'global_rhythm_owner_policy': 'shared-stylesheet-only'",
+        "'dense_page_policy': 'compact-internal-chrome-never-typography'",
+        "'chart_identity_policy': 'stable-reference-codes-only'",
+        "'dynamic_page_policy': 'content-budgeted'",
+        "'section_continuation_policy': 'same-section-only'",
+        "'table_overflow_policy': 'chunk-with-repeated-header'",
+        "'reference_layout_policy': 'two-column-or-stack'",
+        "'typography_scaling_policy': 'never-for-density'",
+        "'dynamic_pair_policy': 'density-selects-50-50-or-stack'",
     ):
         require(token in standard_source, f'Missing Analytics rhythm policy: {token}', errors)
 
@@ -145,7 +157,11 @@ def main() -> int:
         '--analytics-rhythm-paragraph:2.2mm',
         '--analytics-rhythm-register-reference:3.6mm',
         '--analytics-rhythm-section:5.6mm',
-        '--analytics-rhythm-pair-clearance:5.6mm',
+        '--analytics-rhythm-pair-clearance:0mm',
+        '--analytics-footer-safe-zone:18mm',
+        '--analytics-visual-pair-height:50mm',
+        '--analytics-visual-distribution-height:48mm',
+        '--analytics-visual-wide-height:66mm',
     ):
         require(
             token.replace(' ', '') in compact_css
@@ -154,6 +170,20 @@ def main() -> int:
             f'Missing shared publication rhythm token: {token}',
             errors,
         )
+
+    require(
+        'KAORI Analytics Publication R6 - Clean Sweep' in shared_css,
+        'Shared Analytics clean-sweep ownership block is missing.',
+        errors,
+    )
+    for token in (
+        'KAORI Analytics Publication R7 - Global Adaptive Publication Engine',
+        '.publication-pair',
+        '.publication-pair.is-stacked',
+        '.publication-continuation',
+        '.publication-visual',
+    ):
+        require(token in shared_css, f'Missing dynamic publication CSS token: {token}', errors)
 
     overview_css = read(PDF_CSS_ROOT / 'analytics_overview.css')
     overview_compact = re.sub(r'\s+', '', overview_css)
@@ -177,6 +207,33 @@ def main() -> int:
         css_path = PDF_CSS_ROOT / css_name
         require(template_path.exists(), f'Missing canonical Analytics template: {template_name}', errors)
         require(css_path.exists(), f'Missing canonical Analytics stylesheet: {css_name}', errors)
+        if css_path.exists() and css_name != 'analytics_unavailable.css':
+            report_css = read(css_path)
+            direct_section = re.compile(
+                r'\.page[-\w]+\s+\.content-section\s*\{[^}]*margin-top\s*:',
+                flags=re.DOTALL,
+            )
+            direct_body = re.compile(
+                r'\.page[-\w]+\s+\.section-body\s*\{[^}]*margin-top\s*:',
+                flags=re.DOTALL,
+            )
+            global_subheading = re.compile(r'(?m)^\.subheading\s*\{[^}]*margin\s*:')
+            require(
+                not direct_section.search(report_css) and not direct_body.search(report_css),
+                f'Report CSS overrides canonical top-level section rhythm: {css_name}',
+                errors,
+            )
+            require(
+                not global_subheading.search(report_css),
+                f'Report CSS overrides canonical subheading rhythm: {css_name}',
+                errors,
+            )
+            split_ratio = re.compile(r'[^{}]*-split[^{}]*\{[^}]*grid-template-columns\s*:', flags=re.DOTALL)
+            require(
+                not split_ratio.search(report_css),
+                f'Peer column ratios must be owned by shared publication CSS: {css_name}',
+                errors,
+            )
         if template_path.exists():
             source = read(template_path)
             require(
@@ -189,6 +246,12 @@ def main() -> int:
                 f'{template_name} is missing the Analytics publication root class.',
                 errors,
             )
+            for class_value in re.findall(r'class="([^"]*\btwo-column\b[^"]*)"', source):
+                require(
+                    'publication-pair' in class_value.split(),
+                    f'{template_name} two-column layout bypasses publication-pair.',
+                    errors,
+                )
             section_pattern = re.compile(
                 r"(?:ui\.)?section\(\s*'([^']+)'(?:\s*,\s*'([^']*)')?",
                 flags=re.MULTILINE,

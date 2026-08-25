@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from datetime import date, datetime
-from html import escape
 from typing import Any
 
 from app.reports.export.html_pdf.analytics_publication_standard import (
@@ -11,6 +10,7 @@ from app.reports.export.html_pdf.analytics_publication_standard import (
     ANALYTICS_PUBLICATION_STANDARD,
     analytics_layout_contract,
 )
+from app.reports.export.html_pdf.publication_visuals import count_donut_svg
 
 
 def build_storage_analysis_presentation(
@@ -264,7 +264,7 @@ def build_storage_analysis_presentation(
             ),
             'pv': pv_summary,
             'pvc': pvc_summary,
-            'pv_donut_svg': _count_donut_svg(pv_summary['count'], 'Persistent Volumes'),
+            'pv_donut_svg': count_donut_svg(pv_summary['count'], 'Persistent Volumes'),
             'register': (
                 {
                     'ref': 'P1',
@@ -1139,19 +1139,6 @@ def _node_count(payload: Mapping[str, Any], filesystem: Mapping[str, Any]) -> in
         return len(set(str(item) for item in nodes if item))
     return len(
         {str(row.get('node')) for row in _rows(filesystem.get('all_rows') or filesystem.get('rows')) if row.get('node')}
-    )
-
-
-def _count_donut_svg(count: int, label: str) -> str:
-    safe_count = max(0, count)
-    return (
-        '<svg viewBox="0 0 180 180" role="img" aria-label="'
-        + escape(f'{safe_count} {label}')
-        + '"><circle cx="90" cy="90" r="55" fill="none" stroke="#E2E8F0" stroke-width="24"/>'
-        '<circle cx="90" cy="90" r="55" fill="none" stroke="#7C3AED" stroke-width="24" '
-        'stroke-dasharray="345.6 345.6" transform="rotate(-90 90 90)"/>'
-        f'<text x="90" y="88" text-anchor="middle" font-size="30" font-weight="700" fill="#172033">{safe_count}</text>'
-        f'<text x="90" y="112" text-anchor="middle" font-size="10" fill="#64748B">{escape(label)}</text></svg>'
     )
 
 

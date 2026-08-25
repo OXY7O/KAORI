@@ -310,12 +310,15 @@ body.kaori-analytics-publication.kaori-reporting-v3 {
   --analytics-type-subheading: 8.2pt;
   --analytics-type-body: 8pt;
   --analytics-type-support: 6.65pt;
+  --analytics-type-reference-title: 7.1pt;
+  --analytics-type-reference-meta: 6.15pt;
+  --analytics-type-reference-code: 6.6pt;
   --analytics-rhythm-title-description: 1.45mm;
   --analytics-rhythm-description-content: 3mm;
   --analytics-rhythm-paragraph: 2.2mm;
   --analytics-rhythm-register-reference: 3.6mm;
   --analytics-rhythm-section: 5.6mm;
-  --analytics-rhythm-pair-clearance: 5.6mm;
+  --analytics-rhythm-pair-clearance: 0mm;
 }
 
 /* title -> description -> content */
@@ -402,4 +405,455 @@ body.kaori-analytics-publication.kaori-reporting-v3 .methodology-grid,
 body.kaori-analytics-publication.kaori-reporting-v3 .methodology-tables,
 body.kaori-analytics-publication.kaori-reporting-v3 .limitations-grid {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+/*
+ * KAORI Analytics Publication R4 - layout hard lock
+ * One spacing owner, footer-safe geometry, and deterministic visual boxes.
+ */
+body.kaori-analytics-publication.kaori-reporting-v3 {
+  --analytics-footer-safe-zone: 18mm;
+  --analytics-rhythm-subheading-content: 2mm;
+  --analytics-visual-pair-height: 50mm;
+  --analytics-visual-distribution-height: 48mm;
+  --analytics-visual-wide-height: 66mm;
+}
+
+/* Reserve the footer band consistently. This is a layout guard, not a clipping mechanism. */
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content {
+  padding-bottom: var(--analytics-footer-safe-zone) !important;
+}
+
+/* The shared publication stylesheet is the only owner of editorial rhythm. */
+body.kaori-analytics-publication.kaori-reporting-v3 .page .content-section {
+  margin-top: var(--analytics-rhythm-section) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .content-section:first-of-type,
+body.kaori-analytics-publication.kaori-reporting-v3 .two-column > .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .paired-sections > .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .trend-interpretation-stack > .content-section {
+  margin-top: 0 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .section-subtitle {
+  min-height: 0 !important;
+  margin: var(--analytics-rhythm-title-description) 0 0 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .section-body {
+  margin-top: var(--analytics-rhythm-description-content) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .section-body p + p {
+  margin-top: var(--analytics-rhythm-paragraph) !important;
+}
+
+/* A two-column wrapper is one section group: never add clearance twice. */
+body.kaori-analytics-publication.kaori-reporting-v3 .two-column {
+  margin-top: var(--analytics-rhythm-section) !important;
+  padding-bottom: 0 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .metric-strip + .two-column,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-title-row + .two-column {
+  margin-top: 0 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .two-column > .content-section > .section-subtitle {
+  min-height: 0 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .section-after-pair {
+  margin-top: var(--analytics-rhythm-section) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .trend-interpretation-stack {
+  display: grid;
+  gap: var(--analytics-rhythm-section);
+}
+
+/* Nested subheadings use one predictable heading-to-content interval. */
+body.kaori-analytics-publication.kaori-reporting-v3 .methodology-grid h3,
+body.kaori-analytics-publication.kaori-reporting-v3 .methodology-tables h3,
+body.kaori-analytics-publication.kaori-reporting-v3 .boundary-columns h3,
+body.kaori-analytics-publication.kaori-reporting-v3 .limitations-grid h3,
+body.kaori-analytics-publication.kaori-reporting-v3 .limitations-status-layout h3,
+body.kaori-analytics-publication.kaori-reporting-v3 .status-language-block > h3,
+body.kaori-analytics-publication.kaori-reporting-v3 .identity-register > h3 {
+  margin: 0 0 var(--analytics-rhythm-subheading-content) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .methodology-grid,
+body.kaori-analytics-publication.kaori-reporting-v3 .methodology-tables,
+body.kaori-analytics-publication.kaori-reporting-v3 .limitations-grid,
+body.kaori-analytics-publication.kaori-reporting-v3 .limitations-status-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  align-items: start;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .methodology-grid > *,
+body.kaori-analytics-publication.kaori-reporting-v3 .methodology-tables > * {
+  min-width: 0;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .source-register,
+body.kaori-analytics-publication.kaori-reporting-v3 .methodology-register {
+  table-layout: fixed;
+}
+
+/* Shared Status Language primitive - identical in every analytics report. */
+body.kaori-analytics-publication.kaori-reporting-v3 .status-language-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 3mm 4mm !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .status-language-item {
+  grid-template-columns: 9mm minmax(0, 1fr) !important;
+  gap: 3mm !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .status-language-item strong {
+  font-size: 6.8pt !important;
+  line-height: 1.25 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .status-language-item p {
+  margin: .6mm 0 0 !important;
+  font-size: 5.9pt !important;
+  line-height: 1.35 !important;
+}
+
+/* Deterministic chart geometry. SVG content scales inside the locked publication box. */
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-resource-utilization-report .page-cpu .chart-frame,
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-resource-utilization-report .page-memory .chart-frame,
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-forecast-analysis-report .resource-chart {
+  height: var(--analytics-visual-pair-height) !important;
+  min-height: var(--analytics-visual-pair-height) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-resource-utilization-report .page-cpu .chart-frame svg,
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-resource-utilization-report .page-memory .chart-frame svg,
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-forecast-analysis-report .resource-chart svg {
+  width: 100% !important;
+  height: 100% !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-resource-utilization-report .chart-assessment-split .interpretation-card,
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-forecast-analysis-report .resource-forecast-split .interpretation-card {
+  min-height: var(--analytics-visual-pair-height) !important;
+}
+
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-resource-utilization-report .page-distribution .memory-concentration-card,
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-resource-utilization-report .page-distribution .cpu-concentration-card {
+  height: var(--analytics-visual-distribution-height) !important;
+  min-height: var(--analytics-visual-distribution-height) !important;
+  border: .3mm solid #D7DEE8;
+  background: #FCFDFE;
+  padding: 4mm;
+  overflow: hidden;
+}
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-resource-utilization-report .page-distribution .memory-concentration-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+}
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-resource-utilization-report .page-distribution .cpu-concentration-card {
+  display: flex;
+  align-items: center;
+}
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-resource-utilization-report .page-distribution .cpu-concentration-bars {
+  width: 100%;
+}
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-resource-utilization-report .page-distribution .donut-wrap {
+  width: 30mm !important;
+  height: 30mm !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-resource-utilization-report .page-distribution .donut-legend > div {
+  margin: 1.6mm 0 !important;
+}
+
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-resource-utilization-report .page-trend .trend-chart-frame,
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-capacity-analysis-report .forecast-chart-frame,
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-storage-analysis-report .storage-trend-frame,
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-forecast-analysis-report .portfolio-chart {
+  height: var(--analytics-visual-wide-height) !important;
+  min-height: var(--analytics-visual-wide-height) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-resource-utilization-report .page-trend .trend-chart-frame svg,
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-capacity-analysis-report .forecast-chart-frame svg,
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-storage-analysis-report .storage-trend-frame svg,
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-forecast-analysis-report .portfolio-chart svg {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-storage-analysis-report .persistent-volume-card,
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-storage-analysis-report .persistent-assessment {
+  height: var(--analytics-visual-pair-height) !important;
+  min-height: var(--analytics-visual-pair-height) !important;
+}
+
+/* Never use :first-of-type as a spacing shortcut: nested wrappers make it data-structure dependent. */
+body.kaori-analytics-publication.kaori-reporting-v3 .page .content-section:first-of-type {
+  margin-top: var(--analytics-rhythm-section) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .page-title-row + .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .metric-strip + .content-section {
+  margin-top: 0 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .two-column > .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .paired-sections > .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .trend-interpretation-stack > .content-section {
+  margin-top: 0 !important;
+}
+
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-resource-utilization-report .page-distribution .distribution-boundary-note .interpretation-card {
+  padding: 3.4mm !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-resource-utilization-report .page-distribution .distribution-boundary-note .interpretation-card p {
+  margin-top: 2mm !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3.kaori-resource-utilization-report .page-distribution .identity-item {
+  padding-top: 1mm !important;
+  padding-bottom: 1mm !important;
+}
+
+
+/*
+ * KAORI Analytics Publication R5 - collision cleanup
+ * Final layout-only pass: top aligned tables, denser reference rows,
+ * and predictable status-language spacing.
+ */
+body.kaori-analytics-publication.kaori-reporting-v3 .page .two-column > .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .page .paired-sections > .content-section {
+  min-width: 0;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .report-table th,
+body.kaori-analytics-publication.kaori-reporting-v3 .report-table td {
+  vertical-align: top;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .reference-grid,
+body.kaori-analytics-publication.kaori-reporting-v3 .identity-grid {
+  align-items: start;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .reference-item,
+body.kaori-analytics-publication.kaori-reporting-v3 .identity-item {
+  min-width: 0;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .status-language-block,
+body.kaori-analytics-publication.kaori-reporting-v3 .status-language-block > * {
+  min-width: 0;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .status-language-grid {
+  align-items: start;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .status-language-item {
+  min-height: 11.5mm;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .status-language-item > div {
+  min-width: 0;
+}
+
+/*
+ * KAORI Analytics Publication R6 - Clean Sweep
+ * One final owner for editorial typography, section rhythm, peer alignment,
+ * and safe wrapping after all report-specific geometry is loaded.
+ */
+body.kaori-analytics-publication.kaori-reporting-v3 .page .content-section h2 {
+  font-size: var(--analytics-type-section) !important;
+  line-height: 1.22 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .content-section h3 {
+  font-size: var(--analytics-type-subheading) !important;
+  line-height: 1.28 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .section-subtitle {
+  margin: var(--analytics-rhythm-title-description) 0 0 !important;
+  font-size: var(--analytics-type-support) !important;
+  line-height: 1.38 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .section-body {
+  margin-top: var(--analytics-rhythm-description-content) !important;
+  font-size: var(--analytics-type-body) !important;
+  line-height: 1.46 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .lead-paragraph,
+body.kaori-analytics-publication.kaori-reporting-v3 .page .narrative-copy {
+  font-size: 8.15pt !important;
+  line-height: 1.50 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .report-table {
+  font-size: 6.8pt !important;
+  line-height: 1.34 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .reference-item p,
+body.kaori-analytics-publication.kaori-reporting-v3 .page .identity-meta {
+  font-size: 6.9pt !important;
+  line-height: 1.42 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .source-note {
+  font-size: 6.2pt !important;
+  line-height: 1.38 !important;
+}
+
+/* Every top-level publication block receives exactly one section gap. */
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .content-section {
+  margin-top: var(--analytics-rhythm-section) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .two-column {
+  margin-top: var(--analytics-rhythm-section) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .paired-sections {
+  margin-top: var(--analytics-rhythm-section) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .page-title-row + .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .page-title-row + .two-column,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .page-title-row + .paired-sections,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .metric-strip + .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .metric-strip + .two-column,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .metric-strip + .paired-sections {
+  margin-top: 0 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .two-column > .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .paired-sections > .content-section {
+  margin-top: 0 !important;
+  min-width: 0;
+  align-self: start;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .two-column,
+body.kaori-analytics-publication.kaori-reporting-v3 .paired-sections {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  align-items: start;
+}
+
+/* Long evidence wraps inside its own cell/block; it never pushes a peer. */
+body.kaori-analytics-publication.kaori-reporting-v3 .page .report-table th,
+body.kaori-analytics-publication.kaori-reporting-v3 .page .report-table td,
+body.kaori-analytics-publication.kaori-reporting-v3 .page .reference-item,
+body.kaori-analytics-publication.kaori-reporting-v3 .page .identity-item,
+body.kaori-analytics-publication.kaori-reporting-v3 .page .interpretation-card {
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+/* R6 also neutralizes stale family-local type/geometry experiments. */
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content {
+  padding-left: 14mm !important;
+  padding-right: 14mm !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-title-copy h1 {
+  font-size: var(--analytics-type-page) !important;
+  line-height: 1.08 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-title-copy p {
+  margin-top: 1mm !important;
+  font-size: 6.75pt !important;
+  line-height: 1.30 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .cutoff span {
+  font-size: 5.65pt !important;
+  line-height: 1.10 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .cutoff strong {
+  font-size: 6.4pt !important;
+  line-height: 1.25 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .metric > span {
+  font-size: 5.65pt !important;
+  line-height: 1.15 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .metric > strong {
+  font-size: 11.9pt !important;
+  line-height: 1.05 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .metric > strong.metric-medium {
+  font-size: 9.4pt !important;
+  line-height: 1.10 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .metric > strong.metric-long {
+  font-size: 7.75pt !important;
+  line-height: 1.18 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .metric > em {
+  font-size: 6.05pt !important;
+  line-height: 1.20 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .reference-notes > h3,
+body.kaori-analytics-publication.kaori-reporting-v3 .identity-register > h3 {
+  font-size: 8.15pt !important;
+  line-height: 1.22 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .reference-item strong,
+body.kaori-analytics-publication.kaori-reporting-v3 .identity-title {
+  font-size: 7.25pt !important;
+  line-height: 1.30 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .identity-title {
+  font-size: 7.1pt !important;
+  line-height: 1.35 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .reference-code {
+  font-size: 6.6pt !important;
+}
+
+/*
+ * KAORI Analytics Publication R7 - Global Adaptive Publication Engine
+ * Dynamic density changes layout mode or pagination, never typography.
+ */
+body.kaori-analytics-publication.kaori-reporting-v3 .publication-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 6mm;
+  align-items: start;
+  min-width: 0;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .publication-pair.is-stacked {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .publication-pair > * {
+  min-width: 0;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .publication-visual {
+  width: 100%;
+  overflow: hidden;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .publication-continuation {
+  margin: 0;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .publication-continuation-page {
+  break-before: page;
+  page-break-before: always;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .publication-continuation h2 {
+  margin: 0;
+  font-size: var(--analytics-type-section);
+  line-height: 1.22;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .publication-continuation p {
+  margin: var(--analytics-rhythm-title-description) 0 0;
+  color: var(--analytics-muted);
+  font-size: var(--analytics-type-support);
+  line-height: 1.38;
+}
+
+
+body.kaori-analytics-publication.kaori-reporting-v3 .reference-item strong,
+body.kaori-analytics-publication.kaori-reporting-v3 .identity-title {
+  font-size: var(--analytics-type-reference-title) !important;
+  line-height: 1.30 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .reference-item p,
+body.kaori-analytics-publication.kaori-reporting-v3 .identity-meta {
+  font-size: var(--analytics-type-reference-meta) !important;
+  line-height: 1.38 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .reference-code {
+  font-size: var(--analytics-type-reference-code) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .publication-visual.is-pair {
+  height: var(--analytics-visual-pair-height) !important;
+  min-height: var(--analytics-visual-pair-height) !important;
+  max-height: var(--analytics-visual-pair-height) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .publication-visual.is-distribution {
+  height: var(--analytics-visual-distribution-height) !important;
+  min-height: var(--analytics-visual-distribution-height) !important;
+  max-height: var(--analytics-visual-distribution-height) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .publication-visual.is-wide {
+  height: var(--analytics-visual-wide-height) !important;
+  min-height: var(--analytics-visual-wide-height) !important;
+  max-height: var(--analytics-visual-wide-height) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .publication-visual > svg {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
 }

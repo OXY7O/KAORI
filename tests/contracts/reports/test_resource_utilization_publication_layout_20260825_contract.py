@@ -68,34 +68,28 @@ def test_reports_overview_copy_is_compact_without_losing_publication_boundary() 
 def test_resource_utilization_balances_visual_pairs_and_stacks_dense_followups() -> None:
     template = read('app/templates/reports/pdf/resource_utilization.html')
     css = read('app/static/reports/pdf/resource_utilization.css')
+    shared_css = read('app/static/reports/pdf/analytics_publication.css')
     compact = ''.join(css.split())
+    shared_compact = ''.join(shared_css.split())
 
-    balanced_group = (
-        'body.kaori-analytics-publication.two-column.primary-split,'
-        'body.kaori-analytics-publication.two-column.chart-assessment-split,'
-        'body.kaori-analytics-publication.two-column.pod-node-split,'
-        'body.kaori-analytics-publication.two-column.distribution-split{'
-    )
-    assert balanced_group in compact
-    block = compact.split(balanced_group, 1)[1].split('}', 1)[0]
-    assert 'grid-template-columns:minmax(0,1fr)minmax(0,1fr)' in block
+    assert template.count('publication-pair') >= 5
+    assert '.publication-pair{' in shared_compact
+    pair_block = shared_compact.split('.publication-pair{', 1)[1].split('}', 1)[0]
+    assert 'grid-template-columns:minmax(0,1fr)minmax(0,1fr)!important' in pair_block
+    assert '.publication-pair.is-stacked{' in shared_compact
 
-    assert '.trend-interpretation-stack' in css
-    trend_block = compact.split('.trend-interpretation-stack{', 1)[1].split('}', 1)[0]
-    assert 'display:grid' in trend_block
-    assert 'grid-template-columns:minmax(0,1fr)' in trend_block
+    assert '.trend-interpretation-stack' in shared_css
+    assert '.trend-interpretation-stack{display:grid' in shared_compact
 
-    distribution_pair = template.split('class="two-column distribution-split"', 1)[1].split(
+    distribution_pair = template.split('class="two-column publication-pair distribution-split"', 1)[1].split(
         "ui.section('Consumer Reference Register'", 1
     )[0]
     assert 'distribution-note' not in distribution_pair
     assert 'cpu-concentration-card' in distribution_pair
     assert 'distribution-boundary-note' in template
-    assert '.cpu-concentration-card' in css
-    memory_card = compact.split('.memory-concentration-card{', 1)[1].split('}', 1)[0]
-    cpu_card = compact.split('.cpu-concentration-card{', 1)[1].split('}', 1)[0]
-    assert 'min-height:60mm' in memory_card
-    assert 'min-height:60mm' in cpu_card
+    assert '.memory-concentration-card' in shared_css
+    assert '.cpu-concentration-card' in shared_css
+    assert 'height:var(--analytics-visual-distribution-height)!important' in shared_compact
 
 
 def test_resource_utilization_figure_numbering_is_contiguous_for_visuals_only() -> None:
@@ -145,12 +139,12 @@ def test_resource_utilization_reference_blocks_follow_title_description_content_
         in template
     )
 
-    css = read('app/static/reports/pdf/resource_utilization.css')
-    compact = ''.join(css.split())
-    assert '.reference-helper{' in compact
-    helper_block = compact.split('.reference-helper{', 1)[1].split('}', 1)[0]
-    assert 'color:#64748B' in helper_block
-    assert 'font-size:6.35pt' in helper_block
+    shared_css = read('app/static/reports/pdf/analytics_publication.css')
+    compact = ''.join(shared_css.split())
+    assert '.reference-helper,' in compact
+    helper_block = compact.split('.reference-helper,', 1)[1].split('}', 1)[0]
+    assert 'color:var(--analytics-muted)' in helper_block
+    assert 'font-size:6.4pt' in helper_block
 
 
 def test_resource_utilization_sections_after_paired_content_use_explicit_vertical_rhythm() -> None:

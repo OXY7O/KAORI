@@ -8,7 +8,7 @@
 .compact-decision-register th:nth-child(2) { width: 68%; }
 .compact-decision-register th:nth-child(3) { width: 20%; }
 .single-column-references { display: block; }
-.recovery-split { grid-template-columns: 1.08fr .92fr; }
+.recovery-split { }
 .recovery-steps { margin: 0; padding: 0; list-style: none; }
 .recovery-steps li { display: grid; grid-template-columns: 8mm minmax(0, 1fr); gap: 3mm; align-items: start; padding: 3mm 0; border-bottom: .22mm solid #E2E8F0; }
 .recovery-steps li:last-child { border-bottom: none; }

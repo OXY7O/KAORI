@@ -1,10 +1,10 @@
 /* KAORI Alerts & Anomalies PDF specialization v3.0. */
 .kaori-alerts-anomalies-report .paired-sections > .content-section { display: flex; flex-direction: column; align-self: start; margin-top: 0; }
-.kaori-alerts-anomalies-report .executive-split { grid-template-columns: 1.05fr .95fr; }
+.kaori-alerts-anomalies-report .executive-split { }
 .kaori-alerts-anomalies-report .severity-split,
 .kaori-alerts-anomalies-report .anomaly-split,
 .kaori-alerts-anomalies-report .ownership-split,
-.kaori-alerts-anomalies-report .correlation-split { grid-template-columns: 1fr 1fr; }
+.kaori-alerts-anomalies-report .correlation-split { }
 
 .distribution-list { display: grid; gap: 3mm; }
 .distribution-row { display: grid; grid-template-columns: 28mm minmax(0, 1fr) 12mm; gap: 3mm; align-items: center; }
@@ -17,7 +17,6 @@
 .distribution-fill.critical { background: #DC2626; }
 .distribution-row span { text-align: right; font-weight: 700; white-space: nowrap; }
 .large-distribution { gap: 4mm; }
-.subheading { margin: 4.5mm 0 0 !important; }
 .compact-callout { margin-top: 4mm; border-left: 1mm solid #7C3AED; background: #F8FAFC; padding: 4mm; }
 .compact-callout.warning { border-left-color: #D97706; }
 .compact-callout strong { display: block; font-size: 7.25pt; line-height: 1.35; }
@@ -55,15 +54,6 @@
 .recommendation-register th:nth-child(5) { width: 17%; }
 .recommendation-register th:nth-child(6) { width: 10%; }
 .governance-register th { width: 27%; }
-
-.page-active-alerts .identity-title,
-.page-anomaly-evidence .identity-title,
-.page-alert-ownership .identity-title,
-.page-alert-correlation .identity-title { font-size: 6.75pt; }
-.page-active-alerts .identity-meta,
-.page-anomaly-evidence .identity-meta,
-.page-alert-ownership .identity-meta,
-.page-alert-correlation .identity-meta { font-size: 6.05pt; }
 .page-active-alerts .identity-item,
 .page-anomaly-evidence .identity-item,
 .page-alert-ownership .identity-item,
@@ -77,12 +67,19 @@
 .status-grid span { color: #64748B; font-size: 5.9pt; line-height: 1.35; }
 .empty-state { color: #64748B; font-style: italic; }
 
-.page-alert-executive .content-section,
-.page-severity-category .content-section,
-.page-active-alerts .content-section,
-.page-anomaly-evidence .content-section,
-.page-alert-ownership .content-section,
-.page-alert-correlation .content-section,
-.page-alert-recommendations .content-section { margin-top: 4.5mm; }
-.page-alert-methodology .content-section { margin-top: 4mm; }
-.page-alert-methodology .report-table { font-size: var(--analytics-type-table-dense); }
+/* R6 dense-page budget: keep the Active Alerts decision above the footer. */
+.page-active-alerts .report-table th,
+.page-active-alerts .report-table td {
+  padding: 1.15mm 2mm;
+}
+.page-active-alerts .identity-item {
+  padding-top: .75mm;
+  padding-bottom: .75mm;
+}
+.page-active-alerts .alert-references .reference-item {
+  padding-top: .75mm;
+  padding-bottom: .75mm;
+}
+.page-active-alerts .identity-register {
+  margin-top: 2.4mm;
+}

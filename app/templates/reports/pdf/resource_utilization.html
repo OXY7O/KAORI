@@ -88,7 +88,7 @@
                             <div class="page-content">
                                 {{ page_title(1, 'Executive Brief', 'Management position for resource utilization at the report cut-off.') }}
                                 {{ metric_strip(p.executive.metrics) }}
-                                <div class="two-column primary-split">
+                                <div class="two-column publication-pair primary-split">
                                     {% call ui.section('Figure 1 - Shared Resource Utilization', 'Committed utilization against warning and critical bands.') %}
                                         <div class="utilization-bars">
                                             {% for item in p.executive.resources %}
@@ -158,9 +158,9 @@
                             <div class="page-content">
                                 {{ page_title(2, 'CPU Utilization', 'Current CPU posture, trend direction, and workload concentration.') }}
                                 {{ metric_strip(p.cpu.metrics) }}
-                                <div class="two-column chart-assessment-split">
+                                <div class="two-column publication-pair chart-assessment-split">
                                     {% call ui.section('Figure 2 - CPU Direction', 'Committed historical utilization for the selected reporting period.') %}
-                                        <div class="chart-frame">{{ p.cpu.chart_svg|safe }}</div>
+                                        <div class="chart-frame publication-visual is-pair">{{ p.cpu.chart_svg|safe }}</div>
                                         <div class="chart-legend chart-to-section-gap"><span class="legend-cpu">Committed CPU signal</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
                                     {% endcall %}
                                     {% call ui.section('CPU Operating Assessment', 'Interpretation remains separate from the comparison register.') %}
@@ -223,9 +223,9 @@
                             <div class="page-content">
                                 {{ page_title(3, 'Memory Utilization', 'Current memory posture, growth direction, and concentration risk.') }}
                                 {{ metric_strip(p.memory.metrics) }}
-                                <div class="two-column chart-assessment-split">
+                                <div class="two-column publication-pair chart-assessment-split">
                                     {% call ui.section('Figure 3 - Memory Direction and Projection', 'Committed memory endpoint and projected planning position.') %}
-                                        <div class="chart-frame">{{ p.memory.chart_svg|safe }}</div>
+                                        <div class="chart-frame publication-visual is-pair">{{ p.memory.chart_svg|safe }}</div>
                                         <div class="chart-legend chart-to-section-gap"><span class="legend-memory">Historical / projected memory</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
                                     {% endcall %}
                                     {% call ui.section('Memory Operating Assessment', 'Current posture and planning implication.') %}
@@ -288,7 +288,7 @@
                             <div class="page-content">
                                 {{ page_title(4, 'Pod and Node Utilization', 'Schedulable pod use and node participation at the committed cut-off.') }}
                                 {{ metric_strip(p.pod_node.metrics) }}
-                                <div class="two-column pod-node-split">
+                                <div class="two-column publication-pair pod-node-split">
                                     {% call ui.section('Figure 4 - Pod Scheduling Position', 'Committed utilization and remaining scheduling capacity.') %}
                                         <div class="pod-bars">
                                             <div class="pod-row">
@@ -313,7 +313,7 @@
                                         <p class="source-note">The percentage signal and reported count values retain the source scope returned by the committed payload.</p>
                                     {% endcall %}
                                     {% call ui.section('Figure 5 - Node Participation', 'Ready nodes participating in current capacity assumptions.') %}
-                                        <div class="node-card">
+                                        <div class="node-card publication-visual is-pair">
                                             <div class="node-donut">{{ p.pod_node.node_donut_svg|safe }}</div>
                                             <div class="node-legend">
                                                 <div><i class="ready-key"></i><span>Ready</span><strong>{{ p.pod_node.ready_nodes }}</strong></div>
@@ -359,9 +359,9 @@
                             {{ report_header() }}
                             <div class="page-content">
                                 {{ page_title(5, 'Utilization Distribution', 'Concentration of displayed resource signals by namespace and resource identity.') }}
-                                <div class="two-column distribution-split">
+                                <div class="two-column publication-pair distribution-split">
                                     {% call ui.section('Figure 6 - Displayed Memory Concentration', 'Distribution across the top three displayed memory consumers.') %}
-                                        <div class="memory-concentration-card">
+                                        <div class="memory-concentration-card publication-visual is-distribution">
                                             <div class="donut-wrap">{{ p.distribution.memory_donut_svg|safe }}</div>
                                             <div class="donut-legend">
                                                 {% for item in p.distribution.memory_consumers %}
@@ -373,7 +373,7 @@
                                         </div>
                                     {% endcall %}
                                     {% call ui.section('Figure 7 - CPU Concentration', 'Relative contribution across the top three displayed CPU consumers.') %}
-                                        <div class="cpu-concentration-card">
+                                        <div class="cpu-concentration-card publication-visual is-distribution">
                                             <div class="cpu-concentration-bars">
                                                 {% for item in p.distribution.cpu_consumers %}
                                                     <div class="concentration-row">
@@ -448,7 +448,7 @@
                                 {{ page_title(6, 'Trend Evidence', 'Committed historical direction and planning signals across the selected period.') }}
                                 {{ metric_strip(p.trend.metrics) }}
                                 {% call ui.section('Figure 8 - Resource Trend Outlook', 'Historical and projected endpoints within the committed boundary.') %}
-                                    <div class="trend-chart-frame">{{ p.trend.chart_svg|safe }}</div>
+                                    <div class="trend-chart-frame publication-visual is-wide">{{ p.trend.chart_svg|safe }}</div>
                                     <div class="chart-legend chart-to-section-gap"><span class="legend-memory">Memory</span><span class="legend-pods">Pods</span><span class="legend-cpu">CPU</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
                                 {% endcall %}
                                 <div class="trend-interpretation-stack">

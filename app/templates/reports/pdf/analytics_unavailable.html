@@ -102,7 +102,7 @@
                 {{ ui.report_header(p.report_type_label) }}
                 <div class="page-content">
                     {{ ui.page_title(2, 'Recovery and Generation Controls', 'Required recovery steps and reproducibility controls for this unavailable-source artifact.', p.data_cutoff) }}
-                    <div class="two-column recovery-split">
+                    <div class="two-column publication-pair recovery-split">
                         {% call ui.section('Recovery Plan', 'Complete these steps before regenerating the report.') %}
                             <ol class="recovery-steps">
                                 {% for step in p.recovery.steps %}

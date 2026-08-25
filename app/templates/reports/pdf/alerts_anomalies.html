@@ -92,7 +92,7 @@
                         <article class="page page-alert-executive">{{ report_header() }}
                             <div class="page-content">
                                 {{ page_title(1, 'Executive Alert Brief', 'Management position for active alerts and anomaly evidence at the report cut-off.') }}{{ metric_strip(p.executive.metrics) }}
-                                <div class="two-column paired-sections executive-split">
+                                <div class="two-column publication-pair paired-sections executive-split">
                                     {% call ui.section('Figure 1 - Alert Posture', 'Severity and displayed active-alert category distribution.') %}
                                         <h3>Severity Distribution</h3>
                                         <div class="distribution-list">
@@ -145,7 +145,7 @@
                         <article class="page page-severity-category">{{ report_header() }}
                             <div class="page-content">
                                 {{ page_title(2, 'Severity & Category', 'Alert count, category coverage, and interpretation boundary.') }}{{ metric_strip(p.severity_category.metrics) }}
-                                <div class="two-column paired-sections severity-split">
+                                <div class="two-column publication-pair paired-sections severity-split">
                                     {% call ui.section('Severity Distribution', 'Active alerts by committed severity label.') %}
                                         <div class="distribution-list large-distribution">
                                             {% for item in p.severity_category.severity_rows %}{{ distribution_row(item, 'critical' if item.label == 'Critical' else ('warning' if item.label == 'Warning' else 'info') ) }}{% endfor %}
@@ -255,7 +255,7 @@
                         <article class="page page-anomaly-evidence">{{ report_header() }}
                             <div class="page-content">
                                 {{ page_title(4, 'Anomaly Evidence', 'Detected anomaly count, displayed records, and explicit evidence availability.') }}{{ metric_strip(p.anomalies.metrics) }}
-                                <div class="two-column paired-sections anomaly-split">
+                                <div class="two-column publication-pair paired-sections anomaly-split">
                                     {% call ui.section('Recent Anomaly Register', 'Comparable anomaly evidence stays in-table; scope remains by reference.') %}
                                         <table class="report-table anomaly-summary-register">
                                             <thead>
@@ -333,7 +333,7 @@
                         <article class="page page-alert-ownership">{{ report_header() }}
                             <div class="page-content">
                                 {{ page_title(5, 'Duration & Ownership', 'Sustained conditions, accountable scope, metadata coverage, and response state.') }}{{ metric_strip(p.ownership.metrics) }}
-                                <div class="two-column paired-sections ownership-split">
+                                <div class="two-column publication-pair paired-sections ownership-split">
                                     {% call ui.section('Duration Review', 'Committed start times support prioritization, not autonomous closure.') %}
                                         <div class="interpretation-card warning-card">
                                             <strong>Sustained alerts require explicit ownership.</strong>
@@ -389,7 +389,7 @@
                         <article class="page page-alert-correlation">{{ report_header() }}
                             <div class="page-content">
                                 {{ page_title(6, 'Correlation & Evidence Boundary', 'Cross-signal relationships, evidence gaps, and interpretation limits.') }}{{ metric_strip(p.correlation.metrics) }}
-                                <div class="two-column paired-sections correlation-split">
+                                <div class="two-column publication-pair paired-sections correlation-split">
                                     {% call ui.section('Potential Cross-Signal Review', 'Shared namespace and timing can suggest review, not causality.') %}
                                         <div class="interpretation-card warning-card">
                                             <strong>Potential relationships remain unconfirmed.</strong>

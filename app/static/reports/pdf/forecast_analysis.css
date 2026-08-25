@@ -1,8 +1,8 @@
 /* KAORI Forecast Analysis PDF specialization v3.0. */
-.forecast-executive-split { grid-template-columns: 1.1fr .9fr; }
-.resource-forecast-split { grid-template-columns: 1.12fr .88fr; }
+.forecast-executive-split { }
+.resource-forecast-split { }
 .pod-storage-split,
-.exposure-split { grid-template-columns: 1fr 1fr; }
+.exposure-split { }
 .forecast-executive-split > .content-section,
 .resource-forecast-split > .content-section,
 .pod-storage-split > .content-section,
@@ -66,11 +66,11 @@
 .critical-marker { left: 85%; background: #DC2626; }
 
 .chart-frame { border: .3mm solid #D7DEE8; background: #FCFDFE; padding: 2.5mm; overflow: hidden; }
-.chart-frame svg { display: block; width: 100%; height: auto; }
-.portfolio-chart { height: 70mm; }
-.portfolio-chart svg { height: 64mm; }
-.resource-chart { height: 56mm; }
-.resource-chart svg { height: 50mm; }
+.chart-frame svg { display: block; width: 100%; }
+.portfolio-chart { }
+.portfolio-chart svg { }
+.resource-chart { }
+.resource-chart svg { }
 
 .methodology-tables { display: grid; grid-template-columns: minmax(0, 1.42fr) minmax(0, .88fr); gap: 6mm; align-items: start; }
 .methodology-tables h3 { margin-bottom: 2.4mm; }
@@ -83,16 +83,3 @@
 .source-table th:nth-child(1) { width: 50%; }
 .source-table th:nth-child(2) { width: 20%; }
 .source-table th:nth-child(3) { width: 30%; }
-
-.page-forecast-executive .content-section,
-.page-forecast-portfolio .content-section,
-.page-forecast-cpu .content-section,
-.page-forecast-memory .content-section,
-.page-forecast-pod-storage .content-section,
-.page-forecast-exposure .content-section,
-.page-forecast-recommendations .content-section { margin-top: 4.6mm; }
-.page-forecast-methodology .content-section { margin-top: 3.8mm; }
-.page-forecast-methodology .section-body { margin-top: 2.3mm; }
-.page-forecast-executive .reference-item p,
-.page-forecast-recommendations .reference-item p,
-.page-forecast-methodology .reference-item p { font-size: 6.2pt; }

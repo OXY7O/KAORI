@@ -106,10 +106,13 @@ Analytics Overview is no longer allowed to carry a separate typography scale fro
 - Section helper descriptions should remain at or below 72 characters. Shorter wording is preferred when a 50/50 layout would otherwise wrap unnecessarily.
 - Every major content block follows `title -> description -> content`. A missing description is a publication-contract failure.
 - Peer blocks displayed side by side use a symmetric 50/50 layout. If either side becomes too dense, stack the blocks vertically instead of shrinking type or forcing an asymmetric squeeze.
-- Paired sections reserve 5.6mm of clearance before the next section so charts, cards, and registers never visually collide.
+- Paired sections never add a second clearance layer. The following primary section contributes the single canonical 5.6mm gap; pair wrappers add 0mm bottom padding.
 - Dense pages remove or relocate detail before changing the canonical typography or rhythm tokens.
+- Report-specific CSS must not own top-level section spacing; `analytics_publication.css` is the single rhythm owner.
+- Dense pages compact internal chrome before typography: reduce local table/reference padding, shorten helper copy, or move detail into references before changing font roles.
+- Chart labels use stable reference codes for technical or long identities; the complete identity remains in the register below the chart.
 
-The family rhythm is fixed at 1.45 mm from title to description, 3 mm from description to content, 2.2 mm between narrative paragraphs, 3.6 mm from concise register to references, and 5.6 mm between primary sections.
+The family rhythm is fixed at 1.45 mm from title to description, 3 mm from description to content, 2.2 mm between narrative paragraphs, 3.6 mm from concise register to references, and exactly 5.6 mm between primary sections. Wrapper spacing must never add a second 5.6 mm gap.
 
 ### 4.3 Management readability and canvas safety (2026-08-24)
 
@@ -123,6 +126,14 @@ Production Analytics PDFs must be readable by technical operators and management
 - Multi-series charts reserve a dedicated right-side label gutter. Endpoint labels are anchored inside that gutter and may use leader lines; they never overlap plotted data or extend beyond the SVG view box.
 - If a table would become an inventory dump, the analytics report is a management and operational summary: retain only the decision-relevant top rows and aggregate posture. The inventory publication owns exhaustive object-level detail.
 - Charts, labels, registers, reference notes, and management conclusions must remain visually separate. A chart legend may replace repeated long labels when that improves the reading path.
+
+### 4.3 Deterministic visual-box and footer safety lock (2026-08-25)
+
+Graphic surfaces use fixed publication tokens rather than ad-hoc per-report heights. Paired chart boxes use 50 mm, distribution visual boxes use 48 mm, and wide trend/forecast boxes use 66 mm. SVG content scales inside the locked box; content is never allowed to resize the publication surface unpredictably.
+
+The bottom 18 mm of every content page is reserved as the footer-safe zone. Dense pages must shorten, relocate, or split secondary detail instead of allowing narrative or visual content to cross the footer rule.
+
+Status Language is rendered by the shared publication component in every Analytics report. Report-specific status legend markup is prohibited.
 
 ## 5. Vertical rhythm
 
@@ -242,3 +253,25 @@ Before release, render every Analytics report and inspect every page as an image
 - paragraph spacing is consistent;
 - public references use the documented convention;
 - source-unavailable output uses the canonical design.
+
+## 13. Dynamic content and pagination
+
+Analytics publication layout is content-budgeted. The fixed A4 canvas, canonical typography, and editorial rhythm do not change when evidence becomes longer or more numerous.
+
+- Typography never shrinks to make dynamic content fit.
+- Peer information uses 50/50 or stack; report-specific CSS does not own peer column ratios.
+- A short balanced pair stays side by side. A dense pair stacks vertically at full width.
+- Fixed visual boxes scale chart content inside the box instead of letting the visual grow into adjacent sections.
+- Dynamic tables preserve order and may continue on a continuation page with the table header repeated.
+- A continuation page belongs to the same section; the next section begins on a new page when the remaining page budget is unsafe.
+- Reference registers use two columns only for short, limited identities; long or numerous identities stack to one column.
+- Long technical identities remain in reference layers and never force comparison-table columns wider.
+- Every page preserves the 18mm footer safety zone.
+
+The reusable density and pagination helpers live in:
+
+```text
+app/reports/export/html_pdf/publication_layout.py
+```
+
+The shared template primitives expose `adaptive_pair()` and `continuation_heading()` so new report templates can adopt the same behavior without re-implementing spacing or pagination rules.

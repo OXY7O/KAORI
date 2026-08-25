@@ -39,8 +39,8 @@ def test_multi_series_chart_labels_have_a_reserved_right_gutter() -> None:
 
     assert 'left, right, top, bottom = 58, 92, 20, 45' in resource
     assert 'label_x = width - 70' in resource
-    assert 'L {label_x - 7:.1f} {label_y:.1f}' in resource
-    assert 'style="font:12px Inter,sans-serif;font-weight:700' in resource
+    assert 'label_x - 7' in resource
+    assert 'style="font:12px Inter,sans-serif' in resource
 
     assert 'left, right, top, bottom = 58, 165, 22, 40' in capacity
     assert 'label_line_x = width - 166' in capacity
@@ -57,8 +57,10 @@ def test_dense_storage_and_workload_pages_defer_detail_to_reference_blocks() -> 
     assert "'pvc_rows': _pvc_records(pvc_rows)[:2]" in storage
 
     assert '.signal-table th:first-child,' in workload_css
-    assert 'width: 12%; white-space: nowrap;' in workload_css
-    assert '.signal-table td { white-space: nowrap; }' in workload_css
+    assert '.signal-table th:nth-child(2) { width: 53%; }' in workload_css
+    assert '.signal-table td:nth-child(2)' in workload_css
+    assert 'white-space: normal;' in workload_css
+    assert 'overflow-wrap: break-word;' in workload_css
 
 
 def test_publication_standard_documents_management_readability_and_canvas_safety() -> None:

@@ -99,7 +99,7 @@
                             <div class="page-content">
                                 {{ page_title(1, 'Executive Forecast Brief', 'Management position for forecast evidence at the report cut-off.') }}
                                 {{ metric_strip(p.executive.metrics) }}
-                                <div class="two-column forecast-executive-split">
+                                <div class="two-column publication-pair forecast-executive-split">
                                     {% call ui.section('Figure 1 - Forecast Portfolio', 'Current and projected signals against warning and critical bands.') %}
                                         <div class="forecast-bars">{% for item in p.executive.resources %}{{ resource_bar(item) }}{% endfor %}</div>
                                     {% endcall %}
@@ -151,7 +151,7 @@
                                 {{ page_title(2, 'Forecast Portfolio', 'Resource-level direction, projected position, threshold timing, and confidence.') }}
                                 {{ metric_strip(p.portfolio.metrics) }}
                                 {% call ui.section('Figure 2 - Resource Forecast Outlook', 'Current and projected endpoints; missing evidence stays explicit.') %}
-                                    <div class="chart-frame portfolio-chart">{{ p.portfolio.chart_svg|safe }}</div>
+                                    <div class="chart-frame portfolio-chart publication-visual is-wide">{{ p.portfolio.chart_svg|safe }}</div>
                                 {% endcall %}
                                 {% call ui.section('Projected Resource Register', 'Threshold timing is separated from projected value and confidence.') %}
                                     <table class="report-table portfolio-register">
@@ -192,9 +192,9 @@
                             <div class="page-content">
                                 {{ page_title(3, 'CPU Forecast', 'Committed CPU direction, headroom, and workload-specific planning boundary.') }}
                                 {{ metric_strip(p.cpu.metrics) }}
-                                <div class="two-column resource-forecast-split">
+                                <div class="two-column publication-pair resource-forecast-split">
                                     {% call ui.section('Figure 3 - CPU Direction', 'Committed historical direction and projected endpoint.') %}
-                                        <div class="chart-frame resource-chart">{{ p.cpu.resource.chart_svg|safe }}</div>
+                                        <div class="chart-frame resource-chart publication-visual is-pair">{{ p.cpu.resource.chart_svg|safe }}</div>
                                     {% endcall %}
                                     {% call ui.section('CPU Forecast Assessment', 'Planning interpretation remains separate from consumer evidence.') %}
                                         <div class="interpretation-card {{ p.cpu.resource.tone }}-card">
@@ -239,9 +239,9 @@
                             <div class="page-content">
                                 {{ page_title(4, 'Memory Forecast', 'Committed memory direction, threshold timing, and long-range planning implications.') }}
                                 {{ metric_strip(p.memory.metrics) }}
-                                <div class="two-column resource-forecast-split">
+                                <div class="two-column publication-pair resource-forecast-split">
                                     {% call ui.section('Figure 4 - Memory Direction and Projection', 'Current endpoint and projected position across the configured horizon.') %}
-                                        <div class="chart-frame resource-chart">{{ p.memory.resource.chart_svg|safe }}</div>
+                                        <div class="chart-frame resource-chart publication-visual is-pair">{{ p.memory.resource.chart_svg|safe }}</div>
                                     {% endcall %}
                                     {% call ui.section('Memory Forecast Assessment', 'The primary long-range planning signal.') %}
                                         <div class="interpretation-card {{ p.memory.resource.tone }}-card">
@@ -286,9 +286,9 @@
                             <div class="page-content">
                                 {{ page_title(5, 'Pod & Storage Forecast', 'Scheduling projection and explicit storage forecast availability state.') }}
                                 {{ metric_strip(p.pod_storage.metrics) }}
-                                <div class="two-column pod-storage-split">
+                                <div class="two-column publication-pair pod-storage-split">
                                     {% call ui.section('Pod Scheduling Forecast', 'Committed pod direction and projected schedulable pressure.') %}
-                                        <div class="chart-frame resource-chart">{{ p.pod_storage.pods.resource.chart_svg|safe }}</div>
+                                        <div class="chart-frame resource-chart publication-visual is-pair">{{ p.pod_storage.pods.resource.chart_svg|safe }}</div>
                                     {% endcall %}
                                     {% call ui.section('Storage Forecast Evidence', 'Missing evidence remains explicit and is never converted to zero.') %}
                                         <div class="interpretation-card {{ p.pod_storage.storage.resource.tone }}-card">
@@ -363,7 +363,7 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                <div class="two-column exposure-split">
+                                <div class="two-column publication-pair exposure-split">
                                     {% call ui.section('Confidence Interpretation', 'How committed forecast status should be read.') %}
                                         <div class="interpretation-card">
                                             <strong>{{ p.exposure.confidence_title }}</strong>

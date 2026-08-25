@@ -10,6 +10,7 @@ from app.reports.export.html_pdf.analytics_publication_standard import (
     ANALYTICS_PUBLICATION_STANDARD,
     analytics_layout_contract,
 )
+from app.reports.export.html_pdf.publication_copy import compact_governance_signal
 
 
 def build_workload_analysis_presentation(
@@ -580,18 +581,10 @@ def _governance_analysis(
     actionable_count = sum(1 for item in normalized if item['status'] in {'Open', 'Review'})
     critical_count = sum(1 for item in normalized if item['priority'] == 'P1')
     review_count = sum(1 for item in normalized if item['status'] in {'Open', 'Review'})
-    signal_labels = {
-        '16 Namespaces Without ResourceQuota': 'Missing ResourceQuota',
-        '68 Workloads With Incomplete Requests': 'Incomplete Requests',
-        '70 Workloads Need Memory Limit Review': 'Memory Limit Review',
-        '44 BestEffort Workloads': 'BestEffort Workloads',
-        '23 Workloads Have Incomplete Metrics Coverage': 'Metrics Coverage',
-        '68 Workloads Need Right-Sizing Review': 'Right-Sizing Review',
-    }
     signals = [
         {
             'ref': item['ref'],
-            'signal': signal_labels.get(item['title'], item['title']),
+            'signal': compact_governance_signal(item['title']),
             'namespace': 'Selected Scope',
             'state': item['status'],
             'tone': item['tone'],
@@ -995,9 +988,7 @@ def _is_actionable(item: Mapping[str, Any]) -> bool:
     value = item.get('is_actionable')
     if isinstance(value, bool):
         return value
-    if _text(value, '').lower() in {'yes', 'true', '1'}:
-        return True
-    return _priority(_text(item.get('priority'), 'Info')) in {'P1', 'P2'}
+    return _text(value, '').lower() in {'yes', 'true', '1'} or _priority(_text(item.get('priority'), 'Info')) in {'P1', 'P2'}
 
 
 def _date_text(value: Any) -> str:

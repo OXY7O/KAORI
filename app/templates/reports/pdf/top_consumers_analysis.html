@@ -94,7 +94,7 @@
                             {{ report_header() }}
                             <div class="page-content">
                                 {{ page_title(1, 'Executive Consumer Brief', 'Management position for the displayed consumer set at the report cut-off.') }}{{ metric_strip(p.executive.metrics) }}
-                                <div class="two-column paired-sections executive-split">
+                                <div class="two-column publication-pair paired-sections executive-split">
                                     {% call ui.section('Figure 1 - Leading Consumer Signals', 'Displayed CPU and memory values; the set is not a complete denominator.') %}
                                         <h3>CPU</h3>
                                         <div class="consumer-bars">
@@ -153,7 +153,7 @@
                                 {{ report_header() }}
                                 <div class="page-content">
                                     {{ page_title(number, title, 'Leading contributors, displayed share, normalized value, and validation boundary.') }}{{ metric_strip(page_data.metrics) }}
-                                    <div class="two-column paired-sections resource-split">
+                                    <div class="two-column publication-pair paired-sections resource-split">
                                         {% call ui.section(figure_title, 'Relative contribution across the committed displayed ranking set.') %}
                                             <div class="consumer-bars large-bars">
                                                 {% for item in page_data.rows %}
@@ -224,12 +224,12 @@
                         <article class="page page-namespace-concentration">{{ report_header() }}
                             <div class="page-content">
                                 {{ page_title(4, 'Namespace Concentration', 'Displayed contribution grouped by namespace and resource signal.') }}{{ metric_strip(p.namespace.metrics) }}
-                                <div class="two-column paired-sections namespace-split">
+                                <div class="two-column publication-pair paired-sections namespace-split">
                                     {% call ui.section('CPU Namespace Distribution', 'Displayed top-three CPU contribution by namespace.') %}
                                         <div class="namespace-bars">
                                             {% for item in p.namespace.cpu_rows %}
                                                 <div class="namespace-bar-row">
-                                                    <strong>{{ item.namespace }}</strong>
+                                                    <strong>{{ item.ref }}</strong>
                                                     <div class="namespace-track">{{ ui.percent_fill(item.share, 'namespace-fill info') }}</div>
                                                     <span>{{ item.share_label }}</span>
                                                 </div>
@@ -242,7 +242,7 @@
                                         <div class="namespace-bars">
                                             {% for item in p.namespace.memory_rows %}
                                                 <div class="namespace-bar-row">
-                                                    <strong>{{ item.namespace }}</strong>
+                                                    <strong>{{ item.ref }}</strong>
                                                     <div class="namespace-track">{{ ui.percent_fill(item.share, 'namespace-fill primary') }}</div>
                                                     <span>{{ item.share_label }}</span>
                                                 </div>
@@ -275,7 +275,7 @@
                                                     <td>{{ item.namespace }}</td>
                                                     <td>{{ item.signal }}</td>
                                                     <td>{{ item.value }}</td>
-                                                    <td>{{ item.share }}</td>
+                                                    <td>{{ item.share_label }}</td>
                                                     <td class="status {{ item.tone }}">{{ item.status }}</td>
                                                 </tr>
                                             {% endfor %}
@@ -287,7 +287,7 @@
                         <article class="page page-consumer-comparison">{{ report_header() }}
                             <div class="page-content">
                                 {{ page_title(5, 'Consumer Comparison', 'Cross-resource ranking, unit boundary, and interpretation guardrails.') }}{{ metric_strip(p.comparison.metrics) }}
-                                <div class="two-column paired-sections comparison-split">
+                                <div class="two-column publication-pair paired-sections comparison-split">
                                     {% call ui.section('Cross-Resource Comparison Boundary', 'CPU and memory use different units and are not directly rankable.') %}
                                         <div class="interpretation-card normal-card">
                                             <strong>CPU and memory rankings are independent.</strong>
@@ -372,7 +372,7 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                <div class="two-column paired-sections risk-split">
+                                <div class="two-column publication-pair paired-sections risk-split">
                                     {% call ui.section('Concentration Boundary', 'A top rank is not equivalent to saturation or abnormal behavior.') %}
                                         <div class="interpretation-card warning-card">
                                             <strong>Displayed concentration supports review.</strong>

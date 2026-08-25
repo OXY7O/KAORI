@@ -66,7 +66,7 @@
             <div class="page-content">
                 {{ page_title(1, 'Executive Brief', 'Management position for the selected Object Storage system at the report cut-off.') }}
                 {{ ui.metric_strip(p.executive.metrics, 4) }}
-                <div class="two-column object-storage-executive-split">
+                <div class="two-column publication-pair object-storage-executive-split">
                     {% call ui.section('Management Summary', 'The principal analytical signals and the management decision boundary.') %}
                         {{ ui.interpretation_card(p.executive.headline, p.executive.summary, 'Complete bucket detail remains in Object Storage Inventory.', 'info') }}
                     {% endcall %}
@@ -104,7 +104,7 @@
             <div class="page-content">
                 {{ page_title(2, 'Capacity & Governance', 'Capacity position, remaining headroom, quota coverage, and governance pressure.') }}
                 {{ ui.metric_strip(p.capacity.metrics, 4) }}
-                <div class="two-column object-storage-analysis-split">
+                <div class="two-column publication-pair object-storage-analysis-split">
                     {% call ui.section('Capacity & Quota Register', 'Decision fields stay concise; Inventory retains full detail.') %}
                         <table class="report-table object-storage-posture-register single-line-register">
                             <thead>
@@ -142,7 +142,7 @@
             <div class="page-content">
                 {{ page_title(3, 'Request & Reliability', 'Request demand, error posture, queue state, traffic, and node availability.') }}
                 {{ ui.metric_strip(p.reliability.metrics, 4) }}
-                <div class="two-column object-storage-analysis-split">
+                <div class="two-column publication-pair object-storage-analysis-split">
                     {% call ui.section('Reliability Register', 'Comparable operational signals remain concise and one-line.') %}
                         <table class="report-table object-storage-reliability-register single-line-register">
                             <thead>
@@ -270,7 +270,7 @@
             <div class="page-content">
                 {{ page_title(6, 'Risk & Recommendations', 'Operational findings and accountable follow-up actions for management review.') }}
                 {{ ui.metric_strip(p.risk.metrics, 4) }}
-                <div class="two-column object-storage-risk-split">
+                <div class="two-column publication-pair object-storage-risk-split">
                     {% call ui.section('Risk Register', 'Leading committed risk signals in the analytical publication.') %}
                         <table class="report-table object-storage-risk-register single-line-register">
                             <thead>

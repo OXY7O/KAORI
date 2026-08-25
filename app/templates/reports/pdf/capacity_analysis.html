@@ -114,7 +114,7 @@
                             <div class="page-content">
                                 {{ page_title(1, 'Executive Brief', 'Management position for committed capacity at the report cut-off.') }}
                                 {{ metric_strip(p.executive.metrics) }}
-                                <div class="two-column primary-split">
+                                <div class="two-column publication-pair primary-split">
                                     {% call ui.section('Figure 1 - Capacity Posture', 'Committed utilization and remaining headroom by resource.') %}
                                         <div class="capacity-bars">
                                             {% for item in p.executive.resources %}
@@ -176,7 +176,7 @@
                             <div class="page-content">
                                 {{ page_title(2, 'Compute Capacity', 'CPU and memory headroom, allocation pressure, and planning interpretation.') }}
                                 {{ metric_strip(p.compute.metrics) }}
-                                <div class="two-column compute-split">
+                                <div class="two-column publication-pair compute-split">
                                     {% call ui.section('CPU Capacity Position', 'Current committed utilization, headroom, requests, limits, and usage.') %}
                                         {{ capacity_bar(p.compute.cpu) }}
                                         <div class="headroom-line"><span>Remaining Headroom</span><strong>{{ p.compute.cpu.headroom_display }}</strong></div>
@@ -225,7 +225,7 @@
                             <div class="page-content">
                                 {{ page_title(3, 'Scheduling Capacity', 'Pod headroom, node participation, and schedulable-capacity evidence.') }}
                                 {{ metric_strip(p.scheduling.metrics) }}
-                                <div class="two-column scheduling-split">
+                                <div class="two-column publication-pair scheduling-split">
                                     {% call ui.section('Pod Scheduling Position', 'Committed utilization, capacity, and remaining scheduling slots.') %}
                                         {{ capacity_bar(p.scheduling.pods) }}
                                         <div class="headroom-line"><span>Remaining Headroom</span><strong>{{ p.scheduling.pods.headroom_display }}</strong></div>
@@ -236,7 +236,7 @@
                                         {{ allocation_rows(p.scheduling.pods.allocation) }}
                                     {% endcall %}
                                     {% call ui.section('Node Participation', 'Ready nodes included in active capacity assumptions.') %}
-                                        <div class="node-card">
+                                        <div class="node-card publication-visual is-pair">
                                             <div class="node-donut">{{ p.scheduling.nodes.donut_svg|safe }}</div>
                                             <div class="node-legend">
                                                 <div><i class="ready-key"></i><span>Ready</span><strong>{{ p.scheduling.nodes.ready }}</strong></div>
@@ -284,7 +284,7 @@
                             <div class="page-content">
                                 {{ page_title(4, 'Storage Capacity', 'Committed storage evidence, availability state, and validation requirements.') }}
                                 {{ metric_strip(p.storage.metrics) }}
-                                <div class="two-column storage-split">
+                                <div class="two-column publication-pair storage-split">
                                     {% call ui.section('Storage Evidence State', 'Missing evidence remains explicit and is not interpreted as zero.') %}
                                         {% if p.storage.resource.evidence_available %}
                                             <div class="storage-ready">
@@ -357,10 +357,10 @@
                                 {{ page_title(5, 'Capacity Forecast', 'Projected threshold pressure and planning horizon for committed capacity signals.') }}
                                 {{ metric_strip(p.forecast.metrics) }}
                                 {% call ui.section('Figure 2 - Capacity Projection Outlook', 'Historical and projected endpoints within the committed boundary.') %}
-                                    <div class="forecast-chart-frame">{{ p.forecast.chart_svg|safe }}</div>
+                                    <div class="forecast-chart-frame publication-visual is-wide">{{ p.forecast.chart_svg|safe }}</div>
                                     <div class="chart-legend chart-to-section-gap"><span class="legend-memory">Memory</span><span class="legend-pods">Pods</span><span class="legend-cpu">CPU</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
                                 {% endcall %}
-                                <div class="two-column forecast-bottom-split">
+                                <div class="two-column publication-pair forecast-bottom-split">
                                     {% call ui.section('Forecast Interpretation', 'Resource-level direction remains explicit.') %}
                                         <table class="report-table forecast-register">
                                             <thead>

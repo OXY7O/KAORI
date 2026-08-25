@@ -12,6 +12,11 @@ from app.reports.export.html_pdf.analytics_publication_standard import (
     ANALYTICS_TEMPLATE_STYLESHEETS,
 )
 from app.reports.export.html_pdf.document import ReportDocument
+from app.reports.export.html_pdf.publication_layout import (
+    choose_pair_mode,
+    choose_reference_columns,
+    paginate_rows,
+)
 
 
 def render_document_pdf(
@@ -24,7 +29,12 @@ def render_document_pdf(
     metadata: dict[str, Any] | None = None,
 ) -> None:
     template = template_environment.get_template(document.template_name)
-    rendered_html = template.render(document=document)
+    rendered_html = template.render(
+        document=document,
+        publication_pair_mode=choose_pair_mode,
+        publication_reference_columns=choose_reference_columns,
+        publication_paginate_rows=paginate_rows,
+    )
     font_config = FontConfiguration()
 
     analytics_stylesheet = ANALYTICS_TEMPLATE_STYLESHEETS.get(document.template_name)

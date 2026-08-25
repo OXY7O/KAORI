@@ -99,7 +99,7 @@
                             <div class="page-content">
                                 {{ page_title(1, 'Executive Brief', 'Management position for workload governance at the report cut-off.') }}
                                 {{ metric_strip(p.executive.metrics) }}
-                                <div class="two-column workload-executive-split">
+                                <div class="two-column publication-pair workload-executive-split">
                                     {% call ui.section('Figure 1 - Workload Governance Posture', 'Evidence coverage across the main workload governance dimensions.') %}
                                         <div class="governance-bars">
                                             {{ governance_bar({'label': 'Inventory', 'value': p.executive.inventory.coverage, 'display': p.executive.inventory.coverage_display, 'available': p.executive.inventory.available}) }}
@@ -151,7 +151,7 @@
                             <div class="page-content">
                                 {{ page_title(2, 'Workload Inventory & Health', 'Committed workload scope, pod participation, and governance review signals.') }}
                                 {{ metric_strip(p.inventory.metrics) }}
-                                <div class="two-column workload-inventory-split">
+                                <div class="two-column publication-pair workload-inventory-split">
                                     {% call ui.section('Inventory Scope', 'Committed inventory volume by workload boundary.') %}
                                         <div class="inventory-card-grid">
                                             <div class="inventory-card"><span>Workloads</span><strong>{{ p.inventory.summary.workload_display }}</strong><small>Workload mapping rows</small></div>
@@ -226,7 +226,7 @@
                             <div class="page-content">
                                 {{ page_title(3, 'Tenant Quota Analysis', 'Namespace quota coverage, pressure evidence, and explicit collection boundaries.') }}
                                 {{ metric_strip(p.quota.metrics) }}
-                                <div class="two-column workload-quota-split">
+                                <div class="two-column publication-pair workload-quota-split">
                                     {% call ui.section('Quota Evidence State', 'Committed namespace quota coverage and pressure posture.') %}
                                         <div class="quota-summary-card">
                                             <div class="governance-bars">
@@ -341,7 +341,7 @@
                                     </table>
                                     {{ ui.identity_register('Workload Identity References', p.mapping.identities, 'Complete workload and namespace identities are separated from the fixed comparison register.') }}
                                 {% endcall %}
-                                <div class="two-column workload-mapping-split">
+                                <div class="two-column publication-pair workload-mapping-split">
                                     {% call ui.section('Mapping Coverage', 'Available and missing relationship evidence.') %}
                                         <div class="governance-bars">{% for item in p.mapping.coverage %}{{ governance_bar(item) }}{% endfor %}</div>
                                     {% endcall %}
@@ -364,7 +364,7 @@
                             <div class="page-content">
                                 {{ page_title(5, 'Requests, Limits & QoS', 'Resource configuration coverage, QoS classification, metrics, and right-sizing evidence.') }}
                                 {{ metric_strip(p.configuration.metrics) }}
-                                <div class="two-column workload-config-split">
+                                <div class="two-column publication-pair workload-config-split">
                                     {% call ui.section('Configuration Coverage', 'Coverage is calculated only from committed workload rows.') %}
                                         <div class="governance-bars">
                                             {% for item in p.configuration.coverage_rows %}{{ governance_bar(item) }}{% endfor %}
@@ -455,7 +455,7 @@
                                         {% for item in p.governance['items'] %}{{ reference_item(item) }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                <div class="two-column workload-governance-split">
+                                <div class="two-column publication-pair workload-governance-split">
                                     {% call ui.section('Right-Sizing Evidence', 'Recommendations require configuration and metrics coverage.') %}
                                         <div class="inventory-card-grid">
                                             <div class="inventory-card"><span>Missing Requests</span><strong>{{ p.configuration.missing_requests }}</strong><small>Missing or partial request coverage</small></div>

@@ -1,10 +1,10 @@
 /* KAORI Top Consumers PDF specialization v3.0. */
 .kaori-top-consumers-report .paired-sections > .content-section { display: flex; flex-direction: column; align-self: start; margin-top: 0; }
-.kaori-top-consumers-report .executive-split { grid-template-columns: 1.1fr .9fr; }
-.kaori-top-consumers-report .resource-split { grid-template-columns: 1.12fr .88fr; }
+.kaori-top-consumers-report .executive-split { }
+.kaori-top-consumers-report .resource-split { }
 .kaori-top-consumers-report .namespace-split,
 .kaori-top-consumers-report .comparison-split,
-.kaori-top-consumers-report .risk-split { grid-template-columns: 1fr 1fr; }
+.kaori-top-consumers-report .risk-split { }
 
 .consumer-bars,
 .namespace-bars { display: grid; gap: 3.2mm; }
@@ -23,7 +23,6 @@
 .consumer-bar-row span,
 .namespace-bar-row span { text-align: right; font-size: 6.5pt; font-weight: 700; white-space: nowrap; }
 .large-bars .consumer-bar-row { grid-template-columns: 12mm minmax(0, 1fr) 22mm; }
-.subheading { margin: 4.5mm 0 0 !important; }
 .compact-callout { margin-top: 4mm; border-left: 1mm solid #7C3AED; background: #F8FAFC; padding: 4mm; }
 .compact-callout strong { display: block; font-size: 7.25pt; line-height: 1.35; }
 .compact-callout p { margin-top: 1.5mm; color: #475569; font-size: 6.6pt; line-height: 1.45; }
@@ -39,11 +38,12 @@
 .comparison-summary-register th:nth-child(3) { width: 16%; }
 .comparison-summary-register th:nth-child(4) { width: 18%; }
 .comparison-summary-register th:nth-child(5) { width: 27%; }
-.namespace-register th:nth-child(1) { width: 9%; }
-.namespace-register th:nth-child(2) { width: 35%; }
-.namespace-register th:nth-child(3) { width: 16%; }
-.namespace-register th:nth-child(4) { width: 18%; }
-.namespace-register th:nth-child(5) { width: 22%; }
+.namespace-register th:nth-child(1) { width: 8%; }
+.namespace-register th:nth-child(2) { width: 30%; }
+.namespace-register th:nth-child(3) { width: 13%; }
+.namespace-register th:nth-child(4) { width: 20%; }
+.namespace-register th:nth-child(5) { width: 13%; }
+.namespace-register th:nth-child(6) { width: 16%; }
 .risk-register th:nth-child(1) { width: 8%; }
 .risk-register th:nth-child(2) { width: 34%; }
 .risk-register th:nth-child(3) { width: 10%; }
@@ -57,11 +57,6 @@
 .recommendation-register th:nth-child(5) { width: 17%; }
 .recommendation-register th:nth-child(6) { width: 10%; }
 .governance-register th { width: 27%; }
-
-.page-resource-consumers .identity-title,
-.page-consumer-comparison .identity-title { font-size: 6.75pt; }
-.page-resource-consumers .identity-meta,
-.page-consumer-comparison .identity-meta { font-size: 6.05pt; }
 .page-resource-consumers .identity-item,
 .page-consumer-comparison .identity-item { padding-top: 1.45mm; padding-bottom: 1.45mm; }
 
@@ -71,12 +66,3 @@
 .status-grid strong { font-size: 6.4pt; }
 .status-grid span { color: #64748B; font-size: 5.9pt; line-height: 1.35; }
 .empty-state { color: #64748B; font-style: italic; }
-
-.page-consumer-executive .content-section,
-.page-resource-consumers .content-section,
-.page-namespace-concentration .content-section,
-.page-consumer-comparison .content-section,
-.page-consumer-risk .content-section,
-.page-consumer-recommendations .content-section { margin-top: 4.6mm; }
-.page-consumer-methodology .content-section { margin-top: 4.1mm; }
-.page-consumer-methodology .report-table { font-size: var(--analytics-type-table-dense); }
