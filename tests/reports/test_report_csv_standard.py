@@ -3,11 +3,17 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-from app.reports.export.csv.renderer import _write_dict_rows, build_analytics_csv_records
+from app.reports.export.csv.renderer import (
+    _write_dict_rows,
+    build_analytics_csv_records,
+    normalize_analytics_scalar,
+)
 from app.reports.export.csv.standard import (
     ANALYTICS_HEADERS,
     COMMON_METADATA_HEADERS,
+    CSV_CONTENT_TYPE,
     CSV_ENCODING,
+    CSV_INTERCHANGE_PROFILE,
     CSV_STANDARD,
     INVENTORY_CONTROL_HEADERS,
     protect_spreadsheet_formula,
@@ -23,12 +29,15 @@ from app.reports.export.tabular import TABULAR_EXPORT_STANDARD, serialize_tabula
 from app.reports.export.xlsx.standard import INVENTORY_WORKBOOK_PROFILES
 
 
-def test_csv_standard_has_stable_v2_metadata_and_record_contract() -> None:
-    assert CSV_STANDARD == 'kaori-reporting-csv-v2.0'
-    assert COMMON_METADATA_HEADERS[0:4] == (
+def test_csv_standard_has_stable_v3_metadata_and_record_contract() -> None:
+    assert CSV_STANDARD == 'kaori-reporting-csv-v3.0'
+    assert CSV_INTERCHANGE_PROFILE == 'portable-tabular-v1'
+    assert CSV_CONTENT_TYPE == 'text/csv; charset=utf-8'
+    assert COMMON_METADATA_HEADERS[0:5] == (
         'format_standard',
         'tabular_standard',
         'schema_version',
+        'interchange_profile',
         'document_reference',
     )
     assert ANALYTICS_HEADERS[: len(COMMON_METADATA_HEADERS)] == COMMON_METADATA_HEADERS
@@ -43,14 +52,22 @@ def test_csv_standard_has_stable_v2_metadata_and_record_contract() -> None:
         'field_order',
         'field',
         'value',
+        'unit',
         'value_type',
         'status',
         'tone',
         'note',
     )
     assert INVENTORY_CONTROL_HEADERS == ('record_type', 'record_reference', 'row_number')
-    assert TABULAR_EXPORT_STANDARD == 'kaori-tabular-export-v2.0'
+    assert TABULAR_EXPORT_STANDARD == 'kaori-tabular-export-v3.0'
 
+
+
+def test_analytics_csv_separates_simple_numeric_units() -> None:
+    assert normalize_analytics_scalar('17.48 GiB') == (17.48, 'GiB')
+    assert normalize_analytics_scalar('56.2%') == (56.2, '%')
+    assert normalize_analytics_scalar('0.14 cores') == (0.14, 'cores')
+    assert normalize_analytics_scalar('Not Available') == ('Not Available', '')
 
 def test_csv_formula_controls_are_escaped() -> None:
     for value in ('=1+1', '+cmd', '-cmd', '@SUM(A1:A2)', '  =1+1'):
@@ -157,3 +174,37 @@ def test_inventory_csv_schema_reuses_inventory_profiles() -> None:
         assert keys
         assert len(keys) == len(set(keys)), report_type
         assert keys[: len(profile.identity_columns)] == profile.identity_columns
+
+
+def test_csv_output_is_detectable_and_round_trips_with_standard_library(tmp_path: Path) -> None:
+    output = tmp_path / 'portable.csv'
+    headers = ('record_reference', 'name', 'value', 'unit', 'observed_at')
+    rows = [
+        {
+            'record_reference': 'R1',
+            'name': 'bucket, primary',
+            'value': 17.48,
+            'unit': 'GiB',
+            'observed_at': '2026-08-26T05:00:00+00:00',
+        },
+        {
+            'record_reference': 'R2',
+            'name': 'line\nbreak',
+            'value': '',
+            'unit': 'GiB',
+            'observed_at': '',
+        },
+    ]
+    _write_dict_rows(output, headers, rows)
+
+    raw = output.read_text(encoding=CSV_ENCODING)
+    dialect = csv.Sniffer().sniff(raw[:4096], delimiters=',')
+    assert dialect.delimiter == ','
+    with output.open(encoding=CSV_ENCODING, newline='') as handle:
+        parsed = list(csv.DictReader(handle, dialect=dialect))
+    assert tuple(parsed[0]) == headers
+    assert parsed[0]['name'] == 'bucket, primary'
+    assert parsed[0]['value'] == '17.48'
+    assert parsed[0]['unit'] == 'GiB'
+    assert parsed[1]['name'] == 'line\nbreak'
+    assert parsed[1]['value'] == ''

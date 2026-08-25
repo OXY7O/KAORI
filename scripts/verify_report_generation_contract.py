@@ -16,6 +16,7 @@ ANALYTICS_CSS_ROOT = ROOT / 'app' / 'static' / 'reports' / 'pdf'
 CSV_STANDARD_PATH = ROOT / 'app' / 'reports' / 'export' / 'csv' / 'standard.py'
 XLSX_SCHEMA_PATH = ROOT / 'app' / 'reports' / 'export' / 'xlsx' / 'schema.py'
 XLSX_BUILDER_PATH = ROOT / 'app' / 'reports' / 'export' / 'xlsx' / 'builder.py'
+XLSX_OVERVIEW_PATH = ROOT / 'app' / 'reports' / 'export' / 'xlsx' / 'overview.py'
 ANALYTICS_COLLECTOR_PATH = ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'collectors.py'
 INVENTORY_PROFILE_PATHS = (
     ROOT / 'app' / 'reports' / 'export' / 'xlsx' / 'profiles_kubernetes.py',
@@ -187,8 +188,11 @@ def _check_cross_format_standards(errors: list[str]) -> None:
     csv_source = _read(CSV_STANDARD_PATH)
     xlsx_schema = _read(XLSX_SCHEMA_PATH)
     xlsx_builder = _read(XLSX_BUILDER_PATH)
+    xlsx_overview = _read(XLSX_OVERVIEW_PATH)
     for token in (
-        "CSV_STANDARD: Final = 'kaori-reporting-csv-v2.0'",
+        "CSV_STANDARD: Final = 'kaori-reporting-csv-v3.0'",
+        "CSV_INTERCHANGE_PROFILE: Final = 'portable-tabular-v1'",
+        "CSV_CONTENT_TYPE: Final = 'text/csv; charset=utf-8'",
         "CSV_ENCODING: Final = 'utf-8-sig'",
         "CSV_LINE_TERMINATOR: Final = '\\n'",
         'protect_spreadsheet_formula',
@@ -197,7 +201,8 @@ def _check_cross_format_standards(errors: list[str]) -> None:
             errors.append(f'CSV standard is missing required contract token: {token}.')
 
     for token in (
-        "INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v2.0'",
+        "INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v3.0'",
+        "INVENTORY_OVERVIEW_SHEET: Final = 'Overview'",
         "INVENTORY_DATA_SHEET: Final = 'Inventory'",
         "INVENTORY_METADATA_SHEET: Final = 'Metadata'",
         "INVENTORY_DICTIONARY_SHEET: Final = 'Field Dictionary'",
@@ -205,9 +210,19 @@ def _check_cross_format_standards(errors: list[str]) -> None:
         if token not in xlsx_schema:
             errors.append(f'XLSX standard is missing required contract token: {token}.')
 
-    for token in ('build_inventory_export_dataset(', 'style_title(', 'style_header(', 'configure_sheet_page('):
+    for token in (
+        'build_inventory_export_dataset(',
+        'build_inventory_overview_sheet(',
+        'style_title(',
+        'style_header(',
+        'configure_sheet_page(',
+    ):
         if token not in xlsx_builder:
             errors.append(f'Inventory XLSX builder is missing required reusable contract token: {token}.')
+
+    for token in ('Workbook Navigation', 'sheet.parent.sheetnames', 'BarChart'):
+        if token not in xlsx_overview:
+            errors.append(f'Inventory XLSX Overview is missing required contract token: {token}.')
 
     mapped_templates = _dictionary_string_keys(ANALYTICS_PUBLICATION_PATH, 'ANALYTICS_TEMPLATE_STYLESHEETS')
     expected_templates = {

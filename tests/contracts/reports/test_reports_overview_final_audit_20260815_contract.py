@@ -1,3 +1,4 @@
+import ast
 from pathlib import Path
 
 import yaml
@@ -7,6 +8,13 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
+
+
+def has_python_string(source: str, expected: str) -> bool:
+    return any(
+        isinstance(node, ast.Constant) and isinstance(node.value, str) and expected in node.value
+        for node in ast.walk(ast.parse(source))
+    )
 
 
 def test_reports_overview_identity_and_hero_copy_are_explicit() -> None:
@@ -34,14 +42,17 @@ def test_report_workspace_hero_descriptions_keep_consistent_operational_depth() 
     expected_fragments = {
         'overview': 'report coverage across managed infrastructure',
         'generate': 'scope, sections, and an approved output format',
-        'generated': 'worker execution, artifact readiness, and lifecycle state',
+        'generated': 'worker execution progress, artifact readiness, storage availability, and lifecycle state',
         'generated_detail': 'report scope, artifact evidence, execution state, and delivery readiness',
         'templates': 'protected system templates and reusable custom report structures',
         'schedules': 'timezone-aware schedules and retained run evidence',
-        'storage': 'reference integrity, and lifecycle ownership',
+        'storage': 'backend and reference integrity, verification results, retained artifact coverage, and lifecycle ownership',
     }
     for key, fragment in expected_fragments.items():
-        assert fragment in files[key]
+        if key in {'templates', 'storage'}:
+            assert has_python_string(files[key], fragment)
+        else:
+            assert fragment in files[key]
 
 
 def test_reports_overview_uses_operational_reading_and_contract_boundary_not_generic_tips() -> None:

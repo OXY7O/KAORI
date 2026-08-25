@@ -7,14 +7,15 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any, Final
 
-TABULAR_EXPORT_STANDARD: Final = 'kaori-tabular-export-v2.0'
-TABULAR_SCHEMA_VERSION: Final = '2.0'
+TABULAR_EXPORT_STANDARD: Final = 'kaori-tabular-export-v3.0'
+TABULAR_SCHEMA_VERSION: Final = '3.0'
 _SPREADSHEET_NUMERIC_LITERAL = re.compile(r'[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?')
 
 COMMON_EXPORT_METADATA_FIELDS: Final = (
     'format_standard',
     'tabular_standard',
     'schema_version',
+    'interchange_profile',
     'document_reference',
     'report_name',
     'report_type',
@@ -47,6 +48,7 @@ class TabularExportMetadata:
     reporting_period: str
     data_cutoff: datetime | date | str | None
     source_label: str
+    interchange_profile: str = ''
     tabular_standard: str = TABULAR_EXPORT_STANDARD
     schema_version: str = TABULAR_SCHEMA_VERSION
 
@@ -55,6 +57,7 @@ class TabularExportMetadata:
             'format_standard': self.format_standard,
             'tabular_standard': self.tabular_standard,
             'schema_version': self.schema_version,
+            'interchange_profile': self.interchange_profile,
             'document_reference': self.document_reference,
             'report_name': self.report_name,
             'report_type': self.report_type,

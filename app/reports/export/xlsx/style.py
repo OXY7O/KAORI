@@ -135,3 +135,17 @@ def set_footer(sheet: Worksheet, document_reference: str) -> None:
         right.text = 'Page &P of &N'
         right.size = 8
         right.color = KAORI_MUTED
+
+
+def style_summary_label(cell: Any) -> None:
+    cell.font = Font(name=BODY_FONT, size=9, bold=True, color=KAORI_MUTED)
+    cell.fill = PatternFill('solid', fgColor=KAORI_PANEL)
+    cell.border = Border(bottom=THIN_LINE)
+    cell.alignment = Alignment(horizontal='left', vertical='center')
+
+
+def style_summary_value(cell: Any) -> None:
+    cell.font = Font(name=TITLE_FONT, size=14, bold=True, color=KAORI_INK)
+    cell.fill = PatternFill('solid', fgColor=KAORI_WHITE)
+    cell.border = Border(bottom=THIN_LINE)
+    cell.alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)

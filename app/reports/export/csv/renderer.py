@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -22,6 +23,7 @@ from app.reports.export.csv.standard import (
     COMMON_METADATA_HEADERS,
     CSV_DELIMITER,
     CSV_ENCODING,
+    CSV_INTERCHANGE_PROFILE,
     CSV_LINE_TERMINATOR,
     CSV_STANDARD,
     INVENTORY_CONTROL_HEADERS,
@@ -58,6 +60,29 @@ class AnalyticsCsvRecord:
     status: str = ''
     tone: str = ''
     note: str = ''
+    unit: str = ''
+
+
+_ANALYTICS_SCALAR_WITH_UNIT = re.compile(
+    r'^([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*(%|cores?|pods?|nodes?|MiB|GiB|TiB|KiB|MB|GB|TB|ms|s)$'
+)
+
+
+def normalize_analytics_scalar(value: Any) -> tuple[Any, str]:
+    """Separate simple numeric analytics values from their display unit."""
+
+    if isinstance(value, bool) or value is None:
+        return value, ''
+    if isinstance(value, (int, float)):
+        return value, ''
+    text = str(value).strip()
+    match = _ANALYTICS_SCALAR_WITH_UNIT.fullmatch(text)
+    if match is None:
+        return value, ''
+    numeric_text, unit = match.groups()
+    number = float(numeric_text)
+    normalized: int | float = int(number) if number.is_integer() else number
+    return normalized, unit
 
 
 def render_report_csv(report: Report, output_path: Path) -> None:
@@ -266,7 +291,10 @@ def _render_inventory_csv(report: Report, output_path: Path) -> None:
         *INVENTORY_CONTROL_HEADERS,
         *(column.key for column in dataset.profile.columns),
     )
-    metadata = context.tabular_metadata(format_standard=CSV_STANDARD).as_dict()
+    metadata = context.tabular_metadata(
+        format_standard=CSV_STANDARD,
+        interchange_profile=CSV_INTERCHANGE_PROFILE,
+    ).as_dict()
 
     exported_rows: list[dict[str, Any]] = []
     for index, row in enumerate(dataset.rows, start=1):
@@ -309,6 +337,7 @@ def _analytics_metadata(report: Report, document: ReportDocument) -> TabularExpo
         reporting_period=document.period_label,
         data_cutoff=_iso_datetime_text(document.data_cutoff),
         source_label=document.source_kind_label,
+        interchange_profile=CSV_INTERCHANGE_PROFILE,
     )
 
 
@@ -327,6 +356,7 @@ def _analytics_row(
     metadata: dict[str, Any],
     record: AnalyticsCsvRecord,
 ) -> dict[str, Any]:
+    normalized_value, inferred_unit = normalize_analytics_scalar(record.value)
     return {
         **metadata,
         'section_order': record.section_order,
@@ -338,8 +368,9 @@ def _analytics_row(
         'record_order': record.record_order,
         'field_order': record.field_order,
         'field': record.field,
-        'value': record.value,
-        'value_type': tabular_value_type(record.value),
+        'value': normalized_value,
+        'unit': record.unit or inferred_unit,
+        'value_type': tabular_value_type(normalized_value),
         'status': record.status,
         'tone': record.tone,
         'note': record.note,

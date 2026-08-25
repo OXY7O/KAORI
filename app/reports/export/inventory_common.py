@@ -39,7 +39,12 @@ class InventoryExportContext:
     scope_label: str = 'Kubernetes Cluster'
     scope_asset_type: str = 'kubernetes_cluster'
 
-    def tabular_metadata(self, *, format_standard: str) -> TabularExportMetadata:
+    def tabular_metadata(
+        self,
+        *,
+        format_standard: str,
+        interchange_profile: str = '',
+    ) -> TabularExportMetadata:
         report_spec = get_report_type_spec(self.report_type)
         return TabularExportMetadata(
             format_standard=format_standard,
@@ -56,6 +61,7 @@ class InventoryExportContext:
             reporting_period=self.period_label,
             data_cutoff=self.data_cutoff,
             source_label=self.source_label,
+            interchange_profile=interchange_profile,
         )
 
 
@@ -78,6 +84,35 @@ class InventoryExportDataset:
         )
 
 
+def normalize_inventory_row(
+    row: Mapping[str, Any],
+    profile: InventoryWorkbookProfile,
+) -> dict[str, Any]:
+    """Map provider/source rows into the public tabular profile schema."""
+
+    normalized: dict[str, Any] = {}
+    for column in profile.columns:
+        if column.ratio_numerator_key and column.ratio_denominator_key:
+            numerator = row.get(column.ratio_numerator_key)
+            denominator = row.get(column.ratio_denominator_key)
+            try:
+                numerator_value = float(numerator)
+                denominator_value = float(denominator)
+                value = (numerator_value / denominator_value) * 100 if denominator_value > 0 else None
+            except (TypeError, ValueError):
+                value = None
+        else:
+            source_key = column.source_key or column.key
+            value = row.get(source_key)
+            if column.scale_divisor and value not in (None, ''):
+                try:
+                    value = float(value) / column.scale_divisor
+                except (TypeError, ValueError):
+                    value = None
+        normalized[column.key] = value
+    return normalized
+
+
 def get_inventory_rows(
     payload: Mapping[str, Any],
     profile: InventoryWorkbookProfile,
@@ -86,7 +121,7 @@ def get_inventory_rows(
     if not isinstance(raw_rows, Iterable) or isinstance(raw_rows, (str, bytes, Mapping)):
         return []
 
-    return [dict(row) for row in raw_rows if isinstance(row, Mapping)]
+    return [normalize_inventory_row(row, profile) for row in raw_rows if isinstance(row, Mapping)]
 
 
 def build_inventory_export_dataset(

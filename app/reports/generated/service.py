@@ -137,7 +137,7 @@ def get_generated_reports_payload(
 
     return {
         'page_title': 'Generated Reports',
-        'page_subtitle': ('Review report records, artifact availability, generation state, and lifecycle actions.'),
+        'page_subtitle': ('Review generated report records, worker execution progress, artifact readiness, storage availability, and lifecycle state from generation through retention.'),
         'summary_cards': summary_cards,
         'filter_options': get_filter_options(),
         'selected_filters': selected_filters,

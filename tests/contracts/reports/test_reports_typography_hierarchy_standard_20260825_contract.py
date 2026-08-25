@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import re
 from pathlib import Path
 
@@ -9,6 +10,13 @@ REPORT_TEMPLATES = ROOT / 'app/templates/reports'
 
 def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
+
+
+def has_python_string(source: str, expected: str) -> bool:
+    return any(
+        isinstance(node, ast.Constant) and isinstance(node.value, str) and expected in node.value
+        for node in ast.walk(ast.parse(source))
+    )
 
 
 def test_reports_web_templates_use_canonical_semibold_hierarchy() -> None:
@@ -131,21 +139,31 @@ def test_reports_nested_sections_keep_compact_helper_hierarchy() -> None:
 
 
 def test_reports_hero_copy_is_compact_and_operational() -> None:
-    overview = read('app/reports/overview/service.py')
-    generate = read('app/reports/generate/service.py')
-    generated = read('app/reports/generated/service.py')
-    templates = read('app/reports/report_templates/service.py')
-    schedules = read('app/reports/schedules/service.py')
-    storage = read('app/reports/storage/service.py')
+    files = {
+        'overview': read('app/reports/overview/service.py'),
+        'generate': read('app/reports/generate/service.py'),
+        'generated': read('app/reports/generated/service.py'),
+        'templates': read('app/reports/report_templates/service.py'),
+        'schedules': read('app/reports/schedules/service.py'),
+        'storage': read('app/reports/storage/service.py'),
+    }
+    expected = {
+        'overview': 'Review reporting readiness, artifacts, automation, and report coverage across managed infrastructure.',
+        'generate': 'Build a governed report from connected data, scope, sections, and an approved output format.',
+        'generated': (
+            'Review generated report records, worker execution progress, artifact readiness, storage availability, '
+            'and lifecycle state from generation through retention.'
+        ),
+        'templates': (
+            'Manage protected system templates and reusable custom report structures that preserve canonical report '
+            'contracts, supported formats, governed sections, and reusable generation defaults.'
+        ),
+        'schedules': 'Automate report generation and delivery with timezone-aware schedules and retained run evidence.',
+        'storage': (
+            'Review artifact storage readiness, backend and reference integrity, verification results, retained '
+            'artifact coverage, and lifecycle ownership across generated reports.'
+        ),
+    }
+    for key, value in expected.items():
+        assert has_python_string(files[key], value), key
 
-    assert (
-        'Review reporting readiness, artifacts, automation, and report coverage across managed infrastructure.'
-        in overview
-    )
-    assert 'Build a governed report from connected data, scope, sections, and an approved output format.' in generate
-    assert 'Review report records, artifact availability, generation state, and lifecycle actions.' in generated
-    assert 'Manage protected system templates and reusable custom report structures.' in templates
-    assert (
-        'Automate report generation and delivery with timezone-aware schedules and retained run evidence.' in schedules
-    )
-    assert 'Review artifact storage readiness, reference integrity, and lifecycle ownership.' in storage

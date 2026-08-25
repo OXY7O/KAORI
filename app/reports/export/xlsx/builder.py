@@ -17,6 +17,7 @@ from app.reports.export.inventory_common import (
     InventoryExportDataset,
     build_inventory_export_dataset,
 )
+from app.reports.export.xlsx.overview import build_inventory_overview_sheet
 from app.reports.export.tabular import (
     TABULAR_EXPORT_STANDARD,
     TABULAR_SCHEMA_VERSION,
@@ -27,6 +28,7 @@ from app.reports.export.xlsx.standard import (
     INVENTORY_DATA_SHEET,
     INVENTORY_DICTIONARY_SHEET,
     INVENTORY_METADATA_SHEET,
+    INVENTORY_OVERVIEW_SHEET,
     INVENTORY_WORKBOOK_FAMILY,
     INVENTORY_WORKBOOK_STANDARD,
     InventoryColumn,
@@ -139,14 +141,16 @@ def build_inventory_workbook(
     )
 
     workbook = Workbook()
-    inventory_sheet = workbook.active
-    if inventory_sheet is None:
-        inventory_sheet = workbook.create_sheet(INVENTORY_DATA_SHEET)
+    summary_sheet = workbook.active
+    if summary_sheet is None:
+        summary_sheet = workbook.create_sheet(INVENTORY_OVERVIEW_SHEET)
     else:
-        inventory_sheet.title = INVENTORY_DATA_SHEET
+        summary_sheet.title = INVENTORY_OVERVIEW_SHEET
+    inventory_sheet = workbook.create_sheet(INVENTORY_DATA_SHEET)
     metadata_sheet = workbook.create_sheet(INVENTORY_METADATA_SHEET)
     dictionary_sheet = workbook.create_sheet(INVENTORY_DICTIONARY_SHEET)
 
+    build_inventory_overview_sheet(summary_sheet, dataset)
     _build_inventory_sheet(inventory_sheet, dataset)
     _build_metadata_sheet(metadata_sheet, dataset, payload)
     _build_dictionary_sheet(dictionary_sheet, dataset.profile, context)
@@ -160,6 +164,8 @@ def build_inventory_workbook(
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     workbook.save(output_path)
+
+
 
 
 def _build_inventory_sheet(
@@ -324,7 +330,12 @@ def _build_metadata_sheet(
             'Workbook',
             'Inventory is table-first and excludes analytical recommendations.',
         ),
-        ('Primary Format', 'XLSX', 'Workbook', 'Native Excel workbook with one canonical Inventory table.'),
+        (
+            'Primary Format',
+            'XLSX',
+            'Workbook',
+            'Native Excel workbook with Overview, canonical Inventory, Metadata, and Field Dictionary sheets.',
+        ),
         ('CSV Parity', 'Enabled', 'Inventory', 'CSV and XLSX use the same InventoryExportDataset and profile order.'),
         ('Classification', context.classification, 'Workbook', 'Artifact handling classification.'),
         ('Generated At', context.generated_at, 'Workbook', 'Artifact generation timestamp.'),
@@ -410,13 +421,13 @@ def _build_dictionary_sheet(
     profile: InventoryWorkbookProfile,
     context: InventoryExportContext,
 ) -> None:
-    sheet.merge_cells('A1:H1')
+    sheet.merge_cells('A1:I1')
     title = sheet['A1']
     title.value = 'KAORI Inventory Field Dictionary'
     style_title(title)
     sheet.row_dimensions[1].height = 30
 
-    sheet.merge_cells('A2:H2')
+    sheet.merge_cells('A2:I2')
     subtitle = sheet['A2']
     subtitle.value = f'{profile.title} — canonical field order, meaning, source, and formatting.'
     style_subtitle(subtitle)
@@ -431,6 +442,7 @@ def _build_dictionary_sheet(
         'Source / Rule',
         'Missing Value Rule',
         'Semantic Role',
+        'Unit',
         'Excel Number Format',
     )
     for index, label in enumerate(headers, start=1):
@@ -447,6 +459,7 @@ def _build_dictionary_sheet(
             column_spec.source,
             column_spec.missing_value_rule,
             column_spec.semantic_type or 'None',
+            column_spec.unit or 'None',
             column_spec.number_format or 'General',
         )
         for column_index, value in enumerate(values, start=1):
@@ -457,7 +470,7 @@ def _build_dictionary_sheet(
     end_row = _DICTIONARY_HEADER_ROW + len(profile.columns)
     table = Table(
         displayName=f'{_safe_table_name(profile.report_type)}FieldDictionaryTable',
-        ref=f'A{_DICTIONARY_HEADER_ROW}:H{end_row}',
+        ref=f'A{_DICTIONARY_HEADER_ROW}:I{end_row}',
     )
     table.tableStyleInfo = TableStyleInfo(name='TableStyleMedium4', showRowStripes=False)
     sheet.add_table(table)
@@ -470,12 +483,13 @@ def _build_dictionary_sheet(
         'E': 36,
         'F': 22,
         'G': 20,
-        'H': 20,
+        'H': 14,
+        'I': 20,
     }.items():
         sheet.column_dimensions[column].width = width
     configure_sheet_page(
         sheet,
-        print_area=f'A1:H{end_row}',
+        print_area=f'A1:I{end_row}',
         print_title_rows=f'$1:${_DICTIONARY_HEADER_ROW}',
         fit_to_width=1,
     )

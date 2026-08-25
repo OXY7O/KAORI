@@ -9,7 +9,9 @@ from app.reports.export.tabular import (
     protect_spreadsheet_formula,
 )
 
-CSV_STANDARD: Final = 'kaori-reporting-csv-v2.0'
+CSV_STANDARD: Final = 'kaori-reporting-csv-v3.0'
+CSV_INTERCHANGE_PROFILE: Final = 'portable-tabular-v1'
+CSV_CONTENT_TYPE: Final = 'text/csv; charset=utf-8'
 CSV_SCHEMA_VERSION: Final = TABULAR_SCHEMA_VERSION
 CSV_TABULAR_STANDARD: Final = TABULAR_EXPORT_STANDARD
 CSV_ENCODING: Final = 'utf-8-sig'
@@ -30,6 +32,7 @@ ANALYTICS_HEADERS: Final = (
     'field_order',
     'field',
     'value',
+    'unit',
     'value_type',
     'status',
     'tone',
@@ -45,8 +48,10 @@ INVENTORY_CONTROL_HEADERS: Final = (
 __all__ = [
     'ANALYTICS_HEADERS',
     'COMMON_METADATA_HEADERS',
+    'CSV_CONTENT_TYPE',
     'CSV_DELIMITER',
     'CSV_ENCODING',
+    'CSV_INTERCHANGE_PROFILE',
     'CSV_LINE_TERMINATOR',
     'CSV_SCHEMA_VERSION',
     'CSV_STANDARD',

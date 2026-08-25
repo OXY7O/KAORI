@@ -4,6 +4,7 @@ from app.reports.export.xlsx.profiles_common import COMMON_CLUSTER_COLUMNS, COMM
 from app.reports.export.xlsx.schema import (
     COLLECTED_AT_COLUMN,
     CREATED_AT_COLUMN,
+    InventoryOverviewChart,
     InventoryWorkbookProfile,
     column,
 )
@@ -17,6 +18,12 @@ KUBERNETES_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
             'The workbook contains asset facts only and excludes analytical findings and recommendations.'
         ),
         identity_columns=('resource_type',),
+        overview_chart=InventoryOverviewChart(
+            title='Assets by Resource Category',
+            category_key='resource_type',
+            value_key='assets',
+            top_n=12,
+        ),
         columns=(
             column('resource_type', 'Resource Category', 'Committed Kubernetes inventory category.', width=24),
             column(

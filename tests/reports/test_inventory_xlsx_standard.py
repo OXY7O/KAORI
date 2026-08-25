@@ -18,6 +18,7 @@ from app.reports.export.xlsx.standard import (
     INVENTORY_DATA_SHEET,
     INVENTORY_DICTIONARY_SHEET,
     INVENTORY_METADATA_SHEET,
+    INVENTORY_OVERVIEW_SHEET,
     INVENTORY_WORKBOOK_PROFILES,
     INVENTORY_WORKBOOK_STANDARD,
 )
@@ -63,7 +64,13 @@ def _sample_value(data_type: str, key: str) -> object:
 
 def _payload(report_type: str) -> dict[str, object]:
     profile = INVENTORY_WORKBOOK_PROFILES[report_type]
-    row = {column.key: _sample_value(column.data_type, column.key) for column in profile.columns}
+    row: dict[str, object] = {}
+    for column in profile.columns:
+        source_key = column.source_key or column.key
+        if column.scale_divisor:
+            row[source_key] = column.scale_divisor * 2.5
+        else:
+            row[source_key] = _sample_value(column.data_type, source_key)
     return {
         profile.row_source: [row],
         'data_cutoff': datetime(2026, 8, 3, 7, 57, tzinfo=UTC),
@@ -105,7 +112,7 @@ def test_status_semantics_are_owned_by_columns() -> None:
     assert semantics['disk_pressure'] == 'negative_condition'
 
 
-def test_all_inventory_workbooks_follow_the_reusable_three_sheet_contract(tmp_path: Path) -> None:
+def test_all_inventory_workbooks_follow_the_reusable_four_sheet_contract(tmp_path: Path) -> None:
     for report_type, profile in INVENTORY_WORKBOOK_PROFILES.items():
         output_path = tmp_path / f'{report_type}.xlsx'
         build_inventory_workbook(
@@ -117,10 +124,28 @@ def test_all_inventory_workbooks_follow_the_reusable_three_sheet_contract(tmp_pa
 
         workbook = load_workbook(output_path)
         assert workbook.sheetnames == [
+            INVENTORY_OVERVIEW_SHEET,
             INVENTORY_DATA_SHEET,
             INVENTORY_METADATA_SHEET,
             INVENTORY_DICTIONARY_SHEET,
         ]
+
+        summary = workbook[INVENTORY_OVERVIEW_SHEET]
+        assert summary['A1'].value == f'KAORI — {profile.title} Overview'
+        assert summary['A4'].value == 'Key Metrics'
+        assert summary['A5'].value == 'Records'
+        assert summary['A6'].value == 1
+        assert summary['A8'].value == 'General Information'
+        assert summary['F8'].value == 'Workbook Navigation'
+        assert summary['F9'].value == 'Inventory'
+        assert summary['F9'].hyperlink.target == "#'Inventory'!A1"
+        assert summary['F10'].value == 'Metadata'
+        assert summary['F10'].hyperlink.target == "#'Metadata'!A1"
+        assert summary['F11'].value == 'Field Dictionary'
+        assert summary['F11'].hyperlink.target == "#'Field Dictionary'!A1"
+        assert summary['A18'].value == 'Visual Summary'
+        if profile.overview_chart is not None:
+            assert len(summary._charts) == 1
 
         inventory = workbook[INVENTORY_DATA_SHEET]
         expected_freeze_column = get_column_letter(max(1, len(profile.identity_columns) + 1))
@@ -156,9 +181,37 @@ def test_all_inventory_workbooks_follow_the_reusable_three_sheet_contract(tmp_pa
 
         dictionary = workbook[INVENTORY_DICTIONARY_SHEET]
         assert dictionary.max_row == len(profile.columns) + 4
-        assert dictionary.max_column == 8
+        assert dictionary.max_column == 9
         assert len(dictionary.tables) == 1
 
+
+
+def test_object_storage_workbook_uses_readable_gib_columns(tmp_path: Path) -> None:
+    report_type = 'object_storage_inventory'
+    profile = INVENTORY_WORKBOOK_PROFILES[report_type]
+    output_path = tmp_path / 'object-storage.xlsx'
+    payload = _payload(report_type)
+
+    build_inventory_workbook(
+        report_type=report_type,
+        payload=payload,
+        context=_context(report_type),
+        output_path=output_path,
+    )
+
+    workbook = load_workbook(output_path)
+    inventory = workbook[INVENTORY_DATA_SHEET]
+    headers = [inventory.cell(row=HEADER_ROW, column=index).value for index in range(1, len(profile.columns) + 1)]
+    assert 'Usage GiB' in headers
+    assert 'Quota GiB' in headers
+    assert 'Usage Bytes' not in headers
+    assert 'Quota Bytes' not in headers
+    usage_index = headers.index('Usage GiB') + 1
+    quota_index = headers.index('Quota GiB') + 1
+    assert inventory.cell(row=DATA_START_ROW, column=usage_index).value == 2.5
+    assert inventory.cell(row=DATA_START_ROW, column=quota_index).value == 2.5
+    utilization_index = headers.index('Quota Utilization %') + 1
+    assert inventory.cell(row=DATA_START_ROW, column=utilization_index).value == 100.0
 
 def test_numeric_missing_values_stay_blank_and_text_missing_values_are_explicit(tmp_path: Path) -> None:
     report_type = 'node_inventory'

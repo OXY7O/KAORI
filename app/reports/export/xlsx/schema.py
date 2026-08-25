@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Final
+from typing import Final, TypedDict, Unpack
 
-INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v2.0'
+INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v3.0'
 INVENTORY_WORKBOOK_FAMILY: Final = 'inventory'
+INVENTORY_OVERVIEW_SHEET: Final = 'Overview'
 INVENTORY_DATA_SHEET: Final = 'Inventory'
 INVENTORY_METADATA_SHEET: Final = 'Metadata'
 INVENTORY_DICTIONARY_SHEET: Final = 'Field Dictionary'
@@ -21,6 +22,19 @@ class InventoryColumn:
     width: float = 18.0
     number_format: str | None = None
     semantic_type: str | None = None
+    source_key: str | None = None
+    scale_divisor: float | None = None
+    ratio_numerator_key: str | None = None
+    ratio_denominator_key: str | None = None
+    unit: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class InventoryOverviewChart:
+    title: str
+    category_key: str
+    value_key: str
+    top_n: int = 10
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,30 +45,34 @@ class InventoryWorkbookProfile:
     columns: tuple[InventoryColumn, ...]
     row_source: str = 'inventory_assets'
     identity_columns: tuple[str, ...] = ()
+    overview_chart: InventoryOverviewChart | None = None
+
+
+class InventoryColumnOptions(TypedDict, total=False):
+    data_type: str
+    source: str
+    missing_value_rule: str
+    width: float
+    number_format: str | None
+    semantic_type: str | None
+    source_key: str | None
+    scale_divisor: float | None
+    ratio_numerator_key: str | None
+    ratio_denominator_key: str | None
+    unit: str | None
 
 
 def column(
     key: str,
     label: str,
     definition: str,
-    *,
-    data_type: str = 'text',
-    source: str = 'Committed inventory snapshot',
-    missing_value_rule: str = 'Not Available',
-    width: float = 18.0,
-    number_format: str | None = None,
-    semantic_type: str | None = None,
+    **options: Unpack[InventoryColumnOptions],
 ) -> InventoryColumn:
     return InventoryColumn(
         key=key,
         label=label,
         definition=definition,
-        data_type=data_type,
-        source=source,
-        missing_value_rule=missing_value_rule,
-        width=width,
-        number_format=number_format,
-        semantic_type=semantic_type,
+        **options,
     )
 
 

@@ -111,29 +111,32 @@ A PDF artifact is valid only when it exists, has a plausible size, and starts wi
 
 ## 7. XLSX default style — Inventory
 
-Inventory XLSX uses `kaori-inventory-xlsx-v2.0` and exactly three reusable sheets:
+Inventory XLSX uses `kaori-inventory-xlsx-v3.0` and exactly four reusable sheets:
 
-1. `Inventory` — report-specific columns from the canonical inventory profile;
-2. `Metadata` — scope, source, cutoff, ownership, format, security, and standard information;
-3. `Field Dictionary` — column definition, type, source, and missing-value rule.
+1. `Overview` — workbook landing page with key metrics, general information, internal navigation links, cutoff, and optional profile-owned native Excel chart;
+2. `Inventory` — report-specific public columns from the canonical inventory profile;
+3. `Metadata` — scope, source, cutoff, ownership, format, security, and standard information;
+4. `Field Dictionary` — column definition, type, source, missing-value rule, semantic role, unit, and Excel format.
 
 Default workbook rules:
 
 - KAORI Violet title/header hierarchy;
 - Office-native Aptos/Aptos Display fonts are used for workbook portability; this is the approved XLSX font-family exception to the Inter-based PDF publication style;
 - left horizontal alignment and middle vertical alignment;
-- wrapped text, filter, freeze pane, and one Excel table on each structured sheet;
-- stable report-specific column order;
+- wrapped text, filter, freeze pane, and one Excel table on each structured data/reference sheet;
+- stable report-specific public column order;
 - numeric missing values remain blank;
 - text missing values use `Not Available` unless the profile defines another rule;
+- public capacity/usage values use readable units such as MiB/GiB/TiB rather than raw bytes when a readable unit is available;
+- the Overview sheet always includes core report context, links to every other workbook sheet, and may include a native Excel chart only when the profile declares a meaningful evidence-backed aggregation;
 - empty datasets retain valid headers/table structure and show an explicit no-data message;
 - private keys and Secret values are always excluded.
 
-The reusable schema is defined in `app/reports/export/xlsx/standard.py`; shared collection/context/row logic is in `app/reports/export/inventory_common.py`. The cross-format contract is defined in [`kaori-tabular-export-standard-v2.md`](kaori-tabular-export-standard-v2.md).
+The reusable schema is defined in `app/reports/export/xlsx/standard.py`; shared collection/context/normalization logic is in `app/reports/export/inventory_common.py`. The cross-format contract is defined in [`kaori-tabular-export-standard-v3.md`](kaori-tabular-export-standard-v3.md).
 
 ## 8. CSV default style — Analytics and Inventory
 
-CSV standard identifier: `kaori-reporting-csv-v2.0`. CSV is a machine-readable exchange artifact, not a visual report; it deliberately has no decorative presentation layer.
+CSV standard identifier: `kaori-reporting-csv-v3.0`. Interoperability profile: `portable-tabular-v1`. CSV is a machine-readable exchange artifact, not a visual report; it deliberately has no decorative presentation layer.
 
 Common rules:
 
@@ -145,11 +148,12 @@ Common rules:
 - ISO-8601 date/time values;
 - compact deterministic JSON serialization for list/dict values;
 - cells beginning with spreadsheet formula control characters are escaped;
-- no decorative rows, merged cells, or format-specific presentation logic.
+- no decorative rows, merged cells, or format-specific presentation logic;
+- public storage/capacity values use readable numeric units instead of primary raw-byte columns.
 
-Analytics CSV is a normalized long-form export of the same `ReportDocument` used by PDF. It contains source metrics, section status, metrics, findings, table cells, notes, and methodology records.
+Analytics CSV is a normalized long-form export of the same `ReportDocument` used by PDF. It contains source metrics, section status, metrics, findings, table cells, notes, and methodology records. Simple numeric display values expose the numeric `value` separately from `unit` so the CSV stays sortable and easy to process.
 
-Inventory CSV contains common report metadata, `record_type`, `record_reference`, `row_number`, and the same report-specific columns and ordering used by the XLSX Inventory sheet. An empty inventory dataset produces one explicit `no_data` row so metadata and the selected-asset boundary remain auditable.
+Inventory CSV contains common report metadata, `record_type`, `record_reference`, `row_number`, and the same normalized report-specific columns and ordering used by the XLSX Inventory sheet. An empty inventory dataset produces one explicit `no_data` row so metadata and the selected-asset boundary remain auditable.
 
 ## 9. Template and schedule rules
 

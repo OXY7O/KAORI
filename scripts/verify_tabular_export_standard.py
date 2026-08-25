@@ -27,24 +27,35 @@ def main() -> int:
     xlsx_standard = read('app/reports/export/xlsx/standard.py')
     xlsx_schema = read('app/reports/export/xlsx/schema.py')
     xlsx_builder = read('app/reports/export/xlsx/builder.py')
+    xlsx_overview = read('app/reports/export/xlsx/overview.py')
     xlsx_style = read('app/reports/export/xlsx/style.py')
     reporting_doc = read('docs/reports/kaori-reporting-standard-v1.md')
-    tabular_doc = read('docs/reports/kaori-tabular-export-standard-v2.md')
+    tabular_doc = read('docs/reports/kaori-tabular-export-standard-v3.md')
     quality_gate = read('scripts/quality_gate.sh')
 
     require(
-        "TABULAR_EXPORT_STANDARD: Final = 'kaori-tabular-export-v2.0'" in tabular,
-        'tabular v2 standard is missing',
+        "TABULAR_EXPORT_STANDARD: Final = 'kaori-tabular-export-v3.0'" in tabular,
+        'tabular v3 standard is missing',
         errors,
     )
-    require("CSV_STANDARD: Final = 'kaori-reporting-csv-v2.0'" in csv_standard, 'CSV v2 standard is missing', errors)
+    require("CSV_STANDARD: Final = 'kaori-reporting-csv-v3.0'" in csv_standard, 'CSV v3 standard is missing', errors)
     require(
-        "INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v2.0'" in xlsx_schema,
-        'XLSX v2 standard is missing',
+        "CSV_INTERCHANGE_PROFILE: Final = 'portable-tabular-v1'" in csv_standard,
+        'CSV interoperability profile is missing',
         errors,
     )
     require(
-        "'format_standard'" in tabular and "'tabular_standard'" in tabular,
+        "CSV_CONTENT_TYPE: Final = 'text/csv; charset=utf-8'" in csv_standard,
+        'CSV content type contract is missing',
+        errors,
+    )
+    require(
+        "INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v3.0'" in xlsx_schema,
+        'XLSX v3 standard is missing',
+        errors,
+    )
+    require(
+        "'format_standard'" in tabular and "'tabular_standard'" in tabular and "'interchange_profile'" in tabular,
         'shared metadata contract is incomplete',
         errors,
     )
@@ -62,9 +73,20 @@ def main() -> int:
         errors,
     )
 
+    require('build_inventory_overview_sheet' in xlsx_builder, 'Overview sheet builder is not wired', errors)
     require('INVENTORY_DATA_SHEET' in xlsx_builder, 'Inventory sheet contract is missing', errors)
     require('INVENTORY_METADATA_SHEET' in xlsx_builder, 'Metadata sheet contract is missing', errors)
     require('INVENTORY_DICTIONARY_SHEET' in xlsx_builder, 'Field Dictionary sheet contract is missing', errors)
+    require(
+        'Workbook Navigation' in xlsx_overview and 'sheet.parent.sheetnames' in xlsx_overview,
+        'Overview workbook navigation is missing',
+        errors,
+    )
+    require(
+        all(label in xlsx_overview for label in ('Key Metrics', 'General Information', 'Visual Summary')),
+        'Overview landing-page hierarchy is incomplete',
+        errors,
+    )
     require(
         'HEADER_ROW = 5' in xlsx_builder and 'DATA_START_ROW = 6' in xlsx_builder,
         'canonical workbook row contract is missing',
@@ -80,6 +102,26 @@ def main() -> int:
     require('status_columns' not in xlsx_standard, 'legacy profile-level status columns remain', errors)
     require('semantic_type' in xlsx_schema, 'column-level semantic roles are missing', errors)
     require(
+        all(
+            token in xlsx_schema
+            for token in (
+                'source_key',
+                'scale_divisor',
+                'ratio_numerator_key',
+                'ratio_denominator_key',
+                'unit',
+            )
+        ),
+        'profile-owned public transforms are missing',
+        errors,
+    )
+    require('normalize_inventory_row' in inventory_common, 'shared public row normalization is missing', errors)
+    require(
+        'build_inventory_overview_sheet' in xlsx_builder and 'BarChart' in xlsx_overview,
+        'XLSX Overview/chart contract is missing',
+        errors,
+    )
+    require(
         "'negative_condition'" in xlsx_builder,
         'negative Kubernetes conditions do not have dedicated semantic formatting',
         errors,
@@ -94,20 +136,20 @@ def main() -> int:
     )
 
     require(
-        "'record_reference'" in csv_standard and "'field_order'" in csv_standard,
-        'CSV stable record fields are missing',
+        "'record_reference'" in csv_standard and "'field_order'" in csv_standard and "'unit'" in csv_standard,
+        'CSV stable record/unit fields are missing',
         errors,
     )
     require('build_analytics_csv_records' in csv_renderer, 'Analytics CSV record builder is missing', errors)
     require('_table_record_reference' in csv_renderer, 'Analytics table records need stable references', errors)
     require("'no_data'" in csv_renderer, 'Inventory CSV must preserve metadata for empty datasets', errors)
 
-    require('KAORI Tabular Export Standard v2' in tabular_doc, 'tabular v2 documentation title is missing', errors)
-    require('kaori-reporting-csv-v2.0' in tabular_doc, 'CSV v2 documentation is missing', errors)
-    require('kaori-inventory-xlsx-v2.0' in tabular_doc, 'XLSX v2 documentation is missing', errors)
+    require('KAORI Tabular Export Standard v3' in tabular_doc, 'tabular v3 documentation title is missing', errors)
+    require('kaori-reporting-csv-v3.0' in tabular_doc, 'CSV v3 documentation is missing', errors)
+    require('kaori-inventory-xlsx-v3.0' in tabular_doc, 'XLSX v3 documentation is missing', errors)
     require(
-        'kaori-tabular-export-standard-v2.md' in reporting_doc,
-        'reporting standard does not reference tabular v2',
+        'kaori-tabular-export-standard-v3.md' in reporting_doc,
+        'reporting standard does not reference tabular v3',
         errors,
     )
     require(
@@ -125,6 +167,7 @@ def main() -> int:
         'app/reports/export/xlsx/schema.py',
         'app/reports/export/xlsx/style.py',
         'app/reports/export/xlsx/builder.py',
+        'app/reports/export/xlsx/overview.py',
     ):
         try:
             ast.parse(read(path), filename=path)
@@ -140,7 +183,7 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI tabular export audit passed: CSV v2 and Inventory XLSX v2 share '
+        'KAORI tabular export audit passed: CSV v3 and Inventory XLSX v3 share '
         'metadata, dataset, identity, normalization, security, and schema contracts.'
     )
     return 0

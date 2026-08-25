@@ -3,6 +3,7 @@ from __future__ import annotations
 from app.reports.export.xlsx.profiles_common import COMMON_NAMESPACE_COLUMNS
 from app.reports.export.xlsx.schema import (
     COLLECTED_AT_COLUMN,
+    InventoryOverviewChart,
     InventoryWorkbookProfile,
     column,
 )
@@ -17,6 +18,12 @@ INFRASTRUCTURE_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] 
         ),
         row_source='inventory_assets',
         identity_columns=('system', 'environment', 'asset_type', 'name'),
+        overview_chart=InventoryOverviewChart(
+            title='Top Object Storage Usage (GiB)',
+            category_key='name',
+            value_key='usage_gib',
+            top_n=10,
+        ),
         columns=(
             column(
                 'system',
@@ -54,14 +61,17 @@ INFRASTRUCTURE_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] 
                 source='Object Storage committed inventory',
             ),
             column(
-                'size_bytes',
-                'Usage Bytes',
-                'Committed namespace usage in bytes.',
-                data_type='integer',
+                'usage_gib',
+                'Usage GiB',
+                'Committed namespace usage converted from source bytes to GiB for readable export.',
+                data_type='number',
                 missing_value_rule='Blank',
-                width=18,
-                number_format='#,##0',
+                width=16,
+                number_format='#,##0.00',
                 source='Object Storage committed inventory',
+                source_key='size_bytes',
+                scale_divisor=1073741824.0,
+                unit='GiB',
             ),
             column(
                 'object_count',
@@ -74,14 +84,17 @@ INFRASTRUCTURE_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] 
                 source='Object Storage committed inventory',
             ),
             column(
-                'quota_bytes',
-                'Quota Bytes',
-                'Committed namespace quota in bytes when available.',
-                data_type='integer',
+                'quota_gib',
+                'Quota GiB',
+                'Committed namespace quota converted from source bytes to GiB when available.',
+                data_type='number',
                 missing_value_rule='Blank',
-                width=18,
-                number_format='#,##0',
+                width=16,
+                number_format='#,##0.00',
                 source='Object Storage committed inventory',
+                source_key='quota_bytes',
+                scale_divisor=1073741824.0,
+                unit='GiB',
             ),
             column(
                 'quota_utilization_percent',
@@ -90,8 +103,11 @@ INFRASTRUCTURE_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] 
                 data_type='number',
                 missing_value_rule='Blank',
                 width=19,
-                number_format='0.00',
+                number_format='0.00"%"',
                 source='Derived from committed Object Storage inventory',
+                ratio_numerator_key='size_bytes',
+                ratio_denominator_key='quota_bytes',
+                unit='%',
             ),
             column(
                 'quota_state',

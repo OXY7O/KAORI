@@ -74,7 +74,10 @@ def get_report_templates_payload(
 
     return {
         'page_title': 'Report Templates',
-        'page_subtitle': ('Manage protected system templates and reusable custom report structures.'),
+        'page_subtitle': (
+            'Manage protected system templates and reusable custom report structures that preserve canonical report '
+            'contracts, supported formats, governed sections, and reusable generation defaults.'
+        ),
         'summary_cards': get_summary_cards(all_templates),
         'posture': get_template_posture(all_templates),
         'filter_options': get_filter_options(),

@@ -78,8 +78,10 @@ def test_object_storage_inventory_export_reads_committed_snapshot_and_supports_x
     assert "report.report_type == 'object_storage_inventory'" in common
     assert "'object_storage_inventory': InventoryWorkbookProfile(" in xlsx
     assert "row_source='inventory_assets'" in xlsx
-    assert "'size_bytes'" in xlsx and "'Usage Bytes'" in xlsx
-    assert "'quota_bytes'" in xlsx and "'Quota Bytes'" in xlsx
+    assert "'usage_gib'" in xlsx and "source_key='size_bytes'" in xlsx
+    assert "'quota_gib'" in xlsx and "source_key='quota_bytes'" in xlsx
+    assert "'Usage Bytes'" not in xlsx
+    assert "'Quota Bytes'" not in xlsx
 
 
 def test_object_storage_analysis_combines_governed_evidence_for_pdf_and_csv() -> None:
