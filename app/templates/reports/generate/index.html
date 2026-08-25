@@ -133,7 +133,7 @@
                         </span>
                         <div class="min-w-0">
                             <h2 class="text-base font-semibold leading-6 text-content-primary">Build Governed Report</h2>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Complete five guided steps. Nothing is saved or queued until the final Review &amp; Queue step.</p>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Complete five guided steps. Nothing is saved or queued until the final Review &amp; Queue step.</p>
                         </div>
                     </div>
                     {{ table_label.metadata_label('Draft Until Queued', 'route') }}
@@ -171,7 +171,7 @@
                             {{ workflow_number("01") }}
                             <div class="min-w-0">
                                 <h3 class="text-base font-semibold leading-6 text-content-primary">Report Contract</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Choose the published report contract first. KAORI derives the domain, required infrastructure scope, allowed artifact formats, period behavior, and section contract from this selection.</p>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">Choose the published report contract first. KAORI derives the domain, required infrastructure scope, allowed artifact formats, period behavior, and section contract from this selection.</p>
                             </div>
                         </div>
                         <div class="mt-5 grid gap-5 lg:grid-cols-3">
@@ -275,7 +275,7 @@
                                 <h3 id="scope-step-title"
                                     class="text-base font-semibold leading-6 text-content-primary">Infrastructure Scope</h3>
                                 <p id="scope-step-description"
-                                   class="mt-1 text-xs leading-5 text-content-muted">Bind the report to the exact infrastructure asset required by its contract, then define the applicable namespace and period boundary.</p>
+                                   class="mt-1 text-sm leading-6 text-content-secondary">Bind the report to the exact infrastructure asset required by its contract, then define the applicable namespace and period boundary.</p>
                             </div>
                         </div>
                         <div class="mt-5 grid gap-5 lg:grid-cols-3">
@@ -401,7 +401,7 @@
                             {{ workflow_number("03") }}
                             <div class="min-w-0">
                                 <h3 class="text-base font-semibold leading-6 text-content-primary">Artifact Contract</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Choose one output format allowed by the report contract and confirm where KAORI will publish the resulting artifact.</p>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">Choose one output format allowed by the report contract and confirm where KAORI will publish the resulting artifact.</p>
                             </div>
                         </div>
                         <div class="mt-5 grid gap-5 lg:grid-cols-3">
@@ -538,7 +538,7 @@
                                               class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-kaori-soft px-2 text-xs font-semibold text-kaori-primary">{{ payload.form_state.sections|length }} {{ 'Locked' if payload.selected_report_type.family == 'inventory' else 'Selected' }}</span>
                                     </div>
                                     <p id="section-contract-note"
-                                       class="mt-1 text-xs leading-5 text-content-muted">
+                                       class="mt-1 text-sm leading-6 text-content-secondary">
                                         {% if payload.selected_report_type.family == 'inventory' %}
                                             Workbook structure is locked by the report contract.
                                         {% else %}
@@ -627,7 +627,7 @@
                             <div class="min-w-0">
                                 <h3 id="request-summary-title"
                                     class="text-base font-semibold leading-6 text-content-primary">Review &amp; Queue</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Confirm the complete request contract. This is the only step that persists the report request and dispatches generation.</p>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">Confirm the complete request contract. This is the only step that persists the report request and dispatches generation.</p>
                             </div>
                         </div>
                         <div class="mt-5 grid gap-5 lg:grid-cols-3">

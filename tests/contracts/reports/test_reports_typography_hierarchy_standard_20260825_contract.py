@@ -44,8 +44,90 @@ def test_reports_primary_workspaces_use_canonical_section_examples() -> None:
     assert 'text-base font-semibold leading-6 text-content-primary">Generated Reporting Posture</h2>' in generated
     assert 'text-base font-semibold leading-6 text-content-primary">Schedule Registry</h3>' in schedules
     assert '<h2 class="{{ table_ui.block_title_classes() }}">Template Registry</h2>' in templates
-    assert 'text-base font-semibold leading-6 text-content-primary">Reporting Operational Posture</h2>' in overview_posture
-    assert 'text-base font-semibold leading-6 text-content-primary">Report Coverage &amp; Artifact Estate</h2>' in overview_estate
+    assert (
+        'text-base font-semibold leading-6 text-content-primary">Reporting Operational Posture</h2>' in overview_posture
+    )
+    assert (
+        'text-base font-semibold leading-6 text-content-primary">Report Coverage &amp; Artifact Estate</h2>'
+        in overview_estate
+    )
+
+
+def test_reports_typography_roles_follow_shared_kaori_primitives() -> None:
+    table = read('app/templates/components/table_primitives.html')
+    analytics = read('app/templates/analytics/components/_analysis_surfaces.html')
+
+    assert 'text-base font-semibold text-content-primary' in table
+    assert 'mt-1 text-sm leading-6 text-content-secondary' in table
+    assert 'text-base font-semibold leading-6 text-content-primary' in analytics
+    assert 'mt-1 text-sm leading-6 text-content-secondary' in analytics
+
+
+def test_reports_block_headers_keep_shared_description_scale() -> None:
+    cases = {
+        'app/templates/reports/overview/partials/_reporting_operational_posture.html': (
+            'Reporting Operational Posture',
+            'Review worker readiness, recurring automation, storage health, and generation quality before creating or retrieving artifacts.',
+        ),
+        'app/templates/reports/overview/partials/_reporting_estate_capability.html': (
+            'Report Coverage &amp; Artifact Estate',
+            'Separate published report contracts from candidate and planned domains, then review the retained artifact estate and reusable automation.',
+        ),
+        'app/templates/reports/generate/index.html': (
+            'Build Governed Report',
+            'Complete five guided steps. Nothing is saved or queued until the final Review &amp; Queue step.',
+        ),
+        'app/templates/reports/storage/index.html': (
+            'Storage Operations',
+            'Inspect backend configuration, verify retained artifact references, and review lifecycle ownership without changing protected storage configuration.',
+        ),
+        'app/templates/reports/storage/index.html#posture': (
+            'Storage Operations Posture',
+            'Current backend readiness for reading retained artifacts and accepting new report writes.',
+        ),
+    }
+    for relative, (title, description) in cases.items():
+        source = read(relative.split('#', 1)[0])
+        assert title in source, relative
+        assert description in source, relative
+        assert f'text-sm leading-6 text-content-secondary">{description}' in source, relative
+
+
+def test_generate_primary_wizard_steps_use_block_description_scale() -> None:
+    generate = read('app/templates/reports/generate/index.html')
+    for title in (
+        'Report Contract',
+        'Infrastructure Scope',
+        'Artifact Contract',
+        'Report Content',
+        'Review &amp; Queue',
+    ):
+        assert title in generate
+    for old_class in (
+        'text-base font-semibold leading-6 text-content-primary">Report Contract</h3>',
+        'text-base font-semibold leading-6 text-content-primary">Infrastructure Scope</h3>',
+        'text-base font-semibold leading-6 text-content-primary">Artifact Contract</h3>',
+        'text-base font-semibold leading-6 text-content-primary">Report Content</h3>',
+        'text-base font-semibold leading-6 text-content-primary">Review &amp; Queue</h3>',
+    ):
+        assert old_class in generate
+    assert generate.count('text-sm leading-6 text-content-secondary') >= 6
+
+
+def test_reports_nested_sections_keep_compact_helper_hierarchy() -> None:
+    posture = read('app/templates/reports/overview/partials/_reporting_operational_posture.html')
+    schedules = read('app/templates/reports/schedules/index.html')
+
+    assert 'text-sm font-semibold leading-5 text-content-primary">Runtime Health</h3>' in posture
+    assert (
+        'text-xs leading-5 text-content-muted">Live dependencies required to create and retain reporting artifacts.'
+        in posture
+    )
+    assert 'text-sm font-semibold leading-5 text-content-primary">Schedule Identity</h3>' in schedules
+    assert (
+        'text-xs leading-5 text-content-muted">Name the recurring automation and describe the operational purpose'
+        in schedules
+    )
 
 
 def test_reports_hero_copy_is_compact_and_operational() -> None:
@@ -56,9 +138,14 @@ def test_reports_hero_copy_is_compact_and_operational() -> None:
     schedules = read('app/reports/schedules/service.py')
     storage = read('app/reports/storage/service.py')
 
-    assert 'Review reporting readiness, artifacts, automation, and report coverage across managed infrastructure.' in overview
+    assert (
+        'Review reporting readiness, artifacts, automation, and report coverage across managed infrastructure.'
+        in overview
+    )
     assert 'Build a governed report from connected data, scope, sections, and an approved output format.' in generate
     assert 'Review report records, artifact availability, generation state, and lifecycle actions.' in generated
     assert 'Manage protected system templates and reusable custom report structures.' in templates
-    assert 'Automate report generation and delivery with timezone-aware schedules and retained run evidence.' in schedules
+    assert (
+        'Automate report generation and delivery with timezone-aware schedules and retained run evidence.' in schedules
+    )
     assert 'Review artifact storage readiness, reference integrity, and lifecycle ownership.' in storage
