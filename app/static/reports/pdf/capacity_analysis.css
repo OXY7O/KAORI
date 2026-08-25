@@ -120,12 +120,6 @@
 .page-compute .headroom-line {
   margin: 2.6mm 0 2mm;
 }
-.page-scheduling .summary-box-grid {
-  margin-top: 4.8mm;
-}
-.page-scheduling .summary-box {
-  min-height: 20mm;
-}
 .page-scheduling .node-card {
   grid-template-columns: 37mm minmax(0, 1fr);
   padding: 5mm 4.5mm;

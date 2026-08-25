@@ -25,11 +25,6 @@
 .capacity-track > i { display: block; height: 100%; background: #7C3AED; }
 .headroom-fill { background: #15803D !important; }
 
-.summary-box-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; margin-top: 5mm; }
-.summary-box { min-height: 22mm; border: .3mm solid #E2E8F0; background: #F8FAFC; padding: 4mm; }
-.summary-box span { display: block; color: #64748B; font-size: 6pt; font-weight: 650; letter-spacing: .05em; text-transform: uppercase; }
-.summary-box strong { display: block; margin-top: 1.7mm; font-size: 11.5pt; line-height: 1.05; }
-.summary-box small { display: block; margin-top: 1.5mm; color: #64748B; font-size: 6pt; line-height: 1.35; }
 .executive-capacity-values { margin-top: 4mm; }
 
 .aggregate-capacity-card { min-height: 51mm; border: .3mm solid #E2E8F0; padding: 5mm; }
