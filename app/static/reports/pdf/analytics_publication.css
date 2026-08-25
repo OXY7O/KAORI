@@ -325,7 +325,6 @@ body.kaori-analytics-publication.kaori-reporting-v3 {
 body.kaori-analytics-publication.kaori-reporting-v3 .page .content-section {
   margin-top: var(--analytics-rhythm-section);
 }
-body.kaori-analytics-publication.kaori-reporting-v3 .page .content-section:first-of-type,
 body.kaori-analytics-publication.kaori-reporting-v3 .two-column > .content-section,
 body.kaori-analytics-publication.kaori-reporting-v3 .paired-sections > .content-section,
 body.kaori-analytics-publication.kaori-reporting-v3 .trend-interpretation-stack > .content-section {
@@ -428,7 +427,6 @@ body.kaori-analytics-publication.kaori-reporting-v3 .page-content {
 body.kaori-analytics-publication.kaori-reporting-v3 .page .content-section {
   margin-top: var(--analytics-rhythm-section) !important;
 }
-body.kaori-analytics-publication.kaori-reporting-v3 .page .content-section:first-of-type,
 body.kaori-analytics-publication.kaori-reporting-v3 .two-column > .content-section,
 body.kaori-analytics-publication.kaori-reporting-v3 .paired-sections > .content-section,
 body.kaori-analytics-publication.kaori-reporting-v3 .trend-interpretation-stack > .content-section {
@@ -578,10 +576,7 @@ body.kaori-analytics-publication.kaori-reporting-v3.kaori-storage-analysis-repor
   min-height: var(--analytics-visual-pair-height) !important;
 }
 
-/* Never use :first-of-type as a spacing shortcut: nested wrappers make it data-structure dependent. */
-body.kaori-analytics-publication.kaori-reporting-v3 .page .content-section:first-of-type {
-  margin-top: var(--analytics-rhythm-section) !important;
-}
+/* Top-level spacing is owned by direct page-content adjacency rules only. */
 body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .page-title-row + .content-section,
 body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .metric-strip + .content-section {
   margin-top: 0 !important;
@@ -857,3 +852,120 @@ body.kaori-analytics-publication.kaori-reporting-v3 .publication-visual > svg {
   max-width: 100% !important;
   max-height: 100% !important;
 }
+
+
+/*
+ * KAORI Analytics Publication R8 - peer row alignment lock
+ * Paired content shares one visual row model: title, helper, then body.
+ * A first child must never inherit top-level section spacing.
+ */
+body.kaori-analytics-publication.kaori-reporting-v3 {
+  --analytics-pair-subtitle-slot: 7mm;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .publication-pair > .content-section {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  align-self: start;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .publication-pair > .content-section:first-of-type {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  align-self: start;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .publication-pair > .content-section > h2 {
+  margin-top: 0 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .publication-pair > .content-section > .section-subtitle {
+  min-height: var(--analytics-pair-subtitle-slot) !important;
+  margin-top: var(--analytics-rhythm-title-description) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page .publication-pair > .content-section > .section-body {
+  margin-top: var(--analytics-rhythm-description-content) !important;
+}
+
+
+/*
+ * KAORI Analytics Publication R9 - section clearance lock
+ * A top-level section owns one canonical gap regardless of element type order.
+ * Shared reusable content primitives prevent run-on text in dynamic reports.
+ */
+body.kaori-analytics-publication.kaori-reporting-v3 {
+  --analytics-rhythm-component: 3.6mm;
+}
+
+/* A first SECTION element is not necessarily the first publication block. */
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .content-section:first-of-type {
+  margin-top: var(--analytics-rhythm-section) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .page-title-row + .content-section:first-of-type,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .metric-strip + .content-section:first-of-type {
+  margin-top: 0 !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .publication-pair + .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .two-column + .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-content > .paired-sections + .content-section {
+  margin-top: var(--analytics-rhythm-section) !important;
+}
+
+/* Shared compact summary cards - used by scheduling, storage, and utilization. */
+body.kaori-analytics-publication.kaori-reporting-v3 .summary-box-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4mm;
+  margin-top: var(--analytics-rhythm-component) !important;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .summary-box {
+  min-height: 20mm;
+  border: .3mm solid var(--analytics-border);
+  background: #F8FAFC;
+  padding: 3.5mm 4mm;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .summary-box span {
+  display: block;
+  color: var(--analytics-muted);
+  font-size: 6pt;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .summary-box strong {
+  display: block;
+  margin-top: 1.7mm;
+  font-size: 11.2pt;
+  line-height: 1.08;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .summary-box small {
+  display: block;
+  margin-top: 1.4mm;
+  color: var(--analytics-muted);
+  font-size: 6pt;
+  line-height: 1.35;
+}
+
+/* Shared chart legend - figure labels never collapse into one text run. */
+body.kaori-analytics-publication.kaori-reporting-v3 .chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2mm 5mm;
+  margin-top: 2mm;
+  color: #475569;
+  font-size: 6.2pt;
+  line-height: 1.3;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .chart-legend span {
+  white-space: nowrap;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .chart-legend span::before {
+  content: "";
+  display: inline-block;
+  width: 3mm;
+  height: 1.1mm;
+  margin-right: 1.2mm;
+  vertical-align: middle;
+  background: var(--legend-color, #94A3B8);
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .legend-memory { --legend-color: #7C3AED; }
+body.kaori-analytics-publication.kaori-reporting-v3 .legend-pods { --legend-color: #15803D; }
+body.kaori-analytics-publication.kaori-reporting-v3 .legend-cpu { --legend-color: #2563EB; }
+body.kaori-analytics-publication.kaori-reporting-v3 .legend-warning { --legend-color: #D97706; }
+body.kaori-analytics-publication.kaori-reporting-v3 .legend-critical { --legend-color: #DC2626; }

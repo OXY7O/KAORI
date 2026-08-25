@@ -106,6 +106,7 @@ Analytics Overview is no longer allowed to carry a separate typography scale fro
 - Section helper descriptions should remain at or below 72 characters. Shorter wording is preferred when a 50/50 layout would otherwise wrap unnecessarily.
 - Every major content block follows `title -> description -> content`. A missing description is a publication-contract failure.
 - Peer blocks displayed side by side use a symmetric 50/50 layout. If either side becomes too dense, stack the blocks vertically instead of shrinking type or forcing an asymmetric squeeze.
+- **Paired-content row alignment:** title, helper description, and content start on shared rows across both peers. The first peer must never inherit top-level section spacing. A 7mm helper slot absorbs one- versus two-line helper copy so the evidence/content baseline remains symmetric.
 - Paired sections never add a second clearance layer. The following primary section contributes the single canonical 5.6mm gap; pair wrappers add 0mm bottom padding.
 - Dense pages remove or relocate detail before changing the canonical typography or rhythm tokens.
 - Report-specific CSS must not own top-level section spacing; `analytics_publication.css` is the single rhythm owner.
@@ -275,3 +276,9 @@ app/reports/export/html_pdf/publication_layout.py
 ```
 
 The shared template primitives expose `adaptive_pair()` and `continuation_heading()` so new report templates can adopt the same behavior without re-implementing spacing or pagination rules.
+
+### Section clearance and reusable content primitives
+
+A section is spaced by publication order, not by HTML element type. The first `<section>` element on a page may appear after a chart, peer pair, metric block, or other `div`; it still receives the canonical **5.6 mm** section gap unless it immediately follows the page title or metric strip. `:first-of-type` must never zero this gap.
+
+Reusable summary cards and chart legends are family-owned primitives. Summary cards use a structured label -> value -> helper layout with a canonical component gap, while chart legends use explicit swatches and spacing. Report-specific CSS may change domain geometry, but must not collapse these primitives into run-on text.

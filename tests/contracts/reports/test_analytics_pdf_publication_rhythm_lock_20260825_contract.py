@@ -193,7 +193,7 @@ def test_shared_rhythm_has_single_spacing_owner_without_pair_double_gap() -> Non
     assert 'min-height:0!important' in compact
     assert '.trend-interpretation-stack{display:grid' in compact
     assert '.page-content>.metric-strip+.content-section' in compact
-    assert 'content-section:first-of-type{margin-top:var(--analytics-rhythm-section)!important;}' in compact
+    assert '.publication-pair>.content-section:first-of-type{margin-top:0!important;' in compact
 
 
 def test_graphic_boxes_use_publication_size_tokens() -> None:

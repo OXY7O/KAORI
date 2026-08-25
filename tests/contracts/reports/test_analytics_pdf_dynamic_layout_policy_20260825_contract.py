@@ -209,3 +209,20 @@ def test_identity_register_uses_dynamic_reference_column_policy() -> None:
     component = read('app/templates/reports/pdf/components/analytics_publication.html')
     assert 'publication_reference_columns(items)' in component
     assert "columns == 1" in component
+
+
+def test_global_pair_alignment_policy_is_explicit_and_render_owned() -> None:
+    standard = read('app/reports/export/html_pdf/analytics_publication_standard.py')
+    verifier = read('scripts/verify_analytics_pdf_publication.py')
+    docs = read('docs/reports/kaori-analytics-pdf-publication-standard-v3.md')
+
+    for token in (
+        "'peer_alignment_policy': 'shared-title-helper-body-rows'",
+        "'peer_helper_slot': '7mm'",
+    ):
+        assert token in standard
+        assert token in verifier
+
+    assert 'Paired-content row alignment' in docs
+    assert 'title, helper description, and content start on shared rows' in docs
+    assert '7mm helper slot' in docs
