@@ -453,18 +453,27 @@ def _prepare_resource_utilization(
         tables.append(_table('Trends', 'Utilization Trends', 'Committed utilization series in source order.', _TREND_COLUMNS, trend_rows))
 
     consumer_rows: list[dict[str, Any]] = []
-    for resource, key, unit in (
+    for resource, key, default_unit in (
         ('CPU', 'top_cpu_consumers', 'cores'),
         ('Memory', 'top_memory_consumers', 'GiB'),
     ):
         for item in _sequence(payload.get(key)):
+            raw_value = _number(_first(item, 'value', 'current_usage', 'percent'))
+            display_value = _first(item, 'current_display', 'display_value', default=raw_value)
+            unit = _clean_unit(_first(item, 'unit', default=default_unit)) or default_unit
+            value = _normalized_consumer_value(
+                resource=resource,
+                raw_value=raw_value,
+                display_value=display_value,
+                unit=unit,
+            )
             consumer_rows.append(
                 {
                     'resource': resource,
                     'namespace': _first(item, 'namespace', default='Not Available'),
                     'consumer': _first(item, 'pod', 'name', 'workload', default='Not Available'),
-                    'value': _number(_first(item, 'value', 'current_usage', 'percent')),
-                    'unit': _first(item, 'unit', default=unit),
+                    'value': value,
+                    'unit': unit,
                 }
             )
     if consumer_rows:
@@ -653,11 +662,8 @@ def _prepare_storage(
         )
     _append_recommendations(tables, payload)
     chart_rows: tuple[Mapping[str, Any], ...] = ()
-    free_percent = _number(pvc.get('free_percent'))
     if pvc_util is not None:
-        if free_percent is None:
-            free_percent = max(0.0, 100.0 - pvc_util)
-        chart_rows = ({'category': 'PVC Used', 'value': pvc_util}, {'category': 'PVC Free', 'value': free_percent})
+        chart_rows = ({'category': 'Persistent Claims', 'value': pvc_util},)
     chart = AnalyticsChartData(
         title='Persistent Claim Capacity Posture',
         visual_type='capacity_bar',
@@ -869,7 +875,60 @@ def _consumer_unit(item: Mapping[str, Any]) -> str:
     if not display:
         return ''
     tokens = display.split()
-    return _clean_unit(tokens[1]) if len(tokens) > 1 else ''
+    return _clean_unit(' '.join(tokens[1:])) if len(tokens) > 1 else ''
+
+
+def _display_numeric(value: Any) -> float | None:
+    if value in (None, ''):
+        return None
+    rendered = str(value).strip()
+    if not rendered:
+        return None
+    token = rendered.split()[0].rstrip('%')
+    if not token:
+        return None
+    if token.count(',') > 1 and '.' not in token:
+        token = token.replace(',', '')
+    elif token.count('.') > 1 and ',' not in token:
+        token = token.replace('.', '')
+    elif ',' in token and '.' in token:
+        if token.rfind(',') > token.rfind('.'):
+            token = token.replace('.', '').replace(',', '.')
+        else:
+            token = token.replace(',', '')
+    elif ',' in token:
+        integer, fraction = token.rsplit(',', 1)
+        token = f'{integer}.{fraction}' if len(fraction) <= 2 else token.replace(',', '')
+    try:
+        return float(token)
+    except ValueError:
+        return None
+
+
+def _normalized_consumer_value(
+    *,
+    resource: str,
+    raw_value: float | None,
+    display_value: Any,
+    unit: str,
+) -> float | None:
+    displayed = _display_numeric(display_value)
+    rendered_display = str(display_value or '').strip()
+    has_explicit_display_unit = any(character.isalpha() or character == '%' for character in rendered_display)
+    if displayed is not None and unit and has_explicit_display_unit:
+        return displayed
+    if raw_value is None:
+        return None
+    normalized_unit = unit.casefold()
+    if normalized_unit == 'gib' and raw_value > 1024**2:
+        return raw_value / _GIB
+    if normalized_unit == 'mib' and raw_value > 1024:
+        return raw_value / float(1024**2)
+    if normalized_unit == 'kib' and raw_value > 1024:
+        return raw_value / 1024.0
+    if resource.casefold() in {'memory', 'pvc'} and raw_value > 1024**2:
+        return raw_value / _GIB
+    return raw_value
 
 
 def _prepare_top_consumers(
@@ -881,14 +940,24 @@ def _prepare_top_consumers(
     for item in source_rows:
         resource = _text(_first(item, 'resource_type', 'resource', 'metric'), 'Unknown').title()
         value = _number(_first(item, 'current_usage', 'value', 'percent'))
+        display_value = _first(item, 'current_display', 'display_value', default=value)
+        unit = _consumer_unit(item)
+        display_numeric = _normalized_consumer_value(
+            resource=resource,
+            raw_value=value,
+            display_value=display_value,
+            unit=unit,
+        )
         rows.append(
             {
                 'resource': resource,
                 'namespace': _first(item, 'namespace', default='Not Available'),
                 'consumer': _consumer_identity(item),
-                'value': value,
-                'display_value': _first(item, 'current_display', 'display_value', default=value),
-                'unit': _consumer_unit(item) or 'Not Available',
+                'value': display_numeric,
+                'source_value': value,
+                'display_numeric': display_numeric,
+                'display_value': display_value,
+                'unit': unit or 'Not Available',
                 'status': _first(_mapping(item.get('risk')), 'label', default=_first(item, 'status', default='Not Available')),
             }
         )
@@ -903,14 +972,13 @@ def _prepare_top_consumers(
             _table(
                 'Top Consumers',
                 'Top Consumers',
-                'Committed consumer ranking evidence; resource units are preserved and not mixed in one chart.',
+                'Committed consumer ranking evidence normalized to the published display unit for analysis.',
                 (
                     _column('resource', 'Resource', 'Resource signal.', width=14),
                     _column('namespace', 'Namespace', 'Namespace identity.', width=28),
                     _column('consumer', 'Consumer', 'Pod, workload, or resource identity.', width=44),
-                    _column('value', 'Numeric Value', 'Committed numeric value.', data_type='number', number_format='#,##0.00', width=16),
-                    _column('display_value', 'Display Value', 'Committed formatted value.', width=18),
-                    _column('unit', 'Unit', 'Resource-specific unit.', width=12),
+                    _column('value', 'Value', 'Committed numeric value normalized to the published display unit.', data_type='number', number_format='#,##0.00', width=18),
+                    _column('unit', 'Unit', 'Published resource-specific unit.', width=12),
                     _column('status', 'Status', 'Committed risk or review state.', width=18),
                 ),
                 rows,
@@ -919,11 +987,11 @@ def _prepare_top_consumers(
     preferred = next((resource for resource in ('Memory', 'CPU') if any(row['resource'] == resource for row in rows)), None)
     if preferred is None:
         preferred = next((str(row['resource']) for row in rows), None)
-    ranked = [row for row in rows if row['resource'] == preferred and row['value'] is not None]
-    ranked.sort(key=lambda row: float(row['value']), reverse=True)
-    chart_rows = tuple({'category': row['consumer'], 'value': row['value']} for row in ranked[:8])
+    ranked = [row for row in rows if row['resource'] == preferred and row['display_numeric'] is not None]
+    ranked.sort(key=lambda row: float(row['display_numeric']), reverse=True)
+    chart_rows = tuple({'category': row['consumer'], 'value': row['display_numeric']} for row in ranked[:8])
     unit = _clean_unit(ranked[0].get('unit')) if ranked else ''
-    total_value = sum(float(row['value']) for row in ranked if row['value'] is not None)
+    total_value = sum(float(row['display_numeric']) for row in ranked if row['display_numeric'] is not None)
     chart = AnalyticsChartData(
         title=f'Top {preferred} Consumers',
         visual_type='ranked_bar',

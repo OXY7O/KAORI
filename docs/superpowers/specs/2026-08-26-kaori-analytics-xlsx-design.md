@@ -70,13 +70,15 @@ The renderer never invents health conclusions, forecasts, alerts, or recommendat
 
 ## Visual semantics
 
-- Analytics Overview forecast posture uses a clustered Current vs Projected resource bar; resource-level forecast records must never be reinterpreted as time-series points;
-- ordered time-series evidence uses line charts;
-- ranked consumers use horizontal ranked bars with direct labels and Supporting Data;
-- status or part-to-whole Analytics evidence uses a compact horizontal `composition_bar` with an explicit 0–100% denominator, semantic category colors, and percentage-only direct labels; doughnut rendering remains an Inventory concern rather than an Analytics dependency;
-- capacity comparisons use used/headroom or requests/limits/usage visual semantics owned by the profile;
-- forecast workbooks plot committed historical and forecast series, but Excel must not calculate the forecast itself;
-- alert visuals summarize committed severity/state evidence and never duplicate Alert Intelligence workflow state.
+- Analytics Overview forecast posture uses a clustered Current vs Projected resource bar; resource-level forecast records must never be reinterpreted as time-series points.
+- Ordered time-series evidence uses sparse line charts without dense point markers; percent trends use a 0–100 scale, 25-point major interval, and timestamps when committed timestamps exist.
+- Ranked consumers use horizontal ranked bars limited to Top 8, one KAORI violet series, visible category labels, value-only direct labels, no redundant legend, and explicit value-axis headroom so labels do not collide with the chart edge. Long technical identities are shortened only on the chart (maximum 28 display characters); Supporting Data keeps the complete identity.
+- Provider-native consumer values must be normalized to the committed display unit before charting or overview presentation. Memory byte values therefore become typed GiB values rather than raw bytes carrying a GiB suffix. XLSX consumer evidence uses one normalized numeric `Value` column plus `Unit`; raw/display duplicate columns are not part of the human analysis surface.
+- Status or part-to-whole Analytics evidence uses a compact horizontal `composition_bar` with an explicit 0–100% denominator, semantic category colors, and percentage-only direct labels; doughnut rendering remains an Inventory concern rather than an Analytics dependency.
+- Capacity comparisons use Utilization vs Headroom as complementary series over real resource/posture categories. `Used` and `Free` must not be emitted as separate pseudo-resources.
+- Forecast workbooks plot committed historical and forecast series, but Excel must not calculate the forecast itself.
+- Alert visuals summarize committed severity/state evidence and never duplicate Alert Intelligence workflow state. Unclassified records are shown explicitly when the severity denominator would otherwise be incomplete.
+- Missing evidence such as `Not Available` is neutral/muted in evidence tables; it must never inherit a healthy/green semantic style merely because the text contains the word `available`.
 
 ## Recommendations
 

@@ -87,11 +87,7 @@ def test_reports_block_headers_keep_shared_description_scale() -> None:
         ),
         'app/templates/reports/storage/index.html': (
             'Storage Operations',
-            'Inspect backend configuration, verify retained artifact references, and review lifecycle ownership without changing protected storage configuration.',
-        ),
-        'app/templates/reports/storage/index.html#posture': (
-            'Storage Operations Posture',
-            'Current backend readiness for reading retained artifacts and accepting new report writes.',
+            'Review backend readiness, artifact integrity, and lifecycle ownership from one governed workspace.',
         ),
     }
     for relative, (title, description) in cases.items():
@@ -151,17 +147,15 @@ def test_reports_hero_copy_is_compact_and_operational() -> None:
         'overview': 'Review reporting readiness, artifacts, automation, and report coverage across managed infrastructure.',
         'generate': 'Build a governed report from connected data, scope, sections, and an approved output format.',
         'generated': (
-            'Review generated report records, worker execution progress, artifact readiness, storage availability, '
-            'and lifecycle state from generation through retention.'
+            'Review PDF publications, XLSX analytical workbooks, and CSV exports across worker execution, artifact '
+            'readiness, storage availability, and lifecycle state from generation through retention.'
         ),
         'templates': (
-            'Manage protected system templates and reusable custom report structures that preserve canonical report '
-            'contracts, supported formats, governed sections, and reusable generation defaults.'
+            'Manage protected system templates and reusable custom report structures for Analytics PDF/XLSX/CSV and Inventory XLSX/CSV.'
         ),
-        'schedules': 'Automate report generation and delivery with timezone-aware schedules and retained run evidence.',
+        'schedules': 'Automate Analytics PDF, XLSX, or CSV artifacts and Inventory XLSX/CSV exports with timezone-aware schedules and retained run evidence.',
         'storage': (
-            'Review artifact storage readiness, backend and reference integrity, verification results, retained '
-            'artifact coverage, and lifecycle ownership across generated reports.'
+            'Review storage readiness, backend and reference integrity, verification results, retained coverage, and lifecycle ownership for PDF, XLSX, and CSV report artifacts.'
         ),
     }
     for key, value in expected.items():

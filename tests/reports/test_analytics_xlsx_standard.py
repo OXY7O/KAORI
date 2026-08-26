@@ -22,6 +22,7 @@ from app.reports.export.xlsx.analytics_schema import (
     AnalyticsExportContext,
 )
 from app.reports.export.xlsx.schema import XLSX_REPORTING_STANDARD
+from app.reports.export.xlsx.style import KAORI_SLATE_FILL
 
 ANALYTICS_TYPES = {
     'analytics_overview',
@@ -847,3 +848,194 @@ def test_every_analytics_category_builds_its_own_runtime_valid_workbook(
         for row in range(1, metadata.max_row + 1)
     }
     assert metadata_values['Workbook Standard'] == ANALYTICS_WORKBOOK_STANDARD
+
+
+def test_ranked_bar_normalizes_provider_native_memory_bytes_to_committed_display_unit(tmp_path: Path) -> None:
+    payload = {
+        'consumer_payload': {
+            'rows': [
+                {
+                    'resource': 'Memory',
+                    'namespace': 'openebs',
+                    'name': 'cstor-disk-dfgm-7f4dfcd7cd',
+                    'current_usage': 18_638_389_248,
+                    'current_display': '17.36 GiB',
+                },
+                {
+                    'resource': 'Memory',
+                    'namespace': 'openebs',
+                    'name': 'cstor-disk-thkc-55cf8fb6fb',
+                    'current_usage': 18_048_593_920,
+                    'current_display': '16.81 GiB',
+                },
+            ]
+        }
+    }
+
+    prepared = prepare_analytics_workbook_data('top_consumers', payload, _context('top_consumers'))
+    assert prepared.primary_chart is not None
+    assert prepared.primary_chart.series[0].unit == 'GiB'
+    assert prepared.primary_chart.rows[0]['value'] == pytest.approx(17.36)
+    assert prepared.primary_chart.rows[1]['value'] == pytest.approx(16.81)
+    assert prepared.primary_chart.total_value == pytest.approx(34.17)
+
+    output_path = tmp_path / 'normalized-memory-ranked.xlsx'
+    build_analytics_workbook(
+        report_type='top_consumers',
+        payload=payload,
+        context=_context('top_consumers'),
+        output_path=output_path,
+    )
+    workbook = load_workbook(output_path)
+    overview = workbook['Overview']
+    chart = overview._charts[0]
+    assert overview['L16'].value == pytest.approx(17.36)
+    assert overview['L16'].number_format == '#,##0.00" GiB"'
+    assert chart.y_axis.scaling.max is not None
+    assert chart.y_axis.scaling.max >= 20
+
+
+def test_ranked_bar_uses_compact_chart_identity_and_value_label_headroom(tmp_path: Path) -> None:
+    payload = {
+        'consumer_payload': {
+            'rows': [
+                {
+                    'resource': 'Memory',
+                    'namespace': 'monitoring',
+                    'name': 'prometheus-prometheus-kube-prometheus-prometheus-very-long-identity',
+                    'current_usage': 18_638_389_248,
+                    'current_display': '17.36 GiB',
+                },
+                {
+                    'resource': 'Memory',
+                    'namespace': 'openebs',
+                    'name': 'cstor-disk-dfgm-7f4dfcd7cd',
+                    'current_usage': 2_147_483_648,
+                    'current_display': '2.00 GiB',
+                },
+            ]
+        }
+    }
+    output_path = tmp_path / 'ranked-bar-layout.xlsx'
+    build_analytics_workbook(
+        report_type='top_consumers',
+        payload=payload,
+        context=_context('top_consumers'),
+        output_path=output_path,
+    )
+    workbook = load_workbook(output_path)
+    overview = workbook['Overview']
+    chart = overview._charts[0]
+
+    assert overview['K16'].value == 'prometheus-prometheus-kube-prometheus-prometheus-very-long-identity'
+    assert overview['O16'].value.endswith('…')
+    assert len(overview['O16'].value) <= 28
+    assert chart.y_axis.scaling.min == 0
+    assert chart.y_axis.scaling.max is not None
+    assert chart.y_axis.scaling.max >= 20
+    assert chart.legend is None
+    assert chart.dLbls is not None
+    assert chart.dLbls.dLblPos == 'outEnd'
+
+
+def test_storage_capacity_visual_uses_one_persistent_claim_posture_not_used_and_free_as_two_resources(tmp_path: Path) -> None:
+    payload = {
+        'storage_summary': {
+            'persistent_storage': {
+                'pv': {'count': 18, 'capacity': '120 GiB'},
+                'pvc': {
+                    'count': 21,
+                    'used_percent': 63.0,
+                    'free_percent': 37.0,
+                    'used': '75.6 GiB',
+                    'free': '44.4 GiB',
+                },
+            },
+            'node_filesystem': {'rows': [{'name': '/var/lib/kubelet', 'used_percent': 48.0}]},
+        }
+    }
+    prepared = prepare_analytics_workbook_data('storage_analysis', payload, _context('storage_analysis'))
+    assert prepared.primary_chart is not None
+    assert prepared.primary_chart.rows == ({'category': 'Persistent Claims', 'value': 63.0},)
+
+    output_path = tmp_path / 'storage-capacity-posture.xlsx'
+    build_analytics_workbook(
+        report_type='storage_analysis',
+        payload=payload,
+        context=_context('storage_analysis'),
+        output_path=output_path,
+    )
+    workbook = load_workbook(output_path)
+    overview = workbook['Overview']
+    assert overview['J16'].value == 'Persistent Claims'
+    assert overview['K16'].value == pytest.approx(63.0)
+    assert overview['L16'].value == pytest.approx(37.0)
+    assert overview['J17'].value is None
+
+
+def test_top_consumers_evidence_sheet_uses_one_normalized_numeric_value_column() -> None:
+    payload = {
+        'consumer_payload': {
+            'rows': [
+                {
+                    'resource': 'Memory',
+                    'namespace': 'openebs',
+                    'name': 'cstor-disk-dfgm-7f4dfcd7cd',
+                    'current_usage': 18_638_389_248,
+                    'current_display': '17.36 GiB',
+                }
+            ]
+        }
+    }
+    prepared = prepare_analytics_workbook_data('top_consumers', payload, _context('top_consumers'))
+    table = next(table for table in prepared.tables if table.sheet_name == 'Top Consumers')
+    assert [column.label for column in table.columns] == ['Resource', 'Namespace', 'Consumer', 'Value', 'Unit', 'Status']
+    assert table.rows[0]['value'] == pytest.approx(17.36)
+    assert table.rows[0]['unit'] == 'GiB'
+    assert 'display_value' not in {column.key for column in table.columns}
+
+
+def test_resource_utilization_consumer_evidence_normalizes_memory_bytes_to_gib() -> None:
+    payload = {
+        'summary': {
+            'cpu_utilization': 18.2,
+            'memory_utilization': 61.4,
+            'storage_utilization': 42.5,
+            'pod_utilization': 53.0,
+        },
+        'top_cpu_consumers': [{'namespace': 'payments', 'pod': 'api-0', 'value': 0.71}],
+        'top_memory_consumers': [{'namespace': 'openebs', 'pod': 'cstor-0', 'value': 18_638_389_248}],
+    }
+    prepared = prepare_analytics_workbook_data('resource_utilization', payload, _context('resource_utilization'))
+    table = next(table for table in prepared.tables if table.sheet_name == 'Top Consumers')
+    memory = next(row for row in table.rows if row['resource'] == 'Memory')
+    assert memory['value'] == pytest.approx(18_638_389_248 / 1024**3)
+    assert memory['unit'] == 'GiB'
+
+
+def test_missing_evidence_status_uses_neutral_not_healthy_semantic_style(tmp_path: Path) -> None:
+    payload = {
+        'consumer_payload': {
+            'rows': [
+                {
+                    'resource': 'Memory',
+                    'namespace': 'openebs',
+                    'name': 'cstor-0',
+                    'current_usage': 2_147_483_648,
+                    'current_display': '2.00 GiB',
+                    'status': 'Not Available',
+                }
+            ]
+        }
+    }
+    output_path = tmp_path / 'neutral-missing-evidence.xlsx'
+    build_analytics_workbook(
+        report_type='top_consumers',
+        payload=payload,
+        context=_context('top_consumers'),
+        output_path=output_path,
+    )
+    workbook = load_workbook(output_path)
+    status_cell = workbook['Top Consumers']['F6']
+    assert status_cell.value == 'Not Available'
+    assert status_cell.fill.fgColor.rgb.endswith(KAORI_SLATE_FILL)

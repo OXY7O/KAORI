@@ -96,6 +96,19 @@ def main() -> int:
         errors,
     )
     require(
+        '_normalized_consumer_value' in analytics_profiles
+        and "max_length: int = 28" in analytics_overview
+        and "max_value * 1.20" in analytics_overview
+        and "(overview.column_dimensions['K'].width or 0) < 38" in analytics_builder,
+        'Analytics XLSX ranked-bar normalization and spacing contract is incomplete',
+        errors,
+    )
+    require(
+        "value in {'not available', 'n/a', 'na', 'unknown', '-', ''}" in analytics_builder,
+        'Analytics XLSX missing-evidence semantic styling must remain neutral',
+        errors,
+    )
+    require(
         "primary_visual='comparison_bar'" in analytics_profiles
         and "title='Current vs Projected Resource Posture'" in analytics_profiles
         and "chart.visual_type == 'comparison_bar'" in analytics_overview,

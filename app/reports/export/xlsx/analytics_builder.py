@@ -180,14 +180,23 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
                     raise ValueError('Analytics ranked bars require visible categories and a sparse zero-baseline value axis.')
                 if not overview.column_dimensions['O'].hidden:
                     raise ValueError('Analytics ranked bars require the hidden short-category helper column.')
-                if (overview.column_dimensions['K'].width or 0) < 34 or (overview.column_dimensions['L'].width or 0) < 20:
+                if (overview.column_dimensions['K'].width or 0) < 38 or (overview.column_dimensions['L'].width or 0) < 20:
                     raise ValueError('Analytics ranked Supporting Data requires professional category/value column widths.')
+                ranked_values: list[float] = []
                 for row in range(16, min(overview.max_row, 23) + 1):
                     short_label = str(overview.cell(row=row, column=15).value or '')
-                    if len(short_label) > 31:
+                    if len(short_label) > 28:
                         raise ValueError('Analytics ranked chart helper labels must be shortened without changing Supporting Data.')
                     if 'not available' in str(overview.cell(row=row, column=12).number_format or '').casefold():
                         raise ValueError('Analytics ranked numeric formats must not publish placeholder text as a unit.')
+                    value = overview.cell(row=row, column=12).value
+                    if isinstance(value, (int, float)):
+                        ranked_values.append(float(value))
+                if ranked_values:
+                    required_max = max(ranked_values) * 1.10
+                    axis_max = chart.y_axis.scaling.max
+                    if axis_max is None or axis_max < required_max:
+                        raise ValueError('Analytics ranked bars must reserve value-axis headroom for direct labels.')
             if primary_visual == 'composition_bar':
                 if series_count != 1 or chart.grouping != 'clustered' or chart.legend is not None:
                     raise ValueError('Analytics composition bars require one legend-free clustered share series.')
@@ -554,7 +563,10 @@ def _apply_semantic_style(cell: Any, label: str) -> None:
     if label.casefold() not in {'status', 'severity', 'priority', 'evidence state', 'signal quality'}:
         return
     value = str(cell.value or '').casefold()
-    if any(token in value for token in ('critical', 'failed', 'error', 'unavailable', 'not ready')):
+    if value in {'not available', 'n/a', 'na', 'unknown', '-', ''}:
+        cell.fill = PatternFill('solid', fgColor=KAORI_SLATE_FILL)
+        cell.font = Font(name=cell.font.name, size=cell.font.sz, bold=True, color=KAORI_SLATE_TEXT)
+    elif any(token in value for token in ('critical', 'failed', 'error', 'unavailable', 'not ready')):
         cell.fill = PatternFill('solid', fgColor=KAORI_RED_FILL)
         cell.font = Font(name=cell.font.name, size=cell.font.sz, bold=True, color=KAORI_RED_TEXT)
     elif any(token in value for token in ('warning', 'attention', 'review', 'partial', 'pending')):

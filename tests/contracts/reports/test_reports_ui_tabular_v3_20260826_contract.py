@@ -17,32 +17,21 @@ def has_python_string(source: str, expected: str) -> bool:
     )
 
 
-def test_reports_operational_copy_is_expanded_and_consistent() -> None:
-    generated = read('app/templates/reports/generated/index.html')
-    generated_service = read('app/reports/generated/service.py')
+def test_reports_operational_copy_is_compact_and_consistent() -> None:
     templates_service = read('app/reports/report_templates/service.py')
     storage_service = read('app/reports/storage/service.py')
     storage = read('app/templates/reports/storage/index.html')
 
-    generated_copy = (
-        'Review generated report records, worker execution progress, artifact readiness, storage availability, '
-        'and lifecycle state from generation through retention.'
-    )
-    assert generated_copy in generated
-    assert has_python_string(generated_service, generated_copy)
     assert has_python_string(
         templates_service,
-        'Manage protected system templates and reusable custom report structures that preserve canonical report '
-        'contracts, supported formats, governed sections, and reusable generation defaults.',
+        'Manage protected system templates and reusable custom report structures for Analytics PDF/XLSX/CSV and Inventory XLSX/CSV.',
     )
     assert has_python_string(
         storage_service,
-        'Review artifact storage readiness, backend and reference integrity, verification results, retained '
-        'artifact coverage, and lifecycle ownership across generated reports.',
+        'Review storage readiness, backend and reference integrity, verification results, retained coverage, and lifecycle ownership for PDF, XLSX, and CSV report artifacts.',
     )
     assert (
-        'Object storage target used to retain generated report artifacts, download references, verification '
-        'evidence, and lifecycle-managed storage records.'
+        'S3-compatible target for generated report artifacts, download references, and verification evidence.'
         in storage
     )
 

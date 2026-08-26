@@ -76,7 +76,7 @@ def build_analytics_overview_sheet(sheet: Worksheet, data: AnalyticsWorkbookData
         for column, width in {'J': 22, 'K': 14, 'L': 14, 'M': 14, 'N': 14}.items():
             sheet.column_dimensions[column].width = width
     elif data.primary_chart is not None and data.primary_chart.visual_type == 'ranked_bar':
-        for column, width in {'J': 8, 'K': 34, 'L': 22, 'M': 16, 'N': 4}.items():
+        for column, width in {'J': 8, 'K': 38, 'L': 20, 'M': 16, 'N': 4}.items():
             sheet.column_dimensions[column].width = width
         sheet.column_dimensions['O'].hidden = True
     elif data.primary_chart is not None and data.primary_chart.visual_type == 'composition_bar':
@@ -431,6 +431,9 @@ def _add_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: AnalyticsCh
         visual.x_axis.tickLblPos = 'nextTo'
         visual.x_axis.delete = False
         visual.y_axis.scaling.min = 0
+        max_value = max((_number(row.get('value')) for row in chart.rows[:8]), default=0.0)
+        if max_value > 0:
+            visual.y_axis.scaling.max = max(max_value * 1.20, max_value + 1.0)
         visual.y_axis.title = None
         visual.y_axis.majorGridlines = None
         visual.series[0].graphicalProperties.solidFill = KAORI_PRIMARY
@@ -589,7 +592,7 @@ def _series_number_format(number_format: str, unit: str | None) -> str:
     return f'{number_format}" {safe_unit}"'
 
 
-def _short_chart_label(value: str, *, max_length: int = 31) -> str:
+def _short_chart_label(value: str, *, max_length: int = 28) -> str:
     rendered = ' '.join(str(value or '').split())
     if len(rendered) <= max_length:
         return rendered

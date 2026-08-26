@@ -27,7 +27,7 @@ def load_service_symbols(*names: str) -> dict[str, object]:
     return namespace
 
 
-def test_storage_page_uses_balanced_hero_and_one_state_aware_posture() -> None:
+def test_storage_page_uses_balanced_hero_and_contract_first_workspace() -> None:
     template = read('app/templates/reports/storage/index.html')
 
     assert 'page_hero.context_actions_classes(2)' in template
@@ -35,21 +35,16 @@ def test_storage_page_uses_balanced_hero_and_one_state_aware_posture() -> None:
     assert 'Verify Storage' in template
     assert 'Generated Reports' in template
     assert 'data-report-storage-posture=' in template
-    assert 'Storage Operations Posture' in template
-    assert 'data-storage-posture-layout="editorial-readiness"' in template
-    assert 'Storage Decision' in template
-    assert 'Automatic Storage Readiness' in template
+    assert 'data-storage-workspace-shell="true"' in template
+    assert 'data-storage-overview-layout="contract-first"' in template
     assert 'data-report-storage-readiness-monitor="true"' in template
-    assert 'data-storage-readiness-tip="true"' in template
-    assert 'data-storage-readiness-tip-layout="boxed"' in template
-    assert 'Operational Tip' in template
-    assert 'data-storage-decision-list="true"' in template
-    assert 'data-storage-readiness-strip="true"' in template
+    assert 'Active Storage Contract' in template
+    assert 'Readiness & Access' in template
 
     assert 'data-storage-artifact-evidence="metadata-first"' in template
     assert 'Report Reference Coverage' in template
     assert 'Tracked Size' in template
-    assert 'Metadata-first counts from the Reports database' in template
+    assert 'metadata-first counts from the Reports database' in template
     assert 'reports/components/_summary_strip.html' not in template
     assert 'xl:grid-cols-[minmax(0,1fr)_380px]' not in template
     for raw_palette in ('emerald-', 'amber-', 'rose-', 'slate-'):
@@ -224,7 +219,7 @@ def test_storage_overview_uses_active_backend_connection_contract_not_field_card
     assert 'data-storage-backend-connection="s3"' in template
     assert 'data-storage-backend-access="s3"' in template
     assert 'Connection Target' in template
-    assert 'Access & Compatibility' in template
+    assert 'Readiness & Access' in template
     assert 'Object Prefix' in template
     assert 'Credential Mode' in template
     assert 'S3 Client' in template

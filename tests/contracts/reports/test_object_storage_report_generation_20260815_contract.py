@@ -25,7 +25,7 @@ def test_object_storage_report_contracts_are_published_with_canonical_format_pol
 
     assert analysis['family'] == 'analytics'
     assert analysis['default_format'] == 'pdf'
-    assert analysis['allowed_formats'] == ['pdf', 'csv']
+    assert analysis['allowed_formats'] == ['pdf', 'xlsx', 'csv']
     assert analysis['domain'] == 'object_storage'
     assert analysis['scope_asset_type'] == 'object_storage_system'
     assert analysis['requires_cluster'] is False

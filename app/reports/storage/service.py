@@ -741,8 +741,7 @@ def get_report_storage_payload(*, workspace: str | None = None) -> dict[str, Any
     return {
         'page_title': 'Reports Storage',
         'page_subtitle': (
-            'Review storage readiness for PDF, XLSX, and CSV report artifacts, including backend and reference '
-            'integrity, verification results, retained coverage, and lifecycle ownership.'
+            'Review storage readiness, backend and reference integrity, verification results, retained coverage, and lifecycle ownership for PDF, XLSX, and CSV report artifacts.'
         ),
         'active_backend': backend_name,
         'workspace': normalize_storage_workspace(workspace),
