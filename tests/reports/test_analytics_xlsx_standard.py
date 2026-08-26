@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
+from zipfile import ZipFile
 
 from openpyxl import load_workbook
 import pytest
@@ -96,12 +97,74 @@ def test_resource_utilization_preparation_preserves_committed_metrics_trends_and
     assert data.primary_chart is not None
     assert data.primary_chart.visual_type == 'line'
     assert data.primary_chart.source_sheet == 'Trends'
-    assert [series.label for series in data.primary_chart.series] == ['CPU', 'Memory', 'Pods', 'Storage']
+    assert [series.label for series in data.primary_chart.series] == ['CPU', 'Memory', 'Pods']
     assert {'Analysis', 'Trends', 'Top Consumers'} <= {table.sheet_name for table in data.tables}
     trends = next(table for table in data.tables if table.sheet_name == 'Trends')
     assert trends.rows[-1]['memory_percent'] == 61.4
     assert '61.4%' in data.readout
 
+
+
+def test_resource_utilization_line_chart_uses_timestamps_only_available_series_and_sparse_presentation(tmp_path: Path) -> None:
+    trend_points = []
+    for index in range(12):
+        trend_points.append({
+            'timestamp': f'2026-08-26T{index:02d}:00:00+07:00',
+            'cpu': 1.0 + (index * 0.1),
+            'memory': 55.0 + (index * 0.2),
+            'pods': 46.0 + (index * 0.1),
+        })
+    payload = {
+        'summary': {
+            'cpu_utilization': 2.1,
+            'memory_utilization': 57.2,
+            'storage_utilization': None,
+            'pod_utilization': 47.1,
+        },
+        'trends': {
+            'cpu': [{'timestamp': row['timestamp'], 'value': row['cpu']} for row in trend_points],
+            'memory': [{'timestamp': row['timestamp'], 'value': row['memory']} for row in trend_points],
+            'pods': [{'timestamp': row['timestamp'], 'value': row['pods']} for row in trend_points],
+            'storage': [],
+        },
+    }
+
+    data = prepare_analytics_workbook_data('resource_utilization', payload, _context('resource_utilization'))
+    assert data.primary_chart is not None
+    assert data.primary_chart.category_key == 'timestamp'
+    assert [series.label for series in data.primary_chart.series] == ['CPU', 'Memory', 'Pods']
+
+    output_path = tmp_path / 'resource-utilization-sparse.xlsx'
+    build_analytics_workbook(
+        report_type='resource_utilization',
+        payload=payload,
+        context=_context('resource_utilization'),
+        output_path=output_path,
+    )
+    validate_analytics_xlsx_artifact(output_path)
+
+    workbook = load_workbook(output_path)
+    overview = workbook['Overview']
+    chart = overview._charts[0]
+    assert chart.__class__.__name__ == 'LineChart'
+    assert [series.tx.v for series in chart.series] == ['CPU', 'Memory', 'Pods']
+    assert all(series.marker.symbol is None for series in chart.series)
+    with ZipFile(output_path) as archive:
+        chart_xml = archive.read('xl/charts/chart1.xml').decode('utf-8')
+    assert chart_xml.count('<marker><symbol val="none"/>') == 3
+    assert chart.y_axis.scaling.min == 0
+    assert chart.y_axis.scaling.max == 100
+    assert chart.y_axis.majorUnit == 25
+    assert chart.y_axis.majorGridlines is None
+    assert chart.y_axis.title is None
+    assert chart.x_axis.title is None
+    assert overview['J15'].value == 'Observed At'
+    assert overview['K15'].value == 'CPU'
+    assert overview['L15'].value == 'Memory'
+    assert overview['M15'].value == 'Pods'
+    assert overview['N15'].value is None
+    assert overview.column_dimensions['J'].width >= 22
+    assert overview.column_dimensions['K'].width >= 14
 
 def test_analytics_overview_uses_current_vs_projected_resource_posture() -> None:
     payload = {
@@ -284,7 +347,7 @@ def test_resource_utilization_workbook_is_professional_and_runtime_valid(tmp_pat
     assert overview['A9'].value == 'Executive Readout'
     assert len(overview._charts) == 1
     assert overview._charts[0].__class__.__name__ == 'LineChart'
-    assert [series.tx.v for series in overview._charts[0].series] == ['CPU', 'Memory', 'Pods', 'Storage']
+    assert [series.tx.v for series in overview._charts[0].series] == ['CPU', 'Memory', 'Pods']
     assert overview['A32'].hyperlink.target == "#'Analysis'!A1"
     assert overview['A33'].hyperlink is not None
     assert workbook['Analysis']['A3'].hyperlink.target == "#'Overview'!A1"
@@ -319,6 +382,23 @@ def test_capacity_workbook_uses_resource_categories_and_stacked_utilization_head
     assert chart.legend is not None
     assert chart.legend.position == 'b'
     assert [series.tx.v for series in chart.series] == ['Utilization', 'Headroom']
+    assert chart.dLbls is not None
+    assert chart.dLbls.showVal is False
+    assert chart.dLbls.showLegendKey is False
+    assert chart.dLbls.showCatName is False
+    assert chart.dLbls.showSerName is False
+    assert chart.dLbls.showPercent is False
+    assert chart.x_axis.delete is False
+    assert chart.x_axis.tickLblPos == 'nextTo'
+    assert chart.x_axis.title is None
+    assert chart.y_axis.scaling.min == 0
+    assert chart.y_axis.scaling.max == 100
+    assert chart.y_axis.majorUnit == 25
+    assert chart.y_axis.majorGridlines is None
+    assert chart.y_axis.title is None
+    assert overview.column_dimensions['J'].width >= 20
+    assert overview.column_dimensions['K'].width >= 16
+    assert overview.column_dimensions['L'].width >= 16
     assert overview['J15'].value == 'Resource'
     assert overview['K15'].value == 'Utilization'
     assert overview['L15'].value == 'Headroom'
@@ -418,6 +498,26 @@ def test_runtime_validator_rejects_comparison_bar_without_executive_axis_contrac
     with pytest.raises(ValueError, match='executive axis presentation'):
         validate_analytics_xlsx_artifact(output_path)
 
+
+
+def test_runtime_validator_rejects_line_chart_without_sparse_percent_presentation(tmp_path: Path) -> None:
+    output_path = tmp_path / 'line-presentation-regression.xlsx'
+    build_analytics_workbook(
+        report_type='resource_utilization',
+        payload=_representative_payload('resource_utilization'),
+        context=_context('resource_utilization'),
+        output_path=output_path,
+    )
+
+    workbook = load_workbook(output_path)
+    chart = workbook['Overview']._charts[0]
+    chart.y_axis.title = 'Utilization (%)'
+    chart.y_axis.scaling.max = None
+    chart.series[0].marker.symbol = 'circle'
+    workbook.save(output_path)
+
+    with pytest.raises(ValueError, match='sparse percent presentation'):
+        validate_analytics_xlsx_artifact(output_path)
 
 def _representative_payload(report_type: str) -> dict[str, object]:
     payloads: dict[str, dict[str, object]] = {

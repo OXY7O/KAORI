@@ -168,6 +168,27 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
                 labels = [str(getattr(series.tx, 'v', '') or '').strip() for series in chart.series]
                 if labels != ['Utilization', 'Headroom']:
                     raise ValueError('Analytics capacity bars require Utilization and Headroom series labels.')
+                data_labels = getattr(chart, 'dLbls', None)
+                if (
+                    data_labels is None
+                    or data_labels.showVal is not False
+                    or data_labels.showLegendKey is not False
+                    or data_labels.showCatName is not False
+                    or data_labels.showSerName is not False
+                    or data_labels.showPercent is not False
+                ):
+                    raise ValueError('Analytics capacity bars must keep direct data labels disabled to prevent Excel text collisions.')
+                if (
+                    chart.x_axis.delete is not False
+                    or chart.x_axis.tickLblPos != 'nextTo'
+                    or chart.x_axis.title is not None
+                    or chart.y_axis.scaling.min != 0
+                    or chart.y_axis.scaling.max != 100
+                    or chart.y_axis.majorUnit != 25
+                    or chart.y_axis.majorGridlines is not None
+                    or chart.y_axis.title is not None
+                ):
+                    raise ValueError('Analytics capacity bars require visible resource categories and a clean 0-100 percent scale.')
             if primary_visual == 'comparison_bar':
                 if series_count != 2 or chart.grouping != 'clustered':
                     raise ValueError('Analytics comparison bars require clustered Current/Projected series.')
@@ -203,6 +224,16 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
                 raise ValueError('Analytics line charts require a bottom legend.')
             if any(not str(getattr(series.tx, 'v', '') or '').strip() for series in chart.series):
                 raise ValueError('Analytics line charts require explicit series labels.')
+            if (
+                chart.x_axis.title is not None
+                or chart.y_axis.title is not None
+                or chart.y_axis.scaling.min != 0
+                or chart.y_axis.scaling.max != 100
+                or chart.y_axis.majorUnit != 25
+                or chart.y_axis.majorGridlines is not None
+                or any(getattr(series.marker, 'symbol', None) not in {None, 'none'} for series in chart.series)
+            ):
+                raise ValueError('Analytics line charts require the sparse percent presentation contract.')
 
 
 def _build_evidence_sheet(sheet: Worksheet, table: AnalyticsTableData, data: AnalyticsWorkbookData) -> None:

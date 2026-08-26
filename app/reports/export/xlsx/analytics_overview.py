@@ -68,6 +68,12 @@ def build_analytics_overview_sheet(sheet: Worksheet, data: AnalyticsWorkbookData
     if data.primary_chart is not None and data.primary_chart.visual_type == 'comparison_bar':
         for column, width in {'J': 20, 'K': 14, 'L': 14, 'M': 17, 'N': 20}.items():
             sheet.column_dimensions[column].width = width
+    elif data.primary_chart is not None and data.primary_chart.visual_type == 'capacity_bar':
+        for column, width in {'J': 20, 'K': 16, 'L': 16, 'M': 8, 'N': 8}.items():
+            sheet.column_dimensions[column].width = width
+    elif data.primary_chart is not None and data.primary_chart.visual_type == 'line':
+        for column, width in {'J': 22, 'K': 14, 'L': 14, 'M': 14, 'N': 14}.items():
+            sheet.column_dimensions[column].width = width
     sheet.freeze_panes = 'A5'
     sheet.sheet_view.zoomScale = 90
     sheet.sheet_view.zoomScaleNormal = 90
@@ -161,7 +167,8 @@ def _write_visual_and_supporting_data(sheet: Worksheet, data: AnalyticsWorkbookD
 
 def _write_supporting_data(sheet: Worksheet, chart: AnalyticsChartData) -> None:
     if chart.visual_type == 'line':
-        headers = ['Point', *[series.label for series in chart.series[:4]]]
+        category_label = 'Observed At' if chart.category_key == 'timestamp' else 'Observation'
+        headers = [category_label, *[series.label for series in chart.series[:4]]]
         for index, label in enumerate(headers, start=_SUPPORTING_START_COLUMN):
             cell = sheet.cell(row=_SUPPORTING_HEADER_DATA_ROW, column=index, value=label)
             style_header(cell)
@@ -344,12 +351,25 @@ def _add_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: AnalyticsCh
         visual.set_categories(categories)
         visual.legend.position = 'b'
         visual.legend.overlay = False
-        visual.dLbls = DataLabelList(showVal=True, dLblPos='ctr', numFmt='0.0"%"')
+        visual.dLbls = DataLabelList(
+            showLegendKey=False,
+            showVal=False,
+            showCatName=False,
+            showSerName=False,
+            showPercent=False,
+            showBubbleSize=False,
+            showLeaderLines=False,
+        )
         visual.x_axis.scaling.orientation = 'maxMin'
-        visual.x_axis.tickLblPos = 'low'
+        visual.x_axis.delete = False
+        visual.x_axis.tickLblPos = 'nextTo'
+        visual.x_axis.title = None
         visual.y_axis.scaling.min = 0
         visual.y_axis.scaling.max = 100
-        visual.y_axis.title = chart.value_axis_title or 'Utilization (%)'
+        visual.y_axis.majorUnit = 25
+        visual.y_axis.majorGridlines = None
+        visual.y_axis.numFmt = '0"%"'
+        visual.y_axis.title = None
         labels = ('Utilization', 'Headroom')
         fills = (KAORI_PRIMARY, KAORI_PRIMARY_SOFT)
         lines = (KAORI_PRIMARY_DARK, KAORI_ACCENT)
@@ -436,12 +456,22 @@ def _add_line_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: Analyt
     visual.title = chart.title
     visual.height = 8.0
     visual.width = 13.5
-    visual.style = 13
     visual.legend.position = 'b'
     visual.legend.overlay = False
-    visual.y_axis.title = chart.value_axis_title or 'Value'
-    visual.x_axis.title = 'Observation'
-    visual.y_axis.scaling.min = 0
+    visual.x_axis.title = None
+    visual.x_axis.tickLblPos = 'low'
+    visual.x_axis.tickLblSkip = max(1, len(source.rows) // 6)
+    percent_series = bool(chart.series) and all(series.unit == '%' for series in chart.series)
+    if percent_series:
+        visual.y_axis.title = None
+        visual.y_axis.scaling.min = 0
+        visual.y_axis.scaling.max = 100
+        visual.y_axis.majorUnit = 25
+        visual.y_axis.numFmt = '0"%"'
+        visual.y_axis.majorGridlines = None
+    else:
+        visual.y_axis.title = chart.value_axis_title or 'Value'
+        visual.y_axis.scaling.min = 0
     categories = Reference(source_sheet, min_col=category_index, min_row=6, max_row=max_row)
     visual.set_categories(categories)
     for index, series in enumerate(chart.series):
@@ -453,11 +483,10 @@ def _add_line_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: Analyt
         rendered_series = visual.series[-1]
         rendered_series.tx = SeriesLabel(v=series.label)
         rendered_series.graphicalProperties.line.solidFill = _LINE_COLORS[index % len(_LINE_COLORS)]
-        rendered_series.graphicalProperties.line.width = 22000
+        rendered_series.graphicalProperties.line.width = 24000
         if 'forecast' in series.label.casefold():
             rendered_series.graphicalProperties.line.prstDash = 'dash'
-        rendered_series.marker.symbol = 'circle'
-        rendered_series.marker.size = 5
+        rendered_series.marker.symbol = 'none'
     _remove_frame(visual)
     sheet.add_chart(visual, 'A15')
 
