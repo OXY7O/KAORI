@@ -127,7 +127,7 @@ Default workbook rules:
 - Overview metrics are domain-owned; schema counts such as column count or identity-field count are not executive KPIs;
 - every XLSX report profile declares exactly four evidence-backed Overview metrics and exactly one primary chart contract;
 - ranked numeric comparisons use `ranked_bar`: horizontal bars, descending Top-N order, one KAORI series color, zero baseline, direct value labels, no redundant legend, and a maximum of eight displayed categories;
-- compact status/composition summaries use `doughnut`: a restrained semantic palette, right-side legend, and percentage labels;
+- compact status/composition summaries use `doughnut`: a restrained semantic palette, bottom legend, percent-only labels, leader lines, and a dedicated visual gutter so labels never compete with Supporting Data;
 - every chart is paired with a Supporting Data register containing rank, complete category text, exact value, and share so chart interpretation never depends on visual estimation;
 - Executive Readout prose is derived only from committed workbook evidence and must not invent recommendations or health conclusions;
 - Inventory, Metadata, and Field Dictionary include a visible `← Overview` link;

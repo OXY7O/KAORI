@@ -64,7 +64,13 @@ def test_inventory_v4_uses_profile_owned_readable_units_and_executive_summary_co
     assert "cell.hyperlink = f\"#'{target_sheet}'!A1\"" in overview
     assert 'BarChart' in overview and 'DoughnutChart' in overview
     assert 'DataLabelList(showVal=True' in overview
-    assert 'DataLabelList(showPercent=True' in overview
+    assert "visual.legend.position = 'b'" in overview
+    assert 'showPercent=True' in overview
+    assert 'showLegendKey=False' in overview
+    assert 'showVal=False' in overview
+    assert 'showCatName=False' in overview
+    assert 'showSerName=False' in overview
+    assert "dLblPos='bestFit'" in overview
     assert 'visual.varyColors = False' in overview
     assert '_safe_text_value(category)' in overview
 

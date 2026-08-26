@@ -45,8 +45,9 @@ _READOUT_VALUE_ROW = 10
 _VISUAL_HEADER_ROW = 13
 _SUPPORTING_HEADER_ROW = 13
 _SUPPORTING_COLUMNS = (9, 10, 11, 12)  # I:L
-_SUPPORTING_TABLE_HEADER_ROW = 14
-_SUPPORTING_DATA_START_ROW = 15
+_VISUAL_SPACER_ROW = 14
+_SUPPORTING_TABLE_HEADER_ROW = 15
+_SUPPORTING_DATA_START_ROW = 16
 _NAVIGATION_HEADER_ROW = 31
 _NAVIGATION_LINK_ROW = 32
 _OVERVIEW_LAST_ROW = 33
@@ -69,9 +70,9 @@ def build_inventory_overview_sheet(sheet: Worksheet, dataset: InventoryExportDat
         'G': 13,
         'H': 13,
         'I': 7,
-        'J': 30,
-        'K': 15,
-        'L': 12,
+        'J': 32,
+        'K': 16,
+        'L': 14,
     }.items():
         sheet.column_dimensions[column].width = width
     sheet.freeze_panes = 'A5'
@@ -156,7 +157,7 @@ def _write_executive_readout(sheet: Worksheet, dataset: InventoryExportDataset) 
 
 
 def _write_overview_visual(sheet: Worksheet, dataset: InventoryExportDataset) -> None:
-    sheet.merge_cells(start_row=_VISUAL_HEADER_ROW, start_column=1, end_row=_VISUAL_HEADER_ROW, end_column=8)
+    sheet.merge_cells(start_row=_VISUAL_HEADER_ROW, start_column=1, end_row=_VISUAL_HEADER_ROW, end_column=7)
     sheet.cell(row=_VISUAL_HEADER_ROW, column=1, value='Primary Visual')
     style_section_header(sheet.cell(row=_VISUAL_HEADER_ROW, column=1))
 
@@ -164,18 +165,19 @@ def _write_overview_visual(sheet: Worksheet, dataset: InventoryExportDataset) ->
     sheet.cell(row=_SUPPORTING_HEADER_ROW, column=9, value='Supporting Data')
     style_section_header(sheet.cell(row=_SUPPORTING_HEADER_ROW, column=9))
     sheet.row_dimensions[_VISUAL_HEADER_ROW].height = 22
+    sheet.row_dimensions[_VISUAL_SPACER_ROW].height = 10
 
     chart_rows = _collect_chart_rows(dataset)
     if not chart_rows:
-        sheet.merge_cells(start_row=14, start_column=1, end_row=16, end_column=8)
+        sheet.merge_cells(start_row=15, start_column=1, end_row=17, end_column=7)
         message = sheet.cell(
-            row=14,
+            row=15,
             column=1,
             value='No committed chartable evidence is available for this workbook scope.',
         )
         style_readout(message)
-        sheet.merge_cells(start_row=14, start_column=9, end_row=16, end_column=12)
-        support_message = sheet.cell(row=14, column=9, value='No supporting values are available.')
+        sheet.merge_cells(start_row=15, start_column=9, end_row=17, end_column=12)
+        support_message = sheet.cell(row=15, column=9, value='No supporting values are available.')
         style_body(support_message)
         return
 
@@ -199,7 +201,7 @@ def _write_supporting_data(
     for column_index, value in zip(_SUPPORTING_COLUMNS, headers, strict=True):
         cell = sheet.cell(row=_SUPPORTING_TABLE_HEADER_ROW, column=column_index, value=value)
         style_header(cell)
-    sheet.row_dimensions[_SUPPORTING_TABLE_HEADER_ROW].height = 28
+    sheet.row_dimensions[_SUPPORTING_TABLE_HEADER_ROW].height = 30
 
     total = _chart_total(dataset)
     for rank, (category, value) in enumerate(chart_rows, start=1):
@@ -212,7 +214,7 @@ def _write_supporting_data(
             style_body(cell, alternate=rank % 2 == 0, horizontal=horizontal)
         sheet.cell(row=row_index, column=11).number_format = number_format
         sheet.cell(row=row_index, column=12).number_format = '0.0"%"'
-        sheet.row_dimensions[row_index].height = 22
+        sheet.row_dimensions[row_index].height = 26
 
 
 def _add_overview_chart(
@@ -231,8 +233,8 @@ def _add_overview_chart(
         visual.grouping = 'clustered'
         visual.varyColors = False
         visual.title = chart.title
-        visual.height = 8.8
-        visual.width = 15.8
+        visual.height = 8.2
+        visual.width = 12.8
         visual.gapWidth = 55
         visual.add_data(values, titles_from_data=True)
         visual.set_categories(categories)
@@ -252,20 +254,32 @@ def _add_overview_chart(
         visual.series[0].graphicalProperties.solidFill = KAORI_PRIMARY
         visual.series[0].graphicalProperties.line.solidFill = KAORI_PRIMARY_DARK
         _remove_chart_frame(visual)
-        sheet.add_chart(visual, 'A14')
+        sheet.add_chart(visual, 'A15')
         return
 
     visual = DoughnutChart()
     visual.title = chart.title
-    visual.holeSize = 60
+    visual.holeSize = 62
     visual.firstSliceAng = 270
     visual.varyColors = True
-    visual.height = 8.6
-    visual.width = 14.8
+    visual.height = 8.0
+    visual.width = 12.8
     visual.add_data(values, titles_from_data=True)
     visual.set_categories(categories)
-    visual.legend.position = 'r'
-    visual.dLbls = DataLabelList(showPercent=True, showLeaderLines=True)
+    visual.legend.position = 'b'
+    visual.legend.overlay = False
+    visual.dLbls = DataLabelList(
+        dLblPos='bestFit',
+        numFmt='0.0%',
+        showLegendKey=False,
+        showVal=False,
+        showCatName=False,
+        showSerName=False,
+        showPercent=True,
+        showBubbleSize=False,
+        showLeaderLines=True,
+        separator='\n',
+    )
     points: list[DataPoint] = []
     for index, (category, _) in enumerate(chart_rows):
         point = DataPoint(idx=index)
@@ -273,7 +287,7 @@ def _add_overview_chart(
         points.append(point)
     visual.series[0].data_points = points
     _remove_chart_frame(visual)
-    sheet.add_chart(visual, 'A14')
+    sheet.add_chart(visual, 'A15')
 
 
 def _remove_chart_frame(chart: BarChart | DoughnutChart) -> None:

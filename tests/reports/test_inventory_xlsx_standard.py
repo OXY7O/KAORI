@@ -230,14 +230,14 @@ def test_distribution_overview_chart_aggregates_records_by_category(tmp_path: Pa
 
     workbook = load_workbook(output_path)
     summary = workbook[INVENTORY_OVERVIEW_SHEET]
-    assert summary['J14'].value == 'Ready'
-    assert summary['K14'].value == 'Records'
     assert summary['J15'].value == 'Ready'
-    assert summary['K15'].value == 2
-    assert summary['J16'].value == 'Not Ready'
-    assert summary['K16'].value == 1
-    assert summary['K15'].number_format == '#,##0'
-    assert summary['L15'].value == pytest.approx(66.6666666667)
+    assert summary['K15'].value == 'Records'
+    assert summary['J16'].value == 'Ready'
+    assert summary['K16'].value == 2
+    assert summary['J17'].value == 'Not Ready'
+    assert summary['K17'].value == 1
+    assert summary['K16'].number_format == '#,##0'
+    assert summary['L16'].value == pytest.approx(66.6666666667)
     assert len(summary._charts) == 1
 
 
@@ -464,12 +464,12 @@ def test_object_storage_overview_is_executive_and_ranked_bar_is_directly_labeled
     assert '64.25 GiB' in str(overview['A10'].value)
     assert overview['A13'].value == 'Primary Visual'
     assert overview['I13'].value == 'Supporting Data'
-    assert [overview.cell(row=14, column=column).value for column in range(9, 13)] == [
+    assert [overview.cell(row=15, column=column).value for column in range(9, 13)] == [
         'Rank', 'Bucket / Container', 'Usage GiB', 'Share of Total'
     ]
-    assert overview['J15'].value == 'thanos'
-    assert overview['K15'].value == pytest.approx(64.25)
-    assert overview['L15'].value == pytest.approx(64.25 / 76.23 * 100)
+    assert overview['J16'].value == 'thanos'
+    assert overview['K16'].value == pytest.approx(64.25)
+    assert overview['L16'].value == pytest.approx(64.25 / 76.23 * 100)
 
     assert len(overview._charts) == 1
     chart = overview._charts[0]
@@ -511,9 +511,9 @@ def test_ranked_bar_supporting_share_uses_full_dataset_denominator_not_only_top_
 
     workbook = load_workbook(output_path)
     overview = workbook[INVENTORY_OVERVIEW_SHEET]
-    assert overview['J15'].value == 'bucket-1'
-    assert overview['K15'].value == pytest.approx(90.0)
-    assert overview['L15'].value == pytest.approx(90.0 / 450.0 * 100.0)
+    assert overview['J16'].value == 'bucket-1'
+    assert overview['K16'].value == pytest.approx(90.0)
+    assert overview['L16'].value == pytest.approx(90.0 / 450.0 * 100.0)
     assert '20.0% of total Usage GiB' in str(overview['A10'].value)
 
 
@@ -551,16 +551,22 @@ def test_distribution_chart_uses_doughnut_legend_percent_labels_and_domain_kpis(
     assert overview['G7'].value == 1
     assert overview['J6'].value == 'Worker Nodes'
     assert overview['J7'].value == 2
-    assert overview['J15'].value == 'Ready'
-    assert overview['K15'].value == 2
-    assert overview['L15'].value == pytest.approx(66.6666666667)
+    assert overview['J16'].value == 'Ready'
+    assert overview['K16'].value == 2
+    assert overview['L16'].value == pytest.approx(66.6666666667)
 
     chart = overview._charts[0]
     assert isinstance(chart, DoughnutChart)
     assert chart.legend is not None
-    assert chart.legend.position == 'r'
+    assert chart.legend.position == 'b'
     assert chart.dLbls is not None and chart.dLbls.showPercent is True
-    assert chart.holeSize == 60
+    assert chart.dLbls.showLegendKey is False
+    assert chart.dLbls.showVal is False
+    assert chart.dLbls.showCatName is False
+    assert chart.dLbls.showSerName is False
+    assert chart.dLbls.showLeaderLines is True
+    assert chart.dLbls.dLblPos == 'bestFit'
+    assert chart.holeSize == 62
 
 
 def test_doughnut_groups_categories_beyond_declared_limit_into_other(tmp_path: Path) -> None:
@@ -592,11 +598,11 @@ def test_doughnut_groups_categories_beyond_declared_limit_into_other(tmp_path: P
     overview = workbook[INVENTORY_OVERVIEW_SHEET]
     supporting = [
         (overview.cell(row=row, column=10).value, overview.cell(row=row, column=11).value)
-        for row in range(15, 21)
+        for row in range(16, 22)
     ]
     assert len([category for category, _ in supporting if category is not None]) == 6
     assert ('Other', 2) in supporting
-    other_row = next(row for row in range(15, 21) if overview.cell(row=row, column=10).value == 'Other')
+    other_row = next(row for row in range(16, 22) if overview.cell(row=row, column=10).value == 'Other')
     assert overview.cell(row=other_row, column=12).value == pytest.approx(2 / 7 * 100)
 
 

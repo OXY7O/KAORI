@@ -78,7 +78,7 @@ Schema diagnostics such as column count or identity-field count belong in Metada
 The supported visual semantics are explicit:
 
 - `ranked_bar` — horizontal bar chart for ranked numeric values or high-cardinality comparisons. Values are sorted descending and limited to the declared Top-N, with a maximum of eight. The chart uses one KAORI violet series, `varyColors=False`, a zero baseline, direct value labels including the published unit where applicable, restrained/no major gridlines, and no redundant single-series legend.
-- `doughnut` — compact part-to-whole/status composition for two to six displayed categories. It uses semantic category colors where status meaning exists, a right-side legend, and percentage labels. When committed evidence contains more categories than the declared display limit, the remainder is aggregated into `Other` so the part-to-whole denominator remains complete.
+- `doughnut` — compact part-to-whole/status composition for two to six displayed categories. It uses semantic category colors where status meaning exists, a bottom legend, percent-only data labels, explicit suppression of series/category/value label noise, leader lines, and a spacer between the visual and Supporting Data. When committed evidence contains more categories than the declared display limit, the remainder is aggregated into `Other` so the part-to-whole denominator remains complete.
 
 Charts are evidence-driven, not decorative. Empty or non-chartable datasets show explicit no-evidence text instead of synthetic values. The Supporting Data register is mandatory whenever a chart is present so the workbook remains precise even when Excel renders chart labels differently across clients.
 
@@ -138,7 +138,7 @@ XLSX is an operational workbook, not a PDF imitation and not a raw data dump.
 - Use visual hierarchy and whitespace to separate executive summary, primary evidence, and technical reference material.
 - Every XLSX report profile owns domain-aware Executive Snapshot metrics and one semantic Primary Visual.
 - Ranked bar charts must use descending order, one series color, direct value labels, and Supporting Data rather than rainbow bars or a redundant legend.
-- Doughnut charts must be reserved for a small composition/status set where part-to-whole meaning is real.
+- Doughnut charts must be reserved for a small composition/status set where part-to-whole meaning is real; labels show percentage only, the legend sits below the chart, and the Supporting Data table remains visually separated from the chart.
 - Complete long technical identities remain available in Supporting Data and Inventory even when the visual intentionally shows a Top-N subset.
 - Dense technical detail belongs in Inventory and Field Dictionary rather than oversized Overview prose.
 - Runtime validation must reject stale standard identifiers, missing executive sections, broken navigation, nonconforming ranked-bar coloring, or missing Supporting Data for chartable workbooks.

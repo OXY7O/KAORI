@@ -200,7 +200,7 @@ def validate_inventory_xlsx_artifact(output_path: Path) -> None:
         if overview['A13'].value != 'Primary Visual' or overview['I13'].value != 'Supporting Data':
             raise ValueError('KAORI XLSX contract violation: Primary Visual or Supporting Data section is missing.')
 
-        has_no_chart_message = str(overview['A14'].value or '').strip() == (
+        has_no_chart_message = str(overview['A15'].value or '').strip() == (
             'No committed chartable evidence is available for this workbook scope.'
         )
         if not overview._charts and not has_no_chart_message:
@@ -224,21 +224,30 @@ def validate_inventory_xlsx_artifact(output_path: Path) -> None:
                         'KAORI XLSX contract violation: ranked bar charts must use direct value labels.'
                     )
             elif isinstance(chart, DoughnutChart):
-                if chart.legend is None or chart.legend.position != 'r':
+                if chart.legend is None or chart.legend.position != 'b':
                     raise ValueError(
-                        'KAORI XLSX contract violation: doughnut legend must be present on the right.'
+                        'KAORI XLSX contract violation: doughnut legend must be present at the bottom.'
                     )
-                if chart.dLbls is None or chart.dLbls.showPercent is not True:
+                if (
+                    chart.dLbls is None
+                    or chart.dLbls.showPercent is not True
+                    or chart.dLbls.showLegendKey is not False
+                    or chart.dLbls.showVal is not False
+                    or chart.dLbls.showCatName is not False
+                    or chart.dLbls.showSerName is not False
+                    or chart.dLbls.showLeaderLines is not True
+                    or chart.dLbls.dLblPos != 'bestFit'
+                ):
                     raise ValueError(
-                        'KAORI XLSX contract violation: doughnut charts must use percentage labels.'
+                        'KAORI XLSX contract violation: doughnut charts must use clean percent-only labels with leader lines.'
                     )
             else:
                 raise ValueError('KAORI XLSX contract violation: unsupported Overview chart type.')
 
             if (
-                overview['I14'].value != 'Rank'
-                or overview['J14'].value in (None, '')
-                or overview['L14'].value != 'Share of Total'
+                overview['I15'].value != 'Rank'
+                or overview['J15'].value in (None, '')
+                or overview['L15'].value != 'Share of Total'
             ):
                 raise ValueError(
                     'KAORI XLSX contract violation: chartable Overview must include canonical supporting data.'
