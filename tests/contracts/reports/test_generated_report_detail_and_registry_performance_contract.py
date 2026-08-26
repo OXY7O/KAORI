@@ -111,7 +111,7 @@ def test_generated_detail_generation_evidence_actions_use_single_desktop_row() -
     assert 'data-generated-detail-report-actions="true"' in template
     assert 'data-generated-detail-action-row="desktop-nowrap"' in template
     assert 'data-generated-detail-status-placement="identity"' in template
-    assert 'Manage execution, evidence, and actions.' in template
+    assert 'Manage report execution, evidence, lifecycle, and operator actions.' in template
     assert '>Registry<' in template.replace('\n', '').replace('    ', '')
     assert "'Regenerate' if payload.report.can_download_artifact" in template
     assert '<span data-operation-submit-label>Archive</span>' in template

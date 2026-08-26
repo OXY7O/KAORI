@@ -318,3 +318,43 @@ def test_every_wizard_section_explains_its_operational_contract() -> None:
     assert 'Only sections published for the selected report type can be submitted.' in source
     assert 'Ready artifacts follow the Generated Report Data Lifecycle retention policy.' in source
     assert 'description.textContent = section.description;' in source
+
+
+def test_generate_report_uses_shared_form_control_size_and_normal_value_weight() -> None:
+    source = read(TEMPLATE)
+
+    assert '{% import "components/form_field.html" as form_field %}' in source
+
+    select_ids = (
+        'report-type-select',
+        'cluster-select',
+        'namespace-select',
+        'object-storage-system-select',
+        'period-select',
+        'output-format-select',
+    )
+    for control_id in select_ids:
+        match = re.search(
+            rf'<select[^>]*id="{re.escape(control_id)}"[^>]*class="([^"]+)"',
+            source,
+            re.DOTALL,
+        )
+        assert match, f'missing select class for {control_id}'
+        assert match.group(1).strip() == '{{ form_field.select_classes() }}'
+
+    report_name = re.search(
+        r'<input[^>]*id="report-name-input"[^>]*class="([^"]+)"',
+        source,
+        re.DOTALL,
+    )
+    assert report_name
+    assert report_name.group(1).strip() == '{{ form_field.input_classes() }}'
+
+    assert 'id="report-type-select"\n                                            class="mt-1.5' not in source
+    assert 'id="output-format-select"\n                                                    class="mt-2' not in source
+
+    shared = read(Path('app/templates/components/form_field.html'))
+    for token in ('h-10', 'min-h-10', 'box-border', 'py-0', 'text-sm', 'font-normal', 'leading-5'):
+        assert token in shared
+    assert '<option value="{{ option.value }}"' in source
+    assert 'class="font-normal"' in source

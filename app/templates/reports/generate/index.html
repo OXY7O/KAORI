@@ -2,6 +2,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_callout.html" as operational_callout %}
+{% import "components/form_field.html" as form_field %}
 {% macro workflow_number(number, compact=false) -%}
     <span class="inline-flex shrink-0 items-center justify-center rounded-lg border border-kaori-primary/20 bg-kaori-soft font-semibold tracking-wide text-kaori-primary {% if compact %}h-7 min-w-7 px-1.5 text-xs{% else %}h-8 min-w-8 px-2 text-xs{% endif %}"
           data-generate-section-number="{{ number }}"
@@ -180,12 +181,13 @@
                                     <span class="text-sm font-semibold text-content-primary">Report Type <span class="text-status-critical-text">*</span></span>
                                     <select name="report_type"
                                             id="report-type-select"
-                                            class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-semibold text-content-primary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
+                                            class="{{ form_field.select_classes() }}">
                                         {% for group in payload.report_type_groups %}
                                             <optgroup label="{{ group.label }}"
                                                       data-report-contract-group="{{ group.key }}">
                                                 {% for option in group.options %}
                                                     <option value="{{ option.value }}"
+                                                            class="font-normal"
                                                             {% if payload.form_state.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
                                                 {% endfor %}
                                             </optgroup>
@@ -200,7 +202,7 @@
                                            id="report-name-input"
                                            value="{{ payload.form_state.name }}"
                                            placeholder="Auto-generated from report type and period"
-                                           class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
+                                           class="{{ form_field.input_classes() }}">
                                     <p class="mt-1.5 text-xs leading-5 text-content-muted">Leave blank to let KAORI generate a consistent name from the selected report type and period.</p>
                                 </label>
                                 <div id="selected-template-summary"
@@ -287,7 +289,7 @@
                                         <span class="text-sm font-semibold text-content-primary">Cluster <span class="text-status-critical-text">*</span></span>
                                         <select name="cluster_id"
                                                 id="cluster-select"
-                                                class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
+                                                class="{{ form_field.select_classes() }}">
                                             <option value=""
                                                     {% if not payload.form_state.cluster_id %}selected{% endif %}>Select Cluster</option>
                                             {% for cluster in payload.clusters %}
@@ -309,7 +311,7 @@
                                         <select name="namespace"
                                                 id="namespace-select"
                                                 {% if not payload.form_state.cluster_id %}disabled{% endif %}
-                                                class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-secondary shadow-sm disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-muted focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
+                                                class="{{ form_field.select_classes() }}">
                                             <option value="">All Namespaces</option>
                                             {% for namespace in payload.selected_namespace_options %}
                                                 <option value="{{ namespace }}"
@@ -326,7 +328,7 @@
                                         <span class="text-sm font-semibold text-content-primary">Object Storage System <span class="text-status-critical-text">*</span></span>
                                         <select name="object_storage_system_id"
                                                 id="object-storage-system-select"
-                                                class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
+                                                class="{{ form_field.select_classes() }}">
                                             <option value=""
                                                     {% if not payload.form_state.object_storage_system_id %}selected{% endif %}>Select Object Storage System</option>
                                             {% for system in payload.object_storage_systems %}
@@ -351,7 +353,7 @@
                                     </div>
                                     <select name="period"
                                             id="period-select"
-                                            class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
+                                            class="{{ form_field.select_classes() }}">
                                         {% for option in payload.period_options %}
                                             {% set period_allowed = (payload.selected_report_type.family == 'inventory' and option.value == 'snapshot') or (payload.selected_report_type.family != 'inventory' and option.value != 'snapshot') %}
                                             <option value="{{ option.value }}"
@@ -413,7 +415,7 @@
                                             <span class="text-xs font-semibold uppercase tracking-wide text-content-muted">Output Format</span>
                                             <select name="output_format"
                                                     id="output-format-select"
-                                                    class="mt-2 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-semibold text-content-primary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
+                                                    class="{{ form_field.select_classes() }}">
                                                 {% for option in payload.output_format_options %}
                                                     {% set format_allowed = option.value in payload.selected_report_type.allowed_formats %}
                                                     <option value="{{ option.value }}"
