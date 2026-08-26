@@ -88,12 +88,21 @@ def test_reports_section_headings_use_canonical_icons() -> None:
 
     contracts = overview.split('id="contracts-automation-title"', 1)[0][-1200:]
     assert 'data-lucide="workflow"' in contracts
+    assert 'table_ui.block_icon_classes()' in contracts
+    assert 'data-lucide="workflow" class="h-5 w-5"' in contracts
+    assert 'flex min-w-0 items-start gap-3' in contracts
 
     registry = schedules.split('aria-label="Schedule Registry"', 1)[1].split('schedule-registry-loading', 1)[0]
     assert 'data-lucide="calendar-clock"' in registry
+    assert 'table_ui.block_icon_classes()' in registry
+    assert 'data-lucide="calendar-clock" class="h-5 w-5"' in registry
+    assert 'flex min-w-0 items-start gap-3' in registry
 
     runs = schedules.split('aria-label="Recent Schedule Runs"', 1)[1].split('schedule-runs-loading', 1)[0]
     assert 'data-lucide="history"' in runs
+    assert 'table_ui.block_icon_classes()' in runs
+    assert 'data-lucide="history" class="h-5 w-5"' in runs
+    assert 'flex min-w-0 items-start gap-3' in runs
 
 
 def test_report_templates_and_storage_heroes_remain_max_three_metadata() -> None:

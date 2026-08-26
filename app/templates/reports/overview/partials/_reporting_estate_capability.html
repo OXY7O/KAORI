@@ -1,4 +1,5 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/table.html" as table_ui %}
 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
          aria-labelledby="reporting-estate-capability-title"
          data-reports-overview-block="estate-capability">
@@ -197,13 +198,15 @@
     <div class="border-t border-outline-subtle px-5 py-5 sm:px-6"
          aria-labelledby="contracts-automation-title">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div class="max-w-2xl">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="workflow" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                    <i data-lucide="workflow" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0 max-w-2xl">
                     <h3 id="contracts-automation-title"
-                        class="text-sm font-semibold leading-5 text-content-primary">Contracts &amp; Automation</h3>
+                        class="text-base font-semibold leading-6 text-content-primary">Contracts &amp; Automation</h3>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Published contracts, templates, and schedules approved for governed generation.</p>
                 </div>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Published contracts, templates, and schedules approved for governed generation.</p>
             </div>
             <div class="grid grid-cols-3 gap-2 sm:min-w-[28rem]">
                 <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-3 py-3 text-center">
