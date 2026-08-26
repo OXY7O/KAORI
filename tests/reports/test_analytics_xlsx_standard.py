@@ -399,6 +399,26 @@ def test_runtime_validator_rejects_missing_primary_chart_when_chartable_evidence
         validate_analytics_xlsx_artifact(output_path)
 
 
+def test_runtime_validator_rejects_comparison_bar_without_executive_axis_contract(tmp_path: Path) -> None:
+    output_path = tmp_path / 'comparison-axis-regression.xlsx'
+    build_analytics_workbook(
+        report_type='analytics_overview',
+        payload=_representative_payload('analytics_overview'),
+        context=_context('analytics_overview'),
+        output_path=output_path,
+    )
+
+    workbook = load_workbook(output_path)
+    chart = workbook['Overview']._charts[0]
+    chart.x_axis.tickLblPos = 'low'
+    chart.y_axis.title = 'Percent'
+    chart.y_axis.majorUnit = None
+    workbook.save(output_path)
+
+    with pytest.raises(ValueError, match='executive axis presentation'):
+        validate_analytics_xlsx_artifact(output_path)
+
+
 def _representative_payload(report_type: str) -> dict[str, object]:
     payloads: dict[str, dict[str, object]] = {
         'analytics_overview': {
@@ -555,11 +575,24 @@ def test_analytics_overview_workbook_renders_two_series_comparison_without_fake_
     assert chart.dLbls.showPercent is False
     assert chart.dLbls.showBubbleSize is False
     assert chart.dLbls.dLblPos == 'outEnd'
+    assert chart.x_axis.tickLblPos == 'nextTo'
+    assert chart.x_axis.delete is False
+    assert chart.y_axis.title is None
+    assert chart.y_axis.scaling.min == 0
+    assert chart.y_axis.scaling.max == 100
+    assert chart.y_axis.majorUnit == 25
+    assert chart.y_axis.majorGridlines is None
+    assert overview.column_dimensions['J'].width == 20
+    assert overview.column_dimensions['K'].width == 14
+    assert overview.column_dimensions['L'].width == 14
+    assert overview.column_dimensions['M'].width == 17
+    assert overview.column_dimensions['N'].width == 20
     assert overview['J15'].value == 'Resource'
     assert overview['K15'].value == 'Current'
     assert overview['L15'].value == 'Projected'
     assert overview['M15'].value == 'Change (pp)'
     assert overview['N15'].value == 'Trend'
+    assert overview['M16'].alignment.horizontal == 'center'
     assert overview['J16'].value == 'CPU'
     assert overview['J17'].value == 'Memory'
     assert overview['K17'].value == 64.0

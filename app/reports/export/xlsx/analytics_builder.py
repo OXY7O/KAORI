@@ -188,6 +188,16 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
                     or data_labels.dLblPos != 'outEnd'
                 ):
                     raise ValueError('Analytics comparison bars require value-only data labels for Excel compatibility.')
+                if (
+                    chart.x_axis.tickLblPos != 'nextTo'
+                    or chart.x_axis.delete is not False
+                    or chart.y_axis.title is not None
+                    or chart.y_axis.scaling.min != 0
+                    or chart.y_axis.scaling.max != 100
+                    or chart.y_axis.majorUnit != 25
+                    or chart.y_axis.majorGridlines is not None
+                ):
+                    raise ValueError('Analytics comparison bars require the executive axis presentation contract.')
         if chart_name == 'LineChart':
             if chart.legend is None or chart.legend.position != 'b':
                 raise ValueError('Analytics line charts require a bottom legend.')

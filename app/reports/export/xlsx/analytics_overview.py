@@ -65,6 +65,9 @@ def build_analytics_overview_sheet(sheet: Worksheet, data: AnalyticsWorkbookData
         'I': 4, 'J': 8, 'K': 28, 'L': 16, 'M': 16, 'N': 16,
     }.items():
         sheet.column_dimensions[column].width = width
+    if data.primary_chart is not None and data.primary_chart.visual_type == 'comparison_bar':
+        for column, width in {'J': 20, 'K': 14, 'L': 14, 'M': 17, 'N': 20}.items():
+            sheet.column_dimensions[column].width = width
     sheet.freeze_panes = 'A5'
     sheet.sheet_view.zoomScale = 90
     sheet.sheet_view.zoomScaleNormal = 90
@@ -194,10 +197,11 @@ def _write_supporting_data(sheet: Worksheet, chart: AnalyticsChartData) -> None:
             )
             for column_index, item in enumerate(values, start=_SUPPORTING_START_COLUMN):
                 cell = sheet.cell(row=row_index, column=column_index, value=item)
+                horizontal = 'center' if column_index == 13 else ('right' if column_index in {11, 12} else 'left')
                 style_body(
                     cell,
                     alternate=offset % 2 == 1,
-                    horizontal='right' if column_index in {11, 12, 13} else 'left',
+                    horizontal=horizontal,
                 )
             sheet.cell(row=row_index, column=11).number_format = '0.0"%"'
             sheet.cell(row=row_index, column=12).number_format = '0.0"%"'
@@ -292,10 +296,16 @@ def _add_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: AnalyticsCh
             numFmt='0.0"%"',
         )
         visual.x_axis.scaling.orientation = 'maxMin'
-        visual.x_axis.tickLblPos = 'low'
+        visual.x_axis.tickLblPos = 'nextTo'
+        visual.x_axis.delete = False
+        visual.y_axis.axPos = 'b'
+        visual.y_axis.tickLblPos = 'nextTo'
         visual.y_axis.scaling.min = 0
         visual.y_axis.scaling.max = 100
-        visual.y_axis.title = chart.value_axis_title or 'Percent'
+        visual.y_axis.majorUnit = 25
+        visual.y_axis.majorGridlines = None
+        visual.y_axis.numFmt = '0"%"'
+        visual.y_axis.title = None
         labels = ('Current', 'Projected')
         fills = (KAORI_ACCENT, KAORI_PRIMARY)
         lines = (KAORI_PRIMARY_SOFT, KAORI_PRIMARY_DARK)
