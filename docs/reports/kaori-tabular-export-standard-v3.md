@@ -160,3 +160,10 @@ A new CSV/XLSX-capable report must:
 8. for Analytics, prove the XLSX adapter consumes the canonical Analytics payload and never creates forecasts or recommendations during export.
 
 Report-specific renderers must not fork the shared CSV encoding/safety contract or their family-owned XLSX structure. Inventory retains the four-sheet Inventory contract; Analytics retains Overview + evidence-driven category sheets + Metadata + Field Dictionary.
+
+### Analytics Overview evidence completeness
+
+- Analytics Overview CSV keeps the canonical long-form `portable-tabular-v1` layout.
+- Publication sections marked `Included` must resolve to structured committed evidence; sections without structured evidence are published as `No Evidence` or `Unavailable`, never as an `Included` section followed only by an empty-evidence note.
+- `resource_posture` binds to the committed resource snapshot and `trend_forecast` binds to the committed forecast snapshot. Resource-level forecast records retain resource identity, latest/projected percentages, trend, and confidence rather than being reinterpreted as time-series observations.
+- Analytics Overview XLSX presents resource-level forecast evidence as `Current vs Projected Resource Posture`; true line charts are reserved for ordered time-series datasets.

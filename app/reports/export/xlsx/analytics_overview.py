@@ -178,6 +178,33 @@ def _write_supporting_data(sheet: Worksheet, chart: AnalyticsChartData) -> None:
             sheet.row_dimensions[row_index].height = 25
         return
 
+    if chart.visual_type == 'comparison_bar':
+        headers = ('Resource', 'Current', 'Projected', 'Change (pp)', 'Trend')
+        for index, label in enumerate(headers, start=_SUPPORTING_START_COLUMN):
+            cell = sheet.cell(row=_SUPPORTING_HEADER_DATA_ROW, column=index, value=label)
+            style_header(cell)
+        for offset, row in enumerate(chart.rows[:8]):
+            row_index = _SUPPORTING_DATA_ROW + offset
+            values = (
+                row.get(chart.category_key),
+                _number(row.get('current_percent')),
+                _number(row.get('projected_percent')),
+                _number(row.get('change_pp')),
+                row.get('trend'),
+            )
+            for column_index, item in enumerate(values, start=_SUPPORTING_START_COLUMN):
+                cell = sheet.cell(row=row_index, column=column_index, value=item)
+                style_body(
+                    cell,
+                    alternate=offset % 2 == 1,
+                    horizontal='right' if column_index in {11, 12, 13} else 'left',
+                )
+            sheet.cell(row=row_index, column=11).number_format = '0.0"%"'
+            sheet.cell(row=row_index, column=12).number_format = '0.0"%"'
+            sheet.cell(row=row_index, column=13).number_format = '+0.0;-0.0;0.0'
+            sheet.row_dimensions[row_index].height = 25
+        return
+
     if chart.visual_type == 'capacity_bar':
         headers = ('Resource', 'Utilization', 'Headroom')
         for index, label in enumerate(headers, start=_SUPPORTING_START_COLUMN):
@@ -225,6 +252,50 @@ def _add_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: AnalyticsCh
         return
 
     end_row = _SUPPORTING_DATA_ROW + min(len(chart.rows), 8) - 1
+
+    if chart.visual_type == 'comparison_bar':
+        visual = BarChart()
+        visual.type = 'bar'
+        visual.grouping = 'clustered'
+        visual.overlap = 0
+        visual.varyColors = False
+        visual.title = chart.title
+        visual.height = 8.0
+        visual.width = 13.5
+        visual.gapWidth = 60
+        values = Reference(
+            sheet,
+            min_col=_SUPPORTING_START_COLUMN + 1,
+            max_col=_SUPPORTING_START_COLUMN + 2,
+            min_row=_SUPPORTING_HEADER_DATA_ROW,
+            max_row=end_row,
+        )
+        categories = Reference(
+            sheet,
+            min_col=_SUPPORTING_START_COLUMN,
+            min_row=_SUPPORTING_DATA_ROW,
+            max_row=end_row,
+        )
+        visual.add_data(values, titles_from_data=True, from_rows=False)
+        visual.set_categories(categories)
+        visual.legend.position = 'b'
+        visual.legend.overlay = False
+        visual.dLbls = DataLabelList(showVal=True, dLblPos='outEnd', numFmt='0.0"%"')
+        visual.x_axis.scaling.orientation = 'maxMin'
+        visual.x_axis.tickLblPos = 'low'
+        visual.y_axis.scaling.min = 0
+        visual.y_axis.scaling.max = 100
+        visual.y_axis.title = chart.value_axis_title or 'Percent'
+        labels = ('Current', 'Projected')
+        fills = (KAORI_ACCENT, KAORI_PRIMARY)
+        lines = (KAORI_PRIMARY_SOFT, KAORI_PRIMARY_DARK)
+        for index, series in enumerate(visual.series[:2]):
+            series.tx = SeriesLabel(v=labels[index])
+            series.graphicalProperties.solidFill = fills[index]
+            series.graphicalProperties.line.solidFill = lines[index]
+        _remove_frame(visual)
+        sheet.add_chart(visual, 'A15')
+        return
 
     if chart.visual_type == 'capacity_bar':
         visual = BarChart()

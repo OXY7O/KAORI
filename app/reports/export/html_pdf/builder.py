@@ -43,6 +43,19 @@ from app.reports.reference import build_report_reference
 from app.reports.scope import OBJECT_STORAGE_SYSTEM_ASSET_TYPE, resolve_report_scope
 
 _SECTION_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
+    # Analytics Overview publication sections map to committed payload evidence.
+    # CSV v3 flattens the resulting ReportDocument, so these bindings must stay
+    # aligned with the overview service instead of falling through to empty keys.
+    'executive_brief': ('snapshot_summary', 'health_summary'),
+    'resource_posture': ('resource_snapshot',),
+    'trend_forecast': ('forecast_snapshot',),
+    'top_consumers': ('top_consumers',),
+    'capacity_pressure': ('capacity_snapshot', 'resource_snapshot'),
+    'alerts_anomalies': ('alert_detail', 'alerts_snapshot'),
+    'reporting_summary': ('reporting_summary',),
+    'inventory_snapshot': ('inventory_snapshot',),
+    'data_freshness_reliability': ('data_freshness',),
+    'recommendation_plan': ('actionable_recommendations',),
     'analytics_summary': ('health_summary', 'summary'),
     'resource_snapshot': ('resource_snapshot', 'summary_table', 'summary'),
     'risk_overview': ('risk_assessment', 'risk_summary', 'health_summary', 'storage_summary'),
@@ -421,6 +434,7 @@ def _build_section(report: Any, payload: Mapping[str, Any], section_key: str, nu
     status_label, status_tone = _section_status(value)
     note = ''
     if not metrics and not tables and not findings and not chart_svg:
+        status_label, status_tone = 'No Evidence', 'warning'
         note = 'No structured evidence was returned for this section in the current reporting snapshot.'
 
     return ReportSection(
@@ -751,6 +765,10 @@ def _derive_overall_posture(payload: Mapping[str, Any]) -> tuple[str, str]:
 
 def _section_status(value: Any) -> tuple[str, str]:
     if isinstance(value, Mapping):
+        if value.get('available') is False:
+            return 'Unavailable', 'warning'
+        if value.get('evidence_available') is False:
+            return 'Unavailable', 'warning'
         for key in ('status_label', 'status', 'level', 'risk', 'severity'):
             status = value.get(key)
             if status:

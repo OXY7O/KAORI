@@ -63,7 +63,7 @@ def test_analytics_xlsx_profiles_cover_every_published_analytics_category() -> N
         assert profile.description
         assert len(profile.metric_specs) == 4
         assert profile.sheet_names
-        assert profile.primary_visual in {'line', 'ranked_bar', 'doughnut', 'capacity_bar'}
+        assert profile.primary_visual in {'line', 'ranked_bar', 'doughnut', 'capacity_bar', 'comparison_bar'}
 
 
 def test_resource_utilization_preparation_preserves_committed_metrics_trends_and_consumers() -> None:
@@ -101,6 +101,103 @@ def test_resource_utilization_preparation_preserves_committed_metrics_trends_and
     trends = next(table for table in data.tables if table.sheet_name == 'Trends')
     assert trends.rows[-1]['memory_percent'] == 61.4
     assert '61.4%' in data.readout
+
+
+def test_analytics_overview_uses_current_vs_projected_resource_posture() -> None:
+    payload = {
+        'resource_snapshot': {
+            'cpu': {'percent': 22.4, 'status': 'Normal'},
+            'memory': {'percent': 61.4, 'status': 'Warning'},
+            'pods': {'percent': 51.0, 'status': 'Normal'},
+            'storage': {'percent': 44.0, 'status': 'Normal'},
+        },
+        'forecast_snapshot': {
+            'highest_projected_resource': 'Memory',
+            'highest_projected_percent': 67.7,
+            'series': [
+                {
+                    'key': 'cpu',
+                    'label': 'CPU',
+                    'latest_percent': 22.4,
+                    'projected_percent': 31.8,
+                    'trend': 'Increasing',
+                    'confidence': 'High',
+                },
+                {
+                    'key': 'memory',
+                    'label': 'Memory',
+                    'latest_percent': 61.4,
+                    'projected_percent': 67.7,
+                    'trend': 'Increasing',
+                    'confidence': 'High',
+                },
+            ],
+        },
+        'alerts_snapshot': {'critical': 0, 'warning': 1, 'info': 0},
+    }
+
+    data = prepare_analytics_workbook_data('analytics_overview', payload, _context('analytics_overview'))
+
+    assert data.primary_chart is not None
+    assert data.primary_chart.visual_type == 'comparison_bar'
+    assert data.primary_chart.title == 'Current vs Projected Resource Posture'
+    assert [series.label for series in data.primary_chart.series] == ['Current', 'Projected']
+    assert data.primary_chart.rows == (
+        {
+            'resource': 'CPU',
+            'current_percent': 22.4,
+            'projected_percent': 31.8,
+            'change_pp': 9.4,
+            'trend': 'Increasing',
+            'confidence': 'High',
+        },
+        {
+            'resource': 'Memory',
+            'current_percent': 61.4,
+            'projected_percent': 67.7,
+            'change_pp': 6.3,
+            'trend': 'Increasing',
+            'confidence': 'High',
+        },
+    )
+    trends = next(table for table in data.tables if table.sheet_name == 'Trends')
+    assert [column.key for column in trends.columns] == [
+        'resource',
+        'current_percent',
+        'projected_percent',
+        'change_pp',
+        'trend',
+        'confidence',
+    ]
+    assert trends.rows[1]['projected_percent'] == 67.7
+    assert '67.7%' in data.readout
+
+
+def test_analytics_overview_does_not_create_visual_from_empty_forecast_values() -> None:
+    payload = {
+        'resource_snapshot': {
+            'memory': {'percent': 61.4},
+        },
+        'forecast_snapshot': {
+            'highest_projected_percent': None,
+            'series': [
+                {
+                    'key': 'memory',
+                    'label': 'Memory',
+                    'latest_percent': None,
+                    'projected_percent': None,
+                    'trend': 'Unknown',
+                    'confidence': 'Not Available',
+                }
+            ],
+        },
+    }
+
+    data = prepare_analytics_workbook_data('analytics_overview', payload, _context('analytics_overview'))
+
+    assert data.primary_chart is None
+    assert all(table.sheet_name != 'Trends' for table in data.tables)
+
 
 
 def test_alerts_preparation_uses_doughnut_severity_and_does_not_invent_recommendations() -> None:
@@ -312,10 +409,25 @@ def _representative_payload(report_type: str) -> dict[str, object]:
                 'storage': {'percent': 44.0},
             },
             'forecast_snapshot': {
+                'highest_projected_resource': 'Memory',
                 'highest_projected_percent': 72.0,
                 'series': [
-                    {'memory_percent': 60.0},
-                    {'memory_percent': 64.0},
+                    {
+                        'key': 'cpu',
+                        'label': 'CPU',
+                        'latest_percent': 22.0,
+                        'projected_percent': 29.0,
+                        'trend': 'Increasing',
+                        'confidence': 'High',
+                    },
+                    {
+                        'key': 'memory',
+                        'label': 'Memory',
+                        'latest_percent': 64.0,
+                        'projected_percent': 72.0,
+                        'trend': 'Increasing',
+                        'confidence': 'High',
+                    },
                 ],
             },
             'alerts_snapshot': {'critical': 1, 'warning': 2, 'info': 1},
@@ -418,10 +530,39 @@ def _representative_payload(report_type: str) -> dict[str, object]:
     return payloads[report_type]
 
 
+def test_analytics_overview_workbook_renders_two_series_comparison_without_fake_point_legend(tmp_path: Path) -> None:
+    output_path = tmp_path / 'analytics-overview.xlsx'
+    build_analytics_workbook(
+        report_type='analytics_overview',
+        payload=_representative_payload('analytics_overview'),
+        context=_context('analytics_overview'),
+        output_path=output_path,
+    )
+
+    workbook = load_workbook(output_path)
+    overview = workbook['Overview']
+    chart = overview._charts[0]
+    assert chart.__class__.__name__ == 'BarChart'
+    assert chart.grouping == 'clustered'
+    assert chart.legend is not None
+    assert chart.legend.position == 'b'
+    assert [series.tx.v for series in chart.series] == ['Current', 'Projected']
+    assert overview['J15'].value == 'Resource'
+    assert overview['K15'].value == 'Current'
+    assert overview['L15'].value == 'Projected'
+    assert overview['M15'].value == 'Change (pp)'
+    assert overview['N15'].value == 'Trend'
+    assert overview['J16'].value == 'CPU'
+    assert overview['J17'].value == 'Memory'
+    assert overview['K17'].value == 64.0
+    assert overview['L17'].value == 72.0
+
+
+
 @pytest.mark.parametrize(
     ('report_type', 'chart_class'),
     [
-        ('analytics_overview', 'LineChart'),
+        ('analytics_overview', 'BarChart'),
         ('resource_utilization', 'LineChart'),
         ('capacity_analysis', 'BarChart'),
         ('storage_analysis', 'BarChart'),

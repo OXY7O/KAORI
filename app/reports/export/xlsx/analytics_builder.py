@@ -160,14 +160,22 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
             series_count = len(chart.series)
             if series_count == 1 and chart.legend is not None:
                 raise ValueError('Analytics single-series ranked bar charts must not use a redundant legend.')
-            if series_count == 2:
-                if chart.grouping != 'stacked' or chart.overlap != 100:
+            if primary_visual == 'capacity_bar':
+                if series_count != 2 or chart.grouping != 'stacked' or chart.overlap != 100:
                     raise ValueError('Analytics capacity bars require a 100% stacked utilization/headroom presentation.')
                 if chart.legend is None or chart.legend.position != 'b':
                     raise ValueError('Analytics capacity bars require a bottom legend.')
                 labels = [str(getattr(series.tx, 'v', '') or '').strip() for series in chart.series]
                 if labels != ['Utilization', 'Headroom']:
                     raise ValueError('Analytics capacity bars require Utilization and Headroom series labels.')
+            if primary_visual == 'comparison_bar':
+                if series_count != 2 or chart.grouping != 'clustered':
+                    raise ValueError('Analytics comparison bars require clustered Current/Projected series.')
+                if chart.legend is None or chart.legend.position != 'b':
+                    raise ValueError('Analytics comparison bars require a bottom legend.')
+                labels = [str(getattr(series.tx, 'v', '') or '').strip() for series in chart.series]
+                if labels != ['Current', 'Projected']:
+                    raise ValueError('Analytics comparison bars require Current and Projected series labels.')
         if chart_name == 'LineChart':
             if chart.legend is None or chart.legend.position != 'b':
                 raise ValueError('Analytics line charts require a bottom legend.')

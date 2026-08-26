@@ -33,6 +33,7 @@ def main() -> int:
     analytics_profiles = read('app/reports/export/xlsx/analytics_profiles.py')
     analytics_builder = read('app/reports/export/xlsx/analytics_builder.py')
     analytics_overview = read('app/reports/export/xlsx/analytics_overview.py')
+    analytics_document_builder = read('app/reports/export/html_pdf/builder.py')
     xlsx_renderer = read('app/reports/export/xlsx/renderer.py')
     reporting_doc = read('docs/reports/kaori-reporting-standard-v1.md')
     tabular_doc = read('docs/reports/kaori-tabular-export-standard-v3.md')
@@ -89,6 +90,26 @@ def main() -> int:
     require(
         'BarChart' in analytics_overview and 'DoughnutChart' in analytics_overview and 'LineChart' in analytics_overview,
         'Analytics XLSX semantic chart renderers are incomplete',
+        errors,
+    )
+    require(
+        "primary_visual='comparison_bar'" in analytics_profiles
+        and "title='Current vs Projected Resource Posture'" in analytics_profiles
+        and "chart.visual_type == 'comparison_bar'" in analytics_overview,
+        'Analytics Overview must use resource-level Current vs Projected forecast semantics',
+        errors,
+    )
+    require(
+        all(
+            binding in analytics_document_builder
+            for binding in (
+                "'resource_posture': ('resource_snapshot',)",
+                "'trend_forecast': ('forecast_snapshot',)",
+                "'alerts_anomalies': ('alert_detail', 'alerts_snapshot')",
+            )
+        )
+        and "status_label, status_tone = 'No Evidence', 'warning'" in analytics_document_builder,
+        'Analytics CSV evidence sections are not bound to committed overview payloads',
         errors,
     )
     require(

@@ -55,7 +55,7 @@ ANALYTICS_WORKBOOK_PROFILES: dict[str, AnalyticsWorkbookProfile] = {
             _metric('Active Alerts', fmt='#,##0'),
         ),
         sheet_names=('Analysis', 'Trends', 'Top Consumers', 'Alerts & Anomalies', 'Recommendations'),
-        primary_visual='line',
+        primary_visual='comparison_bar',
     ),
     'resource_utilization': AnalyticsWorkbookProfile(
         report_type='resource_utilization',
@@ -167,7 +167,7 @@ ANALYTICS_XLSX_REPORT_TYPES = frozenset(ANALYTICS_WORKBOOK_PROFILES)
 
 
 def _validate_profiles() -> None:
-    visual_types = {'line', 'ranked_bar', 'doughnut', 'capacity_bar'}
+    visual_types = {'line', 'ranked_bar', 'doughnut', 'capacity_bar', 'comparison_bar'}
     for report_type, profile in ANALYTICS_WORKBOOK_PROFILES.items():
         if profile.report_type != report_type:
             raise ValueError(f'Analytics XLSX profile key {report_type!r} does not match profile report type.')
@@ -307,6 +307,15 @@ _TREND_COLUMNS = (
     _column('memory_percent', 'Memory %', 'Memory utilization at this observation.', data_type='percent', number_format='0.0"%"', width=14),
     _column('pods_percent', 'Pods %', 'Pod utilization at this observation.', data_type='percent', number_format='0.0"%"', width=14),
     _column('storage_percent', 'Storage %', 'Storage utilization at this observation.', data_type='percent', number_format='0.0"%"', width=14),
+)
+
+_FORECAST_POSTURE_COLUMNS = (
+    _column('resource', 'Resource', 'Forecast resource dimension.', width=20),
+    _column('current_percent', 'Current %', 'Latest committed observed utilization.', data_type='percent', number_format='0.0"%"', width=16),
+    _column('projected_percent', 'Projected %', 'Committed projected utilization at the configured forecast horizon.', data_type='percent', number_format='0.0"%"', width=16),
+    _column('change_pp', 'Change (pp)', 'Projected change from the latest observation in percentage points.', data_type='number', number_format='+0.0;-0.0;0.0', unit='pp', width=16),
+    _column('trend', 'Trend', 'Committed forecast direction.', width=18),
+    _column('confidence', 'Confidence', 'Committed forecast confidence label.', width=18),
 )
 
 _RECOMMENDATION_COLUMNS = (
@@ -1150,15 +1159,63 @@ def _prepare_overview(
     cpu = _number(_first(_mapping(resources.get('cpu')), 'percent', 'value'))
     memory = _number(_first(_mapping(resources.get('memory')), 'percent', 'value'))
     forecast = _mapping(payload.get('forecast_snapshot'))
+
+    forecast_rows: list[dict[str, Any]] = []
+    for item in _sequence(forecast.get('series')):
+        key = str(_first(item, 'key', default='') or '').strip().lower()
+        if not key:
+            continue
+        resource = _mapping(resources.get(key))
+        current = _number(_first(item, 'latest_percent', 'current_percent'))
+        if current is None:
+            current = _number(_first(resource, 'percent', 'value'))
+        projected = _number(_first(item, 'projected_percent', 'forecast_percent'))
+        if projected is None:
+            continue
+        label = _first(item, 'label', default='') or {
+            'cpu': 'CPU',
+            'memory': 'Memory',
+            'storage': 'Storage',
+            'pods': 'Pods',
+        }.get(key, key.replace('_', ' ').title())
+        change = round(projected - current, 2) if current is not None else None
+        forecast_rows.append(
+            {
+                'resource': str(label),
+                'current_percent': current,
+                'projected_percent': projected,
+                'change_pp': change,
+                'trend': _first(item, 'trend', default=_first(forecast, f'{key}_trend', default='Unknown')),
+                'confidence': _first(item, 'confidence', default='Not Available'),
+            }
+        )
+
     forecast_peak = _number(_first(forecast, 'highest_projected_percent', 'projected_percent'))
-    if forecast_peak is None:
-        forecast_peak = _number(_first(_mapping(forecast.get('memory')), 'projected_percent', 'percent'))
+    if forecast_peak is None and forecast_rows:
+        forecast_peak = max(
+            row['projected_percent'] for row in forecast_rows if row['projected_percent'] is not None
+        )
+
     alerts = _mapping(payload.get('alerts_snapshot'))
     alert_detail = _mapping(payload.get('alert_detail'))
     alert_summary = _mapping(alert_detail.get('summary'))
-    active_alerts = _int(_first(alert_summary, 'active_alerts', default=sum(_int(alerts.get(key)) for key in ('critical', 'warning', 'info'))))
+    active_alerts = _int(
+        _first(
+            alert_summary,
+            'active_alerts',
+            default=_first(
+                alerts,
+                'firing_alerts',
+                default=sum(
+                    _int(_first(alerts, key, f'{key}_alerts'))
+                    for key in ('critical', 'warning', 'info')
+                ),
+            ),
+        )
+    )
     values = (cpu, memory, forecast_peak, active_alerts)
     metrics = tuple(_metric_value(spec, value) for spec, value in zip(profile.metric_specs, values, strict=True))
+
     analysis_rows: list[dict[str, Any]] = []
     for key, label in (('cpu', 'CPU'), ('memory', 'Memory'), ('pods', 'Pods'), ('storage', 'Storage')):
         item = _mapping(resources.get(key))
@@ -1172,24 +1229,29 @@ def _prepare_overview(
                     'status': _first(item, 'status', 'label', default='Not Available'),
                 }
             )
+
     tables: list[AnalyticsTableData] = []
     if analysis_rows:
-        tables.append(_table('Analysis', 'Cross-Domain Resource Posture', 'Committed resource snapshot across the selected analytics boundary.', _RESOURCE_COLUMNS, analysis_rows))
-    series = _sequence(forecast.get('series'))
-    trend_rows: list[dict[str, Any]] = []
-    for index, item in enumerate(series, start=1):
-        trend_rows.append(
-            {
-                'observation': index,
-                'timestamp': _first(item, 'timestamp', 'date', default=''),
-                'cpu_percent': _number(item.get('cpu_percent')),
-                'memory_percent': _number(_first(item, 'memory_percent', 'value')),
-                'pods_percent': _number(item.get('pods_percent')),
-                'storage_percent': _number(item.get('storage_percent')),
-            }
+        tables.append(
+            _table(
+                'Analysis',
+                'Cross-Domain Resource Posture',
+                'Committed resource snapshot across the selected analytics boundary.',
+                _RESOURCE_COLUMNS,
+                analysis_rows,
+            )
         )
-    if trend_rows:
-        tables.append(_table('Trends', 'Cross-Domain Trend Evidence', 'Committed ordered analytics series.', _TREND_COLUMNS, trend_rows))
+    if forecast_rows:
+        tables.append(
+            _table(
+                'Trends',
+                'Current & Projected Resource Posture',
+                'Committed latest observations and backend-owned forecast projections by resource.',
+                _FORECAST_POSTURE_COLUMNS,
+                forecast_rows,
+            )
+        )
+
     consumers = _mapping(payload.get('top_consumers'))
     consumer_rows: list[dict[str, Any]] = []
     for resource in ('memory', 'cpu'):
@@ -1219,6 +1281,7 @@ def _prepare_overview(
                 consumer_rows,
             )
         )
+
     alert_rows = _sequence(alert_detail.get('alerts'))
     if alert_rows:
         tables.append(
@@ -1243,19 +1306,33 @@ def _prepare_overview(
                 ],
             )
         )
+
     _append_recommendations(tables, payload)
     chart = None
-    if trend_rows:
+    if forecast_rows:
         chart = AnalyticsChartData(
-            title='Analytics Trend Direction',
-            visual_type='line',
+            title='Current vs Projected Resource Posture',
+            visual_type='comparison_bar',
             source_sheet='Trends',
-            rows=tuple(trend_rows),
-            category_key='observation',
-            series=(AnalyticsChartSeries('memory_percent', 'Memory', '0.0', '%'),),
+            rows=tuple(forecast_rows),
+            category_key='resource',
+            series=(
+                AnalyticsChartSeries('current_percent', 'Current', '0.0', '%'),
+                AnalyticsChartSeries('projected_percent', 'Projected', '0.0', '%'),
+            ),
             value_axis_title='Percent',
         )
-    return AnalyticsWorkbookData(profile, context, metrics, _leading_percent_readout(metrics[:3], 'analytics'), tuple(tables), chart)
+
+    if forecast_peak is not None:
+        resource_label = str(_first(forecast, 'highest_projected_resource', default='Forecast Peak') or 'Forecast Peak')
+        readout = (
+            f'{resource_label} is the leading committed analytics projection at {forecast_peak:.1f}%. '
+            'Review the Current vs Projected evidence before taking action.'
+        )
+    else:
+        readout = _leading_percent_readout(metrics[:2], 'analytics')
+
+    return AnalyticsWorkbookData(profile, context, metrics, readout, tuple(tables), chart)
 
 
 _PREPARERS: dict[str, _Preparer] = {

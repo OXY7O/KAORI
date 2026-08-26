@@ -70,6 +70,7 @@ The renderer never invents health conclusions, forecasts, alerts, or recommendat
 
 ## Visual semantics
 
+- Analytics Overview forecast posture uses a clustered Current vs Projected resource bar; resource-level forecast records must never be reinterpreted as time-series points;
 - ordered time-series evidence uses line charts;
 - ranked consumers use horizontal ranked bars with direct labels and Supporting Data;
 - status or part-to-whole evidence uses compact doughnut/100% composition visuals only when the denominator is meaningful;
