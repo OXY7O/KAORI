@@ -280,7 +280,17 @@ def _add_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: AnalyticsCh
         visual.set_categories(categories)
         visual.legend.position = 'b'
         visual.legend.overlay = False
-        visual.dLbls = DataLabelList(showVal=True, dLblPos='outEnd', numFmt='0.0"%"')
+        visual.dLbls = DataLabelList(
+            showLegendKey=False,
+            showVal=True,
+            showCatName=False,
+            showSerName=False,
+            showPercent=False,
+            showBubbleSize=False,
+            showLeaderLines=False,
+            dLblPos='outEnd',
+            numFmt='0.0"%"',
+        )
         visual.x_axis.scaling.orientation = 'maxMin'
         visual.x_axis.tickLblPos = 'low'
         visual.y_axis.scaling.min = 0

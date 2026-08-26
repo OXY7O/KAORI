@@ -176,6 +176,18 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
                 labels = [str(getattr(series.tx, 'v', '') or '').strip() for series in chart.series]
                 if labels != ['Current', 'Projected']:
                     raise ValueError('Analytics comparison bars require Current and Projected series labels.')
+                data_labels = getattr(chart, 'dLbls', None)
+                if (
+                    data_labels is None
+                    or data_labels.showVal is not True
+                    or data_labels.showLegendKey is not False
+                    or data_labels.showCatName is not False
+                    or data_labels.showSerName is not False
+                    or data_labels.showPercent is not False
+                    or data_labels.showBubbleSize is not False
+                    or data_labels.dLblPos != 'outEnd'
+                ):
+                    raise ValueError('Analytics comparison bars require value-only data labels for Excel compatibility.')
         if chart_name == 'LineChart':
             if chart.legend is None or chart.legend.position != 'b':
                 raise ValueError('Analytics line charts require a bottom legend.')

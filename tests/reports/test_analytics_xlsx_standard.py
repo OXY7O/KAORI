@@ -547,6 +547,14 @@ def test_analytics_overview_workbook_renders_two_series_comparison_without_fake_
     assert chart.legend is not None
     assert chart.legend.position == 'b'
     assert [series.tx.v for series in chart.series] == ['Current', 'Projected']
+    assert chart.dLbls is not None
+    assert chart.dLbls.showVal is True
+    assert chart.dLbls.showLegendKey is False
+    assert chart.dLbls.showCatName is False
+    assert chart.dLbls.showSerName is False
+    assert chart.dLbls.showPercent is False
+    assert chart.dLbls.showBubbleSize is False
+    assert chart.dLbls.dLblPos == 'outEnd'
     assert overview['J15'].value == 'Resource'
     assert overview['K15'].value == 'Current'
     assert overview['L15'].value == 'Projected'
