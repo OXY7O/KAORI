@@ -85,7 +85,7 @@ def test_reports_storage_uses_contract_first_three_workspace_redesign() -> None:
     source = read(STORAGE_TEMPLATE)
 
     assert 'data-storage-workspace-shell="true"' in source
-    assert 'data-storage-overview-layout="posture-target-coverage"' in source
+    assert 'data-storage-overview-layout="dense-posture-grid"' in source
     assert 'data-storage-integrity-layout="posture-actions-results"' in source
     assert 'data-storage-retention-layout="lifecycle-governance"' in source
     assert 'data-storage-posture-layout="editorial-readiness"' not in source

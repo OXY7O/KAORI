@@ -36,15 +36,16 @@ def test_storage_page_uses_balanced_hero_and_contract_first_workspace() -> None:
     assert 'Generated Reports' in template
     assert 'data-report-storage-posture=' in template
     assert 'data-storage-workspace-shell="true"' in template
-    assert 'data-storage-overview-layout="posture-target-coverage"' in template
+    assert 'data-storage-overview-layout="dense-posture-grid"' in template
     assert 'data-report-storage-readiness-monitor="true"' in template
     assert 'Storage Posture' in template
     assert 'Access &amp; Readiness' in template
 
-    assert 'data-storage-artifact-evidence="metadata-first"' in template
+    assert 'data-storage-artifact-evidence="coverage-contract"' in template
     assert '>References</dt>' in template
     assert 'Tracked Size' in template
-    assert 'Coverage comes from Reports metadata; backend enumeration is not required.' in template
+    assert 'Coverage Source' in template
+    assert 'Backend Enumeration' in template
     assert 'reports/components/_summary_strip.html' not in template
     assert 'xl:grid-cols-[minmax(0,1fr)_380px]' not in template
     for raw_palette in ('emerald-', 'amber-', 'rose-', 'slate-'):
@@ -214,7 +215,7 @@ def test_storage_integrity_and_retention_have_single_authoritative_ownership_bou
 def test_storage_overview_uses_active_backend_connection_contract_not_field_cards() -> None:
     template = read('app/templates/reports/storage/index.html')
 
-    assert 'data-storage-target-access="two-panel"' in template
+    assert 'data-storage-overview-main-grid="target-readiness"' in template
     assert 'S3-compatible storage' not in template or '{{ posture.backend_label }}' in template
     assert 'data-storage-backend-connection="{{ payload.active_backend }}"' in template
     assert 'data-storage-backend-access="{{ payload.active_backend }}"' in template
@@ -224,7 +225,8 @@ def test_storage_overview_uses_active_backend_connection_contract_not_field_card
     assert '>Credentials</dt>' in template
     assert 'Read' in template
     assert 'data-storage-configuration-boundary="true"' in template
-    assert 'Storage configuration is protected and managed through {{ payload.configuration_source }}' in template
+    assert 'data-storage-governance-contract="compact"' in template
+    assert '>Configuration Source</dt>' in template
     assert 'Object Key Contract' in template
 
     overview = template.split("{% if payload.workspace == 'overview' %}", 1)[1].split(

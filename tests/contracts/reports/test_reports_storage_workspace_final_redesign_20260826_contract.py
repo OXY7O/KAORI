@@ -21,7 +21,7 @@ def test_storage_overview_uses_posture_target_access_coverage_governance_hierarc
         "{% elif payload.workspace == 'integrity' %}", 1
     )[0]
 
-    assert 'data-storage-overview-layout="posture-target-coverage"' in overview
+    assert 'data-storage-overview-layout="dense-posture-grid"' in overview
     for heading in (
         'Storage Posture',
         'Storage Target',
@@ -128,3 +128,31 @@ def test_schedule_registry_and_runs_use_canonical_filter_surface() -> None:
     runs_header = runs.split('</header>', 1)[0]
     assert 'registry_ui.filter_form' not in registry_header
     assert 'registry_ui.filter_form' not in runs_header
+
+
+def test_storage_overview_uses_dense_two_by_two_information_grid_without_duplicate_summary_metrics() -> None:
+    source = read('app/templates/reports/storage/index.html')
+    overview = source.split("{% if payload.workspace == 'overview' %}", 1)[1].split(
+        "{% elif payload.workspace == 'integrity' %}", 1
+    )[0]
+
+    assert 'data-storage-overview-layout="dense-posture-grid"' in overview
+    assert 'data-storage-overview-main-grid="target-readiness"' in overview
+    assert 'data-storage-overview-bottom-grid="coverage-governance"' in overview
+    assert 'data-storage-posture-summary="compact-cards"' in overview
+    assert 'data-storage-artifact-evidence="coverage-contract"' in overview
+    assert 'data-storage-governance-contract="compact"' in overview
+
+    # The top strip owns the numeric posture metrics; coverage below explains provenance,
+    # so Ready Reports / Tracked Size must not be repeated inside Artifact Coverage.
+    coverage = overview.split('data-storage-artifact-evidence="coverage-contract"', 1)[1].split('</section>', 1)[0]
+    assert 'Coverage Source' in coverage
+    assert 'Reference Scope' in coverage
+    assert 'Backend Enumeration' in coverage
+    assert 'Ready Reports' not in coverage
+    assert 'Tracked Size' not in coverage
+
+    governance = overview.split('data-storage-governance-contract="compact"', 1)[1].split('</aside>', 1)[0]
+    assert 'Configuration Source' in governance
+    assert 'Object Key Contract' in governance
+    assert 'data-storage-object-key-contract="readable"' in governance
