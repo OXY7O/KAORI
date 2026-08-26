@@ -20,6 +20,7 @@ from app.reports.storage.health import (
 )
 from app.reports.storage.local import build_local_report_storage
 from app.reports.storage.s3 import build_s3_report_storage
+from app.reports.storage import verification as storage_check
 from app.reports.storage.state import (
     clear_shared_report_storage_status,
     format_storage_check_age,
@@ -322,10 +323,7 @@ def get_report_storage_backend_status(
             cache[normalized_backend] = process_cached
             return process_cached
 
-    previous_shared_status = (
-        get_shared_report_storage_status(normalized_backend, allow_stale=True) if normalized_backend == 's3' else None
-    )
-
+    previous_shared_status = storage_check.get_stale_shared_storage_status(normalized_backend)
     if normalized_backend == 'local':
         health = build_local_storage_health()
         readable = bool(health.get('root_exists', False))
@@ -382,6 +380,8 @@ def get_report_storage_backend_status(
             source=source,
         )
 
+    if fallback := storage_check.request_readiness_fallback(normalized_backend, previous_shared_status, force=force):
+        return fallback
     try:
         backend = build_report_storage_backend('s3')
         test_connection = getattr(backend, 'test_connection', None)
@@ -760,12 +760,9 @@ def get_report_storage_payload(*, workspace: str | None = None) -> dict[str, Any
             'reports/<domain>/<source_kind>/YYYY/MM/<asset_slug>/<report_type_slug>/'
             'report-<reference>-<asset>-<scope>-<period>-<timestamp>-<uuid>.<ext>'
         ),
+        'verification_execution': storage_check.get_report_storage_verification_presentation(backend_name),
         'verification': {
-            'mode': 'Strong backend verification',
-            'description': (
-                'Write, confirm, and delete a small verification object on the active backend. '
-                'This is an operator action and never runs from a GET request.'
-            ),
+            'description': 'Queue worker-owned write → confirm → delete verification; web requests never perform provider I/O.',
         },
         'integrity_check': {
             'mode': 'Manual integrity scan',

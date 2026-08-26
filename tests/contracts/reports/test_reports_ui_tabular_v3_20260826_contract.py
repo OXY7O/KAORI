@@ -76,7 +76,7 @@ def test_storage_object_key_contract_is_full_width_nowrap_and_integrity_has_guid
         "{% elif payload.workspace == 'retention' %}", 1
     )[0]
     assert 'data-storage-integrity-guidance="true"' in integrity
-    assert 'Strong Backend Verification performs a temporary write' in integrity
+    assert 'Strong Backend Verification queues a worker-owned write → confirm → delete test' in integrity
     assert 'Artifact Integrity Scan is read-only' in integrity
     assert 'Neither action changes protected storage configuration or repairs artifacts.' in integrity
 

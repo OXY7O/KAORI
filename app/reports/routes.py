@@ -35,7 +35,12 @@ from app.reports.schedules.routes import (
     toggle_schedule,
     update_schedule,
 )
-from app.reports.storage.routes import scan_storage_integrity, storage, verify_storage
+from app.reports.storage.routes import (
+    scan_storage_integrity,
+    storage,
+    storage_verification_status,
+    verify_storage,
+)
 from app.reports.web import render_reports_unavailable
 
 logger = logging.getLogger(__name__)
@@ -283,6 +288,15 @@ reports_bp.add_url_rule(
     view_func=verify_storage,
     methods=[
         'POST',
+    ],
+)
+
+reports_bp.add_url_rule(
+    '/storage/verification/status',
+    endpoint='storage_verification_status',
+    view_func=storage_verification_status,
+    methods=[
+        'GET',
     ],
 )
 

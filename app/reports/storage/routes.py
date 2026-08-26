@@ -1,20 +1,23 @@
 import logging
 
-from flask import redirect, render_template, request, url_for
+from flask import make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from werkzeug.exceptions import HTTPException
 
 from app.access.rbac.decorators import permission_required
 from app.platform_operations.notifications.service import record_operational_activity
+from app.reports.storage.jobs import (
+    ReportStorageVerificationEnqueueError,
+    enqueue_report_storage_verification,
+)
 from app.reports.storage.service import (
     build_storage_integrity_presentation,
-    clear_report_storage_status_cache,
     get_report_storage_payload,
     normalize_storage_workspace,
     scan_report_storage_integrity,
-    verify_active_report_storage,
 )
+from app.reports.storage.verification import get_report_storage_verification_presentation
 from app.reports.web import render_reports_unavailable
 
 logger = logging.getLogger(__name__)
@@ -41,48 +44,65 @@ def storage() -> ResponseReturnValue:
 @permission_required('reports.manage_storage')
 def verify_storage() -> ResponseReturnValue:
     workspace = normalize_storage_workspace(request.form.get('workspace'))
-    status = 'error'
-    title = 'Report Storage Verification Failed'
-    message = 'KAORI could not verify the active report storage backend.'
-    detail = None
-    metadata: dict[str, object] = {'outcome': 'failed'}
-
     try:
-        clear_report_storage_status_cache(include_shared=True)
-        result = verify_active_report_storage()
-    except Exception:
-        logger.exception('Report storage verification failed.')
-        detail = 'The active report storage backend did not respond. Review its endpoint, credentials, and network connectivity.'
+        outcome = enqueue_report_storage_verification(
+            requested_by_user_id=int(current_user.id),
+        )
+    except ReportStorageVerificationEnqueueError:
+        logger.exception('Report storage verification dispatch failed.')
+        record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='report_storage_verification',
+            status='error',
+            title='Report Storage Verification Could Not Start',
+            message='KAORI could not dispatch strong storage verification to the worker.',
+            detail='Review Celery broker and report-storage worker availability, then retry.',
+            action_url=url_for('reports.storage', workspace='integrity'),
+            action_label='View storage',
+            action_icon='hard-drive',
+            metadata={'outcome': 'dispatch_failed'},
+            queue_feedback=True,
+        )
     else:
-        backend = result.get('backend')
-        verified = bool(result.get('verified'))
-        metadata.update({'backend': backend, 'verified': verified})
-        if verified:
-            status = 'success'
-            title = 'Report Storage Verified'
-            message = f'KAORI verified the {backend} report storage backend.'
-            detail = 'The active backend accepted and confirmed the verification object.'
-            metadata['outcome'] = 'success'
-        else:
-            status = 'warning'
-            title = 'Report Storage Verification Incomplete'
-            message = 'KAORI completed the storage check, but could not confirm the verification object.'
-            metadata['outcome'] = 'incomplete'
-
-    record_operational_activity(
-        user_id=current_user.id,
-        event_type='report_storage_verification',
-        status=status,
-        title=title,
-        message=message,
-        detail=detail,
-        action_url=url_for('reports.storage', workspace=workspace),
-        action_label='View storage',
-        action_icon='hard-drive',
-        metadata=metadata,
-        queue_feedback=True,
-    )
+        record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='report_storage_verification',
+            status='success' if outcome.created else 'info',
+            title=(
+                'Report Storage Verification Queued'
+                if outcome.created
+                else 'Report Storage Verification Already Active'
+            ),
+            message=outcome.message,
+            detail=(
+                'The report-storage worker owns provider connectivity, write confirmation, cleanup, '
+                'and technical traceback evidence.'
+            ),
+            action_url=url_for('reports.storage', workspace='integrity'),
+            action_label='View verification',
+            action_icon='hard-drive',
+            metadata={
+                'outcome': outcome.status,
+                'job_execution_id': outcome.job.id,
+                'job_public_id': outcome.job.public_id,
+                'created': outcome.created,
+            },
+            queue_feedback=True,
+        )
     return redirect(url_for('reports.storage', workspace=workspace))
+
+
+@permission_required('reports.manage_storage')
+def storage_verification_status() -> ResponseReturnValue:
+    verification_execution = get_report_storage_verification_presentation()
+    response = make_response(
+        render_template(
+            'reports/storage/_verification_status.html',
+            verification_execution=verification_execution,
+        )
+    )
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    return response
 
 
 @permission_required('reports.manage_storage')

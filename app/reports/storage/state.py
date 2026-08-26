@@ -195,6 +195,8 @@ def format_storage_check_source(status: dict[str, Any]) -> str:
     source = str(status.get('source') or 'direct').strip().lower()
     labels = {
         'periodic': 'Periodic Monitor',
+        'periodic_stale': 'Periodic Monitor (Stale)',
+        'worker_pending': 'Worker Check Pending',
         'manual_verification': 'Manual Verification',
         'manual_verification_failure': 'Manual Verification Failure',
         'artifact_write_failure': 'Artifact Write Failure',

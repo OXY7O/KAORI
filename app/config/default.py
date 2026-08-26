@@ -434,6 +434,9 @@ class Config:
             'app.reports.storage.tasks.refresh_report_storage_readiness_task': {
                 'queue': REPORT_STORAGE_HEALTH_CELERY_QUEUE,
             },
+            'app.reports.storage.tasks.verify_report_storage_task': {
+                'queue': REPORT_STORAGE_HEALTH_CELERY_QUEUE,
+            },
             'app.intelligence.resolver.tasks.execute_authorized_resolution': {
                 'queue': RESOLVER_EXECUTION_CELERY_QUEUE,
             },
