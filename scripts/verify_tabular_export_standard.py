@@ -88,7 +88,10 @@ def main() -> int:
         errors,
     )
     require(
-        'BarChart' in analytics_overview and 'DoughnutChart' in analytics_overview and 'LineChart' in analytics_overview,
+        'BarChart' in analytics_overview
+        and 'LineChart' in analytics_overview
+        and "chart.visual_type == 'composition_bar'" in analytics_overview
+        and "primary_visual='composition_bar'" in analytics_profiles,
         'Analytics XLSX semantic chart renderers are incomplete',
         errors,
     )

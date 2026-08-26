@@ -73,7 +73,7 @@ The renderer never invents health conclusions, forecasts, alerts, or recommendat
 - Analytics Overview forecast posture uses a clustered Current vs Projected resource bar; resource-level forecast records must never be reinterpreted as time-series points;
 - ordered time-series evidence uses line charts;
 - ranked consumers use horizontal ranked bars with direct labels and Supporting Data;
-- status or part-to-whole evidence uses compact doughnut/100% composition visuals only when the denominator is meaningful;
+- status or part-to-whole Analytics evidence uses a compact horizontal `composition_bar` with an explicit 0–100% denominator, semantic category colors, and percentage-only direct labels; doughnut rendering remains an Inventory concern rather than an Analytics dependency;
 - capacity comparisons use used/headroom or requests/limits/usage visual semantics owned by the profile;
 - forecast workbooks plot committed historical and forecast series, but Excel must not calculate the forecast itself;
 - alert visuals summarize committed severity/state evidence and never duplicate Alert Intelligence workflow state.

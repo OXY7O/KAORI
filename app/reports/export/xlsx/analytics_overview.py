@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from openpyxl.chart import BarChart, DoughnutChart, LineChart, Reference
+from openpyxl.chart import BarChart, LineChart, Reference
 from openpyxl.chart.label import DataLabelList
 from openpyxl.chart.series import DataPoint, SeriesLabel
 from openpyxl.chart.shapes import GraphicalProperties
@@ -43,6 +43,7 @@ _READOUT_VALUE_ROW = 10
 _VISUAL_HEADER_ROW = 13
 _SUPPORTING_HEADER_ROW = 13
 _SUPPORTING_START_COLUMN = 10  # J
+_CHART_CATEGORY_COLUMN = 15  # O, hidden helper used by long-label ranked charts
 _SUPPORTING_HEADER_DATA_ROW = 15
 _SUPPORTING_DATA_ROW = 16
 _NAV_HEADER_ROW = 31
@@ -73,6 +74,13 @@ def build_analytics_overview_sheet(sheet: Worksheet, data: AnalyticsWorkbookData
             sheet.column_dimensions[column].width = width
     elif data.primary_chart is not None and data.primary_chart.visual_type == 'line':
         for column, width in {'J': 22, 'K': 14, 'L': 14, 'M': 14, 'N': 14}.items():
+            sheet.column_dimensions[column].width = width
+    elif data.primary_chart is not None and data.primary_chart.visual_type == 'ranked_bar':
+        for column, width in {'J': 8, 'K': 34, 'L': 22, 'M': 16, 'N': 4}.items():
+            sheet.column_dimensions[column].width = width
+        sheet.column_dimensions['O'].hidden = True
+    elif data.primary_chart is not None and data.primary_chart.visual_type == 'composition_bar':
+        for column, width in {'J': 8, 'K': 30, 'L': 16, 'M': 16, 'N': 4}.items():
             sheet.column_dimensions[column].width = width
     sheet.freeze_panes = 'A5'
     sheet.sheet_view.zoomScale = 90
@@ -234,12 +242,13 @@ def _write_supporting_data(sheet: Worksheet, chart: AnalyticsChartData) -> None:
             sheet.row_dimensions[row_index].height = 25
         return
 
-    share_label = 'Share of Total' if chart.visual_type == 'doughnut' else 'Share of Displayed'
+    share_label = 'Share of Total' if chart.visual_type == 'composition_bar' or chart.total_value else 'Share of Displayed'
     headers = ('Rank', 'Category', 'Value', share_label)
     for index, label in enumerate(headers, start=_SUPPORTING_START_COLUMN):
         cell = sheet.cell(row=_SUPPORTING_HEADER_DATA_ROW, column=index, value=label)
         style_header(cell)
-    total = sum(_number(row.get('value')) for row in chart.rows)
+    displayed_total = sum(_number(row.get('value')) for row in chart.rows)
+    total = float(chart.total_value or 0) or displayed_total
     for rank, row in enumerate(chart.rows[:8], start=1):
         row_index = _SUPPORTING_DATA_ROW + rank - 1
         value = _number(row.get('value'))
@@ -254,7 +263,10 @@ def _write_supporting_data(sheet: Worksheet, chart: AnalyticsChartData) -> None:
                 chart.series[0].unit,
             )
         sheet.cell(row=row_index, column=13).number_format = '0.0"%"'
-        sheet.row_dimensions[row_index].height = 25
+        category = str(row.get(chart.category_key) or '')
+        if chart.visual_type == 'ranked_bar':
+            sheet.cell(row=row_index, column=_CHART_CATEGORY_COLUMN, value=_short_chart_label(category))
+        sheet.row_dimensions[row_index].height = 34 if len(category) > 36 else 25
 
 
 def _add_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: AnalyticsChartData) -> None:
@@ -389,57 +401,88 @@ def _add_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: AnalyticsCh
         visual.type = 'bar'
         visual.grouping = 'clustered'
         visual.varyColors = False
+        visual.visible_cells_only = False
         visual.title = chart.title
         visual.height = 8.0
         visual.width = 13.5
-        visual.gapWidth = 55
+        visual.gapWidth = 65
         visual.add_data(values, titles_from_data=True)
-        visual.set_categories(categories)
+        chart_categories = Reference(
+            sheet,
+            min_col=_CHART_CATEGORY_COLUMN,
+            min_row=_SUPPORTING_DATA_ROW,
+            max_row=end_row,
+        )
+        visual.set_categories(chart_categories)
         visual.legend = None
-        visual.dLbls = DataLabelList(showVal=True, dLblPos='outEnd')
+        visual.dLbls = DataLabelList(
+            showLegendKey=False,
+            showVal=True,
+            showCatName=False,
+            showSerName=False,
+            showPercent=False,
+            showBubbleSize=False,
+            showLeaderLines=False,
+            dLblPos='outEnd',
+        )
         if chart.series:
             visual.dLbls.numFmt = _series_number_format(chart.series[0].number_format, chart.series[0].unit)
         visual.x_axis.scaling.orientation = 'maxMin'
-        visual.x_axis.tickLblPos = 'low'
+        visual.x_axis.tickLblPos = 'nextTo'
+        visual.x_axis.delete = False
         visual.y_axis.scaling.min = 0
-        visual.y_axis.title = chart.value_axis_title or 'Value'
+        visual.y_axis.title = None
+        visual.y_axis.majorGridlines = None
         visual.series[0].graphicalProperties.solidFill = KAORI_PRIMARY
         visual.series[0].graphicalProperties.line.solidFill = KAORI_PRIMARY_DARK
         _remove_frame(visual)
         sheet.add_chart(visual, 'A15')
         return
 
-    visual = DoughnutChart()
-    visual.title = chart.title
-    visual.holeSize = 62
-    visual.firstSliceAng = 270
-    visual.varyColors = True
-    visual.height = 8.0
-    visual.width = 13.5
-    visual.add_data(values, titles_from_data=True)
-    visual.set_categories(categories)
-    visual.legend.position = 'b'
-    visual.legend.overlay = False
-    visual.dLbls = DataLabelList(
-        dLblPos='bestFit',
-        numFmt='0.0%',
-        showLegendKey=False,
-        showVal=False,
-        showCatName=False,
-        showSerName=False,
-        showPercent=True,
-        showBubbleSize=False,
-        showLeaderLines=True,
-        separator='\n',
-    )
-    points: list[DataPoint] = []
-    for index, row in enumerate(chart.rows[:8]):
-        point = DataPoint(idx=index)
-        point.graphicalProperties.solidFill = _doughnut_color(str(row.get(chart.category_key) or ''), index)
-        points.append(point)
-    visual.series[0].data_points = points
-    _remove_frame(visual)
-    sheet.add_chart(visual, 'A15')
+    if chart.visual_type == 'composition_bar':
+        share_values = Reference(sheet, min_col=13, min_row=_SUPPORTING_HEADER_DATA_ROW, max_row=end_row)
+        visual = BarChart()
+        visual.type = 'bar'
+        visual.grouping = 'clustered'
+        visual.varyColors = False
+        visual.title = chart.title
+        visual.height = 8.0
+        visual.width = 13.5
+        visual.gapWidth = 70
+        visual.add_data(share_values, titles_from_data=True)
+        visual.set_categories(categories)
+        visual.legend = None
+        visual.dLbls = DataLabelList(
+            showLegendKey=False,
+            showVal=True,
+            showCatName=False,
+            showSerName=False,
+            showPercent=False,
+            showBubbleSize=False,
+            showLeaderLines=False,
+            dLblPos='outEnd',
+            numFmt='0.0"%"',
+        )
+        visual.x_axis.scaling.orientation = 'maxMin'
+        visual.x_axis.tickLblPos = 'nextTo'
+        visual.x_axis.delete = False
+        visual.y_axis.scaling.min = 0
+        visual.y_axis.scaling.max = 100
+        visual.y_axis.majorUnit = 25
+        visual.y_axis.numFmt = '0"%"'
+        visual.y_axis.title = None
+        visual.y_axis.majorGridlines = None
+        points: list[DataPoint] = []
+        for index, row in enumerate(chart.rows[:8]):
+            point = DataPoint(idx=index)
+            point.graphicalProperties.solidFill = _semantic_composition_color(str(row.get(chart.category_key) or ''), index)
+            points.append(point)
+        visual.series[0].data_points = points
+        _remove_frame(visual)
+        sheet.add_chart(visual, 'A15')
+        return
+
+    raise ValueError(f'Unsupported Analytics visual type: {chart.visual_type}.')
 
 
 def _add_line_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: AnalyticsChartData) -> None:
@@ -539,13 +582,21 @@ def _context_line(data: AnalyticsWorkbookData) -> str:
 
 
 def _series_number_format(number_format: str, unit: str | None) -> str:
-    if not unit:
+    rendered_unit = str(unit or '').strip()
+    if rendered_unit.casefold() in {'', 'n/a', 'na', 'not available', 'unknown', '-'}:
         return number_format
-    safe_unit = str(unit).replace('"', '')
+    safe_unit = rendered_unit.replace('"', '')
     return f'{number_format}" {safe_unit}"'
 
 
-def _doughnut_color(category: str, index: int) -> str:
+def _short_chart_label(value: str, *, max_length: int = 31) -> str:
+    rendered = ' '.join(str(value or '').split())
+    if len(rendered) <= max_length:
+        return rendered
+    return f'{rendered[: max_length - 1].rstrip()}…'
+
+
+def _semantic_composition_color(category: str, index: int) -> str:
     key = category.casefold()
     if 'critical' in key or 'not covered' in key or 'failed' in key:
         return KAORI_RED_TEXT
@@ -558,7 +609,7 @@ def _doughnut_color(category: str, index: int) -> str:
     return _DOUGHNUT_COLORS[index % len(_DOUGHNUT_COLORS)]
 
 
-def _remove_frame(chart: BarChart | DoughnutChart | LineChart) -> None:
+def _remove_frame(chart: BarChart | LineChart) -> None:
     chart.graphical_properties = GraphicalProperties()
     chart.graphical_properties.noFill = True
     chart.graphical_properties.line.noFill = True

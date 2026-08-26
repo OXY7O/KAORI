@@ -10,7 +10,7 @@ ANALYTICS_OVERVIEW_SHEET: Final = 'Overview'
 ANALYTICS_METADATA_SHEET: Final = 'Metadata'
 ANALYTICS_DICTIONARY_SHEET: Final = 'Field Dictionary'
 
-AnalyticsVisualType = Literal['line', 'ranked_bar', 'doughnut', 'capacity_bar', 'comparison_bar']
+AnalyticsVisualType = Literal['line', 'ranked_bar', 'composition_bar', 'capacity_bar', 'comparison_bar']
 AnalyticsDataType = Literal['text', 'integer', 'number', 'percent', 'datetime', 'date']
 
 
@@ -83,6 +83,7 @@ class AnalyticsChartData:
     series: tuple[AnalyticsChartSeries, ...] = ()
     top_n: int = 8
     value_axis_title: str | None = None
+    total_value: float | None = None
 
 
 @dataclass(frozen=True, slots=True)

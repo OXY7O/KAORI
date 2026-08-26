@@ -107,7 +107,7 @@ ANALYTICS_WORKBOOK_PROFILES: dict[str, AnalyticsWorkbookProfile] = {
             _metric('Governance Findings', fmt='#,##0'),
         ),
         sheet_names=('Analysis', 'Breakdown', 'Recommendations'),
-        primary_visual='doughnut',
+        primary_visual='composition_bar',
     ),
     'resource_forecast': AnalyticsWorkbookProfile(
         report_type='resource_forecast',
@@ -146,7 +146,7 @@ ANALYTICS_WORKBOOK_PROFILES: dict[str, AnalyticsWorkbookProfile] = {
             _metric('Anomalies', fmt='#,##0'),
         ),
         sheet_names=('Analysis', 'Alerts & Anomalies', 'Recommendations'),
-        primary_visual='doughnut',
+        primary_visual='composition_bar',
     ),
     'object_storage_analysis': AnalyticsWorkbookProfile(
         report_type='object_storage_analysis',
@@ -167,7 +167,7 @@ ANALYTICS_XLSX_REPORT_TYPES = frozenset(ANALYTICS_WORKBOOK_PROFILES)
 
 
 def _validate_profiles() -> None:
-    visual_types = {'line', 'ranked_bar', 'doughnut', 'capacity_bar', 'comparison_bar'}
+    visual_types = {'line', 'ranked_bar', 'composition_bar', 'capacity_bar', 'comparison_bar'}
     for report_type, profile in ANALYTICS_WORKBOOK_PROFILES.items():
         if profile.report_type != report_type:
             raise ValueError(f'Analytics XLSX profile key {report_type!r} does not match profile report type.')
@@ -489,18 +489,26 @@ def _prepare_resource_utilization(
 
     chart = None
     if trend_rows:
-        chart = AnalyticsChartData(
-            title='Resource Utilization Trend',
-            visual_type='line',
-            source_sheet='Trends',
-            rows=tuple(trend_rows),
-            category_key='observation',
-            series=tuple(
-                AnalyticsChartSeries(key=f'{key}_percent', label=label, number_format='0.0', unit='%')
-                for key, label in (('cpu', 'CPU'), ('memory', 'Memory'), ('pods', 'Pods'), ('storage', 'Storage'))
-            ),
-            value_axis_title='Utilization (%)',
+        available_series = tuple(
+            AnalyticsChartSeries(key=f'{key}_percent', label=label, number_format='0.0', unit='%')
+            for key, label in (('cpu', 'CPU'), ('memory', 'Memory'), ('pods', 'Pods'), ('storage', 'Storage'))
+            if any(row.get(f'{key}_percent') is not None for row in trend_rows)
         )
+        category_key = (
+            'timestamp'
+            if all(_text(row.get('timestamp'), '') for row in trend_rows)
+            else 'observation'
+        )
+        if available_series:
+            chart = AnalyticsChartData(
+                title='Resource Utilization Trend',
+                visual_type='line',
+                source_sheet='Trends',
+                rows=tuple(trend_rows),
+                category_key=category_key,
+                series=available_series,
+                value_axis_title='Utilization (%)',
+            )
     return AnalyticsWorkbookData(profile, context, metrics, _leading_percent_readout(metrics, 'utilization'), tuple(tables), chart)
 
 
@@ -738,10 +746,11 @@ def _prepare_workload(
         )
     chart = AnalyticsChartData(
         title='Namespace Quota Coverage',
-        visual_type='doughnut',
+        visual_type='composition_bar',
         source_sheet='Analysis' if normalized_quota else 'Overview',
         rows=chart_rows,
         series=(AnalyticsChartSeries('value', 'Namespaces', '#,##0'),),
+        total_value=float(total) if total else None,
     ) if chart_rows else None
     if coverage is None:
         readout = 'No committed tenant quota coverage denominator is available for the selected reporting boundary.'
@@ -845,6 +854,24 @@ def _consumer_identity(item: Mapping[str, Any]) -> str:
     return _text(_first(_mapping(item.get('identity')), 'primary', default=_first(item, 'name', 'pod', 'workload')))
 
 
+def _clean_unit(value: Any) -> str:
+    rendered = str(value or '').strip()
+    if rendered.casefold() in {'', 'n/a', 'na', 'not available', 'unknown', '-'}:
+        return ''
+    return rendered
+
+
+def _consumer_unit(item: Mapping[str, Any]) -> str:
+    explicit = _clean_unit(item.get('unit'))
+    if explicit:
+        return explicit
+    display = str(_first(item, 'current_display', 'display_value', 'current_usage', default='') or '').strip()
+    if not display:
+        return ''
+    tokens = display.split()
+    return _clean_unit(tokens[1]) if len(tokens) > 1 else ''
+
+
 def _prepare_top_consumers(
     payload: Mapping[str, Any], context: AnalyticsExportContext, profile: AnalyticsWorkbookProfile
 ) -> AnalyticsWorkbookData:
@@ -861,7 +888,7 @@ def _prepare_top_consumers(
                 'consumer': _consumer_identity(item),
                 'value': value,
                 'display_value': _first(item, 'current_display', 'display_value', default=value),
-                'unit': _first(item, 'unit', default='Not Available'),
+                'unit': _consumer_unit(item) or 'Not Available',
                 'status': _first(_mapping(item.get('risk')), 'label', default=_first(item, 'status', default='Not Available')),
             }
         )
@@ -895,7 +922,8 @@ def _prepare_top_consumers(
     ranked = [row for row in rows if row['resource'] == preferred and row['value'] is not None]
     ranked.sort(key=lambda row: float(row['value']), reverse=True)
     chart_rows = tuple({'category': row['consumer'], 'value': row['value']} for row in ranked[:8])
-    unit = _text(ranked[0].get('unit'), '') if ranked else ''
+    unit = _clean_unit(ranked[0].get('unit')) if ranked else ''
+    total_value = sum(float(row['value']) for row in ranked if row['value'] is not None)
     chart = AnalyticsChartData(
         title=f'Top {preferred} Consumers',
         visual_type='ranked_bar',
@@ -903,6 +931,7 @@ def _prepare_top_consumers(
         rows=chart_rows,
         series=(AnalyticsChartSeries('value', preferred or 'Value', '#,##0.00', unit or None),),
         value_axis_title=f'{preferred} ({unit})' if unit and unit != 'Not Available' else preferred,
+        total_value=total_value or None,
     ) if chart_rows else None
     if ranked:
         readout = f'{ranked[0]["consumer"]} is the leading displayed {preferred} consumer at {_text(ranked[0]["display_value"], str(ranked[0]["value"]))}.'
@@ -981,17 +1010,25 @@ def _prepare_alerts(
             )
         )
     _append_recommendations(tables, payload)
+    classified = critical + warning + info
+    unclassified = max(active - classified, 0)
     severity_rows = tuple(
         {'category': label, 'value': count}
-        for label, count in (('Critical', critical), ('Warning', warning), ('Info', info))
+        for label, count in (
+            ('Critical', critical),
+            ('Warning', warning),
+            ('Info', info),
+            ('Unclassified', unclassified),
+        )
         if count > 0
     )
     chart = AnalyticsChartData(
         title='Active Alert Severity',
-        visual_type='doughnut',
+        visual_type='composition_bar',
         source_sheet='Alerts & Anomalies',
         rows=severity_rows,
         series=(AnalyticsChartSeries('value', 'Alerts', '#,##0'),),
+        total_value=float(active) if active else None,
     ) if severity_rows else None
     if active or anomaly_count:
         readout = f'{active:,} active alert(s) and {anomaly_count:,} anomaly candidate(s) are committed at the report cut-off; {critical:,} alert(s) are critical.'
@@ -1144,6 +1181,7 @@ def _prepare_object_storage(
         rows=chart_rows,
         series=(AnalyticsChartSeries('value', 'Usage', '#,##0.00', 'GiB'),),
         value_axis_title='Usage (GiB)',
+        total_value=sum(float(row['usage_gib']) for row in consumers if row['usage_gib'] is not None) or None,
     ) if chart_rows else None
     if consumers and consumers[0]['usage_gib'] is not None:
         readout = f'{consumers[0]["bucket"]} is the leading committed storage consumer at {float(consumers[0]["usage_gib"]):.2f} GiB.'

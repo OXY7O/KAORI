@@ -64,7 +64,13 @@ def test_analytics_xlsx_profiles_cover_every_published_analytics_category() -> N
         assert profile.description
         assert len(profile.metric_specs) == 4
         assert profile.sheet_names
-        assert profile.primary_visual in {'line', 'ranked_bar', 'doughnut', 'capacity_bar', 'comparison_bar'}
+        assert profile.primary_visual in {
+            'line',
+            'ranked_bar',
+            'composition_bar',
+            'capacity_bar',
+            'comparison_bar',
+        }
 
 
 def test_resource_utilization_preparation_preserves_committed_metrics_trends_and_consumers() -> None:
@@ -263,9 +269,9 @@ def test_analytics_overview_does_not_create_visual_from_empty_forecast_values() 
 
 
 
-def test_alerts_preparation_uses_doughnut_severity_and_does_not_invent_recommendations() -> None:
+def test_alerts_preparation_uses_composition_severity_and_accounts_for_unclassified_alerts() -> None:
     payload = {
-        'summary': {'active_alerts': 8, 'critical_alerts': 1, 'warning_alerts': 5, 'info_alerts': 2, 'detected_anomalies': 3},
+        'summary': {'active_alerts': 10, 'critical_alerts': 1, 'warning_alerts': 5, 'info_alerts': 2, 'detected_anomalies': 3},
         'alerts': [
             {'name': 'HighMemory', 'severity': 'critical', 'status': 'firing', 'namespace': 'payments'},
             {'name': 'RestartBurst', 'severity': 'warning', 'status': 'firing', 'namespace': 'core'},
@@ -277,11 +283,12 @@ def test_alerts_preparation_uses_doughnut_severity_and_does_not_invent_recommend
     data = prepare_analytics_workbook_data('alerts_anomalies', payload, _context('alerts_anomalies'))
 
     assert data.primary_chart is not None
-    assert data.primary_chart.visual_type == 'doughnut'
+    assert data.primary_chart.visual_type == 'composition_bar'
     assert data.primary_chart.rows == (
         {'category': 'Critical', 'value': 1},
         {'category': 'Warning', 'value': 5},
         {'category': 'Info', 'value': 2},
+        {'category': 'Unclassified', 'value': 2},
     )
     assert 'Recommendations' not in {table.sheet_name for table in data.tables}
 
@@ -425,7 +432,99 @@ def test_object_storage_workbook_uses_category_title_and_professional_ranked_sup
     assert overview['A1'].value == 'KAORI — Object Storage Analytics'
     assert overview['J15'].value == 'Rank'
     assert overview['K15'].value == 'Category'
-    assert overview['M15'].value == 'Share of Displayed'
+    assert overview['M15'].value == 'Share of Total'
+    assert overview.column_dimensions['K'].width >= 34
+    assert overview.column_dimensions['L'].width >= 20
+    assert 'Not Available' not in str(overview['L16'].number_format)
+
+
+def test_ranked_bar_uses_value_only_labels_short_chart_categories_and_full_supporting_names(tmp_path: Path) -> None:
+    long_name = 'prometheus-prometheus-kube-prometheus-prometheus-0'
+    payload = {
+        'consumer_payload': {
+            'rows': [
+                {
+                    'resource': 'Memory',
+                    'namespace': 'monitoring',
+                    'name': long_name,
+                    'current_usage': '17.34 GiB',
+                    'current_display': '17.34 GiB',
+                },
+                {
+                    'resource': 'Memory',
+                    'namespace': 'openebs',
+                    'name': 'cstor-disk-dfgm-7f4dfcd7cd',
+                    'current_usage': '16.68 GiB',
+                    'current_display': '16.68 GiB',
+                },
+            ]
+        }
+    }
+    output_path = tmp_path / 'ranked-bar-hardening.xlsx'
+    build_analytics_workbook(
+        report_type='top_consumers',
+        payload=payload,
+        context=_context('top_consumers'),
+        output_path=output_path,
+    )
+
+    workbook = load_workbook(output_path)
+    overview = workbook['Overview']
+    chart = overview._charts[0]
+    assert chart.__class__.__name__ == 'BarChart'
+    assert chart.legend is None
+    assert chart.dLbls is not None
+    assert chart.dLbls.showVal is True
+    assert chart.dLbls.showLegendKey is False
+    assert chart.dLbls.showCatName is False
+    assert chart.dLbls.showSerName is False
+    assert chart.dLbls.showPercent is False
+    assert chart.y_axis.title is None
+    assert chart.y_axis.majorGridlines is None
+    assert chart.visible_cells_only is False
+    assert overview['K16'].value == long_name
+    assert overview['O16'].value.endswith('…')
+    assert len(overview['O16'].value) <= 32
+    assert overview.column_dimensions['O'].hidden is True
+    assert 'Not Available' not in str(overview['L16'].number_format)
+
+
+def test_composition_bar_renders_numeric_supporting_evidence_without_blank_primary_visual(tmp_path: Path) -> None:
+    payload = {
+        'tenant_quota_summary': {
+            'scope_total': 30,
+            'scope_covered': 14,
+            'rows': [
+                {'namespace': 'payments', 'status': 'Covered'},
+                {'namespace': 'core', 'status': 'Not Covered'},
+            ],
+        },
+    }
+    output_path = tmp_path / 'composition-bar.xlsx'
+    build_analytics_workbook(
+        report_type='workload_analysis',
+        payload=payload,
+        context=_context('workload_analysis'),
+        output_path=output_path,
+    )
+
+    workbook = load_workbook(output_path)
+    overview = workbook['Overview']
+    assert len(overview._charts) == 1
+    chart = overview._charts[0]
+    assert chart.__class__.__name__ == 'BarChart'
+    assert chart.grouping == 'clustered'
+    assert chart.legend is None
+    assert chart.dLbls is not None
+    assert chart.dLbls.showVal is True
+    assert chart.dLbls.showCatName is False
+    assert chart.dLbls.numFmt == '0.0"%"'
+    assert chart.y_axis.scaling.min == 0
+    assert chart.y_axis.scaling.max == 100
+    assert overview['J15'].value == 'Rank'
+    assert overview['M15'].value == 'Share of Total'
+    assert overview['M16'].value == pytest.approx(46.6666666667)
+    assert overview['M17'].value == pytest.approx(53.3333333333)
 
 
 def test_formula_like_analytics_values_are_stored_as_text_not_formulas(tmp_path: Path) -> None:
@@ -707,10 +806,10 @@ def test_analytics_overview_workbook_renders_two_series_comparison_without_fake_
         ('resource_utilization', 'LineChart'),
         ('capacity_analysis', 'BarChart'),
         ('storage_analysis', 'BarChart'),
-        ('workload_analysis', 'DoughnutChart'),
+        ('workload_analysis', 'BarChart'),
         ('resource_forecast', 'LineChart'),
         ('top_consumers', 'BarChart'),
-        ('alerts_anomalies', 'DoughnutChart'),
+        ('alerts_anomalies', 'BarChart'),
         ('object_storage_analysis', 'BarChart'),
     ],
 )

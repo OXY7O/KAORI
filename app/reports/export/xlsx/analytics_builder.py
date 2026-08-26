@@ -149,17 +149,71 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
         chart = overview._charts[0]
         chart_name = chart.__class__.__name__
         if chart_name == 'DoughnutChart':
-            if chart.legend is None or chart.legend.position != 'b':
-                raise ValueError('Analytics doughnut charts require a bottom legend.')
-            labels = getattr(chart, 'dLbls', None)
-            if labels is None or labels.showPercent is not True or labels.showVal is True or labels.showCatName is True:
-                raise ValueError('Analytics doughnut charts require percentage-only direct labels.')
+            raise ValueError('Analytics XLSX no longer permits doughnut charts; use the global composition_bar contract.')
         if chart_name == 'BarChart':
             if getattr(chart, 'varyColors', None) is not False:
                 raise ValueError('Analytics ranked/capacity bar charts must use controlled series colors.')
             series_count = len(chart.series)
             if series_count == 1 and chart.legend is not None:
                 raise ValueError('Analytics single-series ranked bar charts must not use a redundant legend.')
+            if primary_visual == 'ranked_bar':
+                data_labels = getattr(chart, 'dLbls', None)
+                if (
+                    data_labels is None
+                    or data_labels.showVal is not True
+                    or data_labels.showLegendKey is not False
+                    or data_labels.showCatName is not False
+                    or data_labels.showSerName is not False
+                    or data_labels.showPercent is not False
+                    or data_labels.showBubbleSize is not False
+                    or data_labels.dLblPos != 'outEnd'
+                ):
+                    raise ValueError('Analytics ranked bars require value-only direct labels for Excel compatibility.')
+                if (
+                    chart.x_axis.delete is not False
+                    or chart.x_axis.tickLblPos != 'nextTo'
+                    or chart.y_axis.scaling.min != 0
+                    or chart.y_axis.title is not None
+                    or chart.y_axis.majorGridlines is not None
+                    or chart.visible_cells_only is not False
+                ):
+                    raise ValueError('Analytics ranked bars require visible categories and a sparse zero-baseline value axis.')
+                if not overview.column_dimensions['O'].hidden:
+                    raise ValueError('Analytics ranked bars require the hidden short-category helper column.')
+                if (overview.column_dimensions['K'].width or 0) < 34 or (overview.column_dimensions['L'].width or 0) < 20:
+                    raise ValueError('Analytics ranked Supporting Data requires professional category/value column widths.')
+                for row in range(16, min(overview.max_row, 23) + 1):
+                    short_label = str(overview.cell(row=row, column=15).value or '')
+                    if len(short_label) > 31:
+                        raise ValueError('Analytics ranked chart helper labels must be shortened without changing Supporting Data.')
+                    if 'not available' in str(overview.cell(row=row, column=12).number_format or '').casefold():
+                        raise ValueError('Analytics ranked numeric formats must not publish placeholder text as a unit.')
+            if primary_visual == 'composition_bar':
+                if series_count != 1 or chart.grouping != 'clustered' or chart.legend is not None:
+                    raise ValueError('Analytics composition bars require one legend-free clustered share series.')
+                data_labels = getattr(chart, 'dLbls', None)
+                if (
+                    data_labels is None
+                    or data_labels.showVal is not True
+                    or data_labels.showLegendKey is not False
+                    or data_labels.showCatName is not False
+                    or data_labels.showSerName is not False
+                    or data_labels.showPercent is not False
+                    or data_labels.showBubbleSize is not False
+                    or data_labels.dLblPos != 'outEnd'
+                    or data_labels.numFmt != '0.0"%"'
+                ):
+                    raise ValueError('Analytics composition bars require percentage-only value labels.')
+                if (
+                    chart.x_axis.delete is not False
+                    or chart.x_axis.tickLblPos != 'nextTo'
+                    or chart.y_axis.scaling.min != 0
+                    or chart.y_axis.scaling.max != 100
+                    or chart.y_axis.majorUnit != 25
+                    or chart.y_axis.title is not None
+                    or chart.y_axis.majorGridlines is not None
+                ):
+                    raise ValueError('Analytics composition bars require visible categories and a clean 0-100 percent scale.')
             if primary_visual == 'capacity_bar':
                 if series_count != 2 or chart.grouping != 'stacked' or chart.overlap != 100:
                     raise ValueError('Analytics capacity bars require a 100% stacked utilization/headroom presentation.')
