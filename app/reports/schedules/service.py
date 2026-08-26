@@ -161,7 +161,7 @@ def get_report_schedules_payload(
     return {
         'page_title': 'Report Schedules',
         'page_subtitle': (
-            'Automate report generation and delivery with timezone-aware schedules and retained run evidence.'
+            'Automate Analytics PDF, XLSX, or CSV artifacts and Inventory XLSX/CSV exports with timezone-aware schedules and retained run evidence.'
         ),
         'status_label': f'Reports Worker {worker_context["label"]}',
         'status_description': worker_context['description'],

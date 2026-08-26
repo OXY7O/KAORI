@@ -28,7 +28,7 @@ def test_report_family_format_matrix_is_exact() -> None:
     assert ANALYTICS_REPORT_TYPES.isdisjoint(INVENTORY_REPORT_TYPES)
 
     for report_type in ANALYTICS_REPORT_TYPES:
-        assert get_allowed_output_formats(report_type) == (FORMAT_PDF, FORMAT_CSV)
+        assert get_allowed_output_formats(report_type) == (FORMAT_PDF, FORMAT_XLSX, FORMAT_CSV)
         assert get_default_output_format(report_type) == FORMAT_PDF
 
     for report_type in INVENTORY_REPORT_TYPES:
@@ -80,10 +80,10 @@ def test_object_storage_reports_require_object_storage_scope_without_cluster() -
 
 
 def test_unsupported_family_format_combinations_are_rejected() -> None:
-    with pytest.raises(ReportContractError, match='supports only PDF, CSV'):
+    with pytest.raises(ReportContractError, match='supports only PDF, XLSX, CSV'):
         validate_report_contract(
             report_type='analytics_overview',
-            output_format=FORMAT_XLSX,
+            output_format='docx',
             cluster_id='cluster-1',
         )
 

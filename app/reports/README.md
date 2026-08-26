@@ -16,7 +16,7 @@ Reports orchestrates report configuration, selected-cluster validation, source c
 
 `app/reports/catalog.py` is the single source of truth.
 
-- Analytics: PDF or CSV; PDF is the default.
+- Analytics: PDF, XLSX, or CSV; PDF is the default.
 - Inventory: XLSX or CSV; XLSX is the default.
 - Every report and schedule requires one canonical infrastructure asset scope. Kubernetes reports use one selected cluster with optional namespace; Object Storage reports use one registered Object Storage system.
 - Cross-cluster and default-cluster fallback behavior is prohibited.
@@ -37,7 +37,8 @@ All report workspaces use the KAORI Violet Infrastructure design system: solid v
 Artifact presentation is also standardized:
 
 - Analytics PDF uses the shared Analytics publication component/style system with domain-specific publication templates where required.
-- Inventory XLSX uses the reusable three-sheet workbook contract.
+- Analytics XLSX uses a category-owned executive workbook contract for drill-down, filtering, trends, and evidence review.
+- Inventory XLSX uses the reusable executive inventory workbook contract.
 - Analytics and Inventory CSV use one canonical CSV standard and shared source models.
 
 ## Renderer architecture
@@ -45,7 +46,7 @@ Artifact presentation is also standardized:
 The artifact registry in `app/reports/export/artifacts.py` resolves exactly one renderer from the validated format.
 
 - `app/reports/export/html_pdf/`: Analytics document model, presentation normalization, chart SVGs, and canonical WeasyPrint engine.
-- `app/reports/export/xlsx/`: Inventory workbook profiles, style primitives, and workbook builder.
+- `app/reports/export/xlsx/`: global XLSX presentation primitives plus separate Inventory and Analytics workbook families.
 - `app/reports/export/csv/`: canonical CSV standard and family dispatcher.
 - `app/reports/export/inventory_common.py`: shared Inventory collection context and row normalization used by XLSX and CSV.
 - `app/reports/export/payloads/`: selected-cluster source collectors.

@@ -219,7 +219,7 @@ def _normalize_reporting_coverage(raw: Any) -> list[dict[str, Any]]:
             'label': 'Analytics Reports',
             'description': 'Time-range analysis and operational evidence.',
             'icon': 'chart-no-axes-combined',
-            'formats': ['PDF', 'CSV'],
+            'formats': ['PDF', 'XLSX', 'CSV'],
             'items': [],
             'contract_count': 0,
         },

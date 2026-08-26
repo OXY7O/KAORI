@@ -46,7 +46,7 @@ def test_report_workspace_hero_descriptions_keep_consistent_operational_depth() 
         'generated_detail': 'report scope, artifact evidence, execution state, and delivery readiness',
         'templates': 'protected system templates and reusable custom report structures',
         'schedules': 'timezone-aware schedules and retained run evidence',
-        'storage': 'backend and reference integrity, verification results, retained artifact coverage, and lifecycle ownership',
+        'storage': 'backend and reference integrity, verification results, retained coverage, and lifecycle ownership',
     }
     for key, fragment in expected_fragments.items():
         if key in {'templates', 'storage'}:
@@ -71,7 +71,7 @@ def test_reports_overview_uses_operational_reading_and_contract_boundary_not_gen
     assert 'Format Tip' not in estate
     assert 'Published formats stay family-owned' in estate
     assert 'Published contracts are admitted to Generate' in estate
-    assert 'Analytics Reports' in estate and 'PDF · CSV' in estate
+    assert 'Analytics Reports' in estate and 'PDF · XLSX · CSV' in estate
     assert 'Inventory Reports' in estate and 'XLSX · CSV' in estate
     assert 'Candidate Domains' in estate and 'Contract + renderer required' in estate
     assert 'text-[' not in estate

@@ -235,7 +235,7 @@ def get_reporting_coverage_summary() -> list[dict[str, Any]]:
             'label': 'Analytics Reports',
             'description': 'Time-range analysis and operational evidence.',
             'icon': 'chart-no-axes-combined',
-            'formats': ['PDF', 'CSV'],
+            'formats': ['PDF', 'XLSX', 'CSV'],
             'items': [],
         },
         REPORT_FAMILY_INVENTORY: {
@@ -580,7 +580,7 @@ def get_pipeline_status(
         },
         {
             'name': 'Collect Data & Render Artifact',
-            'summary': 'Connected evidence is collected and rendered by the canonical Analytics PDF or Inventory Excel engine.',
+            'summary': 'Connected evidence is collected and rendered by the canonical Analytics PDF/XLSX or Inventory Excel engine.',
             'description': (
                 'KAORI collects the selected report payloads from validated integrations, builds the chosen '
                 'sections, and renders one standalone report artifact.'

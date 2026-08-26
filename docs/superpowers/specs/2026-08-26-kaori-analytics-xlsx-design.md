@@ -1,6 +1,6 @@
 # KAORI Analytics XLSX Design
 
-**Status:** Approved design direction; not yet enabled in the report catalog  
+**Status:** Implemented contract; Analytics XLSX enabled in the report catalog  
 **Date:** 2026-08-26  
 **Scope:** Kubernetes Analytics and Object Storage Analytics Excel artifacts
 
@@ -12,8 +12,8 @@ Add Analytics XLSX as an analysis artifact without reusing the Inventory workboo
 
 - Global format contract: `kaori-reporting-xlsx-v2.0`.
 - Inventory workbook contract remains `kaori-inventory-xlsx-v4.0`.
-- Analytics workbook contract will be introduced as `kaori-analytics-xlsx-v1.0` when the catalog and renderer are implemented.
-- The current report catalog remains authoritative. This design document does not enable XLSX for Analytics by itself.
+- Analytics workbook contract: `kaori-analytics-xlsx-v1.0`.
+- The report catalog remains authoritative and now enables XLSX for published Analytics report types while retaining PDF as the default format.
 
 ## Category ownership
 
@@ -91,7 +91,7 @@ Analytics XLSX reuses KAORI Violet, Aptos/Aptos Display, typed cells, bounded wi
 
 ## Implementation gate
 
-Before enabling Analytics XLSX in `app/reports/catalog.py`, implementation must provide:
+Analytics XLSX remains enabled only while implementation provides:
 
 1. analytics workbook schema/profile model;
 2. category-specific sheet contracts;

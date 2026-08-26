@@ -112,7 +112,7 @@ def test_estate_capability_merges_artifact_mix_reuse_and_contracts() -> None:
     assert 'data-output-contract="true"' in source
     assert 'Output Contract' in source
     assert 'Analytics Reports' in source
-    assert 'PDF · CSV' in source
+    assert 'PDF · XLSX · CSV' in source
     assert 'Inventory Reports' in source
     assert 'XLSX · CSV' in source
     assert 'Candidate Domains' in source

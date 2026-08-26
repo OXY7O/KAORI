@@ -29,6 +29,11 @@ def main() -> int:
     xlsx_builder = read('app/reports/export/xlsx/builder.py')
     xlsx_overview = read('app/reports/export/xlsx/overview.py')
     xlsx_style = read('app/reports/export/xlsx/style.py')
+    analytics_schema = read('app/reports/export/xlsx/analytics_schema.py')
+    analytics_profiles = read('app/reports/export/xlsx/analytics_profiles.py')
+    analytics_builder = read('app/reports/export/xlsx/analytics_builder.py')
+    analytics_overview = read('app/reports/export/xlsx/analytics_overview.py')
+    xlsx_renderer = read('app/reports/export/xlsx/renderer.py')
     reporting_doc = read('docs/reports/kaori-reporting-standard-v1.md')
     tabular_doc = read('docs/reports/kaori-tabular-export-standard-v3.md')
     quality_gate = read('scripts/quality_gate.sh')
@@ -57,6 +62,38 @@ def main() -> int:
     require(
         "INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v4.0'" in xlsx_schema,
         'Inventory XLSX v4 standard is missing',
+        errors,
+    )
+    require(
+        "ANALYTICS_WORKBOOK_STANDARD: Final = 'kaori-analytics-xlsx-v1.0'" in analytics_schema,
+        'Analytics XLSX v1 standard is missing',
+        errors,
+    )
+    require(
+        'ANALYTICS_WORKBOOK_PROFILES' in analytics_profiles and 'ANALYTICS_XLSX_REPORT_TYPES' in analytics_profiles,
+        'Analytics XLSX category profile registry is missing',
+        errors,
+    )
+    require(
+        'build_analytics_workbook' in analytics_builder
+        and 'validate_analytics_xlsx_artifact' in analytics_builder
+        and 'validate_analytics_xlsx_artifact(output_path)' in analytics_builder,
+        'Analytics XLSX builder/runtime validation contract is incomplete',
+        errors,
+    )
+    require(
+        all(label in analytics_overview for label in ('Executive Snapshot', 'Executive Readout', 'Primary Visual', 'Supporting Data')),
+        'Analytics XLSX Overview hierarchy is incomplete',
+        errors,
+    )
+    require(
+        'BarChart' in analytics_overview and 'DoughnutChart' in analytics_overview and 'LineChart' in analytics_overview,
+        'Analytics XLSX semantic chart renderers are incomplete',
+        errors,
+    )
+    require(
+        'def render_report_xlsx(' in xlsx_renderer and 'REPORT_FAMILY_ANALYTICS' in xlsx_renderer and 'collect_report_payload' in xlsx_renderer,
+        'family-aware XLSX renderer does not route Analytics through the canonical collector',
         errors,
     )
     require(
@@ -199,6 +236,11 @@ def main() -> int:
         'app/reports/export/xlsx/style.py',
         'app/reports/export/xlsx/builder.py',
         'app/reports/export/xlsx/overview.py',
+        'app/reports/export/xlsx/analytics_schema.py',
+        'app/reports/export/xlsx/analytics_profiles.py',
+        'app/reports/export/xlsx/analytics_builder.py',
+        'app/reports/export/xlsx/analytics_overview.py',
+        'app/reports/export/xlsx/renderer.py',
     ):
         try:
             ast.parse(read(path), filename=path)
@@ -214,8 +256,8 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI tabular export audit passed: CSV v3 and global XLSX v2 / Inventory XLSX v4 share '
-        'metadata, dataset, identity, normalization, security, Overview, and schema contracts.'
+        'KAORI tabular export audit passed: CSV v3 and global XLSX v2 cover Inventory XLSX v4 and '
+        'Analytics XLSX v1 with shared metadata/security contracts, category-owned Overview semantics, and runtime validation.'
     )
     return 0
 

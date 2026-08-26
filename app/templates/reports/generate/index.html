@@ -447,7 +447,11 @@
                                                         {% if payload.form_state.output_format == 'csv' %}
                                                             Flat machine-readable evidence export for downstream analysis and audit.
                                                         {% elif payload.form_state.output_format == 'xlsx' %}
-                                                            Governed workbook preserving inventory structure and tabular review.
+                                                            {% if payload.selected_report_type.family == 'analytics' %}
+                                                                Governed analytical workbook for drill-down, filtering, trends, and evidence review.
+                                                            {% else %}
+                                                                Governed workbook preserving inventory structure and tabular review.
+                                                            {% endif %}
                                                         {% else %}
                                                             Governed analytical publication for review, evidence, and operational communication.
                                                         {% endif %}
@@ -1217,7 +1221,9 @@
                         if (selectedFormat === 'csv') {
                             outputFormatPurpose.textContent = 'Flat machine-readable evidence export for downstream analysis and audit.';
                         } else if (selectedFormat === 'xlsx') {
-                            outputFormatPurpose.textContent = 'Governed workbook preserving inventory structure and tabular review.';
+                            outputFormatPurpose.textContent = reportType && reportType.family === 'analytics'
+                                ? 'Governed analytical workbook for drill-down, filtering, trends, and evidence review.'
+                                : 'Governed workbook preserving inventory structure and tabular review.';
                         } else {
                             outputFormatPurpose.textContent = 'Governed analytical publication for review, evidence, and operational communication.';
                         }

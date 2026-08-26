@@ -17,6 +17,9 @@ CSV_STANDARD_PATH = ROOT / 'app' / 'reports' / 'export' / 'csv' / 'standard.py'
 XLSX_SCHEMA_PATH = ROOT / 'app' / 'reports' / 'export' / 'xlsx' / 'schema.py'
 XLSX_BUILDER_PATH = ROOT / 'app' / 'reports' / 'export' / 'xlsx' / 'builder.py'
 XLSX_OVERVIEW_PATH = ROOT / 'app' / 'reports' / 'export' / 'xlsx' / 'overview.py'
+ANALYTICS_XLSX_PROFILE_PATH = ROOT / 'app' / 'reports' / 'export' / 'xlsx' / 'analytics_profiles.py'
+ANALYTICS_XLSX_SCHEMA_PATH = ROOT / 'app' / 'reports' / 'export' / 'xlsx' / 'analytics_schema.py'
+ANALYTICS_XLSX_BUILDER_PATH = ROOT / 'app' / 'reports' / 'export' / 'xlsx' / 'analytics_builder.py'
 ANALYTICS_COLLECTOR_PATH = ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'collectors.py'
 INVENTORY_PROFILE_PATHS = (
     ROOT / 'app' / 'reports' / 'export' / 'xlsx' / 'profiles_kubernetes.py',
@@ -26,7 +29,7 @@ MODEL_PATH = ROOT / 'app' / 'models' / 'report.py'
 STANDARD_PATH = ROOT / 'docs' / 'reports' / 'kaori-reporting-standard-v1.md'
 AUDIT_PATH = ROOT / 'docs' / 'reviews' / 'report-generation-audit-2026-08-03.md'
 
-ANALYTICS_FORMATS = {'pdf', 'csv'}
+ANALYTICS_FORMATS = {'pdf', 'xlsx', 'csv'}
 INVENTORY_FORMATS = {'xlsx', 'csv'}
 SUPPORTED_SCOPE_ASSET_TYPES = {'kubernetes_cluster', 'object_storage_system'}
 FORBIDDEN_TOKENS = (
@@ -105,7 +108,7 @@ def _check_catalog(errors: list[str]) -> tuple[set[str], set[str]]:
 
         if family == 'analytics':
             if allowed != ANALYTICS_FORMATS or default != 'pdf':
-                errors.append(f'{report_type} does not use the Analytics PDF/CSV contract.')
+                errors.append(f'{report_type} does not use the Analytics PDF/XLSX/CSV contract.')
         elif family == 'inventory':
             if allowed != INVENTORY_FORMATS or default != 'xlsx':
                 errors.append(f'{report_type} does not use the Inventory XLSX/CSV contract.')
@@ -126,6 +129,7 @@ def _check_renderer_coverage(
     inventory: set[str],
 ) -> None:
     analytics_collectors = _dictionary_string_keys(ANALYTICS_COLLECTOR_PATH, '_PAYLOAD_COLLECTORS')
+    analytics_xlsx_profiles = _dictionary_string_keys(ANALYTICS_XLSX_PROFILE_PATH, 'ANALYTICS_WORKBOOK_PROFILES')
     inventory_profiles = set().union(
         _dictionary_string_keys(INVENTORY_PROFILE_PATHS[0], 'KUBERNETES_INVENTORY_WORKBOOK_PROFILES'),
         _dictionary_string_keys(INVENTORY_PROFILE_PATHS[1], 'INFRASTRUCTURE_INVENTORY_WORKBOOK_PROFILES'),
@@ -136,6 +140,12 @@ def _check_renderer_coverage(
             f'missing={sorted(analytics - analytics_collectors)}, '
             f'extra={sorted(analytics_collectors - analytics)}.'
         )
+    if analytics_xlsx_profiles != analytics:
+        errors.append(
+            'Analytics XLSX profile coverage differs from the catalog: '
+            f'missing={sorted(analytics - analytics_xlsx_profiles)}, '
+            f'extra={sorted(analytics_xlsx_profiles - analytics)}.'
+        )
     if inventory_profiles != inventory:
         errors.append(
             'Inventory workbook/CSV profile coverage differs from the catalog: '
@@ -143,10 +153,17 @@ def _check_renderer_coverage(
             f'extra={sorted(inventory_profiles - inventory)}.'
         )
 
+    analytics_schema = _read(ANALYTICS_XLSX_SCHEMA_PATH)
+    analytics_builder = _read(ANALYTICS_XLSX_BUILDER_PATH)
+    if "ANALYTICS_WORKBOOK_STANDARD: Final = 'kaori-analytics-xlsx-v1.0'" not in analytics_schema:
+        errors.append('Analytics XLSX workbook standard is missing or stale.')
+    if 'validate_analytics_xlsx_artifact(output_path)' not in analytics_builder:
+        errors.append('Analytics XLSX runtime artifact validation gate is missing.')
+
     artifact_source = _read(ARTIFACT_PATH)
     expected_mappings = (
         'FORMAT_PDF: render_weasyprint_pdf',
-        'FORMAT_XLSX: render_inventory_xlsx',
+        'FORMAT_XLSX: render_report_xlsx',
         'FORMAT_CSV: render_report_csv',
     )
     for mapping in expected_mappings:
@@ -367,7 +384,7 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI report generation contract passed: Analytics supports canonical PDF/CSV, Inventory supports '
+        'KAORI report generation contract passed: Analytics supports canonical PDF/XLSX/CSV, Inventory supports '
         'canonical XLSX/CSV, public references cover every report type, publication/profile coverage matches '
         'the Definition Registry, one infrastructure asset scope is preserved across formats, and legacy '
         'generation paths are absent.'

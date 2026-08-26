@@ -101,7 +101,7 @@ def _collect_reporting_summary(report: Report) -> dict[str, Any]:
             'schedules': [_serialize_schedule(schedule) for schedule in schedules],
             'storage': _serialize_storage_context(get_storage_context()),
             'notes': [
-                'Analytics artifacts use one selected-cluster source boundary for PDF and CSV.',
+                'Analytics PDF, XLSX, and CSV artifacts use one selected-cluster source boundary.',
                 'Recurring schedules and generated records shown here are filtered to the selected cluster.',
             ],
         }

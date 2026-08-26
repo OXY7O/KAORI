@@ -13,12 +13,13 @@ This standard defines the reusable CSV and XLSX publication contract for KAORI r
 | CSV format contract | `kaori-reporting-csv-v3.0` |
 | Global XLSX format contract | `kaori-reporting-xlsx-v2.0` |
 | Inventory workbook contract | `kaori-inventory-xlsx-v4.0` |
+| Analytics workbook contract | `kaori-analytics-xlsx-v1.0` |
 
 The catalog remains the authority for whether a report type supports PDF, CSV, or XLSX. This standard does not enable a new output format by itself.
 
 ## 2. Shared evidence rules
 
-CSV and XLSX generated from the same Inventory report must use the same `InventoryWorkbookProfile`, normalized row set, identity columns, field order, data cut-off, and public reference semantics.
+Inventory CSV/XLSX generated from the same report must use the same `InventoryWorkbookProfile`, normalized row set, identity columns, field order, data cut-off, and public reference semantics. Analytics PDF/XLSX/CSV must reuse the same canonical Analytics collector and selected-asset evidence boundary; the XLSX adapter may reshape presentation but must not query a second source or change denominators.
 
 - Internal database primary keys are not public report identities.
 - Missing evidence remains explicit and is never translated into zero, healthy, or current state.
@@ -55,7 +56,9 @@ Inventory CSV contains common metadata, `record_type`, `record_reference`, `row_
 
 ## 4. XLSX standard
 
-Every XLSX report published by KAORI must use the global `kaori-reporting-xlsx-v2.0` presentation contract. Inventory XLSX uses the `kaori-inventory-xlsx-v4.0` workbook contract and exactly these reusable sheets, in this order:
+Every XLSX report published by KAORI must use the global `kaori-reporting-xlsx-v2.0` presentation contract. Inventory XLSX uses `kaori-inventory-xlsx-v4.0`; Analytics XLSX uses `kaori-analytics-xlsx-v1.0`.
+
+Inventory XLSX uses exactly these reusable sheets, in this order:
 
 1. `Overview`
 2. `Inventory`
@@ -136,7 +139,7 @@ XLSX is an operational workbook, not a PDF imitation and not a raw data dump.
 - Do not use screenshots of charts.
 - Do not merge cells inside structured data tables.
 - Use visual hierarchy and whitespace to separate executive summary, primary evidence, and technical reference material.
-- Every XLSX report profile owns domain-aware Executive Snapshot metrics and one semantic Primary Visual.
+- Every XLSX report profile owns domain-aware Executive Snapshot metrics and a semantic Primary Visual contract appropriate to its family/category.
 - Ranked bar charts must use descending order, one series color, direct value labels, and Supporting Data rather than rainbow bars or a redundant legend.
 - Doughnut charts must be reserved for a small composition/status set where part-to-whole meaning is real; labels show percentage only, the legend sits below the chart, and the Supporting Data table remains visually separated from the chart.
 - Complete long technical identities remain available in Supporting Data and Inventory even when the visual intentionally shows a Top-N subset.
@@ -152,7 +155,8 @@ A new CSV/XLSX-capable report must:
 3. define public units and missing-value behavior;
 4. use shared normalization before rendering;
 5. use the canonical CSV writer or XLSX builder;
-6. declare exactly four domain-aware Overview metrics plus a mandatory semantic chart using committed public fields;
-7. add contract tests for schema order, metric semantics, unit transformations, empty data, security exclusions, navigation, supporting data, and chart behavior.
+6. declare exactly four domain-aware Overview metrics plus a semantic chart contract using committed public fields;
+7. add contract tests for schema order, metric semantics, unit transformations, empty data, security exclusions, navigation, supporting data, and chart behavior;
+8. for Analytics, prove the XLSX adapter consumes the canonical Analytics payload and never creates forecasts or recommendations during export.
 
-Report-specific renderers must not fork the shared CSV encoding/safety contract or the XLSX Overview/Inventory/Metadata/Field Dictionary structure.
+Report-specific renderers must not fork the shared CSV encoding/safety contract or their family-owned XLSX structure. Inventory retains the four-sheet Inventory contract; Analytics retains Overview + evidence-driven category sheets + Metadata + Field Dictionary.

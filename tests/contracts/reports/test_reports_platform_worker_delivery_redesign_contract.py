@@ -252,7 +252,7 @@ def test_generate_report_uses_the_canonical_family_format_and_scope_contract() -
     assert 'Cross-cluster report generation is disabled.' in catalog
 
     assert 'FORMAT_PDF: render_weasyprint_pdf' in artifact_registry
-    assert 'FORMAT_XLSX: render_inventory_xlsx' in artifact_registry
+    assert 'FORMAT_XLSX: render_report_xlsx' in artifact_registry
     assert 'FORMAT_CSV: render_report_csv' in artifact_registry
     assert 'get_report_kubernetes_inventory_payload' not in analytics_collectors
     assert 'def collect_inventory_payload' in inventory_common

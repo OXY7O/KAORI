@@ -75,8 +75,8 @@ def get_report_templates_payload(
     return {
         'page_title': 'Report Templates',
         'page_subtitle': (
-            'Manage protected system templates and reusable custom report structures that preserve canonical report '
-            'contracts, supported formats, governed sections, and reusable generation defaults.'
+            'Manage protected system templates and reusable custom report structures for Analytics PDF/XLSX/CSV and '
+            'Inventory XLSX/CSV while preserving canonical sections and reusable generation defaults.'
         ),
         'summary_cards': get_summary_cards(all_templates),
         'posture': get_template_posture(all_templates),
@@ -662,7 +662,7 @@ def get_renderer_readiness() -> list[dict[str, str]]:
         },
         {
             'label': 'Output renderer mapping',
-            'description': 'Templates are mapped to the canonical Analytics PDF/CSV or Inventory Excel/CSV renderer and shared payload builders.',  # noqa: E501
+            'description': 'Templates are mapped to the canonical Analytics PDF/XLSX/CSV or Inventory Excel/CSV renderer and shared payload builders.',  # noqa: E501
             'status': 'Ready',
             'tone': 'green',
             'icon': 'file-check-2',

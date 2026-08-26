@@ -22,6 +22,7 @@ report_types:
   default_format: pdf
   allowed_formats:
   - pdf
+  - xlsx
   - csv
   default_sections:
   - executive_brief
@@ -44,6 +45,7 @@ report_types:
   default_format: pdf
   allowed_formats:
   - pdf
+  - xlsx
   - csv
   default_sections:
   - executive_summary
@@ -62,6 +64,7 @@ report_types:
   default_format: pdf
   allowed_formats:
   - pdf
+  - xlsx
   - csv
   default_sections:
   - executive_summary
@@ -78,6 +81,7 @@ report_types:
   default_format: pdf
   allowed_formats:
   - pdf
+  - xlsx
   - csv
   default_sections:
   - executive_summary
@@ -95,6 +99,7 @@ report_types:
   default_format: pdf
   allowed_formats:
   - pdf
+  - xlsx
   - csv
   default_sections:
   - executive_summary
@@ -112,6 +117,7 @@ report_types:
   default_format: pdf
   allowed_formats:
   - pdf
+  - xlsx
   - csv
   default_sections:
   - executive_summary
@@ -131,6 +137,7 @@ report_types:
   default_format: pdf
   allowed_formats:
   - pdf
+  - xlsx
   - csv
   default_sections:
   - executive_summary
@@ -149,6 +156,7 @@ report_types:
   default_format: pdf
   allowed_formats:
   - pdf
+  - xlsx
   - csv
   default_sections:
   - executive_summary
@@ -329,6 +337,7 @@ report_types:
   default_format: pdf
   allowed_formats:
   - pdf
+  - xlsx
   - csv
   default_sections:
   - executive_summary

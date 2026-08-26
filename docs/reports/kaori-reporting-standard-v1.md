@@ -10,7 +10,7 @@ This document is the canonical implementation contract for KAORI report artifact
 
 | Report family | Default format | Additional format | Disallowed formats |
 |---|---|---|---|
-| Analytics (Kubernetes and Object Storage) | PDF | CSV | XLSX |
+| Analytics (Kubernetes and Object Storage) | PDF | XLSX, CSV | — |
 | Inventory (Kubernetes and Object Storage) | XLSX | CSV | PDF |
 
 The authoritative matrix is defined in `app/reports/catalog.py`. UI code, routes, schedules, templates, artifact naming, and workers must consume that catalog. They must not maintain separate hard-coded format lists.
@@ -50,7 +50,7 @@ Renderers must not silently substitute another format, report type, cluster, or 
 
 ### 4.1 Analytics
 
-Analytics PDF and Analytics CSV use the same collector and `ReportDocument` model.
+Analytics PDF, XLSX, and CSV use the same canonical Analytics collector. PDF/CSV continue to derive publication structures from the canonical Analytics evidence model; XLSX adapts that same committed payload into its category-owned workbook profile without performing independent source queries.
 
 Canonical sources include:
 
@@ -112,7 +112,9 @@ A PDF artifact is valid only when it exists, has a plausible size, and starts wi
 ## 7. XLSX default style — global KAORI workbook contract
 
 Every XLSX report uses the global `kaori-reporting-xlsx-v2.0` contract. Inventory XLSX additionally uses
-`kaori-inventory-xlsx-v4.0` and exactly four reusable sheets:
+`kaori-inventory-xlsx-v4.0`; Analytics XLSX uses `kaori-analytics-xlsx-v1.0`. PDF remains the default Analytics publication, while XLSX is the governed analysis artifact for drill-down, filtering, trends, and inspectable evidence.
+
+Inventory XLSX uses exactly four reusable sheets:
 
 1. `Overview` — executive workbook landing page with domain-aware snapshot metrics, an evidence-derived Executive Readout, a profile-owned Primary Visual, exact Supporting Data, and internal navigation;
 2. `Inventory` — report-specific public columns from the canonical inventory profile;
@@ -138,7 +140,23 @@ Default workbook rules:
 - private keys and Secret values are always excluded;
 - the serialized artifact is validated after save and rejected when sheet order, navigation, executive sections, chart behavior, supporting data, or contract identifiers drift from the canonical standard.
 
-The reusable schema is defined in `app/reports/export/xlsx/standard.py`; shared collection/context/normalization logic is in `app/reports/export/inventory_common.py`. The cross-format contract is defined in [`kaori-tabular-export-standard-v3.md`](kaori-tabular-export-standard-v3.md).
+
+
+Analytics XLSX uses a category-owned sheet contract. It always begins with `Overview` and ends with `Metadata` and `Field Dictionary`; evidence-bearing intermediate sheets are included only when committed evidence exists. Supported semantic sheet names include `Analysis`, `Trends`, `Breakdown`, `Top Consumers`, `Alerts & Anomalies`, and `Recommendations`. The renderer must not add empty decorative sheets.
+
+Analytics workbook rules:
+
+- exactly four domain-owned executive metrics are defined by the Analytics workbook profile;
+- the Executive Readout is derived only from committed payload evidence and does not invent health conclusions;
+- ordered time series use line charts with a bottom legend and inspectable source rows;
+- ranked consumers use descending horizontal bars with direct value labels and Supporting Data;
+- meaningful status composition uses compact doughnut charts with percentage-only labels and a bottom legend;
+- capacity views use governed used/headroom percentage semantics when those values already exist in the canonical payload;
+- forecasts and recommendations remain backend-owned; Excel presents committed values and never computes a forecast or creates a recommendation at export time;
+- all category sheets provide a visible `← Overview` link, typed cells, bounded widths, native filters/tables, and spreadsheet formula-injection protection;
+- post-save runtime validation rejects stale contract identifiers, broken navigation, or nonconforming chart semantics.
+
+Inventory schema/profile definitions are in `app/reports/export/xlsx/standard.py`; Analytics schema/profile definitions are in `app/reports/export/xlsx/analytics_schema.py` and `app/reports/export/xlsx/analytics_profiles.py`. Shared Inventory collection/context/normalization logic is in `app/reports/export/inventory_common.py`. Analytics XLSX reuses the canonical Analytics collector used by the other Analytics formats. The cross-format contract is defined in [`kaori-tabular-export-standard-v3.md`](kaori-tabular-export-standard-v3.md).
 
 ## 8. CSV default style — Analytics and Inventory
 
@@ -186,7 +204,7 @@ Object keys include domain, source kind, year/month, canonical asset-scope slug,
 The report portfolio is considered aligned only when all three artifact contracts agree on identity, source boundary, and semantics:
 
 - **PDF:** management publication for Analytics only; concise comparison registers, references for long identities, shared Analytics Overview typography hierarchy, and no renderer-side source queries.
-- **XLSX:** operational Inventory workbook only; exactly `Overview`, `Inventory`, `Metadata`, and `Field Dictionary` sheets, an executive Overview with domain metrics/readout/semantic visualization/supporting data, typed numeric/date cells, stable identity-first columns, filtering/freezing, explicit missing evidence, runtime artifact validation, and no private Secret material. Legacy `.xls` is not supported.
+- **XLSX:** governed workbook artifact for both families. Inventory uses exactly `Overview`, `Inventory`, `Metadata`, and `Field Dictionary`; Analytics uses `Overview`, category-owned evidence sheets, `Metadata`, and `Field Dictionary`. Both families require domain metrics, evidence-derived readout, semantic visualization/supporting evidence, typed cells, navigation, formula safety, runtime artifact validation, and no private Secret material. Legacy `.xls` is not supported.
 - **CSV:** machine-readable companion for both families; UTF-8 BOM, LF, stable schema/order, ISO-8601 temporal values, deterministic nested JSON, formula-injection protection, and the same canonical source model used by PDF/XLSX.
 - The public document reference, report type, family, scope, period, data cut-off, generated-by snapshot, and source label must be semantically identical across formats for the same report definition/generation boundary.
 - A report-specific renderer may change presentation only; it must not change the underlying evidence denominator, missing-value meaning, identity, or ordering semantics.
@@ -198,7 +216,7 @@ Do not introduce:
 - a cross-cluster, cross-system, default-cluster, or default-system fallback;
 - a global `pdf` or `xlsx` default applied to every family;
 - format-specific duplicate collectors;
-- PDF rendering for Inventory or XLSX rendering for Analytics;
+- PDF rendering for Inventory;
 - independent CSV field maps that can drift from PDF/XLSX models;
 - renderer-side external data queries;
 - duplicated report type labels, descriptions, icons, sections, or format matrices;
@@ -213,7 +231,7 @@ A change is complete only when it updates, as applicable:
 
 1. `app/definitions/catalogs/reports/catalog.yaml` — type, family, default/allowed formats, sections, period mode, domain, and canonical scope asset;
 2. one canonical collector/payload contract;
-3. Analytics `ReportDocument` presentation or Inventory profile;
+3. Analytics `ReportDocument`/Analytics XLSX profile presentation or Inventory profile;
 4. renderer registry only when adding a new file format;
 5. template/schedule UI derived data, not hard-coded options;
 6. storage extension/MIME behavior through the format catalog;

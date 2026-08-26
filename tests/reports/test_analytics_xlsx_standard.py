@@ -1,0 +1,468 @@
+from __future__ import annotations
+
+from dataclasses import replace
+from datetime import UTC, datetime
+from pathlib import Path
+
+from openpyxl import load_workbook
+import pytest
+
+from app.reports.export.xlsx.analytics_builder import (
+    build_analytics_workbook,
+    validate_analytics_xlsx_artifact,
+)
+from app.reports.export.xlsx.analytics_profiles import (
+    ANALYTICS_WORKBOOK_PROFILES,
+    ANALYTICS_XLSX_REPORT_TYPES,
+    prepare_analytics_workbook_data,
+)
+from app.reports.export.xlsx.analytics_schema import (
+    ANALYTICS_WORKBOOK_STANDARD,
+    AnalyticsExportContext,
+)
+from app.reports.export.xlsx.schema import XLSX_REPORTING_STANDARD
+
+ANALYTICS_TYPES = {
+    'analytics_overview',
+    'resource_utilization',
+    'capacity_analysis',
+    'storage_analysis',
+    'workload_analysis',
+    'resource_forecast',
+    'top_consumers',
+    'alerts_anomalies',
+    'object_storage_analysis',
+}
+
+
+def _context(report_type: str) -> AnalyticsExportContext:
+    return AnalyticsExportContext(
+        report_id='KAORI-TEST-ANX',
+        report_name='Analytics XLSX Test',
+        report_type=report_type,
+        generated_at=datetime(2026, 8, 26, 0, 30, tzinfo=UTC),
+        generated_by='Platform Operations',
+        scope_label='Kubernetes Cluster',
+        scope_value='pgn-k8s-staging',
+        namespace_scope='All Namespaces',
+        period_label='24h',
+        data_cutoff=datetime(2026, 8, 26, 0, 0, tzinfo=UTC),
+        classification='Internal',
+    )
+
+
+def test_analytics_xlsx_profiles_cover_every_published_analytics_category() -> None:
+    assert ANALYTICS_WORKBOOK_STANDARD == 'kaori-analytics-xlsx-v1.0'
+    assert XLSX_REPORTING_STANDARD == 'kaori-reporting-xlsx-v2.0'
+    assert ANALYTICS_XLSX_REPORT_TYPES == ANALYTICS_TYPES
+    assert set(ANALYTICS_WORKBOOK_PROFILES) == ANALYTICS_TYPES
+
+    for report_type, profile in ANALYTICS_WORKBOOK_PROFILES.items():
+        assert profile.report_type == report_type
+        assert profile.title
+        assert profile.description
+        assert len(profile.metric_specs) == 4
+        assert profile.sheet_names
+        assert profile.primary_visual in {'line', 'ranked_bar', 'doughnut', 'capacity_bar'}
+
+
+def test_resource_utilization_preparation_preserves_committed_metrics_trends_and_consumers() -> None:
+    payload = {
+        'summary': {
+            'cpu_utilization': 18.2,
+            'memory_utilization': 61.4,
+            'storage_utilization': 42.5,
+            'pod_utilization': 53.0,
+        },
+        'cluster_info': {'total_nodes': 5, 'ready_nodes': 5},
+        'trends': {
+            'cpu': [{'value': 14.0}, {'value': 18.2}],
+            'memory': [{'value': 58.1}, {'value': 61.4}],
+            'pods': [{'value': 49.0}, {'value': 53.0}],
+        },
+        'top_cpu_consumers': [
+            {'namespace': 'monitoring', 'pod': 'prometheus-0', 'value': 0.71},
+        ],
+        'top_memory_consumers': [
+            {'namespace': 'openebs', 'pod': 'cstor-0', 'value': 16.4},
+        ],
+        'source_evidence': [{'source': 'Committed Analytics', 'freshness': 'Current'}],
+    }
+
+    data = prepare_analytics_workbook_data('resource_utilization', payload, _context('resource_utilization'))
+
+    assert [metric.label for metric in data.metrics] == ['CPU Utilization', 'Memory Utilization', 'Storage Utilization', 'Pod Utilization']
+    assert [metric.value for metric in data.metrics] == [18.2, 61.4, 42.5, 53.0]
+    assert data.primary_chart is not None
+    assert data.primary_chart.visual_type == 'line'
+    assert data.primary_chart.source_sheet == 'Trends'
+    assert [series.label for series in data.primary_chart.series] == ['CPU', 'Memory', 'Pods', 'Storage']
+    assert {'Analysis', 'Trends', 'Top Consumers'} <= {table.sheet_name for table in data.tables}
+    trends = next(table for table in data.tables if table.sheet_name == 'Trends')
+    assert trends.rows[-1]['memory_percent'] == 61.4
+    assert '61.4%' in data.readout
+
+
+def test_alerts_preparation_uses_doughnut_severity_and_does_not_invent_recommendations() -> None:
+    payload = {
+        'summary': {'active_alerts': 8, 'critical_alerts': 1, 'warning_alerts': 5, 'info_alerts': 2, 'detected_anomalies': 3},
+        'alerts': [
+            {'name': 'HighMemory', 'severity': 'critical', 'status': 'firing', 'namespace': 'payments'},
+            {'name': 'RestartBurst', 'severity': 'warning', 'status': 'firing', 'namespace': 'core'},
+        ],
+        'anomalies': [{'name': 'Pod Restart Spike', 'severity': 'warning', 'namespace': 'core'}],
+        'actionable_recommendations': [],
+    }
+
+    data = prepare_analytics_workbook_data('alerts_anomalies', payload, _context('alerts_anomalies'))
+
+    assert data.primary_chart is not None
+    assert data.primary_chart.visual_type == 'doughnut'
+    assert data.primary_chart.rows == (
+        {'category': 'Critical', 'value': 1},
+        {'category': 'Warning', 'value': 5},
+        {'category': 'Info', 'value': 2},
+    )
+    assert 'Recommendations' not in {table.sheet_name for table in data.tables}
+
+
+def test_object_storage_preparation_owns_its_category_and_ranked_consumer_visual() -> None:
+    payload = {
+        'system': {'name': 'minio-pgn-development', 'environment': 'Development'},
+        'summary': {'capacity': '120 GiB', 'usage': '76 GiB', 'headroom': '44 GiB', 'utilization': '63.3%', 'buckets': '5', 'objects': '12,300'},
+        'capacity_usage': {'capacity_total': '120 GiB', 'usage_total': '76 GiB', 'capacity_free': '44 GiB', 'utilization': '63.3%'},
+        'top_consumers': [
+            {'name': 'thanos', 'usage_gib': 64.25, 'object_count': 9000},
+            {'name': 'crm', 'usage_gib': 7.37, 'object_count': 2100},
+        ],
+        'performance': {'request_rate': '125 req/s', 'error_ratio': '0.2%', 'traffic': '32 MiB/s'},
+        'alerts': [],
+    }
+
+    context = _context('object_storage_analysis')
+    context = replace(context, scope_label='Object Storage System', scope_value='minio-pgn-development')
+    data = prepare_analytics_workbook_data('object_storage_analysis', payload, context)
+
+    assert data.primary_chart is not None
+    assert data.primary_chart.visual_type == 'ranked_bar'
+    assert data.primary_chart.source_sheet == 'Top Consumers'
+    assert data.primary_chart.rows[0]['category'] == 'thanos'
+    assert data.primary_chart.rows[0]['value'] == 64.25
+    assert {'Analysis', 'Top Consumers'} <= {table.sheet_name for table in data.tables}
+
+
+def test_resource_utilization_workbook_is_professional_and_runtime_valid(tmp_path: Path) -> None:
+    payload = {
+        'summary': {
+            'cpu_utilization': 18.2,
+            'memory_utilization': 61.4,
+            'storage_utilization': 42.5,
+            'pod_utilization': 53.0,
+        },
+        'trends': {
+            'cpu': [{'value': 14.0}, {'value': 16.0}, {'value': 18.2}],
+            'memory': [{'value': 58.1}, {'value': 60.0}, {'value': 61.4}],
+            'pods': [{'value': 49.0}, {'value': 51.0}, {'value': 53.0}],
+        },
+        'top_cpu_consumers': [{'namespace': 'monitoring', 'pod': 'prometheus-0', 'value': 0.71}],
+        'top_memory_consumers': [{'namespace': 'openebs', 'pod': 'cstor-0', 'value': 16.4}],
+        'source_evidence': [{'source': 'Committed Analytics', 'freshness': 'Current'}],
+    }
+    output_path = tmp_path / 'resource-utilization.xlsx'
+
+    build_analytics_workbook(
+        report_type='resource_utilization',
+        payload=payload,
+        context=_context('resource_utilization'),
+        output_path=output_path,
+    )
+    validate_analytics_xlsx_artifact(output_path)
+
+    workbook = load_workbook(output_path)
+    assert workbook.sheetnames[0] == 'Overview'
+    assert workbook.sheetnames[-2:] == ['Metadata', 'Field Dictionary']
+    assert {'Analysis', 'Trends', 'Top Consumers'} <= set(workbook.sheetnames)
+    overview = workbook['Overview']
+    assert overview['A1'].value == 'KAORI — Resource Utilization Analytics'
+    assert overview['A9'].value == 'Executive Readout'
+    assert len(overview._charts) == 1
+    assert overview._charts[0].__class__.__name__ == 'LineChart'
+    assert [series.tx.v for series in overview._charts[0].series] == ['CPU', 'Memory', 'Pods', 'Storage']
+    assert overview['A32'].hyperlink.target == "#'Analysis'!A1"
+    assert overview['A33'].hyperlink is not None
+    assert workbook['Analysis']['A3'].hyperlink.target == "#'Overview'!A1"
+    metadata_values = {workbook['Metadata'].cell(row=row, column=1).value: workbook['Metadata'].cell(row=row, column=2).value for row in range(1, workbook['Metadata'].max_row + 1)}
+    assert metadata_values['Workbook Standard'] == ANALYTICS_WORKBOOK_STANDARD
+    assert metadata_values['XLSX Standard'] == XLSX_REPORTING_STANDARD
+
+
+def test_capacity_workbook_uses_resource_categories_and_stacked_utilization_headroom(tmp_path: Path) -> None:
+    payload = {
+        'capacity_summary': {
+            'cpu': {'usage_percent': 31.2},
+            'memory': {'usage_percent': 67.5},
+            'pods': {'usage_percent': 49.0},
+            'storage': {'usage_percent': 54.3},
+        },
+    }
+    output_path = tmp_path / 'capacity-analysis.xlsx'
+    build_analytics_workbook(
+        report_type='capacity_analysis',
+        payload=payload,
+        context=_context('capacity_analysis'),
+        output_path=output_path,
+    )
+
+    workbook = load_workbook(output_path)
+    overview = workbook['Overview']
+    chart = overview._charts[0]
+    assert chart.__class__.__name__ == 'BarChart'
+    assert chart.grouping == 'stacked'
+    assert chart.overlap == 100
+    assert chart.legend is not None
+    assert chart.legend.position == 'b'
+    assert [series.tx.v for series in chart.series] == ['Utilization', 'Headroom']
+    assert overview['J15'].value == 'Resource'
+    assert overview['K15'].value == 'Utilization'
+    assert overview['L15'].value == 'Headroom'
+    assert overview['J16'].value == 'CPU'
+    assert overview['K16'].value == 31.2
+    assert overview['L16'].value == 68.8
+
+
+def test_object_storage_workbook_uses_category_title_and_professional_ranked_support(tmp_path: Path) -> None:
+    payload = {
+        'summary': {'capacity': '120 GiB', 'usage': '76 GiB', 'headroom': '44 GiB', 'utilization': '63.3%'},
+        'capacity_usage': {'capacity_total': '120 GiB', 'usage_total': '76 GiB', 'capacity_free': '44 GiB', 'utilization': '63.3%'},
+        'top_consumers': [
+            {'name': 'thanos', 'usage_gib': 64.25, 'object_count': 9000},
+            {'name': 'crm', 'usage_gib': 7.37, 'object_count': 2100},
+        ],
+    }
+    output_path = tmp_path / 'object-storage-analysis.xlsx'
+    context = replace(_context('object_storage_analysis'), scope_label='Object Storage System', scope_value='minio-pgn-development')
+    build_analytics_workbook(report_type='object_storage_analysis', payload=payload, context=context, output_path=output_path)
+
+    workbook = load_workbook(output_path)
+    overview = workbook['Overview']
+    assert overview['A1'].value == 'KAORI — Object Storage Analytics'
+    assert overview['J15'].value == 'Rank'
+    assert overview['K15'].value == 'Category'
+    assert overview['M15'].value == 'Share of Displayed'
+
+
+def test_formula_like_analytics_values_are_stored_as_text_not_formulas(tmp_path: Path) -> None:
+    payload = {
+        'consumer_payload': {
+            'rows': [
+                {'resource': 'CPU', 'namespace': '=HYPERLINK("https://bad")', 'name': '+cmd', 'value': 1.2, 'unit': 'cores'},
+            ]
+        }
+    }
+    output_path = tmp_path / 'top-consumers.xlsx'
+    build_analytics_workbook(
+        report_type='top_consumers',
+        payload=payload,
+        context=_context('top_consumers'),
+        output_path=output_path,
+    )
+    workbook = load_workbook(output_path, data_only=False)
+    sheet = workbook['Top Consumers']
+    values = [cell.value for row in sheet.iter_rows() for cell in row]
+    assert "'=HYPERLINK(\"https://bad\")" in values
+    assert "'+cmd" in values
+
+
+def test_runtime_validator_rejects_missing_primary_chart_when_chartable_evidence_exists(tmp_path: Path) -> None:
+    payload = {
+        'summary': {
+            'cpu_utilization': 18.2,
+            'memory_utilization': 61.4,
+            'storage_utilization': 42.5,
+            'pod_utilization': 53.0,
+        },
+        'trends': {
+            'cpu': [{'value': 14.0}, {'value': 18.2}],
+            'memory': [{'value': 58.1}, {'value': 61.4}],
+        },
+    }
+    output_path = tmp_path / 'missing-chart.xlsx'
+    build_analytics_workbook(
+        report_type='resource_utilization',
+        payload=payload,
+        context=_context('resource_utilization'),
+        output_path=output_path,
+    )
+
+    workbook = load_workbook(output_path)
+    workbook['Overview']._charts.clear()
+    workbook.save(output_path)
+
+    with pytest.raises(ValueError, match='Primary Visual'):
+        validate_analytics_xlsx_artifact(output_path)
+
+
+def _representative_payload(report_type: str) -> dict[str, object]:
+    payloads: dict[str, dict[str, object]] = {
+        'analytics_overview': {
+            'resource_snapshot': {
+                'cpu': {'percent': 22.0},
+                'memory': {'percent': 64.0},
+                'pods': {'percent': 51.0},
+                'storage': {'percent': 44.0},
+            },
+            'forecast_snapshot': {
+                'highest_projected_percent': 72.0,
+                'series': [
+                    {'memory_percent': 60.0},
+                    {'memory_percent': 64.0},
+                ],
+            },
+            'alerts_snapshot': {'critical': 1, 'warning': 2, 'info': 1},
+        },
+        'resource_utilization': {
+            'summary': {
+                'cpu_utilization': 18.2,
+                'memory_utilization': 61.4,
+                'storage_utilization': 42.5,
+                'pod_utilization': 53.0,
+            },
+            'trends': {
+                'cpu': [{'value': 14.0}, {'value': 18.2}],
+                'memory': [{'value': 58.1}, {'value': 61.4}],
+                'pods': [{'value': 49.0}, {'value': 53.0}],
+            },
+        },
+        'capacity_analysis': {
+            'capacity_summary': {
+                'cpu': {'usage_percent': 32.0},
+                'memory': {'usage_percent': 58.0},
+                'pods': {'usage_percent': 47.0},
+                'storage': {'usage_percent': 41.0},
+            },
+        },
+        'storage_analysis': {
+            'storage_summary': {
+                'persistent_storage': {
+                    'pv': {'count': 18, 'capacity': '920 GiB'},
+                    'pvc': {'count': 21, 'used_percent': 63.0, 'used': '580 GiB', 'free': '340 GiB'},
+                },
+                'node_filesystem': {'rows': [{'name': '/var/lib/kubelet', 'used_percent': 48.0}]},
+            },
+        },
+        'workload_analysis': {
+            'tenant_quota_summary': {
+                'scope_total': 10,
+                'scope_covered': 8,
+                'rows': [
+                    {'namespace': 'payments', 'status': 'Covered'},
+                    {'namespace': 'core', 'status': 'Covered'},
+                ],
+            },
+        },
+        'resource_forecast': {
+            'forecast_payload': {
+                'items': [
+                    {
+                        'key': 'memory',
+                        'current_percent': 61.0,
+                        'projected_percent': 74.0,
+                        'historical_points': [{'value': 55.0}, {'value': 61.0}],
+                        'forecast_points': [{'value': 68.0}, {'value': 74.0}],
+                    },
+                    {'key': 'cpu', 'current_percent': 28.0, 'projected_percent': 35.0},
+                ],
+            },
+        },
+        'top_consumers': {
+            'consumer_payload': {
+                'rows': [
+                    {'resource': 'Memory', 'namespace': 'monitoring', 'name': 'prometheus-0', 'value': 14.2, 'unit': 'GiB'},
+                    {'resource': 'Memory', 'namespace': 'logging', 'name': 'loki-0', 'value': 8.7, 'unit': 'GiB'},
+                    {'resource': 'CPU', 'namespace': 'payments', 'name': 'api-0', 'value': 0.8, 'unit': 'cores'},
+                ],
+            },
+        },
+        'alerts_anomalies': {
+            'summary': {
+                'active_alerts': 4,
+                'critical_alerts': 1,
+                'warning_alerts': 2,
+                'info_alerts': 1,
+                'detected_anomalies': 1,
+            },
+            'alerts': [
+                {'name': 'HighMemory', 'severity': 'critical', 'status': 'firing'},
+                {'name': 'RestartBurst', 'severity': 'warning', 'status': 'firing'},
+            ],
+        },
+        'object_storage_analysis': {
+            'summary': {
+                'capacity': '120 GiB',
+                'usage': '76 GiB',
+                'headroom': '44 GiB',
+                'utilization': '63.3%',
+            },
+            'capacity_usage': {
+                'capacity_total': '120 GiB',
+                'usage_total': '76 GiB',
+                'capacity_free': '44 GiB',
+                'utilization': '63.3%',
+            },
+            'top_consumers': [
+                {'name': 'thanos', 'usage_gib': 64.25, 'object_count': 9000},
+                {'name': 'crm', 'usage_gib': 7.37, 'object_count': 2100},
+            ],
+        },
+    }
+    return payloads[report_type]
+
+
+@pytest.mark.parametrize(
+    ('report_type', 'chart_class'),
+    [
+        ('analytics_overview', 'LineChart'),
+        ('resource_utilization', 'LineChart'),
+        ('capacity_analysis', 'BarChart'),
+        ('storage_analysis', 'BarChart'),
+        ('workload_analysis', 'DoughnutChart'),
+        ('resource_forecast', 'LineChart'),
+        ('top_consumers', 'BarChart'),
+        ('alerts_anomalies', 'DoughnutChart'),
+        ('object_storage_analysis', 'BarChart'),
+    ],
+)
+def test_every_analytics_category_builds_its_own_runtime_valid_workbook(
+    tmp_path: Path,
+    report_type: str,
+    chart_class: str,
+) -> None:
+    output_path = tmp_path / f'{report_type}.xlsx'
+    context = _context(report_type)
+    if report_type == 'object_storage_analysis':
+        context = replace(
+            context,
+            scope_label='Object Storage System',
+            scope_value='minio-pgn-development',
+            namespace_scope='Not Applicable',
+        )
+
+    build_analytics_workbook(
+        report_type=report_type,
+        payload=_representative_payload(report_type),
+        context=context,
+        output_path=output_path,
+    )
+    validate_analytics_xlsx_artifact(output_path)
+
+    workbook = load_workbook(output_path)
+    assert workbook.sheetnames[0] == 'Overview'
+    assert workbook.sheetnames[-2:] == ['Metadata', 'Field Dictionary']
+    assert len(workbook['Overview']._charts) == 1
+    assert workbook['Overview']._charts[0].__class__.__name__ == chart_class
+    metadata = workbook['Metadata']
+    metadata_values = {
+        metadata.cell(row=row, column=1).value: metadata.cell(row=row, column=2).value
+        for row in range(1, metadata.max_row + 1)
+    }
+    assert metadata_values['Workbook Standard'] == ANALYTICS_WORKBOOK_STANDARD

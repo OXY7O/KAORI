@@ -97,7 +97,7 @@ def _evidence_boundary(
 
 
 def get_report_object_storage_analysis_payload(report: Report) -> dict[str, Any]:
-    """Collect one governed Object Storage analytics snapshot for PDF/CSV rendering."""
+    """Collect one governed Object Storage analytics snapshot for PDF/XLSX/CSV rendering."""
 
     validate_report_instance(report)
     system_id = require_object_storage_system(report)
