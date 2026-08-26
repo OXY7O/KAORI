@@ -104,6 +104,18 @@ def test_generated_detail_visible_labels_follow_title_case_standard() -> None:
         assert label in service
 
 
+def test_generated_detail_generation_evidence_actions_use_single_desktop_row() -> None:
+    template = read(DETAIL)
+
+    assert 'data-generated-detail-header-layout="single-row-desktop"' in template
+    assert 'data-generated-detail-report-actions="true"' in template
+    assert 'data-generated-detail-action-row="desktop-nowrap"' in template
+    assert 'xl:flex-nowrap' in template
+    assert 'xl:shrink-0' in template
+    assert 'whitespace-nowrap' in template
+    assert 'xl:max-w-[360px]' in template
+
+
 def test_generated_detail_lifecycle_and_actions_remain_single_click_safe() -> None:
     template = read(DETAIL)
 

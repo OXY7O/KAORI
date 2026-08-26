@@ -406,17 +406,19 @@
                  data-generated-detail-block="generation-evidence"
                  data-generated-detail-actions-embedded="true">
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                    <div class="flex min-w-0 items-start gap-3">
+                <div class="flex flex-col gap-4 xl:flex-row xl:flex-nowrap xl:items-center xl:justify-between"
+                     data-generated-detail-header-layout="single-row-desktop">
+                    <div class="flex min-w-0 items-start gap-3 xl:max-w-[360px] xl:flex-none">
                         <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="workflow" class="h-5 w-5"></i></span>
                         <div class="min-w-0">
                             <h2 class="{{ table_ui.block_title_classes() }}">Generation & Evidence</h2>
                             <p class="{{ table_ui.block_description_classes() }}">Execution lifecycle, persisted report definition, and operator actions in one workspace.</p>
                         </div>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2 xl:justify-end"
+                    <div class="flex flex-wrap items-center gap-2 whitespace-nowrap xl:flex-nowrap xl:shrink-0 xl:justify-end"
                          id="report-actions"
-                         data-generated-detail-report-actions="true">
+                         data-generated-detail-report-actions="true"
+                         data-generated-detail-action-row="desktop-nowrap">
                         {% if payload.job_execution %}{{ table_label.status_indicator_label(payload.job_execution.status_label, payload.job_execution.status_tone) }}{% endif %}
                         <a href="{{ payload.registry_return_url }}"
                            class="{{ table_ui.action_classes() }}">
