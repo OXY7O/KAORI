@@ -2,7 +2,7 @@
   "name": "kaori",
   "private": true,
   "scripts": {
-    "watch-css": "tailwindcss -i ./frontend/styles.css -o ./app/static/css/output.css --watch=always",
+    "watch-css": "tailwindcss -i ./frontend/styles.css -o ./app/static/css/output.css --minify --watch=always",
     "build-css": "tailwindcss -i ./frontend/styles.css -o ./app/static/css/output.css --minify && node ./scripts/verify_css_build.mjs",
     "verify-css": "node ./scripts/verify_css_build.mjs",
     "format": "prettier \"frontend/**/*.{css,js}\" \"app/static/js/**/*.js\" \"scripts/**/*.mjs\" \".github/**/*.yml\" \"package*.json\" --write",
