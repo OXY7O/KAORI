@@ -193,7 +193,7 @@ def test_report_delivery_uses_platform_notification_channels_by_identity() -> No
     assert 'dispatch_notification_event(' in delivery
     assert 'def dispatch_notification_event(' in channel_service
     assert 'deliver_generated_report(' in report_worker
-    assert 'Delivery & State' in schedule_template
+    assert 'Timing &amp; Delivery' in schedule_template
     assert 'payload.delivery_channel_options' in schedule_template
     assert 'notification_channel_ids' in schedule_template
     assert 'Manage Notification Channels' in schedule_template

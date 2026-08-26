@@ -90,8 +90,7 @@ def test_schedule_tables_and_actions_keep_kaori_contracts() -> None:
         'Schedule Identity',
         'Infrastructure Scope',
         'Report Contract',
-        'Schedule Timing',
-        'Delivery & State',
+        'Timing &amp; Delivery',
         'Execution Guardrail',
         'Delete Report Schedule',
     ]:
@@ -99,8 +98,7 @@ def test_schedule_tables_and_actions_keep_kaori_contracts() -> None:
 
     assert template.index('Schedule Identity') < template.index('Report Contract')
     assert template.index('Report Contract') < template.index('Infrastructure Scope')
-    assert template.index('Infrastructure Scope') < template.index('Schedule Timing')
-    assert template.index('Schedule Timing') < template.index('Delivery & State')
+    assert template.index('Infrastructure Scope') < template.index('Timing &amp; Delivery')
 
     assert 'table_ui.table_classes()' in template
     assert 'table_ui.head_classes()' in template
@@ -221,9 +219,8 @@ def test_schedule_actions_preserve_safe_registry_context_and_form_order() -> Non
     identity = template.index('Schedule Identity</h3>')
     contract = template.index('Report Contract</h3>')
     scope = template.index('Infrastructure Scope</h3>')
-    timing = template.index('Schedule Timing</h3>')
-    delivery = template.index('Delivery & State</h3>')
-    assert identity < contract < scope < timing < delivery
+    timing_delivery = template.index('Timing &amp; Delivery</h3>')
+    assert identity < contract < scope < timing_delivery
 
 
 def test_schedule_run_history_retains_contract_snapshot_after_schedule_deletion() -> None:
@@ -246,3 +243,58 @@ def test_schedule_run_history_retains_contract_snapshot_after_schedule_deletion(
     assert "revision = '20260816_schedule_run_evidence'" in migration
     assert "down_revision = '20260816_report_lifecycle'" in migration
     assert 'json_build_object(' in migration
+
+
+def test_schedule_create_modal_uses_cluster_bound_namespace_dropdown() -> None:
+    template = read(TEMPLATE)
+    service = read(SERVICE)
+    support = read(ROOT / 'app/reports/schedules/support.py')
+    scope = read(ROOT / 'app/reports/scope.py')
+    script = read(ROOT / 'app/static/js/report_schedules.js')
+
+    assert 'data-schedule-namespaces-by-cluster=' in template
+    assert '<select name="namespace"' in template
+    assert 'data-schedule-namespace' in template
+    assert '<input type="text"\n                               name="namespace"' not in template
+    assert 'All Namespaces' in template
+    assert "'namespace_options_by_cluster': _get_namespace_options_by_cluster()" in service
+    assert 'get_namespace_options_by_cluster as _get_namespace_options_by_cluster' in service
+    assert 'def get_namespace_options_by_cluster()' in support
+    assert 'return get_report_namespace_options_by_cluster()' in support
+    assert 'def get_report_namespace_options_by_cluster()' in scope
+    assert 'NamespaceInventory.namespace' in scope
+    assert 'filter_current_generation(' in scope
+    assert 'scheduleNamespacesByCluster' in script
+    assert 'syncNamespaceOptions' in script
+    assert "clusterSelect?.addEventListener('change', syncNamespaceOptions)" in script
+
+
+def test_schedule_create_modal_uses_kaori_contract_workspace_layout() -> None:
+    template = read(TEMPLATE)
+
+    assert 'data-schedule-form-layout="contract-v4"' in template
+    for block in ('identity', 'report-contract', 'infrastructure-scope', 'timing-delivery'):
+        assert f'data-schedule-form-block="{block}"' in template
+    assert "'expanded') %}" in template or "'expanded') %}" in template
+    assert 'Schedule Identity' in template
+    assert 'Report Contract' in template
+    assert 'Infrastructure Scope' in template
+    assert 'Timing &amp; Delivery' in template
+    assert 'Delivery & State</h3>' not in template
+    assert 'Schedule Timing</h3>' not in template
+
+
+def test_schedule_detail_modal_uses_four_read_only_contract_blocks() -> None:
+    template = read(TEMPLATE)
+
+    assert 'data-schedule-detail-layout="contract-v4"' in template
+    for block in ('overview', 'scope-contract', 'timing-delivery', 'execution-state'):
+        assert f'data-schedule-detail-block="{block}"' in template
+    for label in (
+        'Schedule Overview',
+        'Scope &amp; Contract',
+        'Timing &amp; Delivery',
+        'Execution State',
+    ):
+        assert label in template
+    assert 'The canonical report definition reused by every scheduled execution.' not in template

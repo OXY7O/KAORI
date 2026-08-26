@@ -54,6 +54,7 @@ from app.reports.schedules.support import get_default_sections as _get_default_s
 from app.reports.schedules.support import get_default_sections_by_report_type as _get_default_sections_by_report_type
 from app.reports.schedules.support import get_default_timezone as _get_default_timezone
 from app.reports.schedules.support import get_delivery_channel_options as _get_delivery_channel_options
+from app.reports.schedules.support import get_namespace_options_by_cluster as _get_namespace_options_by_cluster
 from app.reports.schedules.support import get_object_storage_system_options as _get_object_storage_system_options
 from app.reports.schedules.support import get_schedule_context_map as _get_schedule_context_map
 from app.reports.schedules.support import (
@@ -184,6 +185,7 @@ def get_report_schedules_payload(
             'runs' if str(query_args.get('workspace', '') or '').strip().lower() == 'runs' else 'registry'
         ),
         'clusters': cluster_options,
+        'namespace_options_by_cluster': _get_namespace_options_by_cluster(),
         'object_storage_systems': object_storage_system_options,
         'report_type_options': REPORT_TYPE_OPTIONS,
         'period_options': _title_case_period_options(),

@@ -26,7 +26,11 @@ from app.reports.catalog import (
 )
 from app.reports.generate.form_options import PERIOD_OPTIONS, SECTION_OPTIONS
 from app.reports.jobs.queue import get_reports_queue_name
-from app.reports.scope import KUBERNETES_CLUSTER_ASSET_TYPE, OBJECT_STORAGE_SYSTEM_ASSET_TYPE
+from app.reports.scope import (
+    KUBERNETES_CLUSTER_ASSET_TYPE,
+    OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
+    get_report_namespace_options_by_cluster,
+)
 from app.reports.storage.service import get_configured_storage_backend_name, get_report_storage_backend_status
 
 
@@ -670,25 +674,7 @@ def _scope_is_ready(form_state: dict[str, Any], report_context: dict[str, Any]) 
 
 
 def _get_namespace_options_by_cluster() -> dict[str, list[str]]:
-    query = db.session.query(
-        NamespaceInventory.cluster_id,
-        NamespaceInventory.namespace,
-    )
-    query = filter_current_generation(
-        query,
-        NamespaceInventory,
-    )
-    rows = query.order_by(
-        NamespaceInventory.cluster_id.asc(),
-        NamespaceInventory.namespace.asc(),
-    ).all()
-
-    options: dict[str, list[str]] = {}
-    for cluster_id, namespace in rows:
-        cluster_key = str(cluster_id)
-        options.setdefault(cluster_key, []).append(namespace)
-
-    return options
+    return get_report_namespace_options_by_cluster()
 
 
 def _parse_cluster_id(

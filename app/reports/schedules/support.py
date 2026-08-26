@@ -12,6 +12,7 @@ from app.models.cluster import Cluster
 from app.models.object_storage import ObjectStorageSystem
 from app.models.report import ReportSchedule
 from app.reports.catalog import REPORT_TYPE_OPTIONS
+from app.reports.scope import get_report_namespace_options_by_cluster
 
 DEFAULT_TIMEZONE = 'Asia/Jakarta'
 
@@ -31,6 +32,10 @@ def get_cluster_options() -> list[dict[str, str]]:
     clusters = db.session.scalars(select(Cluster).order_by(Cluster.name.asc())).all()
     return [{'value': item.id, 'label': item.name} for item in clusters]
 
+
+
+def get_namespace_options_by_cluster() -> dict[str, list[str]]:
+    return get_report_namespace_options_by_cluster()
 
 def get_cluster_map(cluster_ids: list[str]) -> dict[str, str]:
     if not cluster_ids:

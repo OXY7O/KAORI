@@ -5,8 +5,10 @@ from typing import Any
 
 from flask import has_app_context
 
+from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
 from app.models.cluster import Cluster
+from app.models.inventory import NamespaceInventory
 from app.models.object_storage import ObjectStorageSystem
 
 KUBERNETES_CLUSTER_ASSET_TYPE = 'kubernetes_cluster'
@@ -103,6 +105,33 @@ def resolve_report_scope(record: Any) -> ReportScope | None:
         )
     return None
 
+
+
+def get_report_namespace_options_by_cluster() -> dict[str, list[str]]:
+    """Return current-inventory namespace choices keyed by Kubernetes cluster id."""
+    query = db.session.query(
+        NamespaceInventory.cluster_id,
+        NamespaceInventory.namespace,
+    )
+    query = filter_current_generation(
+        query,
+        NamespaceInventory,
+    )
+    rows = query.order_by(
+        NamespaceInventory.cluster_id.asc(),
+        NamespaceInventory.namespace.asc(),
+    ).all()
+
+    options: dict[str, list[str]] = {}
+    for cluster_id, namespace in rows:
+        cluster_key = str(cluster_id)
+        namespace_name = str(namespace or '').strip()
+        if not cluster_key or not namespace_name:
+            continue
+        bucket = options.setdefault(cluster_key, [])
+        if namespace_name not in bucket:
+            bucket.append(namespace_name)
+    return options
 
 def scope_asset_label(record: Any, *, fallback: str = 'Scope Unavailable') -> str:
     scope = resolve_report_scope(record)

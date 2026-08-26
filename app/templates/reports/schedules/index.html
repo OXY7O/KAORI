@@ -12,19 +12,22 @@
     <form method="POST"
           action="{{ form_action }}"
           data-schedule-form
-          class="space-y-5">
+          data-schedule-form-layout="contract-v4"
+          class="space-y-4">
         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
         <input type="hidden" name="next" value="{{ return_url }}">
-        <section>
+
+        <section data-schedule-form-block="identity"
+                 class="rounded-2xl border border-outline-subtle bg-surface-card p-4 sm:p-5">
             <div class="flex items-start gap-3">
-                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="badge-info" class="h-4 w-4"></i></span>
-                <div>
+                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="badge-info" class="h-5 w-5"></i></span>
+                <div class="min-w-0">
                     <h3 class="text-sm font-semibold leading-5 text-content-primary">Schedule Identity</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Name the recurring automation and describe the operational purpose before defining its report contract.</p>
                 </div>
             </div>
-            <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                <label class="block sm:col-span-2">
+            <div class="mt-4 grid gap-4 lg:grid-cols-3">
+                <label class="block">
                     <span class="text-xs font-semibold text-content-muted">Schedule Name</span>
                     <input type="text"
                            name="name"
@@ -34,20 +37,28 @@
                            placeholder="Example: Weekly Capacity Review"
                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
                 </label>
-                <label class="block sm:col-span-2">
-                    <span class="text-xs font-semibold text-content-muted">Description</span><textarea name="description" rows="2" maxlength="1000" placeholder="Describe the recurring reporting purpose." class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">{{ form_state.description }}</textarea>
+                <label class="block lg:col-span-2">
+                    <span class="text-xs font-semibold text-content-muted">Description</span>
+                    <input type="text"
+                           name="description"
+                           maxlength="1000"
+                           value="{{ form_state.description }}"
+                           placeholder="Describe the recurring reporting purpose."
+                           class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
                 </label>
             </div>
         </section>
-        <section class="border-t border-outline-subtle pt-5">
+
+        <section data-schedule-form-block="report-contract"
+                 class="rounded-2xl border border-outline-subtle bg-surface-card p-4 sm:p-5">
             <div class="flex items-start gap-3">
-                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="file-cog" class="h-4 w-4"></i></span>
-                <div>
+                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="file-cog" class="h-5 w-5"></i></span>
+                <div class="min-w-0">
                     <h3 class="text-sm font-semibold leading-5 text-content-primary">Report Contract</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Use the same canonical report type, period, format, and section contract as Generate Report. Analytics schedules may publish PDF, XLSX, or CSV; PDF remains the default publication format.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Use the canonical report type, period, format, and section contract. Analytics schedules may publish PDF, XLSX, or CSV; PDF remains the default publication format.</p>
                 </div>
             </div>
-            <div class="mt-4 grid gap-4 sm:grid-cols-3">
+            <div class="mt-4 grid gap-4 md:grid-cols-3">
                 <label class="block">
                     <span class="text-xs font-semibold text-content-muted">Report Type</span>
                     <select name="report_type"
@@ -66,8 +77,7 @@
                             data-schedule-period
                             class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
                         {% for option in payload.period_options %}
-                            <option value="{{ option.value }}"
-                                    {% if form_state.period == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}" {% if form_state.period == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
                 </label>
@@ -77,13 +87,12 @@
                             data-schedule-output-format
                             class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
                         {% for option in payload.output_format_options %}
-                            <option value="{{ option.value }}"
-                                    {% if form_state.output_format == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}" {% if form_state.output_format == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
                 </label>
             </div>
-            <div class="mt-4" data-schedule-section-list>
+            <div class="mt-4 border-t border-outline-subtle pt-4" data-schedule-section-list>
                 {% for report_type, options in payload.section_options_by_report_type.items() %}
                     {% set family = payload.report_family_by_report_type.get(report_type, 'analytics') %}
                     <div data-schedule-section-group="{{ report_type }}"
@@ -92,21 +101,16 @@
                         {% if family == 'inventory' %}
                             <div class="rounded-xl border border-kaori-primary/15 bg-kaori-soft/25 px-4 py-3">
                                 <div class="flex items-start gap-3">
-                                    <i data-lucide="lock-keyhole"
-                                       class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
-                                       aria-hidden="true"></i>
+                                    <i data-lucide="lock-keyhole" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                                     <div>
                                         <p class="text-xs font-semibold text-content-primary">Fixed Inventory Workbook Structure</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">Overview, Inventory, Metadata, and Field Dictionary remain fixed by the inventory contract.</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">Overview, Inventory, Metadata, and Field Dictionary remain fixed by contract.</p>
                                     </div>
                                 </div>
                                 <div class="mt-3 flex flex-wrap gap-2">
                                     {% for option in options %}
                                         {{ table_label.metadata_label(option.label, 'check') }}
-                                        <input type="hidden"
-                                               name="sections"
-                                               value="{{ option.value }}"
-                                               data-schedule-inventory-section>
+                                        <input type="hidden" name="sections" value="{{ option.value }}" data-schedule-inventory-section>
                                     {% endfor %}
                                 </div>
                             </div>
@@ -114,23 +118,23 @@
                             <div class="flex items-start justify-between gap-3">
                                 <div>
                                     <p class="text-xs font-semibold text-content-primary">Included Sections</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Select supported Analytics sections for each recurring artifact.</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Choose only sections supported by this Analytics report.</p>
                                 </div>
-                                <button type="button"
-                                        data-schedule-reset-sections
-                                        class="text-xs font-semibold text-kaori-primary">Reset Default</button>
+                                <button type="button" data-schedule-reset-sections class="text-xs font-semibold text-kaori-primary">Reset Default</button>
                             </div>
-                            <p class="mt-2 hidden text-xs font-semibold text-status-critical-text"
-                               data-schedule-section-error>Select at least one Analytics section.</p>
-                            <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                            <p class="mt-2 hidden text-xs font-semibold text-status-critical-text" data-schedule-section-error>Select at least one Analytics section.</p>
+                            <div class="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                                 {% for option in options %}
-                                    <label class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card px-3 py-3 transition hover:border-kaori-primary/30 hover:bg-surface-hover">
+                                    <label class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-page px-3 py-3 transition hover:border-kaori-primary/30 hover:bg-surface-hover">
                                         <input type="checkbox"
                                                name="sections"
                                                value="{{ option.value }}"
                                                {% if option.value in form_state.sections %}checked{% endif %}
                                                class="mt-0.5 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary/20">
-                                        <span class="min-w-0"><span class="block text-xs font-semibold text-content-primary">{{ option.label }}</span><span class="mt-1 block text-xs leading-5 text-content-muted">{{ option.description }}</span></span>
+                                        <span class="min-w-0">
+                                            <span class="block text-xs font-semibold text-content-primary">{{ option.label }}</span>
+                                            <span class="mt-1 block text-xs leading-5 text-content-muted">{{ option.description }}</span>
+                                        </span>
                                     </label>
                                 {% endfor %}
                             </div>
@@ -139,12 +143,14 @@
                 {% endfor %}
             </div>
         </section>
-        <section class="border-t border-outline-subtle pt-5">
+
+        <section data-schedule-form-block="infrastructure-scope"
+                 class="rounded-2xl border border-outline-subtle bg-surface-card p-4 sm:p-5">
             <div class="flex items-start gap-3">
-                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="boxes" class="h-4 w-4"></i></span>
-                <div>
+                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="boxes" class="h-5 w-5"></i></span>
+                <div class="min-w-0">
                     <h3 class="text-sm font-semibold leading-5 text-content-primary">Infrastructure Scope</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Bind the schedule to the infrastructure asset required by the selected report contract. Scope changes automatically when the report type changes.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Select the infrastructure asset and an optional namespace from current inventory.</p>
                 </div>
             </div>
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
@@ -154,23 +160,27 @@
                         <select name="cluster_id"
                                 data-schedule-cluster
                                 class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
-                            <option value=""
-                                    disabled
-                                    {% if not form_state.cluster_id %}selected{% endif %}>Select Cluster</option>
+                            <option value="" disabled {% if not form_state.cluster_id %}selected{% endif %}>Select Cluster</option>
                             {% for option in payload.clusters %}
-                                <option value="{{ option.value }}"
-                                        {% if form_state.cluster_id == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                <option value="{{ option.value }}" {% if form_state.cluster_id == option.value %}selected{% endif %}>{{ option.label }}</option>
                             {% endfor %}
                         </select>
                     </label>
+                    {% set selected_namespace_options = payload.namespace_options_by_cluster.get(form_state.cluster_id, []) %}
                     <label class="block">
                         <span class="text-xs font-semibold text-content-muted">Namespace</span>
-                        <input type="text"
-                               name="namespace"
-                               data-schedule-namespace
-                               value="{{ form_state.namespace }}"
-                               placeholder="All Namespaces"
-                               class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                        <select name="namespace"
+                                data-schedule-namespace
+                                class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            <option value="" {% if not form_state.namespace %}selected{% endif %}>All Namespaces</option>
+                            {% for namespace in selected_namespace_options %}
+                                <option value="{{ namespace }}" {% if form_state.namespace == namespace %}selected{% endif %}>{{ namespace }}</option>
+                            {% endfor %}
+                            {% if form_state.namespace and form_state.namespace not in selected_namespace_options %}
+                                <option value="{{ form_state.namespace }}" selected disabled>{{ form_state.namespace }} · unavailable in current inventory</option>
+                            {% endif %}
+                        </select>
+                        <span class="mt-1.5 block text-xs leading-5 text-content-muted">Options follow the selected cluster's current inventory snapshot.</span>
                     </label>
                 </div>
                 <label class="hidden sm:col-span-2" data-schedule-object-storage-scope>
@@ -178,130 +188,94 @@
                     <select name="object_storage_system_id"
                             data-schedule-object-storage-system
                             class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
-                        <option value=""
-                                disabled
-                                {% if not form_state.object_storage_system_id %}selected{% endif %}>Select Object Storage System</option>
+                        <option value="" disabled {% if not form_state.object_storage_system_id %}selected{% endif %}>Select Object Storage System</option>
                         {% for option in payload.object_storage_systems %}
-                            <option value="{{ option.value }}"
-                                    {% if form_state.object_storage_system_id == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}" {% if form_state.object_storage_system_id == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
                 </label>
             </div>
         </section>
-        <section class="border-t border-outline-subtle pt-5">
+
+        <section data-schedule-form-block="timing-delivery"
+                 class="rounded-2xl border border-outline-subtle bg-surface-card p-4 sm:p-5">
             <div class="flex items-start gap-3">
-                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="clock-3" class="h-4 w-4"></i></span>
-                <div>
-                    <h3 class="text-sm font-semibold leading-5 text-content-primary">Schedule Timing</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Persist cadence in the selected IANA timezone; KAORI stores the next execution in UTC.</p>
+                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="clock-3" class="h-5 w-5"></i></span>
+                <div class="min-w-0">
+                    <h3 class="text-sm font-semibold leading-5 text-content-primary">Timing &amp; Delivery</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Set cadence, timezone, delivery channels, and whether unattended execution is active.</p>
                 </div>
             </div>
-            <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <label class="block">
-                    <span class="text-xs font-semibold text-content-muted">Cadence</span>
-                    <select name="cadence"
-                            data-schedule-cadence
-                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
-                        {% for option in payload.cadence_options %}
-                            <option value="{{ option.value }}"
-                                    {% if form_state.cadence == option.value %}selected{% endif %}>{{ option.label }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <label class="block">
-                    <span class="text-xs font-semibold text-content-muted">Run Time</span>
-                    <input type="time"
-                           name="run_time"
-                           value="{{ form_state.run_time }}"
-                           required
-                           class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
-                </label>
-                <label class="block" data-schedule-weekly-field>
-                    <span class="text-xs font-semibold text-content-muted">Weekly Day</span>
-                    <select name="day_of_week"
-                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
-                        {% for day in payload.day_of_week_options %}
-                            <option value="{{ day.value }}"
-                                    {% if form_state.day_of_week == day.value|string %}selected{% endif %}>{{ day.label }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <label class="block" data-schedule-monthly-field>
-                    <span class="text-xs font-semibold text-content-muted">Monthly Day</span>
-                    <select name="day_of_month"
-                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
-                        {% for day in payload.day_of_month_options %}
-                            <option value="{{ day }}"
-                                    {% if form_state.day_of_month == day|string %}selected{% endif %}>{{ day }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <label class="block sm:col-span-2 lg:col-span-4">
-                    <span class="text-xs font-semibold text-content-muted">Timezone</span>
-                    <input type="text"
-                           name="timezone"
-                           value="{{ form_state.timezone }}"
-                           required
-                           placeholder="Asia/Jakarta"
-                           class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
-                </label>
-            </div>
-        </section>
-        <section class="border-t border-outline-subtle pt-5">
-            <div class="flex items-start justify-between gap-3">
-                <div class="flex items-start gap-3">
-                    <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="send" class="h-4 w-4"></i></span>
-                    <div>
-                        <h3 class="text-sm font-semibold leading-5 text-content-primary">Delivery & State</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Selected Notification Channels are invoked only after the governed artifact reaches Ready state.</p>
-                        <a href="{{ url_for('notification_channels.index') }}"
-                           class="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:underline"><i data-lucide="external-link" class="h-3.5 w-3.5"></i>Manage Notification Channels</a>
+            <div class="mt-4 grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+                <div class="rounded-xl border border-outline-subtle bg-surface-page p-4">
+                    <div class="flex items-center gap-2 text-xs font-semibold text-content-primary"><i data-lucide="calendar-clock" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>Execution Timing</div>
+                    <div class="mt-3 grid gap-4 sm:grid-cols-2">
+                        <label class="block">
+                            <span class="text-xs font-semibold text-content-muted">Cadence</span>
+                            <select name="cadence" data-schedule-cadence class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                                {% for option in payload.cadence_options %}<option value="{{ option.value }}" {% if form_state.cadence == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+                            </select>
+                        </label>
+                        <label class="block">
+                            <span class="text-xs font-semibold text-content-muted">Run Time</span>
+                            <input type="time" name="run_time" value="{{ form_state.run_time }}" required class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                        </label>
+                        <label class="block" data-schedule-weekly-field>
+                            <span class="text-xs font-semibold text-content-muted">Weekly Day</span>
+                            <select name="day_of_week" class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                                {% for day in payload.day_of_week_options %}<option value="{{ day.value }}" {% if form_state.day_of_week == day.value|string %}selected{% endif %}>{{ day.label }}</option>{% endfor %}
+                            </select>
+                        </label>
+                        <label class="block" data-schedule-monthly-field>
+                            <span class="text-xs font-semibold text-content-muted">Monthly Day</span>
+                            <select name="day_of_month" class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                                {% for day in payload.day_of_month_options %}<option value="{{ day }}" {% if form_state.day_of_month == day|string %}selected{% endif %}>{{ day }}</option>{% endfor %}
+                            </select>
+                        </label>
+                        <label class="block sm:col-span-2">
+                            <span class="text-xs font-semibold text-content-muted">Timezone</span>
+                            <input type="text" name="timezone" value="{{ form_state.timezone }}" required placeholder="Asia/Jakarta" class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                        </label>
                     </div>
                 </div>
-                <label class="inline-flex items-center gap-2 text-xs font-semibold text-content-secondary">
-                    <input type="checkbox"
-                           name="is_enabled"
-                           value="1"
-                           {% if form_state.is_enabled == '1' %}checked{% endif %}
-                           class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary/20">
-                    Active Schedule
-                </label>
-            </div>
-            <div class="mt-4 grid gap-2 sm:grid-cols-2">
-                {% for channel in payload.delivery_channel_options %}
-                    <label class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card px-3 py-3 {{ 'cursor-pointer' if channel.selectable else 'cursor-not-allowed opacity-65' }}">
-                        <input type="checkbox"
-                               name="notification_channel_ids"
-                               value="{{ channel.value }}"
-                               data-schedule-channel-domains="{{ channel.domains | join(',') }}"
-                               data-schedule-channel-selectable="{{ 'true' if channel.selectable else 'false' }}"
-                               {% if channel.channel_id in form_state.notification_channel_ids %}checked{% endif %}
-                               {% if not channel.selectable %}disabled{% endif %}
-                               class="mt-0.5 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary/20">
-                        <span class="min-w-0"><span class="flex items-center gap-2 text-xs font-semibold text-content-primary"><i data-lucide="{{ channel.icon }}"
-   class="h-3.5 w-3.5 text-kaori-primary"
-   aria-hidden="true"></i>{{ channel.label }}</span><span class="mt-1 block text-xs leading-5 text-content-muted">{{ channel.provider }} · {{ channel.destination }} · {{ channel.status }}</span></span>
-                    </label>
-                {% endfor %}
-            </div>
-            <div class="mt-4 rounded-xl border border-kaori-primary/15 bg-kaori-soft/25 px-4 py-3">
-                <div class="flex items-start gap-3">
-                    <i data-lucide="shield-check"
-                       class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
-                       aria-hidden="true"></i>
-                    <div>
-                        <p class="text-xs font-semibold text-content-primary">Execution Guardrail</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Schedule management remains available during storage degradation, but Run Now and unattended artifact creation require writable report storage.</p>
+                <div class="rounded-xl border border-outline-subtle bg-surface-page p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <div class="flex items-center gap-2 text-xs font-semibold text-content-primary"><i data-lucide="send" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>Delivery Channels</div>
+                            <a href="{{ url_for('notification_channels.index') }}" class="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:underline"><i data-lucide="external-link" class="h-3.5 w-3.5"></i>Manage Notification Channels</a>
+                        </div>
+                        <label class="inline-flex items-center gap-2 text-xs font-semibold text-content-secondary">
+                            <input type="checkbox" name="is_enabled" value="1" {% if form_state.is_enabled == '1' %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary/20">
+                            Active
+                        </label>
+                    </div>
+                    <div class="mt-3 grid gap-2">
+                        {% for channel in payload.delivery_channel_options %}
+                            <label class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card px-3 py-3 {{ 'cursor-pointer' if channel.selectable else 'cursor-not-allowed opacity-65' }}">
+                                <input type="checkbox"
+                                       name="notification_channel_ids"
+                                       value="{{ channel.value }}"
+                                       data-schedule-channel-domains="{{ channel.domains | join(',') }}"
+                                       data-schedule-channel-selectable="{{ 'true' if channel.selectable else 'false' }}"
+                                       {% if channel.channel_id in form_state.notification_channel_ids %}checked{% endif %}
+                                       {% if not channel.selectable %}disabled{% endif %}
+                                       class="mt-0.5 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary/20">
+                                <span class="min-w-0"><span class="flex items-center gap-2 text-xs font-semibold text-content-primary"><i data-lucide="{{ channel.icon }}" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>{{ channel.label }}</span><span class="mt-1 block text-xs leading-5 text-content-muted">{{ channel.provider }} · {{ channel.destination }} · {{ channel.status }}</span></span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-3 rounded-xl border border-kaori-primary/15 bg-kaori-soft/25 px-3 py-3">
+                        <div class="flex items-start gap-2">
+                            <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                            <p class="text-xs leading-5 text-content-muted"><span class="font-semibold text-content-primary">Execution Guardrail.</span> Artifact generation requires writable report storage; schedule management remains available during degradation.</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
-        <div class="flex flex-col-reverse gap-2 border-t border-outline-subtle pt-4 sm:flex-row sm:items-center sm:justify-end">
-            <button type="button"
-                    data-kaori-dialog-close
-                    data-dialog-target="schedule-form-dialog"
-                    class="{{ table_ui.action_classes() }}">Cancel</button>
+
+        <div data-schedule-form-actions
+             class="sticky bottom-0 z-10 -mx-4 flex justify-end border-t border-outline-subtle bg-surface-card/95 px-4 py-3 backdrop-blur sm:-mx-5 sm:px-5">
             <button type="submit"
                     data-operation-submit
                     data-loading-label="{{ loading_label }}"
@@ -320,6 +294,7 @@
          data-schedule-family-by-type="{{ payload.report_family_by_report_type | tojson | forceescape }}"
          data-schedule-scope-by-type="{{ payload.scope_asset_type_by_report_type | tojson | forceescape }}"
          data-schedule-domain-by-type="{{ payload.report_domain_by_report_type | tojson | forceescape }}"
+         data-schedule-namespaces-by-cluster="{{ payload.namespace_options_by_cluster | tojson | forceescape }}"
          data-schedule-open-dialog="{{ 'true' if schedule_form_is_edit or payload.open_create_dialog else 'false' }}">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
@@ -701,92 +676,106 @@
                     {{ registry_ui.footer('reports.schedules', 'schedule-registry', 'schedule-registry-loading', payload.pagination, payload.registry_query_params, payload.per_page_options, resource_label='Schedules', rows_aria_label='Schedules per page', control_name='report-schedules') }}
                     {% for schedule in payload.schedules %}
                         {% call record_modal.render('schedule-detail-' ~ loop.index, 'Schedule Contract', schedule.name, 'Review the persisted report contract, cadence, delivery, and lifecycle controls.', schedule.report_icon, 'Schedule definitions remain independent from generated artifact availability.', 'standard') %}
-                            <div class="space-y-4">
-                                <section class="grid gap-3 sm:grid-cols-2">
-                                    <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
-                                        <p class="text-xs font-semibold text-content-muted">Schedule Identity</p>
-                                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ schedule.name }}</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ schedule.description }}</p>
-                                    </div>
-                                    <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
-                                        <p class="text-xs font-semibold text-content-muted">Execution Timing</p>
-                                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ schedule.cadence_detail }}</p>
-                                        <p class="mt-1 text-xs text-content-muted">{{ schedule.timezone }} · Next {{ schedule.next_run_at }}</p>
+                            <div class="space-y-4" data-schedule-detail-layout="contract-v4">
+                                <section data-schedule-detail-block="overview"
+                                         class="rounded-2xl border border-outline-subtle bg-surface-card p-4">
+                                    <div class="flex items-start gap-3">
+                                        <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="calendar-check" class="h-5 w-5"></i></span>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex flex-wrap items-start justify-between gap-3">
+                                                <div>
+                                                    <p class="text-sm font-semibold text-content-primary">Schedule Overview</p>
+                                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ schedule.description }}</p>
+                                                </div>
+                                                {{ table_label.status_label(schedule.status_meta.label, schedule.status_meta.tone, schedule.status_meta.icon) }}
+                                            </div>
+                                            <div class="mt-4 grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
+                                                <div class="bg-surface-page px-3 py-3"><p class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Next Run</p><p class="mt-1 text-xs font-semibold text-content-primary">{{ schedule.next_run_at }}</p></div>
+                                                <div class="bg-surface-page px-3 py-3"><p class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Last Run</p><p class="mt-1 text-xs font-semibold text-content-primary">{{ schedule.last_run_at }}</p></div>
+                                                <div class="bg-surface-page px-3 py-3"><p class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Last Result</p><p class="mt-1 text-xs font-semibold text-content-primary">{{ schedule.last_status_label }}</p></div>
+                                                <div class="bg-surface-page px-3 py-3"><p class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Created By</p><p class="mt-1 text-xs font-semibold text-content-primary">{{ schedule.created_by }}</p></div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </section>
-                                <section class="rounded-xl border border-outline-subtle px-4 py-4">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <div>
-                                            <p class="text-sm font-semibold text-content-primary">Report Contract</p>
-                                            <p class="mt-1 text-xs leading-5 text-content-muted">The canonical report definition reused by every scheduled execution.</p>
+
+                                <section data-schedule-detail-block="scope-contract"
+                                         class="rounded-2xl border border-outline-subtle bg-surface-card p-4">
+                                    <div class="flex items-start gap-3">
+                                        <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="file-cog" class="h-5 w-5"></i></span>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex flex-wrap items-start justify-between gap-3">
+                                                <div>
+                                                    <p class="text-sm font-semibold text-content-primary">Scope &amp; Contract</p>
+                                                    <p class="mt-1 text-xs leading-5 text-content-muted">Persisted report definition and infrastructure scope used by each execution.</p>
+                                                </div>
+                                                {{ table_label.metadata_label(schedule.sections_count ~ ' Sections', 'list-checks') }}
+                                            </div>
+                                            <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                                                <div><p class="text-xs font-semibold text-content-muted">Report Type</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ schedule.report_type }}</p></div>
+                                                <div><p class="text-xs font-semibold text-content-muted">{{ schedule.scope_label }}</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ schedule.scope }}</p></div>
+                                                <div><p class="text-xs font-semibold text-content-muted">Namespace</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ schedule.namespace }}</p></div>
+                                                <div><p class="text-xs font-semibold text-content-muted">Period</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ schedule.period }}</p></div>
+                                                <div><p class="text-xs font-semibold text-content-muted">Format</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ schedule.output_format }}</p></div>
+                                            </div>
+                                            <div class="mt-4 flex flex-wrap gap-2">
+                                                {% for section in schedule.sections %}{{ table_label.metadata_label(section.replace('_', ' ') |title, 'check') }}{% endfor %}
+                                            </div>
                                         </div>
-                                        {{ table_label.metadata_label(schedule.sections_count ~ ' Sections', 'list-checks') }}
-                                    </div>
-                                    <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                        <div>
-                                            <p class="text-xs font-semibold text-content-muted">Report Type</p>
-                                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ schedule.report_type }}</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs font-semibold text-content-muted">Scope</p>
-                                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ schedule.scope }}</p>
-                                            <p class="mt-0.5 text-xs text-content-muted">{{ schedule.namespace }}</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs font-semibold text-content-muted">Period</p>
-                                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ schedule.period }}</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs font-semibold text-content-muted">Output Format</p>
-                                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ schedule.output_format }}</p>
-                                        </div>
-                                    </div>
-                                    <div class="mt-4 flex flex-wrap gap-2">
-                                        {% for section in schedule.sections %}{{ table_label.metadata_label(section.replace('_', ' ') |title, 'check') }}{% endfor %}
                                     </div>
                                 </section>
-                                {% if not payload.run_actions_enabled %}
-                                    <section class="rounded-xl border {{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft px-4 py-3">
+
+                                <div class="grid gap-4 lg:grid-cols-2">
+                                    <section data-schedule-detail-block="timing-delivery"
+                                             class="rounded-2xl border border-outline-subtle bg-surface-card p-4">
                                         <div class="flex items-start gap-3">
-                                            <i data-lucide="hard-drive"
-                                               class="mt-0.5 h-4 w-4 shrink-0 text-status-warning-text"
-                                               aria-hidden="true"></i>
-                                            <div>
-                                                <p class="text-xs font-semibold text-status-warning-text">Run Now Paused</p>
-                                                <p class="mt-1 text-xs leading-5 text-content-secondary">Artifact storage is not writable. Schedule management remains available, but new artifact execution is paused.</p>
+                                            <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="clock-3" class="h-5 w-5"></i></span>
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-sm font-semibold text-content-primary">Timing &amp; Delivery</p>
+                                                <div class="mt-4 space-y-3 text-xs">
+                                                    <div class="flex items-start justify-between gap-4 border-b border-outline-subtle pb-3"><span class="font-semibold text-content-muted">Cadence</span><span class="text-right font-semibold text-content-primary">{{ schedule.cadence_detail }}</span></div>
+                                                    <div class="flex items-start justify-between gap-4 border-b border-outline-subtle pb-3"><span class="font-semibold text-content-muted">Timezone</span><span class="text-right font-semibold text-content-primary">{{ schedule.timezone }}</span></div>
+                                                    <div class="flex items-start justify-between gap-4"><span class="font-semibold text-content-muted">Delivery</span><span class="text-right font-semibold text-content-primary">{{ schedule.delivery_label }}</span></div>
+                                                </div>
                                             </div>
                                         </div>
                                     </section>
+
+                                    <section data-schedule-detail-block="execution-state"
+                                             class="rounded-2xl border border-outline-subtle bg-surface-card p-4">
+                                        <div class="flex items-start gap-3">
+                                            <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="activity" class="h-5 w-5"></i></span>
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-sm font-semibold text-content-primary">Execution State</p>
+                                                <div class="mt-4 space-y-3 text-xs">
+                                                    <div class="flex items-start justify-between gap-4 border-b border-outline-subtle pb-3"><span class="font-semibold text-content-muted">Schedule</span><span class="text-right font-semibold text-content-primary">{{ schedule.status_meta.label }}</span></div>
+                                                    <div class="flex items-start justify-between gap-4 border-b border-outline-subtle pb-3"><span class="font-semibold text-content-muted">Last Result</span><span class="text-right font-semibold text-content-primary">{{ schedule.last_status_label }}</span></div>
+                                                    <div class="flex items-start justify-between gap-4"><span class="font-semibold text-content-muted">Run Now</span><span class="text-right font-semibold {{ 'text-status-normal-text' if payload.run_actions_enabled else 'text-status-warning-text' }}">{{ 'Available' if payload.run_actions_enabled else 'Paused by storage readiness' }}</span></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
+                                </div>
+
+                                {% if not payload.run_actions_enabled %}
+                                    <section class="rounded-xl border {{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft px-4 py-3">
+                                        <div class="flex items-start gap-3"><i data-lucide="hard-drive" class="mt-0.5 h-4 w-4 shrink-0 text-status-warning-text" aria-hidden="true"></i><div><p class="text-xs font-semibold text-status-warning-text">Run Now Paused</p><p class="mt-1 text-xs leading-5 text-content-secondary">Artifact storage is not writable. Schedule management remains available.</p></div></div>
+                                    </section>
                                 {% endif %}
+
                                 <div class="flex flex-wrap items-center justify-end gap-2 border-t border-outline-subtle pt-4">
-                                    {% if schedule.last_report_id %}<a href="{{ url_for('reports.generated_report_detail', report_id=schedule.last_report_id) }}"
-   class="{{ table_ui.action_classes() }}"><i data-lucide="file-text" class="h-4 w-4" aria-hidden="true"></i>Last Report</a>{% endif %}
-                                    {% set edit_query = payload.registry_query_params.copy() %}{% set _ = edit_query.update({'page': payload.pagination.page, 'per_page': payload.pagination.per_page, 'edit_schedule_id': schedule.id}) %}<a href="{{ url_for('reports.schedules', **edit_query) }}"
-   class="{{ table_ui.action_classes() }}"><i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>Edit Schedule</a>
-                                    <form method="POST"
-                                          action="{{ url_for('reports.toggle_schedule', schedule_id=schedule.id) }}">
+                                    {% if schedule.last_report_id %}<a href="{{ url_for('reports.generated_report_detail', report_id=schedule.last_report_id) }}" class="{{ table_ui.action_classes() }}"><i data-lucide="file-text" class="h-4 w-4" aria-hidden="true"></i>Last Report</a>{% endif %}
+                                    {% set edit_query = payload.registry_query_params.copy() %}{% set _ = edit_query.update({'page': payload.pagination.page, 'per_page': payload.pagination.per_page, 'edit_schedule_id': schedule.id}) %}<a href="{{ url_for('reports.schedules', **edit_query) }}" class="{{ table_ui.action_classes() }}"><i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>Edit Schedule</a>
+                                    <form method="POST" action="{{ url_for('reports.toggle_schedule', schedule_id=schedule.id) }}">
                                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                         <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
-                                        <button type="submit"
-                                                data-operation-submit
-                                                data-loading-label="Updating Schedule..."
-                                                class="{{ table_ui.action_classes() }}"><i data-lucide="{{ 'pause' if schedule.is_enabled else 'play' }}"
-   class="h-4 w-4"
-   aria-hidden="true"></i><span data-operation-submit-label>{{ 'Pause' if schedule.is_enabled else 'Enable' }}</span></button>
+                                        <button type="submit" data-operation-submit data-loading-label="Updating Schedule..." class="{{ table_ui.action_classes() }}"><i data-lucide="{{ 'pause' if schedule.is_enabled else 'play' }}" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>{{ 'Pause' if schedule.is_enabled else 'Enable' }}</span></button>
                                     </form>
-                                    <button type="button"
-                                            data-kaori-dialog-open
-                                            data-dialog-target="schedule-delete-{{ loop.index }}"
-                                            class="{{ table_ui.action_classes() }}"><i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>Delete</button>
-                                    <form method="POST"
-                                          action="{{ url_for('reports.run_schedule', schedule_id=schedule.id) }}">
+                                    <button type="button" data-kaori-dialog-open data-dialog-target="schedule-delete-{{ loop.index }}" class="{{ table_ui.action_classes() }}"><i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>Delete</button>
+                                    <form method="POST" action="{{ url_for('reports.run_schedule', schedule_id=schedule.id) }}">
                                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                         <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
-                                        <button type="submit"
-                                                data-operation-submit
-                                                data-loading-label="Queueing Report..."
-                                                {% if not payload.run_actions_enabled %}disabled title="Artifact storage is unavailable."{% endif %}
-                                                class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:bg-kaori-soft disabled:text-content-muted"><i data-lucide="play" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Run Now</span></button>
+                                        <button type="submit" data-operation-submit data-loading-label="Queueing Report..." {% if not payload.run_actions_enabled %}disabled title="Artifact storage is unavailable."{% endif %} class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:bg-kaori-soft disabled:text-content-muted"><i data-lucide="play" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Run Now</span></button>
                                     </form>
                                 </div>
                             </div>
@@ -1084,7 +1073,7 @@
                 </section>
             {% endif %}
         </section>
-        {% call record_modal.render('schedule-form-dialog', 'Schedule Workspace', 'Edit Report Schedule' if schedule_form_is_edit else 'Create Report Schedule', 'Define one recurring report contract, execution cadence, and delivery policy.', 'calendar-plus', 'Schedule management remains available independently from generated artifacts; execution is storage-aware.', 'standard') %}
+        {% call record_modal.render('schedule-form-dialog', 'Schedule Workspace', 'Edit Report Schedule' if schedule_form_is_edit else 'Create Report Schedule', 'Define one recurring report contract, execution cadence, and delivery policy.', 'calendar-plus', 'Schedule management remains available independently from generated artifacts; execution is storage-aware.', 'expanded') %}
             {{ schedule_form(schedule_form_state, schedule_form_action, 'Save Schedule' if schedule_form_is_edit else 'Create Schedule', 'Saving Schedule...' if schedule_form_is_edit else 'Creating Schedule...', request.full_path.rstrip('?') ) }}
         {% endcall %}
     </div>

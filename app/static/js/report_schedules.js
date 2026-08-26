@@ -19,6 +19,7 @@
         const familyByType = parseConfig(workspace.dataset.scheduleFamilyByType)
         const scopeByType = parseConfig(workspace.dataset.scheduleScopeByType)
         const domainByType = parseConfig(workspace.dataset.scheduleDomainByType)
+        const scheduleNamespacesByCluster = parseConfig(workspace.dataset.scheduleNamespacesByCluster)
 
         workspace.querySelectorAll('[data-schedule-form]').forEach((form) => {
             if (form.dataset.initialized === 'true') return
@@ -34,8 +35,35 @@
             const kubernetesScope = form.querySelector('[data-schedule-kubernetes-scope]')
             const objectStorageScope = form.querySelector('[data-schedule-object-storage-scope]')
             const clusterSelect = form.querySelector('[data-schedule-cluster]')
-            const namespaceInput = form.querySelector('[data-schedule-namespace]')
+            const namespaceSelect = form.querySelector('[data-schedule-namespace]')
             const objectStorageSelect = form.querySelector('[data-schedule-object-storage-system]')
+
+
+            const syncNamespaceOptions = () => {
+                if (!namespaceSelect) return
+
+                const selectedCluster = clusterSelect?.value || ''
+                const previousNamespace = namespaceSelect.value || ''
+                const options = Array.isArray(scheduleNamespacesByCluster[selectedCluster])
+                    ? scheduleNamespacesByCluster[selectedCluster]
+                    : []
+
+                namespaceSelect.replaceChildren()
+                const allOption = document.createElement('option')
+                allOption.value = ''
+                allOption.textContent = 'All Namespaces'
+                namespaceSelect.appendChild(allOption)
+
+                options.forEach((namespace) => {
+                    const option = document.createElement('option')
+                    option.value = namespace
+                    option.textContent = namespace
+                    namespaceSelect.appendChild(option)
+                })
+
+                namespaceSelect.value = options.includes(previousNamespace) ? previousNamespace : ''
+                namespaceSelect.disabled = !selectedCluster
+            }
 
             const syncTiming = () => {
                 const value = cadence?.value || 'weekly'
@@ -54,8 +82,9 @@
                 kubernetesScope?.classList.toggle('hidden', usesObjectStorage)
                 objectStorageScope?.classList.toggle('hidden', !usesObjectStorage)
                 if (clusterSelect) clusterSelect.disabled = usesObjectStorage
-                if (namespaceInput) namespaceInput.disabled = usesObjectStorage
+                if (namespaceSelect) namespaceSelect.disabled = usesObjectStorage || !clusterSelect?.value
                 if (objectStorageSelect) objectStorageSelect.disabled = !usesObjectStorage
+                if (!usesObjectStorage) syncNamespaceOptions()
                 form.querySelectorAll('[data-schedule-channel-domains]').forEach((input) => {
                     const domains = String(input.dataset.scheduleChannelDomains || '')
                         .split(',')
@@ -98,6 +127,7 @@
             }
 
             reportType?.addEventListener('change', () => syncContract(true))
+            clusterSelect?.addEventListener('change', syncNamespaceOptions)
             cadence?.addEventListener('change', syncTiming)
             form.querySelectorAll('[data-schedule-reset-sections]').forEach((button) =>
                 button.addEventListener('click', () => syncContract(true))
@@ -114,6 +144,7 @@
                 }
             })
 
+            syncNamespaceOptions()
             syncContract(false)
             syncTiming()
         })
