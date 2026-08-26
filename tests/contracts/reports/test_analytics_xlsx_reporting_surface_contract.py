@@ -73,7 +73,7 @@ def test_reports_pages_publish_analytics_excel_as_analysis_artifact() -> None:
     assert 'Analytics XLSX is a drill-down analysis artifact' in generated_detail
     assert 'Analytics PDF, XLSX, or CSV artifacts' in schedules_service
     assert 'Analytics schedules may publish PDF, XLSX, or CSV' in schedules_page
-    assert 'PDF, XLSX, and CSV report artifacts' in storage_service
+    assert 'PDF/XLSX/CSV artifacts' in storage_service
     assert 'PDF · XLSX · CSV Artifacts' in storage_page
 
 

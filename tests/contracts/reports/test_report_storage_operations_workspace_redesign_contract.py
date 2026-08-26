@@ -36,15 +36,15 @@ def test_storage_page_uses_balanced_hero_and_contract_first_workspace() -> None:
     assert 'Generated Reports' in template
     assert 'data-report-storage-posture=' in template
     assert 'data-storage-workspace-shell="true"' in template
-    assert 'data-storage-overview-layout="contract-first"' in template
+    assert 'data-storage-overview-layout="posture-target-coverage"' in template
     assert 'data-report-storage-readiness-monitor="true"' in template
-    assert 'Active Storage Contract' in template
-    assert 'Readiness & Access' in template
+    assert 'Storage Posture' in template
+    assert 'Access &amp; Readiness' in template
 
     assert 'data-storage-artifact-evidence="metadata-first"' in template
-    assert 'Report Reference Coverage' in template
+    assert '>References</dt>' in template
     assert 'Tracked Size' in template
-    assert 'metadata-first counts from the Reports database' in template
+    assert 'Coverage comes from Reports metadata; backend enumeration is not required.' in template
     assert 'reports/components/_summary_strip.html' not in template
     assert 'xl:grid-cols-[minmax(0,1fr)_380px]' not in template
     for raw_palette in ('emerald-', 'amber-', 'rose-', 'slate-'):
@@ -195,7 +195,7 @@ def test_storage_integrity_and_retention_have_single_authoritative_ownership_bou
     template = read('app/templates/reports/storage/index.html')
     service = read('app/reports/storage/service.py')
 
-    assert 'data-storage-integrity-actions="split-workspace"' in template
+    assert 'data-storage-integrity-actions="action-cards"' in template
     assert 'Validate the newest retained report references against their recorded backend prefix.' in service
     assert 'Read-only; nothing is deleted.' in service
     assert "url_for('reports.scan_storage_integrity')" in template
@@ -214,17 +214,17 @@ def test_storage_integrity_and_retention_have_single_authoritative_ownership_bou
 def test_storage_overview_uses_active_backend_connection_contract_not_field_cards() -> None:
     template = read('app/templates/reports/storage/index.html')
 
-    assert 'data-storage-active-backend-layout="connection-contract"' in template
+    assert 'data-storage-target-access="two-panel"' in template
     assert 'S3-compatible storage' not in template or '{{ posture.backend_label }}' in template
-    assert 'data-storage-backend-connection="s3"' in template
-    assert 'data-storage-backend-access="s3"' in template
-    assert 'Connection Target' in template
-    assert 'Readiness & Access' in template
-    assert 'Object Prefix' in template
-    assert 'Credential Mode' in template
-    assert 'S3 Client' in template
+    assert 'data-storage-backend-connection="{{ payload.active_backend }}"' in template
+    assert 'data-storage-backend-access="{{ payload.active_backend }}"' in template
+    assert 'Storage Target' in template
+    assert 'Access &amp; Readiness' in template
+    assert 'Prefix' in template
+    assert '>Credentials</dt>' in template
+    assert 'Read' in template
     assert 'data-storage-configuration-boundary="true"' in template
-    assert 'Configuration Source' in template
+    assert 'Storage configuration is protected and managed through {{ payload.configuration_source }}' in template
     assert 'Object Key Contract' in template
 
     overview = template.split("{% if payload.workspace == 'overview' %}", 1)[1].split(
@@ -232,7 +232,7 @@ def test_storage_overview_uses_active_backend_connection_contract_not_field_card
     )[0]
     assert '{% set active_items = [' not in overview
     assert 'Backend Contract' not in overview
-    assert 'rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3' not in overview
+    assert 'data-storage-posture="summary"' in overview
 
 
 def test_storage_verification_is_post_only_and_object_key_copy_is_generic_asset_aware() -> None:

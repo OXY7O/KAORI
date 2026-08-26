@@ -42,7 +42,7 @@ def test_storage_page_stays_available_and_shows_reconnect_guidance() -> None:
     assert 'Verify Connection' in template
     assert "url_for('reports.verify_storage')" in template
     assert 'method="post"' in template
-    assert 'Integrity Check Paused' in template
+    assert "'Ready' if payload.integrity_actions_enabled else 'Paused'" in template
     assert 'Lifecycle Actions Live in Data Lifecycle' in template
     assert 'Traceback' not in template
     assert 'EndpointConnectionError' not in template

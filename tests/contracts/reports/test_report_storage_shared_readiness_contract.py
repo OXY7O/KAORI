@@ -173,7 +173,8 @@ def test_storage_page_exposes_monitor_state_without_exposing_credentials() -> No
     service = read('app/reports/storage/service.py')
 
     assert 'data-report-storage-readiness-monitor="true"' in storage
-    assert 'Automatic Storage Readiness' in storage
+    assert 'data-report-storage-readiness-monitor="true"' in storage
+    assert 'Every {{ payload.readiness_monitor.interval_minutes }} min' in storage
     assert 'payload.readiness_monitor.interval_minutes' in storage
     assert 'payload.readiness_monitor.checked_label' in storage
     assert "'shared_state': bool(current_app.config.get('REDIS_URL'))" in service

@@ -28,10 +28,10 @@ def test_reports_operational_copy_is_compact_and_consistent() -> None:
     )
     assert has_python_string(
         storage_service,
-        'Review storage readiness, backend and reference integrity, verification results, retained coverage, and lifecycle ownership for PDF, XLSX, and CSV report artifacts.',
+        'Review report storage readiness, integrity, and lifecycle ownership for PDF/XLSX/CSV artifacts.',
     )
     assert (
-        'S3-compatible target for generated report artifacts, download references, and verification evidence.'
+        'S3-compatible target for generated reports and verification evidence.'
         in storage
     )
 
@@ -52,22 +52,23 @@ def test_template_registry_uses_compact_six_column_layout_without_horizontal_scr
     assert '{{ template.report_type_label }}' in registry
 
 
-def test_storage_object_key_contract_is_full_width_nowrap_and_integrity_has_guidance() -> None:
+def test_storage_object_key_contract_is_readable_and_integrity_uses_action_cards() -> None:
     template = read('app/templates/reports/storage/index.html')
 
-    assert 'data-storage-object-key-contract="full-width"' in template
-    object_key = template.split('data-storage-object-key-contract="full-width"', 1)[1].split('</div>', 2)[0]
-    assert 'whitespace-nowrap' in object_key
-    assert 'break-all' not in object_key
+    assert 'data-storage-object-key-contract="readable"' in template
+    object_key = template.split('data-storage-object-key-contract="readable"', 1)[1].split('</div>', 2)[0]
+    assert 'whitespace-nowrap' not in object_key
+    assert 'overflow-x-auto' not in object_key
+    assert 'break-words' in object_key
     assert 'data-kaori-copy' in object_key
 
     integrity = template.split("{% elif payload.workspace == 'integrity' %}", 1)[1].split(
         "{% elif payload.workspace == 'retention' %}", 1
     )[0]
-    assert 'data-storage-integrity-guidance="true"' in integrity
-    assert 'Strong Backend Verification queues a worker-owned write → confirm → delete test' in integrity
-    assert 'Artifact Integrity Scan is read-only' in integrity
-    assert 'Neither action changes protected storage configuration or repairs artifacts.' in integrity
+    assert 'data-storage-integrity-actions="action-cards"' in integrity
+    assert 'data-storage-integrity-guidance="true"' not in integrity
+    assert 'Artifact Integrity Scan' in integrity
+    assert 'Read-only check of retained artifact references.' in integrity
 
 
 def test_quick_actions_use_one_card_shell_and_include_jobs_executions() -> None:

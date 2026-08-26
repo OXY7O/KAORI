@@ -145,7 +145,7 @@ def test_reports_hero_copy_is_compact_and_operational() -> None:
     }
     expected = {
         'overview': 'Review reporting readiness, artifacts, automation, and report coverage across managed infrastructure.',
-        'generate': 'Build a governed report from connected data, scope, sections, and an approved output format.',
+        'generate': 'Build governed reports from connected data and approved formats. Analytics: PDF/XLSX/CSV · Inventory: XLSX/CSV.',
         'generated': (
             'Review PDF publications, XLSX analytical workbooks, and CSV exports across worker execution, artifact '
             'readiness, storage availability, and lifecycle state from generation through retention.'
@@ -155,7 +155,7 @@ def test_reports_hero_copy_is_compact_and_operational() -> None:
         ),
         'schedules': 'Automate Analytics PDF, XLSX, or CSV artifacts and Inventory XLSX/CSV exports with timezone-aware schedules and retained run evidence.',
         'storage': (
-            'Review storage readiness, backend and reference integrity, verification results, retained coverage, and lifecycle ownership for PDF, XLSX, and CSV report artifacts.'
+            'Review report storage readiness, integrity, and lifecycle ownership for PDF/XLSX/CSV artifacts.'
         ),
     }
     for key, value in expected.items():

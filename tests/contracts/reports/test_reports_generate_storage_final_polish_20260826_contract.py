@@ -68,11 +68,11 @@ def test_requested_report_copy_is_shortened_without_losing_contract_meaning() ->
         in templates_service
     )
     assert (
-        'Review storage readiness, backend and reference integrity, verification results, retained coverage, and lifecycle ownership for PDF, XLSX, and CSV report artifacts.'
+        'Review report storage readiness, integrity, and lifecycle ownership for PDF/XLSX/CSV artifacts.'
         in storage_service
     )
     assert (
-        'S3-compatible target for generated report artifacts, download references, and verification evidence.'
+        'S3-compatible target for generated reports and verification evidence.'
         in storage_template
     )
 
@@ -85,18 +85,19 @@ def test_reports_storage_uses_contract_first_three_workspace_redesign() -> None:
     source = read(STORAGE_TEMPLATE)
 
     assert 'data-storage-workspace-shell="true"' in source
-    assert 'data-storage-overview-layout="contract-first"' in source
-    assert 'data-storage-integrity-layout="verification-first"' in source
+    assert 'data-storage-overview-layout="posture-target-coverage"' in source
+    assert 'data-storage-integrity-layout="posture-actions-results"' in source
     assert 'data-storage-retention-layout="lifecycle-governance"' in source
     assert 'data-storage-posture-layout="editorial-readiness"' not in source
 
-    assert 'Active Storage Contract' in source
+    assert 'Storage Posture' in source
     assert 'Artifact Coverage' in source
-    assert 'Readiness & Access' in source
-    assert 'Verification & Integrity' in source
+    assert 'Access &amp; Readiness' in source
+    assert 'Integrity Posture' in source
     assert 'Generated Report Lifecycle Policy' in source
     assert 'Ownership Boundary' in source
 
     # Worker-owned verification remains the execution model after the redesign.
     assert "{% include 'reports/storage/_verification_status.html' %}" in source
-    assert 'worker-owned write → confirm → delete test' in source
+    verification_partial = read(ROOT / 'app/templates/reports/storage/_verification_status.html')
+    assert 'Worker-owned write → confirm → delete test.' in verification_partial
