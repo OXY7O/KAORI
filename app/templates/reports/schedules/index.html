@@ -562,7 +562,9 @@
                             </div>
                         </div>
                         <div class="mt-4">{{ loading_bar.render('schedule-registry-loading', active=false, label='Refreshing Schedule Registry') }}</div>
-                        {% call registry_ui.filter_form('reports.schedules', 'schedule-registry', 'schedule-registry-loading', payload.pagination.per_page, 'mt-4', 'data-schedule-registry-filters', 'true') %}
+                    </header>
+                    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+                        {% call registry_ui.filter_form('reports.schedules', 'schedule-registry', 'schedule-registry-loading', payload.pagination.per_page, '', 'data-schedule-registry-filters', 'true') %}
                             <input type="hidden" name="workspace" value="registry">
                             <label class="block">
                                 <span class="{{ table_ui.filter_label_classes() }}">Search</span>
@@ -624,7 +626,7 @@
                                 </select>
                             </label>
                         {% endcall %}
-                    </header>
+                    </div>
                     <div class="overflow-x-auto">
                         <table class="{{ table_ui.table_classes() }}">
                             <thead class="{{ table_ui.head_classes() }}">
@@ -833,7 +835,9 @@
                             </div>
                         </div>
                         <div class="mt-4">{{ loading_bar.render('schedule-runs-loading', active=false, label='Refreshing Schedule Run Lifecycle') }}</div>
-                        {% call registry_ui.filter_form('reports.schedules', 'schedule-runs-registry', 'schedule-runs-loading', payload.run_pagination.per_page, 'mt-4', 'data-schedule-run-filters', 'true', page_param='run_page', per_page_param='run_per_page') %}
+                    </header>
+                    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+                        {% call registry_ui.filter_form('reports.schedules', 'schedule-runs-registry', 'schedule-runs-loading', payload.run_pagination.per_page, '', 'data-schedule-run-filters', 'true', page_param='run_page', per_page_param='run_per_page') %}
                             <input type="hidden" name="workspace" value="runs">
                             <label class="block">
                                 <span class="{{ table_ui.filter_label_classes() }}">Search</span>
@@ -889,7 +893,7 @@
                                 </select>
                             </label>
                         {% endcall %}
-                    </header>
+                    </div>
                     <div class="overflow-x-auto">
                         <table class="{{ table_ui.table_classes('min-w-[72rem]') }}"
                                data-schedule-run-lifecycle-table="true">

@@ -110,3 +110,21 @@ def test_report_templates_and_storage_heroes_remain_max_three_metadata() -> None
     storage = read('app/templates/reports/storage/index.html')
     assert hero_metadata_count(templates) <= 3
     assert hero_metadata_count(storage) <= 3
+
+
+def test_schedule_registry_and_runs_use_canonical_filter_surface() -> None:
+    schedules = read('app/templates/reports/schedules/index.html')
+
+    registry = schedules.split('aria-label="Schedule Registry"', 1)[1].split('<div class="overflow-x-auto">', 1)[0]
+    runs = schedules.split('aria-label="Recent Schedule Runs"', 1)[1].split('<div class="overflow-x-auto">', 1)[0]
+
+    for block in (registry, runs):
+        assert 'table_ui.inventory_filter_bar_classes()' in block
+        assert 'registry_ui.filter_form' in block
+        assert "payload.pagination.per_page, 'mt-4'" not in block
+        assert "payload.run_pagination.per_page, 'mt-4'" not in block
+
+    registry_header = registry.split('</header>', 1)[0]
+    runs_header = runs.split('</header>', 1)[0]
+    assert 'registry_ui.filter_form' not in registry_header
+    assert 'registry_ui.filter_form' not in runs_header
