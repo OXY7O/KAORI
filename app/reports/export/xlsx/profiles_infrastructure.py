@@ -4,6 +4,7 @@ from app.reports.export.xlsx.profiles_common import COMMON_NAMESPACE_COLUMNS
 from app.reports.export.xlsx.schema import (
     COLLECTED_AT_COLUMN,
     InventoryOverviewChart,
+    InventoryOverviewMetric,
     InventoryWorkbookProfile,
     column,
 )
@@ -18,12 +19,20 @@ INFRASTRUCTURE_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] 
         ),
         row_source='inventory_assets',
         identity_columns=('system', 'environment', 'asset_type', 'name'),
+        record_label='buckets / containers',
+        overview_metrics=(
+            InventoryOverviewMetric('Buckets / Containers', 'row_count'),
+            InventoryOverviewMetric('Total Usage GiB', 'sum', key='usage_gib', number_format='#,##0.00', unit='GiB'),
+            InventoryOverviewMetric('Total Objects', 'sum', key='object_count'),
+            InventoryOverviewMetric('Quota Coverage', 'coverage_percent', key='quota_gib', number_format='0.0"%"', unit='%'),
+        ),
         overview_chart=InventoryOverviewChart(
-            title='Top Object Storage Usage (GiB)',
+            title='Top Object Storage Consumers',
             category_key='name',
+            visual_type='ranked_bar',
             aggregation='value',
             value_key='usage_gib',
-            top_n=10,
+            top_n=8,
         ),
         columns=(
             column(
@@ -240,9 +249,18 @@ INFRASTRUCTURE_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] 
         ),
         row_source='records',
         identity_columns=('cluster', 'environment', 'namespace', 'secret_name'),
+        record_label='certificates',
+        overview_metrics=(
+            InventoryOverviewMetric('Certificates', 'row_count'),
+            InventoryOverviewMetric('Valid', 'count', key='status_label', match_values=('Valid',)),
+            InventoryOverviewMetric('Renewal Window', 'count', key='status_label', match_values=('Renewal Window',)),
+            InventoryOverviewMetric('Critical / Expired', 'count', key='status_label', match_values=('Critical Expiry', 'Expired')),
+        ),
         overview_chart=InventoryOverviewChart(
             title='Certificates by Validity Status',
             category_key='status_label',
+            visual_type='doughnut',
+            top_n=6,
         ),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,

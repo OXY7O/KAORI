@@ -201,8 +201,8 @@ def _check_cross_format_standards(errors: list[str]) -> None:
             errors.append(f'CSV standard is missing required contract token: {token}.')
 
     for token in (
-        "XLSX_REPORTING_STANDARD: Final = 'kaori-reporting-xlsx-v1.0'",
-        "INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v3.0'",
+        "XLSX_REPORTING_STANDARD: Final = 'kaori-reporting-xlsx-v2.0'",
+        "INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v4.0'",
         "INVENTORY_OVERVIEW_SHEET: Final = 'Overview'",
         "INVENTORY_DATA_SHEET: Final = 'Inventory'",
         "INVENTORY_METADATA_SHEET: Final = 'Metadata'",
@@ -221,7 +221,18 @@ def _check_cross_format_standards(errors: list[str]) -> None:
         if token not in xlsx_builder:
             errors.append(f'Inventory XLSX builder is missing required reusable contract token: {token}.')
 
-    for token in ('Workbook Navigation', 'sheet.parent.sheetnames', 'BarChart', "chart.aggregation == 'count'"):
+    for token in (
+        'Executive Snapshot',
+        'Executive Readout',
+        'Primary Visual',
+        'Supporting Data',
+        'Workbook Navigation',
+        'sheet.parent.sheetnames',
+        'BarChart',
+        'DoughnutChart',
+        'DataLabelList',
+        'visual.varyColors = False',
+    ):
         if token not in xlsx_overview:
             errors.append(f'Inventory XLSX Overview is missing required contract token: {token}.')
 

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Final
 
 from openpyxl import Workbook, load_workbook
+from openpyxl.chart import BarChart, DoughnutChart
 from openpyxl.formatting.rule import CellIsRule, FormulaRule
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
@@ -52,6 +53,8 @@ from app.reports.export.xlsx.style import (
     style_context,
     style_empty,
     style_header,
+    style_metadata_section,
+    style_navigation_link,
     style_subtitle,
     style_title,
 )
@@ -190,29 +193,80 @@ def validate_inventory_xlsx_artifact(output_path: Path) -> None:
             )
 
         overview = workbook[INVENTORY_OVERVIEW_SHEET]
-        if not overview._charts:
-            visual_message = str(overview['A19'].value or '').strip()
-            allowed_no_chart_messages = {
-                'No committed records are available for an evidence-backed visual summary.',
-                'No chartable numeric evidence is available for this workbook scope.',
-            }
-            if visual_message not in allowed_no_chart_messages:
+        if overview['A5'].value != 'Executive Snapshot':
+            raise ValueError('KAORI XLSX contract violation: Executive Snapshot is missing.')
+        if overview['A9'].value != 'Executive Readout':
+            raise ValueError('KAORI XLSX contract violation: Executive Readout is missing.')
+        if overview['A13'].value != 'Primary Visual' or overview['I13'].value != 'Supporting Data':
+            raise ValueError('KAORI XLSX contract violation: Primary Visual or Supporting Data section is missing.')
+
+        has_no_chart_message = str(overview['A14'].value or '').strip() == (
+            'No committed chartable evidence is available for this workbook scope.'
+        )
+        if not overview._charts and not has_no_chart_message:
+            raise ValueError(
+                'KAORI XLSX contract violation: Overview must contain an evidence-backed chart '
+                'when chartable report evidence is available.'
+            )
+        if overview._charts:
+            chart = overview._charts[0]
+            if isinstance(chart, BarChart):
+                if getattr(chart, 'varyColors', None) is not False:
+                    raise ValueError(
+                        'KAORI XLSX contract violation: ranked bar charts must set varyColors=False.'
+                    )
+                if chart.legend is not None:
+                    raise ValueError(
+                        'KAORI XLSX contract violation: ranked bar charts must not use a redundant legend.'
+                    )
+                if chart.dLbls is None or chart.dLbls.showVal is not True:
+                    raise ValueError(
+                        'KAORI XLSX contract violation: ranked bar charts must use direct value labels.'
+                    )
+            elif isinstance(chart, DoughnutChart):
+                if chart.legend is None or chart.legend.position != 'r':
+                    raise ValueError(
+                        'KAORI XLSX contract violation: doughnut legend must be present on the right.'
+                    )
+                if chart.dLbls is None or chart.dLbls.showPercent is not True:
+                    raise ValueError(
+                        'KAORI XLSX contract violation: doughnut charts must use percentage labels.'
+                    )
+            else:
+                raise ValueError('KAORI XLSX contract violation: unsupported Overview chart type.')
+
+            if (
+                overview['I14'].value != 'Rank'
+                or overview['J14'].value in (None, '')
+                or overview['L14'].value != 'Share of Total'
+            ):
                 raise ValueError(
-                    'KAORI XLSX contract violation: Overview must contain an evidence-backed chart '
-                    'when chartable report evidence is available.'
+                    'KAORI XLSX contract violation: chartable Overview must include canonical supporting data.'
                 )
 
         expected_navigation = {
-            'F9': (INVENTORY_DATA_SHEET, f"#'{INVENTORY_DATA_SHEET}'!A1"),
-            'F10': (INVENTORY_METADATA_SHEET, f"#'{INVENTORY_METADATA_SHEET}'!A1"),
-            'F11': (INVENTORY_DICTIONARY_SHEET, f"#'{INVENTORY_DICTIONARY_SHEET}'!A1"),
+            'A32': (INVENTORY_DATA_SHEET, f"#'{INVENTORY_DATA_SHEET}'!A1"),
+            'E32': (INVENTORY_METADATA_SHEET, f"#'{INVENTORY_METADATA_SHEET}'!A1"),
+            'I32': (INVENTORY_DICTIONARY_SHEET, f"#'{INVENTORY_DICTIONARY_SHEET}'!A1"),
         }
         for coordinate, (label, target) in expected_navigation.items():
             cell = overview[coordinate]
             actual_target = cell.hyperlink.target if cell.hyperlink is not None else None
-            if cell.value != label or actual_target != target:
+            if cell.value != f'Open {label} →' or actual_target != target:
                 raise ValueError(
                     f'KAORI XLSX contract violation: Overview navigation for {label} is missing or invalid.'
+                )
+
+        for sheet_name, coordinate in (
+            (INVENTORY_DATA_SHEET, 'A4'),
+            (INVENTORY_METADATA_SHEET, 'A3'),
+            (INVENTORY_DICTIONARY_SHEET, 'A3'),
+        ):
+            cell = workbook[sheet_name][coordinate]
+            actual_target = cell.hyperlink.target if cell.hyperlink is not None else None
+            if cell.value != '← Overview' or actual_target != "#'Overview'!A1":
+                raise ValueError(
+                    f'KAORI XLSX contract violation: {sheet_name} must link back to Overview.'
                 )
 
         metadata = workbook[INVENTORY_METADATA_SHEET]
@@ -253,7 +307,8 @@ def _build_inventory_sheet(
     context_cell.value = _inventory_context_line(dataset)
     style_context(context_cell)
     sheet.row_dimensions[3].height = 26
-    sheet.row_dimensions[4].height = 8
+    _write_back_to_overview(sheet, 'A4')
+    sheet.row_dimensions[4].height = 20
 
     for index, column_spec in enumerate(profile.columns, start=1):
         cell = sheet.cell(row=HEADER_ROW, column=index, value=column_spec.label)
@@ -276,7 +331,7 @@ def _build_inventory_sheet(
         ref=f'A{HEADER_ROW}:{last_column}{final_row}',
     )
     table.tableStyleInfo = TableStyleInfo(
-        name='TableStyleMedium4',
+        name='TableStyleLight1',
         showFirstColumn=False,
         showLastColumn=False,
         showRowStripes=False,
@@ -287,6 +342,8 @@ def _build_inventory_sheet(
 
     frozen_column = get_column_letter(max(1, len(profile.identity_columns) + 1))
     sheet.freeze_panes = f'{frozen_column}{DATA_START_ROW}'
+    sheet.sheet_view.zoomScale = 85
+    sheet.sheet_view.zoomScaleNormal = 85
 
     _apply_status_conditional_formatting(
         sheet,
@@ -313,7 +370,8 @@ def _write_inventory_row(
     for column_index, column_spec in enumerate(profile.columns, start=1):
         value = _cell_value(row.get(column_spec.key), column_spec)
         cell = sheet.cell(row=row_index, column=column_index, value=value)
-        style_body(cell, alternate=row_index % 2 == 0)
+        horizontal = 'right' if column_spec.data_type in {'integer', 'number', 'decimal'} else 'left'
+        style_body(cell, alternate=row_index % 2 == 0, horizontal=horizontal)
         if column_spec.number_format:
             cell.number_format = column_spec.number_format
         rendered_values.append('' if value is None else str(value))
@@ -351,10 +409,11 @@ def _build_metadata_sheet(
 
     sheet.merge_cells('A2:D2')
     subtitle = sheet['A2']
-    subtitle.value = 'Canonical source, scope, schema, security, and parity controls.'
+    subtitle.value = 'Canonical identity, reporting boundary, workbook contract, data handling, and security evidence.'
     style_subtitle(subtitle)
     sheet.row_dimensions[2].height = 26
-    sheet.row_dimensions[3].height = 8
+    _write_back_to_overview(sheet, 'A3')
+    sheet.row_dimensions[3].height = 20
 
     headers = ('Field', 'Value', 'Applies To', 'Notes')
     for index, label in enumerate(headers, start=1):
@@ -362,116 +421,60 @@ def _build_metadata_sheet(
         style_header(cell)
     sheet.row_dimensions[_METADATA_HEADER_ROW].height = 28
 
-    metadata = [
-        (
-            'Workbook Standard',
-            INVENTORY_WORKBOOK_STANDARD,
-            'All sheets',
-            'Canonical reusable KAORI Inventory Excel contract.',
-        ),
-        (
-            'XLSX Standard',
-            XLSX_REPORTING_STANDARD,
-            'Workbook',
-            'Global KAORI Excel contract for Overview, navigation, and evidence-backed visual summary.',
-        ),
-        (
-            'Tabular Standard',
-            TABULAR_EXPORT_STANDARD,
-            'Workbook',
-            'Shared CSV/XLSX source, identity, and metadata contract.',
-        ),
-        ('Schema Version', TABULAR_SCHEMA_VERSION, 'Workbook', 'Public tabular schema version.'),
-        (
-            'Report Reference',
-            str(context.report_id),
-            'Workbook',
-            'Stable KAORI document reference; internal database keys are not exposed.',
-        ),
+    metadata: list[tuple[Any, Any, Any, Any]] = [
+        ('REPORT IDENTITY', None, None, None),
+        ('Report Reference', str(context.report_id), 'Workbook', 'Stable KAORI document reference; internal database keys are not exposed.'),
         ('Report Name', context.report_name, 'Workbook', 'User-visible report request name.'),
         ('Report Type', context.report_type, 'Workbook', profile.title),
-        (
-            'Report Family',
-            INVENTORY_WORKBOOK_FAMILY,
-            'Workbook',
-            'Inventory is table-first and excludes analytical recommendations.',
-        ),
-        (
-            'Primary Format',
-            'XLSX',
-            'Workbook',
-            'Native Excel workbook with Overview, canonical Inventory, Metadata, and Field Dictionary sheets.',
-        ),
-        ('CSV Parity', 'Enabled', 'Inventory', 'CSV and XLSX use the same InventoryExportDataset and profile order.'),
+        ('Report Family', INVENTORY_WORKBOOK_FAMILY, 'Workbook', 'Inventory remains evidence-first and excludes analytical recommendations.'),
         ('Classification', context.classification, 'Workbook', 'Artifact handling classification.'),
         ('Generated At', context.generated_at, 'Workbook', 'Artifact generation timestamp.'),
         ('Generated By', context.generated_by, 'Workbook', 'Committed user display-name or username snapshot.'),
-        (
-            f'Selected {context.scope_label}',
-            context.cluster_scope,
-            'Inventory',
-            'Canonical infrastructure asset boundary for this report.',
-        ),
-        (
-            'Selected Namespace',
-            context.namespace_scope,
-            'Inventory',
-            'All Namespaces remains inside the selected cluster.',
-        ),
-        (
-            'Reporting Period',
-            context.period_label,
-            'Inventory',
-            'Inventory reports use the committed snapshot boundary.',
-        ),
-        (
-            'Data Cut-off',
-            context.data_cutoff or payload.get('data_cutoff') or payload.get('collected_at'),
-            'Inventory',
-            'Committed evidence cut-off.',
-        ),
-        ('Source', context.source_label, 'Inventory', 'No live Kubernetes API call occurs during workbook rendering.'),
+        ('REPORTING BOUNDARY', None, None, None),
+        (f'Selected {context.scope_label}', context.cluster_scope, 'Inventory', 'Canonical infrastructure asset boundary for this report.'),
+        ('Selected Namespace', context.namespace_scope, 'Inventory', 'Namespace boundary inside the selected infrastructure system.'),
+        ('Reporting Period', context.period_label, 'Inventory', 'Inventory reports use the committed snapshot boundary.'),
+        ('Data Cut-off', context.data_cutoff or payload.get('data_cutoff') or payload.get('collected_at'), 'Inventory', 'Committed evidence cut-off.'),
+        ('Source', context.source_label, 'Inventory', 'No live provider or Kubernetes API call occurs during workbook rendering.'),
+        ('WORKBOOK CONTRACT', None, None, None),
+        ('Workbook Standard', INVENTORY_WORKBOOK_STANDARD, 'All sheets', 'Canonical reusable KAORI Inventory Excel presentation contract.'),
+        ('XLSX Standard', XLSX_REPORTING_STANDARD, 'Workbook', 'Global KAORI executive workbook contract for Overview, navigation, and evidence-backed visualization.'),
+        ('Tabular Standard', TABULAR_EXPORT_STANDARD, 'Workbook', 'Shared CSV/XLSX source, identity, and metadata contract.'),
+        ('Schema Version', TABULAR_SCHEMA_VERSION, 'Workbook', 'Public tabular schema version.'),
+        ('Primary Format', 'XLSX', 'Workbook', 'Native Excel workbook with Overview, Inventory, Metadata, and Field Dictionary sheets.'),
+        ('CSV Parity', 'Enabled', 'Inventory', 'CSV and XLSX use the same InventoryExportDataset and profile order.'),
+        ('DATA HANDLING', None, None, None),
         ('Total Rows', dataset.row_count, 'Inventory', 'Number of committed inventory rows exported.'),
-        (
-            'Identity Columns',
-            ', '.join(profile.identity_columns) or 'None',
-            'Inventory',
-            'Leading columns used for stable record identity and frozen-column behavior.',
-        ),
-        (
-            'Missing Text Rule',
-            'Profile-defined; normally Not Available',
-            'Inventory',
-            'Missing text evidence remains explicit.',
-        ),
+        ('Identity Columns', ', '.join(profile.identity_columns) or 'None', 'Inventory', 'Leading columns used for stable record identity and frozen-column behavior.'),
+        ('Missing Text Rule', 'Profile-defined; normally Not Available', 'Inventory', 'Missing text evidence remains explicit.'),
         ('Missing Numeric Rule', 'Blank', 'Inventory', 'Numeric columns remain numeric and sortable.'),
-        ('Horizontal Alignment', 'Left', 'Inventory', 'Canonical KAORI table alignment.'),
-        ('Vertical Alignment', 'Middle', 'Inventory', 'Text is vertically centered in every table row.'),
-        (
-            'Private Key Export',
-            'Excluded',
-            'TLS Inventory',
-            'tls.key, Secret values, and recoverable key material are never exported.',
-        ),
+        ('Horizontal Alignment', 'Type-aware', 'Inventory', 'Text is left aligned and numeric evidence is right aligned.'),
+        ('Vertical Alignment', 'Middle', 'Inventory', 'Table content is vertically centered.'),
+        ('SECURITY', None, None, None),
+        ('Private Key Export', 'Excluded', 'TLS Inventory', 'tls.key, Secret values, and recoverable key material are never exported.'),
     ]
 
+    section_labels = {'REPORT IDENTITY', 'REPORTING BOUNDARY', 'WORKBOOK CONTRACT', 'DATA HANDLING', 'SECURITY'}
     for row_index, metadata_row in enumerate(metadata, start=_METADATA_DATA_START_ROW):
+        is_section = metadata_row[0] in section_labels
         for column_index, value in enumerate(metadata_row, start=1):
-            cell = sheet.cell(row=row_index, column=column_index, value=_metadata_value(value))
-            style_body(cell, alternate=row_index % 2 == 0)
-            if isinstance(value, datetime):
-                cell.number_format = 'yyyy-mm-dd hh:mm'
-        sheet.row_dimensions[row_index].height = 28
+            cell = sheet.cell(row=row_index, column=column_index, value=_metadata_value(value) if value is not None else None)
+            if is_section:
+                style_metadata_section(cell)
+            else:
+                style_body(cell, alternate=row_index % 2 == 0)
+                if isinstance(value, datetime):
+                    cell.number_format = 'yyyy-mm-dd hh:mm'
+        sheet.row_dimensions[row_index].height = 22 if is_section else 28
 
     end_row = _METADATA_HEADER_ROW + len(metadata)
-    table = Table(
-        displayName='InventoryWorkbookMetadataTable',
-        ref=f'A{_METADATA_HEADER_ROW}:D{end_row}',
-    )
-    table.tableStyleInfo = TableStyleInfo(name='TableStyleMedium4', showRowStripes=False)
+    table = Table(displayName='InventoryWorkbookMetadataTable', ref=f'A{_METADATA_HEADER_ROW}:D{end_row}')
+    table.tableStyleInfo = TableStyleInfo(name='TableStyleLight1', showRowStripes=False)
     sheet.add_table(table)
     sheet.freeze_panes = f'A{_METADATA_DATA_START_ROW}'
-    for column, width in {'A': 25, 'B': 42, 'C': 22, 'D': 58}.items():
+    sheet.sheet_view.zoomScale = 90
+    sheet.sheet_view.zoomScaleNormal = 90
+    for column, width in {'A': 27, 'B': 40, 'C': 20, 'D': 54}.items():
         sheet.column_dimensions[column].width = width
     configure_sheet_page(
         sheet,
@@ -498,7 +501,8 @@ def _build_dictionary_sheet(
     subtitle.value = f'{profile.title} — canonical field order, meaning, source, and formatting.'
     style_subtitle(subtitle)
     sheet.row_dimensions[2].height = 26
-    sheet.row_dimensions[3].height = 8
+    _write_back_to_overview(sheet, 'A3')
+    sheet.row_dimensions[3].height = 20
 
     headers = (
         'Field Key',
@@ -538,15 +542,17 @@ def _build_dictionary_sheet(
         displayName=f'{_safe_table_name(profile.report_type)}FieldDictionaryTable',
         ref=f'A{_DICTIONARY_HEADER_ROW}:I{end_row}',
     )
-    table.tableStyleInfo = TableStyleInfo(name='TableStyleMedium4', showRowStripes=False)
+    table.tableStyleInfo = TableStyleInfo(name='TableStyleLight1', showRowStripes=False)
     sheet.add_table(table)
     sheet.freeze_panes = f'A{_DICTIONARY_DATA_START_ROW}'
+    sheet.sheet_view.zoomScale = 85
+    sheet.sheet_view.zoomScaleNormal = 85
     for column, width in {
         'A': 25,
         'B': 28,
-        'C': 58,
+        'C': 52,
         'D': 16,
-        'E': 36,
+        'E': 34,
         'F': 22,
         'G': 20,
         'H': 14,
@@ -560,6 +566,13 @@ def _build_dictionary_sheet(
         fit_to_width=1,
     )
     set_footer(sheet, str(context.report_id))
+
+
+def _write_back_to_overview(sheet: Worksheet, coordinate: str) -> None:
+    cell = sheet[coordinate]
+    cell.value = '← Overview'
+    cell.hyperlink = "#'Overview'!A1"
+    style_navigation_link(cell)
 
 
 def _inventory_context_line(dataset: InventoryExportDataset) -> str:

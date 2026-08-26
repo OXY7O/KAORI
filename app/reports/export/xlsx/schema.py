@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final, Literal, TypedDict, Unpack
 
-XLSX_REPORTING_STANDARD: Final = 'kaori-reporting-xlsx-v1.0'
-INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v3.0'
+XLSX_REPORTING_STANDARD: Final = 'kaori-reporting-xlsx-v2.0'
+INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v4.0'
 INVENTORY_WORKBOOK_FAMILY: Final = 'inventory'
 INVENTORY_OVERVIEW_SHEET: Final = 'Overview'
 INVENTORY_DATA_SHEET: Final = 'Inventory'
@@ -31,12 +31,31 @@ class InventoryColumn:
 
 
 @dataclass(frozen=True, slots=True)
+class InventoryOverviewMetric:
+    label: str
+    aggregation: Literal[
+        'row_count',
+        'count',
+        'sum',
+        'distinct_count',
+        'coverage_percent',
+        'leading_share',
+    ]
+    key: str | None = None
+    match_values: tuple[str | bool, ...] = ()
+    exclude_values: tuple[str | bool, ...] = ()
+    number_format: str = '#,##0'
+    unit: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class InventoryOverviewChart:
     title: str
     category_key: str
+    visual_type: Literal['ranked_bar', 'doughnut']
     aggregation: Literal['count', 'value'] = 'count'
     value_key: str | None = None
-    top_n: int = 10
+    top_n: int = 8
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,7 +64,9 @@ class InventoryWorkbookProfile:
     title: str
     description: str
     columns: tuple[InventoryColumn, ...]
+    overview_metrics: tuple[InventoryOverviewMetric, ...]
     overview_chart: InventoryOverviewChart
+    record_label: str = 'records'
     row_source: str = 'inventory_assets'
     identity_columns: tuple[str, ...] = ()
 

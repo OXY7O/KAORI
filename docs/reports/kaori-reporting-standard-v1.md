@@ -111,28 +111,32 @@ A PDF artifact is valid only when it exists, has a plausible size, and starts wi
 
 ## 7. XLSX default style — global KAORI workbook contract
 
-Every XLSX report uses the global `kaori-reporting-xlsx-v1.0` contract. Inventory XLSX additionally uses
-`kaori-inventory-xlsx-v3.0` and exactly four reusable sheets:
+Every XLSX report uses the global `kaori-reporting-xlsx-v2.0` contract. Inventory XLSX additionally uses
+`kaori-inventory-xlsx-v4.0` and exactly four reusable sheets:
 
-1. `Overview` — workbook landing page with key metrics, general information, internal navigation links, cutoff, and a profile-owned evidence-backed native Excel chart when committed rows are available;
+1. `Overview` — executive workbook landing page with domain-aware snapshot metrics, an evidence-derived Executive Readout, a profile-owned Primary Visual, exact Supporting Data, and internal navigation;
 2. `Inventory` — report-specific public columns from the canonical inventory profile;
-3. `Metadata` — scope, source, cutoff, ownership, format, security, and standard information;
+3. `Metadata` — grouped report identity, reporting boundary, workbook contract, data handling, and security evidence;
 4. `Field Dictionary` — column definition, type, source, missing-value rule, semantic role, unit, and Excel format.
 
 Default workbook rules:
 
-- KAORI Violet title/header hierarchy;
+- KAORI Violet title/header hierarchy with restrained use of semantic status colors;
 - Office-native Aptos/Aptos Display fonts are used for workbook portability; this is the approved XLSX font-family exception to the Inter-based PDF publication style;
-- left horizontal alignment and middle vertical alignment;
-- wrapped text, filter, freeze pane, and one Excel table on each structured data/reference sheet;
-- stable report-specific public column order;
-- numeric missing values remain blank;
-- text missing values use `Not Available` unless the profile defines another rule;
+- `Overview` is always the first worksheet and acts as the primary reading and navigation surface;
+- Overview metrics are domain-owned; schema counts such as column count or identity-field count are not executive KPIs;
+- every XLSX report profile declares exactly four evidence-backed Overview metrics and exactly one primary chart contract;
+- ranked numeric comparisons use `ranked_bar`: horizontal bars, descending Top-N order, one KAORI series color, zero baseline, direct value labels, no redundant legend, and a maximum of eight displayed categories;
+- compact status/composition summaries use `doughnut`: a restrained semantic palette, right-side legend, and percentage labels;
+- every chart is paired with a Supporting Data register containing rank, complete category text, exact value, and share so chart interpretation never depends on visual estimation;
+- Executive Readout prose is derived only from committed workbook evidence and must not invent recommendations or health conclusions;
+- Inventory, Metadata, and Field Dictionary include a visible `← Overview` link;
+- typed numeric cells are right aligned; text cells are left aligned; structured tables retain filters and freeze panes;
 - public capacity/usage values use readable units such as MiB/GiB/TiB rather than raw bytes when a readable unit is available;
-- the Overview sheet always includes core report context, links to every other workbook sheet, and a native Excel chart derived from the profile's declared evidence-backed aggregation when committed rows are available;
-- every XLSX profile must declare an Overview chart contract; count charts aggregate public categorical fields and value charts use public numeric fields;
-- empty datasets retain valid headers/table structure and show an explicit no-data message;
-- private keys and Secret values are always excluded.
+- long identities remain complete in the workbook even when chart Top-N presentation is intentionally compact;
+- empty datasets retain valid headers/table structure and show explicit no-evidence text instead of synthetic metrics or charts;
+- private keys and Secret values are always excluded;
+- the serialized artifact is validated after save and rejected when sheet order, navigation, executive sections, chart behavior, supporting data, or contract identifiers drift from the canonical standard.
 
 The reusable schema is defined in `app/reports/export/xlsx/standard.py`; shared collection/context/normalization logic is in `app/reports/export/inventory_common.py`. The cross-format contract is defined in [`kaori-tabular-export-standard-v3.md`](kaori-tabular-export-standard-v3.md).
 
@@ -182,7 +186,7 @@ Object keys include domain, source kind, year/month, canonical asset-scope slug,
 The report portfolio is considered aligned only when all three artifact contracts agree on identity, source boundary, and semantics:
 
 - **PDF:** management publication for Analytics only; concise comparison registers, references for long identities, shared Analytics Overview typography hierarchy, and no renderer-side source queries.
-- **XLSX:** operational Inventory workbook only; exactly `Overview`, `Inventory`, `Metadata`, and `Field Dictionary` sheets, typed numeric/date cells, stable identity-first columns, filtering/freezing, explicit missing evidence, mandatory profile-owned Overview visualization for non-empty datasets, and no private Secret material. Legacy `.xls` is not supported.
+- **XLSX:** operational Inventory workbook only; exactly `Overview`, `Inventory`, `Metadata`, and `Field Dictionary` sheets, an executive Overview with domain metrics/readout/semantic visualization/supporting data, typed numeric/date cells, stable identity-first columns, filtering/freezing, explicit missing evidence, runtime artifact validation, and no private Secret material. Legacy `.xls` is not supported.
 - **CSV:** machine-readable companion for both families; UTF-8 BOM, LF, stable schema/order, ISO-8601 temporal values, deterministic nested JSON, formula-injection protection, and the same canonical source model used by PDF/XLSX.
 - The public document reference, report type, family, scope, period, data cut-off, generated-by snapshot, and source label must be semantically identical across formats for the same report definition/generation boundary.
 - A report-specific renderer may change presentation only; it must not change the underlying evidence denominator, missing-value meaning, identity, or ordering semantics.

@@ -11,8 +11,8 @@ This standard defines the reusable CSV and XLSX publication contract for KAORI r
 | Shared tabular contract | `kaori-tabular-export-v3.0` |
 | Public schema version | `3.0` |
 | CSV format contract | `kaori-reporting-csv-v3.0` |
-| Global XLSX format contract | `kaori-reporting-xlsx-v1.0` |
-| Inventory workbook contract | `kaori-inventory-xlsx-v3.0` |
+| Global XLSX format contract | `kaori-reporting-xlsx-v2.0` |
+| Inventory workbook contract | `kaori-inventory-xlsx-v4.0` |
 
 The catalog remains the authority for whether a report type supports PDF, CSV, or XLSX. This standard does not enable a new output format by itself.
 
@@ -55,7 +55,7 @@ Inventory CSV contains common metadata, `record_type`, `record_reference`, `row_
 
 ## 4. XLSX standard
 
-Every XLSX report published by KAORI must use the global `kaori-reporting-xlsx-v1.0` presentation contract. Inventory XLSX currently uses exactly these reusable sheets, in this order:
+Every XLSX report published by KAORI must use the global `kaori-reporting-xlsx-v2.0` presentation contract. Inventory XLSX uses the `kaori-inventory-xlsx-v4.0` workbook contract and exactly these reusable sheets, in this order:
 
 1. `Overview`
 2. `Inventory`
@@ -64,16 +64,23 @@ Every XLSX report published by KAORI must use the global `kaori-reporting-xlsx-v
 
 ### Overview
 
-The Overview sheet is the workbook landing page: management- and operator-readable while remaining derived from the same committed dataset. It includes:
+The Overview sheet is an executive landing page for management and operators while remaining strictly derived from the committed dataset. The canonical information hierarchy is:
 
-- report title and stable report reference;
-- explicit Key Metrics and General Information sections;
-- selected infrastructure scope and namespace boundary;
-- record count, public column count, identity-field count, and data cut-off;
-- internal hyperlinks to every other workbook sheet;
-- an explicit Visual Summary area with at least one evidence-backed visual summary when committed rows are available.
+1. report title, concise purpose, selected scope, period, and data cut-off;
+2. `Executive Snapshot` with exactly four profile-owned operational metrics;
+3. `Executive Readout` with one concise evidence-derived interpretation;
+4. `Primary Visual` using the profile's semantic chart contract;
+5. `Supporting Data` containing complete category names, exact values, ranking, and share;
+6. `Workbook Navigation` with internal hyperlinks to the other sheets.
 
-Charts are evidence-driven, not decorative. Every XLSX report profile must explicitly declare its chart title, category field, aggregation mode, and maximum displayed rows. Count charts aggregate committed records by a public categorical field; value charts use a committed numeric public field. Empty datasets show an explicit no-evidence message rather than inventing chart values.
+Schema diagnostics such as column count or identity-field count belong in Metadata and are not executive KPIs. Every XLSX report profile must declare its own metrics, record label, visual type, chart title, category field, aggregation mode, and Top-N boundary.
+
+The supported visual semantics are explicit:
+
+- `ranked_bar` — horizontal bar chart for ranked numeric values or high-cardinality comparisons. Values are sorted descending and limited to the declared Top-N, with a maximum of eight. The chart uses one KAORI violet series, `varyColors=False`, a zero baseline, direct value labels including the published unit where applicable, restrained/no major gridlines, and no redundant single-series legend.
+- `doughnut` — compact part-to-whole/status composition for two to six displayed categories. It uses semantic category colors where status meaning exists, a right-side legend, and percentage labels. When committed evidence contains more categories than the declared display limit, the remainder is aggregated into `Other` so the part-to-whole denominator remains complete.
+
+Charts are evidence-driven, not decorative. Empty or non-chartable datasets show explicit no-evidence text instead of synthetic values. The Supporting Data register is mandatory whenever a chart is present so the workbook remains precise even when Excel renders chart labels differently across clients.
 
 ### Inventory
 
@@ -82,16 +89,17 @@ The Inventory sheet is the canonical row-level dataset.
 - identity columns lead the table and determine freeze-pane placement;
 - headers have stable profile order;
 - filters and a native Excel table are enabled;
-- cells are left aligned, vertically centered, and wrapped;
+- numeric cells are right aligned while text cells are left aligned, with vertical centering and controlled wrapping;
 - numeric/date values use typed Excel cells and explicit number formats;
 - missing numeric values stay blank;
 - missing text uses the profile missing-value rule, normally `Not Available`;
 - column widths are profile-owned and bounded for readability;
-- semantic status fields use conditional formatting owned by the shared builder.
+- semantic status fields use conditional formatting owned by the shared builder;
+- a visible `← Overview` link returns the reader to the landing page.
 
 ### Metadata
 
-Metadata records the workbook/tabular standards, report reference, report type/family, selected scope, namespace boundary, period, data cut-off, source, row count, identity columns, generation ownership, classification, parity rules, and security exclusions.
+Metadata is a grouped reference surface rather than a flat undifferentiated list. It groups Report Identity, Reporting Boundary, Workbook Contract, Data Handling, and Security while retaining the same auditable values and public contract identifiers. It includes a `← Overview` link.
 
 ### Field Dictionary
 
@@ -107,6 +115,8 @@ The dictionary documents every public Inventory column with:
 - unit;
 - Excel number format.
 
+The technical table remains filterable and readable, with controlled wrapping and a `← Overview` link.
+
 ## 5. Human-readable units
 
 Byte counts are valid internal source evidence but are not an acceptable primary public presentation when a readable capacity unit is available.
@@ -120,14 +130,18 @@ Object Storage Inventory publishes `Usage GiB`, `Quota GiB`, and `Quota Utilizat
 
 ## 6. Readability and chart policy
 
-XLSX is an operational workbook, not a PDF imitation.
+XLSX is an operational workbook, not a PDF imitation and not a raw data dump.
 
 - Use native Excel tables, filters, freeze panes, typed cells, and native charts.
 - Do not use screenshots of charts.
-- Do not merge data-table cells.
-- Overview charts are mandatory for every XLSX report profile and remain profile-owned.
-- A chart must use committed public fields with a valid denominator/aggregation.
+- Do not merge cells inside structured data tables.
+- Use visual hierarchy and whitespace to separate executive summary, primary evidence, and technical reference material.
+- Every XLSX report profile owns domain-aware Executive Snapshot metrics and one semantic Primary Visual.
+- Ranked bar charts must use descending order, one series color, direct value labels, and Supporting Data rather than rainbow bars or a redundant legend.
+- Doughnut charts must be reserved for a small composition/status set where part-to-whole meaning is real.
+- Complete long technical identities remain available in Supporting Data and Inventory even when the visual intentionally shows a Top-N subset.
 - Dense technical detail belongs in Inventory and Field Dictionary rather than oversized Overview prose.
+- Runtime validation must reject stale standard identifiers, missing executive sections, broken navigation, nonconforming ranked-bar coloring, or missing Supporting Data for chartable workbooks.
 
 ## 7. Extension rule for future reports
 
@@ -138,7 +152,7 @@ A new CSV/XLSX-capable report must:
 3. define public units and missing-value behavior;
 4. use shared normalization before rendering;
 5. use the canonical CSV writer or XLSX builder;
-6. declare a mandatory Overview chart using committed public fields;
-7. add contract tests for schema order, unit transformations, empty data, security exclusions, and chart behavior.
+6. declare exactly four domain-aware Overview metrics plus a mandatory semantic chart using committed public fields;
+7. add contract tests for schema order, metric semantics, unit transformations, empty data, security exclusions, navigation, supporting data, and chart behavior.
 
 Report-specific renderers must not fork the shared CSV encoding/safety contract or the XLSX Overview/Inventory/Metadata/Field Dictionary structure.

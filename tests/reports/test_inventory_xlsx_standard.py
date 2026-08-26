@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 from openpyxl import load_workbook
+from openpyxl.chart import BarChart, DoughnutChart
 from openpyxl.utils import get_column_letter
 
 from app.reports.export.inventory_common import InventoryExportContext
@@ -149,18 +150,19 @@ def test_all_inventory_workbooks_follow_the_reusable_four_sheet_contract(tmp_pat
 
         summary = workbook[INVENTORY_OVERVIEW_SHEET]
         assert summary['A1'].value == f'KAORI — {profile.title} Overview'
-        assert summary['A4'].value == 'Key Metrics'
-        assert summary['A5'].value == 'Records'
-        assert summary['A6'].value == 1
-        assert summary['A8'].value == 'General Information'
-        assert summary['F8'].value == 'Workbook Navigation'
-        assert summary['F9'].value == 'Inventory'
-        assert summary['F9'].hyperlink.target == "#'Inventory'!A1"
-        assert summary['F10'].value == 'Metadata'
-        assert summary['F10'].hyperlink.target == "#'Metadata'!A1"
-        assert summary['F11'].value == 'Field Dictionary'
-        assert summary['F11'].hyperlink.target == "#'Field Dictionary'!A1"
-        assert summary['A18'].value == 'Visual Summary'
+        assert summary['A5'].value == 'Executive Snapshot'
+        assert summary['A6'].value == profile.overview_metrics[0].label
+        assert summary['A7'].value == 1
+        assert summary['A9'].value == 'Executive Readout'
+        assert summary['A13'].value == 'Primary Visual'
+        assert summary['I13'].value == 'Supporting Data'
+        assert summary['A31'].value == 'Workbook Navigation'
+        assert summary['A32'].value == 'Open Inventory →'
+        assert summary['A32'].hyperlink.target == "#'Inventory'!A1"
+        assert summary['E32'].value == 'Open Metadata →'
+        assert summary['E32'].hyperlink.target == "#'Metadata'!A1"
+        assert summary['I32'].value == 'Open Field Dictionary →'
+        assert summary['I32'].hyperlink.target == "#'Field Dictionary'!A1"
         assert len(summary._charts) == 1
 
         inventory = workbook[INVENTORY_DATA_SHEET]
@@ -174,15 +176,16 @@ def test_all_inventory_workbooks_follow_the_reusable_four_sheet_contract(tmp_pat
         assert inventory.print_title_rows == f'$1:${HEADER_ROW}'
         assert inventory.page_setup.fitToWidth == _inventory_print_width(len(profile.columns))
 
-        for row in inventory.iter_rows(
-            min_row=HEADER_ROW,
-            max_row=DATA_START_ROW,
-            max_col=len(profile.columns),
-        ):
-            for cell in row:
-                assert cell.alignment.horizontal == 'left'
-                assert cell.alignment.vertical == 'center'
-                assert cell.alignment.wrap_text is True
+        for cell in inventory[HEADER_ROW][: len(profile.columns)]:
+            assert cell.alignment.horizontal == 'left'
+            assert cell.alignment.vertical == 'center'
+            assert cell.alignment.wrap_text is True
+        for index, column in enumerate(profile.columns, start=1):
+            cell = inventory.cell(row=DATA_START_ROW, column=index)
+            expected_horizontal = 'right' if column.data_type in {'integer', 'number', 'decimal'} else 'left'
+            assert cell.alignment.horizontal == expected_horizontal
+            assert cell.alignment.vertical == 'center'
+            assert cell.alignment.wrap_text is True
 
         metadata = workbook[INVENTORY_METADATA_SHEET]
         metadata_values = {
@@ -227,13 +230,14 @@ def test_distribution_overview_chart_aggregates_records_by_category(tmp_path: Pa
 
     workbook = load_workbook(output_path)
     summary = workbook[INVENTORY_OVERVIEW_SHEET]
-    assert summary['A19'].value == 'Ready'
-    assert summary['B19'].value == 'Records'
-    assert summary['A20'].value == 'Ready'
-    assert summary['B20'].value == 2
-    assert summary['A21'].value == 'Not Ready'
-    assert summary['B21'].value == 1
-    assert summary['B20'].number_format == '#,##0'
+    assert summary['J14'].value == 'Ready'
+    assert summary['K14'].value == 'Records'
+    assert summary['J15'].value == 'Ready'
+    assert summary['K15'].value == 2
+    assert summary['J16'].value == 'Not Ready'
+    assert summary['K16'].value == 1
+    assert summary['K15'].number_format == '#,##0'
+    assert summary['L15'].value == pytest.approx(66.6666666667)
     assert len(summary._charts) == 1
 
 
@@ -397,3 +401,309 @@ def test_empty_inventory_workbook_keeps_a_valid_unmerged_excel_table(tmp_path: P
     )
     assert not any(str(DATA_START_ROW) in str(cell_range) for cell_range in inventory.merged_cells.ranges)
     assert len(inventory.tables) == 1
+
+
+
+def test_global_xlsx_v2_profiles_declare_domain_metrics_and_chart_semantics() -> None:
+    assert XLSX_REPORTING_STANDARD == 'kaori-reporting-xlsx-v2.0'
+    assert INVENTORY_WORKBOOK_STANDARD == 'kaori-inventory-xlsx-v4.0'
+
+    for report_type, profile in INVENTORY_WORKBOOK_PROFILES.items():
+        assert len(profile.overview_metrics) == 4, report_type
+        assert profile.record_label, report_type
+        assert profile.overview_chart.visual_type in {'ranked_bar', 'doughnut'}, report_type
+        assert profile.overview_chart.top_n <= 8, report_type
+        metric_labels = {metric.label for metric in profile.overview_metrics}
+        assert 'Columns' not in metric_labels, report_type
+        assert 'Identity Fields' not in metric_labels, report_type
+
+
+def test_object_storage_overview_is_executive_and_ranked_bar_is_directly_labeled(tmp_path: Path) -> None:
+    report_type = 'object_storage_inventory'
+    profile = INVENTORY_WORKBOOK_PROFILES[report_type]
+    output_path = tmp_path / 'object-storage-executive.xlsx'
+    base_payload = _payload(report_type)
+    source_rows = base_payload[profile.row_source]
+    assert isinstance(source_rows, list)
+    base_row = dict(source_rows[0])
+    gib = 1073741824.0
+    rows = []
+    for name, usage_gib, objects, quota_gib in (
+        ('thanos', 64.25, 1200, 100.0),
+        ('shg-crm', 7.37, 350, 20.0),
+        ('pgnmobile', 4.61, 180, 10.0),
+    ):
+        row = dict(base_row)
+        row['name'] = name
+        row['size_bytes'] = usage_gib * gib
+        row['object_count'] = objects
+        row['quota_bytes'] = quota_gib * gib
+        rows.append(row)
+    base_payload[profile.row_source] = rows
+
+    build_inventory_workbook(
+        report_type=report_type,
+        payload=base_payload,
+        context=_context(report_type),
+        output_path=output_path,
+    )
+
+    workbook = load_workbook(output_path)
+    overview = workbook[INVENTORY_OVERVIEW_SHEET]
+    assert overview['A5'].value == 'Executive Snapshot'
+    assert overview['A6'].value == 'Buckets / Containers'
+    assert overview['A7'].value == 3
+    assert overview['D6'].value == 'Total Usage GiB'
+    assert overview['D7'].value == pytest.approx(76.23)
+    assert overview['G6'].value == 'Total Objects'
+    assert overview['G7'].value == 1730
+    assert overview['J6'].value == 'Quota Coverage'
+    assert overview['J7'].value == pytest.approx(100.0)
+    assert overview['A9'].value == 'Executive Readout'
+    assert 'thanos' in str(overview['A10'].value)
+    assert '64.25 GiB' in str(overview['A10'].value)
+    assert overview['A13'].value == 'Primary Visual'
+    assert overview['I13'].value == 'Supporting Data'
+    assert [overview.cell(row=14, column=column).value for column in range(9, 13)] == [
+        'Rank', 'Bucket / Container', 'Usage GiB', 'Share of Total'
+    ]
+    assert overview['J15'].value == 'thanos'
+    assert overview['K15'].value == pytest.approx(64.25)
+    assert overview['L15'].value == pytest.approx(64.25 / 76.23 * 100)
+
+    assert len(overview._charts) == 1
+    chart = overview._charts[0]
+    assert isinstance(chart, BarChart)
+    assert chart.type == 'bar'
+    assert chart.varyColors is False
+    assert chart.legend is None
+    assert chart.dLbls is not None and chart.dLbls.showVal is True
+    assert chart.dLbls.numFmt == '#,##0.00" GiB"'
+    assert chart.y_axis.scaling.min == 0
+    assert chart.x_axis.scaling.orientation == 'maxMin'
+
+
+def test_ranked_bar_supporting_share_uses_full_dataset_denominator_not_only_top_n(tmp_path: Path) -> None:
+    report_type = 'object_storage_inventory'
+    profile = INVENTORY_WORKBOOK_PROFILES[report_type]
+    output_path = tmp_path / 'object-storage-top-n-share.xlsx'
+    payload = _payload(report_type)
+    source_rows = payload[profile.row_source]
+    assert isinstance(source_rows, list)
+    base_row = dict(source_rows[0])
+    gib = 1073741824.0
+    rows = []
+    for index, usage_gib in enumerate(range(90, 0, -10), 1):
+        row = dict(base_row)
+        row['name'] = f'bucket-{index}'
+        row['size_bytes'] = usage_gib * gib
+        row['object_count'] = index
+        row['quota_bytes'] = 100 * gib
+        rows.append(row)
+    payload[profile.row_source] = rows
+
+    build_inventory_workbook(
+        report_type=report_type,
+        payload=payload,
+        context=_context(report_type),
+        output_path=output_path,
+    )
+
+    workbook = load_workbook(output_path)
+    overview = workbook[INVENTORY_OVERVIEW_SHEET]
+    assert overview['J15'].value == 'bucket-1'
+    assert overview['K15'].value == pytest.approx(90.0)
+    assert overview['L15'].value == pytest.approx(90.0 / 450.0 * 100.0)
+    assert '20.0% of total Usage GiB' in str(overview['A10'].value)
+
+
+def test_distribution_chart_uses_doughnut_legend_percent_labels_and_domain_kpis(tmp_path: Path) -> None:
+    report_type = 'node_inventory'
+    profile = INVENTORY_WORKBOOK_PROFILES[report_type]
+    output_path = tmp_path / 'nodes-executive.xlsx'
+    payload = _payload(report_type)
+    source_rows = payload[profile.row_source]
+    assert isinstance(source_rows, list)
+    base_row = dict(source_rows[0])
+    rows = []
+    for index, (readiness, role) in enumerate((('Ready', 'worker'), ('Ready', 'worker'), ('Not Ready', 'control-plane')), 1):
+        row = dict(base_row)
+        row['node'] = f'node-{index}'
+        row['ready'] = readiness
+        row['role'] = role
+        rows.append(row)
+    payload[profile.row_source] = rows
+
+    build_inventory_workbook(
+        report_type=report_type,
+        payload=payload,
+        context=_context(report_type),
+        output_path=output_path,
+    )
+
+    workbook = load_workbook(output_path)
+    overview = workbook[INVENTORY_OVERVIEW_SHEET]
+    assert overview['A6'].value == 'Total Nodes'
+    assert overview['A7'].value == 3
+    assert overview['D6'].value == 'Ready'
+    assert overview['D7'].value == 2
+    assert overview['G6'].value == 'Not Ready'
+    assert overview['G7'].value == 1
+    assert overview['J6'].value == 'Worker Nodes'
+    assert overview['J7'].value == 2
+    assert overview['J15'].value == 'Ready'
+    assert overview['K15'].value == 2
+    assert overview['L15'].value == pytest.approx(66.6666666667)
+
+    chart = overview._charts[0]
+    assert isinstance(chart, DoughnutChart)
+    assert chart.legend is not None
+    assert chart.legend.position == 'r'
+    assert chart.dLbls is not None and chart.dLbls.showPercent is True
+    assert chart.holeSize == 60
+
+
+def test_doughnut_groups_categories_beyond_declared_limit_into_other(tmp_path: Path) -> None:
+    report_type = 'node_inventory'
+    profile = INVENTORY_WORKBOOK_PROFILES[report_type]
+    output_path = tmp_path / 'nodes-doughnut-other.xlsx'
+    payload = _payload(report_type)
+    source_rows = payload[profile.row_source]
+    assert isinstance(source_rows, list)
+    base_row = dict(source_rows[0])
+    rows = []
+    categories = ('Ready', 'Not Ready', 'Unknown A', 'Unknown B', 'Unknown C', 'Unknown D', 'Unknown E')
+    for index, readiness in enumerate(categories, 1):
+        row = dict(base_row)
+        row['node'] = f'node-{index}'
+        row['ready'] = readiness
+        row['role'] = 'worker'
+        rows.append(row)
+    payload[profile.row_source] = rows
+
+    build_inventory_workbook(
+        report_type=report_type,
+        payload=payload,
+        context=_context(report_type),
+        output_path=output_path,
+    )
+
+    workbook = load_workbook(output_path)
+    overview = workbook[INVENTORY_OVERVIEW_SHEET]
+    supporting = [
+        (overview.cell(row=row, column=10).value, overview.cell(row=row, column=11).value)
+        for row in range(15, 21)
+    ]
+    assert len([category for category, _ in supporting if category is not None]) == 6
+    assert ('Other', 2) in supporting
+    other_row = next(row for row in range(15, 21) if overview.cell(row=row, column=10).value == 'Other')
+    assert overview.cell(row=other_row, column=12).value == pytest.approx(2 / 7 * 100)
+
+
+def test_secondary_sheets_link_back_to_overview_and_numeric_inventory_is_right_aligned(tmp_path: Path) -> None:
+    report_type = 'object_storage_inventory'
+    output_path = tmp_path / 'object-storage-navigation.xlsx'
+    build_inventory_workbook(
+        report_type=report_type,
+        payload=_payload(report_type),
+        context=_context(report_type),
+        output_path=output_path,
+    )
+
+    workbook = load_workbook(output_path)
+    inventory = workbook[INVENTORY_DATA_SHEET]
+    metadata = workbook[INVENTORY_METADATA_SHEET]
+    dictionary = workbook[INVENTORY_DICTIONARY_SHEET]
+
+    assert inventory['A4'].value == '← Overview'
+    assert inventory['A4'].hyperlink.target == "#'Overview'!A1"
+    assert metadata['A3'].value == '← Overview'
+    assert metadata['A3'].hyperlink.target == "#'Overview'!A1"
+    assert dictionary['A3'].value == '← Overview'
+    assert dictionary['A3'].hyperlink.target == "#'Overview'!A1"
+    assert inventory.sheet_view.zoomScale == 85
+    assert metadata.sheet_view.zoomScale == 90
+    assert dictionary.sheet_view.zoomScale == 85
+
+    headers = [inventory.cell(row=HEADER_ROW, column=i).value for i in range(1, inventory.max_column + 1)]
+    usage_col = headers.index('Usage GiB') + 1
+    object_count_col = headers.index('Object Count') + 1
+    assert inventory.cell(row=DATA_START_ROW, column=usage_col).alignment.horizontal == 'right'
+    assert inventory.cell(row=DATA_START_ROW, column=object_count_col).alignment.horizontal == 'right'
+    assert inventory.cell(row=DATA_START_ROW, column=1).alignment.horizontal == 'left'
+
+    section_labels = {metadata.cell(row=row, column=1).value for row in range(5, metadata.max_row + 1)}
+    assert {'REPORT IDENTITY', 'REPORTING BOUNDARY', 'WORKBOOK CONTRACT', 'DATA HANDLING', 'SECURITY'} <= section_labels
+
+    for sheet in (inventory, metadata, dictionary):
+        assert all(table.tableStyleInfo.name == 'TableStyleLight1' for table in sheet.tables.values())
+
+
+def test_runtime_validator_rejects_missing_executive_readout(tmp_path: Path) -> None:
+    output_path = tmp_path / 'nodes-missing-readout.xlsx'
+    build_inventory_workbook(
+        report_type='node_inventory',
+        payload=_payload('node_inventory'),
+        context=_context('node_inventory'),
+        output_path=output_path,
+    )
+    workbook = load_workbook(output_path)
+    workbook[INVENTORY_OVERVIEW_SHEET]['A9'] = None
+    workbook.save(output_path)
+
+    with pytest.raises(ValueError, match='Executive Readout'):
+        validate_inventory_xlsx_artifact(output_path)
+
+
+def test_runtime_validator_rejects_ranked_bar_vary_colors(tmp_path: Path) -> None:
+    output_path = tmp_path / 'object-storage-rainbow-chart.xlsx'
+    build_inventory_workbook(
+        report_type='object_storage_inventory',
+        payload=_payload('object_storage_inventory'),
+        context=_context('object_storage_inventory'),
+        output_path=output_path,
+    )
+    workbook = load_workbook(output_path)
+    overview = workbook[INVENTORY_OVERVIEW_SHEET]
+    assert overview._charts
+    overview._charts[0].varyColors = True
+    workbook.save(output_path)
+
+    with pytest.raises(ValueError, match='varyColors'):
+        validate_inventory_xlsx_artifact(output_path)
+
+
+def test_runtime_validator_rejects_ranked_bar_without_direct_value_labels(tmp_path: Path) -> None:
+    output_path = tmp_path / 'object-storage-missing-direct-labels.xlsx'
+    build_inventory_workbook(
+        report_type='object_storage_inventory',
+        payload=_payload('object_storage_inventory'),
+        context=_context('object_storage_inventory'),
+        output_path=output_path,
+    )
+    workbook = load_workbook(output_path)
+    overview = workbook[INVENTORY_OVERVIEW_SHEET]
+    assert overview._charts and overview._charts[0].dLbls is not None
+    overview._charts[0].dLbls.showVal = False
+    workbook.save(output_path)
+
+    with pytest.raises(ValueError, match='direct value labels'):
+        validate_inventory_xlsx_artifact(output_path)
+
+
+def test_runtime_validator_rejects_doughnut_without_legend(tmp_path: Path) -> None:
+    output_path = tmp_path / 'nodes-missing-doughnut-legend.xlsx'
+    build_inventory_workbook(
+        report_type='node_inventory',
+        payload=_payload('node_inventory'),
+        context=_context('node_inventory'),
+        output_path=output_path,
+    )
+    workbook = load_workbook(output_path)
+    overview = workbook[INVENTORY_OVERVIEW_SHEET]
+    assert overview._charts
+    overview._charts[0].legend = None
+    workbook.save(output_path)
+
+    with pytest.raises(ValueError, match='doughnut legend'):
+        validate_inventory_xlsx_artifact(output_path)

@@ -50,13 +50,13 @@ def main() -> int:
         errors,
     )
     require(
-        "XLSX_REPORTING_STANDARD: Final = 'kaori-reporting-xlsx-v1.0'" in xlsx_schema,
+        "XLSX_REPORTING_STANDARD: Final = 'kaori-reporting-xlsx-v2.0'" in xlsx_schema,
         'global XLSX reporting standard is missing',
         errors,
     )
     require(
-        "INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v3.0'" in xlsx_schema,
-        'XLSX v3 standard is missing',
+        "INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v4.0'" in xlsx_schema,
+        'Inventory XLSX v4 standard is missing',
         errors,
     )
     require(
@@ -94,8 +94,11 @@ def main() -> int:
         errors,
     )
     require(
-        all(label in xlsx_overview for label in ('Key Metrics', 'General Information', 'Visual Summary')),
-        'Overview landing-page hierarchy is incomplete',
+        all(
+            label in xlsx_overview
+            for label in ('Executive Snapshot', 'Executive Readout', 'Primary Visual', 'Supporting Data')
+        ),
+        'Overview executive hierarchy is incomplete',
         errors,
     )
     require(
@@ -113,13 +116,15 @@ def main() -> int:
     require('status_columns' not in xlsx_standard, 'legacy profile-level status columns remain', errors)
     require('semantic_type' in xlsx_schema, 'column-level semantic roles are missing', errors)
     require(
-        'overview_chart: InventoryOverviewChart' in xlsx_schema,
-        'every XLSX profile must own an Overview chart contract',
+        'overview_metrics: tuple[InventoryOverviewMetric, ...]' in xlsx_schema
+        and 'overview_chart: InventoryOverviewChart' in xlsx_schema,
+        'every XLSX profile must own Overview metrics and a chart contract',
         errors,
     )
     require(
-        "aggregation: Literal['count', 'value'] = 'count'" in xlsx_schema,
-        'XLSX Overview chart aggregation contract is missing',
+        "visual_type: Literal['ranked_bar', 'doughnut']" in xlsx_schema
+        and "aggregation: Literal['count', 'value'] = 'count'" in xlsx_schema,
+        'XLSX Overview visual semantics contract is missing',
         errors,
     )
     require(
@@ -138,7 +143,11 @@ def main() -> int:
     )
     require('normalize_inventory_row' in inventory_common, 'shared public row normalization is missing', errors)
     require(
-        'build_inventory_overview_sheet' in xlsx_builder and 'BarChart' in xlsx_overview,
+        'build_inventory_overview_sheet' in xlsx_builder
+        and 'BarChart' in xlsx_overview
+        and 'DoughnutChart' in xlsx_overview
+        and 'DataLabelList' in xlsx_overview
+        and 'visual.varyColors = False' in xlsx_overview,
         'XLSX Overview/chart contract is missing',
         errors,
     )
@@ -167,7 +176,8 @@ def main() -> int:
 
     require('KAORI Tabular Export Standard v3' in tabular_doc, 'tabular v3 documentation title is missing', errors)
     require('kaori-reporting-csv-v3.0' in tabular_doc, 'CSV v3 documentation is missing', errors)
-    require('kaori-inventory-xlsx-v3.0' in tabular_doc, 'XLSX v3 documentation is missing', errors)
+    require('kaori-reporting-xlsx-v2.0' in tabular_doc, 'global XLSX v2 documentation is missing', errors)
+    require('kaori-inventory-xlsx-v4.0' in tabular_doc, 'Inventory XLSX v4 documentation is missing', errors)
     require(
         'kaori-tabular-export-standard-v3.md' in reporting_doc,
         'reporting standard does not reference tabular v3',
@@ -204,7 +214,7 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI tabular export audit passed: CSV v3 and global XLSX v1 / Inventory XLSX v3 share '
+        'KAORI tabular export audit passed: CSV v3 and global XLSX v2 / Inventory XLSX v4 share '
         'metadata, dataset, identity, normalization, security, Overview, and schema contracts.'
     )
     return 0

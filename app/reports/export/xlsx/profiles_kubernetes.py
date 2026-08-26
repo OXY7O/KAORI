@@ -5,6 +5,7 @@ from app.reports.export.xlsx.schema import (
     COLLECTED_AT_COLUMN,
     CREATED_AT_COLUMN,
     InventoryOverviewChart,
+    InventoryOverviewMetric,
     InventoryWorkbookProfile,
     column,
 )
@@ -18,12 +19,20 @@ KUBERNETES_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
             'The workbook contains asset facts only and excludes analytical findings and recommendations.'
         ),
         identity_columns=('resource_type',),
+        record_label='resource categories',
+        overview_metrics=(
+            InventoryOverviewMetric('Resource Categories', 'row_count'),
+            InventoryOverviewMetric('Total Assets', 'sum', key='assets'),
+            InventoryOverviewMetric('Current Categories', 'count', key='status', match_values=('Current',)),
+            InventoryOverviewMetric('Needs Review', 'count', key='status', match_values=('Review',)),
+        ),
         overview_chart=InventoryOverviewChart(
             title='Assets by Resource Category',
             category_key='resource_type',
+            visual_type='ranked_bar',
             aggregation='value',
             value_key='assets',
-            top_n=12,
+            top_n=8,
         ),
         columns=(
             column('resource_type', 'Resource Category', 'Committed Kubernetes inventory category.', width=24),
@@ -69,9 +78,18 @@ KUBERNETES_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         title='Nodes Inventory',
         description='Committed Kubernetes node identities, readiness, platform, capacity, addressing, and collection evidence.',
         identity_columns=('cluster', 'environment', 'node'),
+        record_label='nodes',
+        overview_metrics=(
+            InventoryOverviewMetric('Total Nodes', 'row_count'),
+            InventoryOverviewMetric('Ready', 'count', key='ready', match_values=('Ready',)),
+            InventoryOverviewMetric('Not Ready', 'count', key='ready', match_values=('Not Ready',)),
+            InventoryOverviewMetric('Worker Nodes', 'count', key='role', match_values=('worker',)),
+        ),
         overview_chart=InventoryOverviewChart(
             title='Nodes by Readiness',
             category_key='ready',
+            visual_type='doughnut',
+            top_n=6,
         ),
         columns=(
             *COMMON_CLUSTER_COLUMNS,
@@ -147,9 +165,18 @@ KUBERNETES_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         title='Namespaces Inventory',
         description='Committed namespace identities, lifecycle state, controls, and service-account posture.',
         identity_columns=('cluster', 'environment', 'namespace'),
+        record_label='namespaces',
+        overview_metrics=(
+            InventoryOverviewMetric('Total Namespaces', 'row_count'),
+            InventoryOverviewMetric('Active', 'count', key='status', match_values=('Active',)),
+            InventoryOverviewMetric('Network Policies', 'sum', key='network_policies'),
+            InventoryOverviewMetric('Service Accounts', 'sum', key='service_accounts'),
+        ),
         overview_chart=InventoryOverviewChart(
             title='Namespaces by Lifecycle Status',
             category_key='status',
+            visual_type='doughnut',
+            top_n=6,
         ),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
@@ -216,9 +243,18 @@ KUBERNETES_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         title='Workloads Inventory',
         description='Committed Kubernetes workload identities, readiness, replica state, and update strategy.',
         identity_columns=('cluster', 'environment', 'namespace', 'name'),
+        record_label='workloads',
+        overview_metrics=(
+            InventoryOverviewMetric('Total Workloads', 'row_count'),
+            InventoryOverviewMetric('Ready', 'count', key='ready', match_values=('Ready',)),
+            InventoryOverviewMetric('Desired Replicas', 'sum', key='desired_replicas'),
+            InventoryOverviewMetric('Available Replicas', 'sum', key='available_replicas'),
+        ),
         overview_chart=InventoryOverviewChart(
             title='Workloads by Runtime Status',
             category_key='status',
+            visual_type='doughnut',
+            top_n=6,
         ),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
@@ -272,9 +308,18 @@ KUBERNETES_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         title='Pods Inventory',
         description='Committed pod identities, ownership, phase, readiness, placement, restarts, and attached evidence.',
         identity_columns=('cluster', 'environment', 'namespace', 'pod'),
+        record_label='pods',
+        overview_metrics=(
+            InventoryOverviewMetric('Total Pods', 'row_count'),
+            InventoryOverviewMetric('Running', 'count', key='status', match_values=('Running',)),
+            InventoryOverviewMetric('Pending', 'count', key='status', match_values=('Pending',)),
+            InventoryOverviewMetric('Restarts', 'sum', key='restarts'),
+        ),
         overview_chart=InventoryOverviewChart(
             title='Pods by Phase',
             category_key='status',
+            visual_type='doughnut',
+            top_n=6,
         ),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
@@ -340,9 +385,18 @@ KUBERNETES_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         title='Services Inventory',
         description='Committed Kubernetes Service identities, access models, port mappings, selectors, traffic policy, and backend registration evidence.',
         identity_columns=('cluster', 'environment', 'namespace', 'name'),
+        record_label='services',
+        overview_metrics=(
+            InventoryOverviewMetric('Total Services', 'row_count'),
+            InventoryOverviewMetric('Service Types', 'distinct_count', key='resource_type'),
+            InventoryOverviewMetric('Ready Endpoints', 'sum', key='ready_endpoints'),
+            InventoryOverviewMetric('Not Ready Endpoints', 'sum', key='not_ready_endpoints'),
+        ),
         overview_chart=InventoryOverviewChart(
             title='Services by Service Type',
             category_key='resource_type',
+            visual_type='doughnut',
+            top_n=6,
         ),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
@@ -426,9 +480,18 @@ KUBERNETES_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         title='Ingress Inventory',
         description='Committed Kubernetes Ingress identity, host scope, controller publication, backend routes, and TLS Secret references.',
         identity_columns=('cluster', 'environment', 'namespace', 'name'),
+        record_label='ingresses',
+        overview_metrics=(
+            InventoryOverviewMetric('Total Ingresses', 'row_count'),
+            InventoryOverviewMetric('TLS Enabled', 'count', key='tls_enabled', match_values=(True,)),
+            InventoryOverviewMetric('Host Rules', 'sum', key='all_host_rule_count'),
+            InventoryOverviewMetric('Backends', 'sum', key='backend_count'),
+        ),
         overview_chart=InventoryOverviewChart(
             title='Ingresses by TLS Status',
             category_key='tls_status',
+            visual_type='doughnut',
+            top_n=6,
         ),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
@@ -529,9 +592,18 @@ KUBERNETES_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         title='Configuration Inventory',
         description='Committed ConfigMap and Secret identities and key-index metadata. Configuration values are never persisted or exported.',
         identity_columns=('cluster', 'environment', 'namespace', 'name'),
+        record_label='configuration objects',
+        overview_metrics=(
+            InventoryOverviewMetric('Total Objects', 'row_count'),
+            InventoryOverviewMetric('ConfigMaps', 'count', key='resource_type', match_values=('ConfigMap',)),
+            InventoryOverviewMetric('Secrets', 'count', key='resource_type', match_values=('Secret',)),
+            InventoryOverviewMetric('Total Keys', 'sum', key='key_count'),
+        ),
         overview_chart=InventoryOverviewChart(
             title='Configuration Objects by Type',
             category_key='resource_type',
+            visual_type='doughnut',
+            top_n=6,
         ),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
@@ -567,9 +639,18 @@ KUBERNETES_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         title='Storage Inventory',
         description='Committed StorageClass, persistent-volume, and persistent-volume-claim identities and lifecycle fields.',
         identity_columns=('cluster', 'environment', 'namespace', 'name'),
+        record_label='storage assets',
+        overview_metrics=(
+            InventoryOverviewMetric('Total Assets', 'row_count'),
+            InventoryOverviewMetric('Resource Types', 'distinct_count', key='resource_type'),
+            InventoryOverviewMetric('Bound', 'count', key='status', match_values=('Bound',)),
+            InventoryOverviewMetric('Pending', 'count', key='status', match_values=('Pending',)),
+        ),
         overview_chart=InventoryOverviewChart(
             title='Storage Assets by Resource Type',
             category_key='resource_type',
+            visual_type='doughnut',
+            top_n=6,
         ),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
