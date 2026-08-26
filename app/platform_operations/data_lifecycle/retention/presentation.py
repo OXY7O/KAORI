@@ -406,7 +406,7 @@ def _domain_coverage(name: str) -> tuple[dict[str, str], ...]:
             {
                 'icon': 'list-tree',
                 'label': 'Incident Timeline',
-                'description': 'Detection, acknowledgement, assignment, silence, remediation, source resolution, and closure evidence.',
+                'description': 'Case lifecycle evidence from detection through closure.',
             },
             {
                 'icon': 'send',
@@ -443,7 +443,7 @@ def _domain_coverage_note(name: str) -> str | None:
     return {
         'operational_activity': 'One retention policy governs the shared notifications table; the user inbox and Activity Audit are different views over the same persisted records.',
         'job_execution': 'Execution payloads remain domain-owned; lifecycle archives canonical execution metadata and result references.',
-        'runtime_observation': 'The policy is provider-neutral. Kubernetes, Object Storage, Metrics Source, Alertmanager, and future integrations using IntegrationRuntimeObservation share the same lifecycle boundary.',
+        'runtime_observation': 'Provider-neutral across Kubernetes, Object Storage, Metrics Source, Alertmanager, and future runtime integrations.',
         'analytics_snapshot': 'Cleanup applies only after a snapshot is outside both its stale-serve window and the configured hot-retention boundary.',
         'generated_report': generated_report_ui.GENERATED_REPORT_COVERAGE_NOTE,
         'alert_incident': 'Only Closed cases are archive-eligible. KAORI preserves the case index in PostgreSQL for History search after evidence compaction.',

@@ -27,7 +27,7 @@ jobs:
 - key: object_storage.inventory.sync
   name: Object Storage Inventory Sync
   domain: Object Storage Inventory
-  description: Refresh committed bucket inventory across eligible managed object-storage systems.
+  description: Refresh committed bucket inventory for eligible object storage systems.
   icon: database-zap
   queue_name: inventory
   workload_class: standard
@@ -50,7 +50,7 @@ jobs:
 - key: object_storage.analytics.materialize
   name: Object Storage Analytics Data Refresh
   domain: Object Storage Analytics
-  description: Refresh shared Object Storage operational analytics snapshots on the analytics worker.
+  description: Refresh Object Storage analytics snapshots.
   icon: chart-no-axes-combined
   queue_name: analytics-batch
   workload_class: analytics
@@ -85,7 +85,7 @@ jobs:
 - key: object_storage.forecast.materialize
   name: Object Storage Forecast Data Refresh
   domain: Object Storage Analytics
-  description: Generate persistent Object Storage capacity forecasts on the forecasting worker.
+  description: Generate Object Storage capacity forecasts.
   icon: chart-spline
   queue_name: forecasting
   workload_class: forecasting

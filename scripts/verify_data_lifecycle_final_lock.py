@@ -146,9 +146,9 @@ def main() -> int:
     for required in (
         'components/loading_bar.html',
         "loading_bar.render('data-lifecycle-policy-loading'",
-        'Changing retention days only changes eligibility; it does not run a job immediately.',
+        'Retention changes eligibility only; no job runs immediately.',
         'Requires Policy enabled + Scheduled execution.',
-        'Transient failures retry once; exhausted failures require manual retry.',
+        'transient failures retry once, then require manual retry.',
         'Queue {{ lifecycle.queue_name }} · {{ lifecycle.worker.label }}.',
     ):
         if required not in domain_workspace:
@@ -182,7 +182,7 @@ def main() -> int:
         "'label': 'Metrics Source'",
         "'label': 'Alertmanager'",
         "'label': 'Object Storage · MinIO'",
-        'future integrations using IntegrationRuntimeObservation share the same lifecycle boundary.',
+        'Provider-neutral across Kubernetes, Object Storage, Metrics Source, Alertmanager, and future runtime integrations.',
         'Transient toasts are not persisted and therefore are not lifecycle-managed.',
     ):
         if required not in retention_presentation:

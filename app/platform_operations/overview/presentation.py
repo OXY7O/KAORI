@@ -51,7 +51,7 @@ def build_platform_operations_overview_context(
                 'key': 'jobs',
                 'label': 'Jobs & Executions',
                 'icon': 'list-checks',
-                'description': 'Canonical execution, retry, cancellation, queue, and worker evidence.',
+                'description': 'Canonical execution and worker evidence.',
                 'status_label': status_label,
                 'status_tone': status_tone,
                 'metrics': (
@@ -84,7 +84,7 @@ def build_platform_operations_overview_context(
                 'key': 'data-lifecycle',
                 'label': 'Data Lifecycle',
                 'icon': 'archive-restore',
-                'description': 'Retention policy, verified archive evidence, and safe cleanup boundaries.',
+                'description': 'Retention, verified archives, and safe cleanup.',
                 'status_label': status_label,
                 'status_tone': status_tone,
                 'metrics': (
@@ -125,7 +125,7 @@ def build_platform_operations_overview_context(
                 'key': 'kubernetes',
                 'label': 'Kubernetes Administration',
                 'icon': 'server-cog',
-                'description': 'Protected Kubernetes controls with explicit readiness and authorization boundaries.',
+                'description': 'Protected Kubernetes controls with readiness and authorization gates.',
                 'status_label': status_label,
                 'status_tone': status_tone,
                 'metrics': (

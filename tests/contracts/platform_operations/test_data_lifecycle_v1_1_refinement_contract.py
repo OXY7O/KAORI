@@ -43,9 +43,9 @@ def test_retention_policy_explains_schedule_failure_and_worker_semantics() -> No
     tasks = read('app/platform_operations/data_lifecycle/retention/tasks.py')
     config = read('app/config/default.py')
 
-    assert 'Changing retention days only changes eligibility; it does not run a job immediately.' in policy
+    assert 'Retention changes eligibility only; no job runs immediately.' in policy
     assert 'Requires Policy enabled + Scheduled execution.' in policy
-    assert 'Transient failures retry once; exhausted failures require manual retry.' in policy
+    assert 'transient failures retry once, then require manual retry.' in policy
     assert 'Queue {{ lifecycle.queue_name }} · {{ lifecycle.worker.label }}.' in policy
     assert "crontab(minute='*/15')" in config
     assert "name='app.platform_operations.data_lifecycle.retention.tasks.run_scheduled_retention'" in tasks
