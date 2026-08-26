@@ -18,6 +18,7 @@ def test_v3_identifiers_and_unit_aware_analytics_csv_are_locked() -> None:
     assert "TABULAR_EXPORT_STANDARD: Final = 'kaori-tabular-export-v3.0'" in tabular
     assert "TABULAR_SCHEMA_VERSION: Final = '3.0'" in tabular
     assert "CSV_STANDARD: Final = 'kaori-reporting-csv-v3.0'" in csv_standard
+    assert "XLSX_REPORTING_STANDARD: Final = 'kaori-reporting-xlsx-v1.0'" in xlsx_schema
     assert "INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v3.0'" in xlsx_schema
     assert "CSV_INTERCHANGE_PROFILE: Final = 'portable-tabular-v1'" in csv_standard
     assert "CSV_CONTENT_TYPE: Final = 'text/csv; charset=utf-8'" in csv_standard
@@ -37,12 +38,15 @@ def test_inventory_v3_uses_profile_owned_readable_units_and_summary_contract() -
     assert 'scale_divisor: float | None = None' in schema
     assert 'unit: str | None = None' in schema
     assert 'InventoryOverviewChart' in schema
+    assert "aggregation: Literal['count', 'value'] = 'count'" in schema
+    assert 'overview_chart: InventoryOverviewChart' in schema
     assert "'usage_gib'" in profiles and "source_key='size_bytes'" in profiles
     assert "'quota_gib'" in profiles and "source_key='quota_bytes'" in profiles
     assert "'Usage Bytes'" not in profiles
     assert "'Quota Bytes'" not in profiles
     assert 'normalize_inventory_row' in common
     assert 'build_inventory_overview_sheet' in builder
+    assert "'XLSX Standard'" in builder and 'XLSX_REPORTING_STANDARD' in builder
     standard_import = builder.split('from app.reports.export.xlsx.standard import (', 1)[1].split(')', 1)[0]
     assert 'INVENTORY_OVERVIEW_SHEET,' in standard_import
     assert 'profile.overview_chart' in overview
@@ -60,13 +64,20 @@ def test_inventory_v3_uses_profile_owned_readable_units_and_summary_contract() -
 def test_reporting_docs_and_verifier_reference_v3_contract() -> None:
     reporting = read('docs/reports/kaori-reporting-standard-v1.md')
     verifier = read('scripts/verify_report_generation_contract.py')
+    tabular_verifier = read('scripts/verify_tabular_export_standard.py')
     standard = read('docs/reports/kaori-tabular-export-standard-v3.md')
 
     assert 'kaori-tabular-export-standard-v3.md' in reporting
     assert 'kaori-reporting-csv-v3.0' in reporting
+    assert 'kaori-reporting-xlsx-v1.0' in reporting
     assert 'kaori-inventory-xlsx-v3.0' in reporting
+    assert '`Overview`, `Inventory`, `Metadata`, and `Field Dictionary`' in reporting
     assert "kaori-reporting-csv-v3.0" in verifier
+    assert "kaori-reporting-xlsx-v1.0" in verifier
     assert "kaori-inventory-xlsx-v3.0" in verifier
+    assert "kaori-reporting-xlsx-v1.0" in tabular_verifier
+    assert 'overview_chart: InventoryOverviewChart' in tabular_verifier
+    assert 'validate_inventory_xlsx_artifact' in tabular_verifier
     assert 'Overview' in standard
     assert 'portable-tabular-v1' in standard
     assert 'standard CSV parsers' in standard
@@ -103,3 +114,17 @@ def test_xlsx_overview_is_an_explicit_landing_page_with_navigation_and_visual_su
     assert 'sheet.parent.sheetnames' in overview
     assert 'landing page' in standard.lower()
     assert 'internal hyperlinks' in standard.lower()
+    assert 'every xlsx report' in standard.lower()
+    assert 'at least one evidence-backed visual summary' in standard.lower()
+
+
+def test_xlsx_runtime_artifact_gate_rejects_nonconforming_workbooks() -> None:
+    builder = read('app/reports/export/xlsx/builder.py')
+
+    assert 'def validate_inventory_xlsx_artifact(' in builder
+    assert 'validate_inventory_xlsx_artifact(output_path)' in builder
+    assert 'if workbook.sheetnames != expected_sheets' in builder
+    assert 'if not overview._charts' in builder
+    assert 'allowed_no_chart_messages' in builder
+    assert "metadata_values.get('Workbook Standard') != INVENTORY_WORKBOOK_STANDARD" in builder
+    assert "metadata_values.get('XLSX Standard') != XLSX_REPORTING_STANDARD" in builder

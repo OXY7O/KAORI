@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 
@@ -13,6 +14,7 @@ from app.reports.export.xlsx.builder import (
     HEADER_ROW,
     _inventory_print_width,
     build_inventory_workbook,
+    validate_inventory_xlsx_artifact,
 )
 from app.reports.export.xlsx.standard import (
     INVENTORY_DATA_SHEET,
@@ -21,6 +23,7 @@ from app.reports.export.xlsx.standard import (
     INVENTORY_OVERVIEW_SHEET,
     INVENTORY_WORKBOOK_PROFILES,
     INVENTORY_WORKBOOK_STANDARD,
+    XLSX_REPORTING_STANDARD,
 )
 
 EXPECTED_REPORT_TYPES = {
@@ -96,6 +99,20 @@ def test_inventory_workbook_profiles_cover_every_supported_inventory_report() ->
     assert set(INVENTORY_WORKBOOK_PROFILES) == EXPECTED_REPORT_TYPES
 
 
+def test_every_inventory_profile_declares_a_global_overview_chart() -> None:
+    for report_type, profile in INVENTORY_WORKBOOK_PROFILES.items():
+        assert profile.overview_chart is not None, report_type
+
+        column_keys = {column.key for column in profile.columns}
+        chart = profile.overview_chart
+        assert chart.category_key in column_keys, report_type
+        if chart.aggregation == 'value':
+            assert chart.value_key in column_keys, report_type
+        else:
+            assert chart.aggregation == 'count', report_type
+            assert chart.value_key is None, report_type
+
+
 def test_identity_columns_are_leading_and_reusable_across_csv_xlsx() -> None:
     for report_type, profile in INVENTORY_WORKBOOK_PROFILES.items():
         keys = tuple(column.key for column in profile.columns)
@@ -144,8 +161,7 @@ def test_all_inventory_workbooks_follow_the_reusable_four_sheet_contract(tmp_pat
         assert summary['F11'].value == 'Field Dictionary'
         assert summary['F11'].hyperlink.target == "#'Field Dictionary'!A1"
         assert summary['A18'].value == 'Visual Summary'
-        if profile.overview_chart is not None:
-            assert len(summary._charts) == 1
+        assert len(summary._charts) == 1
 
         inventory = workbook[INVENTORY_DATA_SHEET]
         expected_freeze_column = get_column_letter(max(1, len(profile.identity_columns) + 1))
@@ -174,6 +190,7 @@ def test_all_inventory_workbooks_follow_the_reusable_four_sheet_contract(tmp_pat
             for row in range(5, metadata.max_row + 1)
         }
         assert metadata_values['Workbook Standard'] == INVENTORY_WORKBOOK_STANDARD
+        assert metadata_values['XLSX Standard'] == XLSX_REPORTING_STANDARD
         assert metadata_values['Tabular Standard'] == TABULAR_EXPORT_STANDARD
         assert metadata_values['Schema Version'] == TABULAR_SCHEMA_VERSION
         assert metadata_values['Primary Format'] == 'XLSX'
@@ -184,6 +201,109 @@ def test_all_inventory_workbooks_follow_the_reusable_four_sheet_contract(tmp_pat
         assert dictionary.max_column == 9
         assert len(dictionary.tables) == 1
 
+
+def test_distribution_overview_chart_aggregates_records_by_category(tmp_path: Path) -> None:
+    report_type = 'node_inventory'
+    profile = INVENTORY_WORKBOOK_PROFILES[report_type]
+    output_path = tmp_path / 'nodes-overview-distribution.xlsx'
+    payload = _payload(report_type)
+    source_rows = payload[profile.row_source]
+    assert isinstance(source_rows, list)
+    base_row = dict(source_rows[0])
+    rows = []
+    for index, readiness in enumerate(('Ready', 'Not Ready', 'Ready'), start=1):
+        row = dict(base_row)
+        row['node'] = f'node-{index}'
+        row['ready'] = readiness
+        rows.append(row)
+    payload[profile.row_source] = rows
+
+    build_inventory_workbook(
+        report_type=report_type,
+        payload=payload,
+        context=_context(report_type),
+        output_path=output_path,
+    )
+
+    workbook = load_workbook(output_path)
+    summary = workbook[INVENTORY_OVERVIEW_SHEET]
+    assert summary['A19'].value == 'Ready'
+    assert summary['B19'].value == 'Records'
+    assert summary['A20'].value == 'Ready'
+    assert summary['B20'].value == 2
+    assert summary['A21'].value == 'Not Ready'
+    assert summary['B21'].value == 1
+    assert summary['B20'].number_format == '#,##0'
+    assert len(summary._charts) == 1
+
+
+
+def test_runtime_xlsx_artifact_validator_accepts_the_global_contract(tmp_path: Path) -> None:
+    report_type = 'node_inventory'
+    output_path = tmp_path / 'nodes-runtime-contract.xlsx'
+    build_inventory_workbook(
+        report_type=report_type,
+        payload=_payload(report_type),
+        context=_context(report_type),
+        output_path=output_path,
+    )
+
+    validate_inventory_xlsx_artifact(output_path)
+
+
+def test_runtime_xlsx_artifact_validator_rejects_missing_overview(tmp_path: Path) -> None:
+    report_type = 'node_inventory'
+    output_path = tmp_path / 'nodes-missing-overview.xlsx'
+    build_inventory_workbook(
+        report_type=report_type,
+        payload=_payload(report_type),
+        context=_context(report_type),
+        output_path=output_path,
+    )
+    workbook = load_workbook(output_path)
+    workbook.remove(workbook[INVENTORY_OVERVIEW_SHEET])
+    workbook.save(output_path)
+
+    with pytest.raises(ValueError, match='Overview'):
+        validate_inventory_xlsx_artifact(output_path)
+
+
+def test_runtime_xlsx_artifact_validator_rejects_missing_visual_summary(tmp_path: Path) -> None:
+    report_type = 'node_inventory'
+    output_path = tmp_path / 'nodes-missing-chart.xlsx'
+    build_inventory_workbook(
+        report_type=report_type,
+        payload=_payload(report_type),
+        context=_context(report_type),
+        output_path=output_path,
+    )
+    workbook = load_workbook(output_path)
+    workbook[INVENTORY_OVERVIEW_SHEET]._charts.clear()
+    workbook.save(output_path)
+
+    with pytest.raises(ValueError, match='chart'):
+        validate_inventory_xlsx_artifact(output_path)
+
+
+def test_runtime_xlsx_artifact_validator_rejects_stale_workbook_standard(tmp_path: Path) -> None:
+    report_type = 'node_inventory'
+    output_path = tmp_path / 'nodes-stale-standard.xlsx'
+    build_inventory_workbook(
+        report_type=report_type,
+        payload=_payload(report_type),
+        context=_context(report_type),
+        output_path=output_path,
+    )
+    workbook = load_workbook(output_path)
+    metadata = workbook[INVENTORY_METADATA_SHEET]
+    for row in range(5, metadata.max_row + 1):
+        if metadata.cell(row=row, column=1).value == 'Workbook Standard':
+            metadata.cell(row=row, column=2).value = 'kaori-inventory-xlsx-v2.0'
+            break
+    workbook.save(output_path)
+
+    with pytest.raises(ValueError, match='Workbook Standard'):
+        validate_inventory_xlsx_artifact(output_path)
 
 
 def test_object_storage_workbook_uses_readable_gib_columns(tmp_path: Path) -> None:

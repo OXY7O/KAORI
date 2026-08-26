@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Final, TypedDict, Unpack
+from typing import Final, Literal, TypedDict, Unpack
 
+XLSX_REPORTING_STANDARD: Final = 'kaori-reporting-xlsx-v1.0'
 INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v3.0'
 INVENTORY_WORKBOOK_FAMILY: Final = 'inventory'
 INVENTORY_OVERVIEW_SHEET: Final = 'Overview'
@@ -33,7 +34,8 @@ class InventoryColumn:
 class InventoryOverviewChart:
     title: str
     category_key: str
-    value_key: str
+    aggregation: Literal['count', 'value'] = 'count'
+    value_key: str | None = None
     top_n: int = 10
 
 
@@ -43,9 +45,9 @@ class InventoryWorkbookProfile:
     title: str
     description: str
     columns: tuple[InventoryColumn, ...]
+    overview_chart: InventoryOverviewChart
     row_source: str = 'inventory_assets'
     identity_columns: tuple[str, ...] = ()
-    overview_chart: InventoryOverviewChart | None = None
 
 
 class InventoryColumnOptions(TypedDict, total=False):

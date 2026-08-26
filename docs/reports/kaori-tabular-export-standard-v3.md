@@ -11,6 +11,7 @@ This standard defines the reusable CSV and XLSX publication contract for KAORI r
 | Shared tabular contract | `kaori-tabular-export-v3.0` |
 | Public schema version | `3.0` |
 | CSV format contract | `kaori-reporting-csv-v3.0` |
+| Global XLSX format contract | `kaori-reporting-xlsx-v1.0` |
 | Inventory workbook contract | `kaori-inventory-xlsx-v3.0` |
 
 The catalog remains the authority for whether a report type supports PDF, CSV, or XLSX. This standard does not enable a new output format by itself.
@@ -54,7 +55,7 @@ Inventory CSV contains common metadata, `record_type`, `record_reference`, `row_
 
 ## 4. XLSX standard
 
-Inventory XLSX uses exactly these reusable sheets, in this order:
+Every XLSX report published by KAORI must use the global `kaori-reporting-xlsx-v1.0` presentation contract. Inventory XLSX currently uses exactly these reusable sheets, in this order:
 
 1. `Overview`
 2. `Inventory`
@@ -70,9 +71,9 @@ The Overview sheet is the workbook landing page: management- and operator-readab
 - selected infrastructure scope and namespace boundary;
 - record count, public column count, identity-field count, and data cut-off;
 - internal hyperlinks to every other workbook sheet;
-- an explicit Visual Summary area with an optional native Excel chart when the workbook profile has a meaningful aggregation.
+- an explicit Visual Summary area with at least one evidence-backed visual summary when committed rows are available.
 
-Charts are evidence-driven, not decorative. A profile must explicitly declare its category field, numeric value field, chart title, and maximum displayed rows. If no meaningful chart exists, the Overview sheet remains valid without one.
+Charts are evidence-driven, not decorative. Every XLSX report profile must explicitly declare its chart title, category field, aggregation mode, and maximum displayed rows. Count charts aggregate committed records by a public categorical field; value charts use a committed numeric public field. Empty datasets show an explicit no-evidence message rather than inventing chart values.
 
 ### Inventory
 
@@ -124,7 +125,7 @@ XLSX is an operational workbook, not a PDF imitation.
 - Use native Excel tables, filters, freeze panes, typed cells, and native charts.
 - Do not use screenshots of charts.
 - Do not merge data-table cells.
-- Overview charts are optional and profile-owned.
+- Overview charts are mandatory for every XLSX report profile and remain profile-owned.
 - A chart must use committed public fields with a valid denominator/aggregation.
 - Dense technical detail belongs in Inventory and Field Dictionary rather than oversized Overview prose.
 
@@ -137,6 +138,7 @@ A new CSV/XLSX-capable report must:
 3. define public units and missing-value behavior;
 4. use shared normalization before rendering;
 5. use the canonical CSV writer or XLSX builder;
-6. add contract tests for schema order, unit transformations, empty data, security exclusions, and chart behavior when a chart is configured.
+6. declare a mandatory Overview chart using committed public fields;
+7. add contract tests for schema order, unit transformations, empty data, security exclusions, and chart behavior.
 
 Report-specific renderers must not fork the shared CSV encoding/safety contract or the XLSX Overview/Inventory/Metadata/Field Dictionary structure.

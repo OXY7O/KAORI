@@ -21,6 +21,7 @@ KUBERNETES_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         overview_chart=InventoryOverviewChart(
             title='Assets by Resource Category',
             category_key='resource_type',
+            aggregation='value',
             value_key='assets',
             top_n=12,
         ),
@@ -68,6 +69,10 @@ KUBERNETES_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         title='Nodes Inventory',
         description='Committed Kubernetes node identities, readiness, platform, capacity, addressing, and collection evidence.',
         identity_columns=('cluster', 'environment', 'node'),
+        overview_chart=InventoryOverviewChart(
+            title='Nodes by Readiness',
+            category_key='ready',
+        ),
         columns=(
             *COMMON_CLUSTER_COLUMNS,
             column('node', 'Node', 'Committed node identity.', width=34),
@@ -142,6 +147,10 @@ KUBERNETES_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         title='Namespaces Inventory',
         description='Committed namespace identities, lifecycle state, controls, and service-account posture.',
         identity_columns=('cluster', 'environment', 'namespace'),
+        overview_chart=InventoryOverviewChart(
+            title='Namespaces by Lifecycle Status',
+            category_key='status',
+        ),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
             column('status', 'Status', 'Committed namespace lifecycle status.', width=14, semantic_type='lifecycle'),
@@ -207,6 +216,10 @@ KUBERNETES_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         title='Workloads Inventory',
         description='Committed Kubernetes workload identities, readiness, replica state, and update strategy.',
         identity_columns=('cluster', 'environment', 'namespace', 'name'),
+        overview_chart=InventoryOverviewChart(
+            title='Workloads by Runtime Status',
+            category_key='status',
+        ),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
             column('name', 'Workload', 'Committed workload name.', width=30),
@@ -259,6 +272,10 @@ KUBERNETES_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         title='Pods Inventory',
         description='Committed pod identities, ownership, phase, readiness, placement, restarts, and attached evidence.',
         identity_columns=('cluster', 'environment', 'namespace', 'pod'),
+        overview_chart=InventoryOverviewChart(
+            title='Pods by Phase',
+            category_key='status',
+        ),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
             column('pod', 'Pod', 'Committed pod identity.', width=34),
@@ -323,6 +340,10 @@ KUBERNETES_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         title='Services Inventory',
         description='Committed Kubernetes Service identities, access models, port mappings, selectors, traffic policy, and backend registration evidence.',
         identity_columns=('cluster', 'environment', 'namespace', 'name'),
+        overview_chart=InventoryOverviewChart(
+            title='Services by Service Type',
+            category_key='resource_type',
+        ),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
             column('name', 'Service', 'Committed Service identity.', width=30),
@@ -405,6 +426,10 @@ KUBERNETES_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         title='Ingress Inventory',
         description='Committed Kubernetes Ingress identity, host scope, controller publication, backend routes, and TLS Secret references.',
         identity_columns=('cluster', 'environment', 'namespace', 'name'),
+        overview_chart=InventoryOverviewChart(
+            title='Ingresses by TLS Status',
+            category_key='tls_status',
+        ),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
             column('name', 'Ingress', 'Committed Ingress identity.', width=30),
@@ -504,6 +529,10 @@ KUBERNETES_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         title='Configuration Inventory',
         description='Committed ConfigMap and Secret identities and key-index metadata. Configuration values are never persisted or exported.',
         identity_columns=('cluster', 'environment', 'namespace', 'name'),
+        overview_chart=InventoryOverviewChart(
+            title='Configuration Objects by Type',
+            category_key='resource_type',
+        ),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
             column('name', 'Name', 'Committed ConfigMap or Secret identity.', width=32),
@@ -538,6 +567,10 @@ KUBERNETES_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         title='Storage Inventory',
         description='Committed StorageClass, persistent-volume, and persistent-volume-claim identities and lifecycle fields.',
         identity_columns=('cluster', 'environment', 'namespace', 'name'),
+        overview_chart=InventoryOverviewChart(
+            title='Storage Assets by Resource Type',
+            category_key='resource_type',
+        ),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
             column('name', 'Name', 'Committed storage resource identity.', width=32),

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from typing import Any
 
 from openpyxl.chart import BarChart, Reference
@@ -135,11 +136,11 @@ def _write_overview_visual(sheet: Worksheet, dataset: InventoryExportDataset) ->
     chart = dataset.profile.overview_chart
     data_header_row = _VISUAL_HEADER_ROW + 1
     data_start_row = data_header_row + 1
-    if chart is None or not dataset.rows:
+    if not dataset.rows:
         return _write_visual_message(
             sheet,
             data_header_row,
-            'No evidence-backed visual summary is configured for this workbook profile.',
+            'No committed records are available for an evidence-backed visual summary.',
         )
 
     rows = _collect_chart_rows(dataset)
@@ -150,10 +151,24 @@ def _write_overview_visual(sheet: Worksheet, dataset: InventoryExportDataset) ->
             'No chartable numeric evidence is available for this workbook scope.',
         )
 
-    value_column = next((column for column in dataset.profile.columns if column.key == chart.value_key), None)
-    unit = value_column.unit if value_column is not None else None
-    sheet.cell(row=data_header_row, column=1, value='Category')
-    sheet.cell(row=data_header_row, column=2, value=f'Value ({unit})' if unit else 'Value')
+    category_column = next(
+        (column for column in dataset.profile.columns if column.key == chart.category_key),
+        None,
+    )
+    value_column = next(
+        (column for column in dataset.profile.columns if column.key == chart.value_key),
+        None,
+    )
+    category_label = category_column.label if category_column is not None else 'Category'
+    value_label = 'Records' if chart.aggregation == 'count' else (value_column.label if value_column else 'Value')
+    number_format = (
+        '#,##0'
+        if chart.aggregation == 'count'
+        else ((value_column.number_format if value_column is not None else None) or '#,##0.00')
+    )
+
+    sheet.cell(row=data_header_row, column=1, value=category_label)
+    sheet.cell(row=data_header_row, column=2, value=value_label)
     style_header(sheet.cell(row=data_header_row, column=1))
     style_header(sheet.cell(row=data_header_row, column=2))
     for row_index, (category, value) in enumerate(rows, start=data_start_row):
@@ -161,17 +176,30 @@ def _write_overview_visual(sheet: Worksheet, dataset: InventoryExportDataset) ->
         sheet.cell(row=row_index, column=2, value=value)
         style_body(sheet.cell(row=row_index, column=1), alternate=row_index % 2 == 0)
         style_body(sheet.cell(row=row_index, column=2), alternate=row_index % 2 == 0)
-        sheet.cell(row=row_index, column=2).number_format = '#,##0.00'
+        sheet.cell(row=row_index, column=2).number_format = number_format
 
     end_row = data_header_row + len(rows)
     _add_overview_bar_chart(sheet, dataset, data_header_row, data_start_row, end_row)
     return end_row
 
 
-def _collect_chart_rows(dataset: InventoryExportDataset) -> list[tuple[str, float]]:
+def _collect_chart_rows(dataset: InventoryExportDataset) -> list[tuple[str, int | float]]:
     chart = dataset.profile.overview_chart
-    if chart is None:
-        return []
+
+    if chart.aggregation == 'count':
+        counts: Counter[str] = Counter()
+        for row in dataset.rows:
+            category = row.get(chart.category_key)
+            if category in (None, ''):
+                continue
+            counts[_safe_text_value(category)] += 1
+        rows = list(counts.items())
+        rows.sort(key=lambda item: (-item[1], item[0].casefold()))
+        return rows[: max(1, chart.top_n)]
+
+    if chart.aggregation != 'value' or chart.value_key is None:
+        raise ValueError(f'Unsupported XLSX overview chart aggregation: {chart.aggregation!r}.')
+
     rows: list[tuple[str, float]] = []
     for row in dataset.rows:
         category = row.get(chart.category_key)
@@ -179,7 +207,7 @@ def _collect_chart_rows(dataset: InventoryExportDataset) -> list[tuple[str, floa
         if category in (None, '') or not isinstance(value, (int, float)):
             continue
         rows.append((_safe_text_value(category), float(value)))
-    rows.sort(key=lambda item: item[1], reverse=True)
+    rows.sort(key=lambda item: (-item[1], item[0].casefold()))
     return rows[: max(1, chart.top_n)]
 
 
@@ -191,8 +219,6 @@ def _add_overview_bar_chart(
     end_row: int,
 ) -> None:
     chart = dataset.profile.overview_chart
-    if chart is None:
-        return
     values = Reference(sheet, min_col=2, min_row=data_header_row, max_row=end_row)
     categories = Reference(sheet, min_col=1, min_row=data_start_row, max_row=end_row)
     visual = BarChart()

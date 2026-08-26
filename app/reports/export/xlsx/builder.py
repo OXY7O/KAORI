@@ -5,7 +5,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, Final
 
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.formatting.rule import CellIsRule, FormulaRule
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
@@ -31,6 +31,7 @@ from app.reports.export.xlsx.standard import (
     INVENTORY_OVERVIEW_SHEET,
     INVENTORY_WORKBOOK_FAMILY,
     INVENTORY_WORKBOOK_STANDARD,
+    XLSX_REPORTING_STANDARD,
     InventoryColumn,
     InventoryWorkbookProfile,
 )
@@ -164,8 +165,67 @@ def build_inventory_workbook(
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     workbook.save(output_path)
+    try:
+        validate_inventory_xlsx_artifact(output_path)
+    except Exception:
+        output_path.unlink(missing_ok=True)
+        raise
 
 
+def validate_inventory_xlsx_artifact(output_path: Path) -> None:
+    """Reject serialized XLSX artifacts that drift from the global KAORI contract."""
+
+    workbook = load_workbook(output_path, data_only=False, read_only=False)
+    try:
+        expected_sheets = [
+            INVENTORY_OVERVIEW_SHEET,
+            INVENTORY_DATA_SHEET,
+            INVENTORY_METADATA_SHEET,
+            INVENTORY_DICTIONARY_SHEET,
+        ]
+        if workbook.sheetnames != expected_sheets:
+            raise ValueError(
+                'KAORI XLSX contract violation: Overview, Inventory, Metadata, and '
+                'Field Dictionary must be the canonical sheet order.'
+            )
+
+        overview = workbook[INVENTORY_OVERVIEW_SHEET]
+        if not overview._charts:
+            visual_message = str(overview['A19'].value or '').strip()
+            allowed_no_chart_messages = {
+                'No committed records are available for an evidence-backed visual summary.',
+                'No chartable numeric evidence is available for this workbook scope.',
+            }
+            if visual_message not in allowed_no_chart_messages:
+                raise ValueError(
+                    'KAORI XLSX contract violation: Overview must contain an evidence-backed chart '
+                    'when chartable report evidence is available.'
+                )
+
+        expected_navigation = {
+            'F9': (INVENTORY_DATA_SHEET, f"#'{INVENTORY_DATA_SHEET}'!A1"),
+            'F10': (INVENTORY_METADATA_SHEET, f"#'{INVENTORY_METADATA_SHEET}'!A1"),
+            'F11': (INVENTORY_DICTIONARY_SHEET, f"#'{INVENTORY_DICTIONARY_SHEET}'!A1"),
+        }
+        for coordinate, (label, target) in expected_navigation.items():
+            cell = overview[coordinate]
+            actual_target = cell.hyperlink.target if cell.hyperlink is not None else None
+            if cell.value != label or actual_target != target:
+                raise ValueError(
+                    f'KAORI XLSX contract violation: Overview navigation for {label} is missing or invalid.'
+                )
+
+        metadata = workbook[INVENTORY_METADATA_SHEET]
+        metadata_values = {
+            metadata.cell(row=row, column=1).value: metadata.cell(row=row, column=2).value
+            for row in range(_METADATA_DATA_START_ROW, metadata.max_row + 1)
+        }
+        if metadata_values.get('Workbook Standard') != INVENTORY_WORKBOOK_STANDARD:
+            raise ValueError('KAORI XLSX contract violation: Workbook Standard is stale or missing.')
+        if metadata_values.get('XLSX Standard') != XLSX_REPORTING_STANDARD:
+            raise ValueError('KAORI XLSX contract violation: XLSX Standard is stale or missing.')
+    finally:
+        workbook.close()
 
 
 def _build_inventory_sheet(
@@ -308,6 +368,12 @@ def _build_metadata_sheet(
             INVENTORY_WORKBOOK_STANDARD,
             'All sheets',
             'Canonical reusable KAORI Inventory Excel contract.',
+        ),
+        (
+            'XLSX Standard',
+            XLSX_REPORTING_STANDARD,
+            'Workbook',
+            'Global KAORI Excel contract for Overview, navigation, and evidence-backed visual summary.',
         ),
         (
             'Tabular Standard',

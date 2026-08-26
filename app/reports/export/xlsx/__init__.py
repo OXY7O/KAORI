@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 from app.reports.export.xlsx.standard import (
     INVENTORY_WORKBOOK_STANDARD,
     INVENTORY_XLSX_REPORT_TYPES,
+    XLSX_REPORTING_STANDARD,
     get_inventory_workbook_profile,
 )
 
@@ -33,6 +34,7 @@ def render_inventory_xlsx(report: Report, output_path: Path) -> None:
 __all__ = [
     'INVENTORY_WORKBOOK_STANDARD',
     'INVENTORY_XLSX_REPORT_TYPES',
+    'XLSX_REPORTING_STANDARD',
     'get_inventory_workbook_profile',
     'render_inventory_xlsx',
 ]

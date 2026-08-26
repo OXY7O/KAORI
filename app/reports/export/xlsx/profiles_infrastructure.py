@@ -21,6 +21,7 @@ INFRASTRUCTURE_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] 
         overview_chart=InventoryOverviewChart(
             title='Top Object Storage Usage (GiB)',
             category_key='name',
+            aggregation='value',
             value_key='usage_gib',
             top_n=10,
         ),
@@ -239,6 +240,10 @@ INFRASTRUCTURE_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] 
         ),
         row_source='records',
         identity_columns=('cluster', 'environment', 'namespace', 'secret_name'),
+        overview_chart=InventoryOverviewChart(
+            title='Certificates by Validity Status',
+            category_key='status_label',
+        ),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
             column('secret_name', 'Secret Name', 'Committed Kubernetes TLS Secret name.', width=30),

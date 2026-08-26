@@ -109,11 +109,12 @@ Analytics PDF is the only PDF family. Kubernetes and Object Storage Analytics sh
 
 A PDF artifact is valid only when it exists, has a plausible size, and starts with the `%PDF-` signature.
 
-## 7. XLSX default style — Inventory
+## 7. XLSX default style — global KAORI workbook contract
 
-Inventory XLSX uses `kaori-inventory-xlsx-v3.0` and exactly four reusable sheets:
+Every XLSX report uses the global `kaori-reporting-xlsx-v1.0` contract. Inventory XLSX additionally uses
+`kaori-inventory-xlsx-v3.0` and exactly four reusable sheets:
 
-1. `Overview` — workbook landing page with key metrics, general information, internal navigation links, cutoff, and optional profile-owned native Excel chart;
+1. `Overview` — workbook landing page with key metrics, general information, internal navigation links, cutoff, and a profile-owned evidence-backed native Excel chart when committed rows are available;
 2. `Inventory` — report-specific public columns from the canonical inventory profile;
 3. `Metadata` — scope, source, cutoff, ownership, format, security, and standard information;
 4. `Field Dictionary` — column definition, type, source, missing-value rule, semantic role, unit, and Excel format.
@@ -128,7 +129,8 @@ Default workbook rules:
 - numeric missing values remain blank;
 - text missing values use `Not Available` unless the profile defines another rule;
 - public capacity/usage values use readable units such as MiB/GiB/TiB rather than raw bytes when a readable unit is available;
-- the Overview sheet always includes core report context, links to every other workbook sheet, and may include a native Excel chart only when the profile declares a meaningful evidence-backed aggregation;
+- the Overview sheet always includes core report context, links to every other workbook sheet, and a native Excel chart derived from the profile's declared evidence-backed aggregation when committed rows are available;
+- every XLSX profile must declare an Overview chart contract; count charts aggregate public categorical fields and value charts use public numeric fields;
 - empty datasets retain valid headers/table structure and show an explicit no-data message;
 - private keys and Secret values are always excluded.
 
@@ -180,7 +182,7 @@ Object keys include domain, source kind, year/month, canonical asset-scope slug,
 The report portfolio is considered aligned only when all three artifact contracts agree on identity, source boundary, and semantics:
 
 - **PDF:** management publication for Analytics only; concise comparison registers, references for long identities, shared Analytics Overview typography hierarchy, and no renderer-side source queries.
-- **XLSX:** operational Inventory workbook only; exactly `Inventory`, `Metadata`, and `Field Dictionary` sheets, typed numeric/date cells, stable identity-first columns, filtering/freezing, explicit missing evidence, and no private Secret material. Legacy `.xls` is not supported.
+- **XLSX:** operational Inventory workbook only; exactly `Overview`, `Inventory`, `Metadata`, and `Field Dictionary` sheets, typed numeric/date cells, stable identity-first columns, filtering/freezing, explicit missing evidence, mandatory profile-owned Overview visualization for non-empty datasets, and no private Secret material. Legacy `.xls` is not supported.
 - **CSV:** machine-readable companion for both families; UTF-8 BOM, LF, stable schema/order, ISO-8601 temporal values, deterministic nested JSON, formula-injection protection, and the same canonical source model used by PDF/XLSX.
 - The public document reference, report type, family, scope, period, data cut-off, generated-by snapshot, and source label must be semantically identical across formats for the same report definition/generation boundary.
 - A report-specific renderer may change presentation only; it must not change the underlying evidence denominator, missing-value meaning, identity, or ordering semantics.

@@ -50,6 +50,11 @@ def main() -> int:
         errors,
     )
     require(
+        "XLSX_REPORTING_STANDARD: Final = 'kaori-reporting-xlsx-v1.0'" in xlsx_schema,
+        'global XLSX reporting standard is missing',
+        errors,
+    )
+    require(
         "INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v3.0'" in xlsx_schema,
         'XLSX v3 standard is missing',
         errors,
@@ -74,6 +79,12 @@ def main() -> int:
     )
 
     require('build_inventory_overview_sheet' in xlsx_builder, 'Overview sheet builder is not wired', errors)
+    require(
+        'validate_inventory_xlsx_artifact' in xlsx_builder
+        and 'validate_inventory_xlsx_artifact(output_path)' in xlsx_builder,
+        'XLSX runtime artifact validation gate is missing',
+        errors,
+    )
     require('INVENTORY_DATA_SHEET' in xlsx_builder, 'Inventory sheet contract is missing', errors)
     require('INVENTORY_METADATA_SHEET' in xlsx_builder, 'Metadata sheet contract is missing', errors)
     require('INVENTORY_DICTIONARY_SHEET' in xlsx_builder, 'Field Dictionary sheet contract is missing', errors)
@@ -101,6 +112,16 @@ def main() -> int:
     require('freeze_panes:' not in xlsx_standard, 'legacy hard-coded freeze panes remain in profiles', errors)
     require('status_columns' not in xlsx_standard, 'legacy profile-level status columns remain', errors)
     require('semantic_type' in xlsx_schema, 'column-level semantic roles are missing', errors)
+    require(
+        'overview_chart: InventoryOverviewChart' in xlsx_schema,
+        'every XLSX profile must own an Overview chart contract',
+        errors,
+    )
+    require(
+        "aggregation: Literal['count', 'value'] = 'count'" in xlsx_schema,
+        'XLSX Overview chart aggregation contract is missing',
+        errors,
+    )
     require(
         all(
             token in xlsx_schema
@@ -183,8 +204,8 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI tabular export audit passed: CSV v3 and Inventory XLSX v3 share '
-        'metadata, dataset, identity, normalization, security, and schema contracts.'
+        'KAORI tabular export audit passed: CSV v3 and global XLSX v1 / Inventory XLSX v3 share '
+        'metadata, dataset, identity, normalization, security, Overview, and schema contracts.'
     )
     return 0
 
