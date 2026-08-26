@@ -80,7 +80,7 @@ def test_generated_detail_visible_labels_follow_title_case_standard() -> None:
         'Latest Generation Attempt',
         'Persisted Report Definition',
         'Governed Evidence Scope',
-        'Back to Registry',
+        'Registry',
     ]
     for label in required_title_case:
         assert label in template
@@ -110,10 +110,17 @@ def test_generated_detail_generation_evidence_actions_use_single_desktop_row() -
     assert 'data-generated-detail-header-layout="single-row-desktop"' in template
     assert 'data-generated-detail-report-actions="true"' in template
     assert 'data-generated-detail-action-row="desktop-nowrap"' in template
+    assert 'data-generated-detail-status-placement="identity"' in template
+    assert 'Manage execution, evidence, and actions.' in template
+    assert '>Registry<' in template.replace('\n', '').replace('    ', '')
+    assert "'Regenerate' if payload.report.can_download_artifact" in template
+    assert '<span data-operation-submit-label>Archive</span>' in template
+    assert '<span data-operation-submit-label>Restore</span>' in template
     assert 'xl:flex-nowrap' in template
     assert 'xl:shrink-0' in template
     assert 'whitespace-nowrap' in template
-    assert 'xl:max-w-[360px]' in template
+    assert 'xl:max-w-[360px]' not in template
+    assert 'xl:flex-1' in template
 
 
 def test_generated_detail_lifecycle_and_actions_remain_single_click_safe() -> None:

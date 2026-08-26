@@ -408,22 +408,26 @@
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-4 xl:flex-row xl:flex-nowrap xl:items-center xl:justify-between"
                      data-generated-detail-header-layout="single-row-desktop">
-                    <div class="flex min-w-0 items-start gap-3 xl:max-w-[360px] xl:flex-none">
+                    <div class="flex min-w-0 items-start gap-3 xl:min-w-[320px] xl:flex-1"
+                         data-generated-detail-status-placement="identity">
                         <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="workflow" class="h-5 w-5"></i></span>
                         <div class="min-w-0">
-                            <h2 class="{{ table_ui.block_title_classes() }}">Generation & Evidence</h2>
-                            <p class="{{ table_ui.block_description_classes() }}">Execution lifecycle, persisted report definition, and operator actions in one workspace.</p>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="{{ table_ui.block_title_classes() }}">Generation & Evidence</h2>
+                                {% if payload.job_execution %}{{ table_label.status_indicator_label(payload.job_execution.status_label, payload.job_execution.status_tone) }}{% endif %}
+                            </div>
+                            <p class="{{ table_ui.block_description_classes() }} xl:whitespace-nowrap">Manage execution, evidence, and actions.</p>
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 whitespace-nowrap xl:flex-nowrap xl:shrink-0 xl:justify-end"
                          id="report-actions"
                          data-generated-detail-report-actions="true"
                          data-generated-detail-action-row="desktop-nowrap">
-                        {% if payload.job_execution %}{{ table_label.status_indicator_label(payload.job_execution.status_label, payload.job_execution.status_tone) }}{% endif %}
                         <a href="{{ payload.registry_return_url }}"
+                           aria-label="Back to Registry"
                            class="{{ table_ui.action_classes() }}">
                             <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
-                            Back to Registry
+                            Registry
                         </a>
                         {% if payload.report.can_download_artifact %}
                             <a href="{{ url_for('reports.download_report_artifact', report_id=payload.report.id, next=payload.registry_return_url) }}"
@@ -446,7 +450,7 @@
                                         class="{{ primary_action_classes if not payload.report.can_download_artifact and not payload.report.can_restore_report else table_ui.action_classes() }}"
                                         {% if not payload.report.can_download_artifact and not payload.report.can_restore_report %}data-generated-detail-primary-action="regenerate"{% endif %}>
                                     <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
-                                    <span data-operation-submit-label>{{ payload.report.generate_artifact_label }}</span>
+                                    <span data-operation-submit-label>{{ 'Regenerate' if payload.report.can_download_artifact else payload.report.generate_artifact_label }}</span>
                                 </button>
                             </form>
                         {% endif %}
@@ -462,7 +466,7 @@
                                         data-loading-label="Archiving Report..."
                                         class="{{ table_ui.action_classes() }}">
                                     <i data-lucide="archive" class="h-4 w-4" aria-hidden="true"></i>
-                                    <span data-operation-submit-label>Archive Report</span>
+                                    <span data-operation-submit-label>Archive</span>
                                 </button>
                             </form>
                         {% endif %}
@@ -479,7 +483,7 @@
                                         class="{{ primary_action_classes }}"
                                         data-generated-detail-primary-action="restore">
                                     <i data-lucide="rotate-ccw" class="h-4 w-4" aria-hidden="true"></i>
-                                    <span data-operation-submit-label>Restore Report</span>
+                                    <span data-operation-submit-label>Restore</span>
                                 </button>
                             </form>
                         {% endif %}
