@@ -216,3 +216,15 @@ def test_generated_registry_summary_counts_are_aggregated_for_polling_scale() ->
     assert '.group_by(Report.status)' in service
     assert '_count_reports_by_status' not in service
     assert 'def _count_reports()' not in service
+
+
+def test_generated_reports_hero_metadata_respects_global_three_label_limit() -> None:
+    registry = read('app/templates/reports/generated/index.html')
+    detail = read('app/templates/reports/generated/detail.html')
+
+    for template in (registry, detail):
+        hero = template.split('page_hero.metadata_row_classes()', 1)[1].split('</div>', 1)[0]
+        assert hero.count('page_hero.meta_label(') <= 3
+
+    assert "page_hero.meta_label('workflow', 'Worker-Owned Generation')" not in registry
+    assert "page_hero.meta_label('file-type-2', 'PDF · XLSX · CSV Artifacts')" in registry
