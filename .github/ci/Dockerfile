@@ -80,9 +80,9 @@ RUN set -eux; \
     install -m 0755 /tmp/gitleaks /usr/local/bin/gitleaks; \
     curl -fsSLo /tmp/hadolint "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-linux-${hadolint_arch}"; \
     curl -fsSLo /tmp/hadolint-checksums.txt "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/checksums.sha256"; \
-    grep " hadolint-linux-${hadolint_arch}$" /tmp/hadolint-checksums.txt \
-      | sed "s#hadolint-linux-${hadolint_arch}#/tmp/hadolint#" \
-      | sha256sum -c -; \
+    hadolint_checksum="$(awk -v asset="*hadolint-linux-${hadolint_arch}" '$2 == asset {print $1}' /tmp/hadolint-checksums.txt)"; \
+    test -n "$hadolint_checksum"; \
+    printf '%s  %s\n' "$hadolint_checksum" /tmp/hadolint | sha256sum -c -; \
     install -m 0755 /tmp/hadolint /usr/local/bin/hadolint; \
     curl -fsSLo /tmp/trivy.tar.gz "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${trivy_arch}.tar.gz"; \
     curl -fsSLo /tmp/trivy-checksums.txt "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_checksums.txt"; \
