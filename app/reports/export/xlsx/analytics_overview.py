@@ -14,7 +14,6 @@ from app.reports.export.xlsx.style import (
     KAORI_AMBER_TEXT,
     KAORI_BLUE_TEXT,
     KAORI_GREEN_TEXT,
-    KAORI_MUTED,
     KAORI_PRIMARY,
     KAORI_PRIMARY_DARK,
     KAORI_PRIMARY_SOFT,
