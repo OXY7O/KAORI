@@ -1,6 +1,6 @@
 # KAORI Agile SDLC Governance Design
 
-**Version:** 1.0-design  
+**Version:** 1.0  
 **Date:** 2026-08-27  
 **Scope:** KAORI application repository  
 **Authority:** Application-local governance baseline  
@@ -41,10 +41,14 @@ The lifecycle is deliberately closed-loop. Operational findings, incidents, moni
 
 ### 4.1 Permanent branches
 
+Only two branches are long-lived by default:
+
 - `main` is the production-ready baseline and release authority.
 - `kaori/staging` is the permanent integration and local-UAT branch.
 
-`kaori/staging` replaces the previous `kaori/working` role. The old branch may remain temporarily during migration, but new process documentation and future work must treat `kaori/staging` as authoritative.
+`kaori/staging` replaces the previous `kaori/working` role. `kaori/working` is retired and should be deleted after its remaining commits are represented in `kaori/staging` and no active work depends on it.
+
+Additional long-lived branches require an explicit governance decision and must not be introduced by habit.
 
 ### 4.2 Temporary work branches
 
@@ -61,7 +65,13 @@ Canonical naming:
 
 Infrastructure/bootstrap work may use a descriptive branch such as `kaori/ci-cache` when no final issue number exists yet, but governed work should converge on issue-linked naming.
 
-### 4.3 Integration flow
+### 4.3 Branch hygiene
+
+Temporary branches are disposable delivery branches. After their changes have been integrated into the appropriate long-lived branch and no follow-up work depends on them, they should be deleted from the remote and local clones.
+
+Branch cleanup is part of delivery hygiene, not optional housekeeping. Stale merged branches should not accumulate as a parallel work-history system; Issues, PRs, commits, releases, and governance records provide the durable audit trail.
+
+### 4.4 Integration flow
 
 Normal flow:
 
@@ -69,7 +79,7 @@ Normal flow:
 
 After a successful merge to `main`, `kaori/staging` must be brought back to the exact main lineage using a fast-forward when possible.
 
-### 4.4 Hotfix flow
+### 4.5 Hotfix flow
 
 Urgent production fixes may use:
 
@@ -438,7 +448,8 @@ The governance implementation is successful when:
 6. `kaori/staging` is the single local-UAT integration branch.
 7. `Done` is impossible by process definition before explicit local UAT acceptance.
 8. Release milestones remain separate from sprint iterations.
-9. The model can later be mapped to platform-level governance without rewriting the KAORI product lifecycle from scratch.
+9. Merged temporary branches are routinely retired instead of becoming additional long-lived branches.
+10. The model can later be mapped to platform-level governance without rewriting the KAORI product lifecycle from scratch.
 
 ## 20. Version-1 Decision Record
 
@@ -446,7 +457,10 @@ The following decisions are locked for the first governance implementation:
 
 - `main` = production-ready baseline.
 - `kaori/staging` = permanent integration and local-UAT authority.
+- `main` and `kaori/staging` are the only default long-lived branches.
+- `kaori/working` is retired after migration to staging is complete.
 - work is performed on issue-linked temporary branches.
+- merged temporary branches are deleted when no longer needed.
 - default sprint cadence = two weeks, explicitly flexible.
 - `Done` requires explicit local UAT approval.
 - full CI precedes staging and release promotion.
