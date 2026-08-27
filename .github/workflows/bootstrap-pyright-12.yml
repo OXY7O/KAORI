@@ -99,7 +99,7 @@ jobs:
               'app/reports/export/xlsx/analytics_profiles.py',
               'preferred_key.title()',
               'preferred_label',
-              3,
+              4,
           )
 
           # Analytics chart typing: preserve exact runtime geometry while adapting narrow OpenPyXL stubs.
