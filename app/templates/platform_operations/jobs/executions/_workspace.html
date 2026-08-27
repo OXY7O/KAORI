@@ -1,5 +1,5 @@
 {% import "components/table_label.html" as table_label %}
-{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "components/content_tabs.html" as content_tabs %}
 {% import "components/operational_section_card.html" as operational_section %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% set execution_tabs = [
@@ -8,8 +8,7 @@
     ('queues', 'Queues', 'network', url_for('jobs.executions', execution_tab='queues'), job_stats.queues)
 ] %}
 <section id="job-execution-workspace"
-         class="space-y-5"
-         hx-indicator="#execution-workspace-loading">
+         class="space-y-5">
     <section class="{{ operational_section.shell_classes() }}"
              aria-labelledby="execution-overview-title">
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
@@ -71,28 +70,32 @@
     </section>
     <section class="{{ operational_section.shell_classes() }}"
              aria-labelledby="execution-workspace-title">
-        <header class="border-b border-outline-subtle px-5 pt-4 sm:px-6">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div class="flex items-start gap-3 pb-4">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                          aria-hidden="true">
-                        <i data-lucide="workflow" class="h-4 w-4"></i>
-                    </span>
-                    <div>
-                        <h2 id="execution-workspace-title"
-                            class="text-base font-semibold text-content-primary">Execution Workspace</h2>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Only the selected execution view is loaded. Queue topology inspection runs only when the Queues view is opened.</p>
-                    </div>
+        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="workflow" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 id="execution-workspace-title"
+                        class="text-base font-semibold text-content-primary">Execution Workspace</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Only the selected execution view is loaded. Queue topology inspection runs only when the Queues view is opened.</p>
                 </div>
             </div>
-            {{ framed_workspace_tabs.render_navigation(execution_tabs,
-                        selected_job_tab,
-                        prefix='execution',
-                        aria_label='Execution Workspace Sections',
-                        hx_target='#job-execution-workspace',
-                        hx_select='#job-execution-workspace') }}
-            {{ loading_bar.render('execution-workspace-loading', label='Loading Execution Workspace') }}
         </header>
+        {{ content_tabs.render_links(
+            'execution',
+            execution_tabs,
+            selected_job_tab,
+            'Execution Workspace Sections',
+            embedded=true,
+            data_namespace='execution',
+            hx_target='#job-execution-workspace',
+            hx_select='#job-execution-workspace',
+            hx_indicator='#execution-workspace-loading',
+            hx_sync='#job-execution-workspace:replace'
+        ) }}
+        {{ loading_bar.render('execution-workspace-loading', label='Loading Execution Workspace') }}
         {% if selected_job_tab == 'registry' %}
             {% set embedded = true %}
             {% include 'platform_operations/jobs/executions/partials/_registry.html' %}

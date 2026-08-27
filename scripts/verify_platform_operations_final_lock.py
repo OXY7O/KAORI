@@ -314,14 +314,15 @@ def main() -> int:
         errors.append('Platform Operations Data Lifecycle must expose Analytics Snapshots and Serve Window Protection')
 
     execution_workspace = read('app/templates/platform_operations/jobs/executions/_workspace.html')
-    shared_tabs = read('app/templates/components/framed_workspace_tabs.html')
+    shared_tabs = read('app/templates/components/content_tabs.html')
     if (
-        'components/framed_workspace_tabs.html' not in execution_workspace
-        or 'framed_workspace_tabs.render_navigation(' not in execution_workspace
+        'components/content_tabs.html' not in execution_workspace
+        or 'content_tabs.render_links(' not in execution_workspace
+        or 'embedded=true' not in execution_workspace
     ):
-        errors.append('Execution Workspace must use shared Framed Workspace Tabs')
-    if 'id="{{ prefix }}-{{ tab_key }}-nav-badge"' not in shared_tabs:
-        errors.append('Framed Workspace Tabs must retain shared optional count badge ownership')
+        errors.append('Execution Workspace must use shared Capacity Analysis Content Tabs')
+    if 'id="{{ tabset_id }}-{{ tab_id }}-nav-badge"' not in shared_tabs:
+        errors.append('Content Tabs must retain the server-owned live count badge hook')
     if 'integrations/components/' in execution_workspace:
         errors.append('Jobs must not depend on Integration-specific presentation components')
 

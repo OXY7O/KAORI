@@ -73,8 +73,9 @@ def test_platform_operations_uses_shared_tab_contracts() -> None:
     assert 'framed_workspace_tabs.render(' in kubernetes
     assert 'components/framed_workspace_tabs.html' in jobs
     assert 'framed_workspace_tabs.render_navigation(' in jobs
-    assert 'components/framed_workspace_tabs.html' in executions
-    assert 'framed_workspace_tabs.render_navigation(' in executions
+    assert 'components/content_tabs.html' in executions
+    assert 'content_tabs.render_links(' in executions
+    assert 'components/framed_workspace_tabs.html' not in executions
     assert 'role="tablist"' not in kubernetes
     assert 'role="tablist"' not in jobs
     assert 'role="tablist"' not in executions

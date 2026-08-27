@@ -7,15 +7,17 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_execution_workspace_uses_framed_kaori_tabs_and_live_fragments() -> None:
+def test_execution_workspace_uses_capacity_analysis_content_tabs_and_live_fragments() -> None:
     workspace = read('app/templates/platform_operations/jobs/executions/_workspace.html')
     registry = read('app/templates/platform_operations/jobs/executions/partials/_registry.html')
     queues = read('app/templates/platform_operations/jobs/executions/partials/_queue_activity.html')
 
-    assert 'components/framed_workspace_tabs.html' in workspace
-    assert 'framed_workspace_tabs.render_navigation(' in workspace
-    assert "hx_indicator='#execution-workspace-loading'" not in workspace
-    assert 'hx-indicator="#execution-workspace-loading"' in workspace
+    assert 'components/content_tabs.html' in workspace
+    assert 'content_tabs.render_links(' in workspace
+    assert "embedded=true" in workspace
+    assert "data_namespace='execution'" in workspace
+    assert "hx_indicator='#execution-workspace-loading'" in workspace
+    assert 'components/framed_workspace_tabs.html' not in workspace
     assert 'hx-trigger="every 15s"' in registry
     assert 'hx-trigger="every 15s"' in queues
     assert 'document.hidden' in registry

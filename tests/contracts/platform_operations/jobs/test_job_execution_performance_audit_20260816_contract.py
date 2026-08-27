@@ -24,7 +24,7 @@ def test_execution_subworkspaces_are_demand_loaded() -> None:
     routes = read('app/platform_operations/jobs/routes.py')
     presentation = read('app/platform_operations/jobs/presentation.py')
 
-    assert 'workspace_tabs.render_navigation' in workspace
+    assert 'content_tabs.render_links' in workspace
     assert "selected_job_tab == 'registry'" in workspace
     assert "selected_job_tab == 'queues'" in workspace
     assert 'x-show="activeTab ===' not in workspace

@@ -35,6 +35,16 @@ def test_namespace_policy_uses_title_case_and_inventory_pagination_contract() ->
     assert "'namespace' if namespace_pagination.total_items" not in table
 
 
+
+def test_namespace_policy_filter_uses_archive_history_table_primitives() -> None:
+    section = _read('app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html')
+
+    assert 'class="{{ table_ui.filter_bar_classes() }}"' in section
+    assert section.count('class="{{ table_ui.filter_label_classes() }}"') >= 2
+    assert 'class="{{ table_ui.filter_input_classes() }} pl-10"' in section
+    assert 'class="{{ table_ui.filter_select_classes() }}"' in section
+    assert 'h-11 w-full rounded-lg' not in section
+
 def test_jobs_reuse_shared_metadata_status_and_pagination_components() -> None:
     activity = _read('app/templates/platform_operations/jobs/configuration/_execution_activity.html')
     registry = _read('app/templates/platform_operations/jobs/executions/partials/_registry.html')

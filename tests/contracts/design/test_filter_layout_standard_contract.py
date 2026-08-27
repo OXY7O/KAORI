@@ -42,7 +42,11 @@ def test_provider_registry_and_reviewed_filter_surfaces_do_not_leave_orphan_colu
     assert 'xl:grid-cols-12' not in coverage
     assert 'xl:col-span-' not in coverage
 
-    assert 'table_ui.filter_layout_classes()' in namespace
+    assert 'table_ui.filter_bar_classes()' in namespace
+    assert namespace.count('table_ui.filter_label_classes()') >= 2
+    assert 'table_ui.filter_input_classes()' in namespace
+    assert 'table_ui.filter_select_classes()' in namespace
+    assert 'bg-surface-card px-6 py-4' not in namespace
     assert 'md:grid-cols-[minmax(0,1fr)_18rem]' not in namespace
 
     assert 'analytics_workspace.filter_layout_classes()' in alerts

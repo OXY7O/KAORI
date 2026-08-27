@@ -78,46 +78,45 @@
             </div>
         </div>
     {% endif %}
-    <div class="border-b border-outline-default bg-surface-card px-6 py-4">
-        <form method="get"
-              action="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal') }}"
-              hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.workspace') }}"
-              hx-target="#secret-reveal-namespace-table-content"
-              hx-select="#secret-reveal-namespace-table-content"
-              hx-swap="innerHTML"
-              hx-push-url="true"
-              hx-trigger="change from:select[name='namespace_policy'], keyup changed delay:500ms from:input[name='namespace_q']"
-              hx-indicator="#secret-reveal-namespace-loading"
-              class="{{ table_ui.filter_layout_classes() }}">
-            <input type="hidden" name="cluster_id" value="{{ selected_cluster.id }}">
-            <input type="hidden" name="page" value="1">
-            <input type="hidden"
-                   name="per_page"
-                   value="{{ namespace_pagination.per_page }}">
-            <div class="min-w-0">
-                <label class="mb-2 block text-sm font-medium text-content-secondary">Search Namespace</label>
-                <div class="relative">
-                    <i data-lucide="search"
-                       class="absolute left-3 top-3.5 h-4 w-4 text-content-muted"></i>
-                    <input type="search"
-                           name="namespace_q"
-                           value="{{ namespace_filters.query }}"
-                           placeholder="Search namespace name..."
-                           class="h-11 w-full rounded-lg border border-outline-default bg-surface-card py-2 pr-3 pl-10 text-sm text-content-primary transition outline-none placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
-                </div>
+    <form method="get"
+          action="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal') }}"
+          hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.workspace') }}"
+          hx-target="#secret-reveal-namespace-table-content"
+          hx-select="#secret-reveal-namespace-table-content"
+          hx-swap="innerHTML"
+          hx-push-url="true"
+          hx-trigger="change from:select[name='namespace_policy'], keyup changed delay:500ms from:input[name='namespace_q']"
+          hx-indicator="#secret-reveal-namespace-loading"
+          class="{{ table_ui.filter_bar_classes() }}">
+        <input type="hidden" name="cluster_id" value="{{ selected_cluster.id }}">
+        <input type="hidden" name="page" value="1">
+        <input type="hidden"
+               name="per_page"
+               value="{{ namespace_pagination.per_page }}">
+        <div class="min-w-[220px] flex-1">
+            <label class="{{ table_ui.filter_label_classes() }}">Search Namespace</label>
+            <div class="relative">
+                <i data-lucide="search"
+                   class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+                   aria-hidden="true"></i>
+                <input type="search"
+                       name="namespace_q"
+                       value="{{ namespace_filters.query }}"
+                       placeholder="Search namespaces..."
+                       class="{{ table_ui.filter_input_classes() }} pl-10">
             </div>
-            <div class="min-w-0">
-                <label class="mb-2 block text-sm font-medium text-content-secondary">Reveal Policy</label>
-                <select name="namespace_policy"
-                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
-                    {% for value, label in namespace_filter_options.items() %}
-                        <option value="{{ value }}"
-                                {% if namespace_filters.policy == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-        </form>
-    </div>
+        </div>
+        <div class="min-w-[220px] flex-1">
+            <label class="{{ table_ui.filter_label_classes() }}">Reveal Policy</label>
+            <select name="namespace_policy"
+                    class="{{ table_ui.filter_select_classes() }}">
+                {% for value, label in namespace_filter_options.items() %}
+                    <option value="{{ value }}"
+                            {% if namespace_filters.policy == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
     <div id="secret-reveal-namespace-table-content">
         {% include "platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html" %}
     </div>
