@@ -36,6 +36,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Require Main Branch Dispatch
         shell: bash
@@ -50,9 +51,11 @@ jobs:
 
       - name: Validate Release Identity
         shell: bash
+        env:
+          RELEASE_INPUT_VERSION: ${{ inputs.version }}
         run: |
           : "${DOCKERHUB_IMAGE:?Missing repository variable DOCKERHUB_IMAGE}"
-          bash .github/ci/release-lib.sh preflight "${{ inputs.version }}" "$GITHUB_SHA" "$DOCKERHUB_IMAGE"
+          bash .github/ci/release-lib.sh preflight "$RELEASE_INPUT_VERSION" "$GITHUB_SHA" "$DOCKERHUB_IMAGE"
 
       - name: Prepare Final Release Runtime
         shell: bash
@@ -90,9 +93,13 @@ jobs:
       - name: Emit Locked Release Identity
         id: identity
         shell: bash
+        env:
+          RELEASE_INPUT_VERSION: ${{ inputs.version }}
         run: |
-          echo "release_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
-          echo "release_version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          {
+            echo "release_sha=$GITHUB_SHA"
+            echo "release_version=$RELEASE_INPUT_VERSION"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Cleanup Preflight Services
         if: ${{ always() }}
@@ -117,6 +124,7 @@ jobs:
         with:
           ref: ${{ needs.preflight.outputs.release_sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Validate Publication Variables
         shell: bash
