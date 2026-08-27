@@ -1,5 +1,11 @@
 .git
-.github
+
+# Keep GitHub metadata out of application build contexts by default. The
+# self-hosted CI toolchain Dockerfile needs one pinned dependency manifest.
+.github/*
+!.github/ci/
+.github/ci/*
+!.github/ci/requirements-security.txt
 
 .env
 .env.*
