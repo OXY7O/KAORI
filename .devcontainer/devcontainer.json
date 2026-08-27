@@ -16,10 +16,12 @@
     "analytics-worker",
     "reports-worker",
     "forecasting-worker",
+    "resolver-execution-worker",
+    "resolver-maintenance-worker",
     "beat"
   ],
   "workspaceFolder": "/workspace/kaori",
-  "shutdownAction": "stopCompose",
+  "shutdownAction": "none",
   "remoteUser": "vscode",
   "updateRemoteUserUID": true,
   "forwardPorts": [

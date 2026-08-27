@@ -26,6 +26,20 @@ containers. A host `.venv` is not required.
 
 The application is available at `http://localhost:5000`.
 
+### Dev Container Compose lifecycle
+
+The development stack uses the isolated Compose project **`kaori-dev`**. VS Code is configured with `shutdownAction: none`, so closing or reloading the editor does not stop PostgreSQL, Redis, Celery workers, or Beat. All development services use restart policies, and Celery workers have queue-appropriate graceful shutdown windows.
+
+Use the merged development Compose definition for host-side lifecycle commands:
+
+```bash
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml ps
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml logs --tail=100
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml down --remove-orphans
+```
+
+Do not use plain `docker compose down` to manage the Dev Container. The plain root Compose project is a separate `kaori` boundary; the supported development runtime is `kaori-dev` through the merged files above. To intentionally reset the development database and all development volumes, use the same merged command with `down --volumes --remove-orphans`.
+
 Equivalent terminal launch inside the Dev Container:
 
 ```bash
@@ -72,20 +86,9 @@ The Dev Container starts a dedicated `reports-worker` service automatically. It 
 After pulling a change that adds or modifies worker services, run **Dev Containers: Rebuild and Reopen in Container**. To start or inspect the service directly from the host:
 
 ```bash
-docker compose \
-  -f compose.yml \
-  -f .devcontainer/compose.devcontainer.yml \
-  up -d reports-worker
-
-docker compose \
-  -f compose.yml \
-  -f .devcontainer/compose.devcontainer.yml \
-  ps reports-worker
-
-docker compose \
-  -f compose.yml \
-  -f .devcontainer/compose.devcontainer.yml \
-  logs --tail=100 reports-worker
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml up -d reports-worker
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml ps reports-worker
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml logs --tail=100 reports-worker
 ```
 
 From the Dev Container terminal, verify the worker registration and queue subscription:

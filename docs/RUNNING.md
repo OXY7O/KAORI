@@ -24,7 +24,14 @@ The complete variable contract is documented in `docs/deployment/ENVIRONMENT_CON
 
 ### 2. Open the Dev Container
 
-Open the repository in VS Code and run **Dev Containers: Rebuild and Reopen in Container**. The Dev Container compose stack starts PostgreSQL, Redis, the workspace, the canonical Celery workers, and Beat.
+Open the repository in VS Code and run **Dev Containers: Rebuild and Reopen in Container**. The Dev Container compose stack starts PostgreSQL, Redis, the workspace, the canonical Celery workers, and Beat under the isolated **`kaori-dev`** Compose project. `shutdownAction` is `none`, so closing VS Code does not tear down the running development services. Docker restart policies bring them back after a Docker Desktop restart unless they were explicitly stopped.
+
+Do not use plain `docker compose down` for the Dev Container. Host-side development lifecycle commands must use both Compose files:
+
+```bash
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml ps
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml down --remove-orphans
+```
 
 Do not create or use a host `.venv`; the supported Python runtime is inside the container.
 

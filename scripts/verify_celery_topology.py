@@ -219,13 +219,27 @@ def validate(root: Path) -> list[str]:
     for queue in sorted(worker_queues - route_queues):
         errors.append(f'Production worker consumes a queue with no registered task route: {queue}')
 
-    report_route_queues = {queue for task_name, queue in routes.items() if task_name.startswith('app.reports.')}
-    for queue in sorted(report_route_queues - development_worker_queues):
-        errors.append(f'Report task queue has no Dev Container worker: {queue}')
+    for queue in sorted(route_queues - development_worker_queues):
+        errors.append(f'Celery routed queue has no Dev Container worker: {queue}')
+    for queue in sorted(development_worker_queues - route_queues):
+        errors.append(f'Dev Container worker consumes a queue with no registered task route: {queue}')
 
     development_source = development_compose.read_text(encoding='utf-8')
-    if '  reports-worker:' not in development_source:
-        errors.append('Dev Container compose does not define reports-worker.')
+    canonical_development_services = {
+        'inventory-worker',
+        'maintenance-worker',
+        'runtime-worker',
+        'validation-worker',
+        'analytics-worker',
+        'reports-worker',
+        'forecasting-worker',
+        'resolver-execution-worker',
+        'resolver-maintenance-worker',
+        'beat',
+    }
+    for service in sorted(canonical_development_services):
+        if f'  {service}:\n' not in development_source:
+            errors.append(f'Dev Container compose does not define {service}.')
     if '--hostname=reports@%h' not in development_source:
         errors.append('Dev Container reports-worker has no canonical reports hostname.')
 
@@ -234,8 +248,10 @@ def validate(root: Path) -> list[str]:
         errors.append('Production reports-worker has no canonical reports hostname.')
 
     devcontainer_config = json.loads((root / '.devcontainer' / 'devcontainer.json').read_text(encoding='utf-8'))
-    if 'reports-worker' not in set(devcontainer_config.get('runServices') or []):
-        errors.append('Dev Container runServices does not start reports-worker.')
+    run_services = set(devcontainer_config.get('runServices') or [])
+    for service in sorted(canonical_development_services):
+        if service not in run_services:
+            errors.append(f'Dev Container runServices does not start {service}.')
 
     definitions_by_symbol = {f'{task.module}.{task.function}': task for task in tasks.values()}
     for symbol in sorted(discover_canonical_dispatch_targets(app_root)):

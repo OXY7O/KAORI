@@ -1,3 +1,5 @@
+name: kaori-dev
+
 services:
   workspace:
     build:
@@ -15,6 +17,8 @@ services:
       && chown -R vscode:vscode /workspace/kaori/instance /workspace/kaori/node_modules
       && exec sleep infinity"
     init: true
+    restart: unless-stopped
+    stop_grace_period: 45s
     env_file:
       - .env
     environment:
@@ -46,6 +50,7 @@ services:
       target: development
     init: true
     restart: unless-stopped
+    stop_grace_period: 45s
     env_file:
       - .env
     environment:
@@ -85,6 +90,7 @@ services:
       target: development
     init: true
     restart: unless-stopped
+    stop_grace_period: 45s
     env_file:
       - .env
     environment:
@@ -123,6 +129,7 @@ services:
       target: development
     init: true
     restart: unless-stopped
+    stop_grace_period: 45s
     env_file:
       - .env
     environment:
@@ -160,6 +167,7 @@ services:
       target: development
     init: true
     restart: unless-stopped
+    stop_grace_period: 45s
     env_file:
       - .env
     environment:
@@ -197,6 +205,7 @@ services:
       target: development
     init: true
     restart: unless-stopped
+    stop_grace_period: 180s
     env_file:
       - .env
     environment:
@@ -234,6 +243,7 @@ services:
       target: development
     init: true
     restart: unless-stopped
+    stop_grace_period: 180s
     env_file:
       - .env
     environment:
@@ -272,6 +282,7 @@ services:
       target: development
     init: true
     restart: unless-stopped
+    stop_grace_period: 300s
     env_file:
       - .env
     environment:
@@ -302,6 +313,82 @@ services:
       redis:
         condition: service_healthy
 
+  resolver-execution-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 300s
+    env_file:
+      - .env
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-kaori}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/3
+      RATELIMIT_STORAGE_URI: redis://redis:6379/2
+      POSTGRES_HOST: db
+      POSTGRES_INTERNAL_PORT: 5432
+      WAIT_FOR_DB: "true"
+    command:
+      - sh
+      - -c
+      - >-
+        exec celery --app celery_worker:celery_app worker
+        --queues="$${RESOLVER_EXECUTION_CELERY_QUEUE:-resolver-execution}"
+        --loglevel="$${CELERY_LOG_LEVEL:-INFO}"
+        --concurrency="$${RESOLVER_EXECUTION_WORKER_CONCURRENCY:-1}"
+        --max-tasks-per-child="$${RESOLVER_EXECUTION_MAX_TASKS_PER_CHILD:-25}"
+    volumes:
+      - .:/workspace/kaori
+      - kaori_instance_data:/workspace/kaori/instance
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  resolver-maintenance-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 45s
+    env_file:
+      - .env
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-kaori}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/3
+      RATELIMIT_STORAGE_URI: redis://redis:6379/2
+      POSTGRES_HOST: db
+      POSTGRES_INTERNAL_PORT: 5432
+      WAIT_FOR_DB: "true"
+    command:
+      - sh
+      - -c
+      - >-
+        exec celery --app celery_worker:celery_app worker
+        --queues="$${RESOLVER_MAINTENANCE_CELERY_QUEUE:-resolver-maintenance}"
+        --loglevel="$${CELERY_LOG_LEVEL:-INFO}"
+        --concurrency="$${RESOLVER_MAINTENANCE_WORKER_CONCURRENCY:-1}"
+        --max-tasks-per-child="$${RESOLVER_MAINTENANCE_MAX_TASKS_PER_CHILD:-500}"
+    volumes:
+      - .:/workspace/kaori
+      - kaori_instance_data:/workspace/kaori/instance
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   beat:
     build:
       context: .
@@ -309,6 +396,7 @@ services:
       target: development
     init: true
     restart: unless-stopped
+    stop_grace_period: 45s
     env_file:
       - .env
     environment:
