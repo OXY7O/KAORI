@@ -15,7 +15,7 @@ def test_alert_center_quick_action_routes_to_alert_intelligence() -> None:
     action = navbar[navbar.index(marker) - 700 : navbar.index(marker) + 700]
     assert "url_for('alert_intelligence.index')" in action
     assert "url_for('analytics.alerts')" not in action
-    assert 'Review active alert operations in Alert Intelligence.' in action
+    assert 'Review active alert cases, ownership, suppression, and response state.' in action
 
 
 def test_notification_deck_change_event_bridge_keeps_three_tab_state() -> None:

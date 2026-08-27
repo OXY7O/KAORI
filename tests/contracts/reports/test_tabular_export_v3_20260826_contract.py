@@ -59,12 +59,16 @@ def test_inventory_v4_uses_profile_owned_readable_units_and_executive_summary_co
     assert 'Primary Visual' in overview
     assert 'Supporting Data' in overview
     assert 'Workbook Navigation' in overview
-    assert 'sheet.parent.sheetnames' in overview
+    assert 'workbook = sheet.parent' in overview
+    assert 'if workbook is None:' in overview
+    assert 'workbook.sheetnames' in overview
     assert 'target_sheet != INVENTORY_OVERVIEW_SHEET' in overview
     assert 'cell.hyperlink = f"#\'{target_sheet}\'!A1"' in overview
     assert 'BarChart' in overview and 'DoughnutChart' in overview
     assert 'DataLabelList(showVal=True' in overview
-    assert "visual.legend.position = 'b'" in overview
+    assert 'legend = visual.legend' in overview
+    assert 'if legend is not None:' in overview
+    assert "legend.position = 'b'" in overview
     assert 'showPercent=True' in overview
     assert 'showLegendKey=False' in overview
     assert 'showVal=False' in overview
@@ -126,7 +130,9 @@ def test_xlsx_overview_is_an_executive_landing_page_with_navigation_and_semantic
     assert "'Supporting Data'" in overview
     assert "'Workbook Navigation'" in overview
     assert 'cell.hyperlink = f"#\'{target_sheet}\'!A1"' in overview
-    assert 'sheet.parent.sheetnames' in overview
+    assert 'workbook = sheet.parent' in overview
+    assert 'if workbook is None:' in overview
+    assert 'workbook.sheetnames' in overview
     assert 'ranked_bar' in standard
     assert 'doughnut' in standard
     assert 'Executive Snapshot' in standard
@@ -145,7 +151,8 @@ def test_xlsx_runtime_artifact_gate_rejects_nonconforming_workbooks() -> None:
     assert "overview['A5'].value != 'Executive Snapshot'" in builder
     assert "overview['A9'].value != 'Executive Readout'" in builder
     assert "overview['A13'].value != 'Primary Visual'" in builder
-    assert 'if not overview._charts and not has_no_chart_message' in builder
+    assert 'overview_charts = cast(Any, overview)._charts' in builder
+    assert 'if not overview_charts and not has_no_chart_message' in builder
     assert "getattr(chart, 'varyColors', None) is not False" in builder
     assert "metadata_values.get('Workbook Standard') != INVENTORY_WORKBOOK_STANDARD" in builder
     assert "metadata_values.get('XLSX Standard') != XLSX_REPORTING_STANDARD" in builder

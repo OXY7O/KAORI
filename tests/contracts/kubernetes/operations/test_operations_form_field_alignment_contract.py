@@ -10,7 +10,7 @@ def read(relative: str) -> str:
 def test_shared_form_field_owns_target_alignment_geometry() -> None:
     source = read('app/templates/components/form_field.html')
     assert 'min-h-6' in source
-    assert 'mt-2 h-10 w-full' in source
+    assert 'mt-2 box-border h-10 min-h-10 w-full' in source
     assert 'components/table_label.html' in source
     assert 'help(text)' in source
 
