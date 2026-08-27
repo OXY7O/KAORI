@@ -90,7 +90,12 @@ _BUILT_INS: tuple[AlertTemplateDefinition, ...] = (
     ),
 )
 
-_ENV = Environment(autoescape=False, undefined=StrictUndefined, trim_blocks=True, lstrip_blocks=True)
+_ENV = Environment(
+    autoescape=select_autoescape(default=False, default_for_string=False),
+    undefined=StrictUndefined,
+    trim_blocks=True,
+    lstrip_blocks=True,
+)
 _HTML_ENV = Environment(
     autoescape=select_autoescape(default=True, default_for_string=True),
     undefined=StrictUndefined,

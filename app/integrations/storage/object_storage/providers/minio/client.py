@@ -747,7 +747,7 @@ def _probe_minio_liveness(*, endpoint: str, timeout: int, verify_ssl: bool) -> b
         return False
     health_url = urlunsplit((parsed.scheme, parsed.netloc, '/minio/health/live', '', ''))
     try:
-        response = requests.get(
+        response = requests.get(  # nosec B113 - timeout is bounded to at least one second.
             health_url,
             timeout=max(int(timeout), 1),
             verify=verify_ssl,

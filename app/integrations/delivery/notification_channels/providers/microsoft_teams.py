@@ -16,6 +16,15 @@ from app.integrations.delivery.notification_channels.providers.form_support impo
 from app.models.notification_channel import NotificationChannel
 
 _TEAMS_TEXT_LIMIT = 12000
+_TEAMS_WORKFLOW_SUFFIXES = ('.environment.api.powerplatform.com', '.logic.azure.com')
+
+
+def _is_approved_workflow_url(value: str) -> bool:
+    parsed = urlparse(value)
+    hostname = str(parsed.hostname or '').lower()
+    return bool(
+        parsed.scheme == 'https' and hostname and any(hostname.endswith(suffix) for suffix in _TEAMS_WORKFLOW_SUFFIXES)
+    )
 
 
 def send_microsoft_teams_message(
@@ -30,6 +39,8 @@ def send_microsoft_teams_message(
     workflow_url = str(credentials.get('workflow_url') or '').strip()
     if not workflow_url:
         return DeliveryResult(False, 'Microsoft Teams Workflow webhook URL is not configured.')
+    if not _is_approved_workflow_url(workflow_url):
+        return DeliveryResult(False, 'Microsoft Teams Workflow webhook URL must use an approved HTTPS endpoint.')
     body = json.dumps({'text': _render_message(message)}, separators=(',', ':')).encode('utf-8')
     request = Request(
         workflow_url,
@@ -38,7 +49,7 @@ def send_microsoft_teams_message(
         method='POST',
     )
     try:
-        with urlopen(  # noqa: S310 - validated Microsoft endpoint.
+        with urlopen(  # noqa: S310  # nosec B310 - URL is revalidated against approved HTTPS hosts.
             request, timeout=max(int(timeout_seconds), 1)
         ) as response:
             status = int(getattr(response, 'status', 200) or 200)
@@ -56,9 +67,6 @@ def _render_message(message: NotificationMessage) -> str:
     if message.action_url:
         lines.extend(['', f'{message.action_label or "Open KAORI"}: {message.action_url}'])
     return '\n'.join(lines).strip()[:_TEAMS_TEXT_LIMIT]
-
-
-_TEAMS_WORKFLOW_SUFFIXES = ('.environment.api.powerplatform.com', '.logic.azure.com')
 
 
 def parse_form(form: Any, existing: NotificationChannel | None) -> tuple[str, dict[str, str], dict[str, Any], bool]:

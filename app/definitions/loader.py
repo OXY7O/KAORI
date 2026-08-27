@@ -47,7 +47,11 @@ def load_definition_document(relative_path: str, *, expected_kind: str) -> dict[
     if not path.is_file():
         raise DefinitionError(f'Definition file does not exist: {relative_path}.')
     try:
-        document = yaml.load(path.read_text(encoding='utf-8'), Loader=_StrictSafeLoader)
+        loader = _StrictSafeLoader(path.read_text(encoding='utf-8'))
+        try:
+            document = loader.get_single_data()
+        finally:
+            loader.dispose()
     except yaml.YAMLError as exc:
         raise DefinitionError(f'Invalid YAML in {relative_path}: {exc}.') from exc
     if not isinstance(document, dict):

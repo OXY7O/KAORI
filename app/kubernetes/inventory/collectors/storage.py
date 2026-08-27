@@ -232,7 +232,7 @@ def _persistent_volume_claim_row(pvc: Any) -> dict[str, Any] | None:
 
     status_capacity = _model_value(status, 'capacity', default={}) or {}
     resources = _model_value(spec, 'resources')
-    requests = _model_value(resources, 'requests', default={}) or {}
+    resource_requests = _model_value(resources, 'requests', default={}) or {}
     selector = _model_value(spec, 'selector')
     data_source = _model_value(spec, 'data_source', 'dataSource')
     if data_source is None:
@@ -250,7 +250,9 @@ def _persistent_volume_claim_row(pvc: Any) -> dict[str, Any] | None:
         'requested_access_modes': list(_model_value(spec, 'access_modes', 'accessModes', default=[]) or []),
         'reported_access_modes': list(_model_value(status, 'access_modes', 'accessModes', default=[]) or []),
         'volume_mode': _model_value(spec, 'volume_mode', 'volumeMode'),
-        'requested_storage': str(requests.get('storage')) if requests.get('storage') not in (None, '') else None,
+        'requested_storage': str(resource_requests.get('storage'))
+        if resource_requests.get('storage') not in (None, '')
+        else None,
         'allocated_storage': (
             str(allocated_resources.get('storage')) if allocated_resources.get('storage') not in (None, '') else None
         ),

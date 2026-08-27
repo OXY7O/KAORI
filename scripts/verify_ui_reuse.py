@@ -6,7 +6,7 @@ import json
 import re
 from pathlib import Path
 
-from jinja2 import Environment, TemplateSyntaxError
+from jinja2 import Environment, TemplateSyntaxError, select_autoescape
 
 _METRICS = ('inline_styles', 'inline_scripts', 'inline_event_handlers')
 _EVENT_HANDLER = re.compile(
@@ -52,7 +52,7 @@ def validate(root: Path, baseline_path: Path) -> list[str]:
     baseline = payload.get('files', {})
     current = scan(root)
     errors: list[str] = []
-    environment = Environment()
+    environment = Environment(autoescape=select_autoescape(default=True, default_for_string=True))
 
     for path in sorted(set(current) | set(baseline)):
         current_metrics = current.get(path, {metric: 0 for metric in _METRICS})

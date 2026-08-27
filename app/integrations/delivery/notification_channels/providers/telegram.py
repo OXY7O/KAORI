@@ -44,7 +44,9 @@ def send_telegram_message(
         method='POST',
     )
     try:
-        with urlopen(request, timeout=max(int(timeout_seconds), 1)) as response:  # noqa: S310 - fixed Telegram API.
+        with urlopen(  # noqa: S310  # nosec B310 - fixed HTTPS Telegram API base.
+            request, timeout=max(int(timeout_seconds), 1)
+        ) as response:
             payload = json.loads(response.read().decode('utf-8'))
     except HTTPError as exc:
         return DeliveryResult(False, f'Telegram rejected the request with HTTP {exc.code}.')

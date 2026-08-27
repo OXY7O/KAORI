@@ -48,7 +48,11 @@ StrictLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _ma
 
 def load(relative: str) -> dict:
     path = CATALOG_ROOT / relative
-    data = yaml.load(path.read_text(encoding='utf-8'), Loader=StrictLoader)
+    loader = StrictLoader(path.read_text(encoding='utf-8'))
+    try:
+        data = loader.get_single_data()
+    finally:
+        loader.dispose()
     if not isinstance(data, dict):
         raise ValueError(f'{relative}: root must be mapping')
     if data.get('schema_version') != 1:
