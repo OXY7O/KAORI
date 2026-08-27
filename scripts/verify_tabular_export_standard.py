@@ -83,7 +83,10 @@ def main() -> int:
         errors,
     )
     require(
-        all(label in analytics_overview for label in ('Executive Snapshot', 'Executive Readout', 'Primary Visual', 'Supporting Data')),
+        all(
+            label in analytics_overview
+            for label in ('Executive Snapshot', 'Executive Readout', 'Primary Visual', 'Supporting Data')
+        ),
         'Analytics XLSX Overview hierarchy is incomplete',
         errors,
     )
@@ -97,8 +100,8 @@ def main() -> int:
     )
     require(
         '_normalized_consumer_value' in analytics_profiles
-        and "max_length: int = 28" in analytics_overview
-        and "max_value * 1.20" in analytics_overview
+        and 'max_length: int = 28' in analytics_overview
+        and 'max_value * 1.20' in analytics_overview
         and "(overview.column_dimensions['K'].width or 0) < 38" in analytics_builder,
         'Analytics XLSX ranked-bar normalization and spacing contract is incomplete',
         errors,
@@ -129,7 +132,9 @@ def main() -> int:
         errors,
     )
     require(
-        'def render_report_xlsx(' in xlsx_renderer and 'REPORT_FAMILY_ANALYTICS' in xlsx_renderer and 'collect_report_payload' in xlsx_renderer,
+        'def render_report_xlsx(' in xlsx_renderer
+        and 'REPORT_FAMILY_ANALYTICS' in xlsx_renderer
+        and 'collect_report_payload' in xlsx_renderer,
         'family-aware XLSX renderer does not route Analytics through the canonical collector',
         errors,
     )

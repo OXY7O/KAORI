@@ -57,9 +57,7 @@ def test_overview_section_without_structured_evidence_is_not_marked_included() -
 
     assert section.status_label == 'No Evidence'
     assert section.status_tone == 'warning'
-    assert section.note == (
-        'No structured evidence was returned for this section in the current reporting snapshot.'
-    )
+    assert section.note == ('No structured evidence was returned for this section in the current reporting snapshot.')
 
 
 def test_overview_unavailable_committed_source_is_explicit() -> None:

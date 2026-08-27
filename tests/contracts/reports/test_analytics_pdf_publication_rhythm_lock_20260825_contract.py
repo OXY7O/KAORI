@@ -170,7 +170,7 @@ def test_workload_half_width_signal_register_uses_compact_labels() -> None:
 def test_storage_trend_avoids_start_and_cutoff_label_collision() -> None:
     presenter = read('app/reports/export/html_pdf/storage_analysis.py')
     assert 'compact_axis_labels = cutoff_x - left < 70' in presenter
-    assert "if not compact_axis_labels" in presenter
+    assert 'if not compact_axis_labels' in presenter
 
 
 def test_resource_utilization_interpretation_sections_render_body_copy() -> None:
@@ -241,7 +241,7 @@ def test_storage_count_donut_wraps_long_center_label() -> None:
 def test_top_consumer_totals_normalize_memory_before_display() -> None:
     presenter = read('app/reports/export/html_pdf/top_consumers_analysis.py')
     assert 'def _normalized_usage_value(' in presenter
-    assert "_normalized_usage_value(row)" in presenter
+    assert '_normalized_usage_value(row)' in presenter
 
 
 def test_top_consumer_namespace_register_allocates_all_six_columns() -> None:
@@ -328,8 +328,8 @@ def test_top_consumer_namespace_charts_use_reference_codes() -> None:
 
 def test_top_consumer_resource_totals_use_normalized_values_everywhere() -> None:
     presenter = read('app/reports/export/html_pdf/top_consumers_analysis.py')
-    assert "total = sum(_normalized_usage_value(row) for row in rows)" in presenter
-    assert "memory_total = sum(_normalized_usage_value(row) for row in memory_rows)" in presenter
+    assert 'total = sum(_normalized_usage_value(row) for row in rows)' in presenter
+    assert 'memory_total = sum(_normalized_usage_value(row) for row in memory_rows)' in presenter
     assert "bucket['value'] += _normalized_usage_value(row)" in presenter
 
 
@@ -362,9 +362,10 @@ def test_report_specific_css_does_not_override_shared_publication_typography() -
                 continue
             if re.search(r'\b(?:font-size|line-height)\s*:', declarations):
                 offenders.append(f'{name}: typography in {selector.strip()}')
-            if any(token in selector for token in ('.reference-helper', '.identity-register-subtitle', '.section-subtitle', '.section-body')) and re.search(
-                r'\bmargin(?:-top|-bottom)?\s*:', declarations
-            ):
+            if any(
+                token in selector
+                for token in ('.reference-helper', '.identity-register-subtitle', '.section-subtitle', '.section-body')
+            ) and re.search(r'\bmargin(?:-top|-bottom)?\s*:', declarations):
                 offenders.append(f'{name}: rhythm in {selector.strip()}')
 
     assert not offenders, 'Shared publication CSS must own canonical typography/rhythm:\n' + '\n'.join(offenders)

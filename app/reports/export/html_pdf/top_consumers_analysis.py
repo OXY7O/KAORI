@@ -247,7 +247,6 @@ def build_top_consumers_analysis_presentation(
     }
 
 
-
 def _prepare_rows_by_resource(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for item in rows:
@@ -262,6 +261,7 @@ def _prepare_rows_by_resource(rows: list[dict[str, Any]]) -> dict[str, list[dict
             row['displayed_share_label'] = _percent(share) if share is not None else 'Not Available'
             row['displayed_share_bar'] = min(max(share or 0.0, 0.0), 100.0)
     return grouped
+
 
 def _consumer_row(value: Mapping[str, Any]) -> dict[str, Any]:
     identity = _mapping(value.get('identity'))

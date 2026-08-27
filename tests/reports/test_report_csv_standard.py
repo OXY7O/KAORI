@@ -62,12 +62,12 @@ def test_csv_standard_has_stable_v3_metadata_and_record_contract() -> None:
     assert TABULAR_EXPORT_STANDARD == 'kaori-tabular-export-v3.0'
 
 
-
 def test_analytics_csv_separates_simple_numeric_units() -> None:
     assert normalize_analytics_scalar('17.48 GiB') == (17.48, 'GiB')
     assert normalize_analytics_scalar('56.2%') == (56.2, '%')
     assert normalize_analytics_scalar('0.14 cores') == (0.14, 'cores')
     assert normalize_analytics_scalar('Not Available') == ('Not Available', '')
+
 
 def test_csv_formula_controls_are_escaped() -> None:
     for value in ('=1+1', '+cmd', '-cmd', '@SUM(A1:A2)', '  =1+1'):

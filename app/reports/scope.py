@@ -106,7 +106,6 @@ def resolve_report_scope(record: Any) -> ReportScope | None:
     return None
 
 
-
 def get_report_namespace_options_by_cluster() -> dict[str, list[str]]:
     """Return current-inventory namespace choices keyed by Kubernetes cluster id."""
     query = db.session.query(
@@ -132,6 +131,7 @@ def get_report_namespace_options_by_cluster() -> dict[str, list[str]]:
         if namespace_name not in bucket:
             bucket.append(namespace_name)
     return options
+
 
 def scope_asset_label(record: Any, *, fallback: str = 'Scope Unavailable') -> str:
     scope = resolve_report_scope(record)

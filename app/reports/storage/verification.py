@@ -115,9 +115,9 @@ def _verification_timestamp_label(job: JobExecution | None) -> str:
 def get_report_storage_verification_presentation(backend_name: str | None = None) -> dict[str, Any]:
     """Present canonical strong-verification state without provider exceptions."""
 
-    normalized_backend = str(
-        backend_name or current_app.config.get('REPORT_STORAGE_BACKEND', 'local') or 'local'
-    ).lower().strip()
+    normalized_backend = (
+        str(backend_name or current_app.config.get('REPORT_STORAGE_BACKEND', 'local') or 'local').lower().strip()
+    )
     fingerprint = get_storage_config_fingerprint(normalized_backend)
     jobs = [
         job

@@ -156,7 +156,11 @@ def test_major_visuals_use_global_locked_box_utilities() -> None:
     assert 'height:100%!important' in css
 
     expected = {
-        'resource_utilization.html': ('publication-visual is-pair', 'publication-visual is-distribution', 'publication-visual is-wide'),
+        'resource_utilization.html': (
+            'publication-visual is-pair',
+            'publication-visual is-distribution',
+            'publication-visual is-wide',
+        ),
         'capacity_analysis.html': ('publication-visual is-pair', 'publication-visual is-wide'),
         'storage_analysis.html': ('publication-visual is-pair', 'publication-visual is-wide'),
         'forecast_analysis.html': ('publication-visual is-pair', 'publication-visual is-wide'),
@@ -181,6 +185,7 @@ def test_report_css_does_not_own_locked_visual_heights() -> None:
         '.persistent-volume-card',
     )
     import re
+
     offenders: list[str] = []
     block_pattern = re.compile(r'([^{}]+)\{([^{}]*)\}', re.S)
     for path in sorted((ROOT / 'app/static/reports/pdf').glob('*.css')):
@@ -208,7 +213,7 @@ def test_renderer_exposes_dynamic_layout_helpers_to_templates() -> None:
 def test_identity_register_uses_dynamic_reference_column_policy() -> None:
     component = read('app/templates/reports/pdf/components/analytics_publication.html')
     assert 'publication_reference_columns(items)' in component
-    assert "columns == 1" in component
+    assert 'columns == 1' in component
 
 
 def test_global_pair_alignment_policy_is_explicit_and_render_owned() -> None:

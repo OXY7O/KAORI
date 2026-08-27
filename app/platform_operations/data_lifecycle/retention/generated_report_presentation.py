@@ -19,8 +19,7 @@ GENERATED_REPORT_COVERAGE = (
     },
 )
 GENERATED_REPORT_COVERAGE_NOTE = (
-    'Ready reports use hot retention; Failed and Archived use dedicated windows. '
-    'Artifacts archive before cleanup.'
+    'Ready reports use hot retention; Failed and Archived use dedicated windows. Artifacts archive before cleanup.'
 )
 GENERATED_REPORT_EXCLUSION_NOTE = (
     'Requested, Queued, Generating, active regeneration jobs, and terminal records without a safe artifact reference '
