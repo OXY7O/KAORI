@@ -1,0 +1,125 @@
+name: KAORI Bootstrap Report Contract 12
+
+on:
+  push:
+    branches:
+      - kaori/tech-debt-12-static-quality-baseline
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kaori-bootstrap-report-contract-12
+  cancel-in-progress: false
+
+jobs:
+  remediate:
+    if: "${{ github.event.head_commit.message == 'chore(ci): validate report contract semantics #12' }}"
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    timeout-minutes: 30
+    steps:
+      - name: Check Out Repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Build CI Toolchain
+        run: docker build --file .github/ci/Dockerfile --tag "kaori-report-contract-12:${GITHUB_SHA}" .
+
+      - name: Confirm RED Contract Evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          set +e
+          output="$(docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace \
+            "kaori-report-contract-12:${GITHUB_SHA}" python scripts/verify_report_generation_contract.py 2>&1)"
+          status=$?
+          set -e
+          printf '%s\n' "$output"
+          [[ "$status" -ne 0 ]]
+          grep -Fq 'Inventory XLSX Overview is missing required contract token: sheet.parent.sheetnames.' <<<"$output"
+
+      - name: Apply Semantic Navigation Contract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/verify_report_generation_contract.py')
+          text = path.read_text(encoding='utf-8')
+
+          helper_marker = "\n\ndef _check_catalog(errors: list[str]) -> tuple[set[str], set[str]]:\n"
+          helper = '''\n\ndef _function_uses_attribute(path: Path, function_name: str, attribute_name: str) -> bool:\n    tree = _parse(path)\n    for node in tree.body:\n        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == function_name:\n            return any(\n                isinstance(child, ast.Attribute) and child.attr == attribute_name\n                for child in ast.walk(node)\n            )\n    return False\n'''
+          if text.count(helper_marker) != 1:
+              raise SystemExit('Expected one _check_catalog insertion point.')
+          text = text.replace(helper_marker, helper + helper_marker, 1)
+
+          old_token = "        'sheet.parent.sheetnames',\n"
+          if text.count(old_token) != 1:
+              raise SystemExit('Expected one stale sheet.parent.sheetnames token.')
+          text = text.replace(old_token, '', 1)
+
+          token_block = """    for token in (\n        'Executive Snapshot',\n        'Executive Readout',\n        'Primary Visual',\n        'Supporting Data',\n        'Workbook Navigation',\n        'BarChart',\n        'DoughnutChart',\n        'DataLabelList',\n        'visual.varyColors = False',\n    ):\n        if token not in xlsx_overview:\n            errors.append(f'Inventory XLSX Overview is missing required contract token: {token}.')\n"""
+          semantic_block = token_block + """\n    if not _function_uses_attribute(\n        XLSX_OVERVIEW_PATH,\n        '_write_overview_navigation',\n        'sheetnames',\n    ):\n        errors.append('Inventory XLSX Overview navigation must derive targets from workbook sheet names.')\n"""
+          if text.count(token_block) != 1:
+              raise SystemExit('Expected one Inventory XLSX overview token block.')
+          text = text.replace(token_block, semantic_block, 1)
+
+          old_output = """    if errors:\n        for error in errors:\n            print(f'ERROR: {error}')\n        return 1\n\n    print(\n        'KAORI report generation contract passed: Analytics supports canonical PDF/XLSX/CSV, Inventory supports '\n        'canonical XLSX/CSV, public references cover every report type, publication/profile coverage matches '\n        'the Definition Registry, one infrastructure asset scope is preserved across formats, and legacy '\n        'generation paths are absent.'\n    )\n    return 0\n"""
+          new_output = """    if errors:\n        print('FAIL — KAORI Report Generation Contract')\n        print()\n        print('Contract Errors')\n        for error in errors:\n            print(f'  FAIL — {error}')\n        print()\n        print('Summary')\n        print(f'  {len(errors)} failed')\n        return 1\n\n    print('PASS — KAORI Report Generation Contract')\n    print()\n    print('Formats & Rendering')\n    print('  PASS — Analytics supports canonical PDF, XLSX, and CSV artifacts.')\n    print('  PASS — Inventory supports canonical XLSX and CSV artifacts.')\n    print()\n    print('Registry & References')\n    print('  PASS — Report profiles, collectors, and public references match the Definition Registry.')\n    print()\n    print('Workbook Contracts')\n    print('  PASS — Inventory and Analytics workbook contracts are structurally valid.')\n    print('  PASS — Inventory workbook navigation derives targets from workbook sheet names.')\n    print()\n    print('Scope & Legacy Safety')\n    print('  PASS — Generic infrastructure asset scope is preserved across report formats.')\n    print('  PASS — Retired report-generation paths are absent.')\n    print()\n    print('Summary')\n    print('  7 checks passed · 0 failed')\n    return 0\n"""
+          if text.count(old_output) != 1:
+              raise SystemExit('Expected one legacy report-contract output block.')
+          path.write_text(text.replace(old_output, new_output, 1), encoding='utf-8')
+          PY
+          git diff --check
+
+      - name: Verify Semantic Helper Contract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace \
+            "kaori-report-contract-12:${GITHUB_SHA}" python - <<'PY'
+          from pathlib import Path
+          from tempfile import TemporaryDirectory
+          from scripts.verify_report_generation_contract import _function_uses_attribute
+
+          with TemporaryDirectory() as directory:
+              root = Path(directory)
+              direct = root / 'direct.py'
+              narrowed = root / 'narrowed.py'
+              absent = root / 'absent.py'
+              direct.write_text('def nav(sheet):\n    return sheet.parent.sheetnames\n', encoding='utf-8')
+              narrowed.write_text('def nav(sheet):\n    workbook = sheet.parent\n    return workbook.sheetnames\n', encoding='utf-8')
+              absent.write_text('def nav(sheet):\n    return ()\n', encoding='utf-8')
+              assert _function_uses_attribute(direct, 'nav', 'sheetnames')
+              assert _function_uses_attribute(narrowed, 'nav', 'sheetnames')
+              assert not _function_uses_attribute(absent, 'nav', 'sheetnames')
+          PY
+
+      - name: Canonicalize and Verify
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace \
+            "kaori-report-contract-12:${GITHUB_SHA}" python -m ruff format scripts/verify_report_generation_contract.py
+          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace \
+            "kaori-report-contract-12:${GITHUB_SHA}" python -m ruff check scripts/verify_report_generation_contract.py
+          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace \
+            "kaori-report-contract-12:${GITHUB_SHA}" python scripts/verify_report_generation_contract.py
+          git diff --check
+
+      - name: Commit Verified Contract Fix
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mapfile -t changed < <(git diff --name-only)
+          printf 'Verified contract files (%s):\n' "${#changed[@]}"
+          printf '%s\n' "${changed[@]}"
+          [[ "${#changed[@]}" -eq 1 ]]
+          [[ "${changed[0]}" == 'scripts/verify_report_generation_contract.py' ]]
+          git config user.name "KAORI CI Bootstrap"
+          git config user.email "actions@users.noreply.github.com"
+          git add scripts/verify_report_generation_contract.py
+          git commit -m "fix(reports): make workbook navigation contract semantic #12"
+          git push origin HEAD:kaori/tech-debt-12-static-quality-baseline
