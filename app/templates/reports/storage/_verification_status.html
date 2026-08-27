@@ -1,7 +1,8 @@
+{% import "components/table_label.html" as table_label %}
 {% set verification = verification_execution %}
 {% set state = verification.state %}
 {% set display_status = 'Queued' if state == 'queued' else 'Verifying' if state in ['running', 'retrying'] else 'Healthy' if state == 'healthy' else 'Failed' if state == 'failed' else verification.status %}
-{% set badge_classes = 'border-status-success-border bg-status-success-soft text-status-success-text' if state == 'healthy' else 'border-status-danger-border bg-status-danger-soft text-status-danger-text' if state == 'failed' else 'border-status-warning-border bg-status-warning-soft text-status-warning-text' if state in ['canceled', 'retrying'] else 'border-kaori-primary/25 bg-kaori-soft text-kaori-primary' if state in ['queued', 'running'] else 'border-outline-subtle bg-surface-subtle text-content-secondary' %}
+{% set badge_tone = 'normal' if state == 'healthy' else 'critical' if state == 'failed' else 'warning' if state in ['canceled', 'retrying'] else 'info' if state in ['queued', 'running'] else 'unknown' %}
 <div id="report-storage-verification-status"
      data-report-storage-verification-status="true"
      data-verification-state="{{ state }}"
@@ -17,17 +18,17 @@
                     <p class="mt-1 text-xs leading-5 text-content-muted">Worker-owned write → confirm → delete test.</p>
                 </div>
             </div>
-            <span class="inline-flex min-h-6 shrink-0 items-center rounded-md border px-2 py-1 text-[10px] font-semibold {{ badge_classes }}">{{ display_status }}</span>
+            {{ table_label.status_indicator_label(display_status, badge_tone) }}
         </div>
         <dl class="mt-4 grid gap-3 border-y border-outline-subtle py-3 sm:grid-cols-2">
             <div>
-                <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Execution</dt>
+                <dt class="text-xs font-semibold uppercase tracking-wide text-content-muted">Execution</dt>
                 <dd class="mt-1 text-xs font-semibold text-content-primary">
                     {{ verification.title }}
                 </dd>
             </div>
             <div>
-                <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Ownership</dt>
+                <dt class="text-xs font-semibold uppercase tracking-wide text-content-muted">Ownership</dt>
                 <dd class="mt-1 text-xs font-semibold text-content-primary">
                     Report-storage worker
                 </dd>
