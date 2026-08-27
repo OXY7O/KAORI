@@ -67,9 +67,7 @@ def test_reports_overview_copy_is_compact_without_losing_publication_boundary() 
 
 def test_resource_utilization_balances_visual_pairs_and_stacks_dense_followups() -> None:
     template = read('app/templates/reports/pdf/resource_utilization.html')
-    css = read('app/static/reports/pdf/resource_utilization.css')
     shared_css = read('app/static/reports/pdf/analytics_publication.css')
-    compact = ''.join(css.split())
     shared_compact = ''.join(shared_css.split())
 
     assert template.count('publication-pair') >= 5
