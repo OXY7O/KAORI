@@ -15,13 +15,13 @@ def test_tab_counts_refresh_out_of_band_without_page_reload() -> None:
     status = _read('partials/_status_refresh.html')
     status_oob = _read('partials/_status_oob.html')
     poller = _read('partials/_status_poller.html')
-    shared_tabs = (ROOT / 'app' / 'templates' / 'components' / 'workspace_tabs.html').read_text(encoding='utf-8')
+    shared_tabs = (ROOT / 'app' / 'templates' / 'components' / 'framed_workspace_tabs.html').read_text(encoding='utf-8')
 
-    assert 'components/workspace_tabs.html' in workspace
+    assert 'components/framed_workspace_tabs.html' in workspace
     assert "prefix='execution'" in workspace
-    assert 'id="{{ prefix }}-tab-count-{{ tab_key }}"' in shared_tabs
+    assert 'id="{{ prefix }}-{{ tab_key }}-nav-badge"' in shared_tabs
     for key in ('active', 'registry', 'queues'):
-        assert f'id="execution-tab-count-{key}"' in status_oob
+        assert f'id="execution-{key}-nav-badge"' in status_oob
     assert 'hx-swap-oob="outerHTML"' in status_oob
     assert '_status_oob.html' in status
     assert "fragment='status'" in poller

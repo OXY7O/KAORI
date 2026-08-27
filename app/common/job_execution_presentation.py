@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 from app.common.job_execution_contract import job_operation_label
@@ -72,6 +73,37 @@ def _duration_label(job: JobExecution) -> str:
     return f'{hours}h {minutes}m'
 
 
+def _progress_copy(
+    *, message: str, stage: str, target: str, provider_label: str, current: int, total: int
+) -> tuple[str, str]:
+    clean_message = str(message or 'Waiting for worker').strip() or 'Waiting for worker'
+    clean_stage = str(stage or '').strip()
+    clean_target = str(target or '').strip()
+
+    if not clean_stage:
+        match = re.match(r'^(?P<stage>.+?)\s+for\s+(?P<target>.+?)(?:\s+\((?P<count>[^)]+)\))?\.?$', clean_message)
+        if match:
+            clean_stage = match.group('stage').strip()
+            clean_target = clean_target or match.group('target').strip()
+
+    process = clean_stage or clean_message
+    if provider_label and provider_label != 'KAORI' and provider_label.lower() not in process.lower():
+        process = f'{process} · {provider_label}'
+
+    if clean_target:
+        if total > 1:
+            detail = f'{clean_target} ({current} of {total})'
+        else:
+            detail = clean_target
+    elif total > 1:
+        detail = f'{current} of {total} work items'
+    elif clean_message != process:
+        detail = clean_message
+    else:
+        detail = 'Worker progress is active.'
+    return process, detail
+
+
 def present_job_execution_row(job: JobExecution) -> dict[str, Any]:
     """Build canonical job identity, state, timing, and progress presentation."""
     total = max(job.progress_total, 0)
@@ -110,6 +142,21 @@ def present_job_execution_row(job: JobExecution) -> dict[str, Any]:
         else job.resource_group or 'Global'
     )
     scope = _scope_label(raw_scope)
+    provider_label = _provider_label(job.integration_type)
+    progress_stage = (
+        str(progress_metadata.get('stage') or '').strip() if isinstance(progress_metadata, dict) else ''
+    ) or (job.progress_message or 'Waiting for worker')
+    progress_target = (
+        str(progress_metadata.get('target') or '').strip() if isinstance(progress_metadata, dict) else ''
+    )
+    progress_process, progress_detail = _progress_copy(
+        message=job.progress_message or 'Waiting for worker',
+        stage=str(progress_metadata.get('stage') or '').strip() if isinstance(progress_metadata, dict) else '',
+        target=progress_target,
+        provider_label=provider_label,
+        current=current,
+        total=total,
+    )
     return {
         'public_id': job.public_id,
         'task_id': job.celery_task_id,
@@ -136,13 +183,10 @@ def present_job_execution_row(job: JobExecution) -> dict[str, Any]:
         'progress_current': current,
         'progress_total': total,
         'progress_message': job.progress_message or 'Waiting for worker',
-        'progress_stage': (
-            str(progress_metadata.get('stage') or '').strip() if isinstance(progress_metadata, dict) else ''
-        )
-        or (job.progress_message or 'Waiting for worker'),
-        'progress_target': (
-            str(progress_metadata.get('target') or '').strip() if isinstance(progress_metadata, dict) else ''
-        ),
+        'progress_stage': progress_stage,
+        'progress_target': progress_target,
+        'progress_process': progress_process,
+        'progress_detail': progress_detail,
         'progress_count_label': f'{current} / {total}' if total > 1 else '',
         'progress_updated_at': present_user_datetime(job.heartbeat_at, empty='Waiting for worker'),
         'attempt_count': job.attempt_count,

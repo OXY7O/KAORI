@@ -214,7 +214,7 @@
                                        value="{{ selected.settings.archived_retention_days|default(180) }}">
                             </label>
                         </div>
-                        <p class="mt-3 text-xs leading-5 text-content-muted">Ready reports use the main Hot retention value above. Default batch size is intentionally smaller because one lifecycle batch may transfer report binaries as well as metadata.</p>
+                        <p class="mt-3 text-xs leading-5 text-content-muted">Ready reports use Hot retention; lifecycle batches stay smaller because they may include report binaries.</p>
                     </div>
                 {% endif %}
                 {% if selected.name == 'job_execution' %}

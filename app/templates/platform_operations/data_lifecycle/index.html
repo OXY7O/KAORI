@@ -65,7 +65,7 @@
                                 </div>
                                 <p class="mt-2 text-xs leading-4 text-content-muted">Only approved lifecycle domains are manageable.</p>
                             </div>
-                            <div class="max-h-[580px] space-y-3 overflow-y-auto pr-1">
+                            <div class="space-y-3">
                                 {% for domain in lifecycle.domains %}
                                     <a href="{{ url_for('platform_operations.data_lifecycle.index', tab='policies', domain=domain.name) }}"
                                        data-domain-search="{{ (domain.label ~ ' ' ~ domain.description ~ ' ' ~ domain.name)|lower }}"

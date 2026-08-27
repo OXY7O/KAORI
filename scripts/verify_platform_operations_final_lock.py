@@ -314,14 +314,14 @@ def main() -> int:
         errors.append('Platform Operations Data Lifecycle must expose Analytics Snapshots and Serve Window Protection')
 
     execution_workspace = read('app/templates/platform_operations/jobs/executions/_workspace.html')
-    shared_tabs = read('app/templates/components/workspace_tabs.html')
+    shared_tabs = read('app/templates/components/framed_workspace_tabs.html')
     if (
-        'components/workspace_tabs.html' not in execution_workspace
-        or 'workspace_tabs.render_navigation(' not in execution_workspace
+        'components/framed_workspace_tabs.html' not in execution_workspace
+        or 'framed_workspace_tabs.render_navigation(' not in execution_workspace
     ):
-        errors.append('Execution Workspace must use shared Integrated Workspace Tabs')
-    if 'id="{{ prefix }}-tab-count-{{ tab_key }}"' not in shared_tabs:
-        errors.append('Integrated Workspace Tabs must retain shared optional count badge ownership')
+        errors.append('Execution Workspace must use shared Framed Workspace Tabs')
+    if 'id="{{ prefix }}-{{ tab_key }}-nav-badge"' not in shared_tabs:
+        errors.append('Framed Workspace Tabs must retain shared optional count badge ownership')
     if 'integrations/components/' in execution_workspace:
         errors.append('Jobs must not depend on Integration-specific presentation components')
 
@@ -330,7 +330,7 @@ def main() -> int:
     if '_status_oob.html' not in status_refresh:
         errors.append('Execution status refresh must compose the shared OOB counter fragment')
     for key in ('active', 'registry', 'queues'):
-        if f'id="execution-tab-count-{key}"' not in status_oob:
+        if f'id="execution-{key}-nav-badge"' not in status_oob:
             errors.append(f'Execution live OOB count missing: {key}')
 
     active_jobs = read('app/templates/platform_operations/jobs/executions/partials/_active_jobs.html')
@@ -377,14 +377,19 @@ def main() -> int:
         'table_registry.clear_filters_link',
         'table_registry.footer',
         'job_pagination.allowed_per_page',
-        'expandable_row.toggle_button(',
+        'components/resource_detail_modal.html',
+        'resource_detail_modal.detail_button(',
+        'resource_detail_modal.host(',
         "url_for('jobs.execution_details'",
-        'data-detail-content',
     ):
         if required not in registry:
             errors.append(f'Execution Registry final contract missing: {required}')
     if "('Total Records', job_stats.total)" in registry:
         errors.append('Execution Registry must not reintroduce unfiltered global metric strips')
+    if 'hx-trigger="every 15s"' not in registry or 'document.hidden' not in registry:
+        errors.append('Execution Registry must refresh in the background and pause while hidden')
+    if 'lg:flex-nowrap' not in registry:
+        errors.append('Execution Registry filters must remain one-row on desktop')
 
     execution_detail = read('app/templates/platform_operations/jobs/executions/partials/_execution_details.html')
     for required in (
@@ -400,7 +405,7 @@ def main() -> int:
         errors.append('Execution detail must not render raw execution payloads')
 
     queue_activity = read('app/templates/platform_operations/jobs/executions/partials/_queue_activity.html')
-    for required in ('Worker Readiness', "fragment='queues'", 'worker_readiness.description'):
+    for required in ('Worker Readiness', "fragment='queues'", 'worker_readiness.description', 'hx-trigger="every 15s"', 'document.hidden'):
         if required not in queue_activity:
             errors.append(f'Queue Activity worker-readiness contract missing: {required}')
 

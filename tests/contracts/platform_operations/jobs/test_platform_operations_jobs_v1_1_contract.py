@@ -28,15 +28,17 @@ def test_attention_posture_is_active_plus_recent_terminal_only() -> None:
     assert 'active_attention + recent_attention' in source
 
 
-def test_registry_details_expand_below_row_without_raw_payload() -> None:
+def test_registry_details_use_shared_modal_without_raw_payload() -> None:
     registry = _read('app/templates/platform_operations/jobs/executions/partials/_registry.html')
     detail = _read('app/templates/platform_operations/jobs/executions/partials/_execution_details.html')
     routes = _read('app/platform_operations/jobs/routes.py')
 
-    assert 'components/details/_expandable_row.html' in registry
-    assert 'expandable_row.toggle_button(' in registry
+    assert 'components/resource_detail_modal.html' in registry
+    assert 'resource_detail_modal.detail_button(' in registry
+    assert 'resource_detail_modal.host(' in registry
     assert "url_for('jobs.execution_details'" in registry
-    assert 'data-detail-content' in registry
+    assert 'data-resource-detail-header' in detail
+    assert 'data-resource-detail-summary' in detail
     assert "@bp.get('/executions/<string:public_id>/details')" in routes
     assert 'present_job_execution_detail(job)' in routes
     for label in (

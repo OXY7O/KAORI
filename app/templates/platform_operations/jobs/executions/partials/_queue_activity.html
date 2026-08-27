@@ -5,7 +5,13 @@
 {% set queue_refresh_url = url_for('jobs.executions', fragment='queues', tab='queues') %}
 <section id="job-queue-activity"
          class="{{ 'min-w-0' if embedded|default(false) else operational_section.shell_classes() }}"
-         aria-labelledby="queue-activity-title">
+         aria-labelledby="queue-activity-title"
+         hx-get="{{ queue_refresh_url }}"
+         hx-trigger="every 15s"
+         hx-on::before-request="if (event.detail.elt === this && document.hidden) event.preventDefault()"
+         hx-target="this"
+         hx-swap="outerHTML swap:0ms settle:0ms"
+         hx-sync="this:replace">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex min-w-0 items-start gap-3">

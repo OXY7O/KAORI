@@ -4,10 +4,18 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as table_registry %}
 {% import "components/loading_bar.html" as loading_bar %}
-{% import "components/details/_expandable_row.html" as expandable_row %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
+{% set refresh_url = url_for('jobs.executions', fragment='registry', tab='registry', page=job_pagination.page, per_page=job_pagination.per_page, status=selected_job_status, workload=selected_job_workload, queue=selected_job_queue, search=job_search) %}
 <section id="job-execution-registry"
          class="{{ 'min-w-0' if embedded|default(false) else table_ui.block_classes() }}"
-         aria-labelledby="job-execution-registry-title">
+         aria-labelledby="job-execution-registry-title"
+         hx-get="{{ refresh_url }}"
+         hx-trigger="every 15s"
+         hx-on::before-request="if (event.detail.elt === this && (document.hidden || document.querySelector('[data-resource-detail-modal-host]:not(.hidden)') || this.contains(document.activeElement) && document.activeElement.matches('input, select'))) event.preventDefault()"
+         hx-target="this"
+         hx-select="#job-execution-registry"
+         hx-swap="outerHTML swap:0ms settle:0ms"
+         hx-sync="this:replace">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -18,7 +26,6 @@
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-secondary">Search execution ownership, progress, timing, and terminal outcomes.</p>
             </div>
-            {% set refresh_url = url_for('jobs.executions', fragment='registry', tab='registry', page=job_pagination.page, per_page=job_pagination.per_page, status=selected_job_status, workload=selected_job_workload, queue=selected_job_queue, search=job_search) %}
             <div class="flex flex-wrap items-center gap-2">
                 {% if job_has_filters %}
                     {{ table_registry.clear_filters_link('jobs.executions',
@@ -46,7 +53,7 @@
         'job-execution-registry',
         'job-execution-loading',
         job_pagination.per_page,
-        classes='border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6') %}
+        classes='grid gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6 lg:flex lg:flex-nowrap lg:[&>label]:basis-0 lg:[&>label]:flex-[2]') %}
         <label class="min-w-0">
             <span class="sr-only">Search job executions</span>
             <span class="relative block">
@@ -63,7 +70,7 @@
         </label>
         <select name="status"
                 aria-label="Filter by status"
-                class="{{ table_ui.filter_select_classes() }}">
+                class="{{ table_ui.filter_select_classes() }} lg:min-w-0 lg:basis-0 lg:flex-1">
             <option value="">All Statuses</option>
             {% for value, label in job_status_options %}
                 <option value="{{ value }}"
@@ -72,7 +79,7 @@
         </select>
         <select name="workload"
                 aria-label="Filter by workload"
-                class="{{ table_ui.filter_select_classes() }}">
+                class="{{ table_ui.filter_select_classes() }} lg:min-w-0 lg:basis-0 lg:flex-1">
             <option value="">All Workloads</option>
             {% for value, label in job_workload_options %}
                 <option value="{{ value }}"
@@ -81,7 +88,7 @@
         </select>
         <select name="queue"
                 aria-label="Filter by queue"
-                class="{{ table_ui.filter_select_classes() }}">
+                class="{{ table_ui.filter_select_classes() }} lg:min-w-0 lg:basis-0 lg:flex-1">
             <option value="">All Queues</option>
             {% for value in job_queue_options %}
                 <option value="{{ value }}"
@@ -101,8 +108,6 @@
         </div>
         <div class="divide-y divide-outline-subtle">
             {% for row in job_rows %}
-                {% set detail_target_id = 'job-execution-detail-' ~ row.public_id %}
-                {% set detail_row_id = detail_target_id ~ '-row' %}
                 <div>
                     <article class="grid min-w-0 gap-4 px-5 py-4 sm:px-6 lg:grid-cols-12 lg:items-center">
                         <div class="flex min-w-0 items-start gap-3 lg:col-span-3">
@@ -167,13 +172,13 @@
                             </div>
                         </dl>
                         <div class="flex flex-wrap items-center justify-start gap-2 lg:col-span-2 lg:justify-end">
-                            {{ expandable_row.toggle_button('job-execution-registry',
-                                                        row.public_id,
-                                                        url_for('jobs.execution_details', public_id=row.public_id) ,
-                            detail_target_id,
-                            detail_row_id,
-                            open_label='View Details',
-                            close_label='Close Details'
+                            {{ resource_detail_modal.detail_button(
+                                row.public_id,
+                                url_for('jobs.execution_details', public_id=row.public_id),
+                                row.operation_label,
+                                'Job Execution',
+                                label='View Details',
+                                icon='panel-top-open'
                             ) }}
                             {% if current_user.has_permission('jobs.cancel') and row.can_cancel %}
                                 <form method="post"
@@ -206,13 +211,6 @@
                             {% endif %}
                         </div>
                     </article>
-                    <div id="{{ detail_row_id }}"
-                         class="hidden border-t border-brand-outline/40 bg-kaori-mist/40">
-                        <div id="{{ detail_target_id }}"
-                             data-detail-content
-                             data-open="false"
-                             class="w-full min-w-0"></div>
-                    </div>
                 </div>
             {% endfor %}
         </div>
@@ -245,6 +243,13 @@
         resource_label='Executions',
         rows_aria_label='Executions per page',
         control_name='job-executions') }}
+    {{ resource_detail_modal.host(
+        'Job Execution',
+        url_for('jobs.execution_details', public_id=0),
+        footer_text='Execution evidence comes from the canonical JobExecution record.',
+        context_label='Platform Operations',
+        dialog_max_width='max-w-6xl'
+    ) }}
     {% if operation_feedback %}
         {% include 'components/operation_feedback_oob.html' %}
     {% endif %}

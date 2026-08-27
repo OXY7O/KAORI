@@ -1,11 +1,11 @@
 {% import "components/table_label.html" as table_label %}
-{% import "components/workspace_tabs.html" as workspace_tabs %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "components/operational_section_card.html" as operational_section %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% set execution_tabs = [
-    ('active', 'Active Work', 'activity', job_stats.active, url_for('jobs.executions', execution_tab='active')),
-    ('registry', 'Registry', 'list-checks', job_stats.total, url_for('jobs.executions', execution_tab='registry')),
-    ('queues', 'Queues', 'network', job_stats.queues, url_for('jobs.executions', execution_tab='queues'))
+    ('active', 'Active Work', 'activity', url_for('jobs.executions', execution_tab='active'), job_stats.active),
+    ('registry', 'Registry', 'list-checks', url_for('jobs.executions', execution_tab='registry'), job_stats.total),
+    ('queues', 'Queues', 'network', url_for('jobs.executions', execution_tab='queues'), job_stats.queues)
 ] %}
 <section id="job-execution-workspace" class="space-y-5">
     <section class="{{ operational_section.shell_classes() }}"
@@ -32,32 +32,25 @@
                    class="text-xs font-medium text-content-muted">Updated {{ job_last_refreshed_at }}</p>
             </div>
         </header>
-        <div class="grid sm:grid-cols-2 xl:grid-cols-4">
+        <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
             {% set overview_metrics = [
-                            ('activity', 'Active Jobs', job_stats.active, 'Queued, running, or retrying', 'info'),
-                            ('cpu', 'Running Now', job_stats.running, 'Currently owned by workers', 'violet'),
-                            ('triangle-alert', 'Needs Attention', job_stats.attention, 'Active intervention + terminal issues · 24H', 'warning'),
-                            ('circle-check-big', 'Completed · 24H', job_stats.completed_24h, 'Terminal executions recorded', 'normal')
+                            ('activity', 'Active Jobs', job_stats.active, 'Queued, running, or retrying'),
+                            ('cpu', 'Running Now', job_stats.running, 'Currently owned by workers'),
+                            ('triangle-alert', 'Needs Attention', job_stats.attention, 'Active intervention + terminal issues · 24H'),
+                            ('circle-check-big', 'Completed · 24H', job_stats.completed_24h, 'Terminal executions recorded')
                         ] %}
-            {% for icon, label, value, description, tone in overview_metrics %}
-                {% set icon_classes = 'bg-status-warning-soft text-status-warning-text' if tone == 'warning'
-                                    else ('bg-status-normal-soft text-status-normal-text' if tone == 'normal'
-                                    else ('bg-status-info-soft text-status-info-text' if tone == 'info'
-                                else 'bg-kaori-soft text-kaori-primary')) %}
-                <div class="flex min-w-0 items-center gap-3 border-outline-subtle px-5 py-4 sm:px-6 {% if loop.index < 4 %}border-b{% endif %} {% if loop.index is odd %}sm:border-r{% endif %} {% if loop.index > 2 %}sm:border-b-0{% endif %} {% if loop.index < 4 %}xl:border-b-0 xl:border-r{% else %}xl:border-r-0{% endif %}">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ icon_classes }}"
-                          aria-hidden="true">
-                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <div class="flex items-baseline gap-2">
+            {% for icon, label, value, description in overview_metrics %}
+                <article class="min-w-0 px-5 py-4 sm:px-6">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
                             <p id="execution-overview-metric-{{ 'active' if label == 'Active Jobs' else ('running' if label == 'Running Now' else ('attention' if label == 'Needs Attention' else 'completed')) }}"
-                               class="text-xl font-bold text-content-primary">{{ value }}</p>
-                            <p class="text-xs font-semibold text-content-secondary">{{ label }}</p>
+                               class="mt-1 text-2xl font-semibold tracking-tight text-content-primary">{{ value }}</p>
                         </div>
-                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
+                        <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                     </div>
-                </div>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                </article>
             {% endfor %}
         </div>
         <div class="grid border-t border-outline-subtle bg-surface-hover md:grid-cols-3 md:divide-x md:divide-outline-subtle">
@@ -90,7 +83,7 @@
                     </div>
                 </div>
             </div>
-            {{ workspace_tabs.render_navigation(execution_tabs,
+            {{ framed_workspace_tabs.render_navigation(execution_tabs,
                         selected_job_tab,
                         prefix='execution',
                         aria_label='Execution Workspace Sections',
