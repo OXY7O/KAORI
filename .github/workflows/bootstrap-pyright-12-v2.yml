@@ -1,0 +1,112 @@
+name: KAORI Bootstrap Pyright 12 v2
+
+on:
+  push:
+    branches:
+      - kaori/tech-debt-12-static-quality-baseline
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kaori-bootstrap-pyright-12-v2
+  cancel-in-progress: false
+
+jobs:
+  remediate:
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    timeout-minutes: 45
+    steps:
+      - name: Check Out Repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Build CI Toolchain
+        run: docker build --file .github/ci/Dockerfile --tag "kaori-bootstrap-pyright-12-v2:${GITHUB_SHA}" .
+
+      - name: Apply Corrected Source-Level Type Boundary Fixes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          workflow = Path('.github/workflows/bootstrap-pyright-12.yml').read_text(encoding='utf-8')
+          marker = "python - <<'PY'\n"
+          payload = workflow.split(marker, 1)[1].split('\n          PY', 1)[0]
+          payload = textwrap.dedent(payload)
+          payload = payload.replace(
+              "preferred_label = preferred_key.title() if preferred_key else 'Resource'",
+              "preferred_label = str(preferred_key).title() if preferred_key else 'Resource'",
+              1,
+          )
+          old_guard = """    'preferred_key.title()',
+    'preferred_label',
+    4,
+)"""
+          new_guard = """    'preferred_key.title()',
+    'preferred_label',
+    3,
+)"""
+          if payload.count(old_guard) != 1:
+              raise SystemExit(f'Expected one corrected preferred-label guard, found {payload.count(old_guard)}')
+          payload = payload.replace(old_guard, new_guard, 1)
+          exec(compile(payload, 'bootstrap-pyright-12-source-fixes', 'exec'), {})
+          PY
+
+          mapfile -t changed < <(git diff --name-only)
+          printf 'Type remediation changed %s files:\n' "${#changed[@]}"
+          printf '%s\n' "${changed[@]}"
+          [[ "${#changed[@]}" -eq 7 ]]
+          git diff --check
+
+      - name: Canonicalize Changed Python
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          files=(
+            app/reports/export/inventory_common.py
+            app/reports/export/xlsx/analytics_builder.py
+            app/reports/export/xlsx/analytics_overview.py
+            app/reports/export/xlsx/analytics_profiles.py
+            app/reports/export/xlsx/builder.py
+            app/reports/export/xlsx/overview.py
+            app/reports/storage/routes.py
+          )
+          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace \
+            "kaori-bootstrap-pyright-12-v2:${GITHUB_SHA}" python -m ruff format "${files[@]}"
+          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace \
+            "kaori-bootstrap-pyright-12-v2:${GITHUB_SHA}" python -m ruff check "${files[@]}"
+          git diff --check
+
+      - name: Verify Pyright Green
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace \
+            "kaori-bootstrap-pyright-12-v2:${GITHUB_SHA}" python -m pyright --project pyrightconfig.json
+
+      - name: Run Reporting Regression Tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace \
+            "kaori-bootstrap-pyright-12-v2:${GITHUB_SHA}" \
+            pytest -q \
+              tests/reports/test_analytics_xlsx_standard.py \
+              tests/reports/test_inventory_xlsx_standard.py \
+              tests/contracts/reports/test_report_storage_worker_verification_contract.py
+
+      - name: Commit Verified Type Fixes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mapfile -t changed < <(git diff --name-only)
+          [[ "${#changed[@]}" -eq 7 ]]
+          git config user.name "KAORI CI Bootstrap"
+          git config user.email "actions@users.noreply.github.com"
+          git add -- "${changed[@]}"
+          git commit -m "fix(reports): restore static type safety #12"
+          git push origin HEAD:kaori/tech-debt-12-static-quality-baseline
