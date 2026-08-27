@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
+from xml.etree import ElementTree
 from zipfile import ZipFile
 
 import pytest
@@ -166,7 +167,10 @@ def test_resource_utilization_line_chart_uses_timestamps_only_available_series_a
     assert all(series.marker.symbol is None for series in chart.series)
     with ZipFile(output_path) as archive:
         chart_xml = archive.read('xl/charts/chart1.xml').decode('utf-8')
-    assert chart_xml.count('<marker><symbol val="none"/>') == 3
+    chart_root = ElementTree.fromstring(chart_xml)
+    chart_namespace = {'c': 'http://schemas.openxmlformats.org/drawingml/2006/chart'}
+    marker_symbols = chart_root.findall('.//c:marker/c:symbol', chart_namespace)
+    assert [symbol.get('val') for symbol in marker_symbols].count('none') == 3
     assert chart.y_axis.scaling.min == 0
     assert chart.y_axis.scaling.max == 100
     assert chart.y_axis.majorUnit == 25

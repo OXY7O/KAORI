@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from typing import Any
+from typing import Any, TypeGuard, cast
 
 from openpyxl.chart import BarChart, DoughnutChart, Reference
 from openpyxl.chart.label import DataLabelList
-from openpyxl.chart.series import DataPoint
+from openpyxl.chart.marker import DataPoint
 from openpyxl.chart.shapes import GraphicalProperties
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -238,12 +238,13 @@ def _add_overview_chart(
         visual.varyColors = False
         visual.title = chart.title
         visual.height = 8.2
-        visual.width = 12.8
+        cast(Any, visual).width = 12.8
         visual.gapWidth = 55
         visual.add_data(values, titles_from_data=True)
         visual.set_categories(categories)
         visual.legend = None
-        visual.dLbls = DataLabelList(showVal=True, dLblPos='outEnd')
+        data_labels = DataLabelList(showVal=True, dLblPos='outEnd')
+        visual.dLbls = data_labels
         value_column = _profile_column(dataset, chart.value_key) if chart.value_key else None
         number_format = (
             '#,##0'
@@ -253,7 +254,7 @@ def _add_overview_chart(
         if chart.aggregation == 'value' and value_column is not None and value_column.unit:
             safe_unit = value_column.unit.replace('"', '')
             number_format = f'{number_format}" {safe_unit}"'
-        visual.dLbls.numFmt = number_format
+        data_labels.numFmt = number_format
         visual.x_axis.scaling.orientation = 'maxMin'
         visual.x_axis.tickLblPos = 'low'
         visual.y_axis.scaling.min = 0
@@ -273,11 +274,13 @@ def _add_overview_chart(
     visual.firstSliceAng = 270
     visual.varyColors = True
     visual.height = 8.0
-    visual.width = 12.8
+    cast(Any, visual).width = 12.8
     visual.add_data(values, titles_from_data=True)
     visual.set_categories(categories)
-    visual.legend.position = 'b'
-    visual.legend.overlay = False
+    legend = visual.legend
+    if legend is not None:
+        legend.position = 'b'
+        legend.overlay = False
     visual.dLbls = DataLabelList(
         dLblPos='bestFit',
         numFmt='0.0%',
@@ -313,9 +316,10 @@ def _write_overview_navigation(sheet: Worksheet) -> None:
     style_section_header(sheet.cell(row=_NAVIGATION_HEADER_ROW, column=1))
     sheet.row_dimensions[_NAVIGATION_HEADER_ROW].height = 22
 
-    navigation = tuple(
-        target_sheet for target_sheet in sheet.parent.sheetnames if target_sheet != INVENTORY_OVERVIEW_SHEET
-    )
+    workbook = sheet.parent
+    if workbook is None:
+        raise ValueError('Inventory Overview must belong to a workbook.')
+    navigation = tuple(target_sheet for target_sheet in workbook.sheetnames if target_sheet != INVENTORY_OVERVIEW_SHEET)
     spans = ((1, 4), (5, 8), (9, 12))
     for target_sheet, (start_col, end_col) in zip(navigation, spans, strict=False):
         for column in range(start_col, end_col + 1):
@@ -503,7 +507,7 @@ def _numeric_value(value: Any) -> float:
     return float(value) if _is_number(value) else 0.0
 
 
-def _is_number(value: Any) -> bool:
+def _is_number(value: Any) -> TypeGuard[int | float]:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 

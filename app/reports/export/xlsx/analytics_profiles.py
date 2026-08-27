@@ -1016,6 +1016,7 @@ def _prepare_forecast(
         )
 
     preferred_key = next((key for key in ('memory', 'cpu', 'pods', 'storage') if key in by_key), None)
+    preferred_label = str(preferred_key).title() if preferred_key else 'Resource'
     trend_rows: list[dict[str, Any]] = []
     if preferred_key:
         item = _mapping(by_key[preferred_key])
@@ -1030,14 +1031,14 @@ def _prepare_forecast(
                     'observation': index + 1,
                     'historical_percent': _number(_first(hist, 'percent', 'value')),
                     'forecast_percent': _number(_first(proj, 'percent', 'value')),
-                    'resource': preferred_key.title(),
+                    'resource': preferred_label,
                 }
             )
     if trend_rows:
         tables.append(
             _table(
                 'Trends',
-                f'{preferred_key.title()} Forecast Trend',
+                f'{preferred_label} Forecast Trend',
                 'Committed historical and forecast points in source order.',
                 (
                     _column(
@@ -1073,7 +1074,7 @@ def _prepare_forecast(
     chart = None
     if trend_rows:
         chart = AnalyticsChartData(
-            title=f'{preferred_key.title()} Historical & Forecast Direction',
+            title=f'{preferred_label} Historical & Forecast Direction',
             visual_type='line',
             source_sheet='Trends',
             rows=tuple(trend_rows),

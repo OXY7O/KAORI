@@ -84,6 +84,10 @@ class InventoryExportDataset:
         )
 
 
+def _coerce_float(value: Any) -> float:
+    return float(value)
+
+
 def normalize_inventory_row(
     row: Mapping[str, Any],
     profile: InventoryWorkbookProfile,
@@ -96,8 +100,8 @@ def normalize_inventory_row(
             numerator = row.get(column.ratio_numerator_key)
             denominator = row.get(column.ratio_denominator_key)
             try:
-                numerator_value = float(numerator)
-                denominator_value = float(denominator)
+                numerator_value = _coerce_float(numerator)
+                denominator_value = _coerce_float(denominator)
                 value = (numerator_value / denominator_value) * 100 if denominator_value > 0 else None
             except (TypeError, ValueError):
                 value = None

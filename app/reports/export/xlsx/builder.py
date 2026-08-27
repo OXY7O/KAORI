@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import Any, Final
+from typing import Any, Final, cast
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.chart import BarChart, DoughnutChart
@@ -192,7 +192,7 @@ def validate_inventory_xlsx_artifact(output_path: Path) -> None:
                 'Field Dictionary must be the canonical sheet order.'
             )
 
-        overview = workbook[INVENTORY_OVERVIEW_SHEET]
+        overview = cast(Worksheet, workbook[INVENTORY_OVERVIEW_SHEET])
         if overview['A5'].value != 'Executive Snapshot':
             raise ValueError('KAORI XLSX contract violation: Executive Snapshot is missing.')
         if overview['A9'].value != 'Executive Readout':
@@ -203,13 +203,14 @@ def validate_inventory_xlsx_artifact(output_path: Path) -> None:
         has_no_chart_message = str(overview['A15'].value or '').strip() == (
             'No committed chartable evidence is available for this workbook scope.'
         )
-        if not overview._charts and not has_no_chart_message:
+        overview_charts = cast(Any, overview)._charts
+        if not overview_charts and not has_no_chart_message:
             raise ValueError(
                 'KAORI XLSX contract violation: Overview must contain an evidence-backed chart '
                 'when chartable report evidence is available.'
             )
-        if overview._charts:
-            chart = overview._charts[0]
+        if overview_charts:
+            chart = overview_charts[0]
             if isinstance(chart, BarChart):
                 if getattr(chart, 'varyColors', None) is not False:
                     raise ValueError('KAORI XLSX contract violation: ranked bar charts must set varyColors=False.')

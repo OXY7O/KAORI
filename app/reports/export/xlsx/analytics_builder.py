@@ -4,7 +4,7 @@ import re
 from collections.abc import Mapping
 from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill
@@ -72,7 +72,7 @@ def build_analytics_workbook(
 ) -> None:
     data = prepare_analytics_workbook_data(report_type, payload, context)
     workbook = Workbook()
-    overview = workbook.active
+    overview = cast(Worksheet, workbook.active)
     overview.title = ANALYTICS_OVERVIEW_SHEET
 
     for table in data.tables:
@@ -100,7 +100,7 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
     if sheetnames[-2:] != [ANALYTICS_METADATA_SHEET, ANALYTICS_DICTIONARY_SHEET]:
         raise ValueError('Analytics XLSX artifact must end with Metadata and Field Dictionary.')
 
-    metadata = workbook[ANALYTICS_METADATA_SHEET]
+    metadata = cast(Worksheet, workbook[ANALYTICS_METADATA_SHEET])
     metadata_values = {
         metadata.cell(row=row, column=1).value: metadata.cell(row=row, column=2).value
         for row in range(1, metadata.max_row + 1)
@@ -113,7 +113,7 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
     if metadata_values.get('Report Family') != ANALYTICS_WORKBOOK_FAMILY:
         raise ValueError('Analytics XLSX artifact metadata must declare the analytics family.')
 
-    overview = workbook[ANALYTICS_OVERVIEW_SHEET]
+    overview = cast(Worksheet, workbook[ANALYTICS_OVERVIEW_SHEET])
     if not str(overview['A1'].value or '').startswith('KAORI — '):
         raise ValueError('Analytics XLSX Overview title is missing.')
     if overview['A9'].value != 'Executive Readout':
@@ -129,7 +129,7 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
             raise ValueError(f'Analytics XLSX Overview is missing navigation to {sheet_name!r}.')
 
     for sheet_name in sheetnames[1:-2]:
-        sheet = workbook[sheet_name]
+        sheet = cast(Worksheet, workbook[sheet_name])
         if sheet['A3'].hyperlink is None or sheet['A3'].hyperlink.target != "#'Overview'!A1":
             raise ValueError(f'Analytics XLSX sheet {sheet_name!r} must link back to Overview.')
 
@@ -141,11 +141,12 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
         raise ValueError('Analytics XLSX Overview must reserve the Supporting Data surface.')
 
     primary_visual = str(metadata_values.get('Primary Visual') or '').strip()
-    if primary_visual and primary_visual != 'No chartable evidence' and not overview._charts:
+    overview_charts = cast(Any, overview)._charts
+    if primary_visual and primary_visual != 'No chartable evidence' and not overview_charts:
         raise ValueError('Analytics XLSX Primary Visual is missing for chartable committed evidence.')
 
-    if overview._charts:
-        chart = overview._charts[0]
+    if overview_charts:
+        chart = overview_charts[0]
         chart_name = chart.__class__.__name__
         if chart_name == 'DoughnutChart':
             raise ValueError(
