@@ -206,19 +206,38 @@ def main() -> int:
             return 0
         errors = validate(args.app_root, args.baseline)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
-        print(f'ERROR: {exc}')
+        print('FAIL — KAORI Code Health')
+        print()
+        print('Verifier Error')
+        print(f'  FAIL — {exc}')
+        print()
+        print('Summary')
+        print('  1 failed')
         return 1
 
     if errors:
+        print('FAIL — KAORI Code Health')
+        print()
+        print('Debt Ledger')
         for error in errors:
-            print(f'ERROR: {error}')
+            print(f'  FAIL — {error}')
+        print()
+        print('Summary')
+        print(f'  {len(errors)} failed')
         return 1
+
     modules, functions, broad_exceptions = scan(args.app_root)
-    print(
-        'KAORI code-health debt is bounded across '
-        f'{len(modules)} modules and {len(functions)} functions; '
-        f'{broad_exceptions} broad exception handlers remain in the burn-down baseline.'
-    )
+    print('PASS — KAORI Code Health')
+    print()
+    print('Default Ceilings')
+    print('  PASS — Module 800 lines · Function 160 lines · Branch points 30 · Arguments 8.')
+    print()
+    print('Debt Boundary')
+    print(f'  PASS — {len(modules)} modules and {len(functions)} functions are bounded by the exact debt ledger.')
+    print(f'  PASS — {broad_exceptions} broad exception handlers are explicitly tracked for burn-down.')
+    print()
+    print('Summary')
+    print('  3 checks passed · 0 failed')
     return 0
 
 
