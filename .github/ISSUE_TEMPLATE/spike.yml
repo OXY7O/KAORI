@@ -1,0 +1,35 @@
+name: Spike
+description: Timebox research that must end in evidence and a decision.
+title: "[SPIKE] "
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+    validations:
+      required: true
+  - type: textarea
+    id: hypothesis
+    attributes:
+      label: Hypothesis
+    validations:
+      required: true
+  - type: input
+    id: timebox
+    attributes:
+      label: Timebox
+      placeholder: 4 hours
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+  - type: textarea
+    id: decision
+    attributes:
+      label: Decision
+  - type: textarea
+    id: follow_up
+    attributes:
+      label: Follow-up Stories / Tasks
