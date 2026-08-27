@@ -11,12 +11,13 @@ COMPOSE=(docker compose --project-name "$PROJECT" --file .github/ci/compose.yml)
 
 export KAORI_RUNTIME_IMAGE="$IMAGE_REF"
 export KAORI_RUNTIME_APP_VERSION="$VERSION"
-export KAORI_RUNTIME_BUILD_SHA="$(docker image inspect "$IMAGE_REF" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' 2>/dev/null || true)"
-export KAORI_RUNTIME_BUILD_DATE="$(docker image inspect "$IMAGE_REF" --format '{{ index .Config.Labels "org.opencontainers.image.created" }}' 2>/dev/null || true)"
+KAORI_RUNTIME_BUILD_SHA="$(docker image inspect "$IMAGE_REF" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' 2>/dev/null || true)"
+KAORI_RUNTIME_BUILD_DATE="$(docker image inspect "$IMAGE_REF" --format '{{ index .Config.Labels "org.opencontainers.image.created" }}' 2>/dev/null || true)"
+export KAORI_RUNTIME_BUILD_SHA KAORI_RUNTIME_BUILD_DATE
 if [[ -z "$KAORI_RUNTIME_BUILD_SHA" || -z "$KAORI_RUNTIME_BUILD_DATE" ]]; then
   docker pull "$IMAGE_REF" >/dev/null
-  export KAORI_RUNTIME_BUILD_SHA="$(docker image inspect "$IMAGE_REF" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
-  export KAORI_RUNTIME_BUILD_DATE="$(docker image inspect "$IMAGE_REF" --format '{{ index .Config.Labels "org.opencontainers.image.created" }}')"
+  KAORI_RUNTIME_BUILD_SHA="$(docker image inspect "$IMAGE_REF" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
+  KAORI_RUNTIME_BUILD_DATE="$(docker image inspect "$IMAGE_REF" --format '{{ index .Config.Labels "org.opencontainers.image.created" }}')"
 fi
 export CI_UID="${CI_UID:-$(id -u)}"
 export CI_GID="${CI_GID:-$(id -g)}"
@@ -98,15 +99,17 @@ docker build --target production --tag "$previous_image" "$worktree"
 # Previous release receives its own version/build evidence so ProductionConfig has a complete contract.
 export KAORI_RUNTIME_IMAGE="$previous_image"
 export KAORI_RUNTIME_APP_VERSION="${previous_tag#v}"
-export KAORI_RUNTIME_BUILD_SHA="$(git rev-list -n1 "$previous_tag")"
-export KAORI_RUNTIME_BUILD_DATE="$(git show -s --format=%cI "$previous_tag")"
+KAORI_RUNTIME_BUILD_SHA="$(git rev-list -n1 "$previous_tag")"
+KAORI_RUNTIME_BUILD_DATE="$(git show -s --format=%cI "$previous_tag")"
+export KAORI_RUNTIME_BUILD_SHA KAORI_RUNTIME_BUILD_DATE
 "${upgrade_compose[@]}" up -d postgres redis
 "${upgrade_compose[@]}" run --rm runtime alembic upgrade head
 
 export KAORI_RUNTIME_IMAGE="$IMAGE_REF"
 export KAORI_RUNTIME_APP_VERSION="$VERSION"
-export KAORI_RUNTIME_BUILD_SHA="$(docker image inspect "$IMAGE_REF" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
-export KAORI_RUNTIME_BUILD_DATE="$(docker image inspect "$IMAGE_REF" --format '{{ index .Config.Labels "org.opencontainers.image.created" }}')"
+KAORI_RUNTIME_BUILD_SHA="$(docker image inspect "$IMAGE_REF" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
+KAORI_RUNTIME_BUILD_DATE="$(docker image inspect "$IMAGE_REF" --format '{{ index .Config.Labels "org.opencontainers.image.created" }}')"
+export KAORI_RUNTIME_BUILD_SHA KAORI_RUNTIME_BUILD_DATE
 "${upgrade_compose[@]}" run --rm runtime alembic upgrade head
 
 printf '[KAORI Release] full active DAST\n'
