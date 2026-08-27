@@ -50,7 +50,14 @@ description = "KAORI PromQL profile identifiers are public query contracts"
 condition = "AND"
 regexTarget = "line"
 paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
-regexes = ['''^PROFILE_KEY\s*=\s*['"](?:promql-kubernetes-v1|prometheus-kubernetes-v1)['"]\s*$''']
+regexes = ['''^PROFILE_KEY\s*=\s*['"]promql-kubernetes-v1['"]\s*$''']
+
+[[rules.allowlists]]
+description = "Historical PromQL profile key is a public query contract"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+regexes = ['''^prometheus-kubernetes-v1$''']
 
 [[rules.allowlists]]
 description = "Historical Prometheus compatibility selector is a profile identifier"
@@ -69,6 +76,6 @@ regexes = ['''key\s*=\s*['"]kubernetes-legacy-v1['"]''']
 [[rules.allowlists]]
 description = "Bootstrap password example is an explicit non-secret placeholder"
 condition = "AND"
-regexTarget = "line"
+regexTarget = "secret"
 paths = ['''^\.env\.example$''']
-regexes = ['''^ADMIN_PASSWORD=replace-with-at-least-12-characters\s*$''']
+regexes = ['''^replace-with-at-least-12-characters$''']
