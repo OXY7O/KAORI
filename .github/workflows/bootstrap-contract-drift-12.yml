@@ -66,8 +66,6 @@ jobs:
                   raise SystemExit(f'{path}: expected exactly one replacement target for {old!r}, got {text.count(old)}')
               target.write_text(text.replace(old, new, 1), encoding='utf-8')
 
-          # Shared form geometry: keep the contract semantic while accepting the
-          # canonical box-sizing and minimum-height hardening.
           replace_once(
               'tests/contracts/design/test_form_with_context_standard_contract.py',
               "('macro label_row', 'min-h-6', 'macro select_classes', 'mt-2 h-10 w-full', 'macro help')",
@@ -78,9 +76,6 @@ jobs:
               "assert 'mt-2 h-10 w-full' in source",
               "assert 'mt-2 box-border h-10 min-h-10 w-full' in source",
           )
-
-          # Quick Actions: lock the current concise copy and permission-aware
-          # provider/domain ownership instead of stale literal domain names.
           replace_once(
               'tests/contracts/design/test_quick_action_alert_intelligence_20260824_contract.py',
               "assert 'Review active alert operations in Alert Intelligence.' in action",
@@ -97,25 +92,18 @@ jobs:
               "    assert \"can_sync_kubernetes_inventory = current_user.has_permission('clusters.sync')\" in navbar\n    assert \"can_sync_object_storage_inventory = current_user.has_permission('storage.sync')\" in navbar\n    assert 'every eligible managed domain' in navbar\n",
           )
 
-          # Capacity PDF: summary cards and legends are now centrally owned by
-          # analytics_publication.css; the capacity stylesheet owns only the R5
-          # scheduling specialization.
           capacity_test = Path('tests/contracts/reports/test_capacity_analysis_publication_layout_20260825_contract.py')
           capacity_test.write_text(
               '''from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[3]\n\n\ndef read(relative: str) -> str:\n    return (ROOT / relative).read_text(encoding='utf-8')\n\n\ndef test_capacity_scheduling_summary_cards_use_publication_box_layout() -> None:\n    template = read('app/templates/reports/pdf/capacity_analysis.html')\n    shared_css = read('app/static/reports/pdf/analytics_publication.css')\n    compact = ''.join(shared_css.split())\n\n    scheduling = template.split("ui.section('Pod Scheduling Position'", 1)[1].split(\n        "ui.section('Node Participation'", 1\n    )[0]\n\n    assert 'class="summary-box-grid"' in scheduling\n    assert scheduling.count('class="summary-box"') == 2\n    assert '.summary-box-grid{display:grid;grid-template-columns:minmax(0,1fr)minmax(0,1fr)' in compact\n    assert '.summary-box{min-height:' in compact\n    assert '.summary-boxspan{display:block' in compact\n    assert '.summary-boxstrong{display:block' in compact\n    assert '.summary-boxsmall{display:block' in compact\n\n\ndef test_capacity_node_participation_keeps_legend_values_inside_card() -> None:\n    css = read('app/static/reports/pdf/capacity_analysis.css')\n    compact = ''.join(css.split())\n\n    assert '.page-scheduling.node-card{grid-template-columns:37mmminmax(0,1fr)' in compact\n    assert '.page-scheduling.node-legend>div{grid-template-columns:4mmminmax(0,1fr)13mm' in compact\n    assert 'gap:1.8mm' in compact\n    assert '.node-legendstrong{text-align:right' in compact\n\n\ndef test_capacity_forecast_legend_uses_canonical_spacing_and_swatch_layout() -> None:\n    template = read('app/templates/reports/pdf/capacity_analysis.html')\n    shared_css = read('app/static/reports/pdf/analytics_publication.css')\n    compact = ''.join(shared_css.split())\n\n    assert 'class="chart-legend"' in template\n    assert '.chart-legend{display:flex;' in compact\n    assert '.chart-legendspan::before{content:"";display:inline-block;' in compact\n    for selector in (\n        'legend-cpu',\n        'legend-memory',\n        'legend-pods',\n        'legend-warning',\n        'legend-critical',\n    ):\n        assert f'.{selector}' in shared_css\n''',
               encoding='utf-8',
           )
 
-          # Report Templates Hero follows the canonical maximum-three metadata
-          # contract. Catalog semantics remain available in the page body.
           replace_once(
               'app/templates/reports/report_templates/index.html',
               "                            {{ page_hero.meta_label('layers-3', 'Canonical Report Catalog') }}\n",
               '',
           )
 
-          # XLSX contracts: preserve semantic navigation/chart validation while
-          # accepting explicit type narrowing introduced by the Pyright fix.
           tabular = Path('tests/contracts/reports/test_tabular_export_v3_20260826_contract.py')
           text = tabular.read_text(encoding='utf-8')
           if text.count("assert 'sheet.parent.sheetnames' in overview") != 2:
@@ -124,11 +112,16 @@ jobs:
               "assert 'sheet.parent.sheetnames' in overview",
               "assert 'workbook = sheet.parent' in overview\n    assert 'if workbook is None:' in overview\n    assert 'workbook.sheetnames' in overview",
           )
-          old = "assert 'if not overview._charts and not has_no_chart_message' in builder"
-          new = "assert 'overview_charts = cast(Any, overview)._charts' in builder\n    assert 'if not overview_charts and not has_no_chart_message' in builder"
-          if text.count(old) != 1:
+          old_chart_guard = "assert 'if not overview._charts and not has_no_chart_message' in builder"
+          new_chart_guard = "assert 'overview_charts = cast(Any, overview)._charts' in builder\n    assert 'if not overview_charts and not has_no_chart_message' in builder"
+          if text.count(old_chart_guard) != 1:
               raise SystemExit('Expected one stale overview._charts assertion.')
-          tabular.write_text(text.replace(old, new, 1), encoding='utf-8')
+          text = text.replace(old_chart_guard, new_chart_guard, 1)
+          old_legend = "assert \"visual.legend.position = 'b'\" in overview"
+          new_legend = "assert 'legend = visual.legend' in overview\n    assert 'if legend is not None:' in overview\n    assert \"legend.position = 'b'\" in overview"
+          if text.count(old_legend) != 1:
+              raise SystemExit('Expected one stale doughnut legend assertion.')
+          tabular.write_text(text.replace(old_legend, new_legend, 1), encoding='utf-8')
           PY
           git diff --check
 
