@@ -29,6 +29,7 @@ required_files = (
     'app/templates/platform_operations/notifications/partials/_center_page_content.html',
     'app/templates/layouts/app.html',
     'app/templates/components/navigation/navbar.html',
+    'app/static/js/safe_html.js',
     'app/static/js/navbar.js',
 )
 for relative in required_files:
@@ -194,10 +195,10 @@ for needle in (
     "document.getElementById('notification-deck-active-job-list')",
     "document.getElementById('notification-deck-inbox-content')",
     "document.getElementById('notification-deck-notifications-content')",
-    'activityTarget.innerHTML = payload.activity_html',
-    'inboxTarget.innerHTML = payload.inbox_html',
+    'window.kaoriSafeHtml.replace(activityTarget, payload.activity_html)',
+    'window.kaoriSafeHtml.replace(inboxTarget, payload.inbox_html)',
     'window.htmx?.process(inboxTarget)',
-    'notificationsTarget.innerHTML = payload.notifications_html',
+    'window.kaoriSafeHtml.replace(notificationsTarget, payload.notifications_html)',
     'window.htmx?.process(notificationsTarget)',
     "document.getElementById('work-inbox-badge')",
     "document.getElementById('notification-deck-inbox-count')",
