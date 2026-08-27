@@ -98,18 +98,12 @@ def _validate_inventory_workbook_profiles() -> None:
                 f'category field {chart.category_key!r}.'
             )
         if not 1 <= chart.top_n <= 8:
-            raise ValueError(
-                f'Inventory XLSX profile {report_type!r} chart Top-N must be between 1 and 8.'
-            )
+            raise ValueError(f'Inventory XLSX profile {report_type!r} chart Top-N must be between 1 and 8.')
         if chart.visual_type == 'doughnut' and not 2 <= chart.top_n <= 6:
-            raise ValueError(
-                f'Inventory XLSX profile {report_type!r} doughnut must use between 2 and 6 categories.'
-            )
+            raise ValueError(f'Inventory XLSX profile {report_type!r} doughnut must use between 2 and 6 categories.')
         if chart.aggregation == 'count':
             if chart.value_key is not None:
-                raise ValueError(
-                    f'Inventory XLSX profile {report_type!r} count chart must not declare a value field.'
-                )
+                raise ValueError(f'Inventory XLSX profile {report_type!r} count chart must not declare a value field.')
             continue
         if chart.aggregation != 'value' or chart.value_key is None:
             raise ValueError(
@@ -119,8 +113,7 @@ def _validate_inventory_workbook_profiles() -> None:
         value_column = columns.get(chart.value_key)
         if value_column is None:
             raise ValueError(
-                f'Inventory XLSX profile {report_type!r} uses unknown overview chart '
-                f'value field {chart.value_key!r}.'
+                f'Inventory XLSX profile {report_type!r} uses unknown overview chart value field {chart.value_key!r}.'
             )
         if value_column.data_type not in numeric_types:
             raise ValueError(

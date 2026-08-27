@@ -61,7 +61,7 @@ def test_inventory_v4_uses_profile_owned_readable_units_and_executive_summary_co
     assert 'Workbook Navigation' in overview
     assert 'sheet.parent.sheetnames' in overview
     assert 'target_sheet != INVENTORY_OVERVIEW_SHEET' in overview
-    assert "cell.hyperlink = f\"#'{target_sheet}'!A1\"" in overview
+    assert 'cell.hyperlink = f"#\'{target_sheet}\'!A1"' in overview
     assert 'BarChart' in overview and 'DoughnutChart' in overview
     assert 'DataLabelList(showVal=True' in overview
     assert "visual.legend.position = 'b'" in overview
@@ -86,10 +86,10 @@ def test_reporting_docs_and_verifier_reference_v3_contract() -> None:
     assert 'kaori-reporting-xlsx-v2.0' in reporting
     assert 'kaori-inventory-xlsx-v4.0' in reporting
     assert '`Overview`, `Inventory`, `Metadata`, and `Field Dictionary`' in reporting
-    assert "kaori-reporting-csv-v3.0" in verifier
-    assert "kaori-reporting-xlsx-v2.0" in verifier
-    assert "kaori-inventory-xlsx-v4.0" in verifier
-    assert "kaori-reporting-xlsx-v2.0" in tabular_verifier
+    assert 'kaori-reporting-csv-v3.0' in verifier
+    assert 'kaori-reporting-xlsx-v2.0' in verifier
+    assert 'kaori-inventory-xlsx-v4.0' in verifier
+    assert 'kaori-reporting-xlsx-v2.0' in tabular_verifier
     assert 'overview_metrics: tuple[InventoryOverviewMetric, ...]' in tabular_verifier
     assert 'validate_inventory_xlsx_artifact' in tabular_verifier
     assert 'Overview' in standard
@@ -107,7 +107,7 @@ def test_v3_csv_is_self_describing_and_inventory_transforms_support_derived_perc
 
     assert "'interchange_profile'," in tabular
     assert "interchange_profile: str = ''" in tabular
-    assert "CSV_INTERCHANGE_PROFILE" in csv_standard
+    assert 'CSV_INTERCHANGE_PROFILE' in csv_standard
     assert 'ratio_numerator_key: str | None = None' in xlsx_schema
     assert 'ratio_denominator_key: str | None = None' in xlsx_schema
     assert 'ratio_numerator_key' in inventory_common
@@ -125,7 +125,7 @@ def test_xlsx_overview_is_an_executive_landing_page_with_navigation_and_semantic
     assert "'Primary Visual'" in overview
     assert "'Supporting Data'" in overview
     assert "'Workbook Navigation'" in overview
-    assert "cell.hyperlink = f\"#'{target_sheet}'!A1\"" in overview
+    assert 'cell.hyperlink = f"#\'{target_sheet}\'!A1"' in overview
     assert 'sheet.parent.sheetnames' in overview
     assert 'ranked_bar' in standard
     assert 'doughnut' in standard

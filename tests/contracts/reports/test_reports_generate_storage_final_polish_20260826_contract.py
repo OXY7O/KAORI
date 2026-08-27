@@ -22,9 +22,7 @@ def hero_metadata_count(source: str) -> int:
 
 def test_artifact_contract_uses_full_width_contract_and_format_guidance() -> None:
     source = read(GENERATE_TEMPLATE)
-    artifact = source.split('id="generate-wizard-step-3"', 1)[1].split(
-        'id="generate-wizard-step-4"', 1
-    )[0]
+    artifact = source.split('id="generate-wizard-step-3"', 1)[1].split('id="generate-wizard-step-4"', 1)[0]
 
     assert 'data-artifact-contract-layout="full-width"' in artifact
     assert 'data-artifact-format-guide="true"' in artifact
@@ -37,16 +35,17 @@ def test_artifact_contract_uses_full_width_contract_and_format_guidance() -> Non
 
 def test_report_content_is_full_width_and_contract_moves_below_section_grid() -> None:
     source = read(GENERATE_TEMPLATE)
-    content = source.split('id="generate-wizard-step-4"', 1)[1].split(
-        'id="generate-wizard-step-5"', 1
-    )[0]
+    content = source.split('id="generate-wizard-step-4"', 1)[1].split('id="generate-wizard-step-5"', 1)[0]
 
     assert 'data-report-content-layout="full-width"' in content
     assert 'data-content-contract="full-width"' in content
     assert 'aria-label="Report content guidance"' not in content
     assert 'lg:grid-cols-3' not in content
     assert content.index('id="selected-section-list"') < content.index('data-content-contract="full-width"')
-    assert 'Only sections published for the selected report type can be submitted. KAORI validates the selection again before queueing.' in content
+    assert (
+        'Only sections published for the selected report type can be submitted. KAORI validates the selection again before queueing.'
+        in content
+    )
 
 
 def test_report_templates_and_storage_heroes_cap_metadata_at_three() -> None:
@@ -70,10 +69,7 @@ def test_requested_report_copy_is_shortened_without_losing_contract_meaning() ->
         'Review report storage readiness, integrity, and lifecycle ownership for PDF/XLSX/CSV artifacts.'
         in storage_service
     )
-    assert (
-        'S3-compatible target for generated reports and verification evidence.'
-        in storage_template
-    )
+    assert 'S3-compatible target for generated reports and verification evidence.' in storage_template
 
     assert 'while preserving canonical sections and reusable generation defaults.' not in templates_service
     assert 'including backend and reference integrity, verification results, retained coverage' not in storage_service

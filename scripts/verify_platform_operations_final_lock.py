@@ -406,7 +406,13 @@ def main() -> int:
         errors.append('Execution detail must not render raw execution payloads')
 
     queue_activity = read('app/templates/platform_operations/jobs/executions/partials/_queue_activity.html')
-    for required in ('Worker Readiness', "fragment='queues'", 'worker_readiness.description', 'hx-trigger="every 15s"', 'document.hidden'):
+    for required in (
+        'Worker Readiness',
+        "fragment='queues'",
+        'worker_readiness.description',
+        'hx-trigger="every 15s"',
+        'document.hidden',
+    ):
         if required not in queue_activity:
             errors.append(f'Queue Activity worker-readiness contract missing: {required}')
 

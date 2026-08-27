@@ -17,8 +17,7 @@ def count_donut_svg(count: int, label: str) -> str:
     safe_count = max(0, count)
     lines = _donut_label_lines(label)
     label_markup = ''.join(
-        f'<tspan x="90" dy="{0 if index == 0 else 8.5}">{escape(line)}</tspan>'
-        for index, line in enumerate(lines)
+        f'<tspan x="90" dy="{0 if index == 0 else 8.5}">{escape(line)}</tspan>' for index, line in enumerate(lines)
     )
     return (
         '<svg viewBox="0 0 180 180" role="img" aria-label="'

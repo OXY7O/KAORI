@@ -185,9 +185,14 @@ def main() -> int:
             errors,
         )
 
-    require('chart-to-section-gap' not in shared_css, 'Legacy chart-to-section spacing must not be owned by shared CSS.', errors)
     require(
-        'chart-to-section-gap' not in (ROOT / 'app/static/reports/pdf/resource_utilization.css').read_text(encoding='utf-8'),
+        'chart-to-section-gap' not in shared_css,
+        'Legacy chart-to-section spacing must not be owned by shared CSS.',
+        errors,
+    )
+    require(
+        'chart-to-section-gap'
+        not in (ROOT / 'app/static/reports/pdf/resource_utilization.css').read_text(encoding='utf-8'),
         'Resource Utilization must not own inter-section clearance through chart internals.',
         errors,
     )

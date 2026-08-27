@@ -46,7 +46,7 @@ def _render(html: str, family_css: str | None = None) -> object:
 
 def test_first_top_level_section_after_pair_keeps_canonical_section_gap() -> None:
     page = _render(
-        '''
+        """
         <html><body class="kaori-analytics-publication kaori-reporting-v3">
           <article class="page"><div class="page-content">
             <div class="metric-strip"></div>
@@ -66,7 +66,7 @@ def test_first_top_level_section_after_pair_keeps_canonical_section_gap() -> Non
             </section>
           </div></article>
         </body></html>
-        '''
+        """
     )
     pair = _element_box(page, 'pair')
     next_section = _element_box(page, 'next')
@@ -77,7 +77,7 @@ def test_first_top_level_section_after_pair_keeps_canonical_section_gap() -> Non
 
 def test_first_section_after_non_section_block_is_not_zeroed_by_first_of_type() -> None:
     page = _render(
-        '''
+        """
         <html><body class="kaori-analytics-publication kaori-reporting-v3">
           <article class="page"><div class="page-content">
             <div class="metric-strip"></div>
@@ -88,7 +88,7 @@ def test_first_section_after_non_section_block_is_not_zeroed_by_first_of_type() 
             </section>
           </div></article>
         </body></html>
-        '''
+        """
     )
     visual = _element_box(page, 'visual')
     next_section = _element_box(page, 'next')

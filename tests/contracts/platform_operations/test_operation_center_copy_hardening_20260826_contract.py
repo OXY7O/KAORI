@@ -64,7 +64,9 @@ def test_data_lifecycle_workspace_guidance_is_compact() -> None:
         'Cleanup stays blocked. Transient failures retry once; exhausted failures require manual retry.',
     ):
         assert retired not in domain
-    assert 'Cleanup stays blocked. Transient failures retry once; exhausted failures require manual retry.' not in storage
+    assert (
+        'Cleanup stays blocked. Transient failures retry once; exhausted failures require manual retry.' not in storage
+    )
 
 
 def test_data_lifecycle_evidence_copy_is_compact() -> None:
@@ -86,6 +88,5 @@ def test_data_lifecycle_evidence_copy_is_compact() -> None:
     )
     assert (
         'The policy is provider-neutral. Kubernetes, Object Storage, Metrics Source, Alertmanager, and future integrations '
-        'using IntegrationRuntimeObservation share the same lifecycle boundary.'
-        not in presentation
+        'using IntegrationRuntimeObservation share the same lifecycle boundary.' not in presentation
     )

@@ -541,9 +541,7 @@ def test_analytics_overview_r2_management_typography_and_helper_copy_contract() 
     ):
         assert helper in rendered_html
 
-    shared_stylesheet = (
-        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'
-    ).read_text()
+    shared_stylesheet = (project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css').read_text()
 
     assert '--analytics-type-body: 8pt' in shared_stylesheet
     assert '--analytics-type-section: 10.2pt' in shared_stylesheet

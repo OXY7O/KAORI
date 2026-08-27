@@ -12,10 +12,9 @@ def test_capacity_scheduling_summary_cards_use_publication_box_layout() -> None:
     css = read('app/static/reports/pdf/capacity_analysis.css')
     compact = ''.join(css.split())
 
-    scheduling = (
-        template.split("ui.section('Pod Scheduling Position'", 1)[1]
-        .split("ui.section('Node Participation'", 1)[0]
-    )
+    scheduling = template.split("ui.section('Pod Scheduling Position'", 1)[1].split(
+        "ui.section('Node Participation'", 1
+    )[0]
 
     assert 'class="summary-box-grid"' in scheduling
     assert scheduling.count('class="summary-box"') == 2

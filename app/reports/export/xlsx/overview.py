@@ -195,7 +195,11 @@ def _write_supporting_data(
     value_column = _profile_column(dataset, chart.value_key) if chart.value_key else None
     category_label = category_column.label if category_column is not None else 'Category'
     value_label = 'Records' if chart.aggregation == 'count' else (value_column.label if value_column else 'Value')
-    number_format = '#,##0' if chart.aggregation == 'count' else ((value_column.number_format if value_column else None) or '#,##0.00')
+    number_format = (
+        '#,##0'
+        if chart.aggregation == 'count'
+        else ((value_column.number_format if value_column else None) or '#,##0.00')
+    )
 
     headers = ('Rank', category_label, value_label, 'Share of Total')
     for column_index, value in zip(_SUPPORTING_COLUMNS, headers, strict=True):
@@ -241,7 +245,11 @@ def _add_overview_chart(
         visual.legend = None
         visual.dLbls = DataLabelList(showVal=True, dLblPos='outEnd')
         value_column = _profile_column(dataset, chart.value_key) if chart.value_key else None
-        number_format = '#,##0' if chart.aggregation == 'count' else ((value_column.number_format if value_column else None) or '#,##0.00')
+        number_format = (
+            '#,##0'
+            if chart.aggregation == 'count'
+            else ((value_column.number_format if value_column else None) or '#,##0.00')
+        )
         if chart.aggregation == 'value' and value_column is not None and value_column.unit:
             safe_unit = value_column.unit.replace('"', '')
             number_format = f'{number_format}" {safe_unit}"'
@@ -250,7 +258,9 @@ def _add_overview_chart(
         visual.x_axis.tickLblPos = 'low'
         visual.y_axis.scaling.min = 0
         visual.y_axis.majorGridlines = None
-        visual.y_axis.title = 'Records' if chart.aggregation == 'count' else (value_column.label if value_column else 'Value')
+        visual.y_axis.title = (
+            'Records' if chart.aggregation == 'count' else (value_column.label if value_column else 'Value')
+        )
         visual.series[0].graphicalProperties.solidFill = KAORI_PRIMARY
         visual.series[0].graphicalProperties.line.solidFill = KAORI_PRIMARY_DARK
         _remove_chart_frame(visual)
