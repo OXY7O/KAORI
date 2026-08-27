@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import re
+from pathlib import Path
 
 import pytest
-from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 PDF_TEMPLATE_DIR = ROOT / 'app/templates/reports/pdf'
