@@ -7,7 +7,9 @@
     ('registry', 'Registry', 'list-checks', url_for('jobs.executions', execution_tab='registry'), job_stats.total),
     ('queues', 'Queues', 'network', url_for('jobs.executions', execution_tab='queues'), job_stats.queues)
 ] %}
-<section id="job-execution-workspace" class="space-y-5">
+<section id="job-execution-workspace"
+         class="space-y-5"
+         hx-indicator="#execution-workspace-loading">
     <section class="{{ operational_section.shell_classes() }}"
              aria-labelledby="execution-overview-title">
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
@@ -88,8 +90,7 @@
                         prefix='execution',
                         aria_label='Execution Workspace Sections',
                         hx_target='#job-execution-workspace',
-                        hx_select='#job-execution-workspace',
-                        hx_indicator='#execution-workspace-loading') }}
+                        hx_select='#job-execution-workspace') }}
             {{ loading_bar.render('execution-workspace-loading', label='Loading Execution Workspace') }}
         </header>
         {% if selected_job_tab == 'registry' %}

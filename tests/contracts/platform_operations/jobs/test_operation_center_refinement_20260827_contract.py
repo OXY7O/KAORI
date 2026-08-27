@@ -14,6 +14,8 @@ def test_execution_workspace_uses_framed_kaori_tabs_and_live_fragments() -> None
 
     assert 'components/framed_workspace_tabs.html' in workspace
     assert 'framed_workspace_tabs.render_navigation(' in workspace
+    assert "hx_indicator='#execution-workspace-loading'" not in workspace
+    assert 'hx-indicator="#execution-workspace-loading"' in workspace
     assert 'hx-trigger="every 15s"' in registry
     assert 'hx-trigger="every 15s"' in queues
     assert 'document.hidden' in registry
