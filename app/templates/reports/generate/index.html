@@ -515,15 +515,21 @@
                                     <dl class="grid shrink-0 gap-3 sm:grid-cols-3 sm:divide-x sm:divide-outline-subtle">
                                         <div class="min-w-32 sm:px-4 sm:first:pl-0">
                                             <dt class="text-xs text-content-muted">Backend</dt>
-                                            <dd class="mt-1 text-xs font-semibold text-content-primary">{{ payload.storage_context.label }}</dd>
+                                            <dd class="mt-1 text-xs font-semibold text-content-primary">
+                                                {{ payload.storage_context.label }}
+                                            </dd>
                                         </div>
                                         <div class="min-w-32 sm:px-4">
                                             <dt class="text-xs text-content-muted">Write State</dt>
-                                            <dd class="mt-1">{{ table_label.status_indicator_label(payload.storage_context.status, 'normal' if payload.generation_allowed else 'warning') }}</dd>
+                                            <dd class="mt-1">
+                                                {{ table_label.status_indicator_label(payload.storage_context.status, 'normal' if payload.generation_allowed else 'warning') }}
+                                            </dd>
                                         </div>
                                         <div class="min-w-28 sm:px-4 sm:last:pr-0">
                                             <dt class="text-xs text-content-muted">Worker Queue</dt>
-                                            <dd class="mt-1 text-xs font-semibold text-content-primary">reports</dd>
+                                            <dd class="mt-1 text-xs font-semibold text-content-primary">
+                                                reports
+                                            </dd>
                                         </div>
                                     </dl>
                                 </div>
@@ -580,8 +586,7 @@
                         <div class="mt-5 space-y-4" data-report-content-layout="full-width">
                             <div id="selected-section-validation"
                                  class="hidden rounded-lg border border-outline-default bg-status-critical-soft px-3 py-2.5 text-xs font-semibold text-status-critical-text">Select at least one section before continuing.</div>
-                            <div id="selected-section-list"
-                                 class="grid gap-2 sm:grid-cols-2">
+                            <div id="selected-section-list" class="grid gap-2 sm:grid-cols-2">
                                 {% for section in payload.section_options_by_report_type[payload.form_state.report_type] %}
                                     {% if payload.selected_report_type.family == 'inventory' %}
                                         <div class="flex min-w-0 items-start gap-2.5 rounded-lg border border-outline-subtle bg-surface-hover px-3 py-3">

@@ -172,13 +172,12 @@
                             </div>
                         </dl>
                         <div class="flex flex-wrap items-center justify-start gap-2 lg:col-span-2 lg:justify-end">
-                            {{ resource_detail_modal.detail_button(
-                                row.public_id,
-                                url_for('jobs.execution_details', public_id=row.public_id),
-                                row.operation_label,
-                                'Job Execution',
-                                label='View Details',
-                                icon='panel-top-open'
+                            {{ resource_detail_modal.detail_button(row.public_id,
+                                                        url_for('jobs.execution_details', public_id=row.public_id) ,
+                            row.operation_label,
+                            'Job Execution',
+                            label='View Details',
+                            icon='panel-top-open'
                             ) }}
                             {% if current_user.has_permission('jobs.cancel') and row.can_cancel %}
                                 <form method="post"
@@ -243,12 +242,11 @@
         resource_label='Executions',
         rows_aria_label='Executions per page',
         control_name='job-executions') }}
-    {{ resource_detail_modal.host(
-        'Job Execution',
-        url_for('jobs.execution_details', public_id=0),
-        footer_text='Execution evidence comes from the canonical JobExecution record.',
-        context_label='Platform Operations',
-        dialog_max_width='max-w-6xl'
+    {{ resource_detail_modal.host('Job Execution',
+        url_for('jobs.execution_details', public_id=0) ,
+    footer_text='Execution evidence comes from the canonical JobExecution record.',
+    context_label='Platform Operations',
+    dialog_max_width='max-w-6xl'
     ) }}
     {% if operation_feedback %}
         {% include 'components/operation_feedback_oob.html' %}
