@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   autofix:
-    if: ${{ github.event.head_commit.message == 'chore(quality): bootstrap deterministic ruff autofix' }}
+    if: "${{ github.event.head_commit.message == 'fix(ci): repair bootstrap ruff workflow' }}"
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 15
     steps:
@@ -52,11 +52,10 @@ jobs:
           done
           git diff --check
 
-      - name: Commit Import-Only Fix and Remove Bootstrap Workflow
+      - name: Commit Import-Only Fix
         shell: bash
         run: |
           set -Eeuo pipefail
-          git rm .github/workflows/bootstrap-ruff-autofix.yml
           git config user.name "KAORI CI Bootstrap"
           git config user.email "actions@users.noreply.github.com"
           git add \
