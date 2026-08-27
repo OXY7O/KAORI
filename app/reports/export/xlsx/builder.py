@@ -18,13 +18,13 @@ from app.reports.export.inventory_common import (
     InventoryExportDataset,
     build_inventory_export_dataset,
 )
-from app.reports.export.xlsx.overview import build_inventory_overview_sheet
 from app.reports.export.tabular import (
     TABULAR_EXPORT_STANDARD,
     TABULAR_SCHEMA_VERSION,
     protect_spreadsheet_formula,
     serialize_tabular_value,
 )
+from app.reports.export.xlsx.overview import build_inventory_overview_sheet
 from app.reports.export.xlsx.standard import (
     INVENTORY_DATA_SHEET,
     INVENTORY_DICTIONARY_SHEET,

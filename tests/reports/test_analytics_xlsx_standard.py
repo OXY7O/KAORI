@@ -5,8 +5,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from zipfile import ZipFile
 
-from openpyxl import load_workbook
 import pytest
+from openpyxl import load_workbook
 
 from app.reports.export.xlsx.analytics_builder import (
     build_analytics_workbook,
