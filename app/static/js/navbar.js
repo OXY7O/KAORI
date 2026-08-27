@@ -272,18 +272,18 @@ document.addEventListener('alpine:init', () => {
 
             const activityTarget = document.getElementById('notification-deck-active-job-list')
             if (activityTarget && typeof payload.activity_html === 'string') {
-                activityTarget.innerHTML = payload.activity_html
+                window.kaoriSafeHtml.replace(activityTarget, payload.activity_html)
             }
 
             const inboxTarget = document.getElementById('notification-deck-inbox-content')
             if (inboxTarget && typeof payload.inbox_html === 'string') {
-                inboxTarget.innerHTML = payload.inbox_html
+                window.kaoriSafeHtml.replace(inboxTarget, payload.inbox_html)
                 window.htmx?.process(inboxTarget)
             }
 
             const notificationsTarget = document.getElementById('notification-deck-notifications-content')
             if (notificationsTarget && typeof payload.notifications_html === 'string') {
-                notificationsTarget.innerHTML = payload.notifications_html
+                window.kaoriSafeHtml.replace(notificationsTarget, payload.notifications_html)
                 window.htmx?.process(notificationsTarget)
             }
 
