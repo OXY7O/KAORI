@@ -42,14 +42,8 @@ jobs:
               "preferred_label = str(preferred_key).title() if preferred_key else 'Resource'",
               1,
           )
-          old_guard = """    'preferred_key.title()',
-    'preferred_label',
-    4,
-)"""
-          new_guard = """    'preferred_key.title()',
-    'preferred_label',
-    3,
-)"""
+          old_guard = "    'preferred_key.title()',\n    'preferred_label',\n    4,\n)"
+          new_guard = "    'preferred_key.title()',\n    'preferred_label',\n    3,\n)"
           if payload.count(old_guard) != 1:
               raise SystemExit(f'Expected one corrected preferred-label guard, found {payload.count(old_guard)}')
           payload = payload.replace(old_guard, new_guard, 1)
