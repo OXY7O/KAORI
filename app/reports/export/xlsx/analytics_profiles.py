@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
-from typing import Any, Callable
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from typing import Any
 
 from app.reports.export.xlsx.analytics_schema import (
     AnalyticsChartData,
