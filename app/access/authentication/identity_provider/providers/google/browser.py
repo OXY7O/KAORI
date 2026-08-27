@@ -60,7 +60,7 @@ class GoogleOidcAdapter:
         if not expected_nonce:
             raise SsoProviderError('Google OpenID Connect callback is missing the expected nonce.')
         try:
-            response = requests.post(  # nosec B113 - timeout is bounded by request_timeout_seconds().
+            response = requests.post(  # nosec B113
                 GOOGLE_TOKEN_URL,
                 data={
                     'code': code,
@@ -104,7 +104,7 @@ class GoogleOidcAdapter:
             raise SsoProviderError('Client ID is required.')
         load_client_secret(provider)
         try:
-            response = requests.get(  # nosec B113 - timeout is bounded by request_timeout_seconds().
+            response = requests.get(  # nosec B113
                 GOOGLE_DISCOVERY_URL, timeout=request_timeout_seconds(provider)
             )
             response.raise_for_status()

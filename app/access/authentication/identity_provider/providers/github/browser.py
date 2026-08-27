@@ -57,7 +57,7 @@ class GitHubOAuthAdapter:
         client_id = str((provider.configuration_json or {}).get('client_id') or '').strip()
         headers = {'Accept': 'application/json', 'User-Agent': 'KAORI-SSO'}
         try:
-            token_response = requests.post(  # nosec B113 - timeout is bounded by request_timeout_seconds().
+            token_response = requests.post(  # nosec B113
                 GITHUB_TOKEN_URL,
                 data={
                     'client_id': client_id,
@@ -79,7 +79,7 @@ class GitHubOAuthAdapter:
                 'X-GitHub-Api-Version': '2022-11-28',
                 'User-Agent': 'KAORI-SSO',
             }
-            user_response = requests.get(  # nosec B113 - timeout is bounded by request_timeout_seconds().
+            user_response = requests.get(  # nosec B113
                 GITHUB_USER_URL, headers=api_headers, timeout=request_timeout_seconds(provider)
             )
             user_response.raise_for_status()
@@ -111,7 +111,7 @@ class GitHubOAuthAdapter:
             raise SsoProviderError('Client ID is required.')
         load_client_secret(provider)
         try:
-            response = requests.get(  # nosec B113 - timeout is bounded by request_timeout_seconds().
+            response = requests.get(  # nosec B113
                 GITHUB_META_URL,
                 headers={
                     'Accept': 'application/vnd.github+json',
@@ -128,7 +128,7 @@ class GitHubOAuthAdapter:
 
     @staticmethod
     def _primary_email(headers: dict[str, str], provider: IdentityProvider) -> tuple[str | None, bool]:
-        response = requests.get(  # nosec B113 - timeout is bounded by request_timeout_seconds().
+        response = requests.get(  # nosec B113
             GITHUB_EMAILS_URL, headers=headers, timeout=request_timeout_seconds(provider)
         )
         if response.status_code == 403:

@@ -49,7 +49,7 @@ def send_microsoft_teams_message(
         method='POST',
     )
     try:
-        with urlopen(  # noqa: S310  # nosec B310 - URL is revalidated against approved HTTPS hosts.
+        with urlopen(  # noqa: S310  # nosec B310
             request, timeout=max(int(timeout_seconds), 1)
         ) as response:
             status = int(getattr(response, 'status', 200) or 200)
