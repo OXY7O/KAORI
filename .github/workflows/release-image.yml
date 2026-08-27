@@ -57,10 +57,12 @@ jobs:
       - name: Prepare Final Release Runtime
         shell: bash
         run: |
-          echo "CI_UID=$(id -u)" >> "$GITHUB_ENV"
-          echo "CI_GID=$(id -g)" >> "$GITHUB_ENV"
-          echo "KAORI_CI_TOOLCHAIN_IMAGE=kaori-ci-toolchain:${GITHUB_SHA}" >> "$GITHUB_ENV"
-          echo "COMPOSE_PROJECT_NAME=kaori-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-preflight" >> "$GITHUB_ENV"
+          {
+            echo "CI_UID=$(id -u)"
+            echo "CI_GID=$(id -g)"
+            echo "KAORI_CI_TOOLCHAIN_IMAGE=kaori-ci-toolchain:${GITHUB_SHA}"
+            echo "COMPOSE_PROJECT_NAME=kaori-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-preflight"
+          } >> "$GITHUB_ENV"
 
       - name: Start Final Release Services
         run: docker compose --file .github/ci/compose.yml up -d postgres redis ci-reports-worker
@@ -173,9 +175,11 @@ jobs:
             }
           fi
 
-          echo "candidate_tag=$candidate_tag" >> "$GITHUB_OUTPUT"
-          echo "digest=$digest" >> "$GITHUB_OUTPUT"
-          echo "build_date=$build_date" >> "$GITHUB_OUTPUT"
+          {
+            echo "candidate_tag=$candidate_tag"
+            echo "digest=$digest"
+            echo "build_date=$build_date"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Verify Exact Candidate Identity
         run: >-
@@ -201,8 +205,9 @@ jobs:
       - name: Validate Exact Candidate Runtime, Migration, and DAST
         shell: bash
         run: |
-          export CI_UID="$(id -u)"
-          export CI_GID="$(id -g)"
+          CI_UID="$(id -u)"
+          CI_GID="$(id -g)"
+          export CI_UID CI_GID
           export KAORI_CI_TOOLCHAIN_IMAGE="kaori-ci-toolchain:${RELEASE_SHA}"
           export COMPOSE_PROJECT_NAME="kaori-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-candidate"
           bash .github/ci/run-release-candidate.sh \
