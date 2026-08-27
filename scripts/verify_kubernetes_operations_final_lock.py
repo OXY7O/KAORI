@@ -375,7 +375,9 @@ def main() -> int:
     replace_page = read('app/templates/kubernetes/operations/secrets/replace.html')
     replace_content = read('app/templates/kubernetes/operations/secrets/_replace_content_form.html')
     require(
-        'min-h-6' in form_field and 'mt-2 h-10 w-full' in form_field,
+        'min-h-6' in form_field
+        and 'mt-2 box-border h-10 min-h-10 w-full' in form_field
+        and all(token in form_field for token in ('py-0', 'font-normal', 'leading-5')),
         'Form Field Alignment contract drifted.',
         errors,
     )
