@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   remediate:
-    if: "${{ github.event.head_commit.message == 'chore(ci): run regression-safe pyright remediation #12' }}"
+    if: "${{ github.event.head_commit.message == 'chore(ci): retry serializer-neutral pyright remediation #12' }}"
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 45
     steps:
@@ -43,12 +43,12 @@ jobs:
           test_path = Path('tests/reports/test_analytics_xlsx_standard.py')
           test_text = test_path.read_text(encoding='utf-8')
           import_old = 'from zipfile import ZipFile\n'
-          import_new = 'from zipfile import ZipFile\nfrom xml.etree import ElementTree\n'
+          import_new = 'from xml.etree import ElementTree\nfrom zipfile import ZipFile\n'
           if test_text.count(import_old) != 1:
               raise SystemExit('Expected one ZipFile import in analytics XLSX regression test.')
           test_text = test_text.replace(import_old, import_new, 1)
 
-          assertion_old = '''    with ZipFile(output_path) as archive:\n        chart_xml = archive.read('xl/charts/chart1.xml').decode('utf-8')\n    assert chart_xml.count('<marker><symbol val=\\"none\\"/>') == 3\n'''
+          assertion_old = '''    with ZipFile(output_path) as archive:\n        chart_xml = archive.read('xl/charts/chart1.xml').decode('utf-8')\n    assert chart_xml.count('<marker><symbol val="none"/>') == 3\n'''
           assertion_new = '''    with ZipFile(output_path) as archive:\n        chart_root = ElementTree.fromstring(archive.read('xl/charts/chart1.xml'))\n    chart_ns = {'c': 'http://schemas.openxmlformats.org/drawingml/2006/chart'}\n    marker_symbols = chart_root.findall('.//c:marker/c:symbol', chart_ns)\n    assert [symbol.attrib.get('val') for symbol in marker_symbols] == ['none', 'none', 'none']\n'''
           if test_text.count(assertion_old) != 1:
               raise SystemExit('Expected one lexical marker XML assertion in analytics XLSX regression test.')
