@@ -8,7 +8,19 @@
         timers.delete(panel)
         const rawValue = panel.querySelector('[data-protected-value]')
         if (rawValue) rawValue.textContent = ''
-        panel.innerHTML = `<div class="flex items-center gap-3 p-5 text-sm text-content-secondary"><i data-lucide="eye-off" class="h-5 w-5"></i><span>${message}</span></div>`
+
+        const clearedState = document.createElement('div')
+        clearedState.className = 'flex items-center gap-3 p-5 text-sm text-content-secondary'
+
+        const icon = document.createElement('i')
+        icon.setAttribute('data-lucide', 'eye-off')
+        icon.className = 'h-5 w-5'
+
+        const copy = document.createElement('span')
+        copy.textContent = message
+
+        clearedState.append(icon, copy)
+        panel.replaceChildren(clearedState)
         window.renderKaoriIcons?.()
         if (!window.renderKaoriIcons && window.lucide) window.lucide.createIcons()
     }
