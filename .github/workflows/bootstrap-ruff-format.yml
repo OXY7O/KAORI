@@ -1,0 +1,73 @@
+name: KAORI Bootstrap Ruff Format
+
+on:
+  push:
+    branches:
+      - kaori/governance-agile-v1
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kaori-bootstrap-ruff-format
+  cancel-in-progress: false
+
+jobs:
+  format:
+    if: "${{ github.event.head_commit.message == 'chore(quality): bootstrap canonical ruff format' }}"
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    timeout-minutes: 20
+    steps:
+      - name: Check Out Repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Build CI Toolchain
+        run: docker build --file .github/ci/Dockerfile --tag "kaori-bootstrap-format:${GITHUB_SHA}" .
+
+      - name: Apply Canonical Ruff Format
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --env HOME=/tmp \
+            --volume "$PWD:/workspace" \
+            --workdir /workspace \
+            "kaori-bootstrap-format:${GITHUB_SHA}" \
+            python -m ruff format app migrations tests scripts
+
+          mapfile -t changed < <(git diff --name-only)
+          printf 'Formatter changed %s files:\n' "${#changed[@]}"
+          printf '%s\n' "${changed[@]}"
+          [[ "${#changed[@]}" -gt 0 ]]
+          for file in "${changed[@]}"; do
+            case "$file" in
+              app/*|migrations/*|tests/*|scripts/*) ;;
+              *) echo "Unexpected formatter change outside canonical Python roots: $file" >&2; exit 1 ;;
+            esac
+          done
+          git diff --check
+
+      - name: Verify Formatter Idempotence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --env HOME=/tmp \
+            --volume "$PWD:/workspace" \
+            --workdir /workspace \
+            "kaori-bootstrap-format:${GITHUB_SHA}" \
+            python -m ruff format --check app migrations tests scripts
+
+      - name: Commit Formatter-Only Changes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name "KAORI CI Bootstrap"
+          git config user.email "actions@users.noreply.github.com"
+          git add app migrations tests scripts
+          git commit -m "style(python): apply canonical ruff formatting"
+          git push origin HEAD:kaori/governance-agile-v1
