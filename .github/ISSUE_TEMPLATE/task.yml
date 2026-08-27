@@ -1,0 +1,33 @@
+name: Task
+description: Track a concrete implementation or operational deliverable.
+title: "[TASK] "
+body:
+  - type: input
+    id: parent
+    attributes:
+      label: Parent Work Item
+      description: Reference the parent Epic, Story, Bug, or governance activity.
+    validations:
+      required: true
+  - type: textarea
+    id: deliverable
+    attributes:
+      label: Deliverable
+    validations:
+      required: true
+  - type: textarea
+    id: completion
+    attributes:
+      label: Completion Criteria
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+    validations:
+      required: true
