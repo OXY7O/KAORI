@@ -1,0 +1,292 @@
+name: KAORI Bootstrap Pyright 12
+
+on:
+  push:
+    branches:
+      - kaori/tech-debt-12-static-quality-baseline
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kaori-bootstrap-pyright-12
+  cancel-in-progress: false
+
+jobs:
+  remediate:
+    if: "${{ github.event.head_commit.message == 'chore(ci): bootstrap pyright remediation #12' }}"
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    timeout-minutes: 45
+    steps:
+      - name: Check Out Repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Build CI Toolchain
+        run: docker build --file .github/ci/Dockerfile --tag "kaori-bootstrap-pyright-12:${GITHUB_SHA}" .
+
+      - name: Apply Source-Level Type Boundary Fixes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              target = Path(path)
+              text = target.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one replacement, found {count}: {old[:80]!r}')
+              target.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          def replace_count(path: str, old: str, new: str, expected: int) -> None:
+              target = Path(path)
+              text = target.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != expected:
+                  raise SystemExit(f'{path}: expected {expected} replacements, found {count}: {old[:80]!r}')
+              target.write_text(text.replace(old, new), encoding='utf-8')
+
+          # Dynamic inventory payloads intentionally accept runtime-convertible values.
+          replace_once(
+              'app/reports/export/inventory_common.py',
+              """            try:\n                numerator_value = float(numerator)\n                denominator_value = float(denominator)\n                value = (numerator_value / denominator_value) * 100 if denominator_value > 0 else None\n            except (TypeError, ValueError):\n                value = None\n""",
+              """            try:\n                numerator_value = _coerce_float(numerator)\n                denominator_value = _coerce_float(denominator)\n                value = (numerator_value / denominator_value) * 100 if denominator_value > 0 else None\n            except (TypeError, ValueError):\n                value = None\n""",
+          )
+          replace_once(
+              'app/reports/export/inventory_common.py',
+              """def normalize_inventory_row(\n""",
+              """def _coerce_float(value: Any) -> float:\n    return float(value)\n\n\ndef normalize_inventory_row(\n""",
+          )
+
+          # OpenPyXL's workbook sheet unions are wider than the concrete sheets this builder owns.
+          replace_once(
+              'app/reports/export/xlsx/analytics_builder.py',
+              'from typing import Any\n',
+              'from typing import Any, cast\n',
+          )
+          replace_once(
+              'app/reports/export/xlsx/analytics_builder.py',
+              '    overview = workbook.active\n',
+              '    overview = cast(Worksheet, workbook.active)\n',
+          )
+          replace_count(
+              'app/reports/export/xlsx/analytics_builder.py',
+              '    metadata = workbook[ANALYTICS_METADATA_SHEET]\n',
+              '    metadata = cast(Worksheet, workbook[ANALYTICS_METADATA_SHEET])\n',
+              1,
+          )
+          replace_once(
+              'app/reports/export/xlsx/analytics_builder.py',
+              '    overview = workbook[ANALYTICS_OVERVIEW_SHEET]\n',
+              '    overview = cast(Worksheet, workbook[ANALYTICS_OVERVIEW_SHEET])\n',
+          )
+          replace_once(
+              'app/reports/export/xlsx/analytics_builder.py',
+              '        sheet = workbook[sheet_name]\n',
+              '        sheet = cast(Worksheet, workbook[sheet_name])\n',
+          )
+
+          # Forecast labels are non-null whenever trend rows exist; capture that invariant once.
+          replace_once(
+              'app/reports/export/xlsx/analytics_profiles.py',
+              """    preferred_key = next((key for key in ('memory', 'cpu', 'pods', 'storage') if key in by_key), None)\n    trend_rows: list[dict[str, Any]] = []\n""",
+              """    preferred_key = next((key for key in ('memory', 'cpu', 'pods', 'storage') if key in by_key), None)\n    preferred_label = preferred_key.title() if preferred_key else 'Resource'\n    trend_rows: list[dict[str, Any]] = []\n""",
+          )
+          replace_count(
+              'app/reports/export/xlsx/analytics_profiles.py',
+              'preferred_key.title()',
+              'preferred_label',
+              3,
+          )
+
+          # Analytics chart typing: preserve exact runtime geometry while adapting narrow OpenPyXL stubs.
+          replace_once(
+              'app/reports/export/xlsx/analytics_overview.py',
+              'from typing import Any\n',
+              'from typing import Any, cast\n',
+          )
+          replace_once(
+              'app/reports/export/xlsx/analytics_overview.py',
+              'from openpyxl.chart.series import DataPoint, SeriesLabel\n',
+              'from openpyxl.chart.marker import DataPoint\nfrom openpyxl.chart.series import SeriesLabel\n',
+          )
+          replace_once(
+              'app/reports/export/xlsx/analytics_overview.py',
+              """            values: list[Any] = [category]\n            values.extend(row.get(series.key) for series in chart.series[:4])\n            for column_index, value in enumerate(values, start=_SUPPORTING_START_COLUMN):\n""",
+              """            line_values: list[Any] = [category]\n            line_values.extend(row.get(series.key) for series in chart.series[:4])\n            for column_index, value in enumerate(line_values, start=_SUPPORTING_START_COLUMN):\n""",
+          )
+          replace_once(
+              'app/reports/export/xlsx/analytics_overview.py',
+              """            values = (\n                row.get(chart.category_key),\n                _number(row.get('current_percent')),\n                _number(row.get('projected_percent')),\n                _number(row.get('change_pp')),\n                row.get('trend'),\n            )\n            for column_index, item in enumerate(values, start=_SUPPORTING_START_COLUMN):\n""",
+              """            comparison_values = (\n                row.get(chart.category_key),\n                _number(row.get('current_percent')),\n                _number(row.get('projected_percent')),\n                _number(row.get('change_pp')),\n                row.get('trend'),\n            )\n            for column_index, item in enumerate(comparison_values, start=_SUPPORTING_START_COLUMN):\n""",
+          )
+          replace_once(
+              'app/reports/export/xlsx/analytics_overview.py',
+              """            values = (row.get(chart.category_key), value, headroom)\n            for column_index, item in enumerate(values, start=_SUPPORTING_START_COLUMN):\n""",
+              """            capacity_values = (row.get(chart.category_key), value, headroom)\n            for column_index, item in enumerate(capacity_values, start=_SUPPORTING_START_COLUMN):\n""",
+          )
+          replace_once(
+              'app/reports/export/xlsx/analytics_overview.py',
+              """        values = (rank, row.get(chart.category_key), value, share)\n        for column_index, item in enumerate(values, start=_SUPPORTING_START_COLUMN):\n""",
+              """        ranked_values = (rank, row.get(chart.category_key), value, share)\n        for column_index, item in enumerate(ranked_values, start=_SUPPORTING_START_COLUMN):\n""",
+          )
+          replace_once(
+              'app/reports/export/xlsx/analytics_overview.py',
+              """        visual.dLbls = DataLabelList(\n            showLegendKey=False,\n            showVal=True,\n            showCatName=False,\n            showSerName=False,\n            showPercent=False,\n            showBubbleSize=False,\n            showLeaderLines=False,\n            dLblPos='outEnd',\n        )\n        if chart.series:\n            visual.dLbls.numFmt = _series_number_format(chart.series[0].number_format, chart.series[0].unit)\n""",
+              """        data_labels = DataLabelList(\n            showLegendKey=False,\n            showVal=True,\n            showCatName=False,\n            showSerName=False,\n            showPercent=False,\n            showBubbleSize=False,\n            showLeaderLines=False,\n            dLblPos='outEnd',\n        )\n        visual.dLbls = data_labels\n        if chart.series:\n            data_labels.numFmt = _series_number_format(chart.series[0].number_format, chart.series[0].unit)\n""",
+          )
+          replace_once(
+              'app/reports/export/xlsx/analytics_overview.py',
+              """    source_sheet = sheet.parent[chart.source_sheet]\n""",
+              """    workbook = sheet.parent\n    if workbook is None:\n        raise ValueError('Analytics Overview must belong to a workbook.')\n    source_sheet = cast(Worksheet, workbook[chart.source_sheet])\n""",
+          )
+          replace_once(
+              'app/reports/export/xlsx/analytics_overview.py',
+              """    visual.width = 13.5\n    visual.legend.position = 'b'\n    visual.legend.overlay = False\n""",
+              """    cast(Any, visual).width = 13.5\n    legend = visual.legend\n    if legend is not None:\n        legend.position = 'b'\n        legend.overlay = False\n""",
+          )
+          replace_count(
+              'app/reports/export/xlsx/analytics_overview.py',
+              '        visual.width = 13.5\n',
+              '        cast(Any, visual).width = 13.5\n',
+              4,
+          )
+          replace_once(
+              'app/reports/export/xlsx/analytics_overview.py',
+              """    visual.x_axis.tickLblSkip = max(1, len(source.rows) // 6)\n""",
+              """    cast(Any, visual.x_axis).tickLblSkip = max(1, len(source.rows) // 6)\n""",
+          )
+          replace_once(
+              'app/reports/export/xlsx/analytics_overview.py',
+              """    targets = [name for name in sheet.parent.sheetnames if name != 'Overview'][:7]\n""",
+              """    workbook = sheet.parent\n    if workbook is None:\n        raise ValueError('Analytics Overview must belong to a workbook.')\n    targets = [name for name in workbook.sheetnames if name != 'Overview'][:7]\n""",
+          )
+
+          # Inventory overview uses the same OpenPyXL boundary patterns.
+          replace_once(
+              'app/reports/export/xlsx/overview.py',
+              'from typing import Any\n',
+              'from typing import Any, TypeGuard, cast\n',
+          )
+          replace_once(
+              'app/reports/export/xlsx/overview.py',
+              'from openpyxl.chart.series import DataPoint\n',
+              'from openpyxl.chart.marker import DataPoint\n',
+          )
+          replace_count(
+              'app/reports/export/xlsx/overview.py',
+              '    visual.width = 12.8\n',
+              '    cast(Any, visual).width = 12.8\n',
+              2,
+          )
+          replace_once(
+              'app/reports/export/xlsx/overview.py',
+              """        visual.dLbls = DataLabelList(showVal=True, dLblPos='outEnd')\n""",
+              """        data_labels = DataLabelList(showVal=True, dLblPos='outEnd')\n        visual.dLbls = data_labels\n""",
+          )
+          replace_once(
+              'app/reports/export/xlsx/overview.py',
+              """        visual.dLbls.numFmt = number_format\n""",
+              """        data_labels.numFmt = number_format\n""",
+          )
+          replace_once(
+              'app/reports/export/xlsx/overview.py',
+              """    visual.legend.position = 'b'\n    visual.legend.overlay = False\n""",
+              """    legend = visual.legend\n    if legend is not None:\n        legend.position = 'b'\n        legend.overlay = False\n""",
+          )
+          replace_once(
+              'app/reports/export/xlsx/overview.py',
+              """    navigation = tuple(\n        target_sheet for target_sheet in sheet.parent.sheetnames if target_sheet != INVENTORY_OVERVIEW_SHEET\n    )\n""",
+              """    workbook = sheet.parent\n    if workbook is None:\n        raise ValueError('Inventory Overview must belong to a workbook.')\n    navigation = tuple(\n        target_sheet for target_sheet in workbook.sheetnames if target_sheet != INVENTORY_OVERVIEW_SHEET\n    )\n""",
+          )
+          replace_once(
+              'app/reports/export/xlsx/overview.py',
+              'def _is_number(value: Any) -> bool:\n',
+              'def _is_number(value: Any) -> TypeGuard[int | float]:\n',
+          )
+
+          # Inventory validator owns Worksheet instances even though OpenPyXL stubs expose a wider union.
+          replace_once(
+              'app/reports/export/xlsx/builder.py',
+              'from typing import Any, Final\n',
+              'from typing import Any, Final, cast\n',
+          )
+          replace_once(
+              'app/reports/export/xlsx/builder.py',
+              '        overview = workbook[INVENTORY_OVERVIEW_SHEET]\n',
+              '        overview = cast(Worksheet, workbook[INVENTORY_OVERVIEW_SHEET])\n',
+          )
+
+          # This domain dispatcher always registers/returns a JobExecution; assert the invariant before presentation use.
+          replace_once(
+              'app/reports/storage/routes.py',
+              """        outcome = enqueue_report_storage_verification(\n            requested_by_user_id=int(current_user.id),\n        )\n""",
+              """        outcome = enqueue_report_storage_verification(\n            requested_by_user_id=int(current_user.id),\n        )\n        assert outcome.job is not None, 'Report storage verification must own a JobExecution.'\n""",
+          )
+          PY
+
+          mapfile -t changed < <(git diff --name-only)
+          printf 'Type remediation changed %s files:\n' "${#changed[@]}"
+          printf '%s\n' "${changed[@]}"
+          [[ "${#changed[@]}" -eq 7 ]]
+          for file in "${changed[@]}"; do
+            case "$file" in
+              app/reports/export/inventory_common.py|app/reports/export/xlsx/analytics_builder.py|app/reports/export/xlsx/analytics_overview.py|app/reports/export/xlsx/analytics_profiles.py|app/reports/export/xlsx/builder.py|app/reports/export/xlsx/overview.py|app/reports/storage/routes.py) ;;
+              *) echo "Unexpected #12 type-remediation change: $file" >&2; exit 1 ;;
+            esac
+          done
+          git diff --check
+
+      - name: Canonicalize Changed Python
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          files=(
+            app/reports/export/inventory_common.py
+            app/reports/export/xlsx/analytics_builder.py
+            app/reports/export/xlsx/analytics_overview.py
+            app/reports/export/xlsx/analytics_profiles.py
+            app/reports/export/xlsx/builder.py
+            app/reports/export/xlsx/overview.py
+            app/reports/storage/routes.py
+          )
+          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace \
+            "kaori-bootstrap-pyright-12:${GITHUB_SHA}" python -m ruff format "${files[@]}"
+          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace \
+            "kaori-bootstrap-pyright-12:${GITHUB_SHA}" python -m ruff check "${files[@]}"
+          git diff --check
+
+      - name: Verify Pyright Green
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace \
+            "kaori-bootstrap-pyright-12:${GITHUB_SHA}" python -m pyright --project pyrightconfig.json
+
+      - name: Run Reporting Regression Tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace \
+            "kaori-bootstrap-pyright-12:${GITHUB_SHA}" \
+            pytest -q \
+              tests/reports/test_analytics_xlsx_standard.py \
+              tests/reports/test_inventory_xlsx_standard.py \
+              tests/contracts/reports/test_report_storage_worker_verification_contract.py
+
+      - name: Commit Verified Type Fixes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mapfile -t changed < <(git diff --name-only)
+          printf 'Verified type remediation files (%s):\n' "${#changed[@]}"
+          printf '%s\n' "${changed[@]}"
+          [[ "${#changed[@]}" -eq 7 ]]
+          git config user.name "KAORI CI Bootstrap"
+          git config user.email "actions@users.noreply.github.com"
+          git add -- "${changed[@]}"
+          git commit -m "fix(reports): restore static type safety #12"
+          git push origin HEAD:kaori/tech-debt-12-static-quality-baseline
