@@ -1,113 +1,42 @@
-# KAORI GitHub Actions CI/CD Design
+# KAORI GitHub Actions CI/CD
 
 ## Status
 
-**Design baseline — approved architecture, not yet an executable workflow implementation.**
+**CURRENT — GitHub Organization Free / private repository.**
 
-This document captures the agreed KAORI source-control, CI, release, and container-publication workflow. It complements `docs/setup/GITHUB_ACTIONS_SELF_HOSTED_RUNNER.md`.
+This document is the canonical CI and release-publication contract for KAORI. It complements `docs/setup/GITHUB_ACTIONS_SELF_HOSTED_RUNNER.md` and the existing release governance in `docs/deployment/RELEASE_GOVERNANCE.md`.
 
-The implementation must preserve the existing KAORI quality and release-governance contracts. Existing verification entry points remain authoritative; GitHub Actions orchestrates them rather than replacing or weakening them.
+The current implementation stops at a verified, signed, immutable application image and GitHub Release. Application deployment is intentionally outside the current scope, but every release output is designed so a later CD workflow can deploy the exact approved image digest without rebuilding it.
 
----
-
-## Goals
-
-The CI/CD flow must provide:
-
-- one stable daily working branch that is easy to sync to the developer laptop;
-- deterministic full CI for every working-branch change, including small changes;
-- explicit local Dev Container review before a pull request is allowed to proceed;
-- pull-request validation against the current `main` integration result;
-- explicit human approval before merge;
-- curated Semantic Versioning release preparation;
-- an isolated GitHub `release` Environment for privileged publication;
-- Docker Hub as the production image registry;
-- release-candidate validation against the actual container artifact;
-- **build once, verify, then promote the same immutable digest**;
-- SBOM, provenance, vulnerability scanning, signing, release manifest, and GitHub Release evidence;
-- no direct production deployment in the initial rollout.
-
----
-
-## Locked Decisions
-
-### Repository branches
-
-Daily development uses one long-lived branch:
-
-```text
-kaori/working
-```
-
-Normal work does not create a new branch per task. The working branch is reused continuously so the developer laptop can remain on the same branch.
-
-Exceptional branches are allowed only when isolation is operationally necessary, for example:
-
-```text
-kaori/hotfix/<slug>
-release/vX.Y.Z
-```
-
-The assistant must explicitly tell the user when a local branch switch is required.
-
-### Merge strategy
-
-Pull requests from `kaori/working` use **merge commits**.
-
-Do not use squash merge or rebase merge for the long-lived working branch because the working branch must remain fast-forwardable to the resulting `main` history.
-
-After a successful merge:
+The implementation preserves the repository's existing authorities:
 
 ```bash
-git fetch origin
-git switch kaori/working
-git merge --ff-only origin/main
-git push origin kaori/working
+bash scripts/quality_gate.sh --static
+bash scripts/quality_gate.sh --tests
+bash scripts/quality_gate.sh --frontend
+python scripts/verify_final_release.py --all --runtime
 ```
 
-The remote working branch must then be the base for the next change.
+GitHub Actions orchestrates those gates. It must not weaken, skip, or silently replace them.
 
-The branch must not be automatically deleted after merge. Protect `kaori/working` from deletion and force-push.
+---
 
-### Human acceptance boundary
+## Current Platform Boundary
 
-Automated CI is not sufficient to authorize a PR or merge.
-
-The normal approval flow is:
+KAORI currently assumes:
 
 ```text
-assistant push
-    ↓
-working-branch CI passes
-    ↓
-developer syncs kaori/working
-    ↓
-developer tests in the KAORI Dev Container
-    ↓
-developer says "lanjut PR"
-    ↓
-PR is created
-    ↓
-PR integration CI passes
-    ↓
-developer says "merge"
-    ↓
-merge commit to main
+Repository owner : GitHub Organization
+Repository       : private
+GitHub plan       : Free
+Runner            : self-hosted Linux
+Runner family     : kaori-ci
+Runner instance   : kaori-ci-01
+Registry          : Docker Hub
+Production CD     : not implemented yet
 ```
 
-No workflow automatically creates a PR or merges one.
-
-### Full-CI policy
-
-Every change on `kaori/working` runs the full CI cycle by default, including small changes such as wording, CSS, documentation, template adjustments, or a one-line backend fix.
-
-The initial implementation intentionally avoids broad `paths-ignore` shortcuts.
-
-Optimization may be introduced only after enough CI evidence exists to prove that a safe fast path does not create a verification blind spot.
-
-### Runner selector
-
-All self-hosted jobs use the agreed selector:
+The self-hosted runner selector is:
 
 ```yaml
 runs-on:
@@ -117,104 +46,21 @@ runs-on:
   - kaori-ci
 ```
 
-Initial runner identity:
-
-```text
-Runner family     : kaori-ci
-GitHub runner     : kaori-ci-01
-VM hostname       : kaori-ci-runner-01
-Service account   : github-runner
-```
-
-### Host/runtime boundary
-
-The runner VM is an executor, not the KAORI application runtime.
-
-The host provides:
-
-```text
-Linux
-GitHub Actions Runner
-Docker Engine
-Docker Buildx
-Docker Compose plugin
-base runner prerequisites
-```
-
-Python, Node.js, npm tooling, native PDF/build libraries, PostgreSQL, Redis, DAST tooling, and KAORI dependencies run in containers.
-
-The CI implementation should use a repository-owned Docker/Compose CI environment so the runner host remains distribution-agnostic.
-
-### Docker Hub release registry
-
-Production release images are published to Docker Hub.
-
-GitHub Environment:
-
-```text
-release
-```
-
-Initial required Environment secrets:
-
-```text
-DOCKERHUB_USERNAME
-DOCKERHUB_TOKEN
-```
-
-Initial Environment variable:
-
-```text
-DOCKERHUB_IMAGE
-```
-
-Example value:
-
-```text
-<dockerhub-namespace>/kaori
-```
-
-`DOCKERHUB_TOKEN` must be a scoped Docker Hub access token rather than an account password.
-
-Working-branch and PR CI must not receive Docker Hub release credentials.
-
-The built-in GitHub `GITHUB_TOKEN` is used for Git tag and GitHub Release operations; it is not stored as an Environment secret.
-
-Keyless image signing should use GitHub OIDC where supported, requiring workflow permission:
-
-```yaml
-id-token: write
-```
-
-and no persistent signing private key.
-
-### Release image tags
-
-Release publication uses:
-
-```text
-<image>:X.Y.Z
-<image>:X.Y
-<image>:sha-<commit>
-```
-
-Example:
-
-```text
-<namespace>/kaori:2.4.0
-<namespace>/kaori:2.4
-<namespace>/kaori:sha-9876543
-```
-
-The release contract does not depend on `latest`.
-
-All promoted release tags must resolve to the **same immutable OCI digest**.
+The runner VM is an executor only. Python, Node.js, PostgreSQL, Redis, security scanners, and application test dependencies belong to repository-owned containers.
 
 ---
 
-# Source-Control Lifecycle
+# Source-Control Contract
 
-## Normal working flow
+## Long-lived working branch
+
+Daily work uses one stable branch:
+
+```text
+kaori/working
+```
+
+The normal lifecycle is:
 
 ```text
 main
@@ -226,642 +72,430 @@ main
             └── push
                    │
                    ▼
-            FULL WORKING CI
+              FULL CI
                    │
-                   ▼
                  GREEN
                    │
-          ┌────────┴────────┐
-          ▼                 ▼
-     GitHub state       laptop sync
-                            │
-                            ▼
-                      Dev Container
-                            │
-                            ▼
-                     human validation
-                            │
-                      "lanjut PR"
-                            │
-                            ▼
-                        PR → main
-                            │
-                            ▼
-                    merge-result CI
-                            │
-                          GREEN
-                            │
-                         "merge"
-                            │
-                            ▼
-                      merge commit
-                            │
-                            ▼
-                           main
-                            │
-                            ▼
-                 fast-forward kaori/working
+                   ▼
+          developer syncs laptop
+                   │
+                   ▼
+            KAORI Dev Container
+                   │
+                   ▼
+          runtime + visual review
+                   │
+             "lanjut PR"
+                   │
+                   ▼
+                PR → main
+                   │
+              FULL PR CI
+                   │
+                 GREEN
+                   │
+                "merge"
+                   │
+                   ▼
+              merge commit
+                   │
+                   ▼
+                  main
+                   │
+                   ▼
+       fast-forward kaori/working
 ```
 
-Laptop sync remains simple:
+Exceptional isolated work may use:
+
+```text
+kaori/hotfix/<slug>
+release/vX.Y.Z
+```
+
+The developer should not have to switch local branches for normal work. An exceptional branch switch must be called out explicitly.
+
+## Merge strategy
+
+Normal PRs from `kaori/working` use **merge commits**.
+
+Do not use squash or rebase merge for this long-lived branch because `kaori/working` must remain fast-forwardable to the resulting `main` history.
+
+After merge:
 
 ```bash
 git fetch origin
 git switch kaori/working
-git pull --ff-only origin kaori/working
+git merge --ff-only origin/main
+git push origin kaori/working
+```
+
+## Human acceptance boundary
+
+Machine approval and human acceptance are separate gates:
+
+```text
+GitHub Actions green
+        ≠
+permission to merge
+```
+
+The assistant may create a PR only after local Dev Container review is accepted. The PR may be merged only after the user explicitly authorizes the merge.
+
+No workflow auto-creates PRs or auto-merges them.
+
+---
+
+# Full-CI Policy
+
+Every change runs the full CI cycle during the initial baseline, including small changes such as:
+
+```text
+wording
+CSS
+Jinja templates
+documentation
+one-line Python changes
+workflow changes
+migration changes
+```
+
+The baseline intentionally does not use broad `paths-ignore` shortcuts.
+
+This policy can be optimized later only after enough historical CI evidence exists to prove that a fast path does not create verification blind spots.
+
+A full CI cycle does **not** mean release publication. Working/PR/main CI never:
+
+```text
+logs into Docker Hub with release credentials
+pushes SemVer release tags
+creates a Git tag
+creates a GitHub Release
+deploys to production
 ```
 
 ---
 
-# CI Trigger Matrix
+# `quality.yml`
 
-| Event | Full CI | Local review required | Release secrets | Publishes release image |
-| --- | --- | --- | --- | --- |
-| Push to `kaori/working` | Yes | Before PR | No | No |
-| Pull request to `main` | Yes | Already required before PR; merge still explicit | No | No |
-| Push/merge to `main` | Yes | No additional local gate required for the exact merge | No | No |
-| Release preparation PR | Yes + release metadata validation | GitHub review | No | No |
-| Manual `Release` workflow | Yes + final release/candidate gates | GitHub `release` Environment approval | Yes | Yes |
+## Triggers
 
-The same policy applies to small and large code changes.
+The CI workflow responds to:
+
+```yaml
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+    branches:
+      - kaori/working
+      - main
+      - "release/**"
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+```
+
+The trigger meanings are:
+
+| Trigger | Purpose |
+| --- | --- |
+| push `kaori/working` | validate the exact daily working commit |
+| push `release/**` | validate release-preparation metadata plus application state |
+| PR → `main` | validate the prospective integration result |
+| push `main` | validate the exact canonical merged SHA |
+| `workflow_call` | reusable full CI from release orchestration |
+| `workflow_dispatch` | manual diagnostic rerun without publication |
+
+Pull requests from forks are not admitted onto the trusted self-hosted Docker runner. This avoids executing untrusted fork code on a runner account with Docker privileges.
+
+## Concurrency
+
+Obsolete working/PR runs may be cancelled when a newer commit supersedes them. Canonical `main` and release execution must not be cancelled merely because a later commit appears.
+
+## Job sequence
+
+The required admission order is:
+
+```text
+static-quality
+    ↓
+static-security
+    ↓
+functional-tests
+    ↓
+frontend
+    ↓
+production-runtime
+    ↓
+admission
+```
+
+The sequence is intentionally fail-fast from cheaper checks to more expensive runtime checks.
 
 ---
 
-# CI Gate Architecture
+## Job: Static, Architecture, and Governance
 
-The full CI cycle is ordered from cheaper checks to more expensive runtime checks. This reduces wasted runner time when an early gate fails.
+### Purpose
 
-## Gate 1 — Source hygiene and existing static quality
+Prove the checked-out source satisfies the existing KAORI structural, formatting, migration, architectural, and governance contracts.
 
-Reuse the existing KAORI entry points rather than duplicating them in YAML.
-
-Primary existing command:
-
-```bash
-bash scripts/quality_gate.sh --static
-```
-
-Coverage includes the current KAORI static, architecture, migration, formatting, type, and contract checks owned by the repository.
-
-Additional workflow hygiene checks should include:
+### Steps
 
 ```text
-ShellCheck
-actionlint
-GitHub Actions hardening validation
+checkout full history
+    ↓
+build reproducible CI toolchain
+    ↓
+run scripts/quality_gate.sh --static
 ```
 
-GitHub Action dependencies must be pinned to immutable commit SHAs in the final implementation rather than floating major-version tags.
+The existing gate owns Ruff, djLint, Pyright, KAORI verifier scripts, migration checks, architecture checks, UI contracts, code-health checks, and contract/migration tests already defined by the repository.
 
-## Gate 2 — Static security
+A failure blocks all more expensive downstream jobs.
 
-Recommended baseline:
+---
+
+## Job: Secrets, SAST, Dependencies, and Workflow Security
+
+### Purpose
+
+Provide security coverage that works on a private Organization Free repository without depending on paid GitHub security products.
+
+### CURRENT toolset
 
 ```text
-secret scanning          : Gitleaks
-SAST                     : GitHub CodeQL for Python and JavaScript
-Python dependencies      : pip-audit
-Node dependencies        : npm audit / equivalent policy gate
-workflow hardening       : zizmor
-Dockerfile lint/security : Hadolint
+Gitleaks     secret detection
+Bandit       Python SAST
+Semgrep      local high-confidence SAST rules
+pip-audit    Python dependency vulnerabilities
+npm audit    Node dependency vulnerabilities
+actionlint   GitHub Actions syntax/semantic lint
+Zizmor       GitHub Actions security analysis
+ShellCheck   CI shell correctness
+Hadolint     Dockerfile lint/security
 ```
 
-Security reports that support SARIF should be uploaded to GitHub code scanning where the repository permissions permit it.
+Semgrep uses the committed `.github/ci/semgrep.yml` configuration. It must not download an uncontrolled `auto` ruleset at runtime.
 
-High/critical findings block admission unless an explicit KAORI governance exception exists.
+Required findings fail closed. Accepted risks require a reviewed, explicit suppression or governance exception; do not use blanket `|| true` or `continue-on-error` to manufacture a green result.
 
-## Gate 3 — Functional and integration tests
+Diagnostic reports are short-retention Actions artifacts and must not contain credentials.
 
-Repository authority:
+---
 
-```bash
-bash scripts/quality_gate.sh --tests
-```
+## Job: Functional and Integration Tests
 
-The test stack uses isolated containers:
+### Purpose
+
+Run the canonical KAORI behavioral test suite in an isolated service network.
+
+### Service topology
 
 ```text
-CI network
-├── KAORI CI toolchain
+CI Compose project
+├── ci toolchain
 ├── postgres:5432
 └── redis:6379
 ```
 
-No PostgreSQL or Redis host-port publication is required.
+PostgreSQL and Redis do not publish host ports.
 
-CI values use service DNS rather than `127.0.0.1`:
+The CI contract uses service DNS:
 
 ```text
-DATABASE_URL=postgresql://postgres:postgres@postgres:5432/kaori_test
 TEST_DATABASE_URL=postgresql://postgres:postgres@postgres:5432/kaori_test
+DATABASE_URL=postgresql://postgres:postgres@postgres:5432/kaori_test
 REDIS_URL=redis://redis:6379/0
 CELERY_BROKER_URL=redis://redis:6379/1
 CELERY_RESULT_BACKEND=redis://redis:6379/3
 ```
 
-## Gate 4 — Frontend reproducibility
+The canonical command is:
 
-Repository authority:
+```bash
+bash scripts/quality_gate.sh --tests
+```
+
+Cleanup runs even when tests fail.
+
+---
+
+## Job: Frontend Reproducibility
+
+### Purpose
+
+Prove `package-lock.json`, vendored assets, Tailwind output, frontend formatting, and committed frontend assets reproduce the expected canonical state.
+
+Command:
 
 ```bash
 bash scripts/quality_gate.sh --frontend
 ```
 
-The gate must prove that vendored frontend dependencies and generated frontend assets reproduce the committed canonical state.
-
-## Gate 5 — Production image validation
-
-Every `kaori/working` change builds the production Docker target.
-
-The branch image is a **validation artifact only**:
-
-```text
-kaori:ci-<commit-sha>
-```
-
-It is not pushed to Docker Hub and is not a release candidate.
-
-Validation includes:
-
-```text
-production Docker build
-container startup
-health/readiness
-container vulnerability scan
-runtime smoke
-```
-
-Recommended container scanner:
-
-```text
-Trivy
-```
-
-The local validation image is removed during CI cleanup.
-
-## Gate 6 — Runtime security / DAST
-
-DAST runs against an ephemeral CI environment, never against production.
-
-Initial runtime topology:
-
-```text
-isolated CI network
-
-postgres
-   │
-redis
-   │
-KAORI validation image
-   │
-OWASP ZAP
-```
-
-Initial scanner:
-
-```text
-OWASP ZAP
-```
-
-A baseline unauthenticated policy can be implemented first. Authenticated application flows may be added later once the test identity and anti-CSRF/login mechanics are explicitly modeled.
-
-The environment is destroyed after every run.
-
-## Gate 7 — Admission result
-
-A final required check summarizes the preceding gates.
-
-Conceptual result:
-
-```text
-KAORI CI Admission
-```
-
-It is green only when all required CI jobs are green.
-
-This is the required branch-protection signal for `main`.
+This is intentionally independent from the local watch process used by the Dev Container.
 
 ---
 
-# Planned CI Container Layout
+## Job: Production Image, Container Security, Runtime, and DAST
 
-The preferred implementation does not install application runtimes onto the host runner.
+### Purpose
 
-Planned repository structure:
+Validate the actual production Docker target, not only the source tree.
 
-```text
-.github/
-├── ci/
-│   ├── Dockerfile
-│   └── compose.yml
-└── workflows/
-    ├── quality.yml
-    └── release.yml
-```
-
-The CI Dockerfile owns the reproducible Python 3.12, Node.js 22, npm, build tooling, and native PDF/runtime libraries needed by KAORI gates.
-
-The Compose project owns the test network and transient services.
-
-Use a unique project name per Actions run:
+### Steps
 
 ```text
-kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}
+build production target
+        ↓
+kaori:ci-<full-sha>
+        ↓
+Trivy HIGH/CRITICAL scan
+        ↓
+fresh PostgreSQL migration
+        ↓
+start exact production image
+        ↓
+start Reports worker from exact image
+        ↓
+HTTP readiness
+        ↓
+Reports worker readiness
+        ↓
+OWASP ZAP baseline/passive scan
+        ↓
+collect diagnostics
+        ↓
+remove transient runtime/image
 ```
 
-This prevents network, volume, and container-name collisions if additional runners are introduced later.
+The validation image remains local to the runner and is not pushed to Docker Hub.
 
-Local Dev Container Compose and CI Compose remain separate concerns.
+### DAST policy
+
+Working/PR/main CI always includes the DAST family, but uses the bounded ZAP baseline/passive scan. Full active scanning is reserved for the release candidate.
+
+DAST targets only an ephemeral isolated KAORI runtime. It never targets production.
 
 ---
 
-# Planned `quality.yml`
+## Job: KAORI CI Admission
 
-The final YAML will preserve existing KAORI gate entry points and move execution to `kaori-ci`.
+This final status aggregates all required predecessor results.
 
-The following is a **design skeleton**, not the final executable workflow:
+It succeeds only when every required job reports `success`.
 
-```yaml
-name: KAORI CI
-
-on:
-  workflow_call:
-  push:
-    branches:
-      - kaori/working
-      - main
-  pull_request:
-    branches:
-      - main
-
-permissions:
-  contents: read
-  security-events: write
-
-concurrency:
-  group: kaori-ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
-
-jobs:
-  static-quality:
-    name: Static, Architecture, Governance
-    runs-on: [self-hosted, linux, x64, kaori-ci]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@<PINNED_COMMIT_SHA>
-
-      - name: Build CI toolchain
-        run: docker compose -f .github/ci/compose.yml build ci
-
-      - name: Run KAORI static gate
-        run: >
-          docker compose -f .github/ci/compose.yml
-          run --rm ci bash scripts/quality_gate.sh --static
-
-  static-security:
-    name: SAST, Secrets, Dependencies
-    needs: static-quality
-    runs-on: [self-hosted, linux, x64, kaori-ci]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@<PINNED_COMMIT_SHA>
-
-      # Gitleaks
-      # CodeQL / SAST
-      # pip-audit
-      # npm dependency audit
-      # actionlint / zizmor
-      # Hadolint
-
-  functional-tests:
-    name: Functional and Integration
-    needs: static-security
-    runs-on: [self-hosted, linux, x64, kaori-ci]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@<PINNED_COMMIT_SHA>
-
-      - name: Start test services
-        run: >
-          docker compose -f .github/ci/compose.yml
-          up -d postgres redis
-
-      - name: Run KAORI tests
-        run: >
-          docker compose -f .github/ci/compose.yml
-          run --rm ci bash scripts/quality_gate.sh --tests
-
-  frontend:
-    name: Frontend Reproducibility
-    needs: functional-tests
-    runs-on: [self-hosted, linux, x64, kaori-ci]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@<PINNED_COMMIT_SHA>
-
-      - name: Run frontend gate
-        run: >
-          docker compose -f .github/ci/compose.yml
-          run --rm ci bash scripts/quality_gate.sh --frontend
-
-  production-runtime:
-    name: Production Image, Runtime, DAST
-    needs: frontend
-    runs-on: [self-hosted, linux, x64, kaori-ci]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@<PINNED_COMMIT_SHA>
-
-      - name: Build validation image
-        run: >
-          docker build
-          --target production
-          --tag kaori:ci-${GITHUB_SHA}
-          .
-
-      # Trivy scan
-      # ephemeral production runtime
-      # health/readiness
-      # E2E smoke
-      # OWASP ZAP DAST
-
-      - name: Cleanup
-        if: always()
-        run: >
-          docker compose -f .github/ci/compose.yml
-          down --volumes --remove-orphans
-
-  admission:
-    name: KAORI CI Admission
-    if: always()
-    needs:
-      - static-quality
-      - static-security
-      - functional-tests
-      - frontend
-      - production-runtime
-    runs-on: [self-hosted, linux, x64, kaori-ci]
-    steps:
-      - name: Assert required gates
-        run: |
-          # Final implementation will fail unless every required job succeeded.
-          true
-```
-
-The final implementation must use a deterministic admission assertion rather than the placeholder shown above.
-
----
-
-# Main Branch Governance
-
-`main` is governed by repository rules.
-
-Recommended rules:
+Conceptually:
 
 ```text
-pull request required
-required status check: KAORI CI Admission
-merge commits allowed
-squash merge disabled for normal KAORI flow
-rebase merge disabled for normal KAORI flow
-force push blocked
-branch deletion blocked
+static-quality     success
+static-security    success
+functional-tests   success
+frontend           success
+production-runtime success
+        │
+        ▼
+KAORI CI Admission = success
 ```
 
-`kaori/working` should also block force-push and deletion while allowing authorized normal pushes.
+A failure, cancellation, or unexpected skip in a required predecessor fails admission.
 
-The working branch must survive PR merges.
+When paid private branch protection becomes available, `KAORI CI Admission` becomes the required server-side status check for `main`.
 
 ---
 
-# Changelog and Release Preparation
+# CI Toolchain and Compose Isolation
 
-`CHANGELOG.md` remains the source of truth for operator-visible release changes.
+Repository-owned CI infrastructure lives under:
 
-Normal development records applicable entries under:
+```text
+.github/ci/
+├── Dockerfile
+├── compose.yml
+├── requirements-security.txt
+├── semgrep.yml
+├── run-security-static.sh
+├── run-runtime-validation.sh
+├── run-zap-baseline.sh
+├── run-zap-full.sh
+├── run-release-candidate.sh
+└── release-lib.sh
+```
+
+Pinned baseline tools include:
+
+```text
+Python       3.12
+Node.js      22
+PostgreSQL   17
+Redis        8
+Gitleaks     8.30.1
+Bandit       1.9.4
+pip-audit    2.10.1
+Semgrep      1.174.0
+actionlint   1.7.12
+Zizmor      1.29.0
+Hadolint     2.15.1
+Trivy        0.74.0
+OWASP ZAP    2.17.0
+Cosign       3.1.3
+```
+
+The CI toolchain downloads standalone binaries from official upstream releases and validates provided checksums before installation.
+
+Use a unique Compose project name per workflow run/attempt so future additional runners do not collide on networks, volumes, or container names.
+
+---
+
+# Release Preparation
+
+`CHANGELOG.md` remains the release-history source of truth.
+
+Operator-visible changes should be accumulated under:
 
 ```text
 ## [Unreleased]
 ```
 
-When the user says:
+When the user requests a release, for example:
 
 ```text
 release 2.4.0
 ```
 
-the assistant creates a dedicated release-preparation branch:
+a dedicated branch is prepared:
 
 ```text
 release/v2.4.0
 ```
 
-The release-preparation PR contains only approved release metadata/evidence changes, including:
+The release-preparation PR finalizes:
 
 ```text
-APP_VERSION canonical update
-CHANGELOG [Unreleased] → [2.4.0] - YYYY-MM-DD
+canonical APP_VERSION = 2.4.0
+KAORI_IMAGE=${DOCKERHUB_IMAGE}:v2.4.0
+CHANGELOG [Unreleased] entries → dated [2.4.0] section
 docs/releases/KAORI_2_4_0.md
-release evidence adjustments required by governance
+release-governance evidence required by existing verifiers
 ```
 
-The release PR runs the normal full PR CI plus release-governance validation.
-
-The user explicitly approves the release-preparation merge.
+The release-preparation PR still runs the full CI cycle and remains subject to explicit user approval before merge.
 
 ---
 
-# Release Trigger
+# `release-image.yml`
 
-Release publication is **manual**.
+## Trigger
 
-The GitHub workflow is launched using:
-
-```text
-Release
-```
-
-with one required input:
-
-```text
-version = 2.4.0
-```
-
-The workflow must be dispatched from `main`.
-
-The workflow does not infer the release version from commit messages.
-
-The workflow does not automatically edit `CHANGELOG.md` or `APP_VERSION`.
-
-Those files must already have been reviewed and merged through the release-preparation PR.
-
----
-
-# Release Preflight
-
-Before privileged registry credentials are available, the release workflow validates:
-
-```text
-dispatch ref is main
-input matches strict SemVer
-exact dispatch SHA is locked
-APP_VERSION matches input
-CHANGELOG contains the dated release section
-docs/releases/KAORI_X_Y_Z.md exists
-Git tag vX.Y.Z does not conflict
-release governance verifier passes
-canonical final release verifier passes
-full reusable quality workflow passes
-```
-
-Canonical final release command remains:
-
-```bash
-python scripts/verify_final_release.py --all --runtime
-```
-
-A preflight failure creates:
-
-```text
-no SemVer image
-no Git tag
-no GitHub Release
-```
-
----
-
-# Build Once, Verify, Promote
-
-## Working branch
-
-Working CI builds a local validation image and discards it.
-
-It is never promoted to release.
-
-## Release candidate
-
-After release-preparation metadata is merged and release preflight passes, the release job enters:
-
-```text
-environment: release
-```
-
-The Environment approval boundary exposes Docker Hub credentials only to the privileged release job.
-
-The job locks:
-
-```text
-RELEASE_VERSION = X.Y.Z
-RELEASE_SHA     = exact workflow-dispatch Git SHA
-RELEASE_DATE    = UTC build timestamp
-```
-
-The production image is built **once** from that exact SHA and initially pushed using a commit tag:
-
-```text
-<image>:sha-<commit>
-```
-
-The registry digest is captured:
-
-```text
-sha256:<digest>
-```
-
-No subsequent release stage rebuilds the image.
-
-## Candidate validation
-
-The actual release candidate image is validated by digest.
-
-Required release-candidate evidence:
-
-```text
-container vulnerability scan
-SBOM
-build provenance
-image signing
-runtime startup
-health/readiness
-E2E smoke
-DAST
-fresh-database migration validation
-supported previous-release database upgrade validation
-final release governance
-```
-
-If candidate validation fails:
-
-```text
-no SemVer promotion
-no GitHub Release
-```
-
-The commit-tagged candidate may remain as non-release traceability evidence until retention cleanup.
-
-## Promotion
-
-After all candidate gates succeed:
-
-```text
-<image>:sha-<commit>
-<image>:X.Y.Z
-<image>:X.Y
-```
-
-must all resolve to:
-
-```text
-sha256:<same digest>
-```
-
-Promotion is a manifest/digest retag operation, not a Docker rebuild.
-
-The deployment contract should prefer:
-
-```text
-<image>@sha256:<digest>
-```
-
-for immutable production rollout and rollback.
-
----
-
-# Release Manifest
-
-Every release produces:
-
-```text
-kaori-release-manifest.json
-```
-
-Conceptual content:
-
-```json
-{
-  "version": "2.4.0",
-  "git_tag": "v2.4.0",
-  "git_sha": "987654321abcdef",
-  "image": "<namespace>/kaori:2.4.0",
-  "digest": "sha256:...",
-  "build_date": "2026-08-26T00:00:00Z",
-  "sbom": true,
-  "provenance": true,
-  "signed": true
-}
-```
-
-The manifest is attached to the GitHub Release.
-
----
-
-# Planned `release.yml`
-
-The following is a **design skeleton**, not the final executable workflow:
+Release publication is manual:
 
 ```yaml
-name: Release KAORI
-
 on:
   workflow_dispatch:
     inputs:
@@ -869,350 +503,498 @@ on:
         description: Semantic Version, for example 2.4.0
         required: true
         type: string
+```
 
-permissions:
-  contents: read
+The user supplies only the version. Image name, SHA, changelog path, release-note path, and tags are derived from repository state.
 
-concurrency:
-  group: kaori-release
-  cancel-in-progress: false
+The workflow must be dispatched from `main`.
 
-jobs:
-  quality:
-    uses: ./.github/workflows/quality.yml
+---
 
-  preflight:
-    name: Release Preflight
-    needs: quality
-    runs-on: [self-hosted, linux, x64, kaori-ci]
-    outputs:
-      release_sha: ${{ steps.release.outputs.sha }}
-      release_version: ${{ steps.release.outputs.version }}
-    steps:
-      - name: Checkout exact dispatch commit
-        uses: actions/checkout@<PINNED_COMMIT_SHA>
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 0
+## Release stage 1: full fresh CI
 
-      - name: Validate release identity
-        id: release
-        shell: bash
-        run: |
-          # Validate refs/heads/main.
-          # Validate strict SemVer.
-          # Validate APP_VERSION.
-          # Validate CHANGELOG release section.
-          # Validate docs/releases/KAORI_X_Y_Z.md.
-          # Validate vX.Y.Z tag conflict rules.
-          # Emit exact release SHA and version.
+The release workflow reuses `quality.yml`.
 
-      - name: Run canonical final release gate
-        run: >
-          docker compose -f .github/ci/compose.yml
-          run --rm ci
-          python scripts/verify_final_release.py --all --runtime
+A previously green PR is not accepted as sufficient release evidence. The exact release-dispatch SHA receives a fresh full CI result.
 
-  publish:
-    name: Build, Verify, Promote, Release
-    needs: preflight
+---
 
-    environment:
-      name: release
+## Release stage 2: preflight without publication credentials
 
-    runs-on: [self-hosted, linux, x64, kaori-ci]
+Preflight validates:
 
-    permissions:
-      contents: write
-      id-token: write
-      security-events: write
+```text
+workflow was dispatched from main
+version is strict MAJOR.MINOR.PATCH
+release SHA is exact and locked
+APP_VERSION matches requested version
+KAORI_IMAGE=${DOCKERHUB_IMAGE}:vX.Y.Z
+CHANGELOG contains dated release section
+matching docs/releases/KAORI_X_Y_Z.md exists
+Git tag conflict rules are satisfied
+verify_release_governance.py passes
+verify_final_release.py --all --runtime passes
+Reports worker is live for runtime release verification
+```
 
-    steps:
-      - name: Checkout exact approved SHA
-        uses: actions/checkout@<PINNED_COMMIT_SHA>
-        with:
-          ref: ${{ needs.preflight.outputs.release_sha }}
-          fetch-depth: 0
+If preflight fails:
 
-      - name: Log in to Docker Hub
-        # Final implementation uses the pinned official Docker login action.
-        # Credentials:
-        #   secrets.DOCKERHUB_USERNAME
-        #   secrets.DOCKERHUB_TOKEN
-
-      - name: Build and push candidate exactly once
-        # Build production target.
-        # Inject APP_VERSION / APP_BUILD_SHA / APP_BUILD_DATE.
-        # Push only sha-<commit> initially.
-        # Enable SBOM and provenance.
-        # Capture immutable registry digest.
-
-      - name: Scan exact candidate digest
-        # Trivy high/critical policy.
-
-      - name: Validate exact candidate runtime
-        # Pull/run the candidate by digest.
-        # PostgreSQL + Redis isolated services.
-        # health/readiness + E2E + DAST.
-        # migration upgrade evidence.
-
-      - name: Sign candidate digest
-        # Cosign keyless using GitHub OIDC.
-
-      - name: Create annotated release tag
-        # Create vX.Y.Z at the exact release SHA.
-        # If it already exists at the same SHA during a safe retry, continue.
-        # If it points elsewhere, fail closed.
-
-      - name: Promote same digest
-        # sha-<commit> → X.Y.Z and X.Y
-        # No rebuild.
-
-      - name: Verify promoted tags
-        # Assert every release tag resolves to the captured digest.
-
-      - name: Generate release manifest
-        # kaori-release-manifest.json
-
-      - name: Publish GitHub Release
-        # Release title: KAORI X.Y.Z
-        # Release body from approved release evidence.
-        # Attach kaori-release-manifest.json.
+```text
+no Docker Hub publication
+no SemVer registry tag
+no Git tag
+no GitHub Release
 ```
 
 ---
 
-# Publication Failure and Retry Contract
+# CURRENT — GitHub Organization Free Release Boundary
 
-Publication must be idempotent.
+A private repository under GitHub Organization Free cannot use the paid private-environment protection model we ultimately want. Therefore the current release boundary is implemented through process isolation and job-level least privilege.
 
-A retry may continue an incomplete release only if all existing evidence matches the exact approved release identity.
-
-Examples:
+Repository Actions secrets:
 
 ```text
-existing v2.4.0 tag at expected SHA
-    → safe to continue
-
-existing v2.4.0 tag at different SHA
-    → hard failure
-
-existing 2.4.0 image tag at expected digest
-    → safe to continue
-
-existing 2.4.0 image tag at different digest
-    → hard failure
-
-existing GitHub Release with conflicting identity
-    → hard failure
+DOCKERHUB_USERNAME
+DOCKERHUB_TOKEN
 ```
 
-Never overwrite or move an already published release identity to conceal a failed release.
-
-A real source correction uses the next Semantic Version, for example:
+Repository Actions variable:
 
 ```text
-2.4.0 → 2.4.1
+DOCKERHUB_IMAGE
+```
+
+`DOCKERHUB_TOKEN` must be a scoped Docker Hub access token, not the Docker Hub account password.
+
+Only the release publication job references these credentials. `quality.yml` does not reference them.
+
+The built-in GitHub token is used for Git tag/GitHub Release publication with `contents: write` granted only to the release publication job.
+
+Keyless signing uses GitHub OIDC with `id-token: write`; no long-lived Cosign private key is stored.
+
+This is a logical release boundary, not a protected GitHub Environment boundary.
+
+---
+
+# Build Once → Verify → Promote Same Digest
+
+## Working CI
+
+Working CI builds:
+
+```text
+kaori:ci-<sha>
+```
+
+It is scanned, run, DAST-tested, and removed locally. It is not a release artifact.
+
+## Release candidate
+
+After release metadata is approved and preflight passes, the exact locked SHA is built once and pushed initially as:
+
+```text
+${DOCKERHUB_IMAGE}:sha-<short-sha>
+```
+
+BuildKit records:
+
+```text
+org.opencontainers.image.version
+org.opencontainers.image.revision
+org.opencontainers.image.created
+SBOM
+provenance
+```
+
+The registry returns the immutable digest:
+
+```text
+sha256:<digest>
+```
+
+After that point no release stage may rebuild the application image.
+
+## Exact candidate validation
+
+Every release-candidate validation targets:
+
+```text
+${DOCKERHUB_IMAGE}@sha256:<digest>
+```
+
+Required evidence:
+
+```text
+OCI identity labels
+Trivy HIGH/CRITICAL scan
+fresh database migration
+actual production runtime startup
+actual production Reports worker readiness
+previous supported release DB → current migration path
+full active OWASP ZAP scan
+Cosign keyless signature
+signature verification
+```
+
+If any required evidence fails, there is no SemVer promotion and no GitHub Release.
+
+## Promotion
+
+After candidate verification:
+
+```text
+:vX.Y.Z
+:vX.Y
+:sha-<short-sha>
+```
+
+must all resolve to the same captured digest.
+
+Promotion is performed with registry manifest/digest operations. It is not a new `docker build`.
+
+The `v` prefix is retained because current KAORI release governance expects the production image example to use `:v<APP_VERSION>`.
+
+---
+
+# Release Failure and Retry Contract
+
+Release publication is idempotent and fails closed.
+
+```text
+candidate sha tag absent
+→ build once
+
+candidate sha tag exists with matching OCI version/SHA labels
+→ reuse exact candidate
+
+candidate sha tag exists with conflicting identity
+→ hard fail
+
+vX.Y.Z Git tag absent
+→ create annotated tag after candidate verification
+
+vX.Y.Z Git tag exists at same SHA
+→ safe retry
+
+vX.Y.Z Git tag exists at different SHA
+→ hard fail
+
+vX.Y.Z registry tag absent
+→ promote
+
+vX.Y.Z registry tag exists at same digest
+→ safe retry
+
+vX.Y.Z registry tag exists at different digest
+→ hard fail
+```
+
+Never move or overwrite an already published release identity to hide a failure. A real source correction uses the next SemVer release, for example `2.4.1`.
+
+---
+
+# Release Manifest
+
+Every successful release creates:
+
+```text
+kaori-release-manifest.json
+```
+
+Example:
+
+```json
+{
+  "version": "2.4.0",
+  "git_tag": "v2.4.0",
+  "git_sha": "987654321abcdef987654321abcdef987654321a",
+  "image": "namespace/kaori:v2.4.0",
+  "immutable_image": "namespace/kaori@sha256:...",
+  "digest": "sha256:...",
+  "promoted_tags": [
+    "v2.4.0",
+    "v2.4",
+    "sha-987654321abc"
+  ],
+  "build_date": "2026-08-26T00:00:00Z",
+  "sbom": true,
+  "provenance": true,
+  "signed": true
+}
+```
+
+The manifest must never include credentials, connection strings, internal endpoints, or secret values.
+
+It is attached to the GitHub Release and later becomes the input contract for CD deployment.
+
+---
+
+# GitHub Release
+
+The final publication step creates:
+
+```text
+GitHub Release: KAORI X.Y.Z
+Git tag       : vX.Y.Z
+Docker image  : ${DOCKERHUB_IMAGE}:vX.Y.Z
+Digest        : sha256:<digest>
+```
+
+Release notes are derived from the reviewed release evidence already committed to the repository, not from an uncontrolled commit-message dump.
+
+A release is considered ready to deploy only after image promotion, digest verification, signing, manifest generation, and GitHub Release publication succeed.
+
+---
+
+# GitHub Organization Free Governance
+
+The current Free/private baseline cannot enforce the full desired private-repository ruleset on the server side.
+
+Therefore current governance is procedural plus CI evidence:
+
+```text
+normal work goes through kaori/working
+full CI must be green
+local Dev Container review is required
+PR is created only after explicit approval
+merge occurs only after explicit approval
+no normal direct-push workflow to main
+```
+
+CI can detect or report governance drift after an event, but Free-plan CI cannot retroactively prevent a push that GitHub itself did not protect.
+
+Do not make the repository public merely to obtain Free-plan public-repository rulesets.
+
+---
+
+# PAID ENHANCEMENT — GitHub Team
+
+When the Organization upgrades to GitHub Team, keep the same source-control and CI architecture and add native server-side enforcement.
+
+Recommended `main` ruleset:
+
+```text
+require pull request
+require KAORI CI Admission
+block force push
+block deletion
+require current integration status before merge
+preserve merge-commit workflow
+```
+
+Recommended `kaori/working` ruleset:
+
+```text
+block force push
+block deletion
+```
+
+Recommended release-tag ruleset:
+
+```text
+target v*
+restrict updates
+restrict deletion
+```
+
+Move Docker Hub publication credentials from repository secrets to the private `release` Environment when the selected paid plan supports the required private-environment secret model.
+
+Restrict release deployment branches to `main`.
+
+No application-image rebuild or CI architecture change is required for this upgrade.
+
+---
+
+# PAID ENHANCEMENT — GitHub Code Security
+
+When GitHub Code Security is licensed for the private repository, add native CodeQL and GitHub code-scanning integration.
+
+Target languages:
+
+```text
+Python
+JavaScript
+```
+
+CodeQL is additive. Existing Bandit/Semgrep/Trivy/KAORI verifiers remain useful defense layers and should not be removed merely because CodeQL becomes available.
+
+Where supported, upload SARIF from compatible scanners into the native Security UI while keeping raw diagnostic artifacts available for failed CI analysis.
+
+---
+
+# PAID ENHANCEMENT — GitHub Secret Protection
+
+When GitHub Secret Protection is licensed, add:
+
+```text
+native secret scanning
+push protection
+secret review/alert workflow
+organization security visibility
+```
+
+Gitleaks can remain as an independent CI detector and historical scan layer.
+
+---
+
+# PAID ENHANCEMENT — GitHub Enterprise
+
+When stronger enterprise deployment governance is justified, add protected private deployment approval capabilities such as:
+
+```text
+required deployment reviewers
+prevent self-review where required
+stronger environment governance
+organization-wide audit/security policy
+advanced runner/repository governance
+```
+
+The `release` and future `production` boundaries should become GitHub-enforced rather than only process-enforced.
+
+---
+
+# FUTURE CD
+
+Production deployment is not part of the current implementation.
+
+When CD is requested, add a separate deployment workflow rather than extending release image construction into a server-specific script.
+
+The future deployment input is the immutable release manifest/digest:
+
+```text
+GitHub Release
+      ↓
+kaori-release-manifest.json
+      ↓
+image@sha256:<digest>
+      ↓
+staging deployment
+      ↓
+migration + health + smoke
+      ↓
+approval boundary
+      ↓
+production deployment
+      ↓
+post-deploy verification
+      ↓
+rollback evidence
+```
+
+The deployment workflow must never rebuild the image.
+
+Depending on the final application infrastructure, the CD transport may later use Docker Compose over a controlled remote executor, Kubernetes/Helm, or another approved deployment mechanism. That decision is intentionally deferred until the application-server architecture is known.
+
+Future CD should define separate `staging` and `production` governance boundaries and consume the same image digest already verified by the release pipeline.
+
+---
+
+# Required GitHub Repository Configuration — Current Free Baseline
+
+Before enabling release publication, configure repository Actions values:
+
+Secrets:
+
+```text
+DOCKERHUB_USERNAME
+DOCKERHUB_TOKEN
+```
+
+Variable:
+
+```text
+DOCKERHUB_IMAGE
+```
+
+Do not paste these values into workflow files, documentation, issue text, PR comments, or chat transcripts.
+
+The workflow references secret names only.
+
+---
+
+# Rollout Order
+
+Use this order so `main` is not made red by infrastructure that has not been validated yet:
+
+```text
+1. bootstrap runner host
+2. manually register kaori-ci-01
+3. verify runner Online / Idle
+4. configure Docker Hub repository secret names and variable
+5. apply CI/CD patch locally
+6. run local shell/YAML/Compose/toolchain checks
+7. push controlled infrastructure commit when explicitly approved
+8. establish remote kaori/working
+9. run first full working-branch CI
+10. remediate any real baseline quality/security findings
+11. validate laptop sync + Dev Container review
+12. create controlled PR to main
+13. validate full PR CI
+14. merge only with explicit approval
+15. test release workflow with an explicitly approved release-preparation cycle
+16. stabilize release publication before designing production CD
 ```
 
 ---
 
-# Security Boundary
-
-Working/PR CI:
+# Failure Policy
 
 ```text
-no Docker Hub release credentials
-no release publication permission
-no persistent signing key
-```
+static failure
+→ do not spend runner time on later gates
 
-Release job:
+security failure
+→ block admission; investigate or govern explicitly
 
-```text
-GitHub Environment: release
-required human approval
-Docker Hub token only where explicitly referenced
-contents: write only for publication job
-id-token: write for keyless signing
-```
+functional/frontend failure
+→ block image validation
 
-Secrets must never be printed into logs, embedded into images, included in SARIF/reports, or written to release artifacts.
+production-image/runtime/DAST failure
+→ block admission
 
-Third-party Actions must be reviewed and pinned to immutable commit SHAs.
+PR admission failure
+→ do not merge
 
----
+release preflight failure
+→ no publication side effect
 
-# Artifact Retention
+candidate build failure
+→ no release identity
 
-Recommended baseline:
+candidate scan/runtime/migration/DAST failure
+→ no SemVer promotion
 
-```text
-working/PR diagnostic artifacts : short retention
-main CI evidence                : medium retention
-release manifest                : GitHub Release attachment
-release image                   : immutable Docker Hub digest
-SBOM/provenance/signature       : attached to or associated with the immutable image digest
-```
+signing failure
+→ no promotion
 
-Candidate commit tags may have a defined cleanup policy later, but automated destructive registry cleanup is not part of the initial implementation.
+tag/digest identity conflict
+→ hard fail
 
----
-
-# Initial Rollout Order
-
-1. Prepare the self-hosted runner host.
-2. Register `kaori-ci-01` and verify `Online / Idle`.
-3. Create GitHub Environment `release`.
-4. Add only the required Docker Hub secrets/variables once the final workflow names are fixed.
-5. Introduce the repository-owned CI Docker/Compose environment.
-6. Migrate `quality.yml` to the `kaori-ci` runner.
-7. Validate a controlled working-branch CI run.
-8. Establish/protect the long-lived `kaori/working` branch.
-9. Validate laptop sync and Dev Container review flow.
-10. Validate PR integration CI and merge-commit resynchronization.
-11. Implement the manual `release.yml`.
-12. Test release flow with a non-production trial version/tag policy before the first production release.
-13. Only after release publication is stable, design deployment-to-staging/production automation.
-
----
-
-# Non-Goals for the Initial Rollout
-
-The first rollout does not:
-
-```text
-auto-merge PRs
-auto-create PRs
-infer SemVer from commit messages
-publish every working-branch image
-use release credentials in branch CI
-deploy directly to production
-depend on latest image tags
-rebuild an image after release validation
-skip full CI for small changes
+GitHub Release transient publication failure after valid tag/digest
+→ retry idempotently; do not rebuild
 ```
 
 ---
 
-# Canonical Lifecycle Summary
+# Canonical Principle
 
 ```text
-                           DAILY DEVELOPMENT
+HOST
+= executor only
 
-                                 main
-                                  │
-                                  ▼
-                           kaori/working
-                                  │
-                         assistant implements
-                                  │
-                                  ▼
-                         FULL WORKING CI
-                                  │
-                                GREEN
-                                  │
-                     ┌────────────┴────────────┐
-                     ▼                         ▼
-                 GitHub                  laptop sync
-                                               │
-                                               ▼
-                                         Dev Container
-                                               │
-                                               ▼
-                                         user validates
-                                               │
-                                          "lanjut PR"
-                                               │
-                                               ▼
-                                           PR → main
-                                               │
-                                               ▼
-                                      merge-result full CI
-                                               │
-                                             GREEN
-                                               │
-                                           user "merge"
-                                               │
-                                               ▼
-                                         merge commit
-                                               │
-                                               ▼
-                                              main
-                                               │
-                                               ▼
-                                  fast-forward kaori/working
+CI CONTAINERS
+= deterministic quality/security/runtime environment
 
+REPOSITORY
+= application dependency/version/governance source of truth
 
-                              RELEASE LIFECYCLE
+RELEASE CANDIDATE
+= built exactly once from exact approved SHA
 
-                                              main
-                                               │
-                                      user: release X.Y.Z
-                                               │
-                                               ▼
-                                      release/vX.Y.Z
-                                               │
-                                    release metadata PR
-                                               │
-                                      full CI + governance
-                                               │
-                                             GREEN
-                                               │
-                                         user approves
-                                               │
-                                               ▼
-                                              main
-                                               │
-                                      manual Release X.Y.Z
-                                               │
-                                               ▼
-                                      exact SHA locked
-                                               │
-                                      full release preflight
-                                               │
-                                               ▼
-                                   GitHub Environment: release
-                                               │
-                                      required human approval
-                                               │
-                                               ▼
-                                      BUILD EXACTLY ONCE
-                                               │
-                                               ▼
-                                  image:sha-<commit> + digest
-                                               │
-                          ┌────────────────────┼────────────────────┐
-                          ▼                    ▼                    ▼
-                        scan                 SBOM              provenance
-                          │
-                        signing
-                          │
-                   runtime / E2E / DAST
-                          │
-                  migration upgrade evidence
-                          │
-                    FINAL RELEASE GATE
-                          │
-                        GREEN
-                          │
-                    annotated vX.Y.Z
-                          │
-                  PROMOTE SAME DIGEST
-                          │
-                 ┌────────┼─────────┐
-                 ▼        ▼         ▼
-               X.Y.Z     X.Y   sha-<commit>
-                 └────────┼─────────┘
-                          ▼
-                    same sha256
-                          │
-                          ▼
-                kaori-release-manifest.json
-                          │
-                          ▼
-                   GitHub Release X.Y.Z
-                          │
-                          ▼
-                     READY TO DEPLOY
+PROMOTION
+= aliases the same immutable digest
+
+FUTURE DEPLOYMENT
+= consumes the same immutable digest without rebuilding
 ```

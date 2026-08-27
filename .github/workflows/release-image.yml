@@ -1,65 +1,300 @@
-name: Release Production Image
+name: Release KAORI
 
 on:
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
+    inputs:
+      version:
+        description: Semantic Version, for example 2.4.0
+        required: true
+        type: string
 
 permissions:
   contents: read
-  packages: write
 
 concurrency:
-  group: release-image-${{ github.ref }}
+  group: kaori-release
   cancel-in-progress: false
 
 jobs:
   quality:
+    name: Full KAORI CI
     uses: ./.github/workflows/quality.yml
 
-  build-and-push:
+  preflight:
+    name: Release Preflight
     needs: quality
-    runs-on: ubuntu-latest
-
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    timeout-minutes: 120
+    env:
+      DOCKERHUB_IMAGE: ${{ vars.DOCKERHUB_IMAGE }}
+    outputs:
+      release_sha: ${{ steps.identity.outputs.release_sha }}
+      release_version: ${{ steps.identity.outputs.release_version }}
     steps:
-      - name: Check Out Repository
-        uses: actions/checkout@v6
+      - name: Check Out Exact Dispatch Commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
 
-      - name: Resolve Lowercase GHCR Image Name
-        id: image
+      - name: Require Main Branch Dispatch
         shell: bash
-        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+        run: |
+          [[ "$GITHUB_REF" == "refs/heads/main" ]] || {
+            printf 'Release workflow must be dispatched from main, got %s\n' "$GITHUB_REF" >&2
+            exit 1
+          }
 
-      - name: Set Up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+      - name: Build CI Toolchain
+        run: docker build --file .github/ci/Dockerfile --tag "kaori-ci-toolchain:${GITHUB_SHA}" .
 
-      - name: Log In to GHCR
-        uses: docker/login-action@v4
+      - name: Validate Release Identity
+        shell: bash
+        run: |
+          : "${DOCKERHUB_IMAGE:?Missing repository variable DOCKERHUB_IMAGE}"
+          bash .github/ci/release-lib.sh preflight "${{ inputs.version }}" "$GITHUB_SHA" "$DOCKERHUB_IMAGE"
+
+      - name: Prepare Final Release Runtime
+        shell: bash
+        run: |
+          echo "CI_UID=$(id -u)" >> "$GITHUB_ENV"
+          echo "CI_GID=$(id -g)" >> "$GITHUB_ENV"
+          echo "KAORI_CI_TOOLCHAIN_IMAGE=kaori-ci-toolchain:${GITHUB_SHA}" >> "$GITHUB_ENV"
+          echo "COMPOSE_PROJECT_NAME=kaori-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-preflight" >> "$GITHUB_ENV"
+
+      - name: Start Final Release Services
+        run: docker compose --file .github/ci/compose.yml up -d postgres redis ci-reports-worker
+
+      - name: Wait for Reports Worker
+        shell: bash
+        run: |
+          for _ in $(seq 1 30); do
+            if docker compose --file .github/ci/compose.yml run --rm ci \
+              python scripts/verify_reports_worker_runtime.py --timeout 1 >/dev/null 2>&1
+            then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose --file .github/ci/compose.yml logs --no-color ci-reports-worker || true
+          printf 'KAORI source Reports worker did not become ready within 60 seconds\n' >&2
+          exit 1
+
+      - name: Run Canonical Final Release Gate
+        run: >-
+          docker compose --file .github/ci/compose.yml
+          run --rm ci python scripts/verify_final_release.py --all --runtime
+
+      - name: Emit Locked Release Identity
+        id: identity
+        shell: bash
+        run: |
+          echo "release_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          echo "release_version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+
+      - name: Cleanup Preflight Services
+        if: ${{ always() }}
+        run: docker compose --file .github/ci/compose.yml down --volumes --remove-orphans
+
+  publish:
+    name: Build Once, Verify, Promote, and Publish
+    needs: preflight
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    timeout-minutes: 180
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      RELEASE_VERSION: ${{ needs.preflight.outputs.release_version }}
+      RELEASE_SHA: ${{ needs.preflight.outputs.release_sha }}
+      DOCKERHUB_IMAGE: ${{ vars.DOCKERHUB_IMAGE }}
+      COSIGN_IMAGE: ghcr.io/sigstore/cosign/cosign:v3.1.3
+    steps:
+      - name: Check Out Exact Approved SHA
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ needs.preflight.outputs.release_sha }}
+          fetch-depth: 0
 
-      - name: Generate Image Metadata
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ steps.image.outputs.name }}
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix=sha-
+      - name: Validate Publication Variables
+        shell: bash
+        run: |
+          : "${DOCKERHUB_IMAGE:?Missing repository variable DOCKERHUB_IMAGE}"
+          [[ "$GITHUB_SHA" == "$RELEASE_SHA" ]] || {
+            printf 'Checked-out SHA %s differs from locked release SHA %s\n' "$GITHUB_SHA" "$RELEASE_SHA" >&2
+            exit 1
+          }
 
-      - name: Build and Push Production Image
-        uses: docker/build-push-action@v7
+      - name: Build CI Toolchain
+        run: docker build --file .github/ci/Dockerfile --tag "kaori-ci-toolchain:${RELEASE_SHA}" .
+
+      - name: Log In to Docker Hub
+        shell: bash
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          : "${DOCKERHUB_USERNAME:?Missing repository secret DOCKERHUB_USERNAME}"
+          : "${DOCKERHUB_TOKEN:?Missing repository secret DOCKERHUB_TOKEN}"
+          printf '%s' "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+
+      - name: Resolve or Build Candidate Exactly Once
+        id: candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          short_sha="${RELEASE_SHA:0:12}"
+          candidate_tag="${DOCKERHUB_IMAGE}:sha-${short_sha}"
+          mkdir -p tmp/ci-artifacts/release
+
+          if docker buildx imagetools inspect "$candidate_tag" >/dev/null 2>&1; then
+            digest="$(bash .github/ci/release-lib.sh digest "$candidate_tag")"
+            digest_ref="${DOCKERHUB_IMAGE}@${digest}"
+            bash .github/ci/release-lib.sh verify-labels "$digest_ref" "$RELEASE_VERSION" "$RELEASE_SHA"
+            build_date="$(bash .github/ci/release-lib.sh build-date "$digest_ref")"
+            printf 'Reusing verified candidate %s at %s\n' "$candidate_tag" "$digest"
+          else
+            build_date="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            docker buildx build \
+              --target production \
+              --push \
+              --provenance=mode=max \
+              --sbom=true \
+              --label "org.opencontainers.image.version=${RELEASE_VERSION}" \
+              --label "org.opencontainers.image.revision=${RELEASE_SHA}" \
+              --label "org.opencontainers.image.created=${build_date}" \
+              --tag "$candidate_tag" \
+              --metadata-file tmp/ci-artifacts/release/build-metadata.json \
+              .
+            digest="$(jq -r '."containerimage.digest"' tmp/ci-artifacts/release/build-metadata.json)"
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+              printf 'Buildx did not return a valid immutable digest: %s\n' "$digest" >&2
+              exit 1
+            }
+          fi
+
+          echo "candidate_tag=$candidate_tag" >> "$GITHUB_OUTPUT"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "build_date=$build_date" >> "$GITHUB_OUTPUT"
+
+      - name: Verify Exact Candidate Identity
+        run: >-
+          bash .github/ci/release-lib.sh verify-labels
+          "${DOCKERHUB_IMAGE}@${{ steps.candidate.outputs.digest }}"
+          "$RELEASE_VERSION"
+          "$RELEASE_SHA"
+
+      - name: Scan Exact Candidate Digest
+        shell: bash
+        run: |
+          digest_ref="${DOCKERHUB_IMAGE}@${{ steps.candidate.outputs.digest }}"
+          docker run --rm \
+            --volume "$HOME/.docker:/root/.docker:ro" \
+            "kaori-ci-toolchain:${RELEASE_SHA}" \
+            trivy image \
+              --exit-code 1 \
+              --ignore-unfixed \
+              --severity HIGH,CRITICAL \
+              --scanners vuln \
+              "$digest_ref"
+
+      - name: Validate Exact Candidate Runtime, Migration, and DAST
+        shell: bash
+        run: |
+          export CI_UID="$(id -u)"
+          export CI_GID="$(id -g)"
+          export KAORI_CI_TOOLCHAIN_IMAGE="kaori-ci-toolchain:${RELEASE_SHA}"
+          export COMPOSE_PROJECT_NAME="kaori-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-candidate"
+          bash .github/ci/run-release-candidate.sh \
+            "${DOCKERHUB_IMAGE}@${{ steps.candidate.outputs.digest }}" \
+            "$RELEASE_VERSION"
+
+      - name: Sign Exact Candidate Digest with GitHub OIDC
+        shell: bash
+        run: |
+          docker run --rm \
+            --env ACTIONS_ID_TOKEN_REQUEST_TOKEN \
+            --env ACTIONS_ID_TOKEN_REQUEST_URL \
+            --volume "$HOME/.docker:/root/.docker:ro" \
+            "$COSIGN_IMAGE" \
+            sign --yes "${DOCKERHUB_IMAGE}@${{ steps.candidate.outputs.digest }}"
+
+      - name: Verify Candidate Signature
+        shell: bash
+        run: |
+          docker run --rm \
+            --volume "$HOME/.docker:/root/.docker:ro" \
+            "$COSIGN_IMAGE" \
+            verify \
+              --certificate-identity "https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release-image.yml@refs/heads/main" \
+              --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+              "${DOCKERHUB_IMAGE}@${{ steps.candidate.outputs.digest }}"
+
+      - name: Create or Verify Annotated Release Tag
+        run: bash .github/ci/release-lib.sh tag "$RELEASE_VERSION" "$RELEASE_SHA"
+
+      - name: Protect Existing SemVer Registry Tags
+        shell: bash
+        run: |
+          expected="${{ steps.candidate.outputs.digest }}"
+          major_minor="${RELEASE_VERSION%.*}"
+          bash .github/ci/release-lib.sh registry-tag "${DOCKERHUB_IMAGE}:v${RELEASE_VERSION}" "$expected"
+          bash .github/ci/release-lib.sh registry-tag "${DOCKERHUB_IMAGE}:v${major_minor}" "$expected"
+
+      - name: Promote Same Immutable Digest
+        shell: bash
+        run: |
+          major_minor="${RELEASE_VERSION%.*}"
+          source_ref="${DOCKERHUB_IMAGE}@${{ steps.candidate.outputs.digest }}"
+          docker buildx imagetools create \
+            --tag "${DOCKERHUB_IMAGE}:v${RELEASE_VERSION}" \
+            --tag "${DOCKERHUB_IMAGE}:v${major_minor}" \
+            "$source_ref"
+
+      - name: Verify Promoted Digest Identity
+        shell: bash
+        run: |
+          expected="${{ steps.candidate.outputs.digest }}"
+          major_minor="${RELEASE_VERSION%.*}"
+          short_sha="${RELEASE_SHA:0:12}"
+          for tag in "v${RELEASE_VERSION}" "v${major_minor}" "sha-$short_sha"; do
+            actual="$(bash .github/ci/release-lib.sh digest "${DOCKERHUB_IMAGE}:${tag}")"
+            printf '%s -> %s\n' "$tag" "$actual"
+            [[ "$actual" == "$expected" ]] || {
+              printf 'Digest mismatch for %s: expected %s, got %s\n' "$tag" "$expected" "$actual" >&2
+              exit 1
+            }
+          done
+
+      - name: Generate Release Manifest
+        run: >-
+          bash .github/ci/release-lib.sh manifest
+          "$RELEASE_VERSION"
+          "$RELEASE_SHA"
+          "$DOCKERHUB_IMAGE"
+          "${{ steps.candidate.outputs.digest }}"
+          "${{ steps.candidate.outputs.build_date }}"
+          tmp/ci-artifacts/release/kaori-release-manifest.json
+
+      - name: Publish GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          bash .github/ci/release-lib.sh github-release
+          "$RELEASE_VERSION"
+          tmp/ci-artifacts/release/kaori-release-manifest.json
+
+      - name: Upload Release Diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          context: .
-          target: production
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          provenance: mode=max
-          sbom: true
+          name: release-${{ inputs.version }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            tmp/ci-artifacts/release
+            tmp/ci-artifacts/zap
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Log Out from Docker Hub
+        if: ${{ always() }}
+        run: docker logout
