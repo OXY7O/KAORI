@@ -168,8 +168,8 @@ def test_analytics_overview_uses_management_summary_and_overview_limits() -> Non
     assert 'highest available shared-resource signal' in summary
     assert 'local storage risk item' in summary
     assert 'What Management Should Know' in rendered_html
-    assert 'Reference codes keep long technical identities readable' in rendered_html
-    assert 'The register contains only fixed decision fields' in rendered_html
+    assert 'Concise decisions stay in-table; full context remains by reference.' in rendered_html
+    assert 'Stable reference codes map to the full technical identities shown below.' in rendered_html
 
 
 def test_analytics_overview_title_case_and_section_title_contract() -> None:
@@ -179,8 +179,9 @@ def test_analytics_overview_title_case_and_section_title_contract() -> None:
         'What Management Should Know',
         'Figure 1 - Memory Demand Forecast',
         'Figure 2 - Leading Consumer Signals',
-        'Figure 3 - Report Status Distribution',
-        'Figure 4 - Freshness Over Time',
+        'Figure 3 - Alert Profile',
+        'Figure 4 - Report Status Distribution',
+        'Figure 5 - Freshness Over Time',
         'Data Sources and Coverage',
         'Known Limitations and Operational Use',
     ):
@@ -342,7 +343,8 @@ def test_v27_table_reference_contract_keeps_description_out_of_registers() -> No
     assert register.index(recommendation_header) < register.index(owner_header)
     assert '<th>Interpretation</th>' not in template_source
     assert 'Status Register' not in rendered_html
-    assert 'status-legend-grid' in template_source
+    assert 'status-legend-grid' not in template_source
+    assert 'ui.status_language(p.methodology.status_language)' in template_source
     assert 'class="axis-warning"' in rendered_html
     assert 'class="axis-critical"' in rendered_html
 
@@ -397,11 +399,12 @@ def test_analytics_overview_v29_precision_layout_contract() -> None:
     assert '.limitations-grid' in shared_stylesheet
     assert '.status-language-grid' in shared_stylesheet
     assert '.cover-contents' in shared_stylesheet
+    assert '.content-section' in shared_stylesheet
     assert 'display:grid' in shared_compact
 
     assert '.consumer-group' in specialization
-    assert '.page-alerts .content-section' in specialization
-    assert '.page-reporting .content-section' in specialization
+    assert '.page-alerts .content-section' not in specialization
+    assert '.page-reporting .content-section' not in specialization
     assert '.methodology-register-layout' in specialization
 
     assert rendered_html.count('class="consumer-group"') == 2
@@ -475,7 +478,7 @@ def test_analytics_overview_fixed_registers_use_publication_safe_one_line_fields
     assert 'consumer-identities' in template
     assert '.forecast-register th:nth-child(6)' in stylesheet
     assert '.forecast-register td { white-space: nowrap; }' in stylesheet
-    assert '.page-consumers .identity-title { font-size: 6.9pt; white-space: nowrap; }' in stylesheet
+    assert '.page-consumers .identity-title { white-space: nowrap; }' in stylesheet
 
 
 def test_analytics_overview_pdf_standard_documents_precision_semantics() -> None:
@@ -525,16 +528,16 @@ def test_analytics_overview_r2_management_typography_and_helper_copy_contract() 
         'Reference notes explain the comparison outcome for each shared resource.',
         'Reference notes explain each projected signal and its operating interpretation.',
         'Stable reference codes map to the full technical identities shown below.',
-        'Current utilization, capacity baseline, and remaining headroom are summarized below.',
+        'Current use, capacity baseline, and remaining headroom.',
         'Reference notes describe the operational focus behind each highlighted risk item.',
         'Stable reference codes preserve complete alert identities without overloading the comparison table.',
         'Active schedules for the selected reporting boundary are listed below.',
-        'The latest generated outputs for this report scope are listed with generation status.',
-        'Operational notes summarize report-generation posture and storage readiness.',
-        'Cluster-level inventory counts are summarized for the selected reporting boundary.',
-        'Node readiness and fleet availability are summarized from the committed inventory snapshot.',
-        'Current source freshness, lag, and availability are shown for each contributing dataset.',
-        'Open data-quality conditions affecting completeness or interpretation are listed below.',
+        'Latest generated outputs and their current status.',
+        'Reporting posture and artifact-storage readiness.',
+        'Cluster inventory counts for the selected reporting boundary.',
+        'Node readiness comes from the committed inventory snapshot.',
+        'Source freshness, lag, and availability by dataset.',
+        'Open data-quality issues affecting completeness or interpretation.',
         'Ownership, validation, and execution controls for the current actions.',
         'Source boundaries and interpretation rules for this report.',
         'Operational limits and standardized status definitions.',
