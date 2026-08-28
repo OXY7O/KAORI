@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 DOCKERFILE = Path('.github/ci/Dockerfile')
 REQUIRED_DOWNLOAD_FLAGS = (
     '--retry 5',
