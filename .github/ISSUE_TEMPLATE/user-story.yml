@@ -1,7 +1,11 @@
 name: User Story
 description: Define a testable user or operator capability.
-title: "[STORY] "
+title: ""
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Use a concise sentence-case title that describes the capability or outcome. Native GitHub Issue Type is the type authority; do not add `[STORY]` to the title.
   - type: input
     id: persona
     attributes:
