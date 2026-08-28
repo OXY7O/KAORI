@@ -80,8 +80,7 @@ document.addEventListener('alpine:init', () => {
 
         handleGlobalSearchShortcut(event) {
             const target = event.target
-            const isEditable =
-                target?.matches?.('input, textarea, select') || target?.isContentEditable === true
+            const isEditable = target?.matches?.('input, textarea, select') || target?.isContentEditable === true
             const isCommandK = event.key?.toLowerCase() === 'k' && (event.ctrlKey || event.metaKey)
             const isSlash = event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey && !isEditable
 
@@ -177,9 +176,7 @@ document.addEventListener('alpine:init', () => {
             const items = this.globalSearchItems()
             if (!items.length) return
             const currentIndex = items.findIndex((item) => item.id === this.globalSearchSelectedId)
-            const nextIndex = currentIndex < 0
-                ? 0
-                : (currentIndex + direction + items.length) % items.length
+            const nextIndex = currentIndex < 0 ? 0 : (currentIndex + direction + items.length) % items.length
             this.globalSearchSelectedId = items[nextIndex].id
             this.$nextTick?.(() => {
                 document
@@ -259,9 +256,12 @@ document.addEventListener('alpine:init', () => {
 
         globalSearchStatusClasses(tone) {
             if (tone === 'normal') return 'border-status-normal-border bg-status-normal-soft text-status-normal-text'
-            if (tone === 'warning') return 'border-status-warning-border bg-status-warning-soft text-status-warning-text'
-            if (tone === 'critical') return 'border-status-critical-border bg-status-critical-soft text-status-critical-text'
-            if (tone === 'unknown') return 'border-status-unknown-border bg-status-unknown-soft text-status-unknown-text'
+            if (tone === 'warning')
+                return 'border-status-warning-border bg-status-warning-soft text-status-warning-text'
+            if (tone === 'critical')
+                return 'border-status-critical-border bg-status-critical-soft text-status-critical-text'
+            if (tone === 'unknown')
+                return 'border-status-unknown-border bg-status-unknown-soft text-status-unknown-text'
             return 'border-outline-default bg-surface-hover text-content-secondary'
         },
 

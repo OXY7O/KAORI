@@ -195,7 +195,6 @@ jobs:
       - name: Validate Production Runtime
         run: bash .github/ci/run-runtime-validation.sh "$VALIDATION_IMAGE"
 
-
       - name: Upload Runtime Diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
