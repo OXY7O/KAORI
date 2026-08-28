@@ -1,51 +1,70 @@
-## Linked Issue
+## Linked Work
 
-Closes/Relates to #
+Use `Refs #<issue>` while the work is still moving through staging/UAT. Use `Closes #<issue>` only on the final PR whose successful merge is intended to close the Issue.
 
-## Scope Summary
+Refs #
 
-Describe the governed scope of this change and what is intentionally out of scope.
+## Why
+
+Explain the problem, outcome, or engineering reason for this change in language a reviewer can understand without reading the diff first.
+
+## What Changed
+
+Summarize the implementation in a small number of concrete points. Name the important boundaries or files when that helps review.
+
+## Out of Scope
+
+State what was intentionally not changed. Use `None — <reason>` only when the scope genuinely has no meaningful exclusion.
 
 ## Acceptance Criteria Coverage
 
-Map each linked acceptance criterion to implementation evidence.
+Map each linked acceptance criterion to implementation or evidence. Do not mark criteria complete based only on code presence when runtime/CI/UAT evidence is required.
 
-## Test Evidence
+## Verification Evidence
 
-List targeted and full validation executed. Include relevant GitHub Actions run evidence when available.
+Record the exact evidence used for review:
+
+- Targeted tests/checks:
+- Full KAORI CI run:
+- Validated commit SHA:
+- Known warnings/skips and rationale:
+
+Do not paste full logs here. Link the run/job and summarize the actionable result.
 
 ## Security Impact
 
-State the security impact, threat-boundary changes, or `None` with rationale.
+State the security impact, trust-boundary change, vulnerability/security validation, or `None — <reason>`.
 
 ## Migration / Data Impact
 
-State schema, migration, compatibility, or retained-data impact, or `None` with rationale.
+State schema, migration, compatibility, retained-data, or data-lifecycle impact, or `None — <reason>`.
 
 ## Observability / Operational Impact
 
-State logging, metrics, alerts, operational workflow, rollback, and support impact where applicable.
+State logging, metrics, alerts, operational workflow, rollback, support, or runtime impact, or `None — <reason>`.
 
 ## UAT
 
-- [ ] Not yet applicable — work branch integration only.
+- [ ] Work-branch validation only; staging UAT is not yet applicable.
 - [ ] Integrated into `kaori/staging` and full staging CI passed.
 - [ ] Local UAT from `kaori/staging` passed and explicit acceptance is recorded.
 
-A change is not `Done` merely because code and CI are complete. Promotion from `kaori/staging` to `main` requires explicit local UAT acceptance.
+A change is not `Done` merely because implementation and branch CI are complete.
 
 ## Release Impact
 
-State release target/milestone impact, compatibility notes, and whether release documentation must change.
+State Milestone/release-target impact, compatibility notes, rollout considerations, and whether release documentation changes are required. Do not invent a Milestone for work that has no release target.
 
 ## Reviewer Checklist
 
-- [ ] Change matches the linked work item and agreed scope.
+- [ ] Title is concise, human-readable, and follows the KAORI Conventional Commit subject style.
+- [ ] Linked Issue and relationship to the requested scope are clear.
+- [ ] Change matches the agreed scope and out-of-scope boundary.
 - [ ] Acceptance Criteria are covered by implementation and evidence.
-- [ ] Required CI is green without suppressed failures.
-- [ ] No unexpected skipped tests, tracebacks, assertion failures, HTTP 5xx responses, or migration/runtime failures remain unexplained.
+- [ ] Required CI is green without suppressed or bypassed failures.
+- [ ] No unexpected skipped tests, traceback, assertion failure, HTTP 5xx, migration failure, or runtime failure remains unexplained.
 - [ ] Generated frontend artifacts are reproducible when applicable.
-- [ ] Security and migration impacts are explicitly addressed.
-- [ ] Documentation and contracts are aligned.
-- [ ] `kaori/staging` UAT evidence is present before staging-to-main promotion.
-- [ ] Merge strategy to `main` remains merge commit.
+- [ ] Security, migration/data, observability, and operational impacts are explicitly addressed.
+- [ ] Documentation and canonical contracts are aligned.
+- [ ] `kaori/staging` full-CI and Local UAT evidence exist before work is marked `Done`.
+- [ ] Promotion to `main` is explicitly approved and uses a merge commit.
