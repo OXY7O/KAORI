@@ -45,6 +45,8 @@ def test_issue_forms_use_native_issue_type_without_title_prefixes() -> None:
         'bug.yml': 'Bug',
         'task.yml': 'Task',
         'spike.yml': 'Spike',
+        'chore.yml': 'Chore',
+        'technical-debt.yml': 'Technical Debt',
     }
     for filename, name in expected.items():
         form = load_form(filename)
