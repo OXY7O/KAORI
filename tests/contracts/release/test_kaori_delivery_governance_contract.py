@@ -52,9 +52,7 @@ def test_issue_forms_use_native_issue_type_without_title_prefixes() -> None:
         assert form['title'] == ''
         assert form['body']
         markdown = '\n'.join(
-            item.get('attributes', {}).get('value', '')
-            for item in form['body']
-            if item.get('type') == 'markdown'
+            item.get('attributes', {}).get('value', '') for item in form['body'] if item.get('type') == 'markdown'
         )
         assert 'Native GitHub Issue Type' in markdown
 
