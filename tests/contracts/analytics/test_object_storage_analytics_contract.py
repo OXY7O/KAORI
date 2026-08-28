@@ -9,7 +9,7 @@ def read(relative: str) -> str:
 
 
 def has_jinja_assignment(source: str, variable: str, value: str) -> bool:
-    pattern = rf'{%\s*set\s+{re.escape(variable)}\s*=\s*(["\']){re.escape(value)}\1\s*%}'
+    pattern = rf'{{%\s*set\s+{re.escape(variable)}\s*=\s*(["\']){re.escape(value)}\1\s*%}}'
     return re.search(pattern, source) is not None
 
 
