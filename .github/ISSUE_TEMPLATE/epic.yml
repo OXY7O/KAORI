@@ -1,10 +1,11 @@
 name: Epic
 description: Define a multi-story KAORI product or platform outcome.
-title: "[EPIC] "
+title: ""
 body:
   - type: markdown
     attributes:
       value: |
+        Use a concise sentence-case title that describes the outcome. Native GitHub Issue Type is the type authority; do not add `[EPIC]` to the title.
         Use this form for a governed outcome that requires multiple child work items.
   - type: textarea
     id: outcome
