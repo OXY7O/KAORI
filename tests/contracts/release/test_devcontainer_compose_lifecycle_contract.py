@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 DEV_COMPOSE = ROOT / '.devcontainer' / 'compose.devcontainer.yml'
 DEVCONTAINER = ROOT / '.devcontainer' / 'devcontainer.json'
+ENSURE_FRONTEND = ROOT / '.devcontainer' / 'ensure-frontend.sh'
 
 
 def read(path: Path) -> str:
@@ -77,6 +78,17 @@ def test_devcontainer_workers_have_graceful_shutdown_windows() -> None:
         section = service_section(compose, service)
         assert 'restart: unless-stopped' in section
         assert f'stop_grace_period: {period}' in section
+
+
+def test_devcontainer_frontend_bootstrap_repairs_generated_output_permissions() -> None:
+    source = read(ENSURE_FRONTEND)
+
+    assert 'repair_frontend_output_permissions()' in source
+    assert "'app/static/css'" in source
+    assert "'app/static/fonts'" in source
+    assert "'app/static/vendor'" in source
+    assert 'sudo chown -R "$(id -u):$(id -g)"' in source
+    assert source.rindex('repair_frontend_output_permissions') < source.index('npm run prepare-frontend')
 
 
 def test_development_docs_define_one_canonical_compose_boundary() -> None:
