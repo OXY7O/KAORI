@@ -13,9 +13,7 @@ REQUIRED_DOWNLOAD_FLAGS = (
 def test_ci_tool_downloads_use_bounded_retry_policy() -> None:
     dockerfile = DOCKERFILE.read_text(encoding='utf-8')
     download_lines = [
-        line.strip()
-        for line in dockerfile.splitlines()
-        if 'curl ' in line and 'https://github.com/' in line
+        line.strip() for line in dockerfile.splitlines() if 'curl ' in line and 'https://github.com/' in line
     ]
 
     assert len(download_lines) == 8
