@@ -1,7 +1,11 @@
 name: Bug
 description: Report a reproducible KAORI defect or regression.
-title: "[BUG] "
+title: ""
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Use a concise sentence-case title that describes the defect. Native GitHub Issue Type is the type authority; do not add `[BUG]` to the title.
   - type: textarea
     id: observed
     attributes:
