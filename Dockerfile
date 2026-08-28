@@ -67,6 +67,10 @@ WORKDIR /build
 COPY package.json package-lock.json ./
 RUN npm ci
 
+COPY scripts/vendor_frontend_assets.mjs \
+    scripts/verify_frontend_assets.mjs \
+    scripts/verify_css_build.mjs \
+    ./scripts/
 COPY frontend ./frontend
 COPY app/templates ./app/templates
 COPY app/static/js ./app/static/js
