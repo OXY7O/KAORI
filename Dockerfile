@@ -106,6 +106,11 @@ RUN mkdir -p \
         /app/instance/celery-beat \
     && chown -R kaori:kaori /app/instance
 
+RUN python -m pip uninstall --yes pip \
+    && rm -rf /usr/local/lib/python3.12/ensurepip /root/.cache/pip \
+    && ! python -c 'import pip' >/dev/null 2>&1 \
+    && ! python -c 'import ensurepip' >/dev/null 2>&1
+
 USER kaori
 
 EXPOSE 5000
