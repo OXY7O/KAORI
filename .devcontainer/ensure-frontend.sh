@@ -12,6 +12,31 @@ fail() {
     exit 1
 }
 
+repair_frontend_output_permissions() {
+    local paths=(
+        'app/static/css'
+        'app/static/fonts'
+        'app/static/vendor'
+    )
+    local existing_paths=()
+    local path
+    local needs_repair=false
+
+    for path in "${paths[@]}"; do
+        [[ -e "$path" ]] || continue
+        existing_paths+=("$path")
+        if [[ ! -w "$path" ]] || find "$path" ! -writable -print -quit | grep -q .; then
+            needs_repair=true
+        fi
+    done
+
+    [[ "$needs_repair" == true ]] || return 0
+    command -v sudo >/dev/null 2>&1 || fail 'Generated frontend outputs are not writable and sudo is unavailable to repair their ownership.'
+
+    log 'Repairing generated frontend output ownership for the current Dev Container user...'
+    sudo chown -R "$(id -u):$(id -g)" "${existing_paths[@]}"
+}
+
 command -v node >/dev/null 2>&1 || fail 'Node.js is unavailable. Rebuild the devcontainer so the Node feature can be installed.'
 command -v npm >/dev/null 2>&1 || fail 'npm is unavailable. Rebuild the devcontainer so the Node feature can be installed.'
 
@@ -51,6 +76,8 @@ if [[ "$install_required" == true ]]; then
 else
     log 'Frontend dependencies match package-lock.json.'
 fi
+
+repair_frontend_output_permissions
 
 log 'Vendoring browser dependencies and building Tailwind CSS...'
 npm run prepare-frontend
