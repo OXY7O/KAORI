@@ -361,23 +361,56 @@ def _verify_release_evidence(errors: list[str]) -> None:
 
 
 def main() -> int:
-    errors: list[str] = []
-    _verify_route_contract(errors)
-    _verify_catalog_contract(errors)
-    _verify_presentation_contract(errors)
-    _verify_release_evidence(errors)
-
-    if errors:
-        for error in errors:
-            print(f'ERROR: {error}')
-        return 1
-
-    print(
-        'KAORI Welcome final-lock v3 passed: authenticated landing routes, role-aware discoverability, '
-        'provider-free data boundaries, canonical Violet components, accessibility, layered test coverage, '
-        'retired permission cleanup, and release-gate wiring are aligned.'
+    sections = (
+        (
+            'Routing & Access',
+            _verify_route_contract,
+            'Locked Welcome routing and authentication requirements are not satisfied.',
+            'app/welcome/routes.py',
+        ),
+        (
+            'Role-Aware Discoverability',
+            _verify_catalog_contract,
+            'Locked Welcome catalog, permission, or discoverability requirements are not satisfied.',
+            'app/welcome/shortcuts.py and app/definitions/catalogs/access/rbac/access.yaml',
+        ),
+        (
+            'KAORI UI Standard',
+            _verify_presentation_contract,
+            'Locked Welcome presentation, accessibility, or client-only search requirements are not satisfied.',
+            'app/templates/welcome/index.html, shared Welcome components, and app/static/js/welcome.js',
+        ),
+        (
+            'Release Evidence',
+            _verify_release_evidence,
+            'Locked Welcome test, migration, documentation, or release-gate evidence is not satisfied.',
+            'Welcome tests, migration, quality gate, coverage verifier, and governance documentation',
+        ),
     )
-    return 0
+
+    results: list[tuple[str, list[str], str, str]] = []
+    for name, verifier, why, where in sections:
+        errors: list[str] = []
+        verifier(errors)
+        results.append((name, errors, why, where))
+
+    failed = sum(bool(errors) for _, errors, _, _ in results)
+    passed = len(results) - failed
+    print(f"{'FAIL' if failed else 'PASS'} — KAORI Welcome Final Lock")
+
+    for name, errors, why, where in results:
+        print()
+        print(f"{name} — {'FAIL' if errors else 'PASS'}")
+        if not errors:
+            continue
+        for error in errors:
+            print(f'  WHAT — {error}')
+        print(f'  WHY — {why}')
+        print(f'  WHERE — {where}')
+
+    print()
+    print(f'Summary — {passed} passed · {failed} failed')
+    return 1 if failed else 0
 
 
 if __name__ == '__main__':
