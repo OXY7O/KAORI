@@ -396,11 +396,11 @@ def main() -> int:
 
     failed = sum(bool(errors) for _, errors, _, _ in results)
     passed = len(results) - failed
-    print(f"{'FAIL' if failed else 'PASS'} — KAORI Welcome Final Lock")
+    print(f'{"FAIL" if failed else "PASS"} — KAORI Welcome Final Lock')
 
     for name, errors, why, where in results:
         print()
-        print(f"{name} — {'FAIL' if errors else 'PASS'}")
+        print(f'{name} — {"FAIL" if errors else "PASS"}')
         if not errors:
             continue
         for error in errors:
