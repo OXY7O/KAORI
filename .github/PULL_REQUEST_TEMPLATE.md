@@ -1,51 +1,56 @@
-## Linked Work
+## Summary
 
-Use `Refs #<issue>` while the work is still moving through staging/UAT. Use `Closes #<issue>` only on the final PR whose successful merge is intended to close the Issue.
-
-Refs #
+In 2–4 sentences, explain what this PR changes, why it matters, and the expected outcome. A reviewer should understand the purpose without opening the diff first.
 
 ## Why
 
-Explain the problem, outcome, or engineering reason for this change in language a reviewer can understand without reading the diff first.
+Describe the problem, operational need, product outcome, or engineering reason behind the change. Include only the context needed to understand the decision.
 
 ## What Changed
 
-Summarize the implementation in a small number of concrete points. Name the important boundaries or files when that helps review.
+List the meaningful changes in a small number of concrete bullets. Group related changes instead of narrating every file edit.
 
 ## Out of Scope
 
-State what was intentionally not changed. Use `None — <reason>` only when the scope genuinely has no meaningful exclusion.
+State the important boundaries: what this PR intentionally does not change, fix, migrate, or promote.
+
+## Linked Work
+
+Use `Refs #<issue>` while work is still moving through staging/UAT. Use `Closes #<issue>` only on the final PR whose successful merge is intended to close the Issue.
+
+Refs #
 
 ## Acceptance Criteria Coverage
 
-Map each linked acceptance criterion to implementation or evidence. Do not mark criteria complete based only on code presence when runtime/CI/UAT evidence is required.
+Summarize how the linked Issue acceptance criteria are satisfied. Distinguish implementation-complete criteria from staging/UAT criteria that are still pending.
 
 ## Verification Evidence
 
-Record the exact evidence used for review:
+Keep this concise and evidence-based:
 
-- Targeted tests/checks:
-- Full KAORI CI run:
-- Validated commit SHA:
-- Known warnings/skips and rationale:
+- **Validated SHA:**
+- **Targeted checks:**
+- **Full KAORI CI:**
+- **Result:**
+- **Known warnings / skips:** None, or explain why they are acceptable.
 
-Do not paste full logs here. Link the run/job and summarize the actionable result.
+Link the relevant run when useful. Do not paste raw logs into the PR body.
 
 ## Security Impact
 
-State the security impact, trust-boundary change, vulnerability/security validation, or `None — <reason>`.
+State the trust-boundary, secret, dependency, vulnerability, authorization, or security-validation impact. Use `None — <reason>` when there is no meaningful security impact.
 
 ## Migration / Data Impact
 
-State schema, migration, compatibility, retained-data, or data-lifecycle impact, or `None — <reason>`.
+State schema, migration, compatibility, retained-data, or data-lifecycle impact. Use `None — <reason>` when not applicable.
 
 ## Observability / Operational Impact
 
-State logging, metrics, alerts, operational workflow, rollback, support, or runtime impact, or `None — <reason>`.
+State logging, metrics, alerts, runtime behavior, rollback, support, deployment, or operator-workflow impact. Keep the explanation focused on what changes operationally.
 
 ## UAT
 
-- [ ] Work-branch validation only; staging UAT is not yet applicable.
+- [ ] Work-branch validation is complete.
 - [ ] Integrated into `kaori/staging` and full staging CI passed.
 - [ ] Local UAT from `kaori/staging` passed and explicit acceptance is recorded.
 
@@ -53,18 +58,15 @@ A change is not `Done` merely because implementation and branch CI are complete.
 
 ## Release Impact
 
-State Milestone/release-target impact, compatibility notes, rollout considerations, and whether release documentation changes are required. Do not invent a Milestone for work that has no release target.
+State the release target or Milestone when one exists, plus compatibility/rollout considerations. Do not invent a Milestone for work without a release target.
 
 ## Reviewer Checklist
 
-- [ ] Title is concise, human-readable, and follows the KAORI Conventional Commit subject style.
-- [ ] Linked Issue and relationship to the requested scope are clear.
-- [ ] Change matches the agreed scope and out-of-scope boundary.
-- [ ] Acceptance Criteria are covered by implementation and evidence.
-- [ ] Required CI is green without suppressed or bypassed failures.
-- [ ] No unexpected skipped tests, traceback, assertion failure, HTTP 5xx, migration failure, or runtime failure remains unexplained.
-- [ ] Generated frontend artifacts are reproducible when applicable.
-- [ ] Security, migration/data, observability, and operational impacts are explicitly addressed.
-- [ ] Documentation and canonical contracts are aligned.
-- [ ] `kaori/staging` full-CI and Local UAT evidence exist before work is marked `Done`.
-- [ ] Promotion to `main` is explicitly approved and uses a merge commit.
+- [ ] The title is concise, human-readable, and follows the KAORI Conventional Commit subject style.
+- [ ] Scope and out-of-scope boundaries are clear.
+- [ ] Linked work and acceptance coverage are traceable.
+- [ ] Required CI evidence is green with no unexplained failure, traceback, HTTP 5xx, migration error, runtime error, or unexpected skip.
+- [ ] Security, migration/data, and operational impacts are addressed.
+- [ ] Documentation/contracts are aligned when applicable.
+- [ ] `kaori/staging` CI and Local UAT exist before the work is marked `Done`.
+- [ ] Promotion to `main`, when applicable, is explicitly approved and uses a merge commit.
