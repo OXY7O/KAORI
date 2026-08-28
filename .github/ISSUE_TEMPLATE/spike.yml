@@ -1,7 +1,11 @@
 name: Spike
 description: Timebox research that must end in evidence and a decision.
-title: "[SPIKE] "
+title: ""
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Use a concise sentence-case title that states the uncertainty to resolve. Native GitHub Issue Type is the type authority; do not add `[SPIKE]` to the title.
   - type: textarea
     id: question
     attributes:
