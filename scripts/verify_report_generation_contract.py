@@ -85,6 +85,14 @@ def _dictionary_string_keys(path: Path, variable_name: str) -> set[str]:
     return set()
 
 
+def _function_uses_attribute(path: Path, function_name: str, attribute_name: str) -> bool:
+    tree = _parse(path)
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == function_name:
+            return any(isinstance(child, ast.Attribute) and child.attr == attribute_name for child in ast.walk(node))
+    return False
+
+
 def _check_catalog(errors: list[str]) -> tuple[set[str], set[str]]:
     specs = _catalog_specs()
     if not specs:
@@ -244,7 +252,6 @@ def _check_cross_format_standards(errors: list[str]) -> None:
         'Primary Visual',
         'Supporting Data',
         'Workbook Navigation',
-        'sheet.parent.sheetnames',
         'BarChart',
         'DoughnutChart',
         'DataLabelList',
@@ -252,6 +259,13 @@ def _check_cross_format_standards(errors: list[str]) -> None:
     ):
         if token not in xlsx_overview:
             errors.append(f'Inventory XLSX Overview is missing required contract token: {token}.')
+
+    if not _function_uses_attribute(
+        XLSX_OVERVIEW_PATH,
+        '_write_overview_navigation',
+        'sheetnames',
+    ):
+        errors.append('Inventory XLSX Overview navigation must derive targets from workbook sheet names.')
 
     mapped_templates = _dictionary_string_keys(ANALYTICS_PUBLICATION_PATH, 'ANALYTICS_TEMPLATE_STYLESHEETS')
     expected_templates = {
@@ -379,16 +393,35 @@ def main() -> int:
     _check_documentation(errors)
 
     if errors:
+        print('FAIL — KAORI Report Generation Contract')
+        print()
+        print('Contract Errors')
         for error in errors:
-            print(f'ERROR: {error}')
+            print(f'  FAIL — {error}')
+        print()
+        print('Summary')
+        print(f'  {len(errors)} failed')
         return 1
 
-    print(
-        'KAORI report generation contract passed: Analytics supports canonical PDF/XLSX/CSV, Inventory supports '
-        'canonical XLSX/CSV, public references cover every report type, publication/profile coverage matches '
-        'the Definition Registry, one infrastructure asset scope is preserved across formats, and legacy '
-        'generation paths are absent.'
-    )
+    print('PASS — KAORI Report Generation Contract')
+    print()
+    print('Formats & Rendering')
+    print('  PASS — Analytics supports canonical PDF, XLSX, and CSV artifacts.')
+    print('  PASS — Inventory supports canonical XLSX and CSV artifacts.')
+    print()
+    print('Registry & References')
+    print('  PASS — Report profiles, collectors, and public references match the Definition Registry.')
+    print()
+    print('Workbook Contracts')
+    print('  PASS — Inventory and Analytics workbook contracts are structurally valid.')
+    print('  PASS — Inventory workbook navigation derives targets from workbook sheet names.')
+    print()
+    print('Scope & Legacy Safety')
+    print('  PASS — Generic infrastructure asset scope is preserved across report formats.')
+    print('  PASS — Retired report-generation paths are absent.')
+    print()
+    print('Summary')
+    print('  7 checks passed · 0 failed')
     return 0
 
 

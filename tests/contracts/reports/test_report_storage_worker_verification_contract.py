@@ -26,7 +26,7 @@ def test_manual_storage_verification_is_dispatched_from_web_to_canonical_worker_
     assert "scope_type='report_storage_backend'" in jobs
     assert "resource_group=f'report-storage:{backend_name}'" in jobs
     assert 'require_registered_worker=True' in jobs
-    assert "REPORT_STORAGE_HEALTH_CELERY_QUEUE" in jobs
+    assert 'REPORT_STORAGE_HEALTH_CELERY_QUEUE' in jobs
 
 
 def test_storage_verification_worker_owns_network_probe_and_sanitizes_user_evidence() -> None:
@@ -52,12 +52,14 @@ def test_storage_page_exposes_worker_verification_state_and_htmx_refresh() -> No
     routes = read('app/reports/routes.py')
     storage_routes = read('app/reports/storage/routes.py')
 
-    assert "'verification_execution': storage_check.get_report_storage_verification_presentation(backend_name)" in service
+    assert (
+        "'verification_execution': storage_check.get_report_storage_verification_presentation(backend_name)" in service
+    )
     assert "'reports/storage/_verification_status.html'" in template
     assert 'payload.verification_execution' in template
     assert 'data-report-storage-verification-status="true"' in partial
-    assert "hx-get=\"{{ url_for('reports.storage_verification_status') }}\"" in partial
-    assert "every 3s" in partial
+    assert 'hx-get="{{ url_for(\'reports.storage_verification_status\') }}"' in partial
+    assert 'every 3s' in partial
     assert 'Queued' in partial
     assert 'Verifying' in partial
     assert 'Healthy' in partial

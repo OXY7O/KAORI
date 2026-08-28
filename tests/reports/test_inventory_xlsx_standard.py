@@ -241,7 +241,6 @@ def test_distribution_overview_chart_aggregates_records_by_category(tmp_path: Pa
     assert len(summary._charts) == 1
 
 
-
 def test_runtime_xlsx_artifact_validator_accepts_the_global_contract(tmp_path: Path) -> None:
     report_type = 'node_inventory'
     output_path = tmp_path / 'nodes-runtime-contract.xlsx'
@@ -337,6 +336,7 @@ def test_object_storage_workbook_uses_readable_gib_columns(tmp_path: Path) -> No
     utilization_index = headers.index('Quota Utilization %') + 1
     assert inventory.cell(row=DATA_START_ROW, column=utilization_index).value == 100.0
 
+
 def test_numeric_missing_values_stay_blank_and_text_missing_values_are_explicit(tmp_path: Path) -> None:
     report_type = 'node_inventory'
     profile = INVENTORY_WORKBOOK_PROFILES[report_type]
@@ -403,7 +403,6 @@ def test_empty_inventory_workbook_keeps_a_valid_unmerged_excel_table(tmp_path: P
     assert len(inventory.tables) == 1
 
 
-
 def test_global_xlsx_v2_profiles_declare_domain_metrics_and_chart_semantics() -> None:
     assert XLSX_REPORTING_STANDARD == 'kaori-reporting-xlsx-v2.0'
     assert INVENTORY_WORKBOOK_STANDARD == 'kaori-inventory-xlsx-v4.0'
@@ -465,7 +464,10 @@ def test_object_storage_overview_is_executive_and_ranked_bar_is_directly_labeled
     assert overview['A13'].value == 'Primary Visual'
     assert overview['I13'].value == 'Supporting Data'
     assert [overview.cell(row=15, column=column).value for column in range(9, 13)] == [
-        'Rank', 'Bucket / Container', 'Usage GiB', 'Share of Total'
+        'Rank',
+        'Bucket / Container',
+        'Usage GiB',
+        'Share of Total',
     ]
     assert overview['J16'].value == 'thanos'
     assert overview['K16'].value == pytest.approx(64.25)
@@ -526,7 +528,9 @@ def test_distribution_chart_uses_doughnut_legend_percent_labels_and_domain_kpis(
     assert isinstance(source_rows, list)
     base_row = dict(source_rows[0])
     rows = []
-    for index, (readiness, role) in enumerate((('Ready', 'worker'), ('Ready', 'worker'), ('Not Ready', 'control-plane')), 1):
+    for index, (readiness, role) in enumerate(
+        (('Ready', 'worker'), ('Ready', 'worker'), ('Not Ready', 'control-plane')), 1
+    ):
         row = dict(base_row)
         row['node'] = f'node-{index}'
         row['ready'] = readiness
@@ -597,8 +601,7 @@ def test_doughnut_groups_categories_beyond_declared_limit_into_other(tmp_path: P
     workbook = load_workbook(output_path)
     overview = workbook[INVENTORY_OVERVIEW_SHEET]
     supporting = [
-        (overview.cell(row=row, column=10).value, overview.cell(row=row, column=11).value)
-        for row in range(16, 22)
+        (overview.cell(row=row, column=10).value, overview.cell(row=row, column=11).value) for row in range(16, 22)
     ]
     assert len([category for category, _ in supporting if category is not None]) == 6
     assert ('Other', 2) in supporting

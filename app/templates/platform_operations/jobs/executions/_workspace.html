@@ -7,8 +7,7 @@
     ('registry', 'Registry', 'list-checks', url_for('jobs.executions', execution_tab='registry'), job_stats.total),
     ('queues', 'Queues', 'network', url_for('jobs.executions', execution_tab='queues'), job_stats.queues)
 ] %}
-<section id="job-execution-workspace"
-         class="space-y-5">
+<section id="job-execution-workspace" class="space-y-5">
     <section class="{{ operational_section.shell_classes() }}"
              aria-labelledby="execution-overview-title">
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
@@ -48,7 +47,9 @@
                             <p id="execution-overview-metric-{{ 'active' if label == 'Active Jobs' else ('running' if label == 'Running Now' else ('attention' if label == 'Needs Attention' else 'completed')) }}"
                                class="mt-1 text-2xl font-semibold tracking-tight text-content-primary">{{ value }}</p>
                         </div>
-                        <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                        <i data-lucide="{{ icon }}"
+                           class="h-4 w-4 shrink-0 text-kaori-primary"
+                           aria-hidden="true"></i>
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
                 </article>
@@ -83,18 +84,16 @@
                 </div>
             </div>
         </header>
-        {{ content_tabs.render_links(
-            'execution',
-            execution_tabs,
-            selected_job_tab,
-            'Execution Workspace Sections',
-            embedded=true,
-            data_namespace='execution',
-            hx_target='#job-execution-workspace',
-            hx_select='#job-execution-workspace',
-            hx_indicator='#execution-workspace-loading',
-            hx_sync='#job-execution-workspace:replace'
-        ) }}
+        {{ content_tabs.render_links('execution',
+                execution_tabs,
+                selected_job_tab,
+                'Execution Workspace Sections',
+                embedded=true,
+                data_namespace='execution',
+                hx_target='#job-execution-workspace',
+                hx_select='#job-execution-workspace',
+                hx_indicator='#execution-workspace-loading',
+                hx_sync='#job-execution-workspace:replace') }}
         {{ loading_bar.render('execution-workspace-loading', label='Loading Execution Workspace') }}
         {% if selected_job_tab == 'registry' %}
             {% set embedded = true %}

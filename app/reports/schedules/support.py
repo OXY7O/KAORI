@@ -33,9 +33,9 @@ def get_cluster_options() -> list[dict[str, str]]:
     return [{'value': item.id, 'label': item.name} for item in clusters]
 
 
-
 def get_namespace_options_by_cluster() -> dict[str, list[str]]:
     return get_report_namespace_options_by_cluster()
+
 
 def get_cluster_map(cluster_ids: list[str]) -> dict[str, str]:
     if not cluster_ids:

@@ -64,28 +64,28 @@ RUN set -eux; \
         arm64) action_asset_arch='arm64'; gitleaks_arch='arm64'; trivy_arch='ARM64'; hadolint_arch='arm64' ;; \
         *) echo "Unsupported CI toolchain architecture: $arch" >&2; exit 1 ;; \
     esac; \
-    curl -fsSLo /tmp/actionlint.tar.gz "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_${action_asset_arch}.tar.gz"; \
-    curl -fsSLo /tmp/actionlint-checksums.txt "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_checksums.txt"; \
+    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/actionlint.tar.gz "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_${action_asset_arch}.tar.gz"; \
+    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/actionlint-checksums.txt "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_checksums.txt"; \
     grep " actionlint_${ACTIONLINT_VERSION}_linux_${action_asset_arch}.tar.gz$" /tmp/actionlint-checksums.txt \
       | sed "s#actionlint_${ACTIONLINT_VERSION}_linux_${action_asset_arch}.tar.gz#/tmp/actionlint.tar.gz#" \
       | sha256sum -c -; \
     tar -xzf /tmp/actionlint.tar.gz -C /tmp actionlint; \
     install -m 0755 /tmp/actionlint /usr/local/bin/actionlint; \
-    curl -fsSLo /tmp/gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${gitleaks_arch}.tar.gz"; \
-    curl -fsSLo /tmp/gitleaks-checksums.txt "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_checksums.txt"; \
+    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${gitleaks_arch}.tar.gz"; \
+    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/gitleaks-checksums.txt "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_checksums.txt"; \
     grep " gitleaks_${GITLEAKS_VERSION}_linux_${gitleaks_arch}.tar.gz$" /tmp/gitleaks-checksums.txt \
       | sed "s#gitleaks_${GITLEAKS_VERSION}_linux_${gitleaks_arch}.tar.gz#/tmp/gitleaks.tar.gz#" \
       | sha256sum -c -; \
     tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks; \
     install -m 0755 /tmp/gitleaks /usr/local/bin/gitleaks; \
-    curl -fsSLo /tmp/hadolint "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-linux-${hadolint_arch}"; \
-    curl -fsSLo /tmp/hadolint-checksums.txt "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/checksums.sha256"; \
+    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/hadolint "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-linux-${hadolint_arch}"; \
+    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/hadolint-checksums.txt "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/checksums.sha256"; \
     hadolint_checksum="$(awk -v asset="*hadolint-linux-${hadolint_arch}" '$2 == asset {print $1}' /tmp/hadolint-checksums.txt)"; \
     test -n "$hadolint_checksum"; \
     printf '%s  %s\n' "$hadolint_checksum" /tmp/hadolint | sha256sum -c -; \
     install -m 0755 /tmp/hadolint /usr/local/bin/hadolint; \
-    curl -fsSLo /tmp/trivy.tar.gz "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${trivy_arch}.tar.gz"; \
-    curl -fsSLo /tmp/trivy-checksums.txt "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_checksums.txt"; \
+    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/trivy.tar.gz "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${trivy_arch}.tar.gz"; \
+    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/trivy-checksums.txt "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_checksums.txt"; \
     grep " trivy_${TRIVY_VERSION}_Linux-${trivy_arch}.tar.gz$" /tmp/trivy-checksums.txt \
       | sed "s#trivy_${TRIVY_VERSION}_Linux-${trivy_arch}.tar.gz#/tmp/trivy.tar.gz#" \
       | sha256sum -c -; \

@@ -22,7 +22,6 @@
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('shield-check', 'Protected System Templates') }}
                             {{ page_hero.meta_label('copy-plus', 'Reusable Custom Templates') }}
-                            {{ page_hero.meta_label('layers-3', 'Canonical Report Catalog') }}
                             {{ page_hero.meta_label('file-type-2', 'Analytics PDF · XLSX · CSV') }}
                         </div>
                     {% endcall %}
@@ -269,7 +268,8 @@
                 </label>
             {% endcall %}
             <div class="min-w-0">
-                <table class="w-full table-fixed text-left" data-template-registry-table="compact-v3">
+                <table class="w-full table-fixed text-left"
+                       data-template-registry-table="compact-v3">
                     <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold uppercase tracking-wide text-content-muted">
                         <tr>
                             <th class="w-[31%] px-5 py-3 sm:px-6">Template</th>

@@ -4,7 +4,7 @@ import re
 from collections.abc import Mapping
 from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill
@@ -72,7 +72,7 @@ def build_analytics_workbook(
 ) -> None:
     data = prepare_analytics_workbook_data(report_type, payload, context)
     workbook = Workbook()
-    overview = workbook.active
+    overview = cast(Worksheet, workbook.active)
     overview.title = ANALYTICS_OVERVIEW_SHEET
 
     for table in data.tables:
@@ -100,7 +100,7 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
     if sheetnames[-2:] != [ANALYTICS_METADATA_SHEET, ANALYTICS_DICTIONARY_SHEET]:
         raise ValueError('Analytics XLSX artifact must end with Metadata and Field Dictionary.')
 
-    metadata = workbook[ANALYTICS_METADATA_SHEET]
+    metadata = cast(Worksheet, workbook[ANALYTICS_METADATA_SHEET])
     metadata_values = {
         metadata.cell(row=row, column=1).value: metadata.cell(row=row, column=2).value
         for row in range(1, metadata.max_row + 1)
@@ -113,7 +113,7 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
     if metadata_values.get('Report Family') != ANALYTICS_WORKBOOK_FAMILY:
         raise ValueError('Analytics XLSX artifact metadata must declare the analytics family.')
 
-    overview = workbook[ANALYTICS_OVERVIEW_SHEET]
+    overview = cast(Worksheet, workbook[ANALYTICS_OVERVIEW_SHEET])
     if not str(overview['A1'].value or '').startswith('KAORI — '):
         raise ValueError('Analytics XLSX Overview title is missing.')
     if overview['A9'].value != 'Executive Readout':
@@ -129,7 +129,7 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
             raise ValueError(f'Analytics XLSX Overview is missing navigation to {sheet_name!r}.')
 
     for sheet_name in sheetnames[1:-2]:
-        sheet = workbook[sheet_name]
+        sheet = cast(Worksheet, workbook[sheet_name])
         if sheet['A3'].hyperlink is None or sheet['A3'].hyperlink.target != "#'Overview'!A1":
             raise ValueError(f'Analytics XLSX sheet {sheet_name!r} must link back to Overview.')
 
@@ -141,14 +141,17 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
         raise ValueError('Analytics XLSX Overview must reserve the Supporting Data surface.')
 
     primary_visual = str(metadata_values.get('Primary Visual') or '').strip()
-    if primary_visual and primary_visual != 'No chartable evidence' and not overview._charts:
+    overview_charts = cast(Any, overview)._charts
+    if primary_visual and primary_visual != 'No chartable evidence' and not overview_charts:
         raise ValueError('Analytics XLSX Primary Visual is missing for chartable committed evidence.')
 
-    if overview._charts:
-        chart = overview._charts[0]
+    if overview_charts:
+        chart = overview_charts[0]
         chart_name = chart.__class__.__name__
         if chart_name == 'DoughnutChart':
-            raise ValueError('Analytics XLSX no longer permits doughnut charts; use the global composition_bar contract.')
+            raise ValueError(
+                'Analytics XLSX no longer permits doughnut charts; use the global composition_bar contract.'
+            )
         if chart_name == 'BarChart':
             if getattr(chart, 'varyColors', None) is not False:
                 raise ValueError('Analytics ranked/capacity bar charts must use controlled series colors.')
@@ -176,18 +179,28 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
                     or chart.y_axis.majorGridlines is not None
                     or chart.visible_cells_only is not False
                 ):
-                    raise ValueError('Analytics ranked bars require visible categories and a sparse zero-baseline value axis.')
+                    raise ValueError(
+                        'Analytics ranked bars require visible categories and a sparse zero-baseline value axis.'
+                    )
                 if not overview.column_dimensions['O'].hidden:
                     raise ValueError('Analytics ranked bars require the hidden short-category helper column.')
-                if (overview.column_dimensions['K'].width or 0) < 38 or (overview.column_dimensions['L'].width or 0) < 20:
-                    raise ValueError('Analytics ranked Supporting Data requires professional category/value column widths.')
+                if (overview.column_dimensions['K'].width or 0) < 38 or (
+                    overview.column_dimensions['L'].width or 0
+                ) < 20:
+                    raise ValueError(
+                        'Analytics ranked Supporting Data requires professional category/value column widths.'
+                    )
                 ranked_values: list[float] = []
                 for row in range(16, min(overview.max_row, 23) + 1):
                     short_label = str(overview.cell(row=row, column=15).value or '')
                     if len(short_label) > 28:
-                        raise ValueError('Analytics ranked chart helper labels must be shortened without changing Supporting Data.')
+                        raise ValueError(
+                            'Analytics ranked chart helper labels must be shortened without changing Supporting Data.'
+                        )
                     if 'not available' in str(overview.cell(row=row, column=12).number_format or '').casefold():
-                        raise ValueError('Analytics ranked numeric formats must not publish placeholder text as a unit.')
+                        raise ValueError(
+                            'Analytics ranked numeric formats must not publish placeholder text as a unit.'
+                        )
                     value = overview.cell(row=row, column=12).value
                     if isinstance(value, (int, float)):
                         ranked_values.append(float(value))
@@ -221,10 +234,14 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
                     or chart.y_axis.title is not None
                     or chart.y_axis.majorGridlines is not None
                 ):
-                    raise ValueError('Analytics composition bars require visible categories and a clean 0-100 percent scale.')
+                    raise ValueError(
+                        'Analytics composition bars require visible categories and a clean 0-100 percent scale.'
+                    )
             if primary_visual == 'capacity_bar':
                 if series_count != 2 or chart.grouping != 'stacked' or chart.overlap != 100:
-                    raise ValueError('Analytics capacity bars require a 100% stacked utilization/headroom presentation.')
+                    raise ValueError(
+                        'Analytics capacity bars require a 100% stacked utilization/headroom presentation.'
+                    )
                 if chart.legend is None or chart.legend.position != 'b':
                     raise ValueError('Analytics capacity bars require a bottom legend.')
                 labels = [str(getattr(series.tx, 'v', '') or '').strip() for series in chart.series]
@@ -239,7 +256,9 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
                     or data_labels.showSerName is not False
                     or data_labels.showPercent is not False
                 ):
-                    raise ValueError('Analytics capacity bars must keep direct data labels disabled to prevent Excel text collisions.')
+                    raise ValueError(
+                        'Analytics capacity bars must keep direct data labels disabled to prevent Excel text collisions.'
+                    )
                 if (
                     chart.x_axis.delete is not False
                     or chart.x_axis.tickLblPos != 'nextTo'
@@ -250,7 +269,9 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
                     or chart.y_axis.majorGridlines is not None
                     or chart.y_axis.title is not None
                 ):
-                    raise ValueError('Analytics capacity bars require visible resource categories and a clean 0-100 percent scale.')
+                    raise ValueError(
+                        'Analytics capacity bars require visible resource categories and a clean 0-100 percent scale.'
+                    )
             if primary_visual == 'comparison_bar':
                 if series_count != 2 or chart.grouping != 'clustered':
                     raise ValueError('Analytics comparison bars require clustered Current/Projected series.')
@@ -270,7 +291,9 @@ def validate_analytics_xlsx_artifact(output_path: Path) -> None:
                     or data_labels.showBubbleSize is not False
                     or data_labels.dLblPos != 'outEnd'
                 ):
-                    raise ValueError('Analytics comparison bars require value-only data labels for Excel compatibility.')
+                    raise ValueError(
+                        'Analytics comparison bars require value-only data labels for Excel compatibility.'
+                    )
                 if (
                     chart.x_axis.tickLblPos != 'nextTo'
                     or chart.x_axis.delete is not False
@@ -336,7 +359,9 @@ def _build_evidence_sheet(sheet: Worksheet, table: AnalyticsTableData, data: Ana
     data_end = max(_TABLE_DATA_START_ROW, _TABLE_DATA_START_ROW + len(table.rows) - 1)
     table_name = _safe_table_name(f'{data.profile.report_type}_{table.sheet_name}')
     excel_table = Table(displayName=table_name, ref=f'A{_TABLE_HEADER_ROW}:{last_letter}{data_end}')
-    excel_table.tableStyleInfo = TableStyleInfo(name='TableStyleLight1', showRowStripes=False, showFirstColumn=False, showLastColumn=False)
+    excel_table.tableStyleInfo = TableStyleInfo(
+        name='TableStyleLight1', showRowStripes=False, showFirstColumn=False, showLastColumn=False
+    )
     sheet.add_table(excel_table)
     sheet.freeze_panes = f'A{_TABLE_DATA_START_ROW}'
     sheet.sheet_view.zoomScale = 85
@@ -393,14 +418,39 @@ def _build_metadata_sheet(sheet: Worksheet, data: AnalyticsWorkbookData) -> None
         ('XLSX Standard', XLSX_REPORTING_STANDARD, 'Contract', 'Global KAORI XLSX presentation standard.'),
         ('Tabular Standard', TABULAR_EXPORT_STANDARD, 'Contract', 'Shared typed-cell and formula-safety contract.'),
         ('Schema Version', TABULAR_SCHEMA_VERSION, 'Contract', 'Shared tabular schema version.'),
-        ('Primary Format', 'XLSX', 'Contract', 'Native Excel analysis artifact; Analytics PDF remains the default publication.'),
+        (
+            'Primary Format',
+            'XLSX',
+            'Contract',
+            'Native Excel analysis artifact; Analytics PDF remains the default publication.',
+        ),
         ('DATA HANDLING', None, None, None),
-        ('Category Sheets', ', '.join(table.sheet_name for table in data.tables) or 'None', 'Data', 'Evidence sheets included only when committed category evidence exists.'),
-        ('Primary Visual', data.primary_chart.visual_type if data.primary_chart else 'No chartable evidence', 'Data', 'Semantic visual selected by the Analytics report category.'),
+        (
+            'Category Sheets',
+            ', '.join(table.sheet_name for table in data.tables) or 'None',
+            'Data',
+            'Evidence sheets included only when committed category evidence exists.',
+        ),
+        (
+            'Primary Visual',
+            data.primary_chart.visual_type if data.primary_chart else 'No chartable evidence',
+            'Data',
+            'Semantic visual selected by the Analytics report category.',
+        ),
         ('Recommendations', 'Backend Owned', 'Data', 'Excel never invents recommendations at export time.'),
-        ('Forecast Calculation', 'Backend Owned', 'Data', 'Excel presents committed forecasts and does not calculate forecast models.'),
+        (
+            'Forecast Calculation',
+            'Backend Owned',
+            'Data',
+            'Excel presents committed forecasts and does not calculate forecast models.',
+        ),
         ('SECURITY', None, None, None),
-        ('Formula Injection Protection', 'Enabled', 'Security', 'Formula-like text values are escaped before workbook serialization.'),
+        (
+            'Formula Injection Protection',
+            'Enabled',
+            'Security',
+            'Formula-like text values are escaped before workbook serialization.',
+        ),
     ]
 
     for row_index, row in enumerate(metadata, start=_METADATA_DATA_START_ROW):
@@ -423,7 +473,9 @@ def _build_metadata_sheet(sheet: Worksheet, data: AnalyticsWorkbookData) -> None
     sheet.sheet_view.zoomScale = 90
     for column, width in {'A': 30, 'B': 42, 'C': 18, 'D': 56}.items():
         sheet.column_dimensions[column].width = width
-    configure_sheet_page(sheet, print_area=f'A1:D{end_row}', print_title_rows=f'$1:${_METADATA_HEADER_ROW}', fit_to_width=1)
+    configure_sheet_page(
+        sheet, print_area=f'A1:D{end_row}', print_title_rows=f'$1:${_METADATA_HEADER_ROW}', fit_to_width=1
+    )
     set_footer(sheet, str(data.context.report_id))
 
 
@@ -443,7 +495,17 @@ def _build_dictionary_sheet(sheet: Worksheet, data: AnalyticsWorkbookData) -> No
     sheet.row_dimensions[3].height = 20
     sheet.row_dimensions[4].height = 8
 
-    headers = ('Sheet', 'Field Key', 'Column', 'Definition', 'Data Type', 'Unit', 'Excel Number Format', 'Source', 'Missing Rule')
+    headers = (
+        'Sheet',
+        'Field Key',
+        'Column',
+        'Definition',
+        'Data Type',
+        'Unit',
+        'Excel Number Format',
+        'Source',
+        'Missing Rule',
+    )
     for index, label in enumerate(headers, start=1):
         cell = sheet.cell(row=_DICTIONARY_HEADER_ROW, column=index, value=label)
         style_header(cell)
@@ -465,7 +527,19 @@ def _build_dictionary_sheet(sheet: Worksheet, data: AnalyticsWorkbookData) -> No
                 )
             )
     if not rows:
-        rows.append(('Overview', 'evidence_state', 'Evidence State', 'Explicit analytics evidence availability state.', 'text', 'None', 'General', 'Canonical committed analytics payload', 'Not Available'))
+        rows.append(
+            (
+                'Overview',
+                'evidence_state',
+                'Evidence State',
+                'Explicit analytics evidence availability state.',
+                'text',
+                'None',
+                'General',
+                'Canonical committed analytics payload',
+                'Not Available',
+            )
+        )
 
     for offset, row in enumerate(rows):
         row_index = _DICTIONARY_DATA_START_ROW + offset
@@ -482,7 +556,9 @@ def _build_dictionary_sheet(sheet: Worksheet, data: AnalyticsWorkbookData) -> No
     sheet.sheet_view.zoomScale = 85
     for column, width in {'A': 20, 'B': 25, 'C': 28, 'D': 52, 'E': 16, 'F': 12, 'G': 20, 'H': 34, 'I': 34}.items():
         sheet.column_dimensions[column].width = width
-    configure_sheet_page(sheet, print_area=f'A1:I{end_row}', print_title_rows=f'$1:${_DICTIONARY_HEADER_ROW}', fit_to_width=1)
+    configure_sheet_page(
+        sheet, print_area=f'A1:I{end_row}', print_title_rows=f'$1:${_DICTIONARY_HEADER_ROW}', fit_to_width=1
+    )
     set_footer(sheet, str(data.context.report_id))
 
 

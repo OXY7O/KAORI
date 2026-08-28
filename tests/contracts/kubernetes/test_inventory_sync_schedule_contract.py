@@ -55,7 +55,7 @@ def test_quick_action_wording_describes_inventory_scope() -> None:
     navbar = _source('app/templates/components/navigation/navbar.html')
 
     assert 'Sync All Inventory' in navbar
-    assert 'canonical inventory jobs' in navbar
+    assert 'Queue canonical inventory collection for every eligible managed domain.' in navbar
     assert "url_for('jobs.quick_sync_all_inventory')" in navbar
 
 

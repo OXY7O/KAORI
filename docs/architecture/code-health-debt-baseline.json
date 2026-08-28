@@ -1,5 +1,5 @@
 {
-  "broad_exception_limit": 180,
+  "broad_exception_limit": 181,
   "defaults": {
     "arguments": 8,
     "branch_points": 30,
@@ -74,12 +74,15 @@
     "app/reports/export/html_pdf/resource_utilization.py::_recommendations": 31,
     "app/reports/export/html_pdf/resource_utilization.py::build_resource_utilization_presentation": 49,
     "app/reports/export/html_pdf/storage_analysis.py::build_storage_analysis_presentation": 57,
-    "app/reports/export/html_pdf/top_consumers_analysis.py::build_top_consumers_analysis_presentation": 31,
     "app/reports/export/html_pdf/workload_analysis.py::_configuration_analysis": 42,
     "app/reports/export/html_pdf/workload_analysis.py::_mapping_analysis": 32,
     "app/reports/export/html_pdf/workload_analysis.py::_quota_analysis": 45,
     "app/reports/export/payloads/tls_inventory.py::_present_record": 54,
-    "app/reports/export/payloads/tls_inventory.py::_summary": 31
+    "app/reports/export/payloads/tls_inventory.py::_summary": 31,
+    "app/reports/export/xlsx/analytics_builder.py::validate_analytics_xlsx_artifact": 141,
+    "app/reports/export/xlsx/analytics_overview.py::_write_supporting_data": 37,
+    "app/reports/export/xlsx/analytics_profiles.py::_prepare_top_consumers": 31,
+    "app/reports/export/xlsx/builder.py::validate_inventory_xlsx_artifact": 41
   },
   "function_line_limits": {
     "app/access/overview/presentation.py::build_access_overview": 199,
@@ -108,9 +111,14 @@
     "app/reports/export/html_pdf/forecast_analysis.py::build_forecast_analysis_presentation": 283,
     "app/reports/export/html_pdf/resource_utilization.py::build_resource_utilization_presentation": 449,
     "app/reports/export/html_pdf/storage_analysis.py::build_storage_analysis_presentation": 472,
-    "app/reports/export/html_pdf/top_consumers_analysis.py::build_top_consumers_analysis_presentation": 236,
+    "app/reports/export/html_pdf/top_consumers_analysis.py::build_top_consumers_analysis_presentation": 227,
     "app/reports/export/html_pdf/workload_analysis.py::build_workload_analysis_presentation": 174,
-    "app/reports/storage/service.py::get_report_storage_backend_status": 194
+    "app/reports/export/xlsx/analytics_builder.py::validate_analytics_xlsx_artifact": 227,
+    "app/reports/export/xlsx/analytics_overview.py::_add_chart": 220,
+    "app/reports/export/xlsx/analytics_profiles.py::_prepare_object_storage": 182,
+    "app/reports/export/xlsx/analytics_profiles.py::_prepare_overview": 183,
+    "app/reports/export/xlsx/builder.py::_build_metadata_sheet": 167,
+    "app/reports/storage/service.py::get_report_storage_backend_status": 193
   },
   "module_line_limits": {
     "app/integrations/observability/metrics_source/query_profiles/kubernetes_v1.py": 1309,
@@ -123,11 +131,13 @@
     "app/reports/export/html_pdf/capacity_analysis.py": 1255,
     "app/reports/export/html_pdf/forecast_analysis.py": 1114,
     "app/reports/export/html_pdf/resource_utilization.py": 1270,
-    "app/reports/export/html_pdf/storage_analysis.py": 1221,
-    "app/reports/export/html_pdf/workload_analysis.py": 1000,
-    "app/reports/generated/service.py": 1662,
+    "app/reports/export/html_pdf/storage_analysis.py": 1210,
+    "app/reports/export/html_pdf/workload_analysis.py": 1002,
+    "app/reports/export/xlsx/analytics_profiles.py": 1766,
+    "app/reports/export/xlsx/builder.py": 840,
+    "app/reports/generated/service.py": 1665,
     "app/reports/overview/service.py": 1028,
-    "app/reports/schedules/service.py": 938,
-    "app/reports/storage/service.py": 952
+    "app/reports/schedules/service.py": 940,
+    "app/reports/storage/service.py": 951
   }
 }

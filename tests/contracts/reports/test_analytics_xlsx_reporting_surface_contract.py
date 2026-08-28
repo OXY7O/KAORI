@@ -11,7 +11,7 @@ def read(relative: str) -> str:
 
 
 def _report_block(catalog: str, report_type: str) -> str:
-    pattern = rf"(?ms)^- value: {re.escape(report_type)}\n(?P<body>.*?)(?=^- value: |\Z)"
+    pattern = rf'(?ms)^- value: {re.escape(report_type)}\n(?P<body>.*?)(?=^- value: |\Z)'
     match = re.search(pattern, catalog)
     assert match is not None, report_type
     return match.group(0)

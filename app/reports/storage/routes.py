@@ -48,6 +48,7 @@ def verify_storage() -> ResponseReturnValue:
         outcome = enqueue_report_storage_verification(
             requested_by_user_id=int(current_user.id),
         )
+        assert outcome.job is not None, 'Report storage verification must own a JobExecution.'
     except ReportStorageVerificationEnqueueError:
         logger.exception('Report storage verification dispatch failed.')
         record_operational_activity(

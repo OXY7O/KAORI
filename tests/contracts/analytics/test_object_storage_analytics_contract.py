@@ -289,7 +289,11 @@ def test_object_storage_performance_chart_keeps_request_and_error_series_separat
     assert 'data-object-storage-secondary-trend-points' in trend
     assert 'Request &amp; Error Trend' in trend
     assert 'secondaryByTimestamp' in javascript
-    assert "isPerformance ? 'Request Rate' : (isForecast ? 'Observed Usage' : 'Storage Usage')" in javascript
+    normalized_javascript = ' '.join(javascript.split())
+    assert (
+        "label: isPerformance ? 'Request Rate' : isForecast ? 'Observed Usage' : 'Storage Usage',"
+        in normalized_javascript
+    )
     assert "label: 'Error Rate'" in javascript
 
 

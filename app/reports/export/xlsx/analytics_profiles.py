@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
-from typing import Any, Callable
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from typing import Any
 
 from app.reports.export.xlsx.analytics_schema import (
     AnalyticsChartData,
@@ -295,25 +295,96 @@ def _table(
 
 _RESOURCE_COLUMNS = (
     _column('resource', 'Resource', 'Resource dimension represented by the committed analytics evidence.', width=24),
-    _column('current_percent', 'Current %', 'Current committed utilization or pressure percentage.', data_type='percent', number_format='0.0"%"', width=16),
-    _column('headroom_percent', 'Headroom %', 'Remaining capacity percentage when available.', data_type='percent', number_format='0.0"%"', width=16),
+    _column(
+        'current_percent',
+        'Current %',
+        'Current committed utilization or pressure percentage.',
+        data_type='percent',
+        number_format='0.0"%"',
+        width=16,
+    ),
+    _column(
+        'headroom_percent',
+        'Headroom %',
+        'Remaining capacity percentage when available.',
+        data_type='percent',
+        number_format='0.0"%"',
+        width=16,
+    ),
     _column('status', 'Status', 'Committed status or posture label.', width=22),
 )
 
 _TREND_COLUMNS = (
-    _column('observation', 'Observation', 'Committed series position in source order.', data_type='integer', number_format='#,##0', width=14),
+    _column(
+        'observation',
+        'Observation',
+        'Committed series position in source order.',
+        data_type='integer',
+        number_format='#,##0',
+        width=14,
+    ),
     _column('timestamp', 'Timestamp', 'Committed timestamp when supplied by the analytics source.', width=22),
-    _column('cpu_percent', 'CPU %', 'CPU utilization at this observation.', data_type='percent', number_format='0.0"%"', width=14),
-    _column('memory_percent', 'Memory %', 'Memory utilization at this observation.', data_type='percent', number_format='0.0"%"', width=14),
-    _column('pods_percent', 'Pods %', 'Pod utilization at this observation.', data_type='percent', number_format='0.0"%"', width=14),
-    _column('storage_percent', 'Storage %', 'Storage utilization at this observation.', data_type='percent', number_format='0.0"%"', width=14),
+    _column(
+        'cpu_percent',
+        'CPU %',
+        'CPU utilization at this observation.',
+        data_type='percent',
+        number_format='0.0"%"',
+        width=14,
+    ),
+    _column(
+        'memory_percent',
+        'Memory %',
+        'Memory utilization at this observation.',
+        data_type='percent',
+        number_format='0.0"%"',
+        width=14,
+    ),
+    _column(
+        'pods_percent',
+        'Pods %',
+        'Pod utilization at this observation.',
+        data_type='percent',
+        number_format='0.0"%"',
+        width=14,
+    ),
+    _column(
+        'storage_percent',
+        'Storage %',
+        'Storage utilization at this observation.',
+        data_type='percent',
+        number_format='0.0"%"',
+        width=14,
+    ),
 )
 
 _FORECAST_POSTURE_COLUMNS = (
     _column('resource', 'Resource', 'Forecast resource dimension.', width=20),
-    _column('current_percent', 'Current %', 'Latest committed observed utilization.', data_type='percent', number_format='0.0"%"', width=16),
-    _column('projected_percent', 'Projected %', 'Committed projected utilization at the configured forecast horizon.', data_type='percent', number_format='0.0"%"', width=16),
-    _column('change_pp', 'Change (pp)', 'Projected change from the latest observation in percentage points.', data_type='number', number_format='+0.0;-0.0;0.0', unit='pp', width=16),
+    _column(
+        'current_percent',
+        'Current %',
+        'Latest committed observed utilization.',
+        data_type='percent',
+        number_format='0.0"%"',
+        width=16,
+    ),
+    _column(
+        'projected_percent',
+        'Projected %',
+        'Committed projected utilization at the configured forecast horizon.',
+        data_type='percent',
+        number_format='0.0"%"',
+        width=16,
+    ),
+    _column(
+        'change_pp',
+        'Change (pp)',
+        'Projected change from the latest observation in percentage points.',
+        data_type='number',
+        number_format='+0.0;-0.0;0.0',
+        unit='pp',
+        width=16,
+    ),
     _column('trend', 'Trend', 'Committed forecast direction.', width=18),
     _column('confidence', 'Confidence', 'Committed forecast confidence label.', width=18),
 )
@@ -429,12 +500,20 @@ def _prepare_resource_utilization(
             'resource': label,
             'current_percent': value,
             'headroom_percent': (100.0 - value) if value is not None else None,
-            'status': _first(_mapping(risk.get(key if key != 'pods' else 'pods')), 'status', 'label', default='Not Available'),
+            'status': _first(
+                _mapping(risk.get(key if key != 'pods' else 'pods')), 'status', 'label', default='Not Available'
+            ),
         }
         for label, key, value in zip(resources, resource_keys, values, strict=True)
     ]
     tables: list[AnalyticsTableData] = [
-        _table('Analysis', 'Resource Utilization Analysis', 'Current committed utilization and headroom by resource.', _RESOURCE_COLUMNS, analysis_rows)
+        _table(
+            'Analysis',
+            'Resource Utilization Analysis',
+            'Current committed utilization and headroom by resource.',
+            _RESOURCE_COLUMNS,
+            analysis_rows,
+        )
     ]
 
     trends = _mapping(payload.get('trends'))
@@ -450,7 +529,15 @@ def _prepare_resource_utilization(
                 row['timestamp'] = _first(item, 'timestamp', 'time', 'observed_at', default='')
         trend_rows.append(row)
     if trend_rows:
-        tables.append(_table('Trends', 'Utilization Trends', 'Committed utilization series in source order.', _TREND_COLUMNS, trend_rows))
+        tables.append(
+            _table(
+                'Trends',
+                'Utilization Trends',
+                'Committed utilization series in source order.',
+                _TREND_COLUMNS,
+                trend_rows,
+            )
+        )
 
     consumer_rows: list[dict[str, Any]] = []
     for resource, key, default_unit in (
@@ -486,7 +573,14 @@ def _prepare_resource_utilization(
                     _column('resource', 'Resource', 'Resource signal used for ranking.', width=14),
                     _column('namespace', 'Namespace', 'Kubernetes namespace.', width=28),
                     _column('consumer', 'Consumer', 'Pod, workload, or resource identity.', width=44),
-                    _column('value', 'Value', 'Committed resource value.', data_type='number', number_format='#,##0.00', width=16),
+                    _column(
+                        'value',
+                        'Value',
+                        'Committed resource value.',
+                        data_type='number',
+                        number_format='#,##0.00',
+                        width=16,
+                    ),
                     _column('unit', 'Unit', 'Unit supplied by the source evidence.', width=12),
                 ),
                 consumer_rows,
@@ -503,11 +597,7 @@ def _prepare_resource_utilization(
             for key, label in (('cpu', 'CPU'), ('memory', 'Memory'), ('pods', 'Pods'), ('storage', 'Storage'))
             if any(row.get(f'{key}_percent') is not None for row in trend_rows)
         )
-        category_key = (
-            'timestamp'
-            if all(_text(row.get('timestamp'), '') for row in trend_rows)
-            else 'observation'
-        )
+        category_key = 'timestamp' if all(_text(row.get('timestamp'), '') for row in trend_rows) else 'observation'
         if available_series:
             chart = AnalyticsChartData(
                 title='Resource Utilization Trend',
@@ -518,7 +608,9 @@ def _prepare_resource_utilization(
                 series=available_series,
                 value_axis_title='Utilization (%)',
             )
-    return AnalyticsWorkbookData(profile, context, metrics, _leading_percent_readout(metrics, 'utilization'), tuple(tables), chart)
+    return AnalyticsWorkbookData(
+        profile, context, metrics, _leading_percent_readout(metrics, 'utilization'), tuple(tables), chart
+    )
 
 
 def _capacity_rows(payload: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -535,7 +627,9 @@ def _capacity_rows(payload: Mapping[str, Any]) -> list[dict[str, Any]]:
                 'resource': label,
                 'current_percent': percent,
                 'headroom_percent': headroom,
-                'status': _first(_mapping(item.get('status')), 'label', default=_first(item, 'status_label', default='Not Available')),
+                'status': _first(
+                    _mapping(item.get('status')), 'label', default=_first(item, 'status_label', default='Not Available')
+                ),
             }
         )
     return rows
@@ -545,9 +639,17 @@ def _prepare_capacity(
     payload: Mapping[str, Any], context: AnalyticsExportContext, profile: AnalyticsWorkbookProfile
 ) -> AnalyticsWorkbookData:
     rows = _capacity_rows(payload)
-    metrics = tuple(_metric_value(spec, row['current_percent']) for spec, row in zip(profile.metric_specs, rows, strict=True))
+    metrics = tuple(
+        _metric_value(spec, row['current_percent']) for spec, row in zip(profile.metric_specs, rows, strict=True)
+    )
     tables: list[AnalyticsTableData] = [
-        _table('Analysis', 'Capacity & Headroom', 'Current committed capacity pressure and remaining headroom by resource.', _RESOURCE_COLUMNS, rows)
+        _table(
+            'Analysis',
+            'Capacity & Headroom',
+            'Current committed capacity pressure and remaining headroom by resource.',
+            _RESOURCE_COLUMNS,
+            rows,
+        )
     ]
     forecast_rows: list[dict[str, Any]] = []
     for item in _sequence(_mapping(payload.get('forecast_payload')).get('items')):
@@ -558,7 +660,11 @@ def _prepare_capacity(
                 'current_percent': _number(_first(item, 'current_percent', 'historical_percent', 'current')),
                 'projected_percent': _number(_first(item, 'projected_percent', 'forecast_percent')),
                 'signal_quality': _first(item, 'signal_quality', 'confidence', default='Not Available'),
-                'threshold_eta': _first(_mapping(item.get('warning_eta')), 'label', default=_first(item, 'threshold_eta', default='Not Available')),
+                'threshold_eta': _first(
+                    _mapping(item.get('warning_eta')),
+                    'label',
+                    default=_first(item, 'threshold_eta', default='Not Available'),
+                ),
             }
         )
     if forecast_rows:
@@ -569,8 +675,22 @@ def _prepare_capacity(
                 'Committed projections supplied by the analytics worker. Excel does not calculate forecasts.',
                 (
                     _column('resource', 'Resource', 'Forecast resource.', width=18),
-                    _column('current_percent', 'Current %', 'Current committed percentage.', data_type='percent', number_format='0.0"%"', width=15),
-                    _column('projected_percent', 'Projected %', 'Committed projected percentage.', data_type='percent', number_format='0.0"%"', width=15),
+                    _column(
+                        'current_percent',
+                        'Current %',
+                        'Current committed percentage.',
+                        data_type='percent',
+                        number_format='0.0"%"',
+                        width=15,
+                    ),
+                    _column(
+                        'projected_percent',
+                        'Projected %',
+                        'Committed projected percentage.',
+                        data_type='percent',
+                        number_format='0.0"%"',
+                        width=15,
+                    ),
                     _column('signal_quality', 'Signal Quality', 'Committed forecast evidence quality.', width=18),
                     _column('threshold_eta', 'Threshold ETA', 'Committed threshold timing when available.', width=20),
                 ),
@@ -578,16 +698,26 @@ def _prepare_capacity(
             )
         )
     _append_recommendations(tables, payload)
-    chart_rows = tuple({'category': row['resource'], 'value': row['current_percent']} for row in rows if row['current_percent'] is not None)
-    chart = AnalyticsChartData(
-        title='Capacity Utilization by Resource',
-        visual_type='capacity_bar',
-        source_sheet='Analysis',
-        rows=chart_rows,
-        series=(AnalyticsChartSeries('value', 'Utilization', '0.0', '%'),),
-        value_axis_title='Utilization (%)',
-    ) if chart_rows else None
-    return AnalyticsWorkbookData(profile, context, metrics, _leading_percent_readout(metrics, 'capacity'), tuple(tables), chart)
+    chart_rows = tuple(
+        {'category': row['resource'], 'value': row['current_percent']}
+        for row in rows
+        if row['current_percent'] is not None
+    )
+    chart = (
+        AnalyticsChartData(
+            title='Capacity Utilization by Resource',
+            visual_type='capacity_bar',
+            source_sheet='Analysis',
+            rows=chart_rows,
+            series=(AnalyticsChartSeries('value', 'Utilization', '0.0', '%'),),
+            value_axis_title='Utilization (%)',
+        )
+        if chart_rows
+        else None
+    )
+    return AnalyticsWorkbookData(
+        profile, context, metrics, _leading_percent_readout(metrics, 'capacity'), tuple(tables), chart
+    )
 
 
 def _prepare_storage(
@@ -603,10 +733,26 @@ def _prepare_storage(
     values = (pvc_util, _int(pv.get('count')), _int(pvc.get('count')), len(filesystem_rows))
     metrics = tuple(_metric_value(spec, value) for spec, value in zip(profile.metric_specs, values, strict=True))
     analysis_rows = [
-        {'metric': 'PV Capacity', 'value': _first(pv, 'capacity', default='Not Available'), 'status': 'Committed' if pv else 'Not Available'},
-        {'metric': 'Observed Claim Usage', 'value': _first(pv, 'observed_claim_usage', default='Not Available'), 'status': 'Committed' if pv else 'Not Available'},
-        {'metric': 'PVC Used', 'value': _first(pvc, 'used', default='Not Available'), 'status': 'Committed' if pvc else 'Not Available'},
-        {'metric': 'PVC Free', 'value': _first(pvc, 'free', default='Not Available'), 'status': 'Committed' if pvc else 'Not Available'},
+        {
+            'metric': 'PV Capacity',
+            'value': _first(pv, 'capacity', default='Not Available'),
+            'status': 'Committed' if pv else 'Not Available',
+        },
+        {
+            'metric': 'Observed Claim Usage',
+            'value': _first(pv, 'observed_claim_usage', default='Not Available'),
+            'status': 'Committed' if pv else 'Not Available',
+        },
+        {
+            'metric': 'PVC Used',
+            'value': _first(pvc, 'used', default='Not Available'),
+            'status': 'Committed' if pvc else 'Not Available',
+        },
+        {
+            'metric': 'PVC Free',
+            'value': _first(pvc, 'free', default='Not Available'),
+            'status': 'Committed' if pvc else 'Not Available',
+        },
     ]
     tables: list[AnalyticsTableData] = [
         _table(
@@ -632,13 +778,28 @@ def _prepare_storage(
             breakdown_rows.append(
                 {
                     'type': kind,
-                    'identity': _first(identity, 'primary', default=_first(item, 'name', 'persistent_volume', 'persistent_volume_claim', 'mountpoint', default='Not Available')),
+                    'identity': _first(
+                        identity,
+                        'primary',
+                        default=_first(
+                            item,
+                            'name',
+                            'persistent_volume',
+                            'persistent_volume_claim',
+                            'mountpoint',
+                            default='Not Available',
+                        ),
+                    ),
                     'namespace': _first(item, 'namespace', default='Cluster'),
                     'capacity': _first(item, 'capacity_display', 'capacity', 'size', default='Not Available'),
                     'used': _first(item, 'used_display', 'used', 'usage_display', default='Not Available'),
                     'free': _first(item, 'free_display', 'free', 'available_display', default='Not Available'),
                     'utilization_percent': _number(_first(item, 'used_percent', 'utilization_percent', 'percent')),
-                    'status': _first(_mapping(item.get('risk')), 'label', default=_first(item, 'status', 'phase', default='Not Available')),
+                    'status': _first(
+                        _mapping(item.get('risk')),
+                        'label',
+                        default=_first(item, 'status', 'phase', default='Not Available'),
+                    ),
                 }
             )
     if breakdown_rows:
@@ -654,7 +815,14 @@ def _prepare_storage(
                     _column('capacity', 'Capacity', 'Committed capacity.', width=18),
                     _column('used', 'Used', 'Committed used capacity.', width=18),
                     _column('free', 'Free', 'Committed free capacity.', width=18),
-                    _column('utilization_percent', 'Utilization %', 'Committed utilization percentage.', data_type='percent', number_format='0.0"%"', width=16),
+                    _column(
+                        'utilization_percent',
+                        'Utilization %',
+                        'Committed utilization percentage.',
+                        data_type='percent',
+                        number_format='0.0"%"',
+                        width=16,
+                    ),
                     _column('status', 'Status', 'Lifecycle or risk label.', width=18),
                 ),
                 breakdown_rows,
@@ -664,15 +832,21 @@ def _prepare_storage(
     chart_rows: tuple[Mapping[str, Any], ...] = ()
     if pvc_util is not None:
         chart_rows = ({'category': 'Persistent Claims', 'value': pvc_util},)
-    chart = AnalyticsChartData(
-        title='Persistent Claim Capacity Posture',
-        visual_type='capacity_bar',
-        source_sheet='Analysis',
-        rows=chart_rows,
-        series=(AnalyticsChartSeries('value', 'Percent', '0.0', '%'),),
-        value_axis_title='Percent',
-    ) if chart_rows else None
-    return AnalyticsWorkbookData(profile, context, metrics, _leading_percent_readout((metrics[0],), 'storage'), tuple(tables), chart)
+    chart = (
+        AnalyticsChartData(
+            title='Persistent Claim Capacity Posture',
+            visual_type='capacity_bar',
+            source_sheet='Analysis',
+            rows=chart_rows,
+            series=(AnalyticsChartSeries('value', 'Percent', '0.0', '%'),),
+            value_axis_title='Percent',
+        )
+        if chart_rows
+        else None
+    )
+    return AnalyticsWorkbookData(
+        profile, context, metrics, _leading_percent_readout((metrics[0],), 'storage'), tuple(tables), chart
+    )
 
 
 def _prepare_workload(
@@ -680,7 +854,9 @@ def _prepare_workload(
 ) -> AnalyticsWorkbookData:
     quota = _mapping(payload.get('tenant_quota_summary'))
     quota_rows = _sequence(payload.get('tenant_quota_rows') or quota.get('rows'))
-    mapping_rows_raw = _sequence(payload.get('workload_mapping_rows') or _mapping(payload.get('workload_mapping_payload')).get('rows'))
+    mapping_rows_raw = _sequence(
+        payload.get('workload_mapping_rows') or _mapping(payload.get('workload_mapping_payload')).get('rows')
+    )
     findings = _sequence(payload.get('governance_findings'))
     total = _int(quota.get('scope_total')) or len(quota_rows)
     covered = _int(quota.get('scope_covered'))
@@ -691,7 +867,9 @@ def _prepare_workload(
     normalized_quota = [
         {
             'namespace': _first(item, 'namespace', 'name', default='Not Available'),
-            'quota_status': _first(_mapping(item.get('quota_status')), 'label', default=_first(item, 'status', default='Not Available')),
+            'quota_status': _first(
+                _mapping(item.get('quota_status')), 'label', default=_first(item, 'status', default='Not Available')
+            ),
             'cpu': _first(item, 'cpu', 'cpu_display', default='Not Available'),
             'memory': _first(item, 'memory', 'memory_display', default='Not Available'),
             'pods': _first(item, 'pods', 'pod_display', default='Not Available'),
@@ -718,11 +896,19 @@ def _prepare_workload(
     normalized_mapping = [
         {
             'namespace': _first(item, 'namespace', default='Not Available'),
-            'workload': _first(_mapping(item.get('identity')), 'primary', default=_first(item, 'workload', 'name', default='Not Available')),
+            'workload': _first(
+                _mapping(item.get('identity')),
+                'primary',
+                default=_first(item, 'workload', 'name', default='Not Available'),
+            ),
             'kind': _first(item, 'kind', 'workload_kind', default='Not Available'),
             'requests': _first(item, 'requests', 'request_display', default='Not Available'),
             'limits': _first(item, 'limits', 'limit_display', default='Not Available'),
-            'status': _first(_mapping(item.get('risk')), 'label', default=_first(item, 'status', 'qos_class', default='Not Available')),
+            'status': _first(
+                _mapping(item.get('risk')),
+                'label',
+                default=_first(item, 'status', 'qos_class', default='Not Available'),
+            ),
         }
         for item in mapping_rows_raw
     ]
@@ -750,18 +936,24 @@ def _prepare_workload(
             {'category': 'Quota Covered', 'value': covered},
             {'category': 'Quota Not Covered', 'value': max(total - covered, 0)},
         )
-    chart = AnalyticsChartData(
-        title='Namespace Quota Coverage',
-        visual_type='composition_bar',
-        source_sheet='Analysis' if normalized_quota else 'Overview',
-        rows=chart_rows,
-        series=(AnalyticsChartSeries('value', 'Namespaces', '#,##0'),),
-        total_value=float(total) if total else None,
-    ) if chart_rows else None
+    chart = (
+        AnalyticsChartData(
+            title='Namespace Quota Coverage',
+            visual_type='composition_bar',
+            source_sheet='Analysis' if normalized_quota else 'Overview',
+            rows=chart_rows,
+            series=(AnalyticsChartSeries('value', 'Namespaces', '#,##0'),),
+            total_value=float(total) if total else None,
+        )
+        if chart_rows
+        else None
+    )
     if coverage is None:
         readout = 'No committed tenant quota coverage denominator is available for the selected reporting boundary.'
     else:
-        readout = f'{coverage:.1f}% of {total:,} namespace quota records are covered in the committed analytics evidence.'
+        readout = (
+            f'{coverage:.1f}% of {total:,} namespace quota records are covered in the committed analytics evidence.'
+        )
     return AnalyticsWorkbookData(profile, context, metrics, readout, tuple(tables), chart)
 
 
@@ -783,7 +975,11 @@ def _prepare_forecast(
             'current_percent': _number(_first(item, 'current_percent', 'historical_percent', 'current')),
             'projected_percent': _forecast_item_percent(item),
             'signal_quality': _first(item, 'signal_quality', 'confidence', default='Not Available'),
-            'threshold_eta': _first(_mapping(item.get('warning_eta')), 'label', default=_first(item, 'threshold_eta', default='Not Available')),
+            'threshold_eta': _first(
+                _mapping(item.get('warning_eta')),
+                'label',
+                default=_first(item, 'threshold_eta', default='Not Available'),
+            ),
         }
         for key, item in by_key.items()
     ]
@@ -796,8 +992,22 @@ def _prepare_forecast(
                 'Committed current and projected resource signals.',
                 (
                     _column('resource', 'Resource', 'Forecast resource.', width=18),
-                    _column('current_percent', 'Current %', 'Current committed percentage.', data_type='percent', number_format='0.0"%"', width=15),
-                    _column('projected_percent', 'Projected %', 'Committed projected percentage.', data_type='percent', number_format='0.0"%"', width=15),
+                    _column(
+                        'current_percent',
+                        'Current %',
+                        'Current committed percentage.',
+                        data_type='percent',
+                        number_format='0.0"%"',
+                        width=15,
+                    ),
+                    _column(
+                        'projected_percent',
+                        'Projected %',
+                        'Committed projected percentage.',
+                        data_type='percent',
+                        number_format='0.0"%"',
+                        width=15,
+                    ),
                     _column('signal_quality', 'Signal Quality', 'Committed signal quality.', width=18),
                     _column('threshold_eta', 'Threshold ETA', 'Committed threshold timing.', width=20),
                 ),
@@ -806,6 +1016,7 @@ def _prepare_forecast(
         )
 
     preferred_key = next((key for key in ('memory', 'cpu', 'pods', 'storage') if key in by_key), None)
+    preferred_label = str(preferred_key).title() if preferred_key else 'Resource'
     trend_rows: list[dict[str, Any]] = []
     if preferred_key:
         item = _mapping(by_key[preferred_key])
@@ -820,20 +1031,41 @@ def _prepare_forecast(
                     'observation': index + 1,
                     'historical_percent': _number(_first(hist, 'percent', 'value')),
                     'forecast_percent': _number(_first(proj, 'percent', 'value')),
-                    'resource': preferred_key.title(),
+                    'resource': preferred_label,
                 }
             )
     if trend_rows:
         tables.append(
             _table(
                 'Trends',
-                f'{preferred_key.title()} Forecast Trend',
+                f'{preferred_label} Forecast Trend',
                 'Committed historical and forecast points in source order.',
                 (
-                    _column('observation', 'Observation', 'Source-order point.', data_type='integer', number_format='#,##0', width=14),
+                    _column(
+                        'observation',
+                        'Observation',
+                        'Source-order point.',
+                        data_type='integer',
+                        number_format='#,##0',
+                        width=14,
+                    ),
                     _column('resource', 'Resource', 'Forecast resource.', width=16),
-                    _column('historical_percent', 'Historical %', 'Committed historical percentage.', data_type='percent', number_format='0.0"%"', width=16),
-                    _column('forecast_percent', 'Forecast %', 'Committed forecast percentage.', data_type='percent', number_format='0.0"%"', width=16),
+                    _column(
+                        'historical_percent',
+                        'Historical %',
+                        'Committed historical percentage.',
+                        data_type='percent',
+                        number_format='0.0"%"',
+                        width=16,
+                    ),
+                    _column(
+                        'forecast_percent',
+                        'Forecast %',
+                        'Committed forecast percentage.',
+                        data_type='percent',
+                        number_format='0.0"%"',
+                        width=16,
+                    ),
                 ),
                 trend_rows,
             )
@@ -842,7 +1074,7 @@ def _prepare_forecast(
     chart = None
     if trend_rows:
         chart = AnalyticsChartData(
-            title=f'{preferred_key.title()} Historical & Forecast Direction',
+            title=f'{preferred_label} Historical & Forecast Direction',
             visual_type='line',
             source_sheet='Trends',
             rows=tuple(trend_rows),
@@ -853,7 +1085,9 @@ def _prepare_forecast(
             ),
             value_axis_title='Percent',
         )
-    return AnalyticsWorkbookData(profile, context, metrics, _leading_percent_readout(metrics, 'forecast'), tuple(tables), chart)
+    return AnalyticsWorkbookData(
+        profile, context, metrics, _leading_percent_readout(metrics, 'forecast'), tuple(tables), chart
+    )
 
 
 def _consumer_identity(item: Mapping[str, Any]) -> str:
@@ -958,7 +1192,9 @@ def _prepare_top_consumers(
                 'display_numeric': display_numeric,
                 'display_value': display_value,
                 'unit': unit or 'Not Available',
-                'status': _first(_mapping(item.get('risk')), 'label', default=_first(item, 'status', default='Not Available')),
+                'status': _first(
+                    _mapping(item.get('risk')), 'label', default=_first(item, 'status', default='Not Available')
+                ),
             }
         )
     cpu_count = sum(1 for row in rows if str(row['resource']).casefold() == 'cpu')
@@ -977,14 +1213,23 @@ def _prepare_top_consumers(
                     _column('resource', 'Resource', 'Resource signal.', width=14),
                     _column('namespace', 'Namespace', 'Namespace identity.', width=28),
                     _column('consumer', 'Consumer', 'Pod, workload, or resource identity.', width=44),
-                    _column('value', 'Value', 'Committed numeric value normalized to the published display unit.', data_type='number', number_format='#,##0.00', width=18),
+                    _column(
+                        'value',
+                        'Value',
+                        'Committed numeric value normalized to the published display unit.',
+                        data_type='number',
+                        number_format='#,##0.00',
+                        width=18,
+                    ),
                     _column('unit', 'Unit', 'Published resource-specific unit.', width=12),
                     _column('status', 'Status', 'Committed risk or review state.', width=18),
                 ),
                 rows,
             )
         )
-    preferred = next((resource for resource in ('Memory', 'CPU') if any(row['resource'] == resource for row in rows)), None)
+    preferred = next(
+        (resource for resource in ('Memory', 'CPU') if any(row['resource'] == resource for row in rows)), None
+    )
     if preferred is None:
         preferred = next((str(row['resource']) for row in rows), None)
     ranked = [row for row in rows if row['resource'] == preferred and row['display_numeric'] is not None]
@@ -992,15 +1237,19 @@ def _prepare_top_consumers(
     chart_rows = tuple({'category': row['consumer'], 'value': row['display_numeric']} for row in ranked[:8])
     unit = _clean_unit(ranked[0].get('unit')) if ranked else ''
     total_value = sum(float(row['display_numeric']) for row in ranked if row['display_numeric'] is not None)
-    chart = AnalyticsChartData(
-        title=f'Top {preferred} Consumers',
-        visual_type='ranked_bar',
-        source_sheet='Top Consumers',
-        rows=chart_rows,
-        series=(AnalyticsChartSeries('value', preferred or 'Value', '#,##0.00', unit or None),),
-        value_axis_title=f'{preferred} ({unit})' if unit and unit != 'Not Available' else preferred,
-        total_value=total_value or None,
-    ) if chart_rows else None
+    chart = (
+        AnalyticsChartData(
+            title=f'Top {preferred} Consumers',
+            visual_type='ranked_bar',
+            source_sheet='Top Consumers',
+            rows=chart_rows,
+            series=(AnalyticsChartSeries('value', preferred or 'Value', '#,##0.00', unit or None),),
+            value_axis_title=f'{preferred} ({unit})' if unit and unit != 'Not Available' else preferred,
+            total_value=total_value or None,
+        )
+        if chart_rows
+        else None
+    )
     if ranked:
         readout = f'{ranked[0]["consumer"]} is the leading displayed {preferred} consumer at {_text(ranked[0]["display_value"], str(ranked[0]["value"]))}.'
     else:
@@ -1030,8 +1279,14 @@ def _prepare_alerts(
     source_status = _mapping(payload.get('source_status'))
     analysis_rows = [
         {'signal': 'Alert Source', 'value': _first(source_status, 'label', 'status', default='Not Available')},
-        {'signal': 'Anomaly Source', 'value': _first(_mapping(payload.get('anomaly_source_status')), 'label', 'status', default='Not Available')},
-        {'signal': 'Committed Evidence', 'value': 'Available' if payload.get('committed_evidence_available', True) else 'Unavailable'},
+        {
+            'signal': 'Anomaly Source',
+            'value': _first(_mapping(payload.get('anomaly_source_status')), 'label', 'status', default='Not Available'),
+        },
+        {
+            'signal': 'Committed Evidence',
+            'value': 'Available' if payload.get('committed_evidence_available', True) else 'Unavailable',
+        },
     ]
     tables: list[AnalyticsTableData] = [
         _table(
@@ -1090,14 +1345,18 @@ def _prepare_alerts(
         )
         if count > 0
     )
-    chart = AnalyticsChartData(
-        title='Active Alert Severity',
-        visual_type='composition_bar',
-        source_sheet='Alerts & Anomalies',
-        rows=severity_rows,
-        series=(AnalyticsChartSeries('value', 'Alerts', '#,##0'),),
-        total_value=float(active) if active else None,
-    ) if severity_rows else None
+    chart = (
+        AnalyticsChartData(
+            title='Active Alert Severity',
+            visual_type='composition_bar',
+            source_sheet='Alerts & Anomalies',
+            rows=severity_rows,
+            series=(AnalyticsChartSeries('value', 'Alerts', '#,##0'),),
+            total_value=float(active) if active else None,
+        )
+        if severity_rows
+        else None
+    )
     if active or anomaly_count:
         readout = f'{active:,} active alert(s) and {anomaly_count:,} anomaly candidate(s) are committed at the report cut-off; {critical:,} alert(s) are critical.'
     else:
@@ -1180,10 +1439,32 @@ def _prepare_object_storage(
                 'Bucket/container usage ranking normalized to GiB when numeric usage evidence is available.',
                 (
                     _column('bucket', 'Bucket / Container', 'Bucket or container identity.', width=44),
-                    _column('usage_gib', 'Usage GiB', 'Committed usage normalized to GiB.', data_type='number', number_format='#,##0.00', unit='GiB', width=16),
-                    _column('objects', 'Objects', 'Committed object count.', data_type='integer', number_format='#,##0', width=16),
+                    _column(
+                        'usage_gib',
+                        'Usage GiB',
+                        'Committed usage normalized to GiB.',
+                        data_type='number',
+                        number_format='#,##0.00',
+                        unit='GiB',
+                        width=16,
+                    ),
+                    _column(
+                        'objects',
+                        'Objects',
+                        'Committed object count.',
+                        data_type='integer',
+                        number_format='#,##0',
+                        width=16,
+                    ),
                     _column('quota', 'Quota', 'Committed quota evidence.', width=20),
-                    _column('usage_share', 'Usage Share %', 'Committed usage share when supplied.', data_type='percent', number_format='0.0"%"', width=16),
+                    _column(
+                        'usage_share',
+                        'Usage Share %',
+                        'Committed usage share when supplied.',
+                        data_type='percent',
+                        number_format='0.0"%"',
+                        width=16,
+                    ),
                 ),
                 consumers,
             )
@@ -1208,10 +1489,33 @@ def _prepare_object_storage(
                 'Object Storage Growth & Forecast',
                 'Committed historical and forecast evidence; Excel does not calculate the forecast.',
                 (
-                    _column('observation', 'Observation', 'Source-order point.', data_type='integer', number_format='#,##0', width=14),
+                    _column(
+                        'observation',
+                        'Observation',
+                        'Source-order point.',
+                        data_type='integer',
+                        number_format='#,##0',
+                        width=14,
+                    ),
                     _column('timestamp', 'Timestamp', 'Committed timestamp.', width=22),
-                    _column('historical_gib', 'Historical GiB', 'Committed historical usage.', data_type='number', number_format='#,##0.00', unit='GiB', width=18),
-                    _column('forecast_gib', 'Forecast GiB', 'Committed forecast usage.', data_type='number', number_format='#,##0.00', unit='GiB', width=18),
+                    _column(
+                        'historical_gib',
+                        'Historical GiB',
+                        'Committed historical usage.',
+                        data_type='number',
+                        number_format='#,##0.00',
+                        unit='GiB',
+                        width=18,
+                    ),
+                    _column(
+                        'forecast_gib',
+                        'Forecast GiB',
+                        'Committed forecast usage.',
+                        data_type='number',
+                        number_format='#,##0.00',
+                        unit='GiB',
+                        width=18,
+                    ),
                 ),
                 forecast_rows,
             )
@@ -1241,16 +1545,22 @@ def _prepare_object_storage(
                 normalized_alerts,
             )
         )
-    chart_rows = tuple({'category': row['bucket'], 'value': row['usage_gib']} for row in consumers[:8] if row['usage_gib'] is not None)
-    chart = AnalyticsChartData(
-        title='Top Object Storage Consumers',
-        visual_type='ranked_bar',
-        source_sheet='Top Consumers',
-        rows=chart_rows,
-        series=(AnalyticsChartSeries('value', 'Usage', '#,##0.00', 'GiB'),),
-        value_axis_title='Usage (GiB)',
-        total_value=sum(float(row['usage_gib']) for row in consumers if row['usage_gib'] is not None) or None,
-    ) if chart_rows else None
+    chart_rows = tuple(
+        {'category': row['bucket'], 'value': row['usage_gib']} for row in consumers[:8] if row['usage_gib'] is not None
+    )
+    chart = (
+        AnalyticsChartData(
+            title='Top Object Storage Consumers',
+            visual_type='ranked_bar',
+            source_sheet='Top Consumers',
+            rows=chart_rows,
+            series=(AnalyticsChartSeries('value', 'Usage', '#,##0.00', 'GiB'),),
+            value_axis_title='Usage (GiB)',
+            total_value=sum(float(row['usage_gib']) for row in consumers if row['usage_gib'] is not None) or None,
+        )
+        if chart_rows
+        else None
+    )
     if consumers and consumers[0]['usage_gib'] is not None:
         readout = f'{consumers[0]["bucket"]} is the leading committed storage consumer at {float(consumers[0]["usage_gib"]):.2f} GiB.'
     else:
@@ -1298,9 +1608,7 @@ def _prepare_overview(
 
     forecast_peak = _number(_first(forecast, 'highest_projected_percent', 'projected_percent'))
     if forecast_peak is None and forecast_rows:
-        forecast_peak = max(
-            row['projected_percent'] for row in forecast_rows if row['projected_percent'] is not None
-        )
+        forecast_peak = max(row['projected_percent'] for row in forecast_rows if row['projected_percent'] is not None)
 
     alerts = _mapping(payload.get('alerts_snapshot'))
     alert_detail = _mapping(payload.get('alert_detail'))
@@ -1312,10 +1620,7 @@ def _prepare_overview(
             default=_first(
                 alerts,
                 'firing_alerts',
-                default=sum(
-                    _int(_first(alerts, key, f'{key}_alerts'))
-                    for key in ('critical', 'warning', 'info')
-                ),
+                default=sum(_int(_first(alerts, key, f'{key}_alerts')) for key in ('critical', 'warning', 'info')),
             ),
         )
     )
@@ -1382,7 +1687,14 @@ def _prepare_overview(
                     _column('namespace', 'Namespace', 'Namespace identity.', width=28),
                     _column('consumer', 'Consumer', 'Consumer identity.', width=44),
                     _column('display_value', 'Display Value', 'Committed formatted value.', width=18),
-                    _column('percent', 'Percent', 'Committed percentage when supplied.', data_type='percent', number_format='0.0"%"', width=15),
+                    _column(
+                        'percent',
+                        'Percent',
+                        'Committed percentage when supplied.',
+                        data_type='percent',
+                        number_format='0.0"%"',
+                        width=15,
+                    ),
                 ),
                 consumer_rows,
             )

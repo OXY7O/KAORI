@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from openpyxl.chart import BarChart, LineChart, Reference
 from openpyxl.chart.label import DataLabelList
-from openpyxl.chart.series import DataPoint, SeriesLabel
+from openpyxl.chart.marker import DataPoint
+from openpyxl.chart.series import SeriesLabel
 from openpyxl.chart.shapes import GraphicalProperties
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -61,8 +62,20 @@ def build_analytics_overview_sheet(sheet: Worksheet, data: AnalyticsWorkbookData
     _write_navigation(sheet)
 
     for column, width in {
-        'A': 12, 'B': 12, 'C': 12, 'D': 12, 'E': 12, 'F': 12, 'G': 12, 'H': 12,
-        'I': 4, 'J': 8, 'K': 28, 'L': 16, 'M': 16, 'N': 16,
+        'A': 12,
+        'B': 12,
+        'C': 12,
+        'D': 12,
+        'E': 12,
+        'F': 12,
+        'G': 12,
+        'H': 12,
+        'I': 4,
+        'J': 8,
+        'K': 28,
+        'L': 16,
+        'M': 16,
+        'N': 16,
     }.items():
         sheet.column_dimensions[column].width = width
     if data.primary_chart is not None and data.primary_chart.visual_type == 'comparison_bar':
@@ -161,10 +174,16 @@ def _write_visual_and_supporting_data(sheet: Worksheet, data: AnalyticsWorkbookD
     chart = data.primary_chart
     if chart is None or not chart.rows:
         sheet.merge_cells(start_row=15, start_column=1, end_row=18, end_column=8)
-        message = sheet.cell(row=15, column=1, value='No committed chartable analytics evidence is available for this reporting boundary.')
+        message = sheet.cell(
+            row=15,
+            column=1,
+            value='No committed chartable analytics evidence is available for this reporting boundary.',
+        )
         style_readout(message)
         sheet.merge_cells(start_row=15, start_column=10, end_row=18, end_column=14)
-        support = sheet.cell(row=15, column=10, value='Use the category evidence sheets for available committed records.')
+        support = sheet.cell(
+            row=15, column=10, value='Use the category evidence sheets for available committed records.'
+        )
         style_body(support)
         return
 
@@ -183,11 +202,15 @@ def _write_supporting_data(sheet: Worksheet, chart: AnalyticsChartData) -> None:
         for offset, row in enumerate(rows, start=0):
             row_index = _SUPPORTING_DATA_ROW + offset
             category = row.get(chart.category_key)
-            values: list[Any] = [category]
-            values.extend(row.get(series.key) for series in chart.series[:4])
-            for column_index, value in enumerate(values, start=_SUPPORTING_START_COLUMN):
+            line_values: list[Any] = [category]
+            line_values.extend(row.get(series.key) for series in chart.series[:4])
+            for column_index, value in enumerate(line_values, start=_SUPPORTING_START_COLUMN):
                 cell = sheet.cell(row=row_index, column=column_index, value=value)
-                style_body(cell, alternate=offset % 2 == 1, horizontal='right' if column_index > _SUPPORTING_START_COLUMN else 'left')
+                style_body(
+                    cell,
+                    alternate=offset % 2 == 1,
+                    horizontal='right' if column_index > _SUPPORTING_START_COLUMN else 'left',
+                )
                 series_index = column_index - _SUPPORTING_START_COLUMN - 1
                 if series_index >= 0 and series_index < len(chart.series):
                     series = chart.series[series_index]
@@ -202,14 +225,14 @@ def _write_supporting_data(sheet: Worksheet, chart: AnalyticsChartData) -> None:
             style_header(cell)
         for offset, row in enumerate(chart.rows[:8]):
             row_index = _SUPPORTING_DATA_ROW + offset
-            values = (
+            comparison_values = (
                 row.get(chart.category_key),
                 _number(row.get('current_percent')),
                 _number(row.get('projected_percent')),
                 _number(row.get('change_pp')),
                 row.get('trend'),
             )
-            for column_index, item in enumerate(values, start=_SUPPORTING_START_COLUMN):
+            for column_index, item in enumerate(comparison_values, start=_SUPPORTING_START_COLUMN):
                 cell = sheet.cell(row=row_index, column=column_index, value=item)
                 horizontal = 'center' if column_index == 13 else ('right' if column_index in {11, 12} else 'left')
                 style_body(
@@ -232,16 +255,22 @@ def _write_supporting_data(sheet: Worksheet, chart: AnalyticsChartData) -> None:
             row_index = _SUPPORTING_DATA_ROW + offset
             value = _number(row.get('value'))
             headroom = max(0.0, 100.0 - value) if value is not None else None
-            values = (row.get(chart.category_key), value, headroom)
-            for column_index, item in enumerate(values, start=_SUPPORTING_START_COLUMN):
+            capacity_values = (row.get(chart.category_key), value, headroom)
+            for column_index, item in enumerate(capacity_values, start=_SUPPORTING_START_COLUMN):
                 cell = sheet.cell(row=row_index, column=column_index, value=item)
-                style_body(cell, alternate=offset % 2 == 1, horizontal='right' if column_index > _SUPPORTING_START_COLUMN else 'left')
+                style_body(
+                    cell,
+                    alternate=offset % 2 == 1,
+                    horizontal='right' if column_index > _SUPPORTING_START_COLUMN else 'left',
+                )
             sheet.cell(row=row_index, column=11).number_format = '0.0"%"'
             sheet.cell(row=row_index, column=12).number_format = '0.0"%"'
             sheet.row_dimensions[row_index].height = 25
         return
 
-    share_label = 'Share of Total' if chart.visual_type == 'composition_bar' or chart.total_value else 'Share of Displayed'
+    share_label = (
+        'Share of Total' if chart.visual_type == 'composition_bar' or chart.total_value else 'Share of Displayed'
+    )
     headers = ('Rank', 'Category', 'Value', share_label)
     for index, label in enumerate(headers, start=_SUPPORTING_START_COLUMN):
         cell = sheet.cell(row=_SUPPORTING_HEADER_DATA_ROW, column=index, value=label)
@@ -252,8 +281,8 @@ def _write_supporting_data(sheet: Worksheet, chart: AnalyticsChartData) -> None:
         row_index = _SUPPORTING_DATA_ROW + rank - 1
         value = _number(row.get('value'))
         share = value / total * 100.0 if total > 0 else 0.0
-        values = (rank, row.get(chart.category_key), value, share)
-        for column_index, item in enumerate(values, start=_SUPPORTING_START_COLUMN):
+        ranked_values = (rank, row.get(chart.category_key), value, share)
+        for column_index, item in enumerate(ranked_values, start=_SUPPORTING_START_COLUMN):
             cell = sheet.cell(row=row_index, column=column_index, value=item)
             style_body(cell, alternate=rank % 2 == 0, horizontal='right' if column_index in {10, 12, 13} else 'left')
         if chart.series:
@@ -283,7 +312,7 @@ def _add_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: AnalyticsCh
         visual.varyColors = False
         visual.title = chart.title
         visual.height = 8.0
-        visual.width = 13.5
+        cast(Any, visual).width = 13.5
         visual.gapWidth = 60
         values = Reference(
             sheet,
@@ -343,7 +372,7 @@ def _add_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: AnalyticsCh
         visual.varyColors = False
         visual.title = chart.title
         visual.height = 8.0
-        visual.width = 13.5
+        cast(Any, visual).width = 13.5
         visual.gapWidth = 70
         values = Reference(
             sheet,
@@ -403,7 +432,7 @@ def _add_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: AnalyticsCh
         visual.visible_cells_only = False
         visual.title = chart.title
         visual.height = 8.0
-        visual.width = 13.5
+        cast(Any, visual).width = 13.5
         visual.gapWidth = 65
         visual.add_data(values, titles_from_data=True)
         chart_categories = Reference(
@@ -414,7 +443,7 @@ def _add_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: AnalyticsCh
         )
         visual.set_categories(chart_categories)
         visual.legend = None
-        visual.dLbls = DataLabelList(
+        data_labels = DataLabelList(
             showLegendKey=False,
             showVal=True,
             showCatName=False,
@@ -424,8 +453,9 @@ def _add_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: AnalyticsCh
             showLeaderLines=False,
             dLblPos='outEnd',
         )
+        visual.dLbls = data_labels
         if chart.series:
-            visual.dLbls.numFmt = _series_number_format(chart.series[0].number_format, chart.series[0].unit)
+            data_labels.numFmt = _series_number_format(chart.series[0].number_format, chart.series[0].unit)
         visual.x_axis.scaling.orientation = 'maxMin'
         visual.x_axis.tickLblPos = 'nextTo'
         visual.x_axis.delete = False
@@ -449,7 +479,7 @@ def _add_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: AnalyticsCh
         visual.varyColors = False
         visual.title = chart.title
         visual.height = 8.0
-        visual.width = 13.5
+        cast(Any, visual).width = 13.5
         visual.gapWidth = 70
         visual.add_data(share_values, titles_from_data=True)
         visual.set_categories(categories)
@@ -477,7 +507,9 @@ def _add_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: AnalyticsCh
         points: list[DataPoint] = []
         for index, row in enumerate(chart.rows[:8]):
             point = DataPoint(idx=index)
-            point.graphicalProperties.solidFill = _semantic_composition_color(str(row.get(chart.category_key) or ''), index)
+            point.graphicalProperties.solidFill = _semantic_composition_color(
+                str(row.get(chart.category_key) or ''), index
+            )
             points.append(point)
         visual.series[0].data_points = points
         _remove_frame(visual)
@@ -491,7 +523,10 @@ def _add_line_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: Analyt
     source = data.table(chart.source_sheet)
     if source is None or not source.rows:
         return
-    source_sheet = sheet.parent[chart.source_sheet]
+    workbook = sheet.parent
+    if workbook is None:
+        raise ValueError('Analytics Overview must belong to a workbook.')
+    source_sheet = cast(Worksheet, workbook[chart.source_sheet])
     column_indexes = {column.key: index for index, column in enumerate(source.columns, start=1)}
     category_index = column_indexes.get(chart.category_key)
     if category_index is None:
@@ -500,12 +535,14 @@ def _add_line_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: Analyt
     visual = LineChart()
     visual.title = chart.title
     visual.height = 8.0
-    visual.width = 13.5
-    visual.legend.position = 'b'
-    visual.legend.overlay = False
+    cast(Any, visual).width = 13.5
+    legend = visual.legend
+    if legend is not None:
+        legend.position = 'b'
+        legend.overlay = False
     visual.x_axis.title = None
     visual.x_axis.tickLblPos = 'low'
-    visual.x_axis.tickLblSkip = max(1, len(source.rows) // 6)
+    cast(Any, visual.x_axis).tickLblSkip = max(1, len(source.rows) // 6)
     percent_series = bool(chart.series) and all(series.unit == '%' for series in chart.series)
     if percent_series:
         visual.y_axis.title = None
@@ -542,7 +579,10 @@ def _write_navigation(sheet: Worksheet) -> None:
     style_section_header(header)
     sheet.row_dimensions[_NAV_HEADER_ROW].height = 22
 
-    targets = [name for name in sheet.parent.sheetnames if name != 'Overview'][:7]
+    workbook = sheet.parent
+    if workbook is None:
+        raise ValueError('Analytics Overview must belong to a workbook.')
+    targets = [name for name in workbook.sheetnames if name != 'Overview'][:7]
     rows = (targets[:4], targets[4:7])
     spans = (
         ((1, 3), (4, 6), (7, 9), (10, 14)),
@@ -571,7 +611,7 @@ def _overview_title(data: AnalyticsWorkbookData) -> str:
     if report_type == 'object_storage_analysis':
         return 'KAORI — Object Storage Analytics'
     if data.profile.title.endswith(' Analysis'):
-        return f"KAORI — {data.profile.title.removesuffix(' Analysis')} Analytics"
+        return f'KAORI — {data.profile.title.removesuffix(" Analysis")} Analytics'
     return f'KAORI — {data.profile.title} Analytics'
 
 

@@ -12,6 +12,7 @@ from sqlalchemy import select
 from app.artifact_storage.base import ArtifactStorageBackend, StoredArtifact
 from app.extensions.db import db
 from app.models.report import Report
+from app.reports.storage import verification as storage_check
 from app.reports.storage.health import (
     build_local_storage_health,
     build_s3_storage_health,
@@ -20,7 +21,6 @@ from app.reports.storage.health import (
 )
 from app.reports.storage.local import build_local_report_storage
 from app.reports.storage.s3 import build_s3_report_storage
-from app.reports.storage import verification as storage_check
 from app.reports.storage.state import (
     clear_shared_report_storage_status,
     format_storage_check_age,

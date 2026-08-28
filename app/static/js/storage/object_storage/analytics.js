@@ -70,7 +70,7 @@
         )
         const datasets = [
             {
-                label: isPerformance ? 'Request Rate' : (isForecast ? 'Observed Usage' : 'Storage Usage'),
+                label: isPerformance ? 'Request Rate' : isForecast ? 'Observed Usage' : 'Storage Usage',
                 data: points.map((point) => Number(point.value)),
                 borderColor: primaryColor,
                 backgroundColor: primaryColor,
@@ -116,10 +116,7 @@
             ]
             datasets.push({
                 label: '30d Linear Projection',
-                data: [
-                    ...points.slice(0, -1).map(() => null),
-                    ...projectionPoints.map((point) => Number(point.value)),
-                ],
+                data: [...points.slice(0, -1).map(() => null), ...projectionPoints.map((point) => Number(point.value))],
                 borderColor: primaryColor,
                 backgroundColor: primaryColor,
                 borderWidth: 2,
@@ -140,7 +137,10 @@
                 animation: false,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: { display: (isPerformance || isForecast) && datasets.length > 1, labels: { color: textColor } },
+                    legend: {
+                        display: (isPerformance || isForecast) && datasets.length > 1,
+                        labels: { color: textColor },
+                    },
                     tooltip: {
                         callbacks: {
                             label: (context) =>
