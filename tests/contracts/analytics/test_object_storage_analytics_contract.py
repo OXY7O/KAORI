@@ -9,7 +9,7 @@ def read(relative: str) -> str:
 
 
 def has_jinja_assignment(source: str, variable: str, value: str) -> bool:
-    pattern = rf'{{%\s*set\s+{re.escape(variable)}\s*=\s*(["\']){re.escape(value)}\1\s*%}}'
+    pattern = rf'{%\s*set\s+{re.escape(variable)}\s*=\s*(["\']){re.escape(value)}\1\s*%}'
     return re.search(pattern, source) is not None
 
 
@@ -289,7 +289,11 @@ def test_object_storage_performance_chart_keeps_request_and_error_series_separat
     assert 'data-object-storage-secondary-trend-points' in trend
     assert 'Request &amp; Error Trend' in trend
     assert 'secondaryByTimestamp' in javascript
-    assert "isPerformance ? 'Request Rate' : (isForecast ? 'Observed Usage' : 'Storage Usage')" in javascript
+    normalized_javascript = ' '.join(javascript.split())
+    assert (
+        "label: isPerformance ? 'Request Rate' : isForecast ? 'Observed Usage' : 'Storage Usage',"
+        in normalized_javascript
+    )
     assert "label: 'Error Rate'" in javascript
 
 
