@@ -25,7 +25,7 @@ mkdir -p tmp/ci-artifacts/runtime tmp/ci-artifacts/zap
 chmod 0777 tmp/ci-artifacts/runtime tmp/ci-artifacts/zap
 
 "${COMPOSE[@]}" up -d postgres redis ci
-"${COMPOSE[@]}" run --rm runtime alembic upgrade head
+"${COMPOSE[@]}" run --rm runtime flask --app run:app db upgrade
 "${COMPOSE[@]}" up -d runtime runtime-reports-worker
 
 ready=0
