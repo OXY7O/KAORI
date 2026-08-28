@@ -120,6 +120,28 @@ docs(governance): standardize repository workflow
 
 PR titles describe the change; the body owns traceability and evidence.
 
+### Pull Request body
+
+A KAORI PR is written for humans first and auditability second; both are required. The opening sections must let a reviewer understand the purpose and scope without opening the diff.
+
+Canonical reading order:
+
+```text
+Summary
+  -> Why
+  -> What Changed
+  -> Out of Scope
+  -> Linked Work
+  -> Acceptance Criteria Coverage
+  -> Verification Evidence
+  -> Security / Migration / Operational Impact
+  -> UAT
+  -> Release Impact
+  -> Reviewer Checklist
+```
+
+Keep summaries concise, group related changes, and link exact CI/SHA evidence rather than pasting raw logs. Use `None — <reason>` for impact sections only when the impact is genuinely not applicable.
+
 ### Issue linkage in Pull Requests
 
 Use:
@@ -310,6 +332,8 @@ After the hotfix merges, synchronize `kaori/staging` from `main` before normal d
 
 ## Label Authority
 
+KAORI retains GitHub's built-in `documentation` label as the canonical label for documentation work. It is intentionally not replaced by a custom `scope:documentation` label.
+
 KAORI custom labels use the canonical namespaced vocabulary defined by `docs/engineering/KAORI_GITHUB_LABEL_CATALOG.md`:
 
 - `area:*`
@@ -318,7 +342,7 @@ KAORI custom labels use the canonical namespaced vocabulary defined by `docs/eng
 - `impact:*`
 - `workflow:*`
 
-Labels must not duplicate Project Status, native Issue Type, Priority, Sprint, or Milestone.
+Custom labels must not duplicate GitHub-native metadata or the retained built-in documentation label. Native Issue Type remains the authority for Bug, Feature/User Story, Task, Chore, Technical Debt, Spike, and Epic classification; Project fields remain the authority for Status, Priority, and Sprint.
 
 ## Branch Hygiene
 
