@@ -5,12 +5,13 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - kaori/working
+      - "kaori/**"
       - main
       - "release/**"
   pull_request:
     branches:
       - main
+      - kaori/staging
     types:
       - opened
       - synchronize
