@@ -50,6 +50,24 @@ def test_analytics_overview_chart_dispatch_uses_focused_renderers() -> None:
     assert 'visual = BarChart()' not in chart_dispatch
 
 
+def test_analytics_overview_supporting_data_dispatch_uses_focused_writers() -> None:
+    overview = read('app/reports/export/xlsx/analytics_overview.py')
+    supporting_dispatch = overview.split('def _write_supporting_data(', 1)[1].split('\n\ndef ', 1)[0]
+
+    for writer in (
+        '_write_line_supporting_data',
+        '_write_comparison_supporting_data',
+        '_write_capacity_supporting_data',
+        '_write_ranked_supporting_data',
+        '_write_composition_supporting_data',
+    ):
+        assert f'{writer}(' in supporting_dispatch
+        assert f'def {writer}(' in overview
+
+    assert 'style_header(' not in supporting_dispatch
+    assert 'style_body(' not in supporting_dispatch
+
+
 def test_quality_gate_presents_concise_test_evidence() -> None:
     quality_gate = read('scripts/quality_gate.sh')
 
