@@ -40,14 +40,25 @@ def _breakdown_rows(persistent: Mapping[str, Any], filesystem_rows: list[Mapping
                     'identity': first(
                         identity,
                         'primary',
-                        default=first(item, 'name', 'persistent_volume', 'persistent_volume_claim', 'mountpoint', default='Not Available'),
+                        default=first(
+                            item,
+                            'name',
+                            'persistent_volume',
+                            'persistent_volume_claim',
+                            'mountpoint',
+                            default='Not Available',
+                        ),
                     ),
                     'namespace': first(item, 'namespace', default='Cluster'),
                     'capacity': first(item, 'capacity_display', 'capacity', 'size', default='Not Available'),
                     'used': first(item, 'used_display', 'used', 'usage_display', default='Not Available'),
                     'free': first(item, 'free_display', 'free', 'available_display', default='Not Available'),
                     'utilization_percent': number(first(item, 'used_percent', 'utilization_percent', 'percent')),
-                    'status': first(mapping(item.get('risk')), 'label', default=first(item, 'status', 'phase', default='Not Available')),
+                    'status': first(
+                        mapping(item.get('risk')),
+                        'label',
+                        default=first(item, 'status', 'phase', default='Not Available'),
+                    ),
                 }
             )
     return rows
@@ -66,10 +77,26 @@ def prepare_storage(
     values = (pvc_util, integer(pv.get('count')), integer(pvc.get('count')), len(filesystem_rows))
     metrics = tuple(metric_value(spec, value) for spec, value in zip(profile.metric_specs, values, strict=True))
     analysis_rows = [
-        {'metric': 'PV Capacity', 'value': first(pv, 'capacity', default='Not Available'), 'status': 'Committed' if pv else 'Not Available'},
-        {'metric': 'Observed Claim Usage', 'value': first(pv, 'observed_claim_usage', default='Not Available'), 'status': 'Committed' if pv else 'Not Available'},
-        {'metric': 'PVC Used', 'value': first(pvc, 'used', default='Not Available'), 'status': 'Committed' if pvc else 'Not Available'},
-        {'metric': 'PVC Free', 'value': first(pvc, 'free', default='Not Available'), 'status': 'Committed' if pvc else 'Not Available'},
+        {
+            'metric': 'PV Capacity',
+            'value': first(pv, 'capacity', default='Not Available'),
+            'status': 'Committed' if pv else 'Not Available',
+        },
+        {
+            'metric': 'Observed Claim Usage',
+            'value': first(pv, 'observed_claim_usage', default='Not Available'),
+            'status': 'Committed' if pv else 'Not Available',
+        },
+        {
+            'metric': 'PVC Used',
+            'value': first(pvc, 'used', default='Not Available'),
+            'status': 'Committed' if pvc else 'Not Available',
+        },
+        {
+            'metric': 'PVC Free',
+            'value': first(pvc, 'free', default='Not Available'),
+            'status': 'Committed' if pvc else 'Not Available',
+        },
     ]
     tables: list[AnalyticsTableData] = [
         table(
@@ -98,7 +125,14 @@ def prepare_storage(
                     column('capacity', 'Capacity', 'Committed capacity.', width=18),
                     column('used', 'Used', 'Committed used capacity.', width=18),
                     column('free', 'Free', 'Committed free capacity.', width=18),
-                    column('utilization_percent', 'Utilization %', 'Committed utilization percentage.', data_type='percent', number_format='0.0"%"', width=16),
+                    column(
+                        'utilization_percent',
+                        'Utilization %',
+                        'Committed utilization percentage.',
+                        data_type='percent',
+                        number_format='0.0"%"',
+                        width=16,
+                    ),
                     column('status', 'Status', 'Lifecycle or risk label.', width=18),
                 ),
                 breakdown,
@@ -118,4 +152,6 @@ def prepare_storage(
             series=(AnalyticsChartSeries('value', 'Percent', '0.0', '%'),),
             value_axis_title='Percent',
         )
-    return AnalyticsWorkbookData(profile, context, metrics, leading_percent_readout((metrics[0],), 'storage'), tuple(tables), chart)
+    return AnalyticsWorkbookData(
+        profile, context, metrics, leading_percent_readout((metrics[0],), 'storage'), tuple(tables), chart
+    )
