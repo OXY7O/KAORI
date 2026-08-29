@@ -27,7 +27,9 @@ from app.reports.export.xlsx.analytics_schema import (
 )
 
 
-def _forecast_rows(payload: Mapping[str, Any], resources: Mapping[str, Any]) -> tuple[Mapping[str, Any], list[dict[str, Any]]]:
+def _forecast_rows(
+    payload: Mapping[str, Any], resources: Mapping[str, Any]
+) -> tuple[Mapping[str, Any], list[dict[str, Any]]]:
     forecast = mapping(payload.get('forecast_snapshot'))
     rows: list[dict[str, Any]] = []
     for item in sequence(forecast.get('series')):
@@ -102,9 +104,25 @@ def _append_detail_tables(
     alert_rows: list[Mapping[str, Any]],
 ) -> None:
     if analysis_rows:
-        tables.append(table('Analysis', 'Cross-Domain Resource Posture', 'Committed resource snapshot across the selected analytics boundary.', RESOURCE_COLUMNS, analysis_rows))
+        tables.append(
+            table(
+                'Analysis',
+                'Cross-Domain Resource Posture',
+                'Committed resource snapshot across the selected analytics boundary.',
+                RESOURCE_COLUMNS,
+                analysis_rows,
+            )
+        )
     if forecast_rows:
-        tables.append(table('Trends', 'Current & Projected Resource Posture', 'Committed latest observations and backend-owned forecast projections by resource.', FORECAST_POSTURE_COLUMNS, forecast_rows))
+        tables.append(
+            table(
+                'Trends',
+                'Current & Projected Resource Posture',
+                'Committed latest observations and backend-owned forecast projections by resource.',
+                FORECAST_POSTURE_COLUMNS,
+                forecast_rows,
+            )
+        )
     if consumer_rows:
         tables.append(
             table(
@@ -116,7 +134,14 @@ def _append_detail_tables(
                     column('namespace', 'Namespace', 'Namespace identity.', width=28),
                     column('consumer', 'Consumer', 'Consumer identity.', width=44),
                     column('display_value', 'Display Value', 'Committed formatted value.', width=18),
-                    column('percent', 'Percent', 'Committed percentage when supplied.', data_type='percent', number_format='0.0"%"', width=15),
+                    column(
+                        'percent',
+                        'Percent',
+                        'Committed percentage when supplied.',
+                        data_type='percent',
+                        number_format='0.0"%"',
+                        width=15,
+                    ),
                 ),
                 consumer_rows,
             )
