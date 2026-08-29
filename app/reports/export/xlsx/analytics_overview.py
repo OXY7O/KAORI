@@ -193,84 +193,125 @@ def _write_visual_and_supporting_data(sheet: Worksheet, data: AnalyticsWorkbookD
 
 def _write_supporting_data(sheet: Worksheet, chart: AnalyticsChartData) -> None:
     if chart.visual_type == 'line':
-        category_label = 'Observed At' if chart.category_key == 'timestamp' else 'Observation'
-        headers = [category_label, *[series.label for series in chart.series[:4]]]
-        for index, label in enumerate(headers, start=_SUPPORTING_START_COLUMN):
-            cell = sheet.cell(row=_SUPPORTING_HEADER_DATA_ROW, column=index, value=label)
-            style_header(cell)
-        rows = list(chart.rows[-6:])
-        for offset, row in enumerate(rows, start=0):
-            row_index = _SUPPORTING_DATA_ROW + offset
-            category = row.get(chart.category_key)
-            line_values: list[Any] = [category]
-            line_values.extend(row.get(series.key) for series in chart.series[:4])
-            for column_index, value in enumerate(line_values, start=_SUPPORTING_START_COLUMN):
-                cell = sheet.cell(row=row_index, column=column_index, value=value)
-                style_body(
-                    cell,
-                    alternate=offset % 2 == 1,
-                    horizontal='right' if column_index > _SUPPORTING_START_COLUMN else 'left',
-                )
-                series_index = column_index - _SUPPORTING_START_COLUMN - 1
-                if series_index >= 0 and series_index < len(chart.series):
-                    series = chart.series[series_index]
-                    cell.number_format = _series_number_format(series.number_format, series.unit)
-            sheet.row_dimensions[row_index].height = 25
+        _write_line_supporting_data(sheet, chart)
         return
-
     if chart.visual_type == 'comparison_bar':
-        headers = ('Resource', 'Current', 'Projected', 'Change (pp)', 'Trend')
-        for index, label in enumerate(headers, start=_SUPPORTING_START_COLUMN):
-            cell = sheet.cell(row=_SUPPORTING_HEADER_DATA_ROW, column=index, value=label)
-            style_header(cell)
-        for offset, row in enumerate(chart.rows[:8]):
-            row_index = _SUPPORTING_DATA_ROW + offset
-            comparison_values = (
-                row.get(chart.category_key),
-                _number(row.get('current_percent')),
-                _number(row.get('projected_percent')),
-                _number(row.get('change_pp')),
-                row.get('trend'),
-            )
-            for column_index, item in enumerate(comparison_values, start=_SUPPORTING_START_COLUMN):
-                cell = sheet.cell(row=row_index, column=column_index, value=item)
-                horizontal = 'center' if column_index == 13 else ('right' if column_index in {11, 12} else 'left')
-                style_body(
-                    cell,
-                    alternate=offset % 2 == 1,
-                    horizontal=horizontal,
-                )
-            sheet.cell(row=row_index, column=11).number_format = '0.0"%"'
-            sheet.cell(row=row_index, column=12).number_format = '0.0"%"'
-            sheet.cell(row=row_index, column=13).number_format = '+0.0;-0.0;0.0'
-            sheet.row_dimensions[row_index].height = 25
+        _write_comparison_supporting_data(sheet, chart)
         return
-
     if chart.visual_type == 'capacity_bar':
-        headers = ('Resource', 'Utilization', 'Headroom')
-        for index, label in enumerate(headers, start=_SUPPORTING_START_COLUMN):
-            cell = sheet.cell(row=_SUPPORTING_HEADER_DATA_ROW, column=index, value=label)
-            style_header(cell)
-        for offset, row in enumerate(chart.rows[:8]):
-            row_index = _SUPPORTING_DATA_ROW + offset
-            value = _number(row.get('value'))
-            headroom = max(0.0, 100.0 - value) if value is not None else None
-            capacity_values = (row.get(chart.category_key), value, headroom)
-            for column_index, item in enumerate(capacity_values, start=_SUPPORTING_START_COLUMN):
-                cell = sheet.cell(row=row_index, column=column_index, value=item)
-                style_body(
-                    cell,
-                    alternate=offset % 2 == 1,
-                    horizontal='right' if column_index > _SUPPORTING_START_COLUMN else 'left',
-                )
-            sheet.cell(row=row_index, column=11).number_format = '0.0"%"'
-            sheet.cell(row=row_index, column=12).number_format = '0.0"%"'
-            sheet.row_dimensions[row_index].height = 25
+        _write_capacity_supporting_data(sheet, chart)
         return
+    if chart.visual_type == 'ranked_bar':
+        _write_ranked_supporting_data(sheet, chart)
+        return
+    if chart.visual_type == 'composition_bar':
+        _write_composition_supporting_data(sheet, chart)
+        return
+    raise ValueError(f'Unsupported Analytics visual type: {chart.visual_type}.')
 
-    share_label = (
-        'Share of Total' if chart.visual_type == 'composition_bar' or chart.total_value else 'Share of Displayed'
+
+def _write_line_supporting_data(sheet: Worksheet, chart: AnalyticsChartData) -> None:
+    category_label = 'Observed At' if chart.category_key == 'timestamp' else 'Observation'
+    headers = [category_label, *[series.label for series in chart.series[:4]]]
+    for index, label in enumerate(headers, start=_SUPPORTING_START_COLUMN):
+        cell = sheet.cell(row=_SUPPORTING_HEADER_DATA_ROW, column=index, value=label)
+        style_header(cell)
+    rows = list(chart.rows[-6:])
+    for offset, row in enumerate(rows, start=0):
+        row_index = _SUPPORTING_DATA_ROW + offset
+        category = row.get(chart.category_key)
+        line_values: list[Any] = [category]
+        line_values.extend(row.get(series.key) for series in chart.series[:4])
+        for column_index, value in enumerate(line_values, start=_SUPPORTING_START_COLUMN):
+            cell = sheet.cell(row=row_index, column=column_index, value=value)
+            style_body(
+                cell,
+                alternate=offset % 2 == 1,
+                horizontal='right' if column_index > _SUPPORTING_START_COLUMN else 'left',
+            )
+            series_index = column_index - _SUPPORTING_START_COLUMN - 1
+            if 0 <= series_index < len(chart.series):
+                series = chart.series[series_index]
+                cell.number_format = _series_number_format(series.number_format, series.unit)
+        sheet.row_dimensions[row_index].height = 25
+
+
+def _write_comparison_supporting_data(sheet: Worksheet, chart: AnalyticsChartData) -> None:
+    headers = ('Resource', 'Current', 'Projected', 'Change (pp)', 'Trend')
+    for index, label in enumerate(headers, start=_SUPPORTING_START_COLUMN):
+        cell = sheet.cell(row=_SUPPORTING_HEADER_DATA_ROW, column=index, value=label)
+        style_header(cell)
+    for offset, row in enumerate(chart.rows[:8]):
+        row_index = _SUPPORTING_DATA_ROW + offset
+        comparison_values = (
+            row.get(chart.category_key),
+            _number(row.get('current_percent')),
+            _number(row.get('projected_percent')),
+            _number(row.get('change_pp')),
+            row.get('trend'),
+        )
+        for column_index, item in enumerate(comparison_values, start=_SUPPORTING_START_COLUMN):
+            cell = sheet.cell(row=row_index, column=column_index, value=item)
+            horizontal = 'center' if column_index == 13 else ('right' if column_index in {11, 12} else 'left')
+            style_body(
+                cell,
+                alternate=offset % 2 == 1,
+                horizontal=horizontal,
+            )
+        sheet.cell(row=row_index, column=11).number_format = '0.0"%"'
+        sheet.cell(row=row_index, column=12).number_format = '0.0"%"'
+        sheet.cell(row=row_index, column=13).number_format = '+0.0;-0.0;0.0'
+        sheet.row_dimensions[row_index].height = 25
+
+
+def _write_capacity_supporting_data(sheet: Worksheet, chart: AnalyticsChartData) -> None:
+    headers = ('Resource', 'Utilization', 'Headroom')
+    for index, label in enumerate(headers, start=_SUPPORTING_START_COLUMN):
+        cell = sheet.cell(row=_SUPPORTING_HEADER_DATA_ROW, column=index, value=label)
+        style_header(cell)
+    for offset, row in enumerate(chart.rows[:8]):
+        row_index = _SUPPORTING_DATA_ROW + offset
+        value = _number(row.get('value'))
+        headroom = max(0.0, 100.0 - value) if value is not None else None
+        capacity_values = (row.get(chart.category_key), value, headroom)
+        for column_index, item in enumerate(capacity_values, start=_SUPPORTING_START_COLUMN):
+            cell = sheet.cell(row=row_index, column=column_index, value=item)
+            style_body(
+                cell,
+                alternate=offset % 2 == 1,
+                horizontal='right' if column_index > _SUPPORTING_START_COLUMN else 'left',
+            )
+        sheet.cell(row=row_index, column=11).number_format = '0.0"%"'
+        sheet.cell(row=row_index, column=12).number_format = '0.0"%"'
+        sheet.row_dimensions[row_index].height = 25
+
+
+def _write_ranked_supporting_data(sheet: Worksheet, chart: AnalyticsChartData) -> None:
+    share_label = 'Share of Total' if chart.total_value else 'Share of Displayed'
+    _write_share_supporting_data(
+        sheet,
+        chart,
+        share_label=share_label,
+        include_short_category=True,
     )
+
+
+def _write_composition_supporting_data(sheet: Worksheet, chart: AnalyticsChartData) -> None:
+    _write_share_supporting_data(
+        sheet,
+        chart,
+        share_label='Share of Total',
+        include_short_category=False,
+    )
+
+
+def _write_share_supporting_data(
+    sheet: Worksheet,
+    chart: AnalyticsChartData,
+    *,
+    share_label: str,
+    include_short_category: bool,
+) -> None:
     headers = ('Rank', 'Category', 'Value', share_label)
     for index, label in enumerate(headers, start=_SUPPORTING_START_COLUMN):
         cell = sheet.cell(row=_SUPPORTING_HEADER_DATA_ROW, column=index, value=label)
@@ -292,7 +333,7 @@ def _write_supporting_data(sheet: Worksheet, chart: AnalyticsChartData) -> None:
             )
         sheet.cell(row=row_index, column=13).number_format = '0.0"%"'
         category = str(row.get(chart.category_key) or '')
-        if chart.visual_type == 'ranked_bar':
+        if include_short_category:
             sheet.cell(row=row_index, column=_CHART_CATEGORY_COLUMN, value=_short_chart_label(category))
         sheet.row_dimensions[row_index].height = 34 if len(category) > 36 else 25
 
