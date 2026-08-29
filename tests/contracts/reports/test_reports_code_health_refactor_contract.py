@@ -32,4 +32,6 @@ def test_quality_gate_presents_concise_test_evidence() -> None:
     assert 'PASS — KAORI Functional Tests' in quality_gate
     assert 'FAIL — KAORI Functional Tests' in quality_gate
     assert 'GITHUB_STEP_SUMMARY' in quality_gate
+    assert 'pytest -q tests/contracts tests/migrations' in quality_gate
+    assert "pytest -q -m 'not debug and not e2e'" in quality_gate
     assert 'pytest -q tests/e2e -m e2e' in quality_gate
