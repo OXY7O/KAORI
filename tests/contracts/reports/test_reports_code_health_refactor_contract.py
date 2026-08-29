@@ -34,6 +34,22 @@ def test_inventory_xlsx_metadata_rows_use_focused_boundary() -> None:
     assert "('REPORT IDENTITY', None, None, None)" not in builder
 
 
+def test_analytics_overview_chart_dispatch_uses_focused_renderers() -> None:
+    overview = read('app/reports/export/xlsx/analytics_overview.py')
+    chart_dispatch = overview.split('def _add_chart(', 1)[1].split('def _add_line_chart(', 1)[0]
+
+    for renderer in (
+        '_add_comparison_bar_chart',
+        '_add_capacity_bar_chart',
+        '_add_ranked_bar_chart',
+        '_add_composition_bar_chart',
+    ):
+        assert f'{renderer}(' in chart_dispatch
+        assert f'def {renderer}(' in overview
+
+    assert 'visual = BarChart()' not in chart_dispatch
+
+
 def test_quality_gate_presents_concise_test_evidence() -> None:
     quality_gate = read('scripts/quality_gate.sh')
 
