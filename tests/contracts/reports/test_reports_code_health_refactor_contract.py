@@ -12,10 +12,7 @@ def read(relative: str) -> str:
 def test_analytics_xlsx_validation_uses_focused_boundary() -> None:
     builder = read('app/reports/export/xlsx/analytics_builder.py')
 
-    expected_import = (
-        'from app.reports.export.xlsx.analytics_validation import '
-        'validate_analytics_xlsx_artifact'
-    )
+    expected_import = 'from app.reports.export.xlsx.analytics_validation import validate_analytics_xlsx_artifact'
     assert expected_import in builder
     assert 'def validate_analytics_xlsx_artifact(' not in builder
 
@@ -23,10 +20,7 @@ def test_analytics_xlsx_validation_uses_focused_boundary() -> None:
 def test_inventory_xlsx_validation_uses_focused_boundary() -> None:
     builder = read('app/reports/export/xlsx/builder.py')
 
-    expected_import = (
-        'from app.reports.export.xlsx.inventory_validation import '
-        'validate_inventory_xlsx_artifact'
-    )
+    expected_import = 'from app.reports.export.xlsx.inventory_validation import validate_inventory_xlsx_artifact'
     assert expected_import in builder
     assert 'def validate_inventory_xlsx_artifact(' not in builder
 
