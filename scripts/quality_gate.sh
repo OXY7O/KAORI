@@ -45,6 +45,25 @@ run_pytest_gate() {
     fi
 }
 
+run_e2e_gate() {
+    if pytest -q tests/e2e -m e2e --tb=short; then
+        printf '\nPASS — KAORI End-to-End Tests\n'
+        append_test_summary \
+            'PASS' \
+            'End-to-End Tests' \
+            'Explicit E2E smoke layer passed with concise traceback output; raw command output remains available in the job log.'
+        return 0
+    else
+        local status=$?
+        printf '\nFAIL — KAORI End-to-End Tests\n' >&2
+        append_test_summary \
+            'FAIL' \
+            'End-to-End Tests' \
+            'Review the failing E2E test name, assertion or reason, and source path in the job log.'
+        return "$status"
+    fi
+}
+
 run_static() {
     bash scripts/verify_source_hygiene.sh
     python scripts/verify_release_surface_coverage.py
@@ -176,11 +195,9 @@ run_tests() {
         tests/reports \
         tests/settings \
         -m functional
-    run_pytest_gate \
-        'PASS — KAORI End-to-End Tests' \
-        'FAIL — KAORI End-to-End Tests' \
-        'End-to-End Tests' \
-        tests/e2e -m e2e
+
+    # Keep the explicit command recognizable to release final-lock verifiers.
+    run_e2e_gate
 }
 
 run_frontend() {
