@@ -10,6 +10,16 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-26-kaori-analytics-xlsx-design.md`
 
+## Execution State
+
+- [x] Architectural design approved.
+- [x] Focused implementation plan committed.
+- [x] RED structural contract committed at `35ef601a2815e65b46308cba792b959035818e95`.
+- [x] RED CI #213 / `33253816502`: exactly `1 failed, 2184 passed`, failing because `analytics_profile_catalog.py` did not yet exist; all preceding static/code-health gates passed.
+- [ ] GREEN atomic profile/preparation split integrated and verified.
+- [ ] Exact profile debt ledger reconciled.
+- [ ] Final full KAORI Admission passed.
+
 ## Global Constraints
 
 - Work item: GitHub Issue #13, delivered through draft PR #33.
@@ -26,295 +36,49 @@
 - Do not create custom verification scripts; use existing tests and verifiers.
 - Debt ledger entries may only be removed after GREEN Static/code-health evidence on the corresponding source structure.
 
----
-
-### Task 1: Lock facade, catalog, and package ownership with a RED contract
-
-**Files:**
-- Modify: `tests/contracts/reports/test_reports_code_health_refactor_contract.py`
-- Create after RED: `app/reports/export/xlsx/analytics_profile_catalog.py`
-- Create after RED: `app/reports/export/xlsx/analytics_preparation/__init__.py`
-
-**Interfaces:**
-- Consumes: current `analytics_profiles.py` facade API.
-- Produces: structural contract requiring catalog ownership and category-preparation package boundaries.
-
-- [ ] **Step 1: Add the failing structural contract**
-
-Append a contract equivalent to:
-
-```python
-def test_analytics_profiles_is_a_stable_facade_over_focused_preparation_modules() -> None:
-    facade = read('app/reports/export/xlsx/analytics_profiles.py')
-    catalog = read('app/reports/export/xlsx/analytics_profile_catalog.py')
-
-    assert 'from app.reports.export.xlsx.analytics_profile_catalog import (' in facade
-    assert 'ANALYTICS_WORKBOOK_PROFILES' in facade
-    assert 'ANALYTICS_XLSX_REPORT_TYPES' in facade
-    assert 'def get_analytics_workbook_profile(' in facade
-    assert 'def prepare_analytics_workbook_data(' in facade
-    assert 'AnalyticsWorkbookProfile(' in catalog
-
-    for module in (
-        'overview',
-        'resource_utilization',
-        'capacity',
-        'storage',
-        'workload',
-        'forecast',
-        'top_consumers',
-        'alerts',
-        'object_storage',
-    ):
-        source = read(f'app/reports/export/xlsx/analytics_preparation/{module}.py')
-        assert 'def prepare_' in source
-```
-
-- [ ] **Step 2: Trigger CI and verify RED**
-
-Expected failure: missing `analytics_profile_catalog.py` and/or `analytics_preparation/*` ownership; preceding architecture/code-health gates should remain unchanged.
-
-- [ ] **Step 3: Commit RED evidence**
-
-Commit only the contract test with a message such as `test(reports): lock analytics profile preparation boundaries`.
-
-### Task 2: Extract the declarative Analytics profile catalog
-
-**Files:**
-- Create: `app/reports/export/xlsx/analytics_profile_catalog.py`
-- Modify: `app/reports/export/xlsx/analytics_profiles.py`
-- Test: `tests/reports/test_analytics_xlsx_standard.py`
-
-**Interfaces:**
-- Produces: `ANALYTICS_WORKBOOK_PROFILES: dict[str, AnalyticsWorkbookProfile]`, `ANALYTICS_XLSX_REPORT_TYPES: frozenset[str]`, and catalog validation executed at import time.
-- Facade re-exports the two constants without changing object semantics.
-
-- [ ] **Step 1: Move profile-construction helpers and definitions**
-
-Move `_metric`, `_column`, the full nine-profile `ANALYTICS_WORKBOOK_PROFILES` mapping, `ANALYTICS_XLSX_REPORT_TYPES`, and `_validate_profiles()` into `analytics_profile_catalog.py`.
-
-- [ ] **Step 2: Re-export catalog values from the facade**
-
-Use explicit imports in `analytics_profiles.py`; do not duplicate the registry or recompute a divergent report-type set.
-
-- [ ] **Step 3: Verify public profile behavior**
-
-Run the existing profile contract:
-
-`pytest -q tests/reports/test_analytics_xlsx_standard.py::test_analytics_xlsx_profiles_cover_every_published_analytics_category --tb=short`
-
-Expected: PASS with the exact same nine report types and profile metadata.
-
-- [ ] **Step 4: Run architecture/import checks through CI**
-
-The catalog must not import any preparer, builder, renderer, or facade.
-
-- [ ] **Step 5: Commit the catalog extraction**
-
-Commit message: `refactor(reports): extract analytics profile catalog`.
-
-### Task 3: Extract shared preparation primitives without creating a catch-all
-
-**Files:**
-- Create: `app/reports/export/xlsx/analytics_preparation/__init__.py`
-- Create: `app/reports/export/xlsx/analytics_preparation/common.py`
-- Modify: `app/reports/export/xlsx/analytics_profiles.py`
-- Test: `tests/reports/test_analytics_xlsx_standard.py`
-
-**Interfaces:**
-- `common.py` may own only helpers used by at least two categories, including mapping/sequence/number/text normalization, first-value lookup, shared metric/table construction, shared recommendation rows, and shared column specifications where usage is genuinely cross-category.
-- Category-specific resource-unit rules remain outside common support.
-
-- [ ] **Step 1: Extract reusable normalization primitives**
-
-Move the semantics of `_mapping`, `_sequence`, `_number`, `_int`, `_text`, `_first`, `_percent_from_resource`, `_metric_value`, `_table`, and genuinely shared column/recommendation helpers to `common.py` with stable typed signatures.
-
-- [ ] **Step 2: Keep package `__init__.py` minimal**
-
-Do not eagerly import every preparer from `analytics_preparation/__init__.py`; it should remain package documentation/type-neutral unless a proven import contract requires otherwise.
-
-- [ ] **Step 3: Verify representative preparation behavior**
-
-Run:
-
-`pytest -q tests/reports/test_analytics_xlsx_standard.py -k 'resource_utilization_preparation or alerts_preparation or object_storage_preparation' --tb=short`
-
-Expected: PASS.
-
-- [ ] **Step 4: Commit**
-
-Commit message: `refactor(reports): extract analytics preparation support`.
-
-### Task 4: Extract Kubernetes category preparers
-
-**Files:**
-- Create: `app/reports/export/xlsx/analytics_preparation/overview.py`
-- Create: `app/reports/export/xlsx/analytics_preparation/resource_utilization.py`
-- Create: `app/reports/export/xlsx/analytics_preparation/capacity.py`
-- Create: `app/reports/export/xlsx/analytics_preparation/storage.py`
-- Create: `app/reports/export/xlsx/analytics_preparation/workload.py`
-- Create: `app/reports/export/xlsx/analytics_preparation/forecast.py`
-- Create: `app/reports/export/xlsx/analytics_preparation/top_consumers.py`
-- Create: `app/reports/export/xlsx/analytics_preparation/alerts.py`
-- Modify: `app/reports/export/xlsx/analytics_profiles.py`
-- Test: `tests/reports/test_analytics_xlsx_standard.py`
-
-**Interfaces:**
-- Each module exports one public internal preparer named for its report type: `prepare_overview`, `prepare_resource_utilization`, `prepare_capacity`, `prepare_storage`, `prepare_workload`, `prepare_forecast`, `prepare_top_consumers`, `prepare_alerts`.
-- Each accepts exactly `(payload, context, profile)` and returns `AnalyticsWorkbookData`.
-
-- [ ] **Step 1: Extract Overview preparation**
-
-Move `_prepare_overview` plus only Overview-specific helpers into `overview.py`. Preserve Current-vs-Projected posture semantics, forecast evidence handling, alerts snapshot usage, readout text, and empty-forecast behavior.
-
-Run:
-
-`pytest -q tests/reports/test_analytics_xlsx_standard.py -k 'analytics_overview' --tb=short`
-
-- [ ] **Step 2: Extract Resource Utilization preparation**
-
-Move its preparation and category-only trend/consumer helpers into `resource_utilization.py`.
-
-Run the Resource Utilization tests in `test_analytics_xlsx_standard.py`.
-
-- [ ] **Step 3: Extract Capacity, Storage, Workload, and Forecast preparers one module at a time**
-
-After each extraction run the matching Analytics XLSX tests and commit only when the category is behaviorally green.
-
-- [ ] **Step 4: Extract Top Consumers preparation**
-
-Move `_prepare_top_consumers` and resource-specific ranking/unit normalization to `top_consumers.py`. Decompose internal selection/normalization helpers so no function exceeds 30 branch points.
-
-Run all tests whose names contain `top_consumers`, `ranked`, or consumer-unit normalization.
-
-- [ ] **Step 5: Extract Alerts preparation**
-
-Move Alerts & Anomalies preparation and severity/composition-specific helpers to `alerts.py`; preserve Unclassified denominator behavior.
-
-Run:
-
-`pytest -q tests/reports/test_analytics_xlsx_standard.py -k 'alerts' --tb=short`
-
-- [ ] **Step 6: Commit the Kubernetes preparer extraction**
-
-Use cohesive commits if CI attribution benefits from category checkpoints; do not combine a failing category with unrelated modules.
-
-### Task 5: Extract Object Storage Analytics preparation
-
-**Files:**
-- Create: `app/reports/export/xlsx/analytics_preparation/object_storage.py`
-- Modify: `app/reports/export/xlsx/analytics_profiles.py`
-- Test: `tests/reports/test_analytics_xlsx_standard.py`
-
-**Interfaces:**
-- Produces: `prepare_object_storage(payload, context, profile) -> AnalyticsWorkbookData`.
-- Owns Object Storage-specific capacity/usage parsing, consumer ranking, storage-unit normalization, performance/trend/alert evidence mapping.
-
-- [ ] **Step 1: Extract `_prepare_object_storage` and its domain-only helpers**
-
-Do not move provider/storage-specific normalization into `common.py` unless another category demonstrably uses the exact same semantic rule.
-
-- [ ] **Step 2: Split the current 182-line function into focused helper stages**
-
-Use helpers for summary metrics, analysis rows, consumer rows/chart, optional trends/alerts, and final `AnalyticsWorkbookData` assembly so each function remains <=160 lines and <=30 branch points.
-
-- [ ] **Step 3: Verify Object Storage behavior**
-
-Run:
-
-`pytest -q tests/reports/test_analytics_xlsx_standard.py -k 'object_storage' --tb=short`
-
-Expected: ranked consumer chart remains `ranked_bar`; first `thanos` example remains normalized to `64.25`; table ownership and scope semantics remain unchanged.
-
-- [ ] **Step 4: Commit**
-
-Commit message: `refactor(reports): extract object storage analytics preparation`.
-
-### Task 6: Reduce the facade to lookup and dispatch only
-
-**Files:**
-- Modify: `app/reports/export/xlsx/analytics_profiles.py`
-- Test: `tests/contracts/reports/test_reports_code_health_refactor_contract.py`
-- Test: `tests/reports/test_analytics_xlsx_standard.py`
-
-**Interfaces:**
-- Facade owns `_Preparer`, `_PREPARERS`, `get_analytics_workbook_profile`, and `prepare_analytics_workbook_data` plus explicit imports/re-exports.
-- `_PREPARERS` maps the exact nine report-type keys to focused preparers.
-
-- [ ] **Step 1: Replace old in-file preparers with explicit imports**
-
-The facade must not contain `_column`, `_table`, `_number`, chart-model construction, row construction, or domain-specific preparation functions.
-
-- [ ] **Step 2: Preserve fail-fast behavior**
-
-`get_analytics_workbook_profile()` continues raising bounded `ValueError` for unsupported types; `prepare_analytics_workbook_data()` continues rejecting `context.report_type != report_type` before dispatch.
-
-- [ ] **Step 3: Verify all Analytics preparation and workbook tests**
-
-Run:
-
-`pytest -q tests/reports/test_analytics_xlsx_standard.py --tb=short`
-
-Expected: all tests PASS.
-
-- [ ] **Step 4: Verify public/lazy XLSX boundary**
-
-Run existing report runtime import and tabular verifier gates through Static CI. `app/reports/export/xlsx/__init__.py` remains unchanged unless a failing existing contract proves otherwise.
-
-### Task 7: Reconcile exact profile debt ledger
-
-**Files:**
-- Modify: `docs/architecture/code-health-debt-baseline.json`
-
-**Interfaces:**
-- Removes only debt proven absent by the refactor.
-
-- [ ] **Step 1: Run code-health before editing the ledger**
-
-Require `scripts/verify_code_health.py` to identify stale entries for:
-
-- `app/reports/export/xlsx/analytics_profiles.py` module size `1766`;
-- `app/reports/export/xlsx/analytics_profiles.py::_prepare_object_storage` function lines `182`;
-- `app/reports/export/xlsx/analytics_profiles.py::_prepare_overview` function lines `183`;
-- `app/reports/export/xlsx/analytics_profiles.py::_prepare_top_consumers` branch points `31`.
-
-- [ ] **Step 2: Remove exactly those entries only when current source is compliant**
-
-Do not touch unrelated HTML/PDF or Reports service debt.
-
-- [ ] **Step 3: Verify exact ledger integrity**
-
-Require both `verify_code_health.py` and `verify_code_health_baseline_integrity.py` PASS with defaults unchanged and broad-exception count not increased.
-
-- [ ] **Step 4: Commit**
-
-Commit message: `chore(quality): retire analytics profile debt`.
-
-### Task 8: Integrated review, full Admission, and metadata evidence
-
-**Files:**
-- Update evidence only: GitHub Issue #13 and PR #33 bodies after proof exists.
-- No new implementation files unless a real regression requires a fix.
-
-**Interfaces:**
-- Produces: review-ready PR with exact CI/debt evidence; no release or `main` promotion.
-
-- [ ] **Step 1: Run/observe final Static Foundation on final head**
-
-Require Ruff, Ruff format, djLint, Pyright, architecture boundaries, import symbols/cycles/reachability, code-health, exact baseline integrity, taxonomy/domain architecture/coverage, and contract/migration tests PASS.
-
-- [ ] **Step 2: Require downstream branch/PR gates**
-
-Require Security, Functional & Integration, Frontend/reproducibility, Production Runtime/DAST, and Admission to complete without unexplained failure or unexpected skip.
-
-- [ ] **Step 3: Review PR diff**
-
-Confirm no public report type, profile metadata, workbook contract, test taxonomy, threshold, broad exception, schema, migration, or security-boundary drift.
-
-- [ ] **Step 4: Synchronize Issue #13 and PR #33 evidence**
-
-Update only metadata records/current implementation/CI evidence; do not place sidebar/Project fill instructions in Issue or PR body.
-
-- [ ] **Step 5: Move PR out of Draft only after full final-head Admission is green**
-
-Merge to `kaori/staging` only after normal review/merge guard conditions are satisfied. Then require staging CI and applicable Local UAT before Issue #13 can become `Done`.
+## Task Checklist
+
+### Task 1 — RED ownership contract
+- [x] Lock stable facade, catalog, and focused category module ownership.
+- [x] Observe RED through KAORI CI.
+
+### Task 2 — Profile catalog
+- [ ] Extract profile construction, registry, report-type set, and catalog validation to `analytics_profile_catalog.py`.
+- [ ] Preserve exact nine profile definitions and public re-export semantics.
+
+### Task 3 — Shared preparation support
+- [ ] Create import-light `analytics_preparation/__init__.py`.
+- [ ] Extract only cross-category normalization/table/metric/unit helpers to `analytics_preparation/common.py`.
+
+### Task 4 — Kubernetes category preparers
+- [ ] Extract `overview.py`.
+- [ ] Extract `resource_utilization.py`.
+- [ ] Extract `capacity.py`.
+- [ ] Extract `storage.py`.
+- [ ] Extract `workload.py`.
+- [ ] Extract `forecast.py`.
+- [ ] Extract `top_consumers.py` with branch-heavy logic decomposed.
+- [ ] Extract `alerts.py`.
+
+### Task 5 — Object Storage preparation
+- [ ] Extract `object_storage.py` with summary, consumer, forecast, alerts, chart, and readout stages bounded below default function ceilings.
+
+### Task 6 — Stable facade
+- [ ] Reduce `analytics_profiles.py` to explicit re-exports, profile lookup, preparer mapping, and dispatch.
+- [ ] Preserve unsupported-type and context-mismatch fail-fast behavior.
+
+### Task 7 — Exact debt ledger
+- [ ] Confirm source compliance first.
+- [ ] Remove exactly the resolved module/function/branch entries for Analytics profile debt.
+- [ ] Keep default ceilings and broad-exception ledger unchanged.
+
+### Task 8 — Integrated delivery
+- [ ] Analytics XLSX regression suite PASS.
+- [ ] Static/code-health/exact-baseline PASS.
+- [ ] Security PASS.
+- [ ] Functional & Integration PASS.
+- [ ] Frontend/reproducibility PASS.
+- [ ] Production Runtime/DAST PASS.
+- [ ] Admission PASS.
+- [ ] PR/Issue evidence synchronized without GitHub-UI fill instructions in body.
+- [ ] Ready-for-review only after final-head Admission green.
