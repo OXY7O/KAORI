@@ -23,8 +23,9 @@ RUN apt-get update \
 
 COPY requirements/base.txt /tmp/requirements/base.txt
 
-RUN python -m pip install --upgrade pip \
-    && python -m pip install -r /tmp/requirements/base.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    PIP_NO_CACHE_DIR=0 python -m pip install --upgrade pip \
+    && PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/requirements/base.txt
 
 COPY docker/entrypoint.sh /usr/local/bin/kaori-entrypoint
 RUN chmod 0755 /usr/local/bin/kaori-entrypoint
@@ -46,7 +47,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements/dev.txt /tmp/requirements/dev.txt
-RUN python -m pip install -r /tmp/requirements/dev.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/requirements/dev.txt
 
 RUN useradd --create-home --uid 1000 --shell /bin/bash vscode \
     && echo "vscode ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/vscode \
@@ -65,7 +67,7 @@ FROM node:22-alpine AS frontend-build
 WORKDIR /build
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm npm ci
 
 COPY scripts/vendor_frontend_assets.mjs \
     scripts/verify_frontend_assets.mjs \

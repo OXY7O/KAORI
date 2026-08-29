@@ -53,9 +53,10 @@ RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
 COPY requirements /tmp/kaori-requirements
 COPY .github/ci/requirements-security.txt /tmp/requirements-security.txt
 
-RUN python -m pip install --upgrade pip \
-    && python -m pip install -r /tmp/kaori-requirements/dev.txt \
-    && python -m pip install -r /tmp/requirements-security.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    PIP_NO_CACHE_DIR=0 python -m pip install --upgrade pip \
+    && PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/kaori-requirements/dev.txt \
+    && PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/requirements-security.txt
 
 RUN set -eux; \
     arch="$(dpkg --print-architecture)"; \
