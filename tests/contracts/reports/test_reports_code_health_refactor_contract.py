@@ -68,6 +68,32 @@ def test_analytics_overview_supporting_data_dispatch_uses_focused_writers() -> N
     assert 'style_body(' not in supporting_dispatch
 
 
+def test_analytics_profiles_is_a_stable_facade_over_focused_preparation_modules() -> None:
+    facade = read('app/reports/export/xlsx/analytics_profiles.py')
+    catalog = read('app/reports/export/xlsx/analytics_profile_catalog.py')
+
+    assert 'from app.reports.export.xlsx.analytics_profile_catalog import (' in facade
+    assert 'ANALYTICS_WORKBOOK_PROFILES' in facade
+    assert 'ANALYTICS_XLSX_REPORT_TYPES' in facade
+    assert 'def get_analytics_workbook_profile(' in facade
+    assert 'def prepare_analytics_workbook_data(' in facade
+    assert 'AnalyticsWorkbookProfile(' in catalog
+
+    for module in (
+        'overview',
+        'resource_utilization',
+        'capacity',
+        'storage',
+        'workload',
+        'forecast',
+        'top_consumers',
+        'alerts',
+        'object_storage',
+    ):
+        source = read(f'app/reports/export/xlsx/analytics_preparation/{module}.py')
+        assert 'def prepare_' in source
+
+
 def test_quality_gate_presents_concise_test_evidence() -> None:
     quality_gate = read('scripts/quality_gate.sh')
 
