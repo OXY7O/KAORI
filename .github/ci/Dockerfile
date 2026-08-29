@@ -4,6 +4,7 @@ FROM node:22-bookworm-slim AS node-runtime
 
 FROM python:3.12-slim-bookworm AS ci
 
+ARG PIP_VERSION=26.2.1
 ARG ACTIONLINT_VERSION=1.7.12
 ARG GITLEAKS_VERSION=8.30.1
 ARG HADOLINT_VERSION=2.15.1
@@ -20,6 +21,8 @@ WORKDIR /workspace
 COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
 COPY --from=node-runtime /usr/local/lib/node_modules /usr/local/lib/node_modules
 
+# CI system packages intentionally follow Bookworm repository patch levels.
+# hadolint ignore=DL3008
 RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
     && apt-get update \
@@ -53,10 +56,12 @@ RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
 COPY requirements /tmp/kaori-requirements
 COPY .github/ci/requirements-security.txt /tmp/requirements-security.txt
 
-RUN python -m pip install --upgrade pip \
-    && python -m pip install -r /tmp/kaori-requirements/dev.txt \
-    && python -m pip install -r /tmp/requirements-security.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    PIP_NO_CACHE_DIR=0 python -m pip install "pip==${PIP_VERSION}" \
+    && PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/kaori-requirements/dev.txt \
+    && PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/requirements-security.txt
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN set -eux; \
     arch="$(dpkg --print-architecture)"; \
     case "$arch" in \
