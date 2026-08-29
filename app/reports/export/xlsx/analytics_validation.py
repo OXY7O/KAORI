@@ -207,7 +207,9 @@ def _validate_capacity_bar(chart: Any, series_count: int) -> None:
         or data_labels.showSerName is not False
         or data_labels.showPercent is not False
     ):
-        raise ValueError('Analytics capacity bars must keep direct data labels disabled to prevent Excel text collisions.')
+        raise ValueError(
+            'Analytics capacity bars must keep direct data labels disabled to prevent Excel text collisions.'
+        )
     if (
         chart.x_axis.delete is not False
         or chart.x_axis.tickLblPos != 'nextTo'
