@@ -101,10 +101,32 @@ def _append_optional_tables(
                 'Bucket/container usage ranking normalized to GiB when numeric usage evidence is available.',
                 (
                     column('bucket', 'Bucket / Container', 'Bucket or container identity.', width=44),
-                    column('usage_gib', 'Usage GiB', 'Committed usage normalized to GiB.', data_type='number', number_format='#,##0.00', unit='GiB', width=16),
-                    column('objects', 'Objects', 'Committed object count.', data_type='integer', number_format='#,##0', width=16),
+                    column(
+                        'usage_gib',
+                        'Usage GiB',
+                        'Committed usage normalized to GiB.',
+                        data_type='number',
+                        number_format='#,##0.00',
+                        unit='GiB',
+                        width=16,
+                    ),
+                    column(
+                        'objects',
+                        'Objects',
+                        'Committed object count.',
+                        data_type='integer',
+                        number_format='#,##0',
+                        width=16,
+                    ),
                     column('quota', 'Quota', 'Committed quota evidence.', width=20),
-                    column('usage_share', 'Usage Share %', 'Committed usage share when supplied.', data_type='percent', number_format='0.0"%"', width=16),
+                    column(
+                        'usage_share',
+                        'Usage Share %',
+                        'Committed usage share when supplied.',
+                        data_type='percent',
+                        number_format='0.0"%"',
+                        width=16,
+                    ),
                 ),
                 consumers,
             )
@@ -116,10 +138,33 @@ def _append_optional_tables(
                 'Object Storage Growth & Forecast',
                 'Committed historical and forecast evidence; Excel does not calculate the forecast.',
                 (
-                    column('observation', 'Observation', 'Source-order point.', data_type='integer', number_format='#,##0', width=14),
+                    column(
+                        'observation',
+                        'Observation',
+                        'Source-order point.',
+                        data_type='integer',
+                        number_format='#,##0',
+                        width=14,
+                    ),
                     column('timestamp', 'Timestamp', 'Committed timestamp.', width=22),
-                    column('historical_gib', 'Historical GiB', 'Committed historical usage.', data_type='number', number_format='#,##0.00', unit='GiB', width=18),
-                    column('forecast_gib', 'Forecast GiB', 'Committed forecast usage.', data_type='number', number_format='#,##0.00', unit='GiB', width=18),
+                    column(
+                        'historical_gib',
+                        'Historical GiB',
+                        'Committed historical usage.',
+                        data_type='number',
+                        number_format='#,##0.00',
+                        unit='GiB',
+                        width=18,
+                    ),
+                    column(
+                        'forecast_gib',
+                        'Forecast GiB',
+                        'Committed forecast usage.',
+                        data_type='number',
+                        number_format='#,##0.00',
+                        unit='GiB',
+                        width=18,
+                    ),
                 ),
                 forecast_rows,
             )
@@ -142,7 +187,9 @@ def _append_optional_tables(
 
 
 def _chart(consumers: list[dict[str, Any]]) -> AnalyticsChartData | None:
-    chart_rows = tuple({'category': row['bucket'], 'value': row['usage_gib']} for row in consumers[:8] if row['usage_gib'] is not None)
+    chart_rows = tuple(
+        {'category': row['bucket'], 'value': row['usage_gib']} for row in consumers[:8] if row['usage_gib'] is not None
+    )
     if not chart_rows:
         return None
     total_value = sum(float(row['usage_gib']) for row in consumers if row['usage_gib'] is not None)
