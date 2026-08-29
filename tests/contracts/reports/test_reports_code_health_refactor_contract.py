@@ -36,7 +36,7 @@ def test_inventory_xlsx_metadata_rows_use_focused_boundary() -> None:
 
 def test_analytics_overview_chart_dispatch_uses_focused_renderers() -> None:
     overview = read('app/reports/export/xlsx/analytics_overview.py')
-    chart_dispatch = overview.split('def _add_chart(', 1)[1].split('def _add_line_chart(', 1)[0]
+    chart_dispatch = overview.split('def _add_chart(', 1)[1].split('\n\ndef ', 1)[0]
 
     for renderer in (
         '_add_comparison_bar_chart',
