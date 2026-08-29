@@ -25,6 +25,15 @@ def test_inventory_xlsx_validation_uses_focused_boundary() -> None:
     assert 'def validate_inventory_xlsx_artifact(' not in builder
 
 
+def test_inventory_xlsx_metadata_rows_use_focused_boundary() -> None:
+    builder = read('app/reports/export/xlsx/builder.py')
+
+    expected_import = 'from app.reports.export.xlsx.inventory_metadata import build_inventory_metadata_rows'
+    assert expected_import in builder
+    assert 'metadata = build_inventory_metadata_rows(dataset, payload)' in builder
+    assert "('REPORT IDENTITY', None, None, None)" not in builder
+
+
 def test_quality_gate_presents_concise_test_evidence() -> None:
     quality_gate = read('scripts/quality_gate.sh')
 
