@@ -301,222 +301,232 @@ def _add_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: AnalyticsCh
     if chart.visual_type == 'line':
         _add_line_chart(sheet, data, chart)
         return
-
-    end_row = _SUPPORTING_DATA_ROW + min(len(chart.rows), 8) - 1
-
     if chart.visual_type == 'comparison_bar':
-        visual = BarChart()
-        visual.type = 'bar'
-        visual.grouping = 'clustered'
-        visual.overlap = 0
-        visual.varyColors = False
-        visual.title = chart.title
-        visual.height = 8.0
-        cast(Any, visual).width = 13.5
-        visual.gapWidth = 60
-        values = Reference(
-            sheet,
-            min_col=_SUPPORTING_START_COLUMN + 1,
-            max_col=_SUPPORTING_START_COLUMN + 2,
-            min_row=_SUPPORTING_HEADER_DATA_ROW,
-            max_row=end_row,
-        )
-        categories = Reference(
-            sheet,
-            min_col=_SUPPORTING_START_COLUMN,
-            min_row=_SUPPORTING_DATA_ROW,
-            max_row=end_row,
-        )
-        visual.add_data(values, titles_from_data=True, from_rows=False)
-        visual.set_categories(categories)
-        visual.legend.position = 'b'
-        visual.legend.overlay = False
-        visual.dLbls = DataLabelList(
-            showLegendKey=False,
-            showVal=True,
-            showCatName=False,
-            showSerName=False,
-            showPercent=False,
-            showBubbleSize=False,
-            showLeaderLines=False,
-            dLblPos='outEnd',
-            numFmt='0.0"%"',
-        )
-        visual.x_axis.scaling.orientation = 'maxMin'
-        visual.x_axis.tickLblPos = 'nextTo'
-        visual.x_axis.delete = False
-        visual.y_axis.axPos = 'b'
-        visual.y_axis.tickLblPos = 'nextTo'
-        visual.y_axis.scaling.min = 0
-        visual.y_axis.scaling.max = 100
-        visual.y_axis.majorUnit = 25
-        visual.y_axis.majorGridlines = None
-        visual.y_axis.numFmt = '0"%"'
-        visual.y_axis.title = None
-        labels = ('Current', 'Projected')
-        fills = (KAORI_ACCENT, KAORI_PRIMARY)
-        lines = (KAORI_PRIMARY_SOFT, KAORI_PRIMARY_DARK)
-        for index, series in enumerate(visual.series[:2]):
-            series.tx = SeriesLabel(v=labels[index])
-            series.graphicalProperties.solidFill = fills[index]
-            series.graphicalProperties.line.solidFill = lines[index]
-        _remove_frame(visual)
-        sheet.add_chart(visual, 'A15')
+        _add_comparison_bar_chart(sheet, chart)
         return
-
     if chart.visual_type == 'capacity_bar':
-        visual = BarChart()
-        visual.type = 'bar'
-        visual.grouping = 'stacked'
-        visual.overlap = 100
-        visual.varyColors = False
-        visual.title = chart.title
-        visual.height = 8.0
-        cast(Any, visual).width = 13.5
-        visual.gapWidth = 70
-        values = Reference(
-            sheet,
-            min_col=_SUPPORTING_START_COLUMN + 1,
-            max_col=_SUPPORTING_START_COLUMN + 2,
-            min_row=_SUPPORTING_HEADER_DATA_ROW,
-            max_row=end_row,
-        )
-        categories = Reference(
-            sheet,
-            min_col=_SUPPORTING_START_COLUMN,
-            min_row=_SUPPORTING_DATA_ROW,
-            max_row=end_row,
-        )
-        visual.add_data(values, titles_from_data=True, from_rows=False)
-        visual.set_categories(categories)
-        visual.legend.position = 'b'
-        visual.legend.overlay = False
-        visual.dLbls = DataLabelList(
-            showLegendKey=False,
-            showVal=False,
-            showCatName=False,
-            showSerName=False,
-            showPercent=False,
-            showBubbleSize=False,
-            showLeaderLines=False,
-        )
-        visual.x_axis.scaling.orientation = 'maxMin'
-        visual.x_axis.delete = False
-        visual.x_axis.tickLblPos = 'nextTo'
-        visual.x_axis.title = None
-        visual.y_axis.scaling.min = 0
-        visual.y_axis.scaling.max = 100
-        visual.y_axis.majorUnit = 25
-        visual.y_axis.majorGridlines = None
-        visual.y_axis.numFmt = '0"%"'
-        visual.y_axis.title = None
-        labels = ('Utilization', 'Headroom')
-        fills = (KAORI_PRIMARY, KAORI_PRIMARY_SOFT)
-        lines = (KAORI_PRIMARY_DARK, KAORI_ACCENT)
-        for index, series in enumerate(visual.series[:2]):
-            series.tx = SeriesLabel(v=labels[index])
-            series.graphicalProperties.solidFill = fills[index]
-            series.graphicalProperties.line.solidFill = lines[index]
-        _remove_frame(visual)
-        sheet.add_chart(visual, 'A15')
+        _add_capacity_bar_chart(sheet, chart)
         return
-
-    values = Reference(sheet, min_col=12, min_row=_SUPPORTING_HEADER_DATA_ROW, max_row=end_row)
-    categories = Reference(sheet, min_col=11, min_row=_SUPPORTING_DATA_ROW, max_row=end_row)
-
     if chart.visual_type == 'ranked_bar':
-        visual = BarChart()
-        visual.type = 'bar'
-        visual.grouping = 'clustered'
-        visual.varyColors = False
-        visual.visible_cells_only = False
-        visual.title = chart.title
-        visual.height = 8.0
-        cast(Any, visual).width = 13.5
-        visual.gapWidth = 65
-        visual.add_data(values, titles_from_data=True)
-        chart_categories = Reference(
-            sheet,
-            min_col=_CHART_CATEGORY_COLUMN,
-            min_row=_SUPPORTING_DATA_ROW,
-            max_row=end_row,
-        )
-        visual.set_categories(chart_categories)
-        visual.legend = None
-        data_labels = DataLabelList(
-            showLegendKey=False,
-            showVal=True,
-            showCatName=False,
-            showSerName=False,
-            showPercent=False,
-            showBubbleSize=False,
-            showLeaderLines=False,
-            dLblPos='outEnd',
-        )
-        visual.dLbls = data_labels
-        if chart.series:
-            data_labels.numFmt = _series_number_format(chart.series[0].number_format, chart.series[0].unit)
-        visual.x_axis.scaling.orientation = 'maxMin'
-        visual.x_axis.tickLblPos = 'nextTo'
-        visual.x_axis.delete = False
-        visual.y_axis.scaling.min = 0
-        max_value = max((_number(row.get('value')) for row in chart.rows[:8]), default=0.0)
-        if max_value > 0:
-            visual.y_axis.scaling.max = max(max_value * 1.20, max_value + 1.0)
-        visual.y_axis.title = None
-        visual.y_axis.majorGridlines = None
-        visual.series[0].graphicalProperties.solidFill = KAORI_PRIMARY
-        visual.series[0].graphicalProperties.line.solidFill = KAORI_PRIMARY_DARK
-        _remove_frame(visual)
-        sheet.add_chart(visual, 'A15')
+        _add_ranked_bar_chart(sheet, chart)
         return
-
     if chart.visual_type == 'composition_bar':
-        share_values = Reference(sheet, min_col=13, min_row=_SUPPORTING_HEADER_DATA_ROW, max_row=end_row)
-        visual = BarChart()
-        visual.type = 'bar'
-        visual.grouping = 'clustered'
-        visual.varyColors = False
-        visual.title = chart.title
-        visual.height = 8.0
-        cast(Any, visual).width = 13.5
-        visual.gapWidth = 70
-        visual.add_data(share_values, titles_from_data=True)
-        visual.set_categories(categories)
-        visual.legend = None
-        visual.dLbls = DataLabelList(
-            showLegendKey=False,
-            showVal=True,
-            showCatName=False,
-            showSerName=False,
-            showPercent=False,
-            showBubbleSize=False,
-            showLeaderLines=False,
-            dLblPos='outEnd',
-            numFmt='0.0"%"',
-        )
-        visual.x_axis.scaling.orientation = 'maxMin'
-        visual.x_axis.tickLblPos = 'nextTo'
-        visual.x_axis.delete = False
-        visual.y_axis.scaling.min = 0
-        visual.y_axis.scaling.max = 100
-        visual.y_axis.majorUnit = 25
-        visual.y_axis.numFmt = '0"%"'
-        visual.y_axis.title = None
-        visual.y_axis.majorGridlines = None
-        points: list[DataPoint] = []
-        for index, row in enumerate(chart.rows[:8]):
-            point = DataPoint(idx=index)
-            point.graphicalProperties.solidFill = _semantic_composition_color(
-                str(row.get(chart.category_key) or ''), index
-            )
-            points.append(point)
-        visual.series[0].data_points = points
-        _remove_frame(visual)
-        sheet.add_chart(visual, 'A15')
+        _add_composition_bar_chart(sheet, chart)
         return
-
     raise ValueError(f'Unsupported Analytics visual type: {chart.visual_type}.')
+
+
+def _add_comparison_bar_chart(sheet: Worksheet, chart: AnalyticsChartData) -> None:
+    end_row = _SUPPORTING_DATA_ROW + min(len(chart.rows), 8) - 1
+    visual = BarChart()
+    visual.type = 'bar'
+    visual.grouping = 'clustered'
+    visual.overlap = 0
+    visual.varyColors = False
+    visual.title = chart.title
+    visual.height = 8.0
+    cast(Any, visual).width = 13.5
+    visual.gapWidth = 60
+    values = Reference(
+        sheet,
+        min_col=_SUPPORTING_START_COLUMN + 1,
+        max_col=_SUPPORTING_START_COLUMN + 2,
+        min_row=_SUPPORTING_HEADER_DATA_ROW,
+        max_row=end_row,
+    )
+    categories = Reference(
+        sheet,
+        min_col=_SUPPORTING_START_COLUMN,
+        min_row=_SUPPORTING_DATA_ROW,
+        max_row=end_row,
+    )
+    visual.add_data(values, titles_from_data=True, from_rows=False)
+    visual.set_categories(categories)
+    visual.legend.position = 'b'
+    visual.legend.overlay = False
+    visual.dLbls = DataLabelList(
+        showLegendKey=False,
+        showVal=True,
+        showCatName=False,
+        showSerName=False,
+        showPercent=False,
+        showBubbleSize=False,
+        showLeaderLines=False,
+        dLblPos='outEnd',
+        numFmt='0.0"%"',
+    )
+    visual.x_axis.scaling.orientation = 'maxMin'
+    visual.x_axis.tickLblPos = 'nextTo'
+    visual.x_axis.delete = False
+    visual.y_axis.axPos = 'b'
+    visual.y_axis.tickLblPos = 'nextTo'
+    visual.y_axis.scaling.min = 0
+    visual.y_axis.scaling.max = 100
+    visual.y_axis.majorUnit = 25
+    visual.y_axis.majorGridlines = None
+    visual.y_axis.numFmt = '0"%"'
+    visual.y_axis.title = None
+    labels = ('Current', 'Projected')
+    fills = (KAORI_ACCENT, KAORI_PRIMARY)
+    lines = (KAORI_PRIMARY_SOFT, KAORI_PRIMARY_DARK)
+    for index, series in enumerate(visual.series[:2]):
+        series.tx = SeriesLabel(v=labels[index])
+        series.graphicalProperties.solidFill = fills[index]
+        series.graphicalProperties.line.solidFill = lines[index]
+    _remove_frame(visual)
+    sheet.add_chart(visual, 'A15')
+
+
+def _add_capacity_bar_chart(sheet: Worksheet, chart: AnalyticsChartData) -> None:
+    end_row = _SUPPORTING_DATA_ROW + min(len(chart.rows), 8) - 1
+    visual = BarChart()
+    visual.type = 'bar'
+    visual.grouping = 'stacked'
+    visual.overlap = 100
+    visual.varyColors = False
+    visual.title = chart.title
+    visual.height = 8.0
+    cast(Any, visual).width = 13.5
+    visual.gapWidth = 70
+    values = Reference(
+        sheet,
+        min_col=_SUPPORTING_START_COLUMN + 1,
+        max_col=_SUPPORTING_START_COLUMN + 2,
+        min_row=_SUPPORTING_HEADER_DATA_ROW,
+        max_row=end_row,
+    )
+    categories = Reference(
+        sheet,
+        min_col=_SUPPORTING_START_COLUMN,
+        min_row=_SUPPORTING_DATA_ROW,
+        max_row=end_row,
+    )
+    visual.add_data(values, titles_from_data=True, from_rows=False)
+    visual.set_categories(categories)
+    visual.legend.position = 'b'
+    visual.legend.overlay = False
+    visual.dLbls = DataLabelList(
+        showLegendKey=False,
+        showVal=False,
+        showCatName=False,
+        showSerName=False,
+        showPercent=False,
+        showBubbleSize=False,
+        showLeaderLines=False,
+    )
+    visual.x_axis.scaling.orientation = 'maxMin'
+    visual.x_axis.delete = False
+    visual.x_axis.tickLblPos = 'nextTo'
+    visual.x_axis.title = None
+    visual.y_axis.scaling.min = 0
+    visual.y_axis.scaling.max = 100
+    visual.y_axis.majorUnit = 25
+    visual.y_axis.majorGridlines = None
+    visual.y_axis.numFmt = '0"%"'
+    visual.y_axis.title = None
+    labels = ('Utilization', 'Headroom')
+    fills = (KAORI_PRIMARY, KAORI_PRIMARY_SOFT)
+    lines = (KAORI_PRIMARY_DARK, KAORI_ACCENT)
+    for index, series in enumerate(visual.series[:2]):
+        series.tx = SeriesLabel(v=labels[index])
+        series.graphicalProperties.solidFill = fills[index]
+        series.graphicalProperties.line.solidFill = lines[index]
+    _remove_frame(visual)
+    sheet.add_chart(visual, 'A15')
+
+
+def _add_ranked_bar_chart(sheet: Worksheet, chart: AnalyticsChartData) -> None:
+    end_row = _SUPPORTING_DATA_ROW + min(len(chart.rows), 8) - 1
+    values = Reference(sheet, min_col=12, min_row=_SUPPORTING_HEADER_DATA_ROW, max_row=end_row)
+    visual = BarChart()
+    visual.type = 'bar'
+    visual.grouping = 'clustered'
+    visual.varyColors = False
+    visual.visible_cells_only = False
+    visual.title = chart.title
+    visual.height = 8.0
+    cast(Any, visual).width = 13.5
+    visual.gapWidth = 65
+    visual.add_data(values, titles_from_data=True)
+    chart_categories = Reference(
+        sheet,
+        min_col=_CHART_CATEGORY_COLUMN,
+        min_row=_SUPPORTING_DATA_ROW,
+        max_row=end_row,
+    )
+    visual.set_categories(chart_categories)
+    visual.legend = None
+    data_labels = DataLabelList(
+        showLegendKey=False,
+        showVal=True,
+        showCatName=False,
+        showSerName=False,
+        showPercent=False,
+        showBubbleSize=False,
+        showLeaderLines=False,
+        dLblPos='outEnd',
+    )
+    visual.dLbls = data_labels
+    if chart.series:
+        data_labels.numFmt = _series_number_format(chart.series[0].number_format, chart.series[0].unit)
+    visual.x_axis.scaling.orientation = 'maxMin'
+    visual.x_axis.tickLblPos = 'nextTo'
+    visual.x_axis.delete = False
+    visual.y_axis.scaling.min = 0
+    max_value = max((_number(row.get('value')) for row in chart.rows[:8]), default=0.0)
+    if max_value > 0:
+        visual.y_axis.scaling.max = max(max_value * 1.20, max_value + 1.0)
+    visual.y_axis.title = None
+    visual.y_axis.majorGridlines = None
+    visual.series[0].graphicalProperties.solidFill = KAORI_PRIMARY
+    visual.series[0].graphicalProperties.line.solidFill = KAORI_PRIMARY_DARK
+    _remove_frame(visual)
+    sheet.add_chart(visual, 'A15')
+
+
+def _add_composition_bar_chart(sheet: Worksheet, chart: AnalyticsChartData) -> None:
+    end_row = _SUPPORTING_DATA_ROW + min(len(chart.rows), 8) - 1
+    share_values = Reference(sheet, min_col=13, min_row=_SUPPORTING_HEADER_DATA_ROW, max_row=end_row)
+    categories = Reference(sheet, min_col=11, min_row=_SUPPORTING_DATA_ROW, max_row=end_row)
+    visual = BarChart()
+    visual.type = 'bar'
+    visual.grouping = 'clustered'
+    visual.varyColors = False
+    visual.title = chart.title
+    visual.height = 8.0
+    cast(Any, visual).width = 13.5
+    visual.gapWidth = 70
+    visual.add_data(share_values, titles_from_data=True)
+    visual.set_categories(categories)
+    visual.legend = None
+    visual.dLbls = DataLabelList(
+        showLegendKey=False,
+        showVal=True,
+        showCatName=False,
+        showSerName=False,
+        showPercent=False,
+        showBubbleSize=False,
+        showLeaderLines=False,
+        dLblPos='outEnd',
+        numFmt='0.0"%"',
+    )
+    visual.x_axis.scaling.orientation = 'maxMin'
+    visual.x_axis.tickLblPos = 'nextTo'
+    visual.x_axis.delete = False
+    visual.y_axis.scaling.min = 0
+    visual.y_axis.scaling.max = 100
+    visual.y_axis.majorUnit = 25
+    visual.y_axis.numFmt = '0"%"'
+    visual.y_axis.title = None
+    visual.y_axis.majorGridlines = None
+    points: list[DataPoint] = []
+    for index, row in enumerate(chart.rows[:8]):
+        point = DataPoint(idx=index)
+        point.graphicalProperties.solidFill = _semantic_composition_color(str(row.get(chart.category_key) or ''), index)
+        points.append(point)
+    visual.series[0].data_points = points
+    _remove_frame(visual)
+    sheet.add_chart(visual, 'A15')
 
 
 def _add_line_chart(sheet: Worksheet, data: AnalyticsWorkbookData, chart: AnalyticsChartData) -> None:
