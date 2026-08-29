@@ -6,6 +6,45 @@ cd "$ROOT"
 
 phase="${1:---all}"
 
+append_test_summary() {
+    local status="$1"
+    local label="$2"
+    local detail="$3"
+
+    if [[ -z "${GITHUB_STEP_SUMMARY:-}" ]]; then
+        return 0
+    fi
+
+    {
+        printf -- '- **%s — KAORI %s**\n' "$status" "$label"
+        printf '  - %s\n' "$detail"
+    } >>"$GITHUB_STEP_SUMMARY"
+}
+
+run_pytest_gate() {
+    local pass_label="$1"
+    local fail_label="$2"
+    local summary_label="$3"
+    shift 3
+
+    if pytest -q --tb=short "$@"; then
+        printf '\n%s\n' "$pass_label"
+        append_test_summary \
+            'PASS' \
+            "$summary_label" \
+            'Pytest completed with concise traceback output; raw command output remains available in the job log.'
+        return 0
+    else
+        local status=$?
+        printf '\n%s\n' "$fail_label" >&2
+        append_test_summary \
+            'FAIL' \
+            "$summary_label" \
+            'Review the failing test name, assertion or reason, and source path in the job log.'
+        return "$status"
+    fi
+}
+
 run_static() {
     bash scripts/verify_source_hygiene.sh
     python scripts/verify_release_surface_coverage.py
@@ -102,18 +141,46 @@ run_static() {
     python scripts/verify_feature_test_coverage.py
     python scripts/verify_ui_reuse.py
     python scripts/verify_ui_style.py
-    pytest -q tests/contracts tests/migrations -m 'contract or migration'
+    run_pytest_gate \
+        'PASS — KAORI Contract & Migration Tests' \
+        'FAIL — KAORI Contract & Migration Tests' \
+        'Contract & Migration Tests' \
+        tests/contracts tests/migrations -m 'contract or migration'
 }
 
 run_tests() {
     python scripts/verify_test_prerequisites.py
-    pytest -q -m 'not debug and not e2e'
+    run_pytest_gate \
+        'PASS — KAORI Functional Tests' \
+        'FAIL — KAORI Functional Tests' \
+        'Functional Tests' \
+        -m 'not debug and not e2e'
 
     # Domain characterization tests are explicit release gates. This protects
     # them from environment-level PYTEST_ADDOPTS or marker filtering that may
     # otherwise deselect unmarked behavioral tests.
-    pytest -q tests/welcome tests/access tests/integrations tests/kubernetes/dashboard tests/kubernetes/analytics tests/kubernetes/inventory tests/kubernetes/governance tests/kubernetes/operations tests/storage tests/platform_operations tests/reports tests/settings -m functional
-    pytest -q tests/e2e -m e2e
+    run_pytest_gate \
+        'PASS — KAORI Domain Characterization Tests' \
+        'FAIL — KAORI Domain Characterization Tests' \
+        'Domain Characterization Tests' \
+        tests/welcome \
+        tests/access \
+        tests/integrations \
+        tests/kubernetes/dashboard \
+        tests/kubernetes/analytics \
+        tests/kubernetes/inventory \
+        tests/kubernetes/governance \
+        tests/kubernetes/operations \
+        tests/storage \
+        tests/platform_operations \
+        tests/reports \
+        tests/settings \
+        -m functional
+    run_pytest_gate \
+        'PASS — KAORI End-to-End Tests' \
+        'FAIL — KAORI End-to-End Tests' \
+        'End-to-End Tests' \
+        tests/e2e -m e2e
 }
 
 run_frontend() {
