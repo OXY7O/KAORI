@@ -144,15 +144,18 @@ def test_xlsx_overview_is_an_executive_landing_page_with_navigation_and_semantic
 
 def test_xlsx_runtime_artifact_gate_rejects_nonconforming_workbooks() -> None:
     builder = read('app/reports/export/xlsx/builder.py')
+    validation = read('app/reports/export/xlsx/inventory_validation.py')
 
-    assert 'def validate_inventory_xlsx_artifact(' in builder
+    assert 'from app.reports.export.xlsx.inventory_validation import validate_inventory_xlsx_artifact' in builder
     assert 'validate_inventory_xlsx_artifact(output_path)' in builder
-    assert 'if workbook.sheetnames != expected_sheets' in builder
-    assert "overview['A5'].value != 'Executive Snapshot'" in builder
-    assert "overview['A9'].value != 'Executive Readout'" in builder
-    assert "overview['A13'].value != 'Primary Visual'" in builder
-    assert 'overview_charts = cast(Any, overview)._charts' in builder
-    assert 'if not overview_charts and not has_no_chart_message' in builder
-    assert "getattr(chart, 'varyColors', None) is not False" in builder
-    assert "metadata_values.get('Workbook Standard') != INVENTORY_WORKBOOK_STANDARD" in builder
-    assert "metadata_values.get('XLSX Standard') != XLSX_REPORTING_STANDARD" in builder
+    assert 'def validate_inventory_xlsx_artifact(' in validation
+    assert 'if sheetnames != expected_sheets' in validation
+    assert "overview['A5'].value != 'Executive Snapshot'" in validation
+    assert "overview['A9'].value != 'Executive Readout'" in validation
+    assert "overview['A13'].value != 'Primary Visual'" in validation
+    assert 'overview_charts = cast(Any, overview)._charts' in validation
+    assert 'if not overview_charts:' in validation
+    assert 'if not has_no_chart_message:' in validation
+    assert "getattr(chart, 'varyColors', None) is not False" in validation
+    assert "metadata_values.get('Workbook Standard') != INVENTORY_WORKBOOK_STANDARD" in validation
+    assert "metadata_values.get('XLSX Standard') != XLSX_REPORTING_STANDARD" in validation
