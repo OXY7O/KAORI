@@ -80,8 +80,7 @@
     "app/reports/export/payloads/tls_inventory.py::_present_record": 54,
     "app/reports/export/payloads/tls_inventory.py::_summary": 31,
     "app/reports/export/xlsx/analytics_overview.py::_write_supporting_data": 37,
-    "app/reports/export/xlsx/analytics_profiles.py::_prepare_top_consumers": 31,
-    "app/reports/export/xlsx/builder.py::validate_inventory_xlsx_artifact": 41
+    "app/reports/export/xlsx/analytics_profiles.py::_prepare_top_consumers": 31
   },
   "function_line_limits": {
     "app/access/overview/presentation.py::build_access_overview": 199,
@@ -132,7 +131,6 @@
     "app/reports/export/html_pdf/storage_analysis.py": 1210,
     "app/reports/export/html_pdf/workload_analysis.py": 1002,
     "app/reports/export/xlsx/analytics_profiles.py": 1766,
-    "app/reports/export/xlsx/builder.py": 840,
     "app/reports/generated/service.py": 1665,
     "app/reports/overview/service.py": 1028,
     "app/reports/schedules/service.py": 940,
