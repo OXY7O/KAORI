@@ -69,18 +69,14 @@ def risk_metric(label: str, count: int, tone: str) -> dict[str, str]:
 
 
 def capacity_resource(item: Mapping[str, Any], key: str) -> dict[str, Any]:
-    evidence_available = (
-        bool(item.get('evidence_available')) or to_float(item.get('capacity')) > 0
-    )
+    evidence_available = bool(item.get('evidence_available')) or to_float(item.get('capacity')) > 0
     capacity = max(0.0, to_float(item.get('capacity')))
     used = max(0.0, to_float(item.get('used')))
     available = max(0.0, to_float(item.get('available')))
     headroom = to_float(item.get('headroom')) if evidence_available else None
     if evidence_available and headroom is not None and headroom <= 0 and capacity > 0:
         headroom = max(0.0, min(100.0, available / capacity * 100))
-    used_percent = (
-        max(0.0, min(100.0, 100.0 - headroom)) if headroom is not None else 0.0
-    )
+    used_percent = max(0.0, min(100.0, 100.0 - headroom)) if headroom is not None else 0.0
     status, tone = headroom_status(headroom)
     unit = _RESOURCE_UNITS[key]
     return {
@@ -98,9 +94,7 @@ def capacity_resource(item: Mapping[str, Any], key: str) -> dict[str, Any]:
         'capacity_display': quantity(capacity, unit) if evidence_available else 'Not Available',
         'available_display': quantity(available, unit) if evidence_available else 'Not Available',
         'used_value_display': quantity(used, unit) if evidence_available else 'Not Available',
-        'capacity_value_display': (
-            quantity(capacity, unit) if evidence_available else 'Not Available'
-        ),
+        'capacity_value_display': (quantity(capacity, unit) if evidence_available else 'Not Available'),
         'status': status,
         'tone': tone,
     }
