@@ -2,6 +2,8 @@
 
 FROM python:3.12-slim-bookworm AS base
 
+ARG PIP_VERSION=26.2.1
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
@@ -9,6 +11,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Debian package patch levels intentionally follow Bookworm repositories.
+# hadolint ignore=DL3008
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
@@ -24,7 +28,7 @@ RUN apt-get update \
 COPY requirements/base.txt /tmp/requirements/base.txt
 
 RUN --mount=type=cache,target=/root/.cache/pip \
-    PIP_NO_CACHE_DIR=0 python -m pip install --upgrade pip \
+    PIP_NO_CACHE_DIR=0 python -m pip install "pip==${PIP_VERSION}" \
     && PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/requirements/base.txt
 
 COPY docker/entrypoint.sh /usr/local/bin/kaori-entrypoint
@@ -35,6 +39,8 @@ ENTRYPOINT ["kaori-entrypoint"]
 
 FROM base AS development
 
+# Development utilities intentionally follow Bookworm repository patch levels.
+# hadolint ignore=DL3008
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         bash \
@@ -57,6 +63,8 @@ RUN useradd --create-home --uid 1000 --shell /bin/bash vscode \
     && chown -R vscode:vscode /workspace
 
 WORKDIR /workspace/kaori
+# Named devcontainer user is required by remoteUser/updateRemoteUserUID.
+# hadolint ignore=DL3066
 USER vscode
 
 CMD ["sleep", "infinity"]
@@ -113,6 +121,8 @@ RUN python -m pip uninstall --yes pip \
     && ! python -c 'import pip' >/dev/null 2>&1 \
     && ! python -c 'import ensurepip' >/dev/null 2>&1
 
+# Named runtime user preserves passwd/group ownership and operator-readable identity.
+# hadolint ignore=DL3066
 USER kaori
 
 EXPOSE 5000
