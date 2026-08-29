@@ -46,6 +46,33 @@ def test_buildkit_caches_downloads_without_replacing_install_steps() -> None:
     assert 'npm ci' in production_source
 
 
+def test_dockerfiles_pin_bootstrap_pip_without_replacing_requirements() -> None:
+    for path in (CI_DOCKERFILE, PRODUCTION_DOCKERFILE):
+        source = read(path)
+        assert 'ARG PIP_VERSION=26.2.1' in source
+        assert 'python -m pip install "pip==${PIP_VERSION}"' in source
+        assert 'python -m pip install -r ' in source
+
+
+def test_ci_checksum_pipeline_uses_pipefail_shell() -> None:
+    source = read(CI_DOCKERFILE)
+
+    assert 'SHELL ["/bin/bash", "-o", "pipefail", "-c"]' in source
+    assert '| sha256sum -c -' in source
+
+
+def test_hadolint_exceptions_are_local_to_intentional_os_package_strategy() -> None:
+    production_source = read(PRODUCTION_DOCKERFILE)
+    ci_source = read(CI_DOCKERFILE)
+
+    assert production_source.count('# hadolint ignore=DL3008') == 2
+    assert ci_source.count('# hadolint ignore=DL3008') == 1
+
+    assert production_source.count('# hadolint ignore=DL3066') == 2
+    assert 'USER vscode' in production_source
+    assert 'USER kaori' in production_source
+
+
 def test_trivy_database_is_cached_but_each_validation_image_is_scanned() -> None:
     source = read(QUALITY)
 
