@@ -1,6 +1,6 @@
 # KAORI Analytics XLSX Design
 
-**Status:** Implemented contract; Analytics XLSX enabled in the report catalog  
+**Status:** Workbook contract implemented; Issue #13 code-health refactor design under review  
 **Date:** 2026-08-26  
 **Scope:** Kubernetes Analytics and Object Storage Analytics Excel artifacts
 
@@ -122,26 +122,34 @@ The facade owns profile lookup and preparation dispatch only. It must not regain
 
 ### Internal ownership boundaries
 
-The implementation is split by responsibility rather than by file length alone:
+The refactor targets these explicit internal boundaries:
 
-1. **Profile catalog** — declarative `AnalyticsWorkbookProfile` definitions and validation of profile metadata.
-2. **Shared preparation support** — narrow normalization primitives and shared table/metric helpers used by multiple report families.
-3. **Kubernetes preparers** — category-owned preparation for Resource Utilization, Capacity, Storage, Workload, Forecast, Top Consumers, Alerts & Anomalies, and Kubernetes Analytics Overview.
-4. **Object Storage preparer** — Object Storage Analytics preparation and storage-unit normalization.
-5. **Facade/dispatch** — stable report-type lookup and routing from canonical payload + `AnalyticsExportContext` to the selected preparer.
+- `app/reports/export/xlsx/analytics_profile_catalog.py` — declarative `AnalyticsWorkbookProfile` definitions plus profile metadata validation.
+- `app/reports/export/xlsx/analytics_preparation/common.py` — only normalization primitives, shared metric/table construction, and shared column specifications used by multiple report families.
+- `app/reports/export/xlsx/analytics_preparation/overview.py` — Kubernetes Analytics Overview preparation.
+- `app/reports/export/xlsx/analytics_preparation/resource_utilization.py` — Resource Utilization preparation.
+- `app/reports/export/xlsx/analytics_preparation/capacity.py` — Capacity preparation.
+- `app/reports/export/xlsx/analytics_preparation/storage.py` — Storage preparation.
+- `app/reports/export/xlsx/analytics_preparation/workload.py` — Workload preparation.
+- `app/reports/export/xlsx/analytics_preparation/forecast.py` — Forecast preparation.
+- `app/reports/export/xlsx/analytics_preparation/top_consumers.py` — Top Consumers preparation and resource-unit normalization specific to consumer ranking.
+- `app/reports/export/xlsx/analytics_preparation/alerts.py` — Alerts & Anomalies preparation.
+- `app/reports/export/xlsx/analytics_preparation/object_storage.py` — Object Storage Analytics preparation and storage-unit normalization.
 
-A helper belongs in shared support only when at least two preparers require the same semantic behavior. Helpers that encode one report family's meaning stay with that family. This prevents a new generic utility module from becoming the next oversized debt surface.
+No `kubernetes_preparers.py`, `analytics_helpers.py`, or equivalent catch-all module is introduced. A helper belongs in `common.py` only when at least two preparers require the same semantic behavior. Helpers that encode one report family's meaning stay with that family. Each new module and function must comply with default code-health ceilings when created.
 
 ### Dependency direction
 
 Internal dependencies are one-way:
 
-- schema/types → shared preparation support;
-- schema/types + shared support → category preparers;
+- `analytics_schema.py` → type definitions only;
+- schema/types → `analytics_preparation/common.py`;
+- schema/types + shared preparation support → category preparers;
+- schema/types → `analytics_profile_catalog.py`;
 - profile catalog + category preparers → `analytics_profiles.py` facade;
 - workbook builders/renderers → facade/schema.
 
-Category preparers must not import the facade, builder, validator, or renderer. Shared support must not import category preparers. This keeps the runtime import graph acyclic and preserves lazy/public XLSX boundaries already enforced by KAORI architecture checks.
+Category preparers must not import the facade, builder, validator, or renderer. Shared support must not import category preparers. The profile catalog must not import preparers. This keeps the runtime import graph acyclic and preserves lazy/public XLSX boundaries already enforced by KAORI architecture checks.
 
 ### Preparation contract
 
@@ -171,7 +179,7 @@ For this refactor increment:
 
 - `analytics_profiles.py` must fall below the default 800-line module ceiling without replacing it with another oversized catch-all module;
 - `_prepare_object_storage`, `_prepare_overview`, and `_prepare_top_consumers` must no longer require debt-ledger exceptions under the unchanged defaults of 160 function lines and 30 branch points;
-- any newly extracted module/function must comply with default code-health ceilings on creation;
+- every newly extracted module must remain at or below 800 lines, every function at or below 160 lines and 30 branch points, and existing argument ceiling 8 remains unchanged;
 - the exact debt ledger may only decrease after the corresponding source structure is proven green;
 - broad exception count must not increase.
 
