@@ -51,8 +51,10 @@ def create_app(config_name: str | None = None) -> Flask:
 
     from app.bootstrap.blueprints import register_blueprints
     from app.bootstrap.presentation import register_presentation
+    from app.bootstrap.security import register_security_headers
     from app.commands import register_commands
 
+    register_security_headers(app)
     register_presentation(app)
     register_blueprints(app)
 
