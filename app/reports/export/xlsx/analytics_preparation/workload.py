@@ -28,7 +28,9 @@ def prepare_workload(
 ) -> AnalyticsWorkbookData:
     quota = mapping(payload.get('tenant_quota_summary'))
     quota_rows = sequence(payload.get('tenant_quota_rows') or quota.get('rows'))
-    mapping_rows_raw = sequence(payload.get('workload_mapping_rows') or mapping(payload.get('workload_mapping_payload')).get('rows'))
+    mapping_rows_raw = sequence(
+        payload.get('workload_mapping_rows') or mapping(payload.get('workload_mapping_payload')).get('rows')
+    )
     findings = sequence(payload.get('governance_findings'))
     total = integer(quota.get('scope_total')) or len(quota_rows)
     covered = integer(quota.get('scope_covered'))
@@ -40,7 +42,9 @@ def prepare_workload(
     normalized_quota = [
         {
             'namespace': first(item, 'namespace', 'name', default='Not Available'),
-            'quota_status': first(mapping(item.get('quota_status')), 'label', default=first(item, 'status', default='Not Available')),
+            'quota_status': first(
+                mapping(item.get('quota_status')), 'label', default=first(item, 'status', default='Not Available')
+            ),
             'cpu': first(item, 'cpu', 'cpu_display', default='Not Available'),
             'memory': first(item, 'memory', 'memory_display', default='Not Available'),
             'pods': first(item, 'pods', 'pod_display', default='Not Available'),
@@ -68,11 +72,17 @@ def prepare_workload(
     normalized_mapping = [
         {
             'namespace': first(item, 'namespace', default='Not Available'),
-            'workload': first(mapping(item.get('identity')), 'primary', default=first(item, 'workload', 'name', default='Not Available')),
+            'workload': first(
+                mapping(item.get('identity')),
+                'primary',
+                default=first(item, 'workload', 'name', default='Not Available'),
+            ),
             'kind': first(item, 'kind', 'workload_kind', default='Not Available'),
             'requests': first(item, 'requests', 'request_display', default='Not Available'),
             'limits': first(item, 'limits', 'limit_display', default='Not Available'),
-            'status': first(mapping(item.get('risk')), 'label', default=first(item, 'status', 'qos_class', default='Not Available')),
+            'status': first(
+                mapping(item.get('risk')), 'label', default=first(item, 'status', 'qos_class', default='Not Available')
+            ),
         }
         for item in mapping_rows_raw
     ]
@@ -114,5 +124,7 @@ def prepare_workload(
     if coverage is None:
         readout = 'No committed tenant quota coverage denominator is available for the selected reporting boundary.'
     else:
-        readout = f'{coverage:.1f}% of {total:,} namespace quota records are covered in the committed analytics evidence.'
+        readout = (
+            f'{coverage:.1f}% of {total:,} namespace quota records are covered in the committed analytics evidence.'
+        )
     return AnalyticsWorkbookData(profile, context, metrics, readout, tuple(tables), chart)
