@@ -43,50 +43,14 @@ Modify:
 
 ### Task 1: Structural Ownership RED
 
-- [x] Create `tests/contracts/reports/test_capacity_html_pdf_code_health_contract.py` with:
-
-```python
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[3]
-HTML_PDF = ROOT / "app" / "reports" / "export" / "html_pdf"
-
-
-def test_capacity_refactor_uses_focused_local_package() -> None:
-    expected = (
-        "capacity/model.py",
-        "capacity/charts.py",
-        "capacity/forecast.py",
-        "capacity/actions.py",
-        "capacity/sections.py",
-    )
-    missing = [relative for relative in expected if not (HTML_PDF / relative).is_file()]
-    assert not missing, f"missing Capacity ownership modules: {missing}"
-
-
-def test_capacity_package_never_imports_facade() -> None:
-    package = HTML_PDF / "capacity"
-    assert package.is_dir()
-    for path in package.glob("*.py"):
-        source = path.read_text()
-        assert "from app.reports.export.html_pdf.capacity_analysis" not in source
-        assert "import app.reports.export.html_pdf.capacity_analysis" not in source
-
-
-def test_capacity_facade_keeps_symbol() -> None:
-    source = (HTML_PDF / "capacity_analysis.py").read_text()
-    assert "def build_capacity_analysis_presentation(" in source
-```
-
-- [x] Run `pytest -q tests/contracts/reports/test_capacity_html_pdf_code_health_contract.py`; RED observed in CI run #276 because `capacity/model.py` was absent on SHA `15a2771705f132a036bdd4717a7f6ee75d247caf`.
-- [x] Commit only this test as `test(reports): lock capacity html pdf ownership`.
+- [x] Structural contract committed at `15a2771705f132a036bdd4717a7f6ee75d247caf`.
+- [x] RED observed in KAORI CI #276: Static failed while `capacity/model.py` was absent on that SHA.
 
 ### Task 2: Model / Derived State
 
-- [x] Create all six `capacity/` package files so Task 1 can turn GREEN without import-broken intermediate commits.
-- [x] Move the current normalization implementations into `capacity/model.py`: mapping/sequence/number conversion, resource normalization, allocation normalization, quantity/headroom/status/tone helpers.
-- [ ] Wire the facade to model ownership and delete the dead duplicated helper bodies from `capacity_analysis.py` during the single facade rewrite in Task 6; this avoids repeated full-file rewrites through the GitHub connector.
-- [ ] Verify structural contract + Capacity PDF regression + Ruff after the atomic boundary commit reaches CI.
+- [x] Capacity-local package boundary and normalization implementation prepared atomically.
+- [ ] Verify structural GREEN + existing Capacity behavior + Ruff on branch head.
+- [ ] Wire Capacity facade to local owners during the single facade rewrite in Task 6; delete duplicated dead helper bodies then so the connector does not repeatedly rewrite the 1,255-line source.
 
 ### Task 3: Chart Ownership RED/GREEN
 
@@ -104,7 +68,7 @@ def test_capacity_facade_keeps_symbol() -> None:
 
 - [ ] Add structural RED that facade delegates section assembly.
 - [ ] Move existing `cover`, `executive`, `compute`, `scheduling`, `storage`, `risks`, `recommendations`, and methodology/evidence mapping blocks to focused builders in `capacity/sections.py`.
-- [ ] During this same full-file facade rewrite, replace all model/chart/forecast/action helper calls with their Capacity-local owners and remove dead duplicated helper bodies from `capacity_analysis.py`.
+- [ ] During the same full-file facade rewrite, replace all model/chart/forecast/action helper calls with Capacity-local owners and remove duplicated helper bodies from `capacity_analysis.py`.
 - [ ] Run structural contract + full Capacity PDF regression; commit facade reduction.
 
 ### Task 7: Caller Audit / `ReportDocumentContext`
