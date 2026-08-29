@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 QUALITY = ROOT / ".github/workflows/quality.yml"
 CI_DOCKERFILE = ROOT / ".github/ci/Dockerfile"
