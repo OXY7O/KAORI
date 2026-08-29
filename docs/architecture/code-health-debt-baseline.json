@@ -114,7 +114,6 @@
     "app/reports/export/xlsx/analytics_overview.py::_add_chart": 220,
     "app/reports/export/xlsx/analytics_profiles.py::_prepare_object_storage": 182,
     "app/reports/export/xlsx/analytics_profiles.py::_prepare_overview": 183,
-    "app/reports/export/xlsx/builder.py::_build_metadata_sheet": 167,
     "app/reports/storage/service.py::get_report_storage_backend_status": 193
   },
   "module_line_limits": {
