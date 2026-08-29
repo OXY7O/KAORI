@@ -67,36 +67,21 @@ run_contract_migration_gate() {
     fi
 }
 
-run_functional_gate() {
-    if pytest -q -m 'not debug and not e2e' --tb=short; then
-        record_test_result \
-            'PASS' \
-            'Functional Tests' \
-            'Canonical functional layer passed with concise traceback output.'
-        return 0
-    else
-        local status=$?
-        record_test_result \
-            'FAIL' \
-            'Functional Tests' \
-            'Review the failing functional test, assertion or reason, and source path in the job log.' >&2
-        return "$status"
-    fi
-}
-
 run_e2e_gate() {
     if pytest -q tests/e2e -m e2e --tb=short; then
-        record_test_result \
+        printf '\nPASS — KAORI End-to-End Tests\n'
+        append_test_summary \
             'PASS' \
             'End-to-End Tests' \
             'Explicit E2E smoke layer passed with concise traceback output.'
         return 0
     else
         local status=$?
-        record_test_result \
+        printf '\nFAIL — KAORI End-to-End Tests\n' >&2
+        append_test_summary \
             'FAIL' \
             'End-to-End Tests' \
-            'Review the failing E2E test name, assertion or reason, and source path in the job log.' >&2
+            'Review the failing E2E test name, assertion or reason, and source path in the job log.'
         return "$status"
     fi
 }
@@ -202,7 +187,24 @@ run_static() {
 
 run_tests() {
     python scripts/verify_test_prerequisites.py
-    run_functional_gate
+
+    # Keep the canonical full-functional command explicit for release-contract
+    # source inspection while presenting concise PASS/FAIL evidence around it.
+    if pytest -q -m 'not debug and not e2e' --tb=short; then
+        printf '\nPASS — KAORI Functional Tests\n'
+        append_test_summary \
+            'PASS' \
+            'Functional Tests' \
+            'Canonical functional layer passed with concise traceback output.'
+    else
+        local status=$?
+        printf '\nFAIL — KAORI Functional Tests\n' >&2
+        append_test_summary \
+            'FAIL' \
+            'Functional Tests' \
+            'Review the failing functional test, assertion or reason, and source path in the job log.'
+        return "$status"
+    fi
 
     # Domain characterization tests are explicit release gates. This protects
     # them from environment-level PYTEST_ADDOPTS or marker filtering that may
