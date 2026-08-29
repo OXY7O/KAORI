@@ -21,45 +21,82 @@ append_test_summary() {
     } >>"$GITHUB_STEP_SUMMARY"
 }
 
+record_test_result() {
+    local status="$1"
+    local label="$2"
+    local detail="$3"
+
+    printf '\n%s — KAORI %s\n' "$status" "$label"
+    append_test_summary "$status" "$label" "$detail"
+}
+
 run_pytest_gate() {
-    local pass_label="$1"
-    local fail_label="$2"
-    local summary_label="$3"
-    shift 3
+    local label="$1"
+    shift
 
     if pytest -q --tb=short "$@"; then
-        printf '\n%s\n' "$pass_label"
-        append_test_summary \
+        record_test_result \
             'PASS' \
-            "$summary_label" \
+            "$label" \
             'Pytest completed with concise traceback output; raw command output remains available in the job log.'
         return 0
     else
         local status=$?
-        printf '\n%s\n' "$fail_label" >&2
-        append_test_summary \
+        record_test_result \
             'FAIL' \
-            "$summary_label" \
-            'Review the failing test name, assertion or reason, and source path in the job log.'
+            "$label" \
+            'Review the failing test name, assertion or reason, and source path in the job log.' >&2
+        return "$status"
+    fi
+}
+
+run_contract_migration_gate() {
+    if pytest -q tests/contracts tests/migrations -m 'contract or migration' --tb=short; then
+        record_test_result \
+            'PASS' \
+            'Contract & Migration Tests' \
+            'Canonical contract and migration layer passed with concise traceback output.'
+        return 0
+    else
+        local status=$?
+        record_test_result \
+            'FAIL' \
+            'Contract & Migration Tests' \
+            'Review the failing contract or migration test and source path in the job log.' >&2
+        return "$status"
+    fi
+}
+
+run_functional_gate() {
+    if pytest -q -m 'not debug and not e2e' --tb=short; then
+        record_test_result \
+            'PASS' \
+            'Functional Tests' \
+            'Canonical functional layer passed with concise traceback output.'
+        return 0
+    else
+        local status=$?
+        record_test_result \
+            'FAIL' \
+            'Functional Tests' \
+            'Review the failing functional test, assertion or reason, and source path in the job log.' >&2
         return "$status"
     fi
 }
 
 run_e2e_gate() {
     if pytest -q tests/e2e -m e2e --tb=short; then
-        printf '\nPASS — KAORI End-to-End Tests\n'
-        append_test_summary \
+        record_test_result \
             'PASS' \
             'End-to-End Tests' \
-            'Explicit E2E smoke layer passed with concise traceback output; raw command output remains available in the job log.'
+            'Explicit E2E smoke layer passed with concise traceback output.'
         return 0
     else
         local status=$?
-        printf '\nFAIL — KAORI End-to-End Tests\n' >&2
-        append_test_summary \
+        record_test_result \
             'FAIL' \
             'End-to-End Tests' \
-            'Review the failing E2E test name, assertion or reason, and source path in the job log.'
+            'Review the failing E2E test name, assertion or reason, and source path in the job log.' >&2
         return "$status"
     fi
 }
@@ -160,27 +197,17 @@ run_static() {
     python scripts/verify_feature_test_coverage.py
     python scripts/verify_ui_reuse.py
     python scripts/verify_ui_style.py
-    run_pytest_gate \
-        'PASS — KAORI Contract & Migration Tests' \
-        'FAIL — KAORI Contract & Migration Tests' \
-        'Contract & Migration Tests' \
-        tests/contracts tests/migrations -m 'contract or migration'
+    run_contract_migration_gate
 }
 
 run_tests() {
     python scripts/verify_test_prerequisites.py
-    run_pytest_gate \
-        'PASS — KAORI Functional Tests' \
-        'FAIL — KAORI Functional Tests' \
-        'Functional Tests' \
-        -m 'not debug and not e2e'
+    run_functional_gate
 
     # Domain characterization tests are explicit release gates. This protects
     # them from environment-level PYTEST_ADDOPTS or marker filtering that may
     # otherwise deselect unmarked behavioral tests.
     run_pytest_gate \
-        'PASS — KAORI Domain Characterization Tests' \
-        'FAIL — KAORI Domain Characterization Tests' \
         'Domain Characterization Tests' \
         tests/welcome \
         tests/access \
