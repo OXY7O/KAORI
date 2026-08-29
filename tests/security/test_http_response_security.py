@@ -85,7 +85,7 @@ def test_csp_compatible_layouts_do_not_embed_inline_script_blocks() -> None:
 
 
 def test_hostile_next_payload_stays_data_inside_hidden_login_field(app) -> None:
-    payload = '/\"><svg/onload=alert(1)><input autofocus onfocus=alert(2)>'
+    payload = '/"><svg/onload=alert(1)><input autofocus onfocus=alert(2)>'
     response = app.test_client().get('/auth/login', query_string={'next': payload})
     html = response.get_data(as_text=True)
 
