@@ -39,6 +39,9 @@ def main() -> int:
     xlsx_style = read('app/reports/export/xlsx/style.py')
     analytics_schema = read('app/reports/export/xlsx/analytics_schema.py')
     analytics_profiles = read('app/reports/export/xlsx/analytics_profiles.py')
+    analytics_profile_catalog = read('app/reports/export/xlsx/analytics_profile_catalog.py')
+    analytics_top_consumers = read('app/reports/export/xlsx/analytics_preparation/top_consumers.py')
+    analytics_preparation_overview = read('app/reports/export/xlsx/analytics_preparation/overview.py')
     analytics_builder = read('app/reports/export/xlsx/analytics_builder.py')
     analytics_validation = read('app/reports/export/xlsx/analytics_validation.py')
     analytics_overview = read('app/reports/export/xlsx/analytics_overview.py')
@@ -80,7 +83,10 @@ def main() -> int:
         errors,
     )
     require(
-        'ANALYTICS_WORKBOOK_PROFILES' in analytics_profiles and 'ANALYTICS_XLSX_REPORT_TYPES' in analytics_profiles,
+        'ANALYTICS_WORKBOOK_PROFILES' in analytics_profiles
+        and 'ANALYTICS_XLSX_REPORT_TYPES' in analytics_profiles
+        and 'ANALYTICS_WORKBOOK_PROFILES' in analytics_profile_catalog
+        and 'ANALYTICS_XLSX_REPORT_TYPES' in analytics_profile_catalog,
         'Analytics XLSX category profile registry is missing',
         errors,
     )
@@ -103,12 +109,12 @@ def main() -> int:
         'BarChart' in analytics_overview
         and 'LineChart' in analytics_overview
         and "chart.visual_type == 'composition_bar'" in analytics_overview
-        and "primary_visual='composition_bar'" in analytics_profiles,
+        and "primary_visual='composition_bar'" in analytics_profile_catalog,
         'Analytics XLSX semantic chart renderers are incomplete',
         errors,
     )
     require(
-        '_normalized_consumer_value' in analytics_profiles
+        '_normalized_consumer_value' in analytics_top_consumers
         and 'max_length: int = 28' in analytics_overview
         and 'max_value * 1.20' in analytics_overview
         and "(overview.column_dimensions['K'].width or 0) < 38" in analytics_validation,
@@ -121,8 +127,8 @@ def main() -> int:
         errors,
     )
     require(
-        "primary_visual='comparison_bar'" in analytics_profiles
-        and "title='Current vs Projected Resource Posture'" in analytics_profiles
+        "primary_visual='comparison_bar'" in analytics_profile_catalog
+        and "title='Current vs Projected Resource Posture'" in analytics_preparation_overview
         and "chart.visual_type == 'comparison_bar'" in analytics_overview,
         'Analytics Overview must use resource-level Current vs Projected forecast semantics',
         errors,
@@ -289,7 +295,19 @@ def main() -> int:
         'app/reports/export/xlsx/builder.py',
         'app/reports/export/xlsx/overview.py',
         'app/reports/export/xlsx/analytics_schema.py',
+        'app/reports/export/xlsx/analytics_profile_catalog.py',
         'app/reports/export/xlsx/analytics_profiles.py',
+        'app/reports/export/xlsx/analytics_preparation/__init__.py',
+        'app/reports/export/xlsx/analytics_preparation/common.py',
+        'app/reports/export/xlsx/analytics_preparation/overview.py',
+        'app/reports/export/xlsx/analytics_preparation/resource_utilization.py',
+        'app/reports/export/xlsx/analytics_preparation/capacity.py',
+        'app/reports/export/xlsx/analytics_preparation/storage.py',
+        'app/reports/export/xlsx/analytics_preparation/workload.py',
+        'app/reports/export/xlsx/analytics_preparation/forecast.py',
+        'app/reports/export/xlsx/analytics_preparation/top_consumers.py',
+        'app/reports/export/xlsx/analytics_preparation/alerts.py',
+        'app/reports/export/xlsx/analytics_preparation/object_storage.py',
         'app/reports/export/xlsx/analytics_builder.py',
         'app/reports/export/xlsx/analytics_validation.py',
         'app/reports/export/xlsx/analytics_overview.py',
