@@ -134,7 +134,15 @@ def prepare_resource_utilization(
 
     trend_rows = _trend_rows(payload)
     if trend_rows:
-        tables.append(table('Trends', 'Utilization Trends', 'Committed utilization series in source order.', TREND_COLUMNS, trend_rows))
+        tables.append(
+            table(
+                'Trends',
+                'Utilization Trends',
+                'Committed utilization series in source order.',
+                TREND_COLUMNS,
+                trend_rows,
+            )
+        )
 
     consumer_rows = _consumer_rows(payload)
     if consumer_rows:
@@ -147,7 +155,14 @@ def prepare_resource_utilization(
                     column('resource', 'Resource', 'Resource signal used for ranking.', width=14),
                     column('namespace', 'Namespace', 'Kubernetes namespace.', width=28),
                     column('consumer', 'Consumer', 'Pod, workload, or resource identity.', width=44),
-                    column('value', 'Value', 'Committed resource value.', data_type='number', number_format='#,##0.00', width=16),
+                    column(
+                        'value',
+                        'Value',
+                        'Committed resource value.',
+                        data_type='number',
+                        number_format='#,##0.00',
+                        width=16,
+                    ),
                     column('unit', 'Unit', 'Unit supplied by the source evidence.', width=12),
                 ),
                 consumer_rows,
