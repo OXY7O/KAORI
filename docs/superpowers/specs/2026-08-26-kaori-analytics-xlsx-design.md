@@ -104,3 +104,75 @@ Analytics XLSX remains enabled only while implementation provides:
 6. regression tests for every enabled analytics category;
 7. parity checks against the same canonical analytics payload used by PDF/CSV;
 8. worker restart/deployment guidance because report generation executes outside the web request process.
+
+## Implementation architecture and code-health refactor
+
+Issue #13 may decompose the Analytics XLSX implementation, but it must not change the workbook contract above or the public export surface consumed by report generation and tests.
+
+### Stable facade
+
+`app/reports/export/xlsx/analytics_profiles.py` remains the compatibility facade for the existing Analytics XLSX profile API. Existing consumers must continue to resolve these public symbols without import-path changes:
+
+- `ANALYTICS_WORKBOOK_PROFILES`
+- `ANALYTICS_XLSX_REPORT_TYPES`
+- `get_analytics_workbook_profile`
+- `prepare_analytics_workbook_data`
+
+The facade owns profile lookup and preparation dispatch only. It must not regain domain-specific normalization, row construction, chart-model construction, or report-family preparation logic after extraction.
+
+### Internal ownership boundaries
+
+The implementation is split by responsibility rather than by file length alone:
+
+1. **Profile catalog** — declarative `AnalyticsWorkbookProfile` definitions and validation of profile metadata.
+2. **Shared preparation support** — narrow normalization primitives and shared table/metric helpers used by multiple report families.
+3. **Kubernetes preparers** — category-owned preparation for Resource Utilization, Capacity, Storage, Workload, Forecast, Top Consumers, Alerts & Anomalies, and Kubernetes Analytics Overview.
+4. **Object Storage preparer** — Object Storage Analytics preparation and storage-unit normalization.
+5. **Facade/dispatch** — stable report-type lookup and routing from canonical payload + `AnalyticsExportContext` to the selected preparer.
+
+A helper belongs in shared support only when at least two preparers require the same semantic behavior. Helpers that encode one report family's meaning stay with that family. This prevents a new generic utility module from becoming the next oversized debt surface.
+
+### Dependency direction
+
+Internal dependencies are one-way:
+
+- schema/types → shared preparation support;
+- schema/types + shared support → category preparers;
+- profile catalog + category preparers → `analytics_profiles.py` facade;
+- workbook builders/renderers → facade/schema.
+
+Category preparers must not import the facade, builder, validator, or renderer. Shared support must not import category preparers. This keeps the runtime import graph acyclic and preserves lazy/public XLSX boundaries already enforced by KAORI architecture checks.
+
+### Preparation contract
+
+Every preparer retains the current callable shape:
+
+`(payload: Mapping[str, Any], context: AnalyticsExportContext, profile: AnalyticsWorkbookProfile) -> AnalyticsWorkbookData`
+
+Preparation remains deterministic and side-effect free. It may normalize committed payload values and construct typed workbook data, but it must not query integrations, read persistence, calculate a new forecast, synthesize recommendations, or reinterpret missing evidence as a healthy state.
+
+### Error handling
+
+Unsupported report types continue to fail through the existing facade with a bounded `ValueError`. Context/report-type mismatch remains fail-fast. Extraction must not introduce broad exception handling, silent fallbacks, or source substitution. Report-family helpers may return neutral `Not Available`/empty evidence only where the current contract already does so.
+
+### Regression and TDD requirements
+
+Before each production extraction, a failing characterization/architecture contract must prove the intended new ownership boundary. GREEN evidence must cover both structural and behavioral contracts:
+
+- facade symbols and report-type registry remain import-compatible;
+- every enabled Analytics report type prepares successfully from its existing characterization payload;
+- overview metrics, table names, columns, rows, readout text, chart type, chart source rows, series metadata, and units remain semantically equivalent;
+- generated workbook sheet names, cells, formulas, number formats, chart XML/series, and runtime artifact validation remain covered by existing Analytics XLSX tests;
+- Ruff/format, Pyright, architecture/import graph, code-health, exact debt baseline, taxonomy, and coverage remain green before a debt-ledger entry is lowered or removed.
+
+### Code-health completion criteria
+
+For this refactor increment:
+
+- `analytics_profiles.py` must fall below the default 800-line module ceiling without replacing it with another oversized catch-all module;
+- `_prepare_object_storage`, `_prepare_overview`, and `_prepare_top_consumers` must no longer require debt-ledger exceptions under the unchanged defaults of 160 function lines and 30 branch points;
+- any newly extracted module/function must comply with default code-health ceilings on creation;
+- the exact debt ledger may only decrease after the corresponding source structure is proven green;
+- broad exception count must not increase.
+
+This is a behavior-preserving code-health refactor. No report catalog, workbook schema, publication semantics, XLSX presentation standard, or external API change is part of Issue #13.
