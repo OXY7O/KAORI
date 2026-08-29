@@ -78,8 +78,16 @@ def prepare_alerts(
             ),
             [
                 {'signal': 'Alert Source', 'value': first(source_status, 'label', 'status', default='Not Available')},
-                {'signal': 'Anomaly Source', 'value': first(mapping(payload.get('anomaly_source_status')), 'label', 'status', default='Not Available')},
-                {'signal': 'Committed Evidence', 'value': 'Available' if payload.get('committed_evidence_available', True) else 'Unavailable'},
+                {
+                    'signal': 'Anomaly Source',
+                    'value': first(
+                        mapping(payload.get('anomaly_source_status')), 'label', 'status', default='Not Available'
+                    ),
+                },
+                {
+                    'signal': 'Committed Evidence',
+                    'value': 'Available' if payload.get('committed_evidence_available', True) else 'Unavailable',
+                },
             ],
         )
     ]
@@ -106,7 +114,12 @@ def prepare_alerts(
     unclassified = max(active - (critical + warning + info), 0)
     severity_rows = tuple(
         {'category': label, 'value': count}
-        for label, count in (('Critical', critical), ('Warning', warning), ('Info', info), ('Unclassified', unclassified))
+        for label, count in (
+            ('Critical', critical),
+            ('Warning', warning),
+            ('Info', info),
+            ('Unclassified', unclassified),
+        )
         if count > 0
     )
     chart = None
