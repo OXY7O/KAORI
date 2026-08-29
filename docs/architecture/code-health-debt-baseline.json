@@ -111,7 +111,6 @@
     "app/reports/export/html_pdf/storage_analysis.py::build_storage_analysis_presentation": 472,
     "app/reports/export/html_pdf/top_consumers_analysis.py::build_top_consumers_analysis_presentation": 227,
     "app/reports/export/html_pdf/workload_analysis.py::build_workload_analysis_presentation": 174,
-    "app/reports/export/xlsx/analytics_overview.py::_add_chart": 220,
     "app/reports/export/xlsx/analytics_profiles.py::_prepare_object_storage": 182,
     "app/reports/export/xlsx/analytics_profiles.py::_prepare_overview": 183,
     "app/reports/storage/service.py::get_report_storage_backend_status": 193
