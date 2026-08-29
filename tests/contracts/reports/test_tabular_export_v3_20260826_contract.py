@@ -31,6 +31,7 @@ def test_inventory_v4_uses_profile_owned_readable_units_and_executive_summary_co
     profiles = read('app/reports/export/xlsx/profiles_infrastructure.py')
     common = read('app/reports/export/inventory_common.py')
     builder = read('app/reports/export/xlsx/builder.py')
+    metadata = read('app/reports/export/xlsx/inventory_metadata.py')
     overview = read('app/reports/export/xlsx/overview.py')
 
     assert "INVENTORY_OVERVIEW_SHEET: Final = 'Overview'" in schema
@@ -50,7 +51,8 @@ def test_inventory_v4_uses_profile_owned_readable_units_and_executive_summary_co
     assert "'Quota Bytes'" not in profiles
     assert 'normalize_inventory_row' in common
     assert 'build_inventory_overview_sheet' in builder
-    assert "'XLSX Standard'" in builder and 'XLSX_REPORTING_STANDARD' in builder
+    assert 'from app.reports.export.xlsx.inventory_metadata import build_inventory_metadata_rows' in builder
+    assert "'XLSX Standard'" in metadata and 'XLSX_REPORTING_STANDARD' in metadata
     standard_import = builder.split('from app.reports.export.xlsx.standard import (', 1)[1].split(')', 1)[0]
     assert 'INVENTORY_OVERVIEW_SHEET,' in standard_import
     assert 'profile.overview_chart' in overview
