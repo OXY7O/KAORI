@@ -40,7 +40,7 @@ def main() -> int:
     analytics_schema = read('app/reports/export/xlsx/analytics_schema.py')
     analytics_profiles = read('app/reports/export/xlsx/analytics_profiles.py')
     analytics_profile_catalog = read('app/reports/export/xlsx/analytics_profile_catalog.py')
-    analytics_top_consumers = read('app/reports/export/xlsx/analytics_preparation/top_consumers.py')
+    analytics_preparation_common = read('app/reports/export/xlsx/analytics_preparation/common.py')
     analytics_preparation_overview = read('app/reports/export/xlsx/analytics_preparation/overview.py')
     analytics_builder = read('app/reports/export/xlsx/analytics_builder.py')
     analytics_validation = read('app/reports/export/xlsx/analytics_validation.py')
@@ -114,7 +114,7 @@ def main() -> int:
         errors,
     )
     require(
-        '_normalized_consumer_value' in analytics_top_consumers
+        'normalized_consumer_value' in analytics_preparation_common
         and 'max_length: int = 28' in analytics_overview
         and 'max_value * 1.20' in analytics_overview
         and "(overview.column_dimensions['K'].width or 0) < 38" in analytics_validation,
