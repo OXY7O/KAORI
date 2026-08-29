@@ -64,14 +64,18 @@ def _normalize_rows(payload: Mapping[str, Any]) -> list[dict[str, Any]]:
                 'display_numeric': display_numeric,
                 'display_value': display_value,
                 'unit': unit or 'Not Available',
-                'status': first(mapping(item.get('risk')), 'label', default=first(item, 'status', default='Not Available')),
+                'status': first(
+                    mapping(item.get('risk')), 'label', default=first(item, 'status', default='Not Available')
+                ),
             }
         )
     return rows
 
 
 def _ranked_rows(rows: list[dict[str, Any]]) -> tuple[str | None, list[dict[str, Any]]]:
-    preferred = next((resource for resource in ('Memory', 'CPU') if any(row['resource'] == resource for row in rows)), None)
+    preferred = next(
+        (resource for resource in ('Memory', 'CPU') if any(row['resource'] == resource for row in rows)), None
+    )
     if preferred is None:
         preferred = next((str(row['resource']) for row in rows), None)
     ranked = [row for row in rows if row['resource'] == preferred and row['display_numeric'] is not None]
@@ -116,7 +120,14 @@ def prepare_top_consumers(
                     column('resource', 'Resource', 'Resource signal.', width=14),
                     column('namespace', 'Namespace', 'Namespace identity.', width=28),
                     column('consumer', 'Consumer', 'Pod, workload, or resource identity.', width=44),
-                    column('value', 'Value', 'Committed numeric value normalized to the published display unit.', data_type='number', number_format='#,##0.00', width=18),
+                    column(
+                        'value',
+                        'Value',
+                        'Committed numeric value normalized to the published display unit.',
+                        data_type='number',
+                        number_format='#,##0.00',
+                        width=18,
+                    ),
                     column('unit', 'Unit', 'Published resource-specific unit.', width=12),
                     column('status', 'Status', 'Committed risk or review state.', width=18),
                 ),
