@@ -79,7 +79,6 @@
     "app/reports/export/html_pdf/workload_analysis.py::_quota_analysis": 45,
     "app/reports/export/payloads/tls_inventory.py::_present_record": 54,
     "app/reports/export/payloads/tls_inventory.py::_summary": 31,
-    "app/reports/export/xlsx/analytics_overview.py::_write_supporting_data": 37,
     "app/reports/export/xlsx/analytics_profiles.py::_prepare_top_consumers": 31
   },
   "function_line_limits": {
