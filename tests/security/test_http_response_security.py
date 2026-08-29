@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import re
 from html.parser import HTMLParser
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -11,14 +9,12 @@ from app import create_app
 from app.access.authentication import routes as auth_routes
 from app.bootstrap import presentation as bootstrap_presentation
 
-ROOT = Path(__file__).resolve().parents[2]
-_INLINE_SCRIPT_RE = re.compile(r'<script(?![^>]*\bsrc=)[^>]*>', re.IGNORECASE)
 
-
-class _LoginFormParser(HTMLParser):
+class _SecurityHtmlParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__()
         self.next_input: dict[str, str | None] | None = None
+        self.script_attributes: list[dict[str, str | None]] = []
         self.tags: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
@@ -26,6 +22,8 @@ class _LoginFormParser(HTMLParser):
         attributes = dict(attrs)
         if tag == 'input' and attributes.get('name') == 'next':
             self.next_input = attributes
+        if tag == 'script':
+            self.script_attributes.append(attributes)
 
 
 @pytest.fixture()
@@ -51,6 +49,12 @@ def _csp_directives(value: str) -> dict[str, str]:
     return directives
 
 
+def _csp_nonce(value: str) -> str:
+    script_sources = _csp_directives(value)['script-src'].split()
+    nonce_source = next(source for source in script_sources if source.startswith("'nonce-") and source.endswith("'"))
+    return nonce_source[len("'nonce-") : -1]
+
+
 def test_html_responses_apply_central_http_security_baseline(app) -> None:
     response = app.test_client().get('/auth/login')
 
@@ -69,6 +73,28 @@ def test_html_responses_apply_central_http_security_baseline(app) -> None:
     assert directives['form-action'] == "'self'"
     assert "'self'" in directives['script-src'].split()
     assert "'unsafe-inline'" not in directives['script-src'].split()
+    assert _csp_nonce(response.headers['Content-Security-Policy'])
+
+
+def test_inline_bootstrap_scripts_are_protected_by_response_nonce(app) -> None:
+    response = app.test_client().get('/auth/login')
+    nonce = _csp_nonce(response.headers['Content-Security-Policy'])
+
+    parser = _SecurityHtmlParser()
+    parser.feed(response.get_data(as_text=True))
+    inline_scripts = [attributes for attributes in parser.script_attributes if 'src' not in attributes]
+
+    assert inline_scripts
+    assert all(attributes.get('nonce') == nonce for attributes in inline_scripts)
+
+
+def test_csp_nonce_rotates_between_html_responses(app) -> None:
+    client = app.test_client()
+
+    first = _csp_nonce(client.get('/auth/login').headers['Content-Security-Policy'])
+    second = _csp_nonce(client.get('/auth/login').headers['Content-Security-Policy'])
+
+    assert first != second
 
 
 def test_static_responses_receive_mime_sniffing_protection(app) -> None:
@@ -78,12 +104,6 @@ def test_static_responses_receive_mime_sniffing_protection(app) -> None:
     assert response.headers['X-Content-Type-Options'] == 'nosniff'
 
 
-def test_csp_compatible_layouts_do_not_embed_inline_script_blocks() -> None:
-    for relative_path in ('app/templates/layouts/app.html', 'app/templates/layouts/auth.html'):
-        template = (ROOT / relative_path).read_text(encoding='utf-8')
-        assert _INLINE_SCRIPT_RE.search(template) is None, relative_path
-
-
 def test_hostile_next_payload_stays_data_inside_hidden_login_field(app) -> None:
     payload = '/"><svg/onload=alert(1)><input autofocus onfocus=alert(2)>'
     response = app.test_client().get('/auth/login', query_string={'next': payload})
@@ -91,7 +111,7 @@ def test_hostile_next_payload_stays_data_inside_hidden_login_field(app) -> None:
 
     assert response.status_code == 200
 
-    parser = _LoginFormParser()
+    parser = _SecurityHtmlParser()
     parser.feed(html)
 
     assert parser.next_input is not None
