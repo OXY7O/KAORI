@@ -60,7 +60,9 @@ def prepare_forecast(
             'current_percent': number(first(item, 'current_percent', 'historical_percent', 'current')),
             'projected_percent': _forecast_item_percent(item),
             'signal_quality': first(item, 'signal_quality', 'confidence', default='Not Available'),
-            'threshold_eta': first(mapping(item.get('warning_eta')), 'label', default=first(item, 'threshold_eta', default='Not Available')),
+            'threshold_eta': first(
+                mapping(item.get('warning_eta')), 'label', default=first(item, 'threshold_eta', default='Not Available')
+            ),
         }
         for key, item in by_key.items()
     ]
@@ -73,8 +75,22 @@ def prepare_forecast(
                 'Committed current and projected resource signals.',
                 (
                     column('resource', 'Resource', 'Forecast resource.', width=18),
-                    column('current_percent', 'Current %', 'Current committed percentage.', data_type='percent', number_format='0.0"%"', width=15),
-                    column('projected_percent', 'Projected %', 'Committed projected percentage.', data_type='percent', number_format='0.0"%"', width=15),
+                    column(
+                        'current_percent',
+                        'Current %',
+                        'Current committed percentage.',
+                        data_type='percent',
+                        number_format='0.0"%"',
+                        width=15,
+                    ),
+                    column(
+                        'projected_percent',
+                        'Projected %',
+                        'Committed projected percentage.',
+                        data_type='percent',
+                        number_format='0.0"%"',
+                        width=15,
+                    ),
                     column('signal_quality', 'Signal Quality', 'Committed signal quality.', width=18),
                     column('threshold_eta', 'Threshold ETA', 'Committed threshold timing.', width=20),
                 ),
@@ -92,10 +108,31 @@ def prepare_forecast(
                 f'{preferred_label} Forecast Trend',
                 'Committed historical and forecast points in source order.',
                 (
-                    column('observation', 'Observation', 'Source-order point.', data_type='integer', number_format='#,##0', width=14),
+                    column(
+                        'observation',
+                        'Observation',
+                        'Source-order point.',
+                        data_type='integer',
+                        number_format='#,##0',
+                        width=14,
+                    ),
                     column('resource', 'Resource', 'Forecast resource.', width=16),
-                    column('historical_percent', 'Historical %', 'Committed historical percentage.', data_type='percent', number_format='0.0"%"', width=16),
-                    column('forecast_percent', 'Forecast %', 'Committed forecast percentage.', data_type='percent', number_format='0.0"%"', width=16),
+                    column(
+                        'historical_percent',
+                        'Historical %',
+                        'Committed historical percentage.',
+                        data_type='percent',
+                        number_format='0.0"%"',
+                        width=16,
+                    ),
+                    column(
+                        'forecast_percent',
+                        'Forecast %',
+                        'Committed forecast percentage.',
+                        data_type='percent',
+                        number_format='0.0"%"',
+                        width=16,
+                    ),
                 ),
                 trend_rows,
             )
@@ -115,4 +152,6 @@ def prepare_forecast(
             ),
             value_axis_title='Percent',
         )
-    return AnalyticsWorkbookData(profile, context, metrics, leading_percent_readout(metrics, 'forecast'), tuple(tables), chart)
+    return AnalyticsWorkbookData(
+        profile, context, metrics, leading_percent_readout(metrics, 'forecast'), tuple(tables), chart
+    )
