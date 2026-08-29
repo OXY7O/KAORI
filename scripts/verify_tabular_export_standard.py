@@ -40,6 +40,7 @@ def main() -> int:
     analytics_schema = read('app/reports/export/xlsx/analytics_schema.py')
     analytics_profiles = read('app/reports/export/xlsx/analytics_profiles.py')
     analytics_builder = read('app/reports/export/xlsx/analytics_builder.py')
+    analytics_validation = read('app/reports/export/xlsx/analytics_validation.py')
     analytics_overview = read('app/reports/export/xlsx/analytics_overview.py')
     analytics_document_builder = read('app/reports/export/html_pdf/builder.py')
     xlsx_renderer = read('app/reports/export/xlsx/renderer.py')
@@ -110,7 +111,7 @@ def main() -> int:
         '_normalized_consumer_value' in analytics_profiles
         and 'max_length: int = 28' in analytics_overview
         and 'max_value * 1.20' in analytics_overview
-        and "(overview.column_dimensions['K'].width or 0) < 38" in analytics_builder,
+        and "(overview.column_dimensions['K'].width or 0) < 38" in analytics_validation,
         'Analytics XLSX ranked-bar normalization and spacing contract is incomplete',
         errors,
     )
@@ -290,6 +291,7 @@ def main() -> int:
         'app/reports/export/xlsx/analytics_schema.py',
         'app/reports/export/xlsx/analytics_profiles.py',
         'app/reports/export/xlsx/analytics_builder.py',
+        'app/reports/export/xlsx/analytics_validation.py',
         'app/reports/export/xlsx/analytics_overview.py',
         'app/reports/export/xlsx/renderer.py',
     ):
