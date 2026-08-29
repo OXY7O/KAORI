@@ -222,6 +222,8 @@ Forecast section assembly may remain in `forecast.py` because forecast normaliza
 
 The refactor must not introduce a second publication metadata object when KAORI already has `ReportDocumentContext` in the HTML/PDF builder path.
 
+Repository visibility check: `app/reports/export/html_pdf/__init__.py` does not export the Capacity presentation function. The supported product boundary remains the report-generation flow through `builder.py`. For #36, “stable entrypoint” therefore means the Capacity report type, builder routing, template name, module path, and function symbol remain recognizable; the repository-internal callable signature may be narrowed only after caller audit proves that no supported consumer depends on the current 11-argument form.
+
 Preferred repository-internal call contract:
 
 ```python
