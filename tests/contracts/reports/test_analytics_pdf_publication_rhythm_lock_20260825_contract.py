@@ -168,9 +168,9 @@ def test_workload_half_width_signal_register_uses_compact_labels() -> None:
 
 
 def test_storage_trend_avoids_start_and_cutoff_label_collision() -> None:
-    presenter = read('app/reports/export/html_pdf/storage_analysis.py')
-    assert 'compact_axis_labels = cutoff_x - left < 70' in presenter
-    assert 'if not compact_axis_labels' in presenter
+    trend = read('app/reports/export/html_pdf/storage/trend.py')
+    assert 'if cutoff_x - left >= 70' in trend
+    assert 'Historical Start' in trend
 
 
 def test_resource_utilization_interpretation_sections_render_body_copy() -> None:
@@ -229,9 +229,9 @@ def test_workload_signal_labels_do_not_depend_on_counts() -> None:
 
 
 def test_storage_count_donut_wraps_long_center_label() -> None:
-    presenter = read('app/reports/export/html_pdf/storage_analysis.py')
+    sections = read('app/reports/export/html_pdf/storage/sections.py')
     visuals = read('app/reports/export/html_pdf/publication_visuals.py')
-    assert 'count_donut_svg' in presenter
+    assert 'count_donut_svg' in sections
     assert '_donut_label_lines(label)' in visuals
     assert '<tspan' in visuals
     assert 'font-size="7"' in visuals

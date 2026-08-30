@@ -81,9 +81,9 @@ def test_storage_templates_render_domain_status_without_local_threshold_logic() 
 
 def test_pvc_ui_and_report_use_observed_capacity_as_pressure_denominator() -> None:
     pvc = read('app/templates/kubernetes/analytics/storage/partials/_persistent_volume_claims_panel.html')
-    report = read('app/reports/export/html_pdf/storage_analysis.py')
+    report_sections = read('app/reports/export/html_pdf/storage/sections.py')
 
     assert 'of observed capacity' in pvc
     assert 'row.used }} / {{ row.capacity' in pvc
     assert 'of requested' not in pvc
-    assert "'boundary': 'Observed Volume Capacity'" in report
+    assert "'boundary': 'Observed Volume Capacity'" in report_sections
