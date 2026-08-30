@@ -82,7 +82,9 @@ def resolve_profile(
         profile = 'full'
 
     if profile == 'full':
-        return ProfileDecision(profile, 'full', 'Implementation source trees require comprehensive validation.', PROFILE_DISPLAY[profile])
+        return ProfileDecision(
+            profile, 'full', 'Implementation source trees require comprehensive validation.', PROFILE_DISPLAY[profile]
+        )
 
     sensitive = sorted(path for path in changed_paths if _is_sensitive(path))
     if sensitive:
@@ -123,7 +125,9 @@ def evidence_reuse_decision(
         run_id = int(evidence.get('full_admission_run_id'))
     except (TypeError, ValueError):
         return ReuseDecision(False, 'Admission evidence is missing a valid Full Admission run ID.')
-    return ReuseDecision(True, 'Exact successful Full Admission evidence is reusable.', run_id, current_sha, current_tree)
+    return ReuseDecision(
+        True, 'Exact successful Full Admission evidence is reusable.', run_id, current_sha, current_tree
+    )
 
 
 def staging_lineage_reuse_decision(
@@ -138,7 +142,12 @@ def staging_lineage_reuse_decision(
         return ReuseDecision(False, 'Staging merge parents do not match the admitted lineage.')
     if merge_tree != admitted_tree:
         return ReuseDecision(False, 'Staging merge tree differs from the admitted source tree.')
-    return ReuseDecision(True, 'Staging parents and tree are equivalent to admitted lineage.', source_sha=admitted_head_sha, source_tree=admitted_tree)
+    return ReuseDecision(
+        True,
+        'Staging parents and tree are equivalent to admitted lineage.',
+        source_sha=admitted_head_sha,
+        source_tree=admitted_tree,
+    )
 
 
 def promotion_lineage_reuse_decision(
@@ -153,7 +162,12 @@ def promotion_lineage_reuse_decision(
         return ReuseDecision(False, 'Promotion merge parents do not match the accepted staging lineage.')
     if merge_tree != accepted_tree:
         return ReuseDecision(False, 'Promotion tree differs from the UAT-accepted staging tree.')
-    return ReuseDecision(True, 'Promotion parents and tree preserve the accepted staging lineage.', source_sha=accepted_staging_sha, source_tree=accepted_tree)
+    return ReuseDecision(
+        True,
+        'Promotion parents and tree preserve the accepted staging lineage.',
+        source_sha=accepted_staging_sha,
+        source_tree=accepted_tree,
+    )
 
 
 def render_operator_summary(
@@ -267,9 +281,9 @@ def find_remote_full_evidence(
         ).get('workflow_runs', [])
         for run in runs:
             run_id = int(run['id'])
-            artifacts = _github_request(f'https://api.github.com/repos/{repository}/actions/runs/{run_id}/artifacts', token).get(
-                'artifacts', []
-            )
+            artifacts = _github_request(
+                f'https://api.github.com/repos/{repository}/actions/runs/{run_id}/artifacts', token
+            ).get('artifacts', [])
             for artifact in artifacts:
                 if not str(artifact.get('name', '')).startswith('kaori-full-admission-'):
                     continue
@@ -300,7 +314,9 @@ def _write_output(values: Mapping[str, str]) -> None:
 
 
 def _route(args: argparse.Namespace) -> int:
-    changed = tuple(Path(args.changed_paths_file).read_text(encoding='utf-8').splitlines()) if args.changed_paths_file else ()
+    changed = (
+        tuple(Path(args.changed_paths_file).read_text(encoding='utf-8').splitlines()) if args.changed_paths_file else ()
+    )
     decision = resolve_profile(
         event_name=args.event_name,
         ref=args.ref,
