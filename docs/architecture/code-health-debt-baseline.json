@@ -42,7 +42,6 @@
     "app/reports/export/html_pdf/forecast_analysis.py::build_forecast_analysis_presentation": 11,
     "app/reports/export/html_pdf/resource_utilization.py::_recommendations": 9,
     "app/reports/export/html_pdf/resource_utilization.py::build_resource_utilization_presentation": 11,
-    "app/reports/export/html_pdf/storage_analysis.py::build_storage_analysis_presentation": 11,
     "app/reports/export/html_pdf/top_consumers_analysis.py::build_top_consumers_analysis_presentation": 11,
     "app/reports/export/html_pdf/workload_analysis.py::build_workload_analysis_presentation": 11,
     "app/reports/storage/s3.py::S3ReportStorage.__init__": 11
@@ -71,7 +70,6 @@
     "app/reports/export/html_pdf/normalization.py::findings_from_value": 36,
     "app/reports/export/html_pdf/resource_utilization.py::_recommendations": 31,
     "app/reports/export/html_pdf/resource_utilization.py::build_resource_utilization_presentation": 49,
-    "app/reports/export/html_pdf/storage_analysis.py::build_storage_analysis_presentation": 57,
     "app/reports/export/html_pdf/workload_analysis.py::_configuration_analysis": 42,
     "app/reports/export/html_pdf/workload_analysis.py::_mapping_analysis": 32,
     "app/reports/export/html_pdf/workload_analysis.py::_quota_analysis": 45,
@@ -103,7 +101,6 @@
     "app/reports/export/html_pdf/analytics_overview.py::build_analytics_overview_presentation": 253,
     "app/reports/export/html_pdf/forecast_analysis.py::build_forecast_analysis_presentation": 283,
     "app/reports/export/html_pdf/resource_utilization.py::build_resource_utilization_presentation": 449,
-    "app/reports/export/html_pdf/storage_analysis.py::build_storage_analysis_presentation": 472,
     "app/reports/export/html_pdf/top_consumers_analysis.py::build_top_consumers_analysis_presentation": 227,
     "app/reports/export/html_pdf/workload_analysis.py::build_workload_analysis_presentation": 174,
     "app/reports/storage/service.py::get_report_storage_backend_status": 193
@@ -118,7 +115,6 @@
     "app/reports/export/html_pdf/analytics_overview.py": 2346,
     "app/reports/export/html_pdf/forecast_analysis.py": 1114,
     "app/reports/export/html_pdf/resource_utilization.py": 1270,
-    "app/reports/export/html_pdf/storage_analysis.py": 1210,
     "app/reports/export/html_pdf/workload_analysis.py": 1002,
     "app/reports/generated/service.py": 1665,
     "app/reports/overview/service.py": 1028,
