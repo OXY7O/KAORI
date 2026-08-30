@@ -102,7 +102,6 @@ run_command_capture() {
     log_file="$(mktemp "$STATIC_OUTPUT_DIR/${slug}.XXXXXX.log")"
 
     if "$@" >"$log_file" 2>&1; then
-        printf '  PASS — %s\n' "$label"
         return 0
     else
         status=$?
@@ -121,14 +120,27 @@ run_command_capture() {
 run_static_group() {
     local group="$1"
     shift
-    printf '\n%s\n' "$group"
+    local group_pass_count=0
+
     while (( "$#" )); do
         local label="$1"
         local command="$2"
+        local status
         shift 2
-        run_command_capture "$group" "$label" bash -lc "$command"
+
+        if run_command_capture "$group" "$label" bash -lc "$command"; then
+            group_pass_count=$((group_pass_count + 1))
+        else
+            status=$?
+            return "$status"
+        fi
     done
-    printf 'PASS — KAORI %s\n' "$group"
+
+    printf 'PASS — KAORI %s · %s checks\n' "$group" "$group_pass_count"
+    append_test_summary \
+        'PASS' \
+        "$group" \
+        "$group_pass_count checks. Detailed PASS output is retained in $STATIC_OUTPUT_DIR."
 }
 
 run_contract_migration_gate() {
