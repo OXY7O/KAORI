@@ -88,5 +88,9 @@ def test_shared_form_field_alignment_contract_is_owned_by_contract_tests() -> No
 
 def test_form_with_context_contract_runs_from_canonical_contract_gate() -> None:
     quality_gate = read('scripts/quality_gate.sh')
-    assert 'pytest -q tests/contracts tests/migrations' in quality_gate
+    assert 'run_contract_migration_gate' in quality_gate
+    assert "'Contract & Migration Tests'" in quality_gate
+    assert 'tests/contracts' in quality_gate
+    assert 'tests/migrations' in quality_gate
+    assert 'run_pytest_capture' in quality_gate
     assert 'verify_form_with_context_standard.py' not in quality_gate
