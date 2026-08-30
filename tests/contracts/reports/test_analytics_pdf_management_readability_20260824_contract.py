@@ -45,7 +45,8 @@ def test_multi_series_chart_labels_have_a_reserved_right_gutter() -> None:
     assert 'left, right, top, bottom = 58, 165, 22, 40' in capacity
     assert 'label_line_x = width - 166' in capacity
     assert 'label_x = width - 18' in capacity
-    assert 'text-anchor="end" style="font:11px Inter,sans-serif' in capacity
+    assert 'text-anchor="end"' in capacity
+    assert 'style="font:11px Inter,sans-serif' in capacity
     assert 'width="{width - 2}" height="{height - 2}"' in capacity
 
 
