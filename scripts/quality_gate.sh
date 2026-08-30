@@ -6,6 +6,7 @@ cd "$ROOT"
 
 phase="${1:---all}"
 TEST_OUTPUT_DIR="tmp/ci-artifacts/test-output"
+STATIC_OUTPUT_DIR="tmp/ci-artifacts/static-output"
 
 append_test_summary() {
     local status="$1"
@@ -90,6 +91,46 @@ run_pytest_capture() {
     return "$status"
 }
 
+run_command_capture() {
+    local group="$1"
+    local label="$2"
+    shift 2
+    local slug log_file status first_failure
+
+    mkdir -p "$STATIC_OUTPUT_DIR"
+    slug="$(printf '%s-%s' "$group" "$label" | tr '[:upper:] /&' '[:lower:]----' | tr -cd 'a-z0-9_-')"
+    log_file="$(mktemp "$STATIC_OUTPUT_DIR/${slug}.XXXXXX.log")"
+
+    if "$@" >"$log_file" 2>&1; then
+        printf '  PASS — %s\n' "$label"
+        return 0
+    else
+        status=$?
+    fi
+
+    first_failure="$(grep -m1 -E '^(FAIL|FAILED|ERROR|E[[:space:]]|[A-Z][0-9]{3}[[:space:]])' "$log_file" || true)"
+    [[ -n "$first_failure" ]] || first_failure="Command exited with status $status."
+    printf '  FAIL — %s\n' "$label" >&2
+    printf 'First actionable failure — %s\n' "$first_failure" >&2
+    printf 'Diagnostic excerpt — bounded; full output retained at %s\n' "$log_file" >&2
+    tail -n 60 "$log_file" >&2
+    printf 'Next action — repair %s, then rerun %s.\n' "$label" "$group" >&2
+    return "$status"
+}
+
+run_static_group() {
+    local group="$1"
+    shift
+    printf '\n%s\n' "$group"
+    while (( "$#" )); do
+        local label="$1"
+        local command="$2"
+        shift 2
+        run_command_capture "$group" "$label" bash -lc "$command"
+    done
+    printf 'PASS — KAORI %s\n' "$group"
+}
+
 run_contract_migration_gate() {
     # Canonical contract/migration coverage is executed through run_pytest_capture;
     # semantic equivalent of: pytest -q tests/contracts tests/migrations
@@ -113,101 +154,109 @@ run_e2e_gate() {
 }
 
 run_static() {
-    bash scripts/verify_source_hygiene.sh
-    python scripts/verify_release_surface_coverage.py
-    python scripts/verify_release_governance.py
-    python scripts/verify_environment_contract.py
-    python scripts/verify_engineering_standard.py
-    python scripts/verify_definition_registry.py
-    python scripts/verify_domain_namespace_architecture.py
-    python scripts/verify_application_package_architecture.py
-    python scripts/verify_welcome_final_lock.py
-    python scripts/verify_python_syntax.py
-    python scripts/verify_template_dependencies.py
-    python scripts/verify_single_pdf_engine.py
-    python scripts/verify_analytics_pdf_publication.py
-    python scripts/verify_report_generation_contract.py
-    python scripts/verify_report_runtime_imports.py
-    python scripts/verify_report_job_standard.py
-    python scripts/verify_report_storage_resilience.py
-    python scripts/verify_tabular_export_standard.py
-    python scripts/verify_inventory_final_lock.py
-    python scripts/verify_object_storage_inventory_final_lock.py
-    python scripts/verify_governance_final_lock.py
-    python scripts/verify_kubernetes_operations_final_lock.py
-    python scripts/verify_node_inventory_standard.py
-    python scripts/verify_namespace_inventory_standard.py
-    python scripts/verify_configuration_inventory_standard.py
-    python scripts/verify_configmap_management_standard.py
-    python scripts/verify_secret_management_standard.py
-    python scripts/verify_operational_delivery_policy.py
-    python scripts/verify_operational_feedback_coverage.py
-    python scripts/verify_access_ownership.py
-    python scripts/verify_access_final_lock.py
-    python scripts/verify_activity_audit_final_lock.py
-    python scripts/verify_identity_provider_architecture.py
-    python scripts/verify_authentication_surface_final_lock.py
-    python scripts/verify_settings_final_lock.py
-    python scripts/verify_intelligence_baseline_lock.py
-    python scripts/verify_automation_control.py
-    python scripts/verify_tls_certificate_governance_standard.py
-    python scripts/verify_workload_inventory_standard.py
-    python scripts/verify_pod_inventory_standard.py
-    python scripts/verify_service_inventory_standard.py
-    python scripts/verify_ingress_inventory_standard.py
-    python scripts/verify_storage_inventory_standard.py
-    python scripts/verify_core_workspace_legacy_cleanup.py
-    python scripts/verify_core_workspace_code_health.py
-    python scripts/verify_dark_mode_standard.py
-    python scripts/verify_core_workspace_ui_lock.py
-    python scripts/verify_core_kubernetes_final_lock.py
-    python scripts/verify_platform_operations_final_lock.py
-    python scripts/verify_job_progress_final_lock.py
-    python scripts/verify_data_lifecycle_final_lock.py
-    python scripts/verify_notification_center_final_lock.py
-    python scripts/verify_notification_activity_center.py
-    python scripts/verify_notification_surface_style.py
-    python scripts/verify_integration_provider_foundation.py
-    python scripts/verify_integration_domain_navigation.py
-    python scripts/verify_minio_object_storage_provider.py
-    python scripts/verify_metrics_source_consumer_profiles.py
-    python scripts/verify_alertmanager_consumer_profiles.py
-    python scripts/verify_integrations_final_lock.py
-    python scripts/verify_notification_channels.py
-    python scripts/verify_provider_frontpage_consistency.py
-    python scripts/verify_hero_component_standard.py
-    python scripts/verify_filter_layout_standard.py
-    python scripts/verify_title_case_standard.py
-    python scripts/verify_integrations_title_case.py
-    python scripts/verify_operational_dashboard_standard.py
-    python scripts/verify_operational_data_semantics.py
-    python scripts/verify_analytics_compact_label_standard.py
-    python scripts/verify_analytics_final_lock.py
-    python scripts/verify_object_storage_analytics.py
-    python scripts/verify_sidebar_navigation_standard.py
-    python scripts/verify_application_shell_standard.py
-    python scripts/verify_javascript_syntax.py
-    python scripts/verify_snapshot_context_bar_standard.py
-    python scripts/verify_pre_release_lint_cleanup.py
-    python scripts/verify_pre_release_type_safety.py
-    python -m ruff check app migrations tests scripts
-    python -m ruff format --check app migrations tests scripts
-    python -m djlint app/templates --check
-    python -m pyright --project pyrightconfig.json
-    python scripts/verify_architecture_boundaries.py
-    python scripts/verify_internal_import_symbols.py
-    python scripts/verify_import_cycles.py
-    python scripts/verify_module_reachability.py
-    python scripts/verify_celery_topology.py
-    python scripts/verify_code_health.py
-    python scripts/verify_code_health_baseline_integrity.py
-    python scripts/verify_migration_graph.py
-    python scripts/verify_test_source_paths.py
-    python scripts/verify_test_taxonomy.py
-    python scripts/verify_test_domain_architecture.py
-    python scripts/verify_feature_test_coverage.py
-    python scripts/verify_ui_reuse.py
-    python scripts/verify_ui_style.py
+    run_static_group 'Foundation & Governance' \
+        'Source Hygiene' 'bash scripts/verify_source_hygiene.sh' \
+        'Release Surface Coverage' 'python scripts/verify_release_surface_coverage.py' \
+        'Release Governance' 'python scripts/verify_release_governance.py' \
+        'Environment Contract' 'python scripts/verify_environment_contract.py' \
+        'Engineering Standard' 'python scripts/verify_engineering_standard.py' \
+        'Definition Registry' 'python scripts/verify_definition_registry.py' \
+        'Domain Namespace Architecture' 'python scripts/verify_domain_namespace_architecture.py' \
+        'Application Package Architecture' 'python scripts/verify_application_package_architecture.py' \
+        'Welcome Final Lock' 'python scripts/verify_welcome_final_lock.py' \
+        'Python Syntax' 'python scripts/verify_python_syntax.py' \
+        'Template Dependencies' 'python scripts/verify_template_dependencies.py'
+
+    run_static_group 'Reports/Domain Contracts' \
+        'Single PDF Engine' 'python scripts/verify_single_pdf_engine.py' \
+        'Analytics PDF Publication' 'python scripts/verify_analytics_pdf_publication.py' \
+        'Report Generation Contract' 'python scripts/verify_report_generation_contract.py' \
+        'Report Runtime Imports' 'python scripts/verify_report_runtime_imports.py' \
+        'Report Job Standard' 'python scripts/verify_report_job_standard.py' \
+        'Report Storage Resilience' 'python scripts/verify_report_storage_resilience.py' \
+        'Tabular Export Standard' 'python scripts/verify_tabular_export_standard.py' \
+        'Object Storage Analytics' 'python scripts/verify_object_storage_analytics.py'
+
+    run_static_group 'Kubernetes & Platform Contracts' \
+        'Inventory Final Lock' 'python scripts/verify_inventory_final_lock.py' \
+        'Object Storage Inventory Final Lock' 'python scripts/verify_object_storage_inventory_final_lock.py' \
+        'Governance Final Lock' 'python scripts/verify_governance_final_lock.py' \
+        'Kubernetes Operations Final Lock' 'python scripts/verify_kubernetes_operations_final_lock.py' \
+        'Node Inventory Standard' 'python scripts/verify_node_inventory_standard.py' \
+        'Namespace Inventory Standard' 'python scripts/verify_namespace_inventory_standard.py' \
+        'Configuration Inventory Standard' 'python scripts/verify_configuration_inventory_standard.py' \
+        'ConfigMap Management Standard' 'python scripts/verify_configmap_management_standard.py' \
+        'Secret Management Standard' 'python scripts/verify_secret_management_standard.py' \
+        'Operational Delivery Policy' 'python scripts/verify_operational_delivery_policy.py' \
+        'Operational Feedback Coverage' 'python scripts/verify_operational_feedback_coverage.py' \
+        'Access Ownership' 'python scripts/verify_access_ownership.py' \
+        'Access Final Lock' 'python scripts/verify_access_final_lock.py' \
+        'Activity Audit Final Lock' 'python scripts/verify_activity_audit_final_lock.py' \
+        'Identity Provider Architecture' 'python scripts/verify_identity_provider_architecture.py' \
+        'Authentication Surface Final Lock' 'python scripts/verify_authentication_surface_final_lock.py' \
+        'Settings Final Lock' 'python scripts/verify_settings_final_lock.py' \
+        'Intelligence Baseline Lock' 'python scripts/verify_intelligence_baseline_lock.py' \
+        'Automation Control' 'python scripts/verify_automation_control.py' \
+        'TLS Certificate Governance' 'python scripts/verify_tls_certificate_governance_standard.py' \
+        'Workload Inventory Standard' 'python scripts/verify_workload_inventory_standard.py' \
+        'Pod Inventory Standard' 'python scripts/verify_pod_inventory_standard.py' \
+        'Service Inventory Standard' 'python scripts/verify_service_inventory_standard.py' \
+        'Ingress Inventory Standard' 'python scripts/verify_ingress_inventory_standard.py' \
+        'Storage Inventory Standard' 'python scripts/verify_storage_inventory_standard.py' \
+        'Core Workspace Cleanup' 'python scripts/verify_core_workspace_legacy_cleanup.py' \
+        'Core Workspace Code Health' 'python scripts/verify_core_workspace_code_health.py' \
+        'Dark Mode Standard' 'python scripts/verify_dark_mode_standard.py' \
+        'Core Workspace UI Lock' 'python scripts/verify_core_workspace_ui_lock.py' \
+        'Core Kubernetes Final Lock' 'python scripts/verify_core_kubernetes_final_lock.py' \
+        'Platform Operations Final Lock' 'python scripts/verify_platform_operations_final_lock.py' \
+        'Job Progress Final Lock' 'python scripts/verify_job_progress_final_lock.py' \
+        'Data Lifecycle Final Lock' 'python scripts/verify_data_lifecycle_final_lock.py' \
+        'Notification Center Final Lock' 'python scripts/verify_notification_center_final_lock.py' \
+        'Notification Activity Center' 'python scripts/verify_notification_activity_center.py' \
+        'Notification Surface Style' 'python scripts/verify_notification_surface_style.py' \
+        'Integration Provider Foundation' 'python scripts/verify_integration_provider_foundation.py' \
+        'Integration Domain Navigation' 'python scripts/verify_integration_domain_navigation.py' \
+        'MinIO Object Storage Provider' 'python scripts/verify_minio_object_storage_provider.py' \
+        'Metrics Source Consumer Profiles' 'python scripts/verify_metrics_source_consumer_profiles.py' \
+        'Alertmanager Consumer Profiles' 'python scripts/verify_alertmanager_consumer_profiles.py' \
+        'Integrations Final Lock' 'python scripts/verify_integrations_final_lock.py' \
+        'Notification Channels' 'python scripts/verify_notification_channels.py' \
+        'Provider Frontpage Consistency' 'python scripts/verify_provider_frontpage_consistency.py' \
+        'Hero Component Standard' 'python scripts/verify_hero_component_standard.py' \
+        'Filter Layout Standard' 'python scripts/verify_filter_layout_standard.py' \
+        'Title Case Standard' 'python scripts/verify_title_case_standard.py' \
+        'Integrations Title Case' 'python scripts/verify_integrations_title_case.py' \
+        'Operational Dashboard Standard' 'python scripts/verify_operational_dashboard_standard.py' \
+        'Operational Data Semantics' 'python scripts/verify_operational_data_semantics.py' \
+        'Analytics Compact Label Standard' 'python scripts/verify_analytics_compact_label_standard.py' \
+        'Analytics Final Lock' 'python scripts/verify_analytics_final_lock.py' \
+        'Sidebar Navigation Standard' 'python scripts/verify_sidebar_navigation_standard.py' \
+        'Application Shell Standard' 'python scripts/verify_application_shell_standard.py' \
+        'JavaScript Syntax' 'python scripts/verify_javascript_syntax.py' \
+        'Snapshot Context Bar Standard' 'python scripts/verify_snapshot_context_bar_standard.py' \
+        'Pre-release Semantic Lint' 'python scripts/verify_pre_release_lint_cleanup.py' \
+        'Pre-release Type Safety' 'python scripts/verify_pre_release_type_safety.py'
+
+    run_static_group 'Code Quality & Type Safety' \
+        'Ruff Check' 'python -m ruff check app migrations tests scripts' \
+        'Ruff Format' 'python -m ruff format --check app migrations tests scripts' \
+        'DjLint' 'python -m djlint app/templates --check' \
+        'Pyright' 'python -m pyright --project pyrightconfig.json' \
+        'Architecture Boundaries' 'python scripts/verify_architecture_boundaries.py' \
+        'Internal Import Symbols' 'python scripts/verify_internal_import_symbols.py' \
+        'Import Cycles' 'python scripts/verify_import_cycles.py' \
+        'Module Reachability' 'python scripts/verify_module_reachability.py' \
+        'Celery Topology' 'python scripts/verify_celery_topology.py' \
+        'Code Health' 'python scripts/verify_code_health.py' \
+        'Code Health Baseline Integrity' 'python scripts/verify_code_health_baseline_integrity.py' \
+        'Migration Graph' 'python scripts/verify_migration_graph.py' \
+        'Runtime Test Source Paths' 'python scripts/verify_test_source_paths.py' \
+        'Test Taxonomy' 'python scripts/verify_test_taxonomy.py' \
+        'Test Domain Architecture' 'python scripts/verify_test_domain_architecture.py' \
+        'Feature Test Coverage' 'python scripts/verify_feature_test_coverage.py' \
+        'UI Reuse' 'python scripts/verify_ui_reuse.py' \
+        'UI Style' 'python scripts/verify_ui_style.py'
+
     run_contract_migration_gate
 }
 
