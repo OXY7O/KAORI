@@ -46,17 +46,21 @@ def test_delivery_governance_v2_authorizes_exact_evidence_reuse_without_weakenin
 
 def test_workflow_exposes_progressive_profiles_before_expensive_full_jobs() -> None:
     source = read(WORKFLOW)
+    policy_source = read(POLICY)
     for token in (
         'validation-profile:',
+        'FALLBACK',
+        'GITHUB_STEP_SUMMARY',
+    ):
+        assert token in source
+    for display_name in (
         'Full Admission',
         'PR Integration',
         'Staging Integration',
         'Promotion',
         'Post-promotion',
-        'FALLBACK',
-        'GITHUB_STEP_SUMMARY',
     ):
-        assert token in source
+        assert display_name in policy_source
 
     first_profile = source.index('validation-profile:')
     first_expensive = source.index('static-quality:')
@@ -267,11 +271,12 @@ def test_operator_failure_summary_is_failure_first_and_actionable() -> None:
     assert 'Next action' in summary
 
 
-def test_quality_gate_exposes_fast_smoke_phase_and_removes_pytest_progress_noise() -> None:
+def test_quality_gate_exposes_fast_smoke_phase_and_captures_pytest_progress_noise() -> None:
     source = read(QUALITY_GATE)
     assert '--smoke' in source
     assert 'run_smoke' in source
     assert 'GITHUB_STEP_SUMMARY' in source
     assert '--tb=short' in source
-    assert 'pytest -qq' in source
-    assert 'if pytest -q ' not in source
+    assert 'run_pytest_capture' in source
+    assert 'pytest "$@" >"$log_file" 2>&1' in source
+    assert 'pytest -qq' not in source
