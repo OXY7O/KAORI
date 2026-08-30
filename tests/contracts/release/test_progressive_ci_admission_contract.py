@@ -212,7 +212,7 @@ def test_merge_lineage_reuse_requires_expected_parents_and_equivalent_tree() -> 
     assert promotion.reusable is True
 
 
-def test_operator_summary_is_structured_human_readable_and_actionable() -> None:
+def test_operator_pass_summary_is_structured_and_omits_fake_failure_field() -> None:
     policy = load_policy()
     summary = policy.render_operator_summary(
         result='PASS',
@@ -223,29 +223,55 @@ def test_operator_summary_is_structured_human_readable_and_actionable() -> None:
         fresh_checks=('merge lineage', 'migration/import smoke', 'E2E smoke'),
         reused_coverage=('static', 'security', 'full tests', 'frontend', 'runtime', 'DAST'),
         duration='4m 12s',
-        first_failure='None',
+        first_failure=None,
         next_action='Sync exact staging SHA for Local UAT',
     )
-    for token in (
-        'PASS',
+    ordered_tokens = (
+        'Result',
         'Profile',
-        'Staging Integration',
-        'Commit',
-        'Tree',
+        'Commit SHA',
+        'Tree SHA',
         'Evidence',
-        'Fresh checks',
-        'Reused coverage',
         'Duration',
-        'First failure',
+        'Coverage summary',
+        'Fresh checks',
+        'Reused checks',
         'Next action',
-    ):
-        assert token in summary
+    )
+    positions = [summary.index(token) for token in ordered_tokens]
+    assert positions == sorted(positions)
+    assert 'PASS' in summary
+    assert 'Staging Integration' in summary
+    assert 'First actionable failure' not in summary
     assert 'job failed' not in summary.lower()
 
 
-def test_quality_gate_exposes_fast_smoke_phase_and_keeps_concise_pytest_output() -> None:
+def test_operator_failure_summary_is_failure_first_and_actionable() -> None:
+    policy = load_policy()
+    summary = policy.render_operator_summary(
+        result='FAIL',
+        profile='PR Integration',
+        commit_sha='abc123',
+        tree_sha='tree123',
+        evidence='Fresh Full Admission',
+        fresh_checks=('release contracts',),
+        reused_coverage=(),
+        duration='1m 09s',
+        first_failure='tests/reports/test_example.py::test_missing_evidence — expected Not Available, received 0%',
+        next_action='Repair missing-evidence presentation logic',
+    )
+    assert 'FAIL' in summary
+    assert 'First actionable failure' in summary
+    assert 'tests/reports/test_example.py::test_missing_evidence' in summary
+    assert 'expected Not Available, received 0%' in summary
+    assert 'Next action' in summary
+
+
+def test_quality_gate_exposes_fast_smoke_phase_and_removes_pytest_progress_noise() -> None:
     source = read(QUALITY_GATE)
     assert '--smoke' in source
     assert 'run_smoke' in source
     assert 'GITHUB_STEP_SUMMARY' in source
     assert '--tb=short' in source
+    assert 'pytest -qq' in source
+    assert 'pytest -q ' not in source
