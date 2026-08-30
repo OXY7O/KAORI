@@ -437,9 +437,9 @@ def _test_summary(args: argparse.Namespace) -> int:
         noun = 'test' if total == 1 else 'tests'
         detail = f'{total} {noun}'
         if bucket['failed']:
-            detail += f" · {bucket['failed']} failed"
+            detail += f' · {bucket["failed"]} failed'
         if bucket['skipped']:
-            detail += f" · {bucket['skipped']} skipped"
+            detail += f' · {bucket["skipped"]} skipped'
         rows.append(f'{status} — KAORI {label} · {detail}')
 
     output = '\n'.join(rows) + ('\n' if rows else '')
