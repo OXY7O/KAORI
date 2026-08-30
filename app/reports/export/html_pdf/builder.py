@@ -43,9 +43,6 @@ from app.reports.reference import build_report_reference
 from app.reports.scope import OBJECT_STORAGE_SYSTEM_ASSET_TYPE, resolve_report_scope
 
 _SECTION_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
-    # Analytics Overview publication sections map to committed payload evidence.
-    # CSV v3 flattens the resulting ReportDocument, so these bindings must stay
-    # aligned with the overview service instead of falling through to empty keys.
     'executive_brief': ('snapshot_summary', 'health_summary'),
     'resource_posture': ('resource_snapshot',),
     'trend_forecast': ('forecast_snapshot',),
@@ -269,16 +266,8 @@ def build_report_document(
     elif report.report_type == 'storage_analysis':
         template_name = 'reports/pdf/storage_analysis.html'
         presentation = build_storage_analysis_presentation(
-            report,
             payload,
-            report_id=context.report_id,
-            report_name=context.report_name,
-            cluster_scope=context.cluster_scope,
-            namespace_scope=context.namespace_scope,
-            period_label=context.period_label,
-            data_cutoff=context.data_cutoff,
-            generated_at=context.generated_at_label,
-            generated_by=context.generated_by_label,
+            context=context,
             classification=classification,
         )
     elif report.report_type == 'resource_forecast':
@@ -361,17 +350,12 @@ def build_report_document(
 
 def _build_section(report: Any, payload: Mapping[str, Any], section_key: str, number: int) -> ReportSection:
     title = SECTION_LABELS.get(section_key, humanize_key(section_key))
-    description = _SECTION_DESCRIPTIONS.get(
-        section_key,
-        f'Operational evidence and interpretation for {title.lower()}.',
-    )
+    description = _SECTION_DESCRIPTIONS.get(section_key, f'Operational evidence and interpretation for {title.lower()}.')
 
     if section_key == 'executive_summary':
         return _build_executive_summary(report, payload, number)
-
     if section_key == 'operational_recommendations':
         return _build_recommendations_section(report, payload, number)
-
     if section_key == 'methodology_evidence_boundary':
         return _build_methodology_evidence_section(payload, number)
 
@@ -387,9 +371,7 @@ def _build_section(report: Any, payload: Mapping[str, Any], section_key: str, nu
     }
     resource_key = forecast_resource_keys.get(section_key)
     if resource_key and isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
-        value = [
-            item for item in value if isinstance(item, Mapping) and str(item.get('key', '')).lower() == resource_key
-        ]
+        value = [item for item in value if isinstance(item, Mapping) and str(item.get('key', '')).lower() == resource_key]
 
     metrics = metrics_from_mapping(value) if isinstance(value, Mapping) else ()
     tables = tables_from_value(title, value)
@@ -457,39 +439,20 @@ def _build_methodology_evidence_section(payload: Mapping[str, Any], number: int)
         status_label='Recorded' if metrics else 'Limited',
         status_tone='info' if metrics else 'warning',
         metrics=metrics,
-        note=(
-            'Evidence ownership and cut-off are recorded for this publication.'
-            if metrics
-            else 'No structured methodology evidence was returned for the current reporting snapshot.'
-        ),
+        note='Evidence ownership and cut-off are recorded for this publication.' if metrics else 'No structured methodology evidence was returned for the current reporting snapshot.',
     )
 
 
 def _build_executive_summary(report: Any, payload: Mapping[str, Any], number: int) -> ReportSection:
     scope_asset_type = str(getattr(report, 'scope_asset_type', '') or '')
     metrics: list[ReportMetric] = [
-        ReportMetric(
-            'Object Storage System' if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else 'Cluster Scope',
-            _cluster_scope(report, payload),
-            tone='info',
-        ),
+        ReportMetric('Object Storage System' if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else 'Cluster Scope', _cluster_scope(report, payload), tone='info'),
         ReportMetric('Reporting Period', _report_period_label(report)),
     ]
     if scope_asset_type != OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
-        metrics.insert(
-            1,
-            ReportMetric(
-                'Namespace Scope',
-                sanitize_text(getattr(report, 'namespace', None), fallback='All Namespaces'),
-            ),
-        )
+        metrics.insert(1, ReportMetric('Namespace Scope', sanitize_text(getattr(report, 'namespace', None), fallback='All Namespaces')))
 
-    selected_asset = (
-        payload.get('selected_system')
-        or payload.get('system')
-        or payload.get('cluster')
-        or payload.get('selected_cluster')
-    )
+    selected_asset = payload.get('selected_system') or payload.get('system') or payload.get('cluster') or payload.get('selected_cluster')
     if isinstance(selected_asset, Mapping):
         environment = selected_asset.get('environment')
         if environment:
@@ -511,11 +474,7 @@ def _build_executive_summary(report: Any, payload: Mapping[str, Any], number: in
                 break
 
     summary_value = payload.get('summary') or payload.get('health_summary') or payload.get('forecast_payload')
-    summary_metrics = (
-        metrics_from_mapping(summary_value, limit=max(0, 8 - len(metrics)))
-        if isinstance(summary_value, Mapping)
-        else ()
-    )
+    summary_metrics = metrics_from_mapping(summary_value, limit=max(0, 8 - len(metrics))) if isinstance(summary_value, Mapping) else ()
     metrics.extend(summary_metrics)
 
     findings: list[ReportFinding] = []
@@ -569,16 +528,8 @@ def _build_error_section(payload: Mapping[str, Any], *, number: int) -> ReportSe
         status_label='Limited',
         status_tone='warning',
         findings=(
-            ReportFinding(
-                title='Source Data Was Not Available',
-                description=sanitize_error_message(payload.get('_error')),
-                tone='warning',
-            ),
-            ReportFinding(
-                title='Recommended Next Step',
-                description='Review integration readiness, allow automatic recovery to complete, and regenerate the report.',
-                tone='info',
-            ),
+            ReportFinding(title='Source Data Was Not Available', description=sanitize_error_message(payload.get('_error')), tone='warning'),
+            ReportFinding(title='Recommended Next Step', description='Review integration readiness, allow automatic recovery to complete, and regenerate the report.', tone='info'),
         ),
     )
 
@@ -588,12 +539,7 @@ def _report_period_label(report: Any) -> str:
 
 
 def _cluster_scope(report: Any, payload: Mapping[str, Any]) -> str:
-    selected_asset = (
-        payload.get('selected_system')
-        or payload.get('system')
-        or payload.get('cluster')
-        or payload.get('selected_cluster')
-    )
+    selected_asset = payload.get('selected_system') or payload.get('system') or payload.get('cluster') or payload.get('selected_cluster')
     if isinstance(selected_asset, Mapping):
         name = selected_asset.get('name')
         identifier = selected_asset.get('id')
@@ -663,16 +609,8 @@ def _build_unavailable_presentation(
             'tone': 'warning',
             'summary': error_message or 'KAORI could not collect the required report payload at generation time.',
             'findings': (
-                {
-                    'ref': 'A1',
-                    'title': 'Required Evidence Was Not Available',
-                    'description': 'The renderer received an explicit source limitation and excluded conclusions that require the missing evidence.',
-                },
-                {
-                    'ref': 'A2',
-                    'title': 'Previous Evidence Was Not Reused Silently',
-                    'description': 'This artifact does not substitute stale, unrelated, or cross-cluster evidence for the selected report boundary.',
-                },
+                {'ref': 'A1', 'title': 'Required Evidence Was Not Available', 'description': 'The renderer received an explicit source limitation and excluded conclusions that require the missing evidence.'},
+                {'ref': 'A2', 'title': 'Previous Evidence Was Not Reused Silently', 'description': 'This artifact does not substitute stale, unrelated, or cross-cluster evidence for the selected report boundary.'},
             ),
         },
         'recovery': {
@@ -747,10 +685,10 @@ def _derive_overall_posture(payload: Mapping[str, Any]) -> tuple[str, str]:
                 collect_status_values(item, depth=depth + 1)
 
     collect_status_values(payload)
-    text = ' '.join(sanitize_text(item, fallback='') for item in candidates).lower()
-    if any(token in text for token in ('critical', 'failed', 'unhealthy', 'expired')):
+    text_value = ' '.join(sanitize_text(item, fallback='') for item in candidates).lower()
+    if any(token in text_value for token in ('critical', 'failed', 'unhealthy', 'expired')):
         return 'Critical', 'critical'
-    if any(token in text for token in ('warning', 'degraded', 'review', 'stale')):
+    if any(token in text_value for token in ('warning', 'degraded', 'review', 'stale')):
         return 'Needs Review', 'warning'
     return 'Operational', 'normal'
 
