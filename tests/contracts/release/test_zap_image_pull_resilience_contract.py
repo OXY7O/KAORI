@@ -6,11 +6,15 @@ ZAP_IMAGE = 'ghcr.io/zaproxy/zaproxy:2.17.0'
 
 
 def _compose_service_block(compose: str, service: str) -> str:
-    marker = f'  {service}:\n'
-    start = compose.index(marker)
-    remainder = compose[start + len(marker) :]
-    next_service = remainder.find('\n  ')
-    return remainder if next_service == -1 else remainder[:next_service]
+    lines = compose.splitlines()
+    marker = f'  {service}:'
+    start = lines.index(marker) + 1
+    block: list[str] = []
+    for line in lines[start:]:
+        if line.startswith('  ') and not line.startswith('    '):
+            break
+        block.append(line)
+    return '\n'.join(block)
 
 
 def test_zap_image_pull_uses_bounded_retry_and_backoff() -> None:
