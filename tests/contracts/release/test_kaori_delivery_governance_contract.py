@@ -22,7 +22,7 @@ def load_form(name: str) -> dict:
 def test_delivery_workflow_locks_current_lifecycle_branch_and_uat_authority() -> None:
     source = read(WORKFLOW)
     for token in (
-        '**Governance Version:** 1.0',
+        '**Governance Version:** 2.0',
         'Inbox',
         'Backlog',
         'Ready',
@@ -34,6 +34,9 @@ def test_delivery_workflow_locks_current_lifecycle_branch_and_uat_authority() ->
         'main',
         'kaori/staging',
         'kaori/working',
+        'Full Admission',
+        'exact evidence reuse',
+        'FALLBACK',
         'Local UAT',
         'merge commit',
     ):
@@ -146,8 +149,13 @@ def test_label_catalog_preserves_documentation_and_avoids_native_metadata_duplic
         assert forbidden not in source
 
 
-def test_full_ci_runs_for_governed_kaori_branches_and_staging_prs() -> None:
+def test_progressive_ci_routes_governed_branches_and_staging_prs_without_losing_full_authority() -> None:
     source = read(QUALITY_WORKFLOW)
     assert '- "kaori/**"' in source
     assert '- kaori/staging' in source
     assert '- kaori/working' not in source
+    assert 'validation-profile:' in source
+    assert 'integration-smoke:' in source
+    assert "needs.validation-profile.outputs.execution == 'full'" in source
+    assert "needs.validation-profile.outputs.execution == 'fast'" in source
+    assert 'KAORI CI Admission' in source
