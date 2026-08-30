@@ -10,8 +10,21 @@ from app.reports.export.html_pdf.storage.actions import (
     executive_title,
     recommendation_metrics,
 )
-from app.reports.export.html_pdf.storage.model import format_temporal, metric, percent, risk_label, risk_tone, rows, text
-from app.reports.export.html_pdf.storage.records import binding_coverage, expansion_evidence_available, pv_records, pvc_records
+from app.reports.export.html_pdf.storage.model import (
+    format_temporal,
+    metric,
+    percent,
+    risk_label,
+    risk_tone,
+    rows,
+    text,
+)
+from app.reports.export.html_pdf.storage.records import (
+    binding_coverage,
+    expansion_evidence_available,
+    pv_records,
+    pvc_records,
+)
 from app.reports.export.html_pdf.storage.trend import trend_interpretation
 
 
