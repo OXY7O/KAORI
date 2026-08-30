@@ -228,9 +228,18 @@ def build_full_evidence(
     }
 
 
+def _validated_github_url(url: str) -> str:
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme != 'https' or parsed.hostname != 'api.github.com':
+        raise ValueError('KAORI CI Admission only permits HTTPS requests to api.github.com.')
+    if parsed.username or parsed.password:
+        raise ValueError('KAORI CI Admission does not permit credentials embedded in request URLs.')
+    return parsed.geturl()
+
+
 def _github_request(url: str, token: str, *, binary: bool = False) -> Any:
     request = urllib.request.Request(
-        url,
+        _validated_github_url(url),
         headers={
             'Accept': 'application/vnd.github+json',
             'Authorization': f'Bearer {token}',
@@ -238,7 +247,7 @@ def _github_request(url: str, token: str, *, binary: bool = False) -> Any:
             'User-Agent': 'KAORI-CI-Admission',
         },
     )
-    with urllib.request.urlopen(request, timeout=60) as response:  # noqa: S310
+    with urllib.request.urlopen(request, timeout=60) as response:
         return response.read() if binary else json.load(response)
 
 
