@@ -85,14 +85,16 @@ jobs:
         run: |
           set -Eeuo pipefail
           source_sha="$(git rev-parse HEAD)"
-          source_tree="$(git rev-parse HEAD^{tree})"
-          printf 'source_sha=%s\n' "$source_sha" >> "$GITHUB_OUTPUT"
-          printf 'source_tree=%s\n' "$source_tree" >> "$GITHUB_OUTPUT"
-          printf 'started_epoch=%s\n' "$(date +%s)" >> "$GITHUB_OUTPUT"
+          source_tree="$(git show -s --format=%T HEAD)"
+          {
+            printf 'source_sha=%s\n' "$source_sha"
+            printf 'source_tree=%s\n' "$source_tree"
+            printf 'started_epoch=%s\n' "$(date +%s)"
+          } >> "$GITHUB_OUTPUT"
           mkdir -p tmp/ci-artifacts/profile
           if [[ "$EVENT_NAME" == "pull_request" && -n "$PR_BASE_SHA" ]]; then
             git diff --name-only "$PR_BASE_SHA" "$source_sha" > tmp/ci-artifacts/profile/changed-paths.txt
-          elif [[ -n "$EVENT_BEFORE" && ! "$EVENT_BEFORE" =~ ^0+$ ]] && git cat-file -e "$EVENT_BEFORE^{commit}" 2>/dev/null; then
+          elif [[ -n "$EVENT_BEFORE" && ! "$EVENT_BEFORE" =~ ^0+$ ]] && git rev-parse --verify --quiet "$EVENT_BEFORE" >/dev/null; then
             git diff --name-only "$EVENT_BEFORE" "$source_sha" > tmp/ci-artifacts/profile/changed-paths.txt
           else
             git show --pretty='' --name-only "$source_sha" > tmp/ci-artifacts/profile/changed-paths.txt
@@ -432,14 +434,18 @@ jobs:
             for result in "$STATIC_QUALITY" "$STATIC_SECURITY" "$FUNCTIONAL_TESTS" "$FRONTEND" "$PRODUCTION_RUNTIME"; do
               [[ "$result" == "success" ]] || { echo 'selected Full Admission gate failed'; exit 1; }
             done
-            echo 'coverage=Foundation & Governance; Reports/Domain Contracts; Code Quality & Type Safety; Functional & Integration; Frontend; Security & Runtime' >> "$GITHUB_OUTPUT"
-            echo 'fresh=Foundation & Governance|Reports/Domain Contracts|Code Quality & Type Safety|Functional & Integration|Frontend|Security & Runtime' >> "$GITHUB_OUTPUT"
-            echo 'reused=' >> "$GITHUB_OUTPUT"
+            {
+              echo 'coverage=Foundation & Governance; Reports/Domain Contracts; Code Quality & Type Safety; Functional & Integration; Frontend; Security & Runtime'
+              echo 'fresh=Foundation & Governance|Reports/Domain Contracts|Code Quality & Type Safety|Functional & Integration|Frontend|Security & Runtime'
+              echo 'reused='
+            } >> "$GITHUB_OUTPUT"
           else
             [[ "$INTEGRATION_SMOKE" == "success" ]] || { echo 'fast integration smoke failed'; exit 1; }
-            echo 'coverage=Exact Full Admission evidence reused with fresh lineage and integration smoke.' >> "$GITHUB_OUTPUT"
-            echo 'fresh=Admission evidence identity|syntax/architecture/import/migration smoke|release contracts|E2E smoke' >> "$GITHUB_OUTPUT"
-            echo 'reused=Foundation & Governance|Reports/Domain Contracts|Code Quality & Type Safety|Functional & Integration|Frontend|Security & Runtime' >> "$GITHUB_OUTPUT"
+            {
+              echo 'coverage=Exact Full Admission evidence reused with fresh lineage and integration smoke.'
+              echo 'fresh=Admission evidence identity|syntax/architecture/import/migration smoke|release contracts|E2E smoke'
+              echo 'reused=Foundation & Governance|Reports/Domain Contracts|Code Quality & Type Safety|Functional & Integration|Frontend|Security & Runtime'
+            } >> "$GITHUB_OUTPUT"
           fi
 
       - name: Publish Immutable Full Admission Evidence
