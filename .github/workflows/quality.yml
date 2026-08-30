@@ -206,6 +206,14 @@ jobs:
           docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp
           --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE"
           bash scripts/quality_gate.sh --static
+      - name: Upload Static Diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: static-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/static-output
+          if-no-files-found: ignore
+          retention-days: 7
 
   static-security:
     if: ${{ needs.validation-profile.outputs.execution == 'full' && needs.static-quality.result == 'success' }}
@@ -263,6 +271,14 @@ jobs:
         run: >-
           docker compose --file .github/ci/compose.yml run --rm ci
           bash scripts/quality_gate.sh --tests
+      - name: Upload Test Diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tests-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/test-output
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Cleanup Test Services
         if: ${{ always() }}
         run: docker compose --file .github/ci/compose.yml down --volumes --remove-orphans
@@ -366,6 +382,14 @@ jobs:
         run: >-
           docker compose --file .github/ci/compose.yml run --rm ci
           bash scripts/quality_gate.sh --smoke
+      - name: Upload Smoke Diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: smoke-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/test-output
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Cleanup Smoke Dependencies
         if: ${{ always() }}
         run: docker compose --file .github/ci/compose.yml down --volumes --remove-orphans
@@ -466,6 +490,12 @@ jobs:
           FRESH: ${{ steps.result.outputs.fresh }}
           REUSED: ${{ steps.result.outputs.reused }}
           COVERAGE: ${{ steps.result.outputs.coverage }}
+          STATIC_QUALITY: ${{ needs.static-quality.result }}
+          STATIC_SECURITY: ${{ needs.static-security.result }}
+          FUNCTIONAL_TESTS: ${{ needs.functional-tests.result }}
+          FRONTEND: ${{ needs.frontend.result }}
+          PRODUCTION_RUNTIME: ${{ needs.production-runtime.result }}
+          INTEGRATION_SMOKE: ${{ needs.integration-smoke.result }}
         run: |
           set -Eeuo pipefail
           elapsed=$(( $(date +%s) - STARTED_EPOCH ))
@@ -476,13 +506,33 @@ jobs:
           elif [[ "$FALLBACK" == "true" ]]; then
             evidence="FALLBACK — ${REASON}; fresh Full Admission executed"
           fi
+
+          RESULT=PASS
+          FIRST_FAILURE=''
+          if [[ "$EXECUTION" == "full" ]]; then
+            if [[ "$STATIC_QUALITY" != "success" ]]; then RESULT=FAIL; FIRST_FAILURE="Static, Architecture, and Governance — $STATIC_QUALITY";
+            elif [[ "$STATIC_SECURITY" != "success" ]]; then RESULT=FAIL; FIRST_FAILURE="Secrets, SAST, Dependencies, and Workflow Security — $STATIC_SECURITY";
+            elif [[ "$FUNCTIONAL_TESTS" != "success" ]]; then RESULT=FAIL; FIRST_FAILURE="Functional and Integration Tests — $FUNCTIONAL_TESTS";
+            elif [[ "$FRONTEND" != "success" ]]; then RESULT=FAIL; FIRST_FAILURE="Frontend Reproducibility — $FRONTEND";
+            elif [[ "$PRODUCTION_RUNTIME" != "success" ]]; then RESULT=FAIL; FIRST_FAILURE="Production Image, Container Security, Runtime, and DAST — $PRODUCTION_RUNTIME";
+            fi
+          elif [[ "$INTEGRATION_SMOKE" != "success" ]]; then
+            RESULT=FAIL
+            FIRST_FAILURE="KAORI Fast Integration Smoke — $INTEGRATION_SMOKE"
+          fi
+
           next='Ready for PR Integration'
-          case "${{ needs.validation-profile.outputs.profile }}" in
-            pr-integration) next='Ready to merge into kaori/staging' ;;
-            staging-integration) next='Sync exact staging SHA for Local UAT' ;;
-            promotion) next='Ready to promote accepted staging lineage to main' ;;
-            post-promotion) next='Production lineage verified; delivery evidence complete' ;;
-          esac
+          if [[ "$RESULT" == "FAIL" ]]; then
+            next='Repair the first actionable failure, then rerun this validation profile'
+          else
+            case "${{ needs.validation-profile.outputs.profile }}" in
+              pr-integration) next='Ready to merge into kaori/staging' ;;
+              staging-integration) next='Sync exact staging SHA for Local UAT' ;;
+              promotion) next='Ready to promote accepted staging lineage to main' ;;
+              post-promotion) next='Production lineage verified; delivery evidence complete' ;;
+            esac
+          fi
+
           docker run --rm \
             --user "$(id -u):$(id -g)" \
             --env HOME=/tmp \
@@ -490,15 +540,16 @@ jobs:
             --workdir /workspace \
             "$CI_TOOLCHAIN_IMAGE" \
             python scripts/ci_admission.py summary \
-              --result PASS \
+              --result "$RESULT" \
               --profile "$PROFILE" \
               --commit-sha "${{ needs.validation-profile.outputs.source_sha }}" \
               --tree-sha "${{ needs.validation-profile.outputs.source_tree }}" \
               --evidence "$evidence" \
               --duration "$duration" \
-              --coverage-summary "$COVERAGE" \
+              --coverage-summary "${COVERAGE:-Selected validation path did not complete.}" \
               --fresh-checks "$FRESH" \
               --reused-checks "$REUSED" \
+              --first-failure "$FIRST_FAILURE" \
               --next-action "$next" \
             >> "$GITHUB_STEP_SUMMARY"
-          printf 'PASS — KAORI %s · %s · %s\n' "$PROFILE" "$duration" "$next"
+          printf '%s — KAORI %s · %s · %s\n' "$RESULT" "$PROFILE" "$duration" "$next"
