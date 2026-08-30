@@ -98,9 +98,12 @@ def test_quality_gate_presents_concise_test_evidence() -> None:
     quality_gate = read('scripts/quality_gate.sh')
 
     assert '--tb=short' in quality_gate
-    assert 'PASS — KAORI Functional Tests' in quality_gate
-    assert 'FAIL — KAORI Functional Tests' in quality_gate
+    assert 'run_pytest_capture' in quality_gate
+    assert "'Functional Tests'" in quality_gate
+    assert "'Contract & Migration Tests'" in quality_gate
+    assert "'End-to-End Tests'" in quality_gate
     assert 'GITHUB_STEP_SUMMARY' in quality_gate
-    assert 'pytest -q tests/contracts tests/migrations' in quality_gate
-    assert "pytest -q -m 'not debug and not e2e'" in quality_gate
-    assert 'pytest -q tests/e2e -m e2e' in quality_gate
+    assert 'pytest "$@" >"$log_file" 2>&1' in quality_gate
+    assert 'First actionable failure' in quality_gate
+    assert 'tail -n 80' in quality_gate
+    assert 'pytest -qq' not in quality_gate
