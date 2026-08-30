@@ -9,8 +9,9 @@ import sys
 import urllib.parse
 import urllib.request
 import zipfile
+from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any, Mapping, NamedTuple, Sequence
+from typing import Any, NamedTuple
 
 PROFILE_VERSION = '2'
 FULL_GATE_NAMES = (
