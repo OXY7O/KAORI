@@ -164,7 +164,12 @@ run_e2e_gate() {
         --junitxml="$TEST_OUTPUT_DIR/e2e.xml" \
         tests/e2e \
         -m e2e
-    python scripts/ci_admission.py test-summary --junit "$TEST_OUTPUT_DIR/e2e.xml"
+}
+
+render_test_taxonomy_summary() {
+    python scripts/ci_admission.py test-summary \
+        --junit "$TEST_OUTPUT_DIR/release-suite.xml" \
+        --junit "$TEST_OUTPUT_DIR/e2e.xml"
 }
 
 run_static() {
@@ -278,12 +283,11 @@ run_tests() {
     python scripts/verify_test_prerequisites.py
 
     run_pytest_capture \
-        'Release Test Suite' \
+        'Functional Tests' \
         -q \
         --tb=short \
         --junitxml="$TEST_OUTPUT_DIR/release-suite.xml" \
         -m 'not debug and not e2e'
-    python scripts/ci_admission.py test-summary --junit "$TEST_OUTPUT_DIR/release-suite.xml"
 
     run_pytest_capture \
         'Domain Characterization Tests' \
@@ -304,6 +308,7 @@ run_tests() {
         -m functional
 
     run_e2e_gate
+    render_test_taxonomy_summary
 }
 
 run_frontend() {
