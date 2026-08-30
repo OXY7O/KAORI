@@ -37,7 +37,9 @@ def storage_trend(payload: Mapping[str, Any], *, current: float) -> dict[str, An
         'assessment': assessment,
         'method': text(forecast.get('method_label') or forecast.get('forecast_method'), 'Not Available'),
         'horizon': text(forecast.get('forecast_horizon'), 'Not Available'),
-        'chart_svg': _trend_svg(historical, projected, current=current, projection=projected_percent) if available else '',
+        'chart_svg': _trend_svg(historical, projected, current=current, projection=projected_percent)
+        if available
+        else '',
     }
 
 
@@ -49,7 +51,9 @@ def trend_interpretation(capacity: Mapping[str, Any], trend: Mapping[str, Any]) 
     projection = safe_float(trend.get('projection_percent'))
     if projection is not None and projection >= 70:
         return f'Storage is projected to reach {projection:.1f}%, which requires planning review before the warning-band exposure becomes operational.'
-    return 'Current and projected aggregate storage remain below the warning band within the available committed horizon.'
+    return (
+        'Current and projected aggregate storage remain below the warning band within the available committed horizon.'
+    )
 
 
 def _point_values(value: Any) -> list[float]:
@@ -87,24 +91,42 @@ def _trend_svg(historical: list[float], projected: list[float], *, current: floa
         yy = y(float(tick))
         color = '#D97706' if tick == 70 else '#DC2626' if tick == 85 else '#E2E8F0'
         dash = ' stroke-dasharray="5 5"' if tick in {70, 85} else ''
-        parts.append(f'<line x1="{left}" y1="{yy:.1f}" x2="{width - right}" y2="{yy:.1f}" stroke="{color}" stroke-width="1"{dash}/>')
-        parts.append(f'<text x="{left - 12}" y="{yy + 3:.1f}" text-anchor="end" font-size="9" fill="#64748B">{tick}%</text>')
+        parts.append(
+            f'<line x1="{left}" y1="{yy:.1f}" x2="{width - right}" y2="{yy:.1f}" stroke="{color}" stroke-width="1"{dash}/>'
+        )
+        parts.append(
+            f'<text x="{left - 12}" y="{yy + 3:.1f}" text-anchor="end" font-size="9" fill="#64748B">{tick}%</text>'
+        )
     cutoff_x = x(cutoff_index)
-    parts.append(f'<line x1="{cutoff_x:.1f}" y1="{top}" x2="{cutoff_x:.1f}" y2="{height - bottom}" stroke="#A78BFA" stroke-width="1" stroke-dasharray="4 4"/>')
+    parts.append(
+        f'<line x1="{cutoff_x:.1f}" y1="{top}" x2="{cutoff_x:.1f}" y2="{height - bottom}" stroke="#A78BFA" stroke-width="1" stroke-dasharray="4 4"/>'
+    )
     history_points = ' '.join(f'{x(index):.1f},{y(value):.1f}' for index, value in enumerate(history_values))
-    parts.append(f'<polyline points="{history_points}" fill="none" stroke="#7C3AED" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>')
+    parts.append(
+        f'<polyline points="{history_points}" fill="none" stroke="#7C3AED" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>'
+    )
     if forecast_values:
         forecast_series = [history_values[-1], *forecast_values]
-        forecast_points = ' '.join(f'{x(cutoff_index + index):.1f},{y(value):.1f}' for index, value in enumerate(forecast_series))
-        parts.append(f'<polyline points="{forecast_points}" fill="none" stroke="#7C3AED" stroke-width="4" stroke-dasharray="8 6" stroke-linejoin="round" stroke-linecap="round"/>')
+        forecast_points = ' '.join(
+            f'{x(cutoff_index + index):.1f},{y(value):.1f}' for index, value in enumerate(forecast_series)
+        )
+        parts.append(
+            f'<polyline points="{forecast_points}" fill="none" stroke="#7C3AED" stroke-width="4" stroke-dasharray="8 6" stroke-linejoin="round" stroke-linecap="round"/>'
+        )
     end_value = forecast_values[-1] if forecast_values else history_values[-1]
     end_x = x(cutoff_index + len(forecast_values))
     end_y = y(end_value)
     parts.append(f'<circle cx="{end_x:.1f}" cy="{end_y:.1f}" r="5" fill="#7C3AED"/>')
-    parts.append(f'<text x="{end_x - 6:.1f}" y="{end_y - 10:.1f}" text-anchor="end" font-size="12" font-weight="700" fill="#7C3AED">{end_value:.1f}%</text>')
+    parts.append(
+        f'<text x="{end_x - 6:.1f}" y="{end_y - 10:.1f}" text-anchor="end" font-size="12" font-weight="700" fill="#7C3AED">{end_value:.1f}%</text>'
+    )
     if cutoff_x - left >= 70:
         parts.append(f'<text x="{left}" y="{height - 14}" font-size="10" fill="#64748B">Historical Start</text>')
-    parts.append(f'<text x="{cutoff_x:.1f}" y="{height - 14}" text-anchor="middle" font-size="10" fill="#64748B">Cut-off</text>')
-    parts.append(f'<text x="{width - right}" y="{height - 14}" text-anchor="end" font-size="10" fill="#64748B">Horizon</text>')
+    parts.append(
+        f'<text x="{cutoff_x:.1f}" y="{height - 14}" text-anchor="middle" font-size="10" fill="#64748B">Cut-off</text>'
+    )
+    parts.append(
+        f'<text x="{width - right}" y="{height - 14}" text-anchor="end" font-size="10" fill="#64748B">Horizon</text>'
+    )
     parts.append('</svg>')
     return ''.join(parts)
