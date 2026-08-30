@@ -56,6 +56,7 @@ jobs:
       evidence_run_id: ${{ steps.evidence.outputs.evidence_run_id }}
       evidence_source_sha: ${{ steps.evidence.outputs.evidence_source_sha }}
       started_epoch: ${{ steps.identity.outputs.started_epoch }}
+      toolchain_image: ${{ steps.toolchain.outputs.image }}
     steps:
       - name: Check Out Exact Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -63,6 +64,16 @@ jobs:
           ref: ${{ env.KAORI_SOURCE_SHA }}
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Resolve and Reuse CI Toolchain
+        id: toolchain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
+          image="kaori-ci-toolchain:$key"
+          docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
+          printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
 
       - name: Resolve Source Identity and Change Set
         id: identity
@@ -73,18 +84,18 @@ jobs:
           EVENT_BEFORE: ${{ github.event.before }}
         run: |
           set -Eeuo pipefail
-          SOURCE_SHA="$(git rev-parse HEAD)"
-          SOURCE_TREE="$(git rev-parse HEAD^{tree})"
-          printf 'source_sha=%s\n' "$SOURCE_SHA" >> "$GITHUB_OUTPUT"
-          printf 'source_tree=%s\n' "$SOURCE_TREE" >> "$GITHUB_OUTPUT"
+          source_sha="$(git rev-parse HEAD)"
+          source_tree="$(git rev-parse HEAD^{tree})"
+          printf 'source_sha=%s\n' "$source_sha" >> "$GITHUB_OUTPUT"
+          printf 'source_tree=%s\n' "$source_tree" >> "$GITHUB_OUTPUT"
           printf 'started_epoch=%s\n' "$(date +%s)" >> "$GITHUB_OUTPUT"
           mkdir -p tmp/ci-artifacts/profile
           if [[ "$EVENT_NAME" == "pull_request" && -n "$PR_BASE_SHA" ]]; then
-            git diff --name-only "$PR_BASE_SHA" "$SOURCE_SHA" > tmp/ci-artifacts/profile/changed-paths.txt
+            git diff --name-only "$PR_BASE_SHA" "$source_sha" > tmp/ci-artifacts/profile/changed-paths.txt
           elif [[ -n "$EVENT_BEFORE" && ! "$EVENT_BEFORE" =~ ^0+$ ]] && git cat-file -e "$EVENT_BEFORE^{commit}" 2>/dev/null; then
-            git diff --name-only "$EVENT_BEFORE" "$SOURCE_SHA" > tmp/ci-artifacts/profile/changed-paths.txt
+            git diff --name-only "$EVENT_BEFORE" "$source_sha" > tmp/ci-artifacts/profile/changed-paths.txt
           else
-            git show --pretty='' --name-only "$SOURCE_SHA" > tmp/ci-artifacts/profile/changed-paths.txt
+            git show --pretty='' --name-only "$source_sha" > tmp/ci-artifacts/profile/changed-paths.txt
           fi
 
       - name: Resolve Requested Profile
@@ -96,6 +107,7 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
           HEAD_REF: ${{ github.head_ref }}
           DISPATCH_PROFILE: ${{ inputs.validation_profile }}
+          CI_TOOLCHAIN_IMAGE: ${{ steps.toolchain.outputs.image }}
         run: |
           set -Eeuo pipefail
           if [[ "$EVENT_NAME" == "workflow_dispatch" && "${DISPATCH_PROFILE:-full}" == "full" ]]; then
@@ -106,12 +118,19 @@ jobs:
               echo 'reason=Manual dispatch requested Full Admission.'
             } >> "$GITHUB_OUTPUT"
           else
-            python scripts/ci_admission.py route \
-              --event-name "$EVENT_NAME" \
-              --ref "$EVENT_REF" \
-              --base-ref "${BASE_REF:-}" \
-              --head-ref "${HEAD_REF:-}" \
-              --changed-paths-file tmp/ci-artifacts/profile/changed-paths.txt
+            docker run --rm \
+              --user "$(id -u):$(id -g)" \
+              --env HOME=/tmp \
+              --volume "$PWD:/workspace" \
+              --workdir /workspace \
+              "$CI_TOOLCHAIN_IMAGE" \
+              python scripts/ci_admission.py route \
+                --event-name "$EVENT_NAME" \
+                --ref "$EVENT_REF" \
+                --base-ref "${BASE_REF:-}" \
+                --head-ref "${HEAD_REF:-}" \
+                --changed-paths-file tmp/ci-artifacts/profile/changed-paths.txt \
+              >> "$GITHUB_OUTPUT"
           fi
 
       - name: Locate Exact Full Admission Evidence
@@ -120,14 +139,23 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          CI_TOOLCHAIN_IMAGE: ${{ steps.toolchain.outputs.image }}
         run: |
           set -Eeuo pipefail
-          python scripts/ci_admission.py find-evidence \
-            --repository "$GITHUB_REPOSITORY" \
-            --token "$GH_TOKEN" \
-            --workflow quality.yml \
-            --start-sha "${{ steps.identity.outputs.source_sha }}" \
-            --current-tree "${{ steps.identity.outputs.source_tree }}"
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --env HOME=/tmp \
+            --env GH_TOKEN \
+            --volume "$PWD:/workspace" \
+            --workdir /workspace \
+            "$CI_TOOLCHAIN_IMAGE" \
+            python scripts/ci_admission.py find-evidence \
+              --repository "$GITHUB_REPOSITORY" \
+              --token "$GH_TOKEN" \
+              --workflow quality.yml \
+              --start-sha "${{ steps.identity.outputs.source_sha }}" \
+              --current-tree "${{ steps.identity.outputs.source_tree }}" \
+            >> "$GITHUB_OUTPUT"
 
       - name: Finalize Validation Profile
         id: final
@@ -171,18 +199,8 @@ jobs:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Resolve CI Toolchain Cache Key
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          CI_TOOLCHAIN_KEY="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
-          echo "CI_TOOLCHAIN_KEY=$CI_TOOLCHAIN_KEY" >> "$GITHUB_ENV"
-          echo "CI_TOOLCHAIN_IMAGE=kaori-ci-toolchain:$CI_TOOLCHAIN_KEY" >> "$GITHUB_ENV"
-      - name: Build or Reuse CI Toolchain
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          docker image inspect "$CI_TOOLCHAIN_IMAGE" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$CI_TOOLCHAIN_IMAGE" .
+      - name: Reuse CI Toolchain
+        run: echo "CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}" >> "$GITHUB_ENV"
       - name: Run Static Foundation Gate
         run: >-
           docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp
@@ -202,16 +220,8 @@ jobs:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Resolve CI Toolchain Cache Key
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          CI_TOOLCHAIN_KEY="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
-          echo "CI_TOOLCHAIN_IMAGE=kaori-ci-toolchain:$CI_TOOLCHAIN_KEY" >> "$GITHUB_ENV"
-      - name: Build or Reuse CI Toolchain
-        shell: bash
-        run: |
-          docker image inspect "$CI_TOOLCHAIN_IMAGE" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$CI_TOOLCHAIN_IMAGE" .
+      - name: Reuse CI Toolchain
+        run: echo "CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}" >> "$GITHUB_ENV"
       - name: Run Free-Plan Static Security Gate
         run: >-
           docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp
@@ -238,23 +248,15 @@ jobs:
         with:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
           persist-credentials: false
-      - name: Resolve CI Toolchain Cache Key
-        shell: bash
-        run: |
-          CI_TOOLCHAIN_KEY="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
-          echo "CI_TOOLCHAIN_IMAGE=kaori-ci-toolchain:$CI_TOOLCHAIN_KEY" >> "$GITHUB_ENV"
       - name: Prepare CI Runtime Contract
         shell: bash
         run: |
           {
             echo "CI_UID=$(id -u)"
             echo "CI_GID=$(id -g)"
-            echo "KAORI_CI_TOOLCHAIN_IMAGE=$CI_TOOLCHAIN_IMAGE"
+            echo "KAORI_CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}"
             echo "COMPOSE_PROJECT_NAME=kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-tests"
           } >> "$GITHUB_ENV"
-      - name: Build or Reuse CI Toolchain
-        shell: bash
-        run: docker image inspect "$CI_TOOLCHAIN_IMAGE" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$CI_TOOLCHAIN_IMAGE" .
       - name: Start PostgreSQL and Redis
         run: docker compose --file .github/ci/compose.yml up -d postgres redis
       - name: Run Functional Test Gate
@@ -277,14 +279,8 @@ jobs:
         with:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
           persist-credentials: false
-      - name: Resolve CI Toolchain Cache Key
-        shell: bash
-        run: |
-          CI_TOOLCHAIN_KEY="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
-          echo "CI_TOOLCHAIN_IMAGE=kaori-ci-toolchain:$CI_TOOLCHAIN_KEY" >> "$GITHUB_ENV"
-      - name: Build or Reuse CI Toolchain
-        shell: bash
-        run: docker image inspect "$CI_TOOLCHAIN_IMAGE" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$CI_TOOLCHAIN_IMAGE" .
+      - name: Reuse CI Toolchain
+        run: echo "CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}" >> "$GITHUB_ENV"
       - name: Build and Verify Frontend
         run: >-
           docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp
@@ -304,24 +300,17 @@ jobs:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Resolve CI Toolchain Cache Key
-        shell: bash
-        run: |
-          CI_TOOLCHAIN_KEY="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
-          echo "CI_TOOLCHAIN_IMAGE=kaori-ci-toolchain:$CI_TOOLCHAIN_KEY" >> "$GITHUB_ENV"
       - name: Prepare Runtime Contract
         shell: bash
         run: |
           {
             echo "CI_UID=$(id -u)"
             echo "CI_GID=$(id -g)"
-            echo "KAORI_CI_TOOLCHAIN_IMAGE=$CI_TOOLCHAIN_IMAGE"
+            echo "KAORI_CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}"
+            echo "CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}"
             echo "COMPOSE_PROJECT_NAME=kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-runtime"
             echo "VALIDATION_IMAGE=kaori:ci-${{ needs.validation-profile.outputs.source_sha }}"
           } >> "$GITHUB_ENV"
-      - name: Build or Reuse CI Toolchain
-        shell: bash
-        run: docker image inspect "$CI_TOOLCHAIN_IMAGE" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$CI_TOOLCHAIN_IMAGE" .
       - name: Build Production Validation Image
         run: docker build --target production --tag "$VALIDATION_IMAGE" .
       - name: Scan Production Validation Image
@@ -362,17 +351,15 @@ jobs:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Resolve CI Toolchain Cache Key
+      - name: Prepare Smoke Runtime Contract
         shell: bash
         run: |
-          CI_TOOLCHAIN_KEY="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
-          echo "CI_TOOLCHAIN_IMAGE=kaori-ci-toolchain:$CI_TOOLCHAIN_KEY" >> "$GITHUB_ENV"
-          echo "CI_UID=$(id -u)" >> "$GITHUB_ENV"
-          echo "CI_GID=$(id -g)" >> "$GITHUB_ENV"
-          echo "COMPOSE_PROJECT_NAME=kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-smoke" >> "$GITHUB_ENV"
-      - name: Build or Reuse CI Toolchain
-        shell: bash
-        run: docker image inspect "$CI_TOOLCHAIN_IMAGE" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$CI_TOOLCHAIN_IMAGE" .
+          {
+            echo "CI_UID=$(id -u)"
+            echo "CI_GID=$(id -g)"
+            echo "KAORI_CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}"
+            echo "COMPOSE_PROJECT_NAME=kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-smoke"
+          } >> "$GITHUB_ENV"
       - name: Start Smoke Dependencies
         run: docker compose --file .github/ci/compose.yml up -d postgres redis
       - name: Run Integration Smoke
@@ -434,19 +421,27 @@ jobs:
       - name: Publish Immutable Full Admission Evidence
         if: ${{ needs.validation-profile.outputs.execution == 'full' }}
         shell: bash
+        env:
+          CI_TOOLCHAIN_IMAGE: ${{ needs.validation-profile.outputs.toolchain_image }}
         run: |
-          python scripts/ci_admission.py write-evidence \
-            --source-sha "${{ needs.validation-profile.outputs.source_sha }}" \
-            --source-tree "${{ needs.validation-profile.outputs.source_tree }}" \
-            --run-id "$GITHUB_RUN_ID" \
-            --run-attempt "$GITHUB_RUN_ATTEMPT" \
-            --workflow-ref "$GITHUB_WORKFLOW_REF" \
-            --static-quality "${{ needs.static-quality.result }}" \
-            --static-security "${{ needs.static-security.result }}" \
-            --functional-tests "${{ needs.functional-tests.result }}" \
-            --frontend "${{ needs.frontend.result }}" \
-            --production-runtime "${{ needs.production-runtime.result }}" \
-            --output admission-evidence.json
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --env HOME=/tmp \
+            --volume "$PWD:/workspace" \
+            --workdir /workspace \
+            "$CI_TOOLCHAIN_IMAGE" \
+            python scripts/ci_admission.py write-evidence \
+              --source-sha "${{ needs.validation-profile.outputs.source_sha }}" \
+              --source-tree "${{ needs.validation-profile.outputs.source_tree }}" \
+              --run-id "$GITHUB_RUN_ID" \
+              --run-attempt "$GITHUB_RUN_ATTEMPT" \
+              --workflow-ref "$GITHUB_WORKFLOW_REF" \
+              --static-quality "${{ needs.static-quality.result }}" \
+              --static-security "${{ needs.static-security.result }}" \
+              --functional-tests "${{ needs.functional-tests.result }}" \
+              --frontend "${{ needs.frontend.result }}" \
+              --production-runtime "${{ needs.production-runtime.result }}" \
+              --output admission-evidence.json
 
       - name: Upload Full Admission Evidence
         if: ${{ needs.validation-profile.outputs.execution == 'full' }}
@@ -461,6 +456,7 @@ jobs:
         if: ${{ always() }}
         shell: bash
         env:
+          CI_TOOLCHAIN_IMAGE: ${{ needs.validation-profile.outputs.toolchain_image }}
           EXECUTION: ${{ needs.validation-profile.outputs.execution }}
           PROFILE: ${{ needs.validation-profile.outputs.display_profile }}
           FALLBACK: ${{ needs.validation-profile.outputs.fallback }}
@@ -487,16 +483,22 @@ jobs:
             promotion) next='Ready to promote accepted staging lineage to main' ;;
             post-promotion) next='Production lineage verified; delivery evidence complete' ;;
           esac
-          python scripts/ci_admission.py summary \
-            --result PASS \
-            --profile "$PROFILE" \
-            --commit-sha "${{ needs.validation-profile.outputs.source_sha }}" \
-            --tree-sha "${{ needs.validation-profile.outputs.source_tree }}" \
-            --evidence "$evidence" \
-            --duration "$duration" \
-            --coverage-summary "$COVERAGE" \
-            --fresh-checks "$FRESH" \
-            --reused-checks "$REUSED" \
-            --next-action "$next" \
-            --output "$GITHUB_STEP_SUMMARY"
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --env HOME=/tmp \
+            --volume "$PWD:/workspace" \
+            --workdir /workspace \
+            "$CI_TOOLCHAIN_IMAGE" \
+            python scripts/ci_admission.py summary \
+              --result PASS \
+              --profile "$PROFILE" \
+              --commit-sha "${{ needs.validation-profile.outputs.source_sha }}" \
+              --tree-sha "${{ needs.validation-profile.outputs.source_tree }}" \
+              --evidence "$evidence" \
+              --duration "$duration" \
+              --coverage-summary "$COVERAGE" \
+              --fresh-checks "$FRESH" \
+              --reused-checks "$REUSED" \
+              --next-action "$next" \
+            >> "$GITHUB_STEP_SUMMARY"
           printf 'PASS — KAORI %s · %s · %s\n' "$PROFILE" "$duration" "$next"
