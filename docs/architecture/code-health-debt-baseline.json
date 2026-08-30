@@ -39,7 +39,6 @@
     "app/reports/export/html_pdf/alerts_anomalies.py::build_alerts_anomalies_presentation": 11,
     "app/reports/export/html_pdf/analytics_overview.py::build_analytics_overview_presentation": 13,
     "app/reports/export/html_pdf/builder.py::_build_unavailable_presentation": 12,
-    "app/reports/export/html_pdf/capacity_analysis.py::build_capacity_analysis_presentation": 11,
     "app/reports/export/html_pdf/forecast_analysis.py::build_forecast_analysis_presentation": 11,
     "app/reports/export/html_pdf/resource_utilization.py::_recommendations": 9,
     "app/reports/export/html_pdf/resource_utilization.py::build_resource_utilization_presentation": 11,
