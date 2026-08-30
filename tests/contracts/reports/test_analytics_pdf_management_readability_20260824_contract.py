@@ -30,7 +30,7 @@ def test_object_storage_analytics_is_management_overview_not_inventory_dump() ->
 def test_multi_series_chart_labels_have_a_reserved_right_gutter() -> None:
     forecast = read('app/reports/export/html_pdf/forecast_analysis.py')
     resource = read('app/reports/export/html_pdf/resource_utilization.py')
-    capacity = read('app/reports/export/html_pdf/capacity_analysis.py')
+    capacity = read('app/reports/export/html_pdf/capacity/charts.py')
 
     assert 'left, top, chart_w, chart_h = 58.0, 24.0, 520.0, 160.0' in forecast
     assert 'label_line_x = 626.0' in forecast
