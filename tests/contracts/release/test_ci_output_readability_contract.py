@@ -40,16 +40,16 @@ def test_static_verifier_output_is_grouped_instead_of_streamed_as_long_prose() -
 def test_successful_static_groups_emit_one_operator_row_instead_of_one_pass_per_verifier() -> None:
     source = QUALITY_GATE.read_text(encoding='utf-8')
 
-    assert "printf '  PASS — %s\\n' \"$label\"" not in source
+    assert 'printf \'  PASS — %s\\n\' "$label"' not in source
     assert 'group_pass_count' in source
-    assert "PASS — KAORI %s · %s checks" in source
+    assert 'PASS — KAORI %s · %s checks' in source
     assert 'Detailed PASS output is retained in' in source
 
 
 def test_failed_static_verifier_remains_failure_first_and_names_the_check() -> None:
     source = QUALITY_GATE.read_text(encoding='utf-8')
 
-    assert "printf '  FAIL — %s\\n' \"$label\"" in source
+    assert 'printf \'  FAIL — %s\\n\' "$label"' in source
     assert 'First actionable failure' in source
     assert 'Diagnostic excerpt' in source
     assert 'Next action' in source
