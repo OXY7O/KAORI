@@ -45,3 +45,13 @@ def test_raw_ci_diagnostics_are_uploaded_as_artifacts() -> None:
     assert 'Upload Smoke Diagnostics' in workflow
     assert 'tmp/ci-artifacts/static-output' in workflow
     assert 'tmp/ci-artifacts/test-output' in workflow
+
+
+def test_admission_summary_reports_real_failure_state_instead_of_hardcoded_pass() -> None:
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+
+    assert 'RESULT=' in workflow
+    assert 'FIRST_FAILURE=' in workflow
+    assert '--result "$RESULT"' in workflow
+    assert '--first-failure "$FIRST_FAILURE"' in workflow
+    assert '--result PASS' not in workflow
