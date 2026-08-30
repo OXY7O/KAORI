@@ -34,54 +34,52 @@ run_pytest_gate() {
     local label="$1"
     shift
 
-    if pytest -q --tb=short "$@"; then
+    if pytest -qq --tb=short "$@"; then
         record_test_result \
             'PASS' \
             "$label" \
-            'Pytest completed with concise traceback output; raw command output remains available in the job log.'
+            'Pytest completed without progress-noise; final counts and short failure traces remain in the raw log.'
         return 0
     else
         local status=$?
         record_test_result \
             'FAIL' \
             "$label" \
-            'Review the failing test name, assertion or reason, and source path in the job log.' >&2
+            'Review the first failing test name, assertion or reason, and source path in the raw diagnostic log.' >&2
         return "$status"
     fi
 }
 
 run_contract_migration_gate() {
-    if pytest -q tests/contracts tests/migrations -m 'contract or migration' --tb=short; then
+    if pytest -qq tests/contracts tests/migrations -m 'contract or migration' --tb=short; then
         record_test_result \
             'PASS' \
             'Contract & Migration Tests' \
-            'Canonical contract and migration layer passed with concise traceback output.'
+            'Canonical contract and migration layer passed; final counts are retained without progress-dot noise.'
         return 0
     else
         local status=$?
         record_test_result \
             'FAIL' \
             'Contract & Migration Tests' \
-            'Review the failing contract or migration test and source path in the job log.' >&2
+            'Review the first failing contract or migration test and source path in the raw diagnostic log.' >&2
         return "$status"
     fi
 }
 
 run_e2e_gate() {
-    if pytest -q tests/e2e -m e2e --tb=short; then
-        printf '\nPASS — KAORI End-to-End Tests\n'
-        append_test_summary \
+    if pytest -qq tests/e2e -m e2e --tb=short; then
+        record_test_result \
             'PASS' \
             'End-to-End Tests' \
-            'Explicit E2E smoke layer passed with concise traceback output.'
+            'Explicit E2E smoke layer passed with concise final counts and short tracebacks.'
         return 0
     else
         local status=$?
-        printf '\nFAIL — KAORI End-to-End Tests\n' >&2
-        append_test_summary \
+        record_test_result \
             'FAIL' \
             'End-to-End Tests' \
-            'Review the failing E2E test name, assertion or reason, and source path in the job log.'
+            'Review the first failing E2E test, source path, and short traceback in the raw diagnostic log.' >&2
         return "$status"
     fi
 }
@@ -189,26 +187,21 @@ run_tests() {
     python scripts/verify_test_prerequisites.py
 
     # Keep the canonical full-functional command explicit for release-contract
-    # source inspection while presenting concise PASS/FAIL evidence around it.
-    if pytest -q -m 'not debug and not e2e' --tb=short; then
-        printf '\nPASS — KAORI Functional Tests\n'
-        append_test_summary \
+    # source inspection while removing progress-dot noise from operator-facing logs.
+    if pytest -qq -m 'not debug and not e2e' --tb=short; then
+        record_test_result \
             'PASS' \
             'Functional Tests' \
-            'Canonical functional layer passed with concise traceback output.'
+            'Canonical functional layer passed; final counts remain visible without progress-dot noise.'
     else
         local status=$?
-        printf '\nFAIL — KAORI Functional Tests\n' >&2
-        append_test_summary \
+        record_test_result \
             'FAIL' \
             'Functional Tests' \
-            'Review the failing functional test, assertion or reason, and source path in the job log.'
+            'Review the first failing functional test, assertion/reason, and source path in the raw diagnostic log.' >&2
         return "$status"
     fi
 
-    # Domain characterization tests are explicit release gates. This protects
-    # them from environment-level PYTEST_ADDOPTS or marker filtering that may
-    # otherwise deselect unmarked behavioral tests.
     run_pytest_gate \
         'Domain Characterization Tests' \
         tests/welcome \
@@ -225,7 +218,6 @@ run_tests() {
         tests/settings \
         -m functional
 
-    # Keep the explicit command recognizable to release final-lock verifiers.
     run_e2e_gate
 }
 
@@ -234,6 +226,23 @@ run_frontend() {
     npm run check-format
     npm run build-frontend
     npm run verify-frontend
+}
+
+run_smoke() {
+    printf 'KAORI CI — Integration Smoke\n'
+    python scripts/verify_python_syntax.py
+    python scripts/verify_architecture_boundaries.py
+    python scripts/verify_internal_import_symbols.py
+    python scripts/verify_migration_graph.py
+    run_pytest_gate \
+        'Integration Smoke Tests' \
+        tests/contracts/release/test_kaori_delivery_governance_contract.py \
+        tests/contracts/release/test_progressive_ci_admission_contract.py
+    run_e2e_gate
+    record_test_result \
+        'PASS' \
+        'Integration Smoke' \
+        'Fresh syntax, architecture, import, migration, release-contract, progressive-CI, and E2E checks passed.'
 }
 
 case "$phase" in
@@ -246,13 +255,16 @@ case "$phase" in
     --frontend)
         run_frontend
         ;;
+    --smoke)
+        run_smoke
+        ;;
     --all)
         run_static
         run_tests
         run_frontend
         ;;
     *)
-        printf 'Usage: %s [--static|--tests|--frontend|--all]\n' "$0" >&2
+        printf 'Usage: %s [--static|--tests|--frontend|--smoke|--all]\n' "$0" >&2
         exit 2
         ;;
 esac
