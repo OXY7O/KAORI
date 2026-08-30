@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 phase="${1:---all}"
+TEST_OUTPUT_DIR="tmp/ci-artifacts/test-output"
 
 append_test_summary() {
     local status="$1"
@@ -26,64 +27,85 @@ record_test_result() {
     local label="$2"
     local detail="$3"
 
-    printf '\n%s — KAORI %s\n' "$status" "$label"
+    printf '\n%s — KAORI %s · %s\n' "$status" "$label" "$detail"
     append_test_summary "$status" "$label" "$detail"
 }
 
-run_pytest_gate() {
+pytest_result_line() {
+    local log_file="$1"
+    grep -E '(^|[[:space:]])([0-9]+ (passed|failed|error|errors|skipped|deselected)|no tests ran)' "$log_file" \
+        | tail -n 1 \
+        | sed -E 's/^[[:space:]]+//'
+}
+
+print_pytest_failure_excerpt() {
+    local log_file="$1"
+    local first_failure
+
+    first_failure="$(grep -m1 -E '^FAILED |^ERROR ' "$log_file" || true)"
+    if [[ -z "$first_failure" ]]; then
+        first_failure="$(grep -m1 -E '^E[[:space:]]|^ERRORS$|^FAILURES$' "$log_file" || true)"
+    fi
+    if [[ -z "$first_failure" ]]; then
+        first_failure='Pytest exited non-zero; inspect the retained raw diagnostic log.'
+    fi
+
+    printf 'First actionable failure — %s\n' "$first_failure" >&2
+    printf 'Diagnostic excerpt — bounded; full pytest output is retained at %s\n' "$log_file" >&2
+
+    awk '
+        /={3,} FAILURES ={3,}/ {capture=1}
+        /={3,} ERRORS ={3,}/ {capture=1}
+        capture {print; lines++}
+        lines >= 60 {exit}
+    ' "$log_file" >&2
+
+    printf '%s\n' '--- short test summary info / final output ---' >&2
+    tail -n 80 "$log_file" >&2
+}
+
+run_pytest_capture() {
     local label="$1"
     shift
+    local slug log_file result_line status
 
-    if pytest -qq --tb=short "$@"; then
-        record_test_result \
-            'PASS' \
-            "$label" \
-            'Pytest completed without progress-noise; final counts and short failure traces remain in the raw log.'
+    mkdir -p "$TEST_OUTPUT_DIR"
+    slug="$(printf '%s' "$label" | tr '[:upper:] ' '[:lower:]-' | tr -cd 'a-z0-9_-')"
+    log_file="$(mktemp "$TEST_OUTPUT_DIR/${slug}.XXXXXX.log")"
+
+    if pytest "$@" >"$log_file" 2>&1; then
+        result_line="$(pytest_result_line "$log_file" || true)"
+        [[ -n "$result_line" ]] || result_line='Pytest completed successfully.'
+        record_test_result 'PASS' "$label" "$result_line"
         return 0
-    else
-        local status=$?
-        record_test_result \
-            'FAIL' \
-            "$label" \
-            'Review the first failing test name, assertion or reason, and source path in the raw diagnostic log.' >&2
-        return "$status"
     fi
+
+    status=$?
+    result_line="$(pytest_result_line "$log_file" || true)"
+    [[ -n "$result_line" ]] || result_line="Pytest exited with status $status."
+    record_test_result 'FAIL' "$label" "$result_line" >&2
+    print_pytest_failure_excerpt "$log_file"
+    printf 'Next action — repair the first actionable failure above, then rerun this gate.\n' >&2
+    return "$status"
 }
 
 run_contract_migration_gate() {
-    if pytest -qq tests/contracts tests/migrations -m 'contract or migration' --tb=short; then
-        record_test_result \
-            'PASS' \
-            'Contract & Migration Tests' \
-            'Canonical contract and migration layer passed; final counts are retained without progress-dot noise.'
-        return 0
-    else
-        local status=$?
-        record_test_result \
-            'FAIL' \
-            'Contract & Migration Tests' \
-            'Review the first failing contract or migration test and source path in the raw diagnostic log.' >&2
-        return "$status"
-    fi
+    run_pytest_capture \
+        'Contract & Migration Tests' \
+        -q \
+        --tb=short \
+        tests/contracts \
+        tests/migrations \
+        -m 'contract or migration'
 }
 
 run_e2e_gate() {
-    # Release-contract compatibility marker only: pytest -q tests/e2e -m e2e
-    # The executable form intentionally uses -qq so progress dots do not dominate human-facing logs.
-    if pytest -qq tests/e2e -m e2e --tb=short; then
-        record_test_result \
-            'PASS' \
-            'End-to-End Tests' \
-            'Explicit E2E smoke layer passed with concise final counts and short tracebacks.'
-        return 0
-    else
-        local status=$?
-        record_test_result \
-            'FAIL' \
-            'End-to-End Tests' \
-            'Review the first failing E2E test, source path, and short traceback in the raw diagnostic log.' >&2
-        return "$status"
-    fi
+    run_pytest_capture \
+        'End-to-End Tests' \
+        -q \
+        --tb=short \
+        tests/e2e \
+        -m e2e
 }
 
 run_static() {
@@ -188,24 +210,16 @@ run_static() {
 run_tests() {
     python scripts/verify_test_prerequisites.py
 
-    # Keep the canonical full-functional command explicit for release-contract
-    # source inspection while removing progress-dot noise from operator-facing logs.
-    if pytest -qq -m 'not debug and not e2e' --tb=short; then
-        record_test_result \
-            'PASS' \
-            'Functional Tests' \
-            'Canonical functional layer passed; final counts remain visible without progress-dot noise.'
-    else
-        local status=$?
-        record_test_result \
-            'FAIL' \
-            'Functional Tests' \
-            'Review the first failing functional test, assertion/reason, and source path in the raw diagnostic log.' >&2
-        return "$status"
-    fi
+    run_pytest_capture \
+        'Functional Tests' \
+        -q \
+        --tb=short \
+        -m 'not debug and not e2e'
 
-    run_pytest_gate \
+    run_pytest_capture \
         'Domain Characterization Tests' \
+        -q \
+        --tb=short \
         tests/welcome \
         tests/access \
         tests/integrations \
@@ -236,15 +250,18 @@ run_smoke() {
     python scripts/verify_architecture_boundaries.py
     python scripts/verify_internal_import_symbols.py
     python scripts/verify_migration_graph.py
-    run_pytest_gate \
+    run_pytest_capture \
         'Integration Smoke Tests' \
+        -q \
+        --tb=short \
         tests/contracts/release/test_kaori_delivery_governance_contract.py \
-        tests/contracts/release/test_progressive_ci_admission_contract.py
+        tests/contracts/release/test_progressive_ci_admission_contract.py \
+        tests/contracts/release/test_ci_output_readability_contract.py
     run_e2e_gate
     record_test_result \
         'PASS' \
         'Integration Smoke' \
-        'Fresh syntax, architecture, import, migration, release-contract, progressive-CI, and E2E checks passed.'
+        'Fresh syntax, architecture, import, migration, release-contract, progressive-CI, readability, and E2E checks passed.'
 }
 
 case "$phase" in
