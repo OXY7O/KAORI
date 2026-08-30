@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:17-alpine
+    pull_policy: missing
     environment:
       POSTGRES_DB: kaori_test
       POSTGRES_USER: postgres
@@ -13,6 +14,7 @@ services:
 
   redis:
     image: redis:8-alpine
+    pull_policy: missing
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
