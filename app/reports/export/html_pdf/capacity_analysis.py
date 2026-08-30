@@ -9,6 +9,7 @@ from app.reports.export.html_pdf.analytics_publication_standard import (
     ANALYTICS_PUBLICATION_STANDARD,
     analytics_layout_contract,
 )
+from app.reports.export.html_pdf.builder_context import ReportDocumentContext
 
 from .capacity.actions import build_capacity_action_state
 from .capacity.charts import build_capacity_forecast_chart_svg, build_participation_donut_svg
@@ -40,23 +41,14 @@ _CAPACITY_PAGE_TITLES = (
 
 
 def build_capacity_analysis_presentation(
-    report: Any,
     payload: Mapping[str, Any],
     *,
-    report_id: str,
-    report_name: str,
-    cluster_scope: str,
-    namespace_scope: str,
-    period_label: str,
-    data_cutoff: str,
-    generated_at: str,
-    generated_by: str,
+    context: ReportDocumentContext,
     classification: str,
 ) -> dict[str, Any]:
-    del report
     state = build_capacity_state(payload)
     forecast = build_capacity_forecast_state(state)
-    actions = build_capacity_action_state(payload, state, forecast, period_label=period_label)
+    actions = build_capacity_action_state(payload, state, forecast, period_label=context.period_label)
     forecast_chart = build_capacity_forecast_chart_svg(
         resources=state.resources,
         forecast_items=forecast.items,
@@ -79,19 +71,19 @@ def build_capacity_analysis_presentation(
             table_policy='concise-register-plus-reference',
             missing_evidence_policy='explicit-not-available',
         ),
-        'report_id': report_id,
-        'report_name': report_name,
+        'report_id': context.report_id,
+        'report_name': context.report_name,
         'report_title': 'Capacity Analysis',
         'report_subtitle': 'Kubernetes Operational Intelligence Report',
         'classification': classification,
-        'cluster_scope': cluster_scope,
-        'namespace_scope': namespace_scope,
-        'period_label': period_label,
-        'data_cutoff': data_cutoff,
-        'generated_at': generated_at,
-        'generated_by': generated_by,
+        'cluster_scope': context.cluster_scope,
+        'namespace_scope': context.namespace_scope,
+        'period_label': context.period_label,
+        'data_cutoff': context.data_cutoff,
+        'generated_at': context.generated_at_label,
+        'generated_by': context.generated_by_label,
         'page_titles': _CAPACITY_PAGE_TITLES,
-        'cover': build_cover_section(state, cluster_scope),
+        'cover': build_cover_section(state, context.cluster_scope),
         'executive': build_executive_section(state, forecast, actions),
         'compute': build_compute_section(state, forecast),
         'scheduling': build_scheduling_section(state, donut_svg),
@@ -103,8 +95,8 @@ def build_capacity_analysis_presentation(
             state,
             forecast,
             actions,
-            namespace_scope,
-            period_label,
-            data_cutoff,
+            context.namespace_scope,
+            context.period_label,
+            context.data_cutoff,
         ),
     }
