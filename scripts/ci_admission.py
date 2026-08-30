@@ -247,8 +247,8 @@ def _github_request(url: str, token: str, *, binary: bool = False) -> Any:
             'User-Agent': 'KAORI-CI-Admission',
         },
     )
-    # nosec B310 -- _validated_github_url rejects non-HTTPS, non-api.github.com, and embedded credentials.
-    with urllib.request.urlopen(request, timeout=60) as response:
+    # URL is validated above to HTTPS api.github.com with no embedded credentials.
+    with urllib.request.urlopen(request, timeout=60) as response:  # nosec B310
         return response.read() if binary else json.load(response)
 
 
