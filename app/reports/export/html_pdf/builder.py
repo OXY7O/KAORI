@@ -269,16 +269,8 @@ def build_report_document(
     elif report.report_type == 'storage_analysis':
         template_name = 'reports/pdf/storage_analysis.html'
         presentation = build_storage_analysis_presentation(
-            report,
             payload,
-            report_id=context.report_id,
-            report_name=context.report_name,
-            cluster_scope=context.cluster_scope,
-            namespace_scope=context.namespace_scope,
-            period_label=context.period_label,
-            data_cutoff=context.data_cutoff,
-            generated_at=context.generated_at_label,
-            generated_by=context.generated_by_label,
+            context=context,
             classification=classification,
         )
     elif report.report_type == 'resource_forecast':
@@ -517,7 +509,6 @@ def _build_executive_summary(report: Any, payload: Mapping[str, Any], number: in
         else ()
     )
     metrics.extend(summary_metrics)
-
     findings: list[ReportFinding] = []
     for key in ('risk_assessment', 'governance_findings', 'source_health', 'incident_readiness'):
         value = payload.get(key)

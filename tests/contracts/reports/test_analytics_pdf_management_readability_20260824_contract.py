@@ -51,11 +51,11 @@ def test_multi_series_chart_labels_have_a_reserved_right_gutter() -> None:
 
 
 def test_dense_storage_and_workload_pages_defer_detail_to_reference_blocks() -> None:
-    storage = read('app/reports/export/html_pdf/storage_analysis.py')
+    storage_sections = read('app/reports/export/html_pdf/storage/sections.py')
     workload_css = read('app/static/reports/pdf/workload_analysis.css')
 
-    assert "'pv_rows': _pv_records(pv_rows)[:2]" in storage
-    assert "'pvc_rows': _pvc_records(pvc_rows)[:2]" in storage
+    assert "'pv_rows': pv_records(pv_rows)[:2]" in storage_sections
+    assert "'pvc_rows': pvc_records(pvc_rows)[:2]" in storage_sections
 
     assert '.signal-table th:first-child,' in workload_css
     assert '.signal-table th:nth-child(2) { width: 53%; }' in workload_css
