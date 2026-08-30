@@ -16,19 +16,13 @@ from app.reports.export.html_pdf.storage.model import (
 
 def capacity_resource(summary: Mapping[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
     capacity_bytes = sum(
-        max(0.0, safe_float(item.get('capacity_bytes'), 0.0) or 0.0)
-        for item in rows
-        if item.get('evidence_available')
+        max(0.0, safe_float(item.get('capacity_bytes'), 0.0) or 0.0) for item in rows if item.get('evidence_available')
     )
     used_bytes = sum(
-        max(0.0, safe_float(item.get('used_bytes'), 0.0) or 0.0)
-        for item in rows
-        if item.get('evidence_available')
+        max(0.0, safe_float(item.get('used_bytes'), 0.0) or 0.0) for item in rows if item.get('evidence_available')
     )
     free_bytes = sum(
-        max(0.0, safe_float(item.get('free_bytes'), 0.0) or 0.0)
-        for item in rows
-        if item.get('evidence_available')
+        max(0.0, safe_float(item.get('free_bytes'), 0.0) or 0.0) for item in rows if item.get('evidence_available')
     )
     evidence_available = bool(summary.get('evidence_available')) or capacity_bytes > 0
     used_percent = safe_float(summary.get('usage_percent'))
@@ -92,8 +86,12 @@ def persistent_volume_summary(summary: Mapping[str, Any], rows: list[dict[str, A
         'count_display': str(count) if summary.get('inventory_evidence_available') or rows else 'Not Available',
         'capacity': text(summary.get('capacity')) if evidence_available else 'Not Available',
         'observed_claim_usage': text(summary.get('observed_claim_usage')) if evidence_available else 'Not Available',
-        'requested_claim_capacity': text(summary.get('requested_claim_capacity')) if evidence_available else 'Not Available',
-        'unallocated': text(summary.get('unallocated_provisioned_difference')) if evidence_available else 'Not Available',
+        'requested_claim_capacity': text(summary.get('requested_claim_capacity'))
+        if evidence_available
+        else 'Not Available',
+        'unallocated': text(summary.get('unallocated_provisioned_difference'))
+        if evidence_available
+        else 'Not Available',
     }
 
 
