@@ -333,13 +333,7 @@ def test_capacity_analysis_forecast_has_no_svg_font_collision() -> None:
     assert 'class="value"' not in forecast_section
     assert 'font:11px Inter,sans-serif;font-weight:700' in forecast_section
     source = (
-        Path(__file__).resolve().parents[2]
-        / 'app'
-        / 'reports'
-        / 'export'
-        / 'html_pdf'
-        / 'capacity'
-        / 'charts.py'
+        Path(__file__).resolve().parents[2] / 'app' / 'reports' / 'export' / 'html_pdf' / 'capacity' / 'charts.py'
     ).read_text()
     assert 'resolve_vertical_labels' in source
     assert '65.4%' in forecast_section

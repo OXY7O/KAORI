@@ -165,12 +165,10 @@ def build_capacity_state(payload: Mapping[str, Any]) -> CapacityState:
     capacity_summary = mapping(payload.get('capacity_summary'))
     allocation_summary = mapping(payload.get('allocation_summary'))
     resources = {
-        key: capacity_resource(mapping(capacity_summary.get(key)), key)
-        for key in ('cpu', 'memory', 'pods', 'storage')
+        key: capacity_resource(mapping(capacity_summary.get(key)), key) for key in ('cpu', 'memory', 'pods', 'storage')
     }
     allocations = {
-        key: allocation_resource(mapping(allocation_summary.get(key)), key)
-        for key in ('cpu', 'memory', 'pods')
+        key: allocation_resource(mapping(allocation_summary.get(key)), key) for key in ('cpu', 'memory', 'pods')
     }
     total_nodes = number_int(cluster_info.get('total_nodes'))
     ready_nodes = number_int(cluster_info.get('ready_nodes'))

@@ -270,9 +270,24 @@ def build_recommendation_section(actions: CapacityActionState) -> dict[str, Any]
     recommendations = actions.recommendations
     return {
         'metrics': (
-            metric('P1 Actions', str(actions.p1_count), 'Open' if actions.p1_count else 'None', 'critical' if actions.p1_count else 'normal'),
-            metric('P2 Actions', str(actions.p2_count), 'Open' if actions.p2_count else 'None', 'warning' if actions.p2_count else 'normal'),
-            metric('P3 Actions', str(actions.p3_count), 'Planned' if actions.p3_count else 'None', 'info' if actions.p3_count else 'normal'),
+            metric(
+                'P1 Actions',
+                str(actions.p1_count),
+                'Open' if actions.p1_count else 'None',
+                'critical' if actions.p1_count else 'normal',
+            ),
+            metric(
+                'P2 Actions',
+                str(actions.p2_count),
+                'Open' if actions.p2_count else 'None',
+                'warning' if actions.p2_count else 'normal',
+            ),
+            metric(
+                'P3 Actions',
+                str(actions.p3_count),
+                'Planned' if actions.p3_count else 'None',
+                'info' if actions.p3_count else 'normal',
+            ),
             metric('Validation Gates', str(len(recommendations)), 'Required', 'info'),
         ),
         'rows': recommendations,
@@ -370,8 +385,20 @@ def build_methodology_section(
         ),
         'status_language': (
             {'ref': 'S1', 'title': 'Not Available', 'description': 'No evidence exists for the requested dimension.'},
-            {'ref': 'S2', 'title': 'Not Collected', 'description': 'Collection was prevented by configuration or failure.'},
-            {'ref': 'S3', 'title': 'Partial Coverage', 'description': 'Evidence exists but does not cover the full requested scope.'},
-            {'ref': 'S4', 'title': 'Source Unavailable', 'description': 'The source was unreachable or not providing data at the cut-off.'},
+            {
+                'ref': 'S2',
+                'title': 'Not Collected',
+                'description': 'Collection was prevented by configuration or failure.',
+            },
+            {
+                'ref': 'S3',
+                'title': 'Partial Coverage',
+                'description': 'Evidence exists but does not cover the full requested scope.',
+            },
+            {
+                'ref': 'S4',
+                'title': 'Source Unavailable',
+                'description': 'The source was unreachable or not providing data at the cut-off.',
+            },
         ),
     }

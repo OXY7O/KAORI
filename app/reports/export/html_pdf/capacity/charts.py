@@ -44,12 +44,8 @@ def build_capacity_forecast_chart_svg(
     ]
     for tick in (0, 25, 50, 70, 85):
         y = point(tick, left)[1]
-        svg.append(
-            f'<line x1="{left}" y1="{y:.1f}" x2="{left + inner_w}" y2="{y:.1f}" stroke="#E2E8F0"/>'
-        )
-        svg.append(
-            f'<text x="{left - 10}" y="{y + 4:.1f}" text-anchor="end" class="axis">{tick}%</text>'
-        )
+        svg.append(f'<line x1="{left}" y1="{y:.1f}" x2="{left + inner_w}" y2="{y:.1f}" stroke="#E2E8F0"/>')
+        svg.append(f'<text x="{left - 10}" y="{y + 4:.1f}" text-anchor="end" class="axis">{tick}%</text>')
     for threshold, color in ((70, '#D97706'), (85, '#DC2626')):
         y = point(threshold, left)[1]
         svg.append(
@@ -72,10 +68,7 @@ def build_capacity_forecast_chart_svg(
         if not history:
             history = [current, current]
         history = history[-12:]
-        history_xs = [
-            left + (split_x - left) * index / max(len(history) - 1, 1)
-            for index in range(len(history))
-        ]
+        history_xs = [left + (split_x - left) * index / max(len(history) - 1, 1) for index in range(len(history))]
         history_points = [point(value, x) for x, value in zip(history_xs, history)]
         color = RESOURCE_COLORS[key]
         svg.append(
@@ -156,7 +149,7 @@ def build_participation_donut_svg(percent: float, ready_nodes: int, total_nodes:
             'transform="rotate(-90 78 78)"/>'
         )
     label = f'{ready_nodes} / {total_nodes}' if total_nodes else 'N/A'
-    return f'''<svg viewBox="0 0 156 156" role="img" aria-label="Node participation {value:.0f} percent">
+    return f"""<svg viewBox="0 0 156 156" role="img" aria-label="Node participation {value:.0f} percent">
 <circle cx="78" cy="78" r="52" fill="none" stroke="#E2E8F0" stroke-width="18"/>{progress}
 <text x="78" y="75" text-anchor="middle" font-family="Inter, sans-serif" font-size="22" font-weight="700" fill="#1E293B">{escape(label)}</text>
-<text x="78" y="94" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#475569">Ready Nodes</text></svg>'''
+<text x="78" y="94" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#475569">Ready Nodes</text></svg>"""

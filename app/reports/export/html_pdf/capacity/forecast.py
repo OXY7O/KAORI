@@ -104,10 +104,7 @@ def forecast_interpretation(projections: Mapping[str, float | None]) -> str:
             'and requires an approved response.'
         )
     if constrained_value >= 70:
-        return (
-            f'{RESOURCE_LABELS[constrained_key]} projects into the warning band '
-            'and requires planning review.'
-        )
+        return f'{RESOURCE_LABELS[constrained_key]} projects into the warning band and requires planning review.'
     return 'No displayed resource is projected to enter the warning band within the committed planning horizon.'
 
 
@@ -117,10 +114,7 @@ def build_capacity_forecast_state(state: CapacityState) -> CapacityForecastState
         for item in sequence(state.forecast_payload.get('items'))
         if isinstance(item, Mapping)
     }
-    projections = {
-        key: forecast_percent(mapping(items.get(key)))
-        for key in ('cpu', 'memory', 'pods')
-    }
+    projections = {key: forecast_percent(mapping(items.get(key))) for key in ('cpu', 'memory', 'pods')}
     rows = tuple(
         forecast_row(
             f'T{index}',
@@ -132,8 +126,7 @@ def build_capacity_forecast_state(state: CapacityState) -> CapacityForecastState
     )
     available = any(value is not None for value in projections.values())
     method = sanitize_text(
-        state.forecast_payload.get('method_label')
-        or state.forecast_payload.get('forecast_method'),
+        state.forecast_payload.get('method_label') or state.forecast_payload.get('forecast_method'),
         fallback='Not Available',
     )
     return CapacityForecastState(

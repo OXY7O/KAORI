@@ -57,10 +57,7 @@ def executive_interpretation(
         f'{leading["used_display"]} with {leading["headroom_display"]} remaining headroom.'
     )
     if evidence_gap_count:
-        text += (
-            f' {evidence_gap_count} resource domain(s) remain unavailable '
-            'and must not be interpreted as healthy.'
-        )
+        text += f' {evidence_gap_count} resource domain(s) remain unavailable and must not be interpreted as healthy.'
     return text
 
 
@@ -95,8 +92,7 @@ def executive_findings(
             'status': 'Review' if (projections['memory'] or 0) >= 70 else 'Planned',
             'tone': 'warning' if (projections['memory'] or 0) >= 70 else 'info',
             'description': (
-                'Retain current memory headroom and committed projection evidence '
-                'in the next capacity gate.'
+                'Retain current memory headroom and committed projection evidence in the next capacity gate.'
             ),
         }
     )
@@ -173,8 +169,7 @@ def risk_rows(
                 'status': allocation['status'],
                 'tone': allocation['tone'],
                 'description': (
-                    f'Allocation status is {allocation["status"]}; validate requests, limits, '
-                    'actual use, and peak use.'
+                    f'Allocation status is {allocation["status"]}; validate requests, limits, actual use, and peak use.'
                 ),
             }
         )
@@ -190,8 +185,7 @@ def risk_rows(
                 'status': 'Open',
                 'tone': 'warning',
                 'description': (
-                    f'{total_nodes - ready_nodes} node(s) are not ready and excluded '
-                    'from active capacity assumptions.'
+                    f'{total_nodes - ready_nodes} node(s) are not ready and excluded from active capacity assumptions.'
                 ),
             }
         )
@@ -206,8 +200,7 @@ def risk_rows(
                 'status': 'Review',
                 'tone': 'warning',
                 'description': (
-                    f'Memory projects to {percent(projections["memory"])} '
-                    'within the committed planning horizon.'
+                    f'Memory projects to {percent(projections["memory"])} within the committed planning horizon.'
                 ),
             }
         )
@@ -257,13 +250,7 @@ def recommendation_rows(
                 'priority': priority,
                 'title': title,
                 'owner': owner,
-                'target': (
-                    'This Week'
-                    if priority == 'P1'
-                    else 'Next Week'
-                    if priority == 'P2'
-                    else 'This Month'
-                ),
+                'target': ('This Week' if priority == 'P1' else 'Next Week' if priority == 'P2' else 'This Month'),
                 'status': 'Open' if priority in {'P1', 'P2'} else 'Planned',
                 'tone': 'critical' if priority == 'P1' else 'warning' if priority == 'P2' else 'info',
                 'description': description,
@@ -339,10 +326,7 @@ def recommendation_rows(
                 'target': 'Next Week',
                 'status': 'Open',
                 'tone': 'warning',
-                'description': (
-                    'Restore or formally exclude not-ready nodes before relying '
-                    'on schedulable capacity.'
-                ),
+                'description': ('Restore or formally exclude not-ready nodes before relying on schedulable capacity.'),
             }
         )
 
