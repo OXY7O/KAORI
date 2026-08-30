@@ -254,9 +254,7 @@ def _test_word(count: int) -> str:
 
 
 def render_test_taxonomy_summary(junit_paths: Sequence[Path]) -> str:
-    counts = {
-        label: {'passed': 0, 'failed': 0, 'error': 0, 'skipped': 0} for label in TEST_TAXONOMY_LABELS
-    }
+    counts = {label: {'passed': 0, 'failed': 0, 'error': 0, 'skipped': 0} for label in TEST_TAXONOMY_LABELS}
     for junit_path in junit_paths:
         # Inputs are trusted pytest JUnit files generated inside the current CI workspace.
         root = ET.parse(junit_path).getroot()  # nosec B314
@@ -272,6 +270,8 @@ def render_test_taxonomy_summary(junit_paths: Sequence[Path]) -> str:
         errors = bucket['error']
         skipped = bucket['skipped']
         total = passed + failed + errors + skipped
+        if total == 0:
+            continue
 
         if failed or errors:
             details = [f'{failed} failed'] if failed else []
@@ -287,10 +287,8 @@ def render_test_taxonomy_summary(junit_paths: Sequence[Path]) -> str:
             if skipped:
                 detail = f'{passed} passed / {skipped} skipped'
             lines.append(f'PASS — KAORI {label} · {detail}')
-        elif skipped:
-            lines.append(f'SKIP — KAORI {label} · {skipped} skipped')
         else:
-            lines.append(f'SKIP — KAORI {label} · 0 tests')
+            lines.append(f'SKIP — KAORI {label} · {skipped} skipped')
     return '\n'.join(lines)
 
 
