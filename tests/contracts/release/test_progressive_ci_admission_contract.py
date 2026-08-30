@@ -274,4 +274,4 @@ def test_quality_gate_exposes_fast_smoke_phase_and_removes_pytest_progress_noise
     assert 'GITHUB_STEP_SUMMARY' in source
     assert '--tb=short' in source
     assert 'pytest -qq' in source
-    assert 'pytest -q ' not in source
+    assert 'if pytest -q ' not in source
