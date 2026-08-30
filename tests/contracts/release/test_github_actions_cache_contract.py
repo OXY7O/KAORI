@@ -30,7 +30,9 @@ def test_ci_toolchain_cache_key_uses_immutable_toolchain_inputs() -> None:
 def test_existing_local_toolchain_image_is_reused() -> None:
     source = read(QUALITY)
 
-    resolver = source.split('- name: Resolve and Reuse CI Toolchain', 1)[1].split('- name: Resolve Source Identity', 1)[0]
+    resolver = source.split('- name: Resolve and Reuse CI Toolchain', 1)[1].split('- name: Resolve Source Identity', 1)[
+        0
+    ]
     assert 'docker image inspect "$image"' in resolver
     assert '|| docker build' in resolver
     assert '--file .github/ci/Dockerfile' in resolver
