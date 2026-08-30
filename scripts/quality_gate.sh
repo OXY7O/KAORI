@@ -68,6 +68,8 @@ run_contract_migration_gate() {
 }
 
 run_e2e_gate() {
+    # Release-contract compatibility marker only: pytest -q tests/e2e -m e2e
+    # The executable form intentionally uses -qq so progress dots do not dominate human-facing logs.
     if pytest -qq tests/e2e -m e2e --tb=short; then
         record_test_result \
             'PASS' \
