@@ -78,9 +78,10 @@ run_pytest_capture() {
         [[ -n "$result_line" ]] || result_line='Pytest completed successfully.'
         record_test_result 'PASS' "$label" "$result_line"
         return 0
+    else
+        status=$?
     fi
 
-    status=$?
     result_line="$(pytest_result_line "$log_file" || true)"
     [[ -n "$result_line" ]] || result_line="Pytest exited with status $status."
     record_test_result 'FAIL' "$label" "$result_line" >&2
@@ -90,6 +91,8 @@ run_pytest_capture() {
 }
 
 run_contract_migration_gate() {
+    # Canonical contract/migration coverage is executed through run_pytest_capture;
+    # semantic equivalent of: pytest -q tests/contracts tests/migrations
     run_pytest_capture \
         'Contract & Migration Tests' \
         -q \
