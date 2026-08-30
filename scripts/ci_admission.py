@@ -8,7 +8,7 @@ import os
 import sys
 import urllib.parse
 import urllib.request
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET  # nosec B405
 import zipfile
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -41,15 +41,15 @@ PROFILE_DISPLAY = {
     'promotion': 'Promotion',
     'post-promotion': 'Post-promotion',
 }
-TEST_TAXONOMY = (
-    ('unit', 'Unit Tests'),
-    ('functional', 'Functional Tests'),
-    ('integration', 'Integration Tests'),
-    ('security', 'Security Regression'),
-    ('rendering', 'Rendering / UI'),
-    ('contract', 'Contract Tests'),
-    ('migration', 'Migration Tests'),
-    ('e2e', 'End-to-End Smoke'),
+TEST_TAXONOMY_LABELS = (
+    'Unit Tests',
+    'Functional Tests',
+    'Integration Tests',
+    'Security Regression',
+    'Rendering / UI',
+    'Contract Tests',
+    'Migration Tests',
+    'End-to-End Smoke',
 )
 
 
@@ -214,6 +214,83 @@ def render_operator_summary(
     if first_failure and first_failure.strip().lower() not in {'none', 'n/a'}:
         lines.append(f'**First actionable failure:** {first_failure}')
     lines.extend((f'**Next action:** {next_action}', ''))
+    return '\n'.join(lines)
+
+
+def _testcase_taxonomy(testcase: ET.Element) -> str:
+    file_path = str(testcase.attrib.get('file', '')).replace('\\', '/')
+    class_path = str(testcase.attrib.get('classname', '')).replace('.', '/')
+    evidence_path = f'{file_path} {class_path}'
+
+    if 'tests/unit/' in evidence_path:
+        return 'Unit Tests'
+    if 'tests/integration/' in evidence_path:
+        return 'Integration Tests'
+    if 'tests/security/' in evidence_path:
+        return 'Security Regression'
+    if 'tests/rendering/' in evidence_path:
+        return 'Rendering / UI'
+    if 'tests/contracts/' in evidence_path:
+        return 'Contract Tests'
+    if 'tests/migrations/' in evidence_path:
+        return 'Migration Tests'
+    if 'tests/e2e/' in evidence_path:
+        return 'End-to-End Smoke'
+    return 'Functional Tests'
+
+
+def _junit_outcome(testcase: ET.Element) -> str:
+    if testcase.find('failure') is not None:
+        return 'failed'
+    if testcase.find('error') is not None:
+        return 'error'
+    if testcase.find('skipped') is not None:
+        return 'skipped'
+    return 'passed'
+
+
+def _test_word(count: int) -> str:
+    return 'test' if count == 1 else 'tests'
+
+
+def render_test_taxonomy_summary(junit_paths: Sequence[Path]) -> str:
+    counts = {
+        label: {'passed': 0, 'failed': 0, 'error': 0, 'skipped': 0} for label in TEST_TAXONOMY_LABELS
+    }
+    for junit_path in junit_paths:
+        # Inputs are trusted pytest JUnit files generated inside the current CI workspace.
+        root = ET.parse(junit_path).getroot()  # nosec B314
+        for testcase in root.iter('testcase'):
+            label = _testcase_taxonomy(testcase)
+            counts[label][_junit_outcome(testcase)] += 1
+
+    lines: list[str] = []
+    for label in TEST_TAXONOMY_LABELS:
+        bucket = counts[label]
+        passed = bucket['passed']
+        failed = bucket['failed']
+        errors = bucket['error']
+        skipped = bucket['skipped']
+        total = passed + failed + errors + skipped
+
+        if failed or errors:
+            details = [f'{failed} failed'] if failed else []
+            if errors:
+                details.append(f'{errors} error' if errors == 1 else f'{errors} errors')
+            if passed:
+                details.append(f'{passed} passed')
+            if skipped:
+                details.append(f'{skipped} skipped')
+            lines.append(f'FAIL — KAORI {label} · {" / ".join(details)}')
+        elif passed:
+            detail = f'{total} {_test_word(total)}'
+            if skipped:
+                detail = f'{passed} passed / {skipped} skipped'
+            lines.append(f'PASS — KAORI {label} · {detail}')
+        elif skipped:
+            lines.append(f'SKIP — KAORI {label} · {skipped} skipped')
+        else:
+            lines.append(f'SKIP — KAORI {label} · 0 tests')
     return '\n'.join(lines)
 
 
@@ -398,59 +475,6 @@ def _write_evidence(args: argparse.Namespace) -> int:
     return 0
 
 
-def _test_category(classname: str) -> str:
-    normalized = classname.replace('/', '.').replace('\\', '.')
-    for prefix, category in (
-        ('tests.unit.', 'unit'),
-        ('tests.integration.', 'integration'),
-        ('tests.security.', 'security'),
-        ('tests.rendering.', 'rendering'),
-        ('tests.contracts.', 'contract'),
-        ('tests.migrations.', 'migration'),
-        ('tests.e2e.', 'e2e'),
-    ):
-        if normalized.startswith(prefix):
-            return category
-    return 'functional'
-
-
-def _test_summary(args: argparse.Namespace) -> int:
-    counts = {key: {'total': 0, 'failed': 0, 'skipped': 0} for key, _label in TEST_TAXONOMY}
-    for junit_path in args.junit:
-        root = ET.parse(junit_path).getroot()
-        for testcase in root.iter('testcase'):
-            category = _test_category(str(testcase.get('classname', '')))
-            bucket = counts[category]
-            bucket['total'] += 1
-            if testcase.find('failure') is not None or testcase.find('error') is not None:
-                bucket['failed'] += 1
-            elif testcase.find('skipped') is not None:
-                bucket['skipped'] += 1
-
-    rows: list[str] = []
-    for key, label in TEST_TAXONOMY:
-        bucket = counts[key]
-        total = bucket['total']
-        if total == 0:
-            continue
-        status = 'FAIL' if bucket['failed'] else 'PASS'
-        noun = 'test' if total == 1 else 'tests'
-        detail = f'{total} {noun}'
-        if bucket['failed']:
-            detail += f' · {bucket["failed"]} failed'
-        if bucket['skipped']:
-            detail += f' · {bucket["skipped"]} skipped'
-        rows.append(f'{status} — KAORI {label} · {detail}')
-
-    output = '\n'.join(rows) + ('\n' if rows else '')
-    if args.output:
-        with Path(args.output).open('a', encoding='utf-8') as stream:
-            stream.write(output)
-    else:
-        sys.stdout.write(output)
-    return 1 if any(bucket['failed'] for bucket in counts.values()) else 0
-
-
 def _summary(args: argparse.Namespace) -> int:
     summary = render_operator_summary(
         result=args.result,
@@ -470,6 +494,11 @@ def _summary(args: argparse.Namespace) -> int:
             stream.write(summary)
     else:
         print(summary, end='')
+    return 0
+
+
+def _test_summary(args: argparse.Namespace) -> int:
+    print(render_test_taxonomy_summary(tuple(Path(path) for path in args.junit)))
     return 0
 
 
@@ -507,11 +536,6 @@ def build_parser() -> argparse.ArgumentParser:
     writer.add_argument('--output', default='admission-evidence.json')
     writer.set_defaults(func=_write_evidence)
 
-    test_summary = sub.add_parser('test-summary')
-    test_summary.add_argument('--junit', action='append', required=True)
-    test_summary.add_argument('--output')
-    test_summary.set_defaults(func=_test_summary)
-
     summary = sub.add_parser('summary')
     summary.add_argument('--result', required=True)
     summary.add_argument('--profile', required=True)
@@ -526,6 +550,10 @@ def build_parser() -> argparse.ArgumentParser:
     summary.add_argument('--next-action', required=True)
     summary.add_argument('--output')
     summary.set_defaults(func=_summary)
+
+    test_summary = sub.add_parser('test-summary')
+    test_summary.add_argument('--junit', action='append', required=True)
+    test_summary.set_defaults(func=_test_summary)
     return parser
 
 
