@@ -8,6 +8,7 @@ import os
 import sys
 import urllib.parse
 import urllib.request
+import xml.etree.ElementTree as ET
 import zipfile
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -40,6 +41,16 @@ PROFILE_DISPLAY = {
     'promotion': 'Promotion',
     'post-promotion': 'Post-promotion',
 }
+TEST_TAXONOMY = (
+    ('unit', 'Unit Tests'),
+    ('functional', 'Functional Tests'),
+    ('integration', 'Integration Tests'),
+    ('security', 'Security Regression'),
+    ('rendering', 'Rendering / UI'),
+    ('contract', 'Contract Tests'),
+    ('migration', 'Migration Tests'),
+    ('e2e', 'End-to-End Smoke'),
+)
 
 
 class ProfileDecision(NamedTuple):
@@ -387,6 +398,59 @@ def _write_evidence(args: argparse.Namespace) -> int:
     return 0
 
 
+def _test_category(classname: str) -> str:
+    normalized = classname.replace('/', '.').replace('\\', '.')
+    for prefix, category in (
+        ('tests.unit.', 'unit'),
+        ('tests.integration.', 'integration'),
+        ('tests.security.', 'security'),
+        ('tests.rendering.', 'rendering'),
+        ('tests.contracts.', 'contract'),
+        ('tests.migrations.', 'migration'),
+        ('tests.e2e.', 'e2e'),
+    ):
+        if normalized.startswith(prefix):
+            return category
+    return 'functional'
+
+
+def _test_summary(args: argparse.Namespace) -> int:
+    counts = {key: {'total': 0, 'failed': 0, 'skipped': 0} for key, _label in TEST_TAXONOMY}
+    for junit_path in args.junit:
+        root = ET.parse(junit_path).getroot()
+        for testcase in root.iter('testcase'):
+            category = _test_category(str(testcase.get('classname', '')))
+            bucket = counts[category]
+            bucket['total'] += 1
+            if testcase.find('failure') is not None or testcase.find('error') is not None:
+                bucket['failed'] += 1
+            elif testcase.find('skipped') is not None:
+                bucket['skipped'] += 1
+
+    rows: list[str] = []
+    for key, label in TEST_TAXONOMY:
+        bucket = counts[key]
+        total = bucket['total']
+        if total == 0:
+            continue
+        status = 'FAIL' if bucket['failed'] else 'PASS'
+        noun = 'test' if total == 1 else 'tests'
+        detail = f'{total} {noun}'
+        if bucket['failed']:
+            detail += f" · {bucket['failed']} failed"
+        if bucket['skipped']:
+            detail += f" · {bucket['skipped']} skipped"
+        rows.append(f'{status} — KAORI {label} · {detail}')
+
+    output = '\n'.join(rows) + ('\n' if rows else '')
+    if args.output:
+        with Path(args.output).open('a', encoding='utf-8') as stream:
+            stream.write(output)
+    else:
+        sys.stdout.write(output)
+    return 1 if any(bucket['failed'] for bucket in counts.values()) else 0
+
+
 def _summary(args: argparse.Namespace) -> int:
     summary = render_operator_summary(
         result=args.result,
@@ -442,6 +506,11 @@ def build_parser() -> argparse.ArgumentParser:
     writer.add_argument('--production-runtime', required=True)
     writer.add_argument('--output', default='admission-evidence.json')
     writer.set_defaults(func=_write_evidence)
+
+    test_summary = sub.add_parser('test-summary')
+    test_summary.add_argument('--junit', action='append', required=True)
+    test_summary.add_argument('--output')
+    test_summary.set_defaults(func=_test_summary)
 
     summary = sub.add_parser('summary')
     summary.add_argument('--result', required=True)
