@@ -70,7 +70,7 @@ def test_release_suite_emits_junit_for_taxonomy_summary_without_duplicate_execut
 def test_taxonomy_summary_groups_existing_junit_by_kaori_test_purpose(tmp_path: Path) -> None:
     junit = tmp_path / 'release-suite.xml'
     junit.write_text(
-        '''<?xml version="1.0" encoding="utf-8"?>
+        """<?xml version="1.0" encoding="utf-8"?>
 <testsuites>
   <testsuite name="pytest" tests="7" failures="0" errors="0" skipped="0">
     <testcase classname="tests.unit.reports.test_unit" name="test_unit" />
@@ -82,7 +82,7 @@ def test_taxonomy_summary_groups_existing_junit_by_kaori_test_purpose(tmp_path: 
     <testcase classname="tests.migrations.test_upgrade" name="test_migration" />
   </testsuite>
 </testsuites>
-''',
+""",
         encoding='utf-8',
     )
 
