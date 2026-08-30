@@ -21,7 +21,9 @@ def recommendation_cards(payload: Mapping[str, Any]) -> list[dict[str, Any]]:
         result.append(
             {
                 'title': text(item.get('title'), 'Review Storage Evidence'),
-                'description': text(item.get('description'), 'Validate the committed storage evidence and ownership boundary.'),
+                'description': text(
+                    item.get('description'), 'Validate the committed storage evidence and ownership boundary.'
+                ),
                 'priority': priority,
                 'owner': _owner_for_source(text(item.get('source'), 'storage')),
                 'actionable': bool(item.get('is_actionable', True)),
@@ -31,16 +33,61 @@ def recommendation_cards(payload: Mapping[str, Any]) -> list[dict[str, Any]]:
 
 
 def executive_findings(
-    *, capacity: Mapping[str, Any], local_risks: int, filesystem_available: bool, pvc_available: bool, pv_available: bool
+    *,
+    capacity: Mapping[str, Any],
+    local_risks: int,
+    filesystem_available: bool,
+    pvc_available: bool,
+    pv_available: bool,
 ) -> tuple[dict[str, str], ...]:
     findings: list[dict[str, str]] = []
     if local_risks:
-        findings.append(_finding('F1', 'P2', 'Review Local Filesystem Risk', 'Platform Operations', 'Open', 'warning', f'{local_risks} filesystem risk item(s) require identity, owner, live-state, and remediation validation.'))
+        findings.append(
+            _finding(
+                'F1',
+                'P2',
+                'Review Local Filesystem Risk',
+                'Platform Operations',
+                'Open',
+                'warning',
+                f'{local_risks} filesystem risk item(s) require identity, owner, live-state, and remediation validation.',
+            )
+        )
     if not filesystem_available:
-        findings.append(_finding('F2', 'P2', 'Restore Node Filesystem Coverage', 'Observability Owner', 'Review', 'warning', 'Collect node, mount, used, capacity, available, and operational-state evidence.'))
+        findings.append(
+            _finding(
+                'F2',
+                'P2',
+                'Restore Node Filesystem Coverage',
+                'Observability Owner',
+                'Review',
+                'warning',
+                'Collect node, mount, used, capacity, available, and operational-state evidence.',
+            )
+        )
     if not pvc_available or not pv_available:
-        findings.append(_finding('F3', 'P3', 'Restore PV/PVC Evidence Coverage', 'Observability Owner', 'Planned', 'info', 'Keep persistent inventory, claim utilization, and lifecycle evidence explicit and scope-aligned.'))
-    findings.append(_finding('F4', 'P3', 'Maintain Aggregate Headroom Monitoring', 'Platform Operations', 'Current' if capacity.get('evidence_available') else 'Review', 'normal' if capacity.get('evidence_available') else 'warning', 'Continue threshold monitoring without using aggregate headroom to clear localized risk.'))
+        findings.append(
+            _finding(
+                'F3',
+                'P3',
+                'Restore PV/PVC Evidence Coverage',
+                'Observability Owner',
+                'Planned',
+                'info',
+                'Keep persistent inventory, claim utilization, and lifecycle evidence explicit and scope-aligned.',
+            )
+        )
+    findings.append(
+        _finding(
+            'F4',
+            'P3',
+            'Maintain Aggregate Headroom Monitoring',
+            'Platform Operations',
+            'Current' if capacity.get('evidence_available') else 'Review',
+            'normal' if capacity.get('evidence_available') else 'warning',
+            'Continue threshold monitoring without using aggregate headroom to clear localized risk.',
+        )
+    )
     return tuple(findings[:4])
 
 
@@ -59,27 +106,102 @@ def executive_body(capacity: Mapping[str, Any], local_risks: int, gaps: int) -> 
 
 
 def risk_register(
-    *, capacity: Mapping[str, Any], local_risks: int, filesystem_available: bool, pvc_risks: int,
-    pvc_available: bool, pv_risks: int, expansion_available: bool
+    *,
+    capacity: Mapping[str, Any],
+    local_risks: int,
+    filesystem_available: bool,
+    pvc_risks: int,
+    pvc_available: bool,
+    pv_risks: int,
+    expansion_available: bool,
 ) -> tuple[dict[str, str], ...]:
     rows: list[dict[str, str]] = []
     if local_risks:
-        rows.append(_risk('R1', 'Local Filesystem Risk', 'P2', 'Medium', 'Platform Operations', 'Open', 'warning', 'Resolve filesystem identity, owner, impact, and live pressure before remediation.'))
+        rows.append(
+            _risk(
+                'R1',
+                'Local Filesystem Risk',
+                'P2',
+                'Medium',
+                'Platform Operations',
+                'Open',
+                'warning',
+                'Resolve filesystem identity, owner, impact, and live pressure before remediation.',
+            )
+        )
     if not filesystem_available:
-        rows.append(_risk('R2', 'Filesystem Coverage Gap', 'P2', 'Medium', 'Observability Owner', 'Review', 'warning', 'Node filesystem evidence is incomplete or unavailable.'))
+        rows.append(
+            _risk(
+                'R2',
+                'Filesystem Coverage Gap',
+                'P2',
+                'Medium',
+                'Observability Owner',
+                'Review',
+                'warning',
+                'Node filesystem evidence is incomplete or unavailable.',
+            )
+        )
     if pvc_risks or not pvc_available:
-        rows.append(_risk('R3', 'PVC Utilization Coverage', 'P2' if pvc_risks else 'P3', 'Medium' if pvc_risks else 'Low', 'Observability Owner', 'Open' if pvc_risks else 'Planned', 'warning' if pvc_risks else 'info', f'{pvc_risks} PVC risk item(s) detected; claim utilization coverage must remain explicit.'))
+        rows.append(
+            _risk(
+                'R3',
+                'PVC Utilization Coverage',
+                'P2' if pvc_risks else 'P3',
+                'Medium' if pvc_risks else 'Low',
+                'Observability Owner',
+                'Open' if pvc_risks else 'Planned',
+                'warning' if pvc_risks else 'info',
+                f'{pvc_risks} PVC risk item(s) detected; claim utilization coverage must remain explicit.',
+            )
+        )
     if pv_risks:
-        rows.append(_risk('R4', 'PV Lifecycle Risk', 'P2', 'Medium', 'Platform Operations', 'Open', 'warning', f'{pv_risks} PV lifecycle risk item(s) require reclaim-policy and binding review.'))
+        rows.append(
+            _risk(
+                'R4',
+                'PV Lifecycle Risk',
+                'P2',
+                'Medium',
+                'Platform Operations',
+                'Open',
+                'warning',
+                f'{pv_risks} PV lifecycle risk item(s) require reclaim-policy and binding review.',
+            )
+        )
     if not expansion_available:
-        rows.append(_risk('R5', 'Expansion Support Unknown', 'P3', 'Low', 'Platform Operations', 'Planned', 'info', 'StorageClass expansion and filesystem growth capability are not committed in the current evidence.'))
+        rows.append(
+            _risk(
+                'R5',
+                'Expansion Support Unknown',
+                'P3',
+                'Low',
+                'Platform Operations',
+                'Planned',
+                'info',
+                'StorageClass expansion and filesystem growth capability are not committed in the current evidence.',
+            )
+        )
     if not rows:
-        rows.append(_risk('R1', 'Aggregate Capacity Monitoring', 'P3', 'Low', 'Platform Operations', 'Current', 'normal', f'Aggregate storage remains {capacity.get("status", "Normal")} at the committed cut-off.'))
+        rows.append(
+            _risk(
+                'R1',
+                'Aggregate Capacity Monitoring',
+                'P3',
+                'Low',
+                'Platform Operations',
+                'Current',
+                'normal',
+                f'Aggregate storage remains {capacity.get("status", "Normal")} at the committed cut-off.',
+            )
+        )
     return tuple(rows[:5])
 
 
 def recommendation_plan(
-    *, recommendation_cards: list[dict[str, Any]], risk_register: tuple[dict[str, str], ...], capacity: Mapping[str, Any]
+    *,
+    recommendation_cards: list[dict[str, Any]],
+    risk_register: tuple[dict[str, str], ...],
+    capacity: Mapping[str, Any],
 ) -> tuple[dict[str, str], ...]:
     items: list[dict[str, str]] = []
     for card in recommendation_cards:
@@ -88,9 +210,31 @@ def recommendation_plan(
     for risk in risk_register:
         if any(item['title'].lower() == risk['title'].lower() for item in items):
             continue
-        items.append(_action(risk['priority'], _recommendation_title(risk['title']), risk['owner'], risk['description'], risk['priority'], tone=risk['tone']))
-    if capacity.get('evidence_available') and not any('headroom' in item['title'].lower() or 'capacity monitoring' in item['title'].lower() for item in items):
-        items.append({'ref': '', 'priority': 'P3', 'title': 'Maintain Aggregate Capacity Monitoring', 'owner': 'Platform Operations', 'target': 'This Month', 'status': 'Current', 'tone': 'normal', 'description': f'Continue monitoring {capacity.get("used_percent_display")} aggregate utilization while preserving threshold and denominator evidence.'})
+        items.append(
+            _action(
+                risk['priority'],
+                _recommendation_title(risk['title']),
+                risk['owner'],
+                risk['description'],
+                risk['priority'],
+                tone=risk['tone'],
+            )
+        )
+    if capacity.get('evidence_available') and not any(
+        'headroom' in item['title'].lower() or 'capacity monitoring' in item['title'].lower() for item in items
+    ):
+        items.append(
+            {
+                'ref': '',
+                'priority': 'P3',
+                'title': 'Maintain Aggregate Capacity Monitoring',
+                'owner': 'Platform Operations',
+                'target': 'This Month',
+                'status': 'Current',
+                'tone': 'normal',
+                'description': f'Continue monitoring {capacity.get("used_percent_display")} aggregate utilization while preserving threshold and denominator evidence.',
+            }
+        )
     rank = {'P1': 0, 'P2': 1, 'P3': 2}
     items.sort(key=lambda item: (rank.get(item['priority'], 9), item['title']))
     for index, item in enumerate(items[:5], start=1):
@@ -101,9 +245,18 @@ def recommendation_plan(
 def recommendation_metrics(items: tuple[dict[str, str], ...]) -> tuple[dict[str, str], ...]:
     counts = {priority: sum(1 for item in items if item['priority'] == priority) for priority in ('P1', 'P2', 'P3')}
     return (
-        metric('P1 Actions', str(counts['P1']), 'Open' if counts['P1'] else 'None', 'critical' if counts['P1'] else 'normal'),
-        metric('P2 Actions', str(counts['P2']), 'Open' if counts['P2'] else 'None', 'warning' if counts['P2'] else 'normal'),
-        metric('P3 Actions', str(counts['P3']), 'Planned' if counts['P3'] else 'None', 'info' if counts['P3'] else 'normal'),
+        metric(
+            'P1 Actions',
+            str(counts['P1']),
+            'Open' if counts['P1'] else 'None',
+            'critical' if counts['P1'] else 'normal',
+        ),
+        metric(
+            'P2 Actions', str(counts['P2']), 'Open' if counts['P2'] else 'None', 'warning' if counts['P2'] else 'normal'
+        ),
+        metric(
+            'P3 Actions', str(counts['P3']), 'Planned' if counts['P3'] else 'None', 'info' if counts['P3'] else 'normal'
+        ),
         metric('Validation Gates', str(len(items)), 'Required', 'info'),
     )
 
@@ -116,20 +269,50 @@ def assigned_owners(items: tuple[dict[str, str], ...]) -> str:
 
 
 def _owner_for_source(source: str) -> str:
-    return 'Observability Owner' if any(token in source.lower() for token in ('metric', 'observability', 'coverage')) else 'Platform Operations'
+    return (
+        'Observability Owner'
+        if any(token in source.lower() for token in ('metric', 'observability', 'coverage'))
+        else 'Platform Operations'
+    )
 
 
-def _finding(ref: str, priority: str, title: str, owner: str, status: str, tone: str, description: str) -> dict[str, str]:
-    return {'ref': ref, 'priority': priority, 'title': title, 'owner': owner, 'status': status, 'tone': tone, 'description': description}
-
-
-def _risk(ref: str, title: str, priority: str, impact: str, owner: str, status: str, tone: str, description: str) -> dict[str, str]:
-    return {'ref': ref, 'title': title, 'priority': priority, 'impact': impact, 'owner': owner, 'status': status, 'tone': tone, 'description': description}
-
-
-def _action(priority: str, title: str, owner: str, description: str, rank_priority: str, *, tone: str | None = None) -> dict[str, str]:
+def _finding(
+    ref: str, priority: str, title: str, owner: str, status: str, tone: str, description: str
+) -> dict[str, str]:
     return {
-        'ref': '', 'priority': priority, 'title': title, 'owner': owner,
+        'ref': ref,
+        'priority': priority,
+        'title': title,
+        'owner': owner,
+        'status': status,
+        'tone': tone,
+        'description': description,
+    }
+
+
+def _risk(
+    ref: str, title: str, priority: str, impact: str, owner: str, status: str, tone: str, description: str
+) -> dict[str, str]:
+    return {
+        'ref': ref,
+        'title': title,
+        'priority': priority,
+        'impact': impact,
+        'owner': owner,
+        'status': status,
+        'tone': tone,
+        'description': description,
+    }
+
+
+def _action(
+    priority: str, title: str, owner: str, description: str, rank_priority: str, *, tone: str | None = None
+) -> dict[str, str]:
+    return {
+        'ref': '',
+        'priority': priority,
+        'title': title,
+        'owner': owner,
         'target': 'Next Week' if rank_priority in {'P1', 'P2'} else 'This Month',
         'status': 'Open' if rank_priority in {'P1', 'P2'} else 'Planned',
         'tone': tone or ('critical' if rank_priority == 'P1' else 'warning' if rank_priority == 'P2' else 'info'),
