@@ -57,7 +57,7 @@ class ReuseDecision(NamedTuple):
 
 
 def _is_sensitive(path: str) -> bool:
-    normalized = path.lstrip('./')
+    normalized = path[2:] if path.startswith('./') else path
     return any(normalized == prefix or normalized.startswith(prefix) for prefix in SENSITIVE_PREFIXES)
 
 
@@ -118,12 +118,11 @@ def evidence_reuse_decision(
         if conclusion != 'success':
             return ReuseDecision(False, f'{gate} is {conclusion or "missing"}; evidence is not reusable.')
 
-    run_id = evidence.get('full_admission_run_id')
     try:
-        normalized_run_id = int(run_id)
+        run_id = int(evidence.get('full_admission_run_id'))
     except (TypeError, ValueError):
         return ReuseDecision(False, 'Admission evidence is missing a valid Full Admission run ID.')
-    return ReuseDecision(True, 'Exact successful Full Admission evidence is reusable.', normalized_run_id, current_sha, current_tree)
+    return ReuseDecision(True, 'Exact successful Full Admission evidence is reusable.', run_id, current_sha, current_tree)
 
 
 def staging_lineage_reuse_decision(
@@ -214,7 +213,7 @@ def build_full_evidence(
     }
 
 
-def _github_json(url: str, token: str) -> Any:
+def _github_request(url: str, token: str, *, binary: bool = False) -> Any:
     request = urllib.request.Request(
         url,
         headers={
@@ -224,29 +223,13 @@ def _github_json(url: str, token: str) -> Any:
             'User-Agent': 'KAORI-CI-Admission',
         },
     )
-    with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310 - fixed GitHub API origin assembled by caller
-        return json.load(response)
-
-
-def _github_bytes(url: str, token: str) -> bytes:
-    request = urllib.request.Request(
-        url,
-        headers={
-            'Accept': 'application/vnd.github+json',
-            'Authorization': f'Bearer {token}',
-            'X-GitHub-Api-Version': '2022-11-28',
-            'User-Agent': 'KAORI-CI-Admission',
-        },
-    )
-    with urllib.request.urlopen(request, timeout=60) as response:  # noqa: S310 - GitHub artifact URL from API response
-        return response.read()
+    with urllib.request.urlopen(request, timeout=60) as response:  # noqa: S310
+        return response.read() if binary else json.load(response)
 
 
 def _commit_metadata(repository: str, token: str, sha: str) -> tuple[str, tuple[str, ...]]:
-    payload = _github_json(f'https://api.github.com/repos/{repository}/commits/{sha}', token)
-    tree = str(payload['commit']['tree']['sha'])
-    parents = tuple(str(parent['sha']) for parent in payload.get('parents', ()))
-    return tree, parents
+    payload = _github_request(f'https://api.github.com/repos/{repository}/commits/{sha}', token)
+    return str(payload['commit']['tree']['sha']), tuple(str(parent['sha']) for parent in payload.get('parents', ()))
 
 
 def _candidate_lineage(repository: str, token: str, start_sha: str, max_depth: int = 4) -> list[tuple[str, str]]:
@@ -260,8 +243,8 @@ def _candidate_lineage(repository: str, token: str, start_sha: str, max_depth: i
         seen.add(sha)
         tree, parents = _commit_metadata(repository, token, sha)
         candidates.append((sha, tree))
-        ordered_parents = list(parents[1:2]) + list(parents[:1]) + list(parents[2:])
-        queue.extend((parent, depth + 1) for parent in ordered_parents)
+        ordered = list(parents[1:2]) + list(parents[:1]) + list(parents[2:])
+        queue.extend((parent, depth + 1) for parent in ordered)
     return candidates
 
 
@@ -277,24 +260,23 @@ def find_remote_full_evidence(
     for candidate_sha, candidate_tree in _candidate_lineage(repository, token, start_sha):
         if candidate_tree != current_tree:
             continue
-        params = urllib.parse.urlencode({'head_sha': candidate_sha, 'status': 'success', 'per_page': 20})
-        runs = _github_json(
-            f'https://api.github.com/repos/{repository}/actions/workflows/{encoded_workflow}/runs?{params}', token
+        query = urllib.parse.urlencode({'head_sha': candidate_sha, 'status': 'success', 'per_page': 20})
+        runs = _github_request(
+            f'https://api.github.com/repos/{repository}/actions/workflows/{encoded_workflow}/runs?{query}', token
         ).get('workflow_runs', [])
         for run in runs:
             run_id = int(run['id'])
-            artifacts = _github_json(f'https://api.github.com/repos/{repository}/actions/runs/{run_id}/artifacts', token).get(
+            artifacts = _github_request(f'https://api.github.com/repos/{repository}/actions/runs/{run_id}/artifacts', token).get(
                 'artifacts', []
             )
             for artifact in artifacts:
                 if not str(artifact.get('name', '')).startswith('kaori-full-admission-'):
                     continue
-                archive = _github_bytes(str(artifact['archive_download_url']), token)
+                archive = _github_request(str(artifact['archive_download_url']), token, binary=True)
                 with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
-                    try:
-                        evidence = json.loads(bundle.read('admission-evidence.json').decode('utf-8'))
-                    except KeyError:
+                    if 'admission-evidence.json' not in bundle.namelist():
                         continue
+                    evidence = json.loads(bundle.read('admission-evidence.json').decode('utf-8'))
                 decision = evidence_reuse_decision(
                     evidence,
                     current_sha=candidate_sha,
@@ -306,9 +288,9 @@ def find_remote_full_evidence(
     return ReuseDecision(False, 'No exact successful Full Admission evidence was found in the source lineage.')
 
 
-def _write_github_output(values: Mapping[str, str]) -> None:
-    output_path = os.environ.get('GITHUB_OUTPUT')
+def _write_output(values: Mapping[str, str]) -> None:
     payload = ''.join(f'{key}={value}\n' for key, value in values.items())
+    output_path = os.environ.get('GITHUB_OUTPUT')
     if output_path:
         with Path(output_path).open('a', encoding='utf-8') as stream:
             stream.write(payload)
@@ -316,7 +298,7 @@ def _write_github_output(values: Mapping[str, str]) -> None:
         sys.stdout.write(payload)
 
 
-def _cmd_route(args: argparse.Namespace) -> int:
+def _route(args: argparse.Namespace) -> int:
     changed = tuple(Path(args.changed_paths_file).read_text(encoding='utf-8').splitlines()) if args.changed_paths_file else ()
     decision = resolve_profile(
         event_name=args.event_name,
@@ -325,7 +307,7 @@ def _cmd_route(args: argparse.Namespace) -> int:
         head_ref=args.head_ref,
         changed_paths=changed,
     )
-    _write_github_output(
+    _write_output(
         {
             'profile': decision.profile,
             'execution': decision.execution,
@@ -336,7 +318,7 @@ def _cmd_route(args: argparse.Namespace) -> int:
     return 0
 
 
-def _cmd_find_evidence(args: argparse.Namespace) -> int:
+def _find_evidence(args: argparse.Namespace) -> int:
     decision = find_remote_full_evidence(
         repository=args.repository,
         token=args.token,
@@ -344,7 +326,7 @@ def _cmd_find_evidence(args: argparse.Namespace) -> int:
         start_sha=args.start_sha,
         current_tree=args.current_tree,
     )
-    _write_github_output(
+    _write_output(
         {
             'reusable': 'true' if decision.reusable else 'false',
             'evidence_run_id': str(decision.full_admission_run_id or ''),
@@ -356,7 +338,7 @@ def _cmd_find_evidence(args: argparse.Namespace) -> int:
     return 0
 
 
-def _cmd_write_evidence(args: argparse.Namespace) -> int:
+def _write_evidence(args: argparse.Namespace) -> int:
     gates = {
         'Static, Architecture, and Governance': args.static_quality,
         'Secrets, SAST, Dependencies, and Workflow Security': args.static_security,
@@ -366,7 +348,7 @@ def _cmd_write_evidence(args: argparse.Namespace) -> int:
     }
     if any(value != 'success' for value in gates.values()):
         raise SystemExit('Cannot publish Full Admission evidence unless every comprehensive gate succeeded.')
-    evidence = build_full_evidence(
+    payload = build_full_evidence(
         source_sha=args.source_sha,
         source_tree=args.source_tree,
         run_id=args.run_id,
@@ -374,21 +356,19 @@ def _cmd_write_evidence(args: argparse.Namespace) -> int:
         workflow_ref=args.workflow_ref,
         gates=gates,
     )
-    Path(args.output).write_text(json.dumps(evidence, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+    Path(args.output).write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n', encoding='utf-8')
     return 0
 
 
-def _cmd_summary(args: argparse.Namespace) -> int:
-    fresh = tuple(filter(None, (part.strip() for part in args.fresh_checks.split('|'))))
-    reused = tuple(filter(None, (part.strip() for part in args.reused_checks.split('|'))))
+def _summary(args: argparse.Namespace) -> int:
     summary = render_operator_summary(
         result=args.result,
         profile=args.profile,
         commit_sha=args.commit_sha,
         tree_sha=args.tree_sha,
         evidence=args.evidence,
-        fresh_checks=fresh,
-        reused_coverage=reused,
+        fresh_checks=tuple(filter(None, (part.strip() for part in args.fresh_checks.split('|')))),
+        reused_coverage=tuple(filter(None, (part.strip() for part in args.reused_checks.split('|')))),
         duration=args.duration,
         first_failure=args.first_failure,
         next_action=args.next_action,
@@ -404,39 +384,39 @@ def _cmd_summary(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='KAORI progressive CI Admission policy helper')
-    subparsers = parser.add_subparsers(dest='command', required=True)
+    sub = parser.add_subparsers(dest='command', required=True)
 
-    route = subparsers.add_parser('route')
+    route = sub.add_parser('route')
     route.add_argument('--event-name', required=True)
     route.add_argument('--ref', required=True)
     route.add_argument('--base-ref', default='')
     route.add_argument('--head-ref', default='')
     route.add_argument('--changed-paths-file')
-    route.set_defaults(func=_cmd_route)
+    route.set_defaults(func=_route)
 
-    find_evidence = subparsers.add_parser('find-evidence')
-    find_evidence.add_argument('--repository', required=True)
-    find_evidence.add_argument('--token', required=True)
-    find_evidence.add_argument('--workflow', default='quality.yml')
-    find_evidence.add_argument('--start-sha', required=True)
-    find_evidence.add_argument('--current-tree', required=True)
-    find_evidence.set_defaults(func=_cmd_find_evidence)
+    evidence = sub.add_parser('find-evidence')
+    evidence.add_argument('--repository', required=True)
+    evidence.add_argument('--token', required=True)
+    evidence.add_argument('--workflow', default='quality.yml')
+    evidence.add_argument('--start-sha', required=True)
+    evidence.add_argument('--current-tree', required=True)
+    evidence.set_defaults(func=_find_evidence)
 
-    write_evidence = subparsers.add_parser('write-evidence')
-    write_evidence.add_argument('--source-sha', required=True)
-    write_evidence.add_argument('--source-tree', required=True)
-    write_evidence.add_argument('--run-id', type=int, required=True)
-    write_evidence.add_argument('--run-attempt', type=int, required=True)
-    write_evidence.add_argument('--workflow-ref', required=True)
-    write_evidence.add_argument('--static-quality', required=True)
-    write_evidence.add_argument('--static-security', required=True)
-    write_evidence.add_argument('--functional-tests', required=True)
-    write_evidence.add_argument('--frontend', required=True)
-    write_evidence.add_argument('--production-runtime', required=True)
-    write_evidence.add_argument('--output', default='admission-evidence.json')
-    write_evidence.set_defaults(func=_cmd_write_evidence)
+    writer = sub.add_parser('write-evidence')
+    writer.add_argument('--source-sha', required=True)
+    writer.add_argument('--source-tree', required=True)
+    writer.add_argument('--run-id', type=int, required=True)
+    writer.add_argument('--run-attempt', type=int, required=True)
+    writer.add_argument('--workflow-ref', required=True)
+    writer.add_argument('--static-quality', required=True)
+    writer.add_argument('--static-security', required=True)
+    writer.add_argument('--functional-tests', required=True)
+    writer.add_argument('--frontend', required=True)
+    writer.add_argument('--production-runtime', required=True)
+    writer.add_argument('--output', default='admission-evidence.json')
+    writer.set_defaults(func=_write_evidence)
 
-    summary = subparsers.add_parser('summary')
+    summary = sub.add_parser('summary')
     summary.add_argument('--result', required=True)
     summary.add_argument('--profile', required=True)
     summary.add_argument('--commit-sha', required=True)
@@ -449,13 +429,12 @@ def build_parser() -> argparse.ArgumentParser:
     summary.add_argument('--first-failure')
     summary.add_argument('--next-action', required=True)
     summary.add_argument('--output')
-    summary.set_defaults(func=_cmd_summary)
+    summary.set_defaults(func=_summary)
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = build_parser()
-    args = parser.parse_args(argv)
+    args = build_parser().parse_args(argv)
     return int(args.func(args))
 
 
