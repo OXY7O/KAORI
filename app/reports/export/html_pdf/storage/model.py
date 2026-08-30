@@ -123,4 +123,6 @@ def node_count(payload: Mapping[str, Any], filesystem: Mapping[str, Any]) -> int
     nodes = filesystem.get('available_nodes')
     if isinstance(nodes, Sequence) and not isinstance(nodes, (str, bytes, bytearray)):
         return len(set(str(item) for item in nodes if item))
-    return len({str(row.get('node')) for row in rows(filesystem.get('all_rows') or filesystem.get('rows')) if row.get('node')})
+    return len(
+        {str(row.get('node')) for row in rows(filesystem.get('all_rows') or filesystem.get('rows')) if row.get('node')}
+    )
