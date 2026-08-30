@@ -32,10 +32,11 @@ jobs:
       release_version: ${{ steps.identity.outputs.release_version }}
     steps:
       - name: Check Out Exact Dispatch Commit
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Require Main Branch Dispatch
         shell: bash
@@ -50,17 +51,21 @@ jobs:
 
       - name: Validate Release Identity
         shell: bash
+        env:
+          RELEASE_INPUT_VERSION: ${{ inputs.version }}
         run: |
           : "${DOCKERHUB_IMAGE:?Missing repository variable DOCKERHUB_IMAGE}"
-          bash .github/ci/release-lib.sh preflight "${{ inputs.version }}" "$GITHUB_SHA" "$DOCKERHUB_IMAGE"
+          bash .github/ci/release-lib.sh preflight "$RELEASE_INPUT_VERSION" "$GITHUB_SHA" "$DOCKERHUB_IMAGE"
 
       - name: Prepare Final Release Runtime
         shell: bash
         run: |
-          echo "CI_UID=$(id -u)" >> "$GITHUB_ENV"
-          echo "CI_GID=$(id -g)" >> "$GITHUB_ENV"
-          echo "KAORI_CI_TOOLCHAIN_IMAGE=kaori-ci-toolchain:${GITHUB_SHA}" >> "$GITHUB_ENV"
-          echo "COMPOSE_PROJECT_NAME=kaori-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-preflight" >> "$GITHUB_ENV"
+          {
+            echo "CI_UID=$(id -u)"
+            echo "CI_GID=$(id -g)"
+            echo "KAORI_CI_TOOLCHAIN_IMAGE=kaori-ci-toolchain:${GITHUB_SHA}"
+            echo "COMPOSE_PROJECT_NAME=kaori-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-preflight"
+          } >> "$GITHUB_ENV"
 
       - name: Start Final Release Services
         run: docker compose --file .github/ci/compose.yml up -d postgres redis ci-reports-worker
@@ -88,9 +93,13 @@ jobs:
       - name: Emit Locked Release Identity
         id: identity
         shell: bash
+        env:
+          RELEASE_INPUT_VERSION: ${{ inputs.version }}
         run: |
-          echo "release_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
-          echo "release_version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          {
+            echo "release_sha=$GITHUB_SHA"
+            echo "release_version=$RELEASE_INPUT_VERSION"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Cleanup Preflight Services
         if: ${{ always() }}
@@ -111,10 +120,11 @@ jobs:
       COSIGN_IMAGE: ghcr.io/sigstore/cosign/cosign:v3.1.3
     steps:
       - name: Check Out Exact Approved SHA
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.preflight.outputs.release_sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Validate Publication Variables
         shell: bash
@@ -173,9 +183,11 @@ jobs:
             }
           fi
 
-          echo "candidate_tag=$candidate_tag" >> "$GITHUB_OUTPUT"
-          echo "digest=$digest" >> "$GITHUB_OUTPUT"
-          echo "build_date=$build_date" >> "$GITHUB_OUTPUT"
+          {
+            echo "candidate_tag=$candidate_tag"
+            echo "digest=$digest"
+            echo "build_date=$build_date"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Verify Exact Candidate Identity
         run: >-
@@ -201,8 +213,9 @@ jobs:
       - name: Validate Exact Candidate Runtime, Migration, and DAST
         shell: bash
         run: |
-          export CI_UID="$(id -u)"
-          export CI_GID="$(id -g)"
+          CI_UID="$(id -u)"
+          CI_GID="$(id -g)"
+          export CI_UID CI_GID
           export KAORI_CI_TOOLCHAIN_IMAGE="kaori-ci-toolchain:${RELEASE_SHA}"
           export COMPOSE_PROJECT_NAME="kaori-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-candidate"
           bash .github/ci/run-release-candidate.sh \
@@ -286,7 +299,7 @@ jobs:
 
       - name: Upload Release Diagnostics
         if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-${{ inputs.version }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |

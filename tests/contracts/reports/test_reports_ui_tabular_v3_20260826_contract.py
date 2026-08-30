@@ -30,10 +30,7 @@ def test_reports_operational_copy_is_compact_and_consistent() -> None:
         storage_service,
         'Review report storage readiness, integrity, and lifecycle ownership for PDF/XLSX/CSV artifacts.',
     )
-    assert (
-        'S3-compatible target for generated reports and verification evidence.'
-        in storage
-    )
+    assert 'S3-compatible target for generated reports and verification evidence.' in storage
 
 
 def test_template_registry_uses_compact_six_column_layout_without_horizontal_scroll() -> None:

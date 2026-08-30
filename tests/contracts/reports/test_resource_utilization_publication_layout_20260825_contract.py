@@ -67,9 +67,7 @@ def test_reports_overview_copy_is_compact_without_losing_publication_boundary() 
 
 def test_resource_utilization_balances_visual_pairs_and_stacks_dense_followups() -> None:
     template = read('app/templates/reports/pdf/resource_utilization.html')
-    css = read('app/static/reports/pdf/resource_utilization.css')
     shared_css = read('app/static/reports/pdf/analytics_publication.css')
-    compact = ''.join(css.split())
     shared_compact = ''.join(shared_css.split())
 
     assert template.count('publication-pair') >= 5
@@ -153,10 +151,22 @@ def test_resource_utilization_sections_after_paired_content_use_explicit_vertica
     css = read('app/static/reports/pdf/resource_utilization.css')
     compact = ''.join(css.split())
 
-    assert "ui.section('Leading CPU Consumers', 'Concise comparison fields map to full CPU identities by reference.', 'section-after-pair')" in template
-    assert "ui.section('Leading Memory Consumers', 'Concise comparison fields map to full memory identities by reference.', 'section-after-pair')" in template
-    assert "ui.section('Utilization Register', 'Comparison fields stay in-table; interpretation follows below.', 'section-after-pair')" in template
-    assert "ui.section('Consumer Reference Register', 'Chart references map to complete consumer identities.', 'section-after-pair')" in template
+    assert (
+        "ui.section('Leading CPU Consumers', 'Concise comparison fields map to full CPU identities by reference.', 'section-after-pair')"
+        in template
+    )
+    assert (
+        "ui.section('Leading Memory Consumers', 'Concise comparison fields map to full memory identities by reference.', 'section-after-pair')"
+        in template
+    )
+    assert (
+        "ui.section('Utilization Register', 'Comparison fields stay in-table; interpretation follows below.', 'section-after-pair')"
+        in template
+    )
+    assert (
+        "ui.section('Consumer Reference Register', 'Chart references map to complete consumer identities.', 'section-after-pair')"
+        in template
+    )
 
     block = compact.split('.section-after-pair{', 1)[1].split('}', 1)[0]
     assert 'margin-top:' in block

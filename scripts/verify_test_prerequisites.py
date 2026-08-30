@@ -22,7 +22,7 @@ FUNCTIONAL_TEST_BUCKETS = (
 _DIRECT_MODULE_ASSIGNMENT = re.compile(r'^\s*sys\.modules\[[^\]]+\]\s*=', re.MULTILINE)
 
 REQUIRED_TEST_PACKAGES = {
-    'pypdf': '6.14.2',
+    'pypdf': '6.15.0',
     'pytest': None,
 }
 

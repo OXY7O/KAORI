@@ -14,7 +14,7 @@ def test_execution_workspace_uses_capacity_analysis_content_tabs_and_live_fragme
 
     assert 'components/content_tabs.html' in workspace
     assert 'content_tabs.render_links(' in workspace
-    assert "embedded=true" in workspace
+    assert 'embedded=true' in workspace
     assert "data_namespace='execution'" in workspace
     assert "hx_indicator='#execution-workspace-loading'" in workspace
     assert 'components/framed_workspace_tabs.html' not in workspace

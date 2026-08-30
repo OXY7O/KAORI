@@ -38,7 +38,6 @@
             const namespaceSelect = form.querySelector('[data-schedule-namespace]')
             const objectStorageSelect = form.querySelector('[data-schedule-object-storage-system]')
 
-
             const syncNamespaceOptions = () => {
                 if (!namespaceSelect) return
 

@@ -146,9 +146,7 @@ def present_job_execution_row(job: JobExecution) -> dict[str, Any]:
     progress_stage = (
         str(progress_metadata.get('stage') or '').strip() if isinstance(progress_metadata, dict) else ''
     ) or (job.progress_message or 'Waiting for worker')
-    progress_target = (
-        str(progress_metadata.get('target') or '').strip() if isinstance(progress_metadata, dict) else ''
-    )
+    progress_target = str(progress_metadata.get('target') or '').strip() if isinstance(progress_metadata, dict) else ''
     progress_process, progress_detail = _progress_copy(
         message=job.progress_message or 'Waiting for worker',
         stage=str(progress_metadata.get('stage') or '').strip() if isinstance(progress_metadata, dict) else '',

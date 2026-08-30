@@ -1,0 +1,153 @@
+from pathlib import Path
+
+import yaml
+
+ROOT = Path(__file__).resolve().parents[3]
+WORKFLOW = ROOT / 'docs/engineering/KAORI_DELIVERY_WORKFLOW.md'
+PROJECT_SETUP = ROOT / 'docs/engineering/KAORI_GITHUB_PROJECT_SETUP.md'
+LABEL_CATALOG = ROOT / 'docs/engineering/KAORI_GITHUB_LABEL_CATALOG.md'
+ISSUE_DIR = ROOT / '.github/ISSUE_TEMPLATE'
+QUALITY_WORKFLOW = ROOT / '.github/workflows/quality.yml'
+PR_TEMPLATE = ROOT / '.github/PULL_REQUEST_TEMPLATE.md'
+
+
+def read(path: Path) -> str:
+    return path.read_text(encoding='utf-8')
+
+
+def load_form(name: str) -> dict:
+    return yaml.safe_load((ISSUE_DIR / name).read_text(encoding='utf-8'))
+
+
+def test_delivery_workflow_locks_current_lifecycle_branch_and_uat_authority() -> None:
+    source = read(WORKFLOW)
+    for token in (
+        '**Governance Version:** 1.0',
+        'Inbox',
+        'Backlog',
+        'Ready',
+        'In Progress',
+        'Review',
+        'UAT',
+        'Done',
+        'Only two branches are long-lived by default',
+        'main',
+        'kaori/staging',
+        'kaori/working',
+        'Local UAT',
+        'merge commit',
+    ):
+        assert token in source
+
+
+def test_issue_forms_use_native_issue_type_without_title_prefixes() -> None:
+    expected = {
+        'epic.yml': 'Epic',
+        'user-story.yml': 'User Story',
+        'bug.yml': 'Bug',
+        'task.yml': 'Task',
+        'spike.yml': 'Spike',
+        'chore.yml': 'Chore',
+        'technical-debt.yml': 'Technical Debt',
+    }
+    for filename, name in expected.items():
+        form = load_form(filename)
+        assert form['name'] == name
+        assert form['title'] == ''
+        assert form['body']
+        markdown = '\n'.join(
+            item.get('attributes', {}).get('value', '') for item in form['body'] if item.get('type') == 'markdown'
+        )
+        assert 'Native GitHub Issue Type' in markdown
+
+
+def test_blank_issue_creation_is_disabled() -> None:
+    config = load_form('config.yml')
+    assert config['blank_issues_enabled'] is False
+
+
+def test_pull_request_template_requires_governed_delivery_evidence() -> None:
+    source = read(PR_TEMPLATE)
+    for token in (
+        'Linked Work',
+        'Why',
+        'What Changed',
+        'Out of Scope',
+        'Acceptance Criteria Coverage',
+        'Verification Evidence',
+        'Security Impact',
+        'Migration / Data Impact',
+        'Observability / Operational Impact',
+        'UAT',
+        'Release Impact',
+    ):
+        assert token in source
+    assert 'Refs #<issue>' in source
+    assert 'Closes #<issue>' in source
+
+
+def test_project_setup_locks_current_fields_views_and_authorities() -> None:
+    source = read(PROJECT_SETUP)
+    for token in (
+        'Native GitHub Issue Type',
+        'Inbox',
+        'Backlog',
+        'Ready',
+        'In Progress',
+        'Review',
+        'UAT',
+        'Done',
+        'Urgent',
+        'High',
+        'Medium',
+        'Low',
+        '1, 2, 3, 5, 8',
+        '00 - Work Register',
+        '01 - Inbox',
+        '02 - Backlog & Ready',
+        '03 - Current Sprint',
+        '04 - Delivery Flow',
+        '05 - Stabilization',
+        '06 - UAT & Release',
+        '07 - Bugs & Debt',
+        '08 - Roadmap',
+        'PR cards',
+        'Local UAT',
+    ):
+        assert token in source
+    assert 'P0 — Critical' not in source
+    assert 'P2 — Normal' not in source
+
+
+def test_label_catalog_preserves_documentation_and_avoids_native_metadata_duplication() -> None:
+    source = read(LABEL_CATALOG)
+    for token in (
+        'documentation',
+        'area:platform',
+        'area:reports',
+        'scope:frontend',
+        'scope:backend',
+        'scope:ci',
+        'quality:security',
+        'quality:reliability',
+        'impact:migration',
+        'workflow:blocked',
+        'workflow:expedite',
+    ):
+        assert token in source
+    for forbidden in (
+        'scope:documentation',
+        'type:bug',
+        'type:task',
+        'priority:high',
+        'status:done',
+        'status:in-progress',
+    ):
+        assert forbidden not in source
+
+
+def test_full_ci_runs_for_governed_kaori_branches_and_staging_prs() -> None:
+    source = read(QUALITY_WORKFLOW)
+    assert '- "kaori/**"' in source
+    assert '- kaori/staging' in source
+    assert '- kaori/working' not in source

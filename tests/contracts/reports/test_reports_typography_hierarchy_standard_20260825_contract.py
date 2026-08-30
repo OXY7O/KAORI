@@ -154,10 +154,7 @@ def test_reports_hero_copy_is_compact_and_operational() -> None:
             'Manage protected system templates and reusable custom report structures for Analytics PDF/XLSX/CSV and Inventory XLSX/CSV.'
         ),
         'schedules': 'Automate Analytics PDF, XLSX, or CSV artifacts and Inventory XLSX/CSV exports with timezone-aware schedules and retained run evidence.',
-        'storage': (
-            'Review report storage readiness, integrity, and lifecycle ownership for PDF/XLSX/CSV artifacts.'
-        ),
+        'storage': ('Review report storage readiness, integrity, and lifecycle ownership for PDF/XLSX/CSV artifacts.'),
     }
     for key, value in expected.items():
         assert has_python_string(files[key], value), key
-

@@ -68,7 +68,13 @@ def test_shared_form_field_alignment_contract_is_owned_by_contract_tests() -> No
     standard = read('docs/design/components/FORM_FIELD.md')
     form_standard = read('docs/design/components/FORM.md')
 
-    for token in ('macro label_row', 'min-h-6', 'macro select_classes', 'mt-2 h-10 w-full', 'macro help'):
+    for token in (
+        'macro label_row',
+        'min-h-6',
+        'macro select_classes',
+        'mt-2 box-border h-10 min-h-10 w-full',
+        'macro help',
+    ):
         assert token in field
     for token in (
         '# KAORI Form Field Alignment Standard',

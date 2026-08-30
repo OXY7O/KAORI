@@ -988,7 +988,10 @@ def _is_actionable(item: Mapping[str, Any]) -> bool:
     value = item.get('is_actionable')
     if isinstance(value, bool):
         return value
-    return _text(value, '').lower() in {'yes', 'true', '1'} or _priority(_text(item.get('priority'), 'Info')) in {'P1', 'P2'}
+    return _text(value, '').lower() in {'yes', 'true', '1'} or _priority(_text(item.get('priority'), 'Info')) in {
+        'P1',
+        'P2',
+    }
 
 
 def _date_text(value: Any) -> str:

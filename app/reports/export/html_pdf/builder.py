@@ -262,16 +262,8 @@ def build_report_document(
     elif report.report_type == 'capacity_analysis':
         template_name = 'reports/pdf/capacity_analysis.html'
         presentation = build_capacity_analysis_presentation(
-            report,
             payload,
-            report_id=context.report_id,
-            report_name=context.report_name,
-            cluster_scope=context.cluster_scope,
-            namespace_scope=context.namespace_scope,
-            period_label=context.period_label,
-            data_cutoff=context.data_cutoff,
-            generated_at=context.generated_at_label,
-            generated_by=context.generated_by_label,
+            context=context,
             classification=classification,
         )
     elif report.report_type == 'storage_analysis':

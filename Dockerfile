@@ -2,6 +2,8 @@
 
 FROM python:3.12-slim-bookworm AS base
 
+ARG PIP_VERSION=26.2.1
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
@@ -9,6 +11,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Debian package patch levels intentionally follow Bookworm repositories.
+# hadolint ignore=DL3008
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
@@ -23,8 +27,9 @@ RUN apt-get update \
 
 COPY requirements/base.txt /tmp/requirements/base.txt
 
-RUN python -m pip install --upgrade pip \
-    && python -m pip install -r /tmp/requirements/base.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    PIP_NO_CACHE_DIR=0 python -m pip install "pip==${PIP_VERSION}" \
+    && PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/requirements/base.txt
 
 COPY docker/entrypoint.sh /usr/local/bin/kaori-entrypoint
 RUN chmod 0755 /usr/local/bin/kaori-entrypoint
@@ -34,6 +39,8 @@ ENTRYPOINT ["kaori-entrypoint"]
 
 FROM base AS development
 
+# Development utilities intentionally follow Bookworm repository patch levels.
+# hadolint ignore=DL3008
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         bash \
@@ -46,7 +53,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements/dev.txt /tmp/requirements/dev.txt
-RUN python -m pip install -r /tmp/requirements/dev.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/requirements/dev.txt
 
 RUN useradd --create-home --uid 1000 --shell /bin/bash vscode \
     && echo "vscode ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/vscode \
@@ -55,6 +63,8 @@ RUN useradd --create-home --uid 1000 --shell /bin/bash vscode \
     && chown -R vscode:vscode /workspace
 
 WORKDIR /workspace/kaori
+# Named devcontainer user is required by remoteUser/updateRemoteUserUID.
+# hadolint ignore=DL3066
 USER vscode
 
 CMD ["sleep", "infinity"]
@@ -65,8 +75,12 @@ FROM node:22-alpine AS frontend-build
 WORKDIR /build
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm npm ci
 
+COPY scripts/vendor_frontend_assets.mjs \
+    scripts/verify_frontend_assets.mjs \
+    scripts/verify_css_build.mjs \
+    ./scripts/
 COPY frontend ./frontend
 COPY app/templates ./app/templates
 COPY app/static/js ./app/static/js
@@ -102,6 +116,13 @@ RUN mkdir -p \
         /app/instance/celery-beat \
     && chown -R kaori:kaori /app/instance
 
+RUN python -m pip uninstall --yes pip \
+    && rm -rf /usr/local/lib/python3.12/ensurepip /root/.cache/pip \
+    && ! python -c 'import pip' >/dev/null 2>&1 \
+    && ! python -c 'import ensurepip' >/dev/null 2>&1
+
+# Named runtime user preserves passwd/group ownership and operator-readable identity.
+# hadolint ignore=DL3066
 USER kaori
 
 EXPOSE 5000

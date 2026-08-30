@@ -3,10 +3,11 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
+from xml.etree import ElementTree
 from zipfile import ZipFile
 
-from openpyxl import load_workbook
 import pytest
+from openpyxl import load_workbook
 
 from app.reports.export.xlsx.analytics_builder import (
     build_analytics_workbook,
@@ -99,7 +100,12 @@ def test_resource_utilization_preparation_preserves_committed_metrics_trends_and
 
     data = prepare_analytics_workbook_data('resource_utilization', payload, _context('resource_utilization'))
 
-    assert [metric.label for metric in data.metrics] == ['CPU Utilization', 'Memory Utilization', 'Storage Utilization', 'Pod Utilization']
+    assert [metric.label for metric in data.metrics] == [
+        'CPU Utilization',
+        'Memory Utilization',
+        'Storage Utilization',
+        'Pod Utilization',
+    ]
     assert [metric.value for metric in data.metrics] == [18.2, 61.4, 42.5, 53.0]
     assert data.primary_chart is not None
     assert data.primary_chart.visual_type == 'line'
@@ -111,16 +117,19 @@ def test_resource_utilization_preparation_preserves_committed_metrics_trends_and
     assert '61.4%' in data.readout
 
 
-
-def test_resource_utilization_line_chart_uses_timestamps_only_available_series_and_sparse_presentation(tmp_path: Path) -> None:
+def test_resource_utilization_line_chart_uses_timestamps_only_available_series_and_sparse_presentation(
+    tmp_path: Path,
+) -> None:
     trend_points = []
     for index in range(12):
-        trend_points.append({
-            'timestamp': f'2026-08-26T{index:02d}:00:00+07:00',
-            'cpu': 1.0 + (index * 0.1),
-            'memory': 55.0 + (index * 0.2),
-            'pods': 46.0 + (index * 0.1),
-        })
+        trend_points.append(
+            {
+                'timestamp': f'2026-08-26T{index:02d}:00:00+07:00',
+                'cpu': 1.0 + (index * 0.1),
+                'memory': 55.0 + (index * 0.2),
+                'pods': 46.0 + (index * 0.1),
+            }
+        )
     payload = {
         'summary': {
             'cpu_utilization': 2.1,
@@ -158,7 +167,10 @@ def test_resource_utilization_line_chart_uses_timestamps_only_available_series_a
     assert all(series.marker.symbol is None for series in chart.series)
     with ZipFile(output_path) as archive:
         chart_xml = archive.read('xl/charts/chart1.xml').decode('utf-8')
-    assert chart_xml.count('<marker><symbol val="none"/>') == 3
+    chart_root = ElementTree.fromstring(chart_xml)
+    chart_namespace = {'c': 'http://schemas.openxmlformats.org/drawingml/2006/chart'}
+    marker_symbols = chart_root.findall('.//c:marker/c:symbol', chart_namespace)
+    assert [symbol.get('val') for symbol in marker_symbols].count('none') == 3
     assert chart.y_axis.scaling.min == 0
     assert chart.y_axis.scaling.max == 100
     assert chart.y_axis.majorUnit == 25
@@ -172,6 +184,7 @@ def test_resource_utilization_line_chart_uses_timestamps_only_available_series_a
     assert overview['N15'].value is None
     assert overview.column_dimensions['J'].width >= 22
     assert overview.column_dimensions['K'].width >= 14
+
 
 def test_analytics_overview_uses_current_vs_projected_resource_posture() -> None:
     payload = {
@@ -269,10 +282,15 @@ def test_analytics_overview_does_not_create_visual_from_empty_forecast_values() 
     assert all(table.sheet_name != 'Trends' for table in data.tables)
 
 
-
 def test_alerts_preparation_uses_composition_severity_and_accounts_for_unclassified_alerts() -> None:
     payload = {
-        'summary': {'active_alerts': 10, 'critical_alerts': 1, 'warning_alerts': 5, 'info_alerts': 2, 'detected_anomalies': 3},
+        'summary': {
+            'active_alerts': 10,
+            'critical_alerts': 1,
+            'warning_alerts': 5,
+            'info_alerts': 2,
+            'detected_anomalies': 3,
+        },
         'alerts': [
             {'name': 'HighMemory', 'severity': 'critical', 'status': 'firing', 'namespace': 'payments'},
             {'name': 'RestartBurst', 'severity': 'warning', 'status': 'firing', 'namespace': 'core'},
@@ -297,8 +315,20 @@ def test_alerts_preparation_uses_composition_severity_and_accounts_for_unclassif
 def test_object_storage_preparation_owns_its_category_and_ranked_consumer_visual() -> None:
     payload = {
         'system': {'name': 'minio-pgn-development', 'environment': 'Development'},
-        'summary': {'capacity': '120 GiB', 'usage': '76 GiB', 'headroom': '44 GiB', 'utilization': '63.3%', 'buckets': '5', 'objects': '12,300'},
-        'capacity_usage': {'capacity_total': '120 GiB', 'usage_total': '76 GiB', 'capacity_free': '44 GiB', 'utilization': '63.3%'},
+        'summary': {
+            'capacity': '120 GiB',
+            'usage': '76 GiB',
+            'headroom': '44 GiB',
+            'utilization': '63.3%',
+            'buckets': '5',
+            'objects': '12,300',
+        },
+        'capacity_usage': {
+            'capacity_total': '120 GiB',
+            'usage_total': '76 GiB',
+            'capacity_free': '44 GiB',
+            'utilization': '63.3%',
+        },
         'top_consumers': [
             {'name': 'thanos', 'usage_gib': 64.25, 'object_count': 9000},
             {'name': 'crm', 'usage_gib': 7.37, 'object_count': 2100},
@@ -359,7 +389,10 @@ def test_resource_utilization_workbook_is_professional_and_runtime_valid(tmp_pat
     assert overview['A32'].hyperlink.target == "#'Analysis'!A1"
     assert overview['A33'].hyperlink is not None
     assert workbook['Analysis']['A3'].hyperlink.target == "#'Overview'!A1"
-    metadata_values = {workbook['Metadata'].cell(row=row, column=1).value: workbook['Metadata'].cell(row=row, column=2).value for row in range(1, workbook['Metadata'].max_row + 1)}
+    metadata_values = {
+        workbook['Metadata'].cell(row=row, column=1).value: workbook['Metadata'].cell(row=row, column=2).value
+        for row in range(1, workbook['Metadata'].max_row + 1)
+    }
     assert metadata_values['Workbook Standard'] == ANALYTICS_WORKBOOK_STANDARD
     assert metadata_values['XLSX Standard'] == XLSX_REPORTING_STANDARD
 
@@ -418,15 +451,24 @@ def test_capacity_workbook_uses_resource_categories_and_stacked_utilization_head
 def test_object_storage_workbook_uses_category_title_and_professional_ranked_support(tmp_path: Path) -> None:
     payload = {
         'summary': {'capacity': '120 GiB', 'usage': '76 GiB', 'headroom': '44 GiB', 'utilization': '63.3%'},
-        'capacity_usage': {'capacity_total': '120 GiB', 'usage_total': '76 GiB', 'capacity_free': '44 GiB', 'utilization': '63.3%'},
+        'capacity_usage': {
+            'capacity_total': '120 GiB',
+            'usage_total': '76 GiB',
+            'capacity_free': '44 GiB',
+            'utilization': '63.3%',
+        },
         'top_consumers': [
             {'name': 'thanos', 'usage_gib': 64.25, 'object_count': 9000},
             {'name': 'crm', 'usage_gib': 7.37, 'object_count': 2100},
         ],
     }
     output_path = tmp_path / 'object-storage-analysis.xlsx'
-    context = replace(_context('object_storage_analysis'), scope_label='Object Storage System', scope_value='minio-pgn-development')
-    build_analytics_workbook(report_type='object_storage_analysis', payload=payload, context=context, output_path=output_path)
+    context = replace(
+        _context('object_storage_analysis'), scope_label='Object Storage System', scope_value='minio-pgn-development'
+    )
+    build_analytics_workbook(
+        report_type='object_storage_analysis', payload=payload, context=context, output_path=output_path
+    )
 
     workbook = load_workbook(output_path)
     overview = workbook['Overview']
@@ -532,7 +574,13 @@ def test_formula_like_analytics_values_are_stored_as_text_not_formulas(tmp_path:
     payload = {
         'consumer_payload': {
             'rows': [
-                {'resource': 'CPU', 'namespace': '=HYPERLINK("https://bad")', 'name': '+cmd', 'value': 1.2, 'unit': 'cores'},
+                {
+                    'resource': 'CPU',
+                    'namespace': '=HYPERLINK("https://bad")',
+                    'name': '+cmd',
+                    'value': 1.2,
+                    'unit': 'cores',
+                },
             ]
         }
     }
@@ -546,7 +594,7 @@ def test_formula_like_analytics_values_are_stored_as_text_not_formulas(tmp_path:
     workbook = load_workbook(output_path, data_only=False)
     sheet = workbook['Top Consumers']
     values = [cell.value for row in sheet.iter_rows() for cell in row]
-    assert "'=HYPERLINK(\"https://bad\")" in values
+    assert '\'=HYPERLINK("https://bad")' in values
     assert "'+cmd" in values
 
 
@@ -599,7 +647,6 @@ def test_runtime_validator_rejects_comparison_bar_without_executive_axis_contrac
         validate_analytics_xlsx_artifact(output_path)
 
 
-
 def test_runtime_validator_rejects_line_chart_without_sparse_percent_presentation(tmp_path: Path) -> None:
     output_path = tmp_path / 'line-presentation-regression.xlsx'
     build_analytics_workbook(
@@ -618,6 +665,7 @@ def test_runtime_validator_rejects_line_chart_without_sparse_percent_presentatio
 
     with pytest.raises(ValueError, match='sparse percent presentation'):
         validate_analytics_xlsx_artifact(output_path)
+
 
 def _representative_payload(report_type: str) -> dict[str, object]:
     payloads: dict[str, dict[str, object]] = {
@@ -709,7 +757,13 @@ def _representative_payload(report_type: str) -> dict[str, object]:
         'top_consumers': {
             'consumer_payload': {
                 'rows': [
-                    {'resource': 'Memory', 'namespace': 'monitoring', 'name': 'prometheus-0', 'value': 14.2, 'unit': 'GiB'},
+                    {
+                        'resource': 'Memory',
+                        'namespace': 'monitoring',
+                        'name': 'prometheus-0',
+                        'value': 14.2,
+                        'unit': 'GiB',
+                    },
                     {'resource': 'Memory', 'namespace': 'logging', 'name': 'loki-0', 'value': 8.7, 'unit': 'GiB'},
                     {'resource': 'CPU', 'namespace': 'payments', 'name': 'api-0', 'value': 0.8, 'unit': 'cores'},
                 ],
@@ -797,7 +851,6 @@ def test_analytics_overview_workbook_renders_two_series_comparison_without_fake_
     assert overview['J17'].value == 'Memory'
     assert overview['K17'].value == 64.0
     assert overview['L17'].value == 72.0
-
 
 
 @pytest.mark.parametrize(
@@ -938,7 +991,9 @@ def test_ranked_bar_uses_compact_chart_identity_and_value_label_headroom(tmp_pat
     assert chart.dLbls.dLblPos == 'outEnd'
 
 
-def test_storage_capacity_visual_uses_one_persistent_claim_posture_not_used_and_free_as_two_resources(tmp_path: Path) -> None:
+def test_storage_capacity_visual_uses_one_persistent_claim_posture_not_used_and_free_as_two_resources(
+    tmp_path: Path,
+) -> None:
     payload = {
         'storage_summary': {
             'persistent_storage': {
@@ -989,7 +1044,14 @@ def test_top_consumers_evidence_sheet_uses_one_normalized_numeric_value_column()
     }
     prepared = prepare_analytics_workbook_data('top_consumers', payload, _context('top_consumers'))
     table = next(table for table in prepared.tables if table.sheet_name == 'Top Consumers')
-    assert [column.label for column in table.columns] == ['Resource', 'Namespace', 'Consumer', 'Value', 'Unit', 'Status']
+    assert [column.label for column in table.columns] == [
+        'Resource',
+        'Namespace',
+        'Consumer',
+        'Value',
+        'Unit',
+        'Status',
+    ]
     assert table.rows[0]['value'] == pytest.approx(17.36)
     assert table.rows[0]['unit'] == 'GiB'
     assert 'display_value' not in {column.key for column in table.columns}

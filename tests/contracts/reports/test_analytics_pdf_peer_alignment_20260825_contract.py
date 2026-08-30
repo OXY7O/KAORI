@@ -10,8 +10,6 @@ ROOT = Path(__file__).resolve().parents[3]
 SHARED_CSS = ROOT / 'app/static/reports/pdf/analytics_publication.css'
 
 
-
-
 def _find_text_box(page: object, text: str) -> object:
     def walk(box: object) -> object | None:
         if str(getattr(box, 'text', '')).startswith(text):
@@ -43,7 +41,7 @@ def _find_text_box_y(page: object, text: str) -> float:
 
 
 def _render_peer_alignment_fixture() -> object:
-    html = '''
+    html = """
     <html>
       <body class="kaori-analytics-publication kaori-reporting-v3">
         <article class="page">
@@ -67,7 +65,7 @@ def _render_peer_alignment_fixture() -> object:
         </article>
       </body>
     </html>
-    '''
+    """
     font_config = FontConfiguration()
     document = HTML(string=html, base_url=str(ROOT)).render(
         stylesheets=[CSS(filename=str(SHARED_CSS), font_config=font_config)],
@@ -96,7 +94,10 @@ def test_pair_contract_neutralizes_first_of_type_spacing_and_reserves_helper_slo
 
     assert '.publication-pair>.content-section:first-of-type{margin-top:0!important;' in compact
     assert '--analytics-pair-subtitle-slot:7mm' in compact
-    assert '.publication-pair>.content-section>.section-subtitle{min-height:var(--analytics-pair-subtitle-slot)!important' in compact
+    assert (
+        '.publication-pair>.content-section>.section-subtitle{min-height:var(--analytics-pair-subtitle-slot)!important'
+        in compact
+    )
 
 
 @pytest.mark.parametrize(
@@ -118,7 +119,7 @@ def test_every_analytics_family_stylesheet_preserves_peer_row_alignment(
     stylesheet_name: str,
     body_class: str,
 ) -> None:
-    html = f'''
+    html = f"""
     <html>
       <body class="kaori-analytics-publication kaori-reporting-v3 {body_class}">
         <article class="page">
@@ -140,7 +141,7 @@ def test_every_analytics_family_stylesheet_preserves_peer_row_alignment(
         </article>
       </body>
     </html>
-    '''
+    """
     font_config = FontConfiguration()
     family_css = ROOT / 'app/static/reports/pdf' / stylesheet_name
     document = HTML(string=html, base_url=str(ROOT)).render(
@@ -176,7 +177,7 @@ def test_every_analytics_family_preserves_compact_title_to_description_rhythm(
     stylesheet_name: str,
     body_class: str,
 ) -> None:
-    html = f'''
+    html = f"""
     <html>
       <body class="kaori-analytics-publication kaori-reporting-v3 {body_class}">
         <article class="page">
@@ -198,7 +199,7 @@ def test_every_analytics_family_preserves_compact_title_to_description_rhythm(
         </article>
       </body>
     </html>
-    '''
+    """
     font_config = FontConfiguration()
     family_css = ROOT / 'app/static/reports/pdf' / stylesheet_name
     document = HTML(string=html, base_url=str(ROOT)).render(
@@ -216,9 +217,7 @@ def test_every_analytics_family_preserves_compact_title_to_description_rhythm(
     ):
         title_box = _find_text_box(page, title)
         helper_box = _find_text_box(page, helper)
-        vertical_delta = float(getattr(helper_box, 'position_y')) - float(
-            getattr(title_box, 'position_y')
-        )
+        vertical_delta = float(getattr(helper_box, 'position_y')) - float(getattr(title_box, 'position_y'))
         # One title line + canonical 1.45 mm margin. Flex-section regressions
         # inflate this to roughly 39 pt / 13.6 mm.
         assert vertical_delta < 27.0, (stylesheet_name, vertical_delta)

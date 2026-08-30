@@ -4,6 +4,7 @@ FROM node:22-bookworm-slim AS node-runtime
 
 FROM python:3.12-slim-bookworm AS ci
 
+ARG PIP_VERSION=26.2.1
 ARG ACTIONLINT_VERSION=1.7.12
 ARG GITLEAKS_VERSION=8.30.1
 ARG HADOLINT_VERSION=2.15.1
@@ -20,6 +21,8 @@ WORKDIR /workspace
 COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
 COPY --from=node-runtime /usr/local/lib/node_modules /usr/local/lib/node_modules
 
+# CI system packages intentionally follow Bookworm repository patch levels.
+# hadolint ignore=DL3008
 RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
     && apt-get update \
@@ -53,10 +56,12 @@ RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
 COPY requirements /tmp/kaori-requirements
 COPY .github/ci/requirements-security.txt /tmp/requirements-security.txt
 
-RUN python -m pip install --upgrade pip \
-    && python -m pip install -r /tmp/kaori-requirements/dev.txt \
-    && python -m pip install -r /tmp/requirements-security.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    PIP_NO_CACHE_DIR=0 python -m pip install "pip==${PIP_VERSION}" \
+    && PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/kaori-requirements/dev.txt \
+    && PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/requirements-security.txt
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN set -eux; \
     arch="$(dpkg --print-architecture)"; \
     case "$arch" in \
@@ -64,28 +69,28 @@ RUN set -eux; \
         arm64) action_asset_arch='arm64'; gitleaks_arch='arm64'; trivy_arch='ARM64'; hadolint_arch='arm64' ;; \
         *) echo "Unsupported CI toolchain architecture: $arch" >&2; exit 1 ;; \
     esac; \
-    curl -fsSLo /tmp/actionlint.tar.gz "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_${action_asset_arch}.tar.gz"; \
-    curl -fsSLo /tmp/actionlint-checksums.txt "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_checksums.txt"; \
+    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/actionlint.tar.gz "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_${action_asset_arch}.tar.gz"; \
+    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/actionlint-checksums.txt "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_checksums.txt"; \
     grep " actionlint_${ACTIONLINT_VERSION}_linux_${action_asset_arch}.tar.gz$" /tmp/actionlint-checksums.txt \
       | sed "s#actionlint_${ACTIONLINT_VERSION}_linux_${action_asset_arch}.tar.gz#/tmp/actionlint.tar.gz#" \
       | sha256sum -c -; \
     tar -xzf /tmp/actionlint.tar.gz -C /tmp actionlint; \
     install -m 0755 /tmp/actionlint /usr/local/bin/actionlint; \
-    curl -fsSLo /tmp/gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${gitleaks_arch}.tar.gz"; \
-    curl -fsSLo /tmp/gitleaks-checksums.txt "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_checksums.txt"; \
+    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${gitleaks_arch}.tar.gz"; \
+    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/gitleaks-checksums.txt "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_checksums.txt"; \
     grep " gitleaks_${GITLEAKS_VERSION}_linux_${gitleaks_arch}.tar.gz$" /tmp/gitleaks-checksums.txt \
       | sed "s#gitleaks_${GITLEAKS_VERSION}_linux_${gitleaks_arch}.tar.gz#/tmp/gitleaks.tar.gz#" \
       | sha256sum -c -; \
     tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks; \
     install -m 0755 /tmp/gitleaks /usr/local/bin/gitleaks; \
-    curl -fsSLo /tmp/hadolint "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-linux-${hadolint_arch}"; \
-    curl -fsSLo /tmp/hadolint-checksums.txt "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/checksums.sha256"; \
-    grep " hadolint-linux-${hadolint_arch}$" /tmp/hadolint-checksums.txt \
-      | sed "s#hadolint-linux-${hadolint_arch}#/tmp/hadolint#" \
-      | sha256sum -c -; \
+    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/hadolint "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-linux-${hadolint_arch}"; \
+    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/hadolint-checksums.txt "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/checksums.sha256"; \
+    hadolint_checksum="$(awk -v asset="*hadolint-linux-${hadolint_arch}" '$2 == asset {print $1}' /tmp/hadolint-checksums.txt)"; \
+    test -n "$hadolint_checksum"; \
+    printf '%s  %s\n' "$hadolint_checksum" /tmp/hadolint | sha256sum -c -; \
     install -m 0755 /tmp/hadolint /usr/local/bin/hadolint; \
-    curl -fsSLo /tmp/trivy.tar.gz "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${trivy_arch}.tar.gz"; \
-    curl -fsSLo /tmp/trivy-checksums.txt "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_checksums.txt"; \
+    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/trivy.tar.gz "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${trivy_arch}.tar.gz"; \
+    curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSLo /tmp/trivy-checksums.txt "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_checksums.txt"; \
     grep " trivy_${TRIVY_VERSION}_Linux-${trivy_arch}.tar.gz$" /tmp/trivy-checksums.txt \
       | sed "s#trivy_${TRIVY_VERSION}_Linux-${trivy_arch}.tar.gz#/tmp/trivy.tar.gz#" \
       | sha256sum -c -; \

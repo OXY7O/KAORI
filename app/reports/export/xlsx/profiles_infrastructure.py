@@ -24,7 +24,9 @@ INFRASTRUCTURE_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] 
             InventoryOverviewMetric('Buckets / Containers', 'row_count'),
             InventoryOverviewMetric('Total Usage GiB', 'sum', key='usage_gib', number_format='#,##0.00', unit='GiB'),
             InventoryOverviewMetric('Total Objects', 'sum', key='object_count'),
-            InventoryOverviewMetric('Quota Coverage', 'coverage_percent', key='quota_gib', number_format='0.0"%"', unit='%'),
+            InventoryOverviewMetric(
+                'Quota Coverage', 'coverage_percent', key='quota_gib', number_format='0.0"%"', unit='%'
+            ),
         ),
         overview_chart=InventoryOverviewChart(
             title='Top Object Storage Consumers',
@@ -254,7 +256,9 @@ INFRASTRUCTURE_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] 
             InventoryOverviewMetric('Certificates', 'row_count'),
             InventoryOverviewMetric('Valid', 'count', key='status_label', match_values=('Valid',)),
             InventoryOverviewMetric('Renewal Window', 'count', key='status_label', match_values=('Renewal Window',)),
-            InventoryOverviewMetric('Critical / Expired', 'count', key='status_label', match_values=('Critical Expiry', 'Expired')),
+            InventoryOverviewMetric(
+                'Critical / Expired', 'count', key='status_label', match_values=('Critical Expiry', 'Expired')
+            ),
         ),
         overview_chart=InventoryOverviewChart(
             title='Certificates by Validity Status',

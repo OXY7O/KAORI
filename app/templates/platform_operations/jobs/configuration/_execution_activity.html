@@ -46,9 +46,13 @@
                         {% if active_job %}
                             <dl class="mt-3 grid gap-2 text-xs sm:grid-cols-[4.5rem_minmax(0,1fr)] sm:gap-x-3 sm:gap-y-1.5">
                                 <dt class="font-semibold text-content-muted">Process</dt>
-                                <dd class="break-words font-semibold text-content-primary">{{ active_job.progress_process }}</dd>
+                                <dd class="break-words font-semibold text-content-primary">
+                                    {{ active_job.progress_process }}
+                                </dd>
                                 <dt class="font-semibold text-content-muted">Detail</dt>
-                                <dd class="break-words leading-5 text-content-secondary">{{ active_job.progress_detail }}</dd>
+                                <dd class="break-words leading-5 text-content-secondary">
+                                    {{ active_job.progress_detail }}
+                                </dd>
                             </dl>
                         {% else %}
                             <p class="mt-2 text-sm font-semibold leading-6 text-content-primary">{{ selected_job.execution_state.description }}</p>

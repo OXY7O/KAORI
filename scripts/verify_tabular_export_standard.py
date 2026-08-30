@@ -17,6 +17,14 @@ def require(condition: bool, message: str, errors: list[str]) -> None:
         errors.append(message)
 
 
+def function_uses_attribute(source: str, function_name: str, attribute_name: str) -> bool:
+    tree = ast.parse(source)
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == function_name:
+            return any(isinstance(child, ast.Attribute) and child.attr == attribute_name for child in ast.walk(node))
+    return False
+
+
 def main() -> int:
     errors: list[str] = []
 
@@ -31,7 +39,11 @@ def main() -> int:
     xlsx_style = read('app/reports/export/xlsx/style.py')
     analytics_schema = read('app/reports/export/xlsx/analytics_schema.py')
     analytics_profiles = read('app/reports/export/xlsx/analytics_profiles.py')
+    analytics_profile_catalog = read('app/reports/export/xlsx/analytics_profile_catalog.py')
+    analytics_preparation_common = read('app/reports/export/xlsx/analytics_preparation/common.py')
+    analytics_preparation_overview = read('app/reports/export/xlsx/analytics_preparation/overview.py')
     analytics_builder = read('app/reports/export/xlsx/analytics_builder.py')
+    analytics_validation = read('app/reports/export/xlsx/analytics_validation.py')
     analytics_overview = read('app/reports/export/xlsx/analytics_overview.py')
     analytics_document_builder = read('app/reports/export/html_pdf/builder.py')
     xlsx_renderer = read('app/reports/export/xlsx/renderer.py')
@@ -71,7 +83,10 @@ def main() -> int:
         errors,
     )
     require(
-        'ANALYTICS_WORKBOOK_PROFILES' in analytics_profiles and 'ANALYTICS_XLSX_REPORT_TYPES' in analytics_profiles,
+        'ANALYTICS_WORKBOOK_PROFILES' in analytics_profiles
+        and 'ANALYTICS_XLSX_REPORT_TYPES' in analytics_profiles
+        and 'ANALYTICS_WORKBOOK_PROFILES' in analytics_profile_catalog
+        and 'ANALYTICS_XLSX_REPORT_TYPES' in analytics_profile_catalog,
         'Analytics XLSX category profile registry is missing',
         errors,
     )
@@ -83,7 +98,10 @@ def main() -> int:
         errors,
     )
     require(
-        all(label in analytics_overview for label in ('Executive Snapshot', 'Executive Readout', 'Primary Visual', 'Supporting Data')),
+        all(
+            label in analytics_overview
+            for label in ('Executive Snapshot', 'Executive Readout', 'Primary Visual', 'Supporting Data')
+        ),
         'Analytics XLSX Overview hierarchy is incomplete',
         errors,
     )
@@ -91,15 +109,15 @@ def main() -> int:
         'BarChart' in analytics_overview
         and 'LineChart' in analytics_overview
         and "chart.visual_type == 'composition_bar'" in analytics_overview
-        and "primary_visual='composition_bar'" in analytics_profiles,
+        and "primary_visual='composition_bar'" in analytics_profile_catalog,
         'Analytics XLSX semantic chart renderers are incomplete',
         errors,
     )
     require(
-        '_normalized_consumer_value' in analytics_profiles
-        and "max_length: int = 28" in analytics_overview
-        and "max_value * 1.20" in analytics_overview
-        and "(overview.column_dimensions['K'].width or 0) < 38" in analytics_builder,
+        'normalized_consumer_value' in analytics_preparation_common
+        and 'max_length: int = 28' in analytics_overview
+        and 'max_value * 1.20' in analytics_overview
+        and "(overview.column_dimensions['K'].width or 0) < 38" in analytics_validation,
         'Analytics XLSX ranked-bar normalization and spacing contract is incomplete',
         errors,
     )
@@ -109,8 +127,8 @@ def main() -> int:
         errors,
     )
     require(
-        "primary_visual='comparison_bar'" in analytics_profiles
-        and "title='Current vs Projected Resource Posture'" in analytics_profiles
+        "primary_visual='comparison_bar'" in analytics_profile_catalog
+        and "title='Current vs Projected Resource Posture'" in analytics_preparation_overview
         and "chart.visual_type == 'comparison_bar'" in analytics_overview,
         'Analytics Overview must use resource-level Current vs Projected forecast semantics',
         errors,
@@ -129,7 +147,9 @@ def main() -> int:
         errors,
     )
     require(
-        'def render_report_xlsx(' in xlsx_renderer and 'REPORT_FAMILY_ANALYTICS' in xlsx_renderer and 'collect_report_payload' in xlsx_renderer,
+        'def render_report_xlsx(' in xlsx_renderer
+        and 'REPORT_FAMILY_ANALYTICS' in xlsx_renderer
+        and 'collect_report_payload' in xlsx_renderer,
         'family-aware XLSX renderer does not route Analytics through the canonical collector',
         errors,
     )
@@ -163,8 +183,9 @@ def main() -> int:
     require('INVENTORY_METADATA_SHEET' in xlsx_builder, 'Metadata sheet contract is missing', errors)
     require('INVENTORY_DICTIONARY_SHEET' in xlsx_builder, 'Field Dictionary sheet contract is missing', errors)
     require(
-        'Workbook Navigation' in xlsx_overview and 'sheet.parent.sheetnames' in xlsx_overview,
-        'Overview workbook navigation is missing',
+        'Workbook Navigation' in xlsx_overview
+        and function_uses_attribute(xlsx_overview, '_write_overview_navigation', 'sheetnames'),
+        'Overview workbook navigation must derive targets from workbook sheet names',
         errors,
     )
     require(
@@ -274,8 +295,21 @@ def main() -> int:
         'app/reports/export/xlsx/builder.py',
         'app/reports/export/xlsx/overview.py',
         'app/reports/export/xlsx/analytics_schema.py',
+        'app/reports/export/xlsx/analytics_profile_catalog.py',
         'app/reports/export/xlsx/analytics_profiles.py',
+        'app/reports/export/xlsx/analytics_preparation/__init__.py',
+        'app/reports/export/xlsx/analytics_preparation/common.py',
+        'app/reports/export/xlsx/analytics_preparation/overview.py',
+        'app/reports/export/xlsx/analytics_preparation/resource_utilization.py',
+        'app/reports/export/xlsx/analytics_preparation/capacity.py',
+        'app/reports/export/xlsx/analytics_preparation/storage.py',
+        'app/reports/export/xlsx/analytics_preparation/workload.py',
+        'app/reports/export/xlsx/analytics_preparation/forecast.py',
+        'app/reports/export/xlsx/analytics_preparation/top_consumers.py',
+        'app/reports/export/xlsx/analytics_preparation/alerts.py',
+        'app/reports/export/xlsx/analytics_preparation/object_storage.py',
         'app/reports/export/xlsx/analytics_builder.py',
+        'app/reports/export/xlsx/analytics_validation.py',
         'app/reports/export/xlsx/analytics_overview.py',
         'app/reports/export/xlsx/renderer.py',
     ):
@@ -288,14 +322,30 @@ def main() -> int:
         errors.append('ad-hoc semicolon serialization remains in CSV renderer')
 
     if errors:
+        print('FAIL — KAORI Tabular Export Standard')
+        print()
+        print('Contract Errors')
         for error in errors:
-            print(f'ERROR: {error}')
+            print(f'  FAIL — {error}')
+        print()
+        print('Summary')
+        print(f'  {len(errors)} failed')
         return 1
 
-    print(
-        'KAORI tabular export audit passed: CSV v3 and global XLSX v2 cover Inventory XLSX v4 and '
-        'Analytics XLSX v1 with shared metadata/security contracts, category-owned Overview semantics, and runtime validation.'
-    )
+    print('PASS — KAORI Tabular Export Standard')
+    print()
+    print('CSV Contract')
+    print('  PASS — CSV v3 uses canonical metadata, encoding, and formula-safety contracts.')
+    print()
+    print('XLSX Contract')
+    print('  PASS — Global XLSX v2 covers Inventory XLSX v4 and Analytics XLSX v1.')
+    print('  PASS — Inventory Overview navigation derives targets from workbook sheet names.')
+    print()
+    print('Runtime Validation')
+    print('  PASS — Inventory and Analytics XLSX artifacts retain runtime validation gates.')
+    print()
+    print('Summary')
+    print('  4 checks passed · 0 failed')
     return 0
 
 

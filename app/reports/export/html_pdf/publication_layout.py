@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Any, NamedTuple, TypeVar
-
-T = TypeVar('T')
+from typing import Any, NamedTuple
 
 FOOTER_SAFE_ZONE_MM = 18.0
 PAIR_PEER_UNIT_LIMIT = 9.0
@@ -56,7 +54,7 @@ def choose_reference_columns(
     return 1 if longest > REFERENCE_TWO_COLUMN_MAX_IDENTITY_CHARS else 2
 
 
-def paginate_rows(
+def paginate_rows[T](
     rows: Sequence[T],
     *,
     first_page_capacity: int,

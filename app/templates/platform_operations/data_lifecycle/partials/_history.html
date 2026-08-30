@@ -135,7 +135,8 @@
                         <td class="{{ table_ui.cell_classes() }}">
                             {{ table_ui.title_cell(archive.short_id, archive.checksum_short or 'Checksum pending', 'file-archive') }}
                             <div class="mt-2 flex min-w-0 items-center gap-1.5 text-xs text-content-muted">
-                                <i data-lucide="{{ archive.domain_icon }}" class="h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
+                                <i data-lucide="{{ archive.domain_icon }}"
+                                   class="h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
                                 <span class="min-w-0 break-words">{{ archive.domain_label }}</span>
                             </div>
                         </td>
@@ -173,9 +174,15 @@
                                         <input type="hidden" name="tab" value="history">
                                         <input type="hidden" name="archive_domain" value="{{ filters.domain }}">
                                         <input type="hidden" name="archive_status" value="{{ filters.status }}">
-                                        <input type="hidden" name="archive_trigger" value="{{ filters.trigger_type }}">
-                                        <input type="hidden" name="archive_mode" value="{{ filters.operation_mode }}">
-                                        <input type="hidden" name="archive_storage" value="{{ filters.storage_backend }}">
+                                        <input type="hidden"
+                                               name="archive_trigger"
+                                               value="{{ filters.trigger_type }}">
+                                        <input type="hidden"
+                                               name="archive_mode"
+                                               value="{{ filters.operation_mode }}">
+                                        <input type="hidden"
+                                               name="archive_storage"
+                                               value="{{ filters.storage_backend }}">
                                         <input type="hidden" name="archive_search" value="{{ filters.search }}">
                                         <input type="hidden" name="archive_page" value="{{ pager.page }}">
                                         <input type="hidden" name="archive_per_page" value="{{ pager.per_page }}">

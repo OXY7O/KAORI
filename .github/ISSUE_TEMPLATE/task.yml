@@ -1,0 +1,37 @@
+name: Task
+description: Track a concrete implementation or operational deliverable.
+title: ""
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use a concise sentence-case title that describes the deliverable. Native GitHub Issue Type is the type authority; do not add `[TASK]` to the title.
+  - type: input
+    id: parent
+    attributes:
+      label: Parent Work Item
+      description: Reference the parent Epic, Story, Bug, or governance activity.
+    validations:
+      required: true
+  - type: textarea
+    id: deliverable
+    attributes:
+      label: Deliverable
+    validations:
+      required: true
+  - type: textarea
+    id: completion
+    attributes:
+      label: Completion Criteria
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+    validations:
+      required: true

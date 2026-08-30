@@ -1,0 +1,72 @@
+name: User Story
+description: Define a testable user or operator capability.
+title: ""
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use a concise sentence-case title that describes the capability or outcome. Native GitHub Issue Type is the type authority; do not add `[STORY]` to the title.
+  - type: input
+    id: persona
+    attributes:
+      label: Persona
+      placeholder: Platform Operator
+    validations:
+      required: true
+  - type: textarea
+    id: capability
+    attributes:
+      label: Capability
+      description: "As a <persona>, I want <capability>, so that <outcome>."
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Business / Operational Outcome
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: Use Given / When / Then where practical.
+    validations:
+      required: true
+  - type: textarea
+    id: ready
+    attributes:
+      label: Definition of Ready Evidence
+    validations:
+      required: true
+  - type: textarea
+    id: technical
+    attributes:
+      label: Technical Notes
+  - type: textarea
+    id: security
+    attributes:
+      label: Security Considerations
+  - type: textarea
+    id: migration
+    attributes:
+      label: Data / Migration Considerations
+  - type: textarea
+    id: observability
+    attributes:
+      label: Observability / Operational Considerations
+  - type: textarea
+    id: tests
+    attributes:
+      label: Test Strategy
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+  - type: textarea
+    id: uat
+    attributes:
+      label: UAT Evidence
+      description: Leave pending until the change is integrated into kaori/staging.

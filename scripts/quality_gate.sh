@@ -6,6 +6,86 @@ cd "$ROOT"
 
 phase="${1:---all}"
 
+append_test_summary() {
+    local status="$1"
+    local label="$2"
+    local detail="$3"
+
+    if [[ -z "${GITHUB_STEP_SUMMARY:-}" ]]; then
+        return 0
+    fi
+
+    {
+        printf -- '- **%s — KAORI %s**\n' "$status" "$label"
+        printf '  - %s\n' "$detail"
+    } >>"$GITHUB_STEP_SUMMARY"
+}
+
+record_test_result() {
+    local status="$1"
+    local label="$2"
+    local detail="$3"
+
+    printf '\n%s — KAORI %s\n' "$status" "$label"
+    append_test_summary "$status" "$label" "$detail"
+}
+
+run_pytest_gate() {
+    local label="$1"
+    shift
+
+    if pytest -q --tb=short "$@"; then
+        record_test_result \
+            'PASS' \
+            "$label" \
+            'Pytest completed with concise traceback output; raw command output remains available in the job log.'
+        return 0
+    else
+        local status=$?
+        record_test_result \
+            'FAIL' \
+            "$label" \
+            'Review the failing test name, assertion or reason, and source path in the job log.' >&2
+        return "$status"
+    fi
+}
+
+run_contract_migration_gate() {
+    if pytest -q tests/contracts tests/migrations -m 'contract or migration' --tb=short; then
+        record_test_result \
+            'PASS' \
+            'Contract & Migration Tests' \
+            'Canonical contract and migration layer passed with concise traceback output.'
+        return 0
+    else
+        local status=$?
+        record_test_result \
+            'FAIL' \
+            'Contract & Migration Tests' \
+            'Review the failing contract or migration test and source path in the job log.' >&2
+        return "$status"
+    fi
+}
+
+run_e2e_gate() {
+    if pytest -q tests/e2e -m e2e --tb=short; then
+        printf '\nPASS — KAORI End-to-End Tests\n'
+        append_test_summary \
+            'PASS' \
+            'End-to-End Tests' \
+            'Explicit E2E smoke layer passed with concise traceback output.'
+        return 0
+    else
+        local status=$?
+        printf '\nFAIL — KAORI End-to-End Tests\n' >&2
+        append_test_summary \
+            'FAIL' \
+            'End-to-End Tests' \
+            'Review the failing E2E test name, assertion or reason, and source path in the job log.'
+        return "$status"
+    fi
+}
+
 run_static() {
     bash scripts/verify_source_hygiene.sh
     python scripts/verify_release_surface_coverage.py
@@ -102,18 +182,51 @@ run_static() {
     python scripts/verify_feature_test_coverage.py
     python scripts/verify_ui_reuse.py
     python scripts/verify_ui_style.py
-    pytest -q tests/contracts tests/migrations -m 'contract or migration'
+    run_contract_migration_gate
 }
 
 run_tests() {
     python scripts/verify_test_prerequisites.py
-    pytest -q -m 'not debug and not e2e'
+
+    # Keep the canonical full-functional command explicit for release-contract
+    # source inspection while presenting concise PASS/FAIL evidence around it.
+    if pytest -q -m 'not debug and not e2e' --tb=short; then
+        printf '\nPASS — KAORI Functional Tests\n'
+        append_test_summary \
+            'PASS' \
+            'Functional Tests' \
+            'Canonical functional layer passed with concise traceback output.'
+    else
+        local status=$?
+        printf '\nFAIL — KAORI Functional Tests\n' >&2
+        append_test_summary \
+            'FAIL' \
+            'Functional Tests' \
+            'Review the failing functional test, assertion or reason, and source path in the job log.'
+        return "$status"
+    fi
 
     # Domain characterization tests are explicit release gates. This protects
     # them from environment-level PYTEST_ADDOPTS or marker filtering that may
     # otherwise deselect unmarked behavioral tests.
-    pytest -q tests/welcome tests/access tests/integrations tests/kubernetes/dashboard tests/kubernetes/analytics tests/kubernetes/inventory tests/kubernetes/governance tests/kubernetes/operations tests/storage tests/platform_operations tests/reports tests/settings -m functional
-    pytest -q tests/e2e -m e2e
+    run_pytest_gate \
+        'Domain Characterization Tests' \
+        tests/welcome \
+        tests/access \
+        tests/integrations \
+        tests/kubernetes/dashboard \
+        tests/kubernetes/analytics \
+        tests/kubernetes/inventory \
+        tests/kubernetes/governance \
+        tests/kubernetes/operations \
+        tests/storage \
+        tests/platform_operations \
+        tests/reports \
+        tests/settings \
+        -m functional
+
+    # Keep the explicit command recognizable to release final-lock verifiers.
+    run_e2e_gate
 }
 
 run_frontend() {

@@ -709,10 +709,10 @@ const startTopologyWorkspace = () => {
     const hasActiveFilters = () =>
         Boolean(
             clusterSelect.value ||
-                (!namespaceSelect.disabled && namespaceSelect.value) ||
-                scopeSelect.value !== 'all' ||
-                depthSelect.value !== '1' ||
-                searchInput.value.trim()
+            (!namespaceSelect.disabled && namespaceSelect.value) ||
+            scopeSelect.value !== 'all' ||
+            depthSelect.value !== '1' ||
+            searchInput.value.trim()
         )
 
     const syncClearFiltersVisibility = () => {
@@ -1934,7 +1934,9 @@ const startTopologyWorkspace = () => {
         if (!searchResults?.contains(event.target) && event.target !== searchInput) hideSearchResults()
     })
 
-    viewTabs.forEach((button) => button.addEventListener('click', () => setActiveView(button.dataset.kaoriSegmentedTab)))
+    viewTabs.forEach((button) =>
+        button.addEventListener('click', () => setActiveView(button.dataset.kaoriSegmentedTab))
+    )
     bindSegmentedKeyboard(viewTabs, (button) => setActiveView(button.dataset.kaoriSegmentedTab))
     $('topology-controls-button')?.addEventListener('click', () => openPane(controlsPanel))
     $('topology-details-button')?.addEventListener('click', () => openPane(detailsPanel))

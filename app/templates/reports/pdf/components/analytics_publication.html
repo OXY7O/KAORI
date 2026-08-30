@@ -301,13 +301,11 @@
         </div>
     </div>
 {%- endmacro %}
-
 {% macro adaptive_pair(mode='split', extra_class='') -%}
     <div class="two-column paired-sections publication-pair {% if mode == 'stack' %}is-stacked{% else %}is-split{% endif %} {{ extra_class }}">
         {{ caller() }}
     </div>
 {%- endmacro %}
-
 {% macro continuation_heading(title, description='Continued evidence for the same publication section.') -%}
     <div class="publication-continuation">
         <h2>{{ title }} - Continued</h2>

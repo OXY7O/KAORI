@@ -1199,9 +1199,7 @@ def _trend_svg(historical: list[float], projected: list[float], *, current: floa
     )
     compact_axis_labels = cutoff_x - left < 70
     if not compact_axis_labels:
-        parts.append(
-            f'<text x="{left}" y="{height - 14}" font-size="10" fill="#64748B">Historical Start</text>'
-        )
+        parts.append(f'<text x="{left}" y="{height - 14}" font-size="10" fill="#64748B">Historical Start</text>')
     parts.append(
         f'<text x="{cutoff_x:.1f}" y="{height - 14}" text-anchor="middle" font-size="10" fill="#64748B">Cut-off</text>'
     )

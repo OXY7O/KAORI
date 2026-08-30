@@ -116,7 +116,6 @@ def main() -> int:
     ):
         require(token in standard_source, f'Missing Analytics rhythm policy: {token}', errors)
 
-    # Evaluate only the literal registry assignment without importing Flask/app.
     registry: dict[str, str] | None = None
     for node in registry_ast.body:
         if (
@@ -185,9 +184,14 @@ def main() -> int:
             errors,
         )
 
-    require('chart-to-section-gap' not in shared_css, 'Legacy chart-to-section spacing must not be owned by shared CSS.', errors)
     require(
-        'chart-to-section-gap' not in (ROOT / 'app/static/reports/pdf/resource_utilization.css').read_text(encoding='utf-8'),
+        'chart-to-section-gap' not in shared_css,
+        'Legacy chart-to-section spacing must not be owned by shared CSS.',
+        errors,
+    )
+    require(
+        'chart-to-section-gap'
+        not in (ROOT / 'app/static/reports/pdf/resource_utilization.css').read_text(encoding='utf-8'),
         'Resource Utilization must not own inter-section clearance through chart internals.',
         errors,
     )
@@ -208,11 +212,7 @@ def main() -> int:
 
     overview_css = read(PDF_CSS_ROOT / 'analytics_overview.css')
     overview_compact = re.sub(r'\s+', '', overview_css)
-    for token in (
-        'max-width:100%',
-        '.report-use-advisory',
-        '.fresh-table',
-    ):
+    for token in ('max-width:100%', '.report-use-advisory', '.fresh-table'):
         require(token in overview_compact, f'Missing Analytics Overview layout token: {token}', errors)
 
     component = read(PDF_TEMPLATE_ROOT / 'components' / 'analytics_publication.html')
@@ -285,10 +285,7 @@ def main() -> int:
                 )
                 require(
                     len(subtitle) <= SECTION_DESCRIPTION_MAX_CHARS,
-                    (
-                        f'Section description exceeds {SECTION_DESCRIPTION_MAX_CHARS} characters '
-                        f'in {template_name}: {title}'
-                    ),
+                    f'Section description exceeds {SECTION_DESCRIPTION_MAX_CHARS} characters in {template_name}: {title}',
                     errors,
                 )
 
@@ -319,13 +316,19 @@ def main() -> int:
 
     chart_helper = read(HTML_PDF_ROOT / 'chart_labels.py')
     require('def resolve_vertical_labels(' in chart_helper, 'Chart collision resolver is missing.', errors)
-    for filename in ('forecast_analysis.py', 'resource_utilization.py', 'capacity_analysis.py'):
+    for filename in ('forecast_analysis.py', 'resource_utilization.py'):
         source = read(HTML_PDF_ROOT / filename)
         require(
             'resolve_vertical_labels' in source,
             f'{filename} does not use the collision-safe chart label resolver.',
             errors,
         )
+    capacity_chart_source = read(HTML_PDF_ROOT / 'capacity' / 'charts.py')
+    require(
+        'resolve_vertical_labels' in capacity_chart_source,
+        'capacity/charts.py does not use the collision-safe chart label resolver.',
+        errors,
+    )
 
     resource_source = read(HTML_PDF_ROOT / 'resource_utilization.py')
     overview_source = read(HTML_PDF_ROOT / 'analytics_overview.py')
