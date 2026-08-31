@@ -189,7 +189,9 @@ def build_pod_node(state: UtilizationState) -> dict[str, Any]:
                 'ref': 'P1',
                 'resource': 'Pods',
                 'used': state.pods['value'],
-                'capacity': f'{pod_capacity} Total' if state.summary.get('pod_capacity') is not None else 'Not Available',
+                'capacity': f'{pod_capacity} Total'
+                if state.summary.get('pod_capacity') is not None
+                else 'Not Available',
                 'headroom': (
                     f'{max(pod_capacity - pod_count, 0)} Remaining'
                     if state.summary.get('pod_capacity') is not None
@@ -233,7 +235,12 @@ def build_trend(state: UtilizationState, *, chart_svg: str) -> dict[str, Any]:
     confidence = forecast_confidence(state)
     return {
         'metrics': (
-            metric('CPU Direction', trend_direction(state.cpu_history), state.cpu['value'], direction_tone(state.cpu_history)),
+            metric(
+                'CPU Direction',
+                trend_direction(state.cpu_history),
+                state.cpu['value'],
+                direction_tone(state.cpu_history),
+            ),
             metric(
                 'Memory Direction',
                 trend_direction(state.memory_history),
