@@ -2,20 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any
 
 from app.reports.export.html_pdf.builder_context import ReportDocumentContext
-
-
-class UtilizationPresentationContext(Protocol):
-    report_id: str
-    report_name: str
-    cluster_scope: str
-    namespace_scope: str
-    period_label: str
-    data_cutoff: str
-    generated_at_label: str
-    generated_by_label: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,7 +22,7 @@ class LegacyUtilizationPresentationContext:
 def resolve_utilization_context(
     context: ReportDocumentContext | None,
     legacy: Mapping[str, Any],
-) -> UtilizationPresentationContext:
+) -> ReportDocumentContext | LegacyUtilizationPresentationContext:
     if context is not None:
         return context
     return LegacyUtilizationPresentationContext(
