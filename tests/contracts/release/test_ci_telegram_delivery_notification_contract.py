@@ -5,7 +5,8 @@ from pathlib import Path
 from types import ModuleType
 
 ROOT = Path(__file__).resolve().parents[3]
-WORKFLOW = ROOT / '.github/workflows/quality.yml'
+QUALITY_WORKFLOW = ROOT / '.github/workflows/quality.yml'
+NOTIFY_WORKFLOW = ROOT / '.github/workflows/telegram-github-actions.yml'
 NOTIFIER = ROOT / 'scripts/ci_delivery_notify.py'
 
 
@@ -22,17 +23,23 @@ def load_notifier() -> ModuleType:
     return module
 
 
-def test_workflow_uses_github_actions_environment_topic_and_trusted_source_guard() -> None:
-    source = read(WORKFLOW)
-    assert 'name: KAORI GitHub Actions Notification' in source
+def test_notification_workflow_is_separate_environment_scoped_and_trusted() -> None:
+    source = read(NOTIFY_WORKFLOW)
+    quality = read(QUALITY_WORKFLOW)
+    assert 'name: KAORI GitHub Actions Telegram Notification' in source
+    assert 'workflow_run:' in source
+    assert 'workflows: ["KAORI CI"]' in source
+    assert 'types: [completed]' in source
     assert 'name: kaori-github-actions' in source
+    assert 'runs-on: ubuntu-latest' in source
     assert 'TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}' in source
     assert 'TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}' in source
     assert 'TELEGRAM_GITHUB_ACTIONS_TOPIC_ID: ${{ vars.TELEGRAM_GITHUB_ACTIONS_TOPIC_ID }}' in source
     assert 'TELEGRAM_NOTIFICATIONS_ENABLED: ${{ vars.TELEGRAM_NOTIFICATIONS_ENABLED }}' in source
-    assert 'github.event.pull_request.head.repo.full_name == github.repository' in source
+    assert 'github.event.workflow_run.head_repository.full_name == github.repository' in source
     assert 'continue-on-error: true' in source
     assert 'KAORI_UAT_URL' not in source
+    assert 'KAORI GitHub Actions Telegram Notification' not in quality
 
 
 def test_event_routing_is_actionable_and_profile_aware() -> None:
@@ -100,6 +107,23 @@ def test_event_routing_is_actionable_and_profile_aware() -> None:
         )
         is None
     )
+    assert (
+        notifier.select_event(
+            profile='pr-integration',
+            execution='full',
+            admission_result='skipped',
+            security_result='skipped',
+        )
+        is None
+    )
+
+
+def test_profile_resolution_supports_governed_delivery_boundaries() -> None:
+    notifier = load_notifier()
+    assert notifier.resolve_profile(event_name='pull_request', head_branch='feature', base_branch='kaori/staging') == 'pr-integration'
+    assert notifier.resolve_profile(event_name='push', head_branch='kaori/staging', base_branch='') == 'staging-integration'
+    assert notifier.resolve_profile(event_name='pull_request', head_branch='kaori/staging', base_branch='main') == 'promotion'
+    assert notifier.resolve_profile(event_name='push', head_branch='main', base_branch='') == 'post-promotion'
 
 
 def test_event_categories_are_stable_and_operator_facing() -> None:
