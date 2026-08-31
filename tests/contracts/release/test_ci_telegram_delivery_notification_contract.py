@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[3]
 QUALITY_WORKFLOW = ROOT / '.github/workflows/quality.yml'
 NOTIFY_WORKFLOW = ROOT / '.github/workflows/telegram-github-actions.yml'
 NOTIFIER = ROOT / 'scripts/ci_delivery_notify.py'
+SPEC = ROOT / 'docs/superpowers/specs/2026-08-31-github-actions-telegram-delivery-notifications-design.md'
 
 
 def read(path: Path) -> str:
@@ -44,78 +45,14 @@ def test_notification_workflow_is_separate_environment_scoped_and_trusted() -> N
 
 def test_event_routing_is_actionable_and_profile_aware() -> None:
     notifier = load_notifier()
-    assert (
-        notifier.select_event(
-            profile='pr-integration',
-            execution='full',
-            admission_result='success',
-            security_result='success',
-        )
-        == 'FULL_ADMISSION_PASSED'
-    )
-    assert (
-        notifier.select_event(
-            profile='staging-integration',
-            execution='fast',
-            admission_result='success',
-            security_result='skipped',
-        )
-        == 'UAT_REQUIRED'
-    )
-    assert (
-        notifier.select_event(
-            profile='promotion',
-            execution='fast',
-            admission_result='success',
-            security_result='skipped',
-        )
-        == 'PROMOTION_VALIDATED'
-    )
-    assert (
-        notifier.select_event(
-            profile='post-promotion',
-            execution='fast',
-            admission_result='success',
-            security_result='skipped',
-        )
-        == 'PROMOTION_SUCCEEDED'
-    )
-    assert (
-        notifier.select_event(
-            profile='pr-integration',
-            execution='full',
-            admission_result='failure',
-            security_result='failure',
-        )
-        == 'SECURITY_GATE_FAILED'
-    )
-    assert (
-        notifier.select_event(
-            profile='staging-integration',
-            execution='fast',
-            admission_result='failure',
-            security_result='skipped',
-        )
-        == 'DELIVERY_FAILED'
-    )
-    assert (
-        notifier.select_event(
-            profile='pr-integration',
-            execution='fast',
-            admission_result='success',
-            security_result='skipped',
-        )
-        is None
-    )
-    assert (
-        notifier.select_event(
-            profile='pr-integration',
-            execution='full',
-            admission_result='skipped',
-            security_result='skipped',
-        )
-        is None
-    )
+    assert notifier.select_event(profile='pr-integration', execution='full', admission_result='success', security_result='success') == 'FULL_ADMISSION_PASSED'
+    assert notifier.select_event(profile='staging-integration', execution='fast', admission_result='success', security_result='skipped') == 'UAT_REQUIRED'
+    assert notifier.select_event(profile='promotion', execution='fast', admission_result='success', security_result='skipped') == 'PROMOTION_VALIDATED'
+    assert notifier.select_event(profile='post-promotion', execution='fast', admission_result='success', security_result='skipped') == 'PROMOTION_SUCCEEDED'
+    assert notifier.select_event(profile='pr-integration', execution='full', admission_result='failure', security_result='failure') == 'SECURITY_GATE_FAILED'
+    assert notifier.select_event(profile='staging-integration', execution='fast', admission_result='failure', security_result='skipped') == 'DELIVERY_FAILED'
+    assert notifier.select_event(profile='pr-integration', execution='fast', admission_result='success', security_result='skipped') is None
+    assert notifier.select_event(profile='pr-integration', execution='full', admission_result='skipped', security_result='skipped') is None
 
 
 def test_profile_resolution_supports_governed_delivery_boundaries() -> None:
@@ -134,6 +71,14 @@ def test_event_categories_are_stable_and_operator_facing() -> None:
     assert notifier.event_category('UAT_REQUIRED') == 'UAT'
     assert notifier.event_category('PROMOTION_VALIDATED') == 'Promotion'
     assert notifier.event_category('PROMOTION_SUCCEEDED') == 'Promotion'
+
+    spec = read(SPEC)
+    assert '| CI / Quality |' in spec
+    assert '| Security |' in spec
+    assert '| UAT |' in spec
+    assert '| Promotion |' in spec
+    assert '| Release |' in spec
+    assert '| Deployment |' in spec
 
 
 def test_uat_message_contains_category_exact_operator_action_and_github_link() -> None:
@@ -163,18 +108,14 @@ def test_configuration_is_disabled_unless_explicitly_enabled_and_complete() -> N
         False,
         'Telegram GitHub Actions notifications are not enabled.',
     )
-    assert notifier.configuration_status(
-        enabled='true',
-        bot_token='secret',
-        chat_id='-100123',
-        topic_id='',
-    ) == (False, 'Telegram GitHub Actions notification configuration is incomplete.')
-    assert notifier.configuration_status(
-        enabled='true',
-        bot_token='secret',
-        chat_id='-100123',
-        topic_id='42',
-    ) == (True, 'Telegram GitHub Actions notifications are configured.')
+    assert notifier.configuration_status(enabled='true', bot_token='secret', chat_id='-100123', topic_id='') == (
+        False,
+        'Telegram GitHub Actions notification configuration is incomplete.',
+    )
+    assert notifier.configuration_status(enabled='true', bot_token='secret', chat_id='-100123', topic_id='42') == (
+        True,
+        'Telegram GitHub Actions notifications are configured.',
+    )
 
 
 def test_transport_contract_is_https_topic_aware_and_does_not_log_secret_values() -> None:
@@ -188,3 +129,12 @@ def test_transport_contract_is_https_topic_aware_and_does_not_log_secret_values(
     assert "response.read().decode('utf-8')" in source
     assert 'app.integrations' not in source
     assert 'KAORI_UAT_URL' not in source
+
+
+def test_reserved_release_and_deployment_categories_do_not_emit_until_future_workflows_exist() -> None:
+    notifier = load_notifier()
+    emitted = set(notifier._EVENT_CATEGORIES)
+    assert 'Release' not in emitted
+    assert 'Deployment' not in emitted
+    assert 'RELEASE_PUBLISHED' not in emitted
+    assert 'DEPLOYMENT_SUCCEEDED' not in emitted
