@@ -180,6 +180,8 @@ def test_evidence_reuse_requires_exact_sha_tree_profile_timestamp_and_all_requir
         'source_sha': 'abc123',
         'source_tree': 'tree123',
         'full_admission_run_id': 420,
+        'run_attempt': 1,
+        'workflow_ref': 'OXY7O/KAORI/.github/workflows/quality.yml@refs/heads/kaori/test',
         'created_at': '2026-08-31T00:00:00+00:00',
         'gates': {gate: 'success' for gate in REQUIRED_FULL_GATES - {'KAORI CI Admission'}},
     }
@@ -203,6 +205,39 @@ def test_evidence_reuse_requires_exact_sha_tree_profile_timestamp_and_all_requir
     )
     assert rejected_timestamp.reusable is False
     assert 'timestamp' in rejected_timestamp.reason.lower()
+
+    missing_attempt = dict(evidence)
+    missing_attempt.pop('run_attempt')
+    rejected_attempt = policy.evidence_reuse_decision(
+        missing_attempt,
+        current_sha='abc123',
+        current_tree='tree123',
+        required_profile_version='2',
+    )
+    assert rejected_attempt.reusable is False
+    assert 'attempt' in rejected_attempt.reason.lower()
+
+    missing_workflow = dict(evidence)
+    missing_workflow.pop('workflow_ref')
+    rejected_workflow = policy.evidence_reuse_decision(
+        missing_workflow,
+        current_sha='abc123',
+        current_tree='tree123',
+        required_profile_version='2',
+    )
+    assert rejected_workflow.reusable is False
+    assert 'workflow' in rejected_workflow.reason.lower()
+
+    wrong_workflow = dict(evidence)
+    wrong_workflow['workflow_ref'] = 'OXY7O/KAORI/.github/workflows/other.yml@refs/heads/main'
+    rejected_workflow_identity = policy.evidence_reuse_decision(
+        wrong_workflow,
+        current_sha='abc123',
+        current_tree='tree123',
+        required_profile_version='2',
+    )
+    assert rejected_workflow_identity.reusable is False
+    assert 'workflow' in rejected_workflow_identity.reason.lower()
 
     wrong_tree = policy.evidence_reuse_decision(
         evidence,

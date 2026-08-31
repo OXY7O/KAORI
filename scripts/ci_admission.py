@@ -167,16 +167,18 @@ def evidence_reuse_decision(
     if run_id <= 0:
         return ReuseDecision(False, 'Admission evidence Full Admission run ID is invalid.')
 
-    run_attempt = evidence.get('run_attempt')
-    if run_attempt is not None:
-        try:
-            if int(run_attempt) <= 0:
-                raise ValueError
-        except (TypeError, ValueError):
-            return ReuseDecision(False, 'Admission evidence run attempt is invalid.')
-    workflow_ref = evidence.get('workflow_ref')
-    if workflow_ref is not None and not str(workflow_ref).strip():
-        return ReuseDecision(False, 'Admission evidence workflow identity is invalid.')
+    try:
+        run_attempt = int(evidence.get('run_attempt'))
+    except (TypeError, ValueError):
+        return ReuseDecision(False, 'Admission evidence is missing a valid run attempt.')
+    if run_attempt <= 0:
+        return ReuseDecision(False, 'Admission evidence run attempt is invalid.')
+
+    workflow_ref = str(evidence.get('workflow_ref', '')).strip()
+    if not workflow_ref:
+        return ReuseDecision(False, 'Admission evidence is missing workflow identity.')
+    if '.github/workflows/quality.yml@' not in workflow_ref:
+        return ReuseDecision(False, 'Admission evidence workflow identity is not KAORI CI quality.yml.')
 
     return ReuseDecision(
         True, 'Exact successful Full Admission evidence is reusable.', run_id, current_sha, current_tree
