@@ -598,3 +598,9 @@ jobs:
               --next-action "$next" \
             >> "$GITHUB_STEP_SUMMARY"
           printf '%s — KAORI %s · %s · %s\n' "$RESULT" "$PROFILE" "$duration" "$next"
+
+  telegram-notification:
+    name: GitHub Actions Telegram Delivery
+    if: ${{ always() }}
+    needs: admission
+    uses: OXY7O/KAORI/.github/workflows/telegram-github-actions.yml@43ca843a09835a53bd72a7513a82f891164736d6
