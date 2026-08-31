@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import sys
+import time
 from typing import Any, Final
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode
@@ -12,52 +13,40 @@ from urllib.request import Request, urlopen
 _TELEGRAM_API: Final = 'https://api.telegram.org'
 _GITHUB_API: Final = 'https://api.github.com'
 _TRUE_VALUES: Final = frozenset({'1', 'true', 'yes', 'on'})
-_FAILURE_RESULTS: Final = frozenset({'failure', 'cancelled', 'timed_out', 'action_required'})
+_FAILURE_RESULTS: Final = frozenset({'failure', 'timed_out', 'action_required'})
+_WORKFLOW_WAIT_ATTEMPTS: Final = 90
+_WORKFLOW_WAIT_SECONDS: Final = 10
 
 _EVENT_TITLES: Final = {
-    'FULL_ADMISSION_PASSED': '✅ KAORI · Full Admission Passed',
-    'SECURITY_GATE_FAILED': '🔐 KAORI · Security Gate Failed',
     'DELIVERY_FAILED': '❌ KAORI · Delivery Failed',
     'UAT_REQUIRED': '🧪 KAORI · UAT Required',
-    'PROMOTION_VALIDATED': '✅ KAORI · Promotion Validated',
     'PROMOTION_SUCCEEDED': '🚀 KAORI · Promotion Succeeded',
 }
 
 _EVENT_CATEGORIES: Final = {
-    'FULL_ADMISSION_PASSED': 'CI / Quality',
     'DELIVERY_FAILED': 'CI / Quality',
-    'SECURITY_GATE_FAILED': 'Security',
     'UAT_REQUIRED': 'UAT',
-    'PROMOTION_VALIDATED': 'Promotion',
     'PROMOTION_SUCCEEDED': 'Promotion',
 }
 
 _PROFILE_CONTEXT: Final = {
-    'pr-integration': ('PR Integration', 'Staging Candidate'),
     'staging-integration': ('Staging Integration', 'Staging'),
-    'promotion': ('Promotion', 'Main Promotion'),
     'post-promotion': ('Post-promotion', 'Main'),
 }
 
 _ACTIONS: Final = {
-    'FULL_ADMISSION_PASSED': ('Review the final candidate and merge to kaori/staging when approved.'),
-    'SECURITY_GATE_FAILED': ('Review security evidence, repair the finding, then rerun Admission.'),
-    'DELIVERY_FAILED': ('Review the first failing delivery gate, repair it, then rerun Admission.'),
+    'DELIVERY_FAILED': 'Review the first failing delivery gate, repair it, then rerun Admission.',
     'UAT_REQUIRED': 'Complete UAT before promotion to main.',
-    'PROMOTION_VALIDATED': 'Merge the accepted staging lineage to main.',
-    'PROMOTION_SUCCEEDED': ('No delivery action required; promoted lineage is verified on main.'),
+    'PROMOTION_SUCCEEDED': 'No delivery action required; promoted lineage is verified on main.',
 }
 
-_FULL_GATE_NAMES: Final = (
+_FAILURE_ORDER: Final = (
+    'Resolve KAORI Validation Profile',
     'Static, Architecture, and Governance',
     'Secrets, SAST, Dependencies, and Workflow Security',
     'Functional and Integration Tests',
     'Frontend Reproducibility',
     'Production Image, Container Security, Runtime, and DAST',
-)
-_FAILURE_ORDER: Final = (
-    'Resolve KAORI Validation Profile',
-    *_FULL_GATE_NAMES,
     'KAORI Fast Integration Smoke',
     'KAORI CI Admission',
 )
@@ -70,29 +59,20 @@ def select_event(
     admission_result: str,
     security_result: str,
 ) -> str | None:
+    del execution, security_result
+    if profile not in {'staging-integration', 'post-promotion'}:
+        return None
     if admission_result in _FAILURE_RESULTS:
-        if security_result == 'failure':
-            return 'SECURITY_GATE_FAILED'
         return 'DELIVERY_FAILED'
     if admission_result != 'success':
         return None
-
     if profile == 'staging-integration':
         return 'UAT_REQUIRED'
-    if profile == 'promotion':
-        return 'PROMOTION_VALIDATED'
-    if profile == 'post-promotion':
-        return 'PROMOTION_SUCCEEDED'
-    if profile == 'pr-integration' and execution == 'full':
-        return 'FULL_ADMISSION_PASSED'
-    return None
+    return 'PROMOTION_SUCCEEDED'
 
 
 def resolve_profile(*, event_name: str, head_branch: str, base_branch: str) -> str:
-    if event_name == 'pull_request' and base_branch == 'kaori/staging':
-        return 'pr-integration'
-    if event_name == 'pull_request' and base_branch == 'main' and head_branch == 'kaori/staging':
-        return 'promotion'
+    del base_branch
     if event_name == 'push' and head_branch == 'kaori/staging':
         return 'staging-integration'
     if event_name == 'push' and head_branch == 'main':
@@ -129,15 +109,10 @@ def render_message(
     pr_number: str,
     failure_detail: str = '',
 ) -> str:
-    title = _EVENT_TITLES.get(
-        event,
-        f'ℹ️ KAORI · {event.replace("_", " ").title()}',
-    )
-    boundary, environment = _PROFILE_CONTEXT.get(
-        profile,
-        (profile or 'Delivery', 'Delivery'),
-    )
-    result = 'FAIL' if event in {'SECURITY_GATE_FAILED', 'DELIVERY_FAILED'} else 'PASS'
+    del pr_number
+    title = _EVENT_TITLES.get(event, f'ℹ️ KAORI · {event.replace("_", " ").title()}')
+    boundary, environment = _PROFILE_CONTEXT.get(profile, (profile or 'Delivery', 'Delivery'))
+    result = 'FAIL' if event == 'DELIVERY_FAILED' else 'PASS'
     short_sha = source_sha[:12] if source_sha else 'unknown'
 
     lines = [
@@ -150,15 +125,11 @@ def render_message(
         f'Commit: {short_sha}',
         f'Repository: {repository}',
     ]
-    if pr_number.strip():
-        lines.append(f'PR: #{pr_number.strip()}')
-
     evidence = _evidence_summary(event=event, execution=execution)
     if evidence:
         lines.append(f'Evidence: {evidence}')
     if failure_detail.strip() and result == 'FAIL':
         lines.append(f'First Failure: {failure_detail.strip()}')
-
     lines.append(f'Action: {_ACTIONS.get(event, "Review the workflow result.")}')
     if run_url.strip():
         lines.extend(['', f'View Run: {run_url.strip()}'])
@@ -166,13 +137,11 @@ def render_message(
 
 
 def _evidence_summary(*, event: str, execution: str) -> str:
-    if event == 'FULL_ADMISSION_PASSED':
-        return 'Fresh Full Admission PASS'
-    if event in {'UAT_REQUIRED', 'PROMOTION_VALIDATED', 'PROMOTION_SUCCEEDED'}:
+    if event in {'UAT_REQUIRED', 'PROMOTION_SUCCEEDED'}:
         if execution == 'fast':
             return 'Full Admission evidence reused + Fast Integration Smoke PASS'
         return 'Selected Admission path PASS'
-    if event in {'SECURITY_GATE_FAILED', 'DELIVERY_FAILED'}:
+    if event == 'DELIVERY_FAILED':
         return 'Selected Admission path failed'
     return ''
 
@@ -247,57 +216,71 @@ def fetch_workflow_jobs(
     return [job for job in jobs if isinstance(job, dict)]
 
 
-def fetch_associated_pull_requests(
+def fetch_quality_workflow_runs(
     *,
     repository: str,
-    source_sha: str,
+    head_branch: str,
     token: str,
 ) -> list[dict[str, Any]]:
     safe_repository = _safe_repository(repository)
-    safe_sha = quote(source_sha, safe='')
+    safe_branch = quote(head_branch, safe='')
     payload = _github_api_get(
-        path=f'/repos/{safe_repository}/commits/{safe_sha}/pulls?per_page=100',
+        path=(
+            f'/repos/{safe_repository}/actions/workflows/quality.yml/runs?branch={safe_branch}&event=push&per_page=50'
+        ),
         token=token,
     )
-    if not isinstance(payload, list):
-        raise RuntimeError('GitHub pull request lookup returned an invalid payload.')
-    return [pull for pull in payload if isinstance(pull, dict)]
+    runs = payload.get('workflow_runs') if isinstance(payload, dict) else None
+    if not isinstance(runs, list):
+        raise RuntimeError('GitHub Actions workflow lookup returned an invalid payload.')
+    return [run for run in runs if isinstance(run, dict)]
 
 
-def select_pull_request_context(
+def select_matching_workflow_run(
     *,
-    pull_requests: list[dict[str, Any]],
-    head_branch: str,
+    runs: list[dict[str, Any]],
     source_sha: str,
-) -> tuple[str, str]:
-    candidates: list[dict[str, Any]] = []
-    for pull in pull_requests:
-        head = pull.get('head')
-        base = pull.get('base')
-        if not isinstance(head, dict) or not isinstance(base, dict):
-            continue
-        if str(head.get('ref') or '') != head_branch:
-            continue
-        if str(head.get('sha') or '') != source_sha:
-            continue
-        if str(base.get('ref') or '') not in {'kaori/staging', 'main'}:
-            continue
-        candidates.append(pull)
+    head_branch: str,
+) -> dict[str, Any] | None:
+    matches = [
+        run
+        for run in runs
+        if str(run.get('event') or '') == 'push'
+        and str(run.get('head_sha') or '') == source_sha
+        and str(run.get('head_branch') or '') == head_branch
+    ]
+    if not matches:
+        return None
+    return max(matches, key=lambda run: int(run.get('id') or 0))
 
-    open_candidates = [pull for pull in candidates if pull.get('state') == 'open']
-    if len(open_candidates) == 1:
-        selected = open_candidates[0]
-    elif len(candidates) == 1:
-        selected = candidates[0]
-    else:
-        return '', ''
 
-    base = selected.get('base')
-    if not isinstance(base, dict):
-        return '', ''
-    base_branch = str(base.get('ref') or '')
-    number = str(selected.get('number') or '')
-    return base_branch, number
+def wait_for_quality_workflow_run(
+    *,
+    repository: str,
+    source_sha: str,
+    head_branch: str,
+    token: str,
+    attempts: int = _WORKFLOW_WAIT_ATTEMPTS,
+    interval_seconds: int = _WORKFLOW_WAIT_SECONDS,
+) -> dict[str, Any]:
+    attempts = max(int(attempts), 1)
+    interval_seconds = max(int(interval_seconds), 0)
+    for attempt in range(attempts):
+        runs = fetch_quality_workflow_runs(
+            repository=repository,
+            head_branch=head_branch,
+            token=token,
+        )
+        selected = select_matching_workflow_run(
+            runs=runs,
+            source_sha=source_sha,
+            head_branch=head_branch,
+        )
+        if selected is not None and str(selected.get('status') or '') == 'completed':
+            return selected
+        if attempt + 1 < attempts and interval_seconds:
+            time.sleep(interval_seconds)
+    raise RuntimeError('Timed out waiting for the exact-SHA KAORI CI workflow run to complete.')
 
 
 def send_message(
@@ -343,8 +326,9 @@ def send_message(
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description=('Send categorized KAORI GitHub Actions notifications to a Telegram topic.')
+        description='Send trusted-branch KAORI GitHub Actions notifications to a Telegram topic.'
     )
+    parser.add_argument('--discover-workflow-run', action='store_true')
     parser.add_argument('--workflow-run-id', default='')
     parser.add_argument('--workflow-event', default='')
     parser.add_argument('--workflow-conclusion', default='')
@@ -356,7 +340,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--security-result', default='skipped')
     parser.add_argument('--source-sha', required=True)
     parser.add_argument('--repository', required=True)
-    parser.add_argument('--run-url', required=True)
+    parser.add_argument('--run-url', default='')
     parser.add_argument('--pr-number', default='')
     parser.add_argument('--failure-detail', default='')
     return parser
@@ -384,44 +368,46 @@ def main(argv: list[str] | None = None) -> int:
     admission_result = args.admission_result
     security_result = args.security_result
     failure_detail = args.failure_detail
-    base_branch = args.base_branch
-    pr_number = args.pr_number
+    workflow_run_id = args.workflow_run_id
+    workflow_conclusion = args.workflow_conclusion
+    run_url = args.run_url
 
-    if args.workflow_run_id:
-        token = os.environ.get('GH_TOKEN', '')
+    token = os.environ.get('GH_TOKEN', '')
+    if args.discover_workflow_run:
         try:
-            jobs = fetch_workflow_jobs(
+            workflow_run = wait_for_quality_workflow_run(
                 repository=args.repository,
-                run_id=args.workflow_run_id,
+                source_sha=args.source_sha,
+                head_branch=args.head_branch,
                 token=token,
             )
-            if args.workflow_event == 'pull_request' and not base_branch:
-                pull_requests = fetch_associated_pull_requests(
-                    repository=args.repository,
-                    source_sha=args.source_sha,
-                    token=token,
-                )
-                base_branch, resolved_pr_number = select_pull_request_context(
-                    pull_requests=pull_requests,
-                    head_branch=args.head_branch,
-                    source_sha=args.source_sha,
-                )
-                if not pr_number:
-                    pr_number = resolved_pr_number
         except RuntimeError as exc:
             print(f'FAIL — {exc}', file=sys.stderr)
             return 1
+        workflow_run_id = str(workflow_run.get('id') or '')
+        workflow_conclusion = str(workflow_run.get('conclusion') or '')
+        run_url = str(workflow_run.get('html_url') or '')
 
+    if workflow_run_id:
+        try:
+            jobs = fetch_workflow_jobs(
+                repository=args.repository,
+                run_id=workflow_run_id,
+                token=token,
+            )
+        except RuntimeError as exc:
+            print(f'FAIL — {exc}', file=sys.stderr)
+            return 1
         conclusions = _job_conclusions(jobs)
         profile = resolve_profile(
             event_name=args.workflow_event,
             head_branch=args.head_branch,
-            base_branch=base_branch,
+            base_branch=args.base_branch,
         )
         execution = infer_execution(jobs)
         admission_result = conclusions.get('KAORI CI Admission', '')
-        if admission_result not in _FAILURE_RESULTS | {'success'} and args.workflow_conclusion in _FAILURE_RESULTS:
-            admission_result = args.workflow_conclusion
+        if admission_result not in _FAILURE_RESULTS | {'success'} and workflow_conclusion in _FAILURE_RESULTS:
+            admission_result = workflow_conclusion
         security_result = conclusions.get(
             'Secrets, SAST, Dependencies, and Workflow Security',
             'skipped',
@@ -435,7 +421,7 @@ def main(argv: list[str] | None = None) -> int:
         security_result=security_result,
     )
     if event is None:
-        print('SKIP — Completed KAORI CI run has no actionable GitHub Actions notification.')
+        print('SKIP — Completed KAORI CI run has no trusted-branch Telegram notification.')
         return 0
 
     message = render_message(
@@ -444,8 +430,8 @@ def main(argv: list[str] | None = None) -> int:
         execution=execution,
         source_sha=args.source_sha,
         repository=args.repository,
-        run_url=args.run_url,
-        pr_number=pr_number,
+        run_url=run_url,
+        pr_number=args.pr_number,
         failure_detail=failure_detail,
     )
     delivered, detail = send_message(

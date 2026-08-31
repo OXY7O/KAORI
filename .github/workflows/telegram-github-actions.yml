@@ -1,40 +1,33 @@
 name: KAORI GitHub Actions Telegram Notification
 
 on:
-  workflow_call:
+  push:
+    branches:
+      - kaori/staging
+      - main
 
 permissions:
   contents: read
   actions: read
 
 concurrency:
-  group: kaori-telegram-github-actions-${{ github.run_id }}-${{ github.run_attempt }}
+  group: kaori-telegram-github-actions-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: false
 
 jobs:
   notify:
     name: KAORI GitHub Actions Notification
-    if: ${{ github.repository == 'OXY7O/KAORI' && (github.event_name != 'pull_request' || (github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    if: ${{ github.repository == 'OXY7O/KAORI' && github.event_name == 'push' && (github.ref == 'refs/heads/kaori/staging' || github.ref == 'refs/heads/main') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    environment:
-      name: kaori-github-actions
+    timeout-minutes: 20
     steps:
-      - name: Check Out Trusted Notifier
-        id: trusted_checkout
-        continue-on-error: true
+      - name: Check Out Trusted Push
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ github.sha }}
           persist-credentials: false
 
-      - name: Report Trusted Notifier Checkout Failure
-        if: ${{ steps.trusted_checkout.outcome != 'success' }}
-        run: echo "SKIP — Trusted Telegram notifier checkout was unavailable; KAORI CI remains authoritative."
-
-      - name: Send Categorized Telegram Notification
-        if: ${{ steps.trusted_checkout.outcome == 'success' }}
-        continue-on-error: true
+      - name: Send Trusted Branch Telegram Notification
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -42,20 +35,13 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
           TELEGRAM_GITHUB_ACTIONS_TOPIC_ID: ${{ vars.TELEGRAM_GITHUB_ACTIONS_TOPIC_ID }}
           TELEGRAM_NOTIFICATIONS_ENABLED: ${{ vars.TELEGRAM_NOTIFICATIONS_ENABLED }}
-          WORKFLOW_RUN_ID: ${{ github.run_id }}
           WORKFLOW_EVENT: ${{ github.event_name }}
-          WORKFLOW_HEAD_BRANCH: ${{ github.head_ref || github.ref_name }}
-          WORKFLOW_BASE_BRANCH: ${{ github.base_ref }}
-          WORKFLOW_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          WORKFLOW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          WORKFLOW_PR_NUMBER: ${{ github.event.pull_request.number }}
+          WORKFLOW_HEAD_BRANCH: ${{ github.ref_name }}
+          WORKFLOW_SOURCE_SHA: ${{ github.sha }}
         run: >-
           python scripts/ci_delivery_notify.py
-          --workflow-run-id "$WORKFLOW_RUN_ID"
+          --discover-workflow-run
           --workflow-event "$WORKFLOW_EVENT"
           --head-branch "$WORKFLOW_HEAD_BRANCH"
-          --base-branch "$WORKFLOW_BASE_BRANCH"
           --source-sha "$WORKFLOW_SOURCE_SHA"
           --repository "$GITHUB_REPOSITORY"
-          --run-url "$WORKFLOW_RUN_URL"
-          --pr-number "$WORKFLOW_PR_NUMBER"
