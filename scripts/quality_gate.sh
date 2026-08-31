@@ -147,7 +147,7 @@ run_contract_migration_gate() {
     # Canonical contract/migration coverage is executed through run_pytest_capture;
     # semantic equivalent of: pytest -q tests/contracts tests/migrations
     run_pytest_capture \
-        'Contract & Migration Tests' \
+        'Contract & Migration Safety' \
         -q \
         --tb=short \
         tests/contracts \
@@ -186,7 +186,7 @@ run_static() {
         'Python Syntax' 'python scripts/verify_python_syntax.py' \
         'Template Dependencies' 'python scripts/verify_template_dependencies.py'
 
-    run_static_group 'Reports/Domain Contracts' \
+    run_static_group 'Domain & Capability Contracts' \
         'Single PDF Engine' 'python scripts/verify_single_pdf_engine.py' \
         'Analytics PDF Publication' 'python scripts/verify_analytics_pdf_publication.py' \
         'Report Generation Contract' 'python scripts/verify_report_generation_contract.py' \
@@ -194,9 +194,7 @@ run_static() {
         'Report Job Standard' 'python scripts/verify_report_job_standard.py' \
         'Report Storage Resilience' 'python scripts/verify_report_storage_resilience.py' \
         'Tabular Export Standard' 'python scripts/verify_tabular_export_standard.py' \
-        'Object Storage Analytics' 'python scripts/verify_object_storage_analytics.py'
-
-    run_static_group 'Kubernetes & Platform Contracts' \
+        'Object Storage Analytics' 'python scripts/verify_object_storage_analytics.py' \
         'Inventory Final Lock' 'python scripts/verify_inventory_final_lock.py' \
         'Object Storage Inventory Final Lock' 'python scripts/verify_object_storage_inventory_final_lock.py' \
         'Governance Final Lock' 'python scripts/verify_governance_final_lock.py' \
@@ -256,7 +254,7 @@ run_static() {
         'Pre-release Semantic Lint' 'python scripts/verify_pre_release_lint_cleanup.py' \
         'Pre-release Type Safety' 'python scripts/verify_pre_release_type_safety.py'
 
-    run_static_group 'Code Quality & Type Safety' \
+    run_static_group 'Engineering Quality' \
         'Ruff Check' 'python -m ruff check app migrations tests scripts' \
         'Ruff Format' 'python -m ruff format --check app migrations tests scripts' \
         'DjLint' 'python -m djlint app/templates --check' \
