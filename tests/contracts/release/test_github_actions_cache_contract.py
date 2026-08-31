@@ -13,7 +13,7 @@ def read(path: Path) -> str:
 def test_ci_toolchain_cache_key_uses_immutable_toolchain_inputs() -> None:
     source = read(QUALITY)
 
-    assert 'Resolve and Reuse CI Toolchain' in source
+    assert 'Resolve CI Toolchain' in source
     for input_path in (
         '.github/ci/Dockerfile',
         '.github/ci/requirements-security.txt',
@@ -30,9 +30,7 @@ def test_ci_toolchain_cache_key_uses_immutable_toolchain_inputs() -> None:
 def test_existing_local_toolchain_image_is_reused() -> None:
     source = read(QUALITY)
 
-    resolver = source.split('- name: Resolve and Reuse CI Toolchain', 1)[1].split('- name: Resolve Source Identity', 1)[
-        0
-    ]
+    resolver = source.split('- name: Resolve CI Toolchain', 1)[1].split('- name: Resolve Source Identity', 1)[0]
     assert 'docker image inspect "$image"' in resolver
     assert '|| docker build' in resolver
     assert '--file .github/ci/Dockerfile' in resolver
@@ -85,19 +83,19 @@ def test_trivy_database_is_cached_but_each_exact_validation_image_is_scanned() -
     assert 'trivy image' in source
     assert '--exit-code 1' in source
     assert 'VALIDATION_IMAGE=kaori:ci-${{ needs.validation-profile.outputs.source_sha }}' in source
-    assert 'Scan Production Validation Image' in source
+    assert 'Scan Production Image' in source
 
 
 def test_cache_optimization_preserves_required_validation_gates() -> None:
     source = read(QUALITY)
 
     for token in (
-        'Run Static Foundation Gate',
-        'Run Free-Plan Static Security Gate',
-        'Run Functional Test Gate',
-        'Build and Verify Frontend',
-        'Scan Production Validation Image',
-        'Validate Production Runtime',
-        'KAORI CI Admission',
+        'Run Static & Governance',
+        'Run Security Gate',
+        'Run Functional Tests',
+        'Build & Verify Frontend',
+        'Scan Production Image',
+        'Validate Runtime & DAST',
+        'name: CI Admission',
     ):
         assert token in source
