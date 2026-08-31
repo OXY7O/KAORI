@@ -19,9 +19,7 @@ _FAMILIES = (
 def _function_span(source: str, name: str) -> int:
     tree = ast.parse(source)
     function = next(
-        node
-        for node in tree.body
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == name
+        node for node in tree.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == name
     )
     assert function.end_lineno is not None
     return function.end_lineno - function.lineno + 1
@@ -39,4 +37,6 @@ def test_remaining_html_pdf_report_families_have_bounded_facades_and_owned_packa
         assert package.is_dir(), f'{package_name}/ must own extracted {filename} presentation responsibilities'
         assert (package / '__init__.py').exists(), f'{package_name}/ must be an explicit Python package'
         ownership_modules = [path for path in package.glob('*.py') if path.name != '__init__.py']
-        assert len(ownership_modules) >= 2, f'{package_name}/ must use cohesive ownership modules, not one catch-all file'
+        assert len(ownership_modules) >= 2, (
+            f'{package_name}/ must use cohesive ownership modules, not one catch-all file'
+        )
