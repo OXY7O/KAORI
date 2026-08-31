@@ -1,0 +1,50 @@
+name: KAORI GitHub Actions Telegram Notification
+
+on:
+  workflow_run:
+    workflows: ["KAORI CI"]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: kaori-telegram-github-actions-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    name: KAORI GitHub Actions Notification
+    if: ${{ github.event.workflow_run.head_repository.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: kaori-github-actions
+    steps:
+      - name: Check Out Trusted Notifier
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Send Categorized Telegram Notification
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
+          TELEGRAM_GITHUB_ACTIONS_TOPIC_ID: ${{ vars.TELEGRAM_GITHUB_ACTIONS_TOPIC_ID }}
+          TELEGRAM_NOTIFICATIONS_ENABLED: ${{ vars.TELEGRAM_NOTIFICATIONS_ENABLED }}
+        run: >-
+          python scripts/ci_delivery_notify.py
+          --workflow-run-id "${{ github.event.workflow_run.id }}"
+          --workflow-event "${{ github.event.workflow_run.event }}"
+          --workflow-conclusion "${{ github.event.workflow_run.conclusion }}"
+          --head-branch "${{ github.event.workflow_run.head_branch }}"
+          --base-branch "${{ github.event.workflow_run.pull_requests[0].base.ref }}"
+          --source-sha "${{ github.event.workflow_run.head_sha }}"
+          --repository "$GITHUB_REPOSITORY"
+          --run-url "${{ github.event.workflow_run.html_url }}"
+          --pr-number "${{ github.event.workflow_run.pull_requests[0].number }}"
