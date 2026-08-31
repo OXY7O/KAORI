@@ -26,18 +26,16 @@ def test_pytest_failure_output_is_failure_first_and_bounded() -> None:
     assert 'First actionable failure' in source
 
 
-def test_static_verifier_output_is_grouped_instead_of_streamed_as_long_prose() -> None:
+def test_static_operator_rollup_uses_kaori_architecture_level_categories() -> None:
     source = QUALITY_GATE.read_text(encoding='utf-8')
 
-    assert 'run_command_capture' in source
-    assert 'STATIC_OUTPUT_DIR' in source
-    for group in (
-        'Foundation & Governance',
-        'Reports/Domain Contracts',
-        'Kubernetes & Platform Contracts',
-        'Code Quality & Type Safety',
-    ):
-        assert group in source
+    assert "run_static_group 'Foundation & Governance'" in source
+    assert "run_static_group 'Domain & Capability Contracts'" in source
+    assert "run_static_group 'Engineering Quality'" in source
+    assert "'Contract & Migration Safety'" in source
+    assert "run_static_group 'Reports/Domain Contracts'" not in source
+    assert "run_static_group 'Kubernetes & Platform Contracts'" not in source
+    assert "run_static_group 'Code Quality & Type Safety'" not in source
 
 
 def test_successful_static_groups_emit_one_operator_row_instead_of_one_pass_per_verifier() -> None:
