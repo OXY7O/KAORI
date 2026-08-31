@@ -67,6 +67,25 @@ def test_workflow_exposes_progressive_profiles_before_expensive_full_jobs() -> N
     assert first_profile < first_expensive
 
 
+def test_fast_profiles_wire_transition_lineage_verification_before_reuse() -> None:
+    source = read(WORKFLOW)
+
+    assert 'Verify Transition Lineage' in source
+    assert 'ci_admission.py verify-lineage' in source
+    for token in (
+        '--profile "$PROFILE"',
+        '--source-sha "$SOURCE_SHA"',
+        '--source-tree "$SOURCE_TREE"',
+        '--expected-before "${EXPECTED_BEFORE:-}"',
+        '--expected-base "${EXPECTED_BASE:-}"',
+        '--evidence-source-sha "$EVIDENCE_SOURCE_SHA"',
+        '--evidence-source-tree "$EVIDENCE_SOURCE_TREE"',
+    ):
+        assert token in source
+    assert 'lineage_reusable' in source
+    assert 'lineage_reason' in source
+
+
 def test_full_admission_keeps_the_existing_comprehensive_gate_inventory() -> None:
     source = read(WORKFLOW)
     for gate in REQUIRED_FULL_GATES:
