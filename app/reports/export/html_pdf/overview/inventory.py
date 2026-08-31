@@ -74,28 +74,12 @@ def _inventory_totals(
     return {
         'clusters': len(clusters) if scoped else integer(inventory_snapshot.get('total_clusters')),
         'nodes': _scoped_total(clusters, 'nodes') if scoped else integer(inventory_snapshot.get('total_nodes')),
-        'namespaces': (
-            _scoped_total(clusters, 'namespaces')
-            if scoped
-            else integer(inventory_snapshot.get('total_namespaces'))
-        ),
-        'workloads': (
-            _scoped_total(clusters, 'workloads')
-            if scoped
-            else integer(inventory_snapshot.get('total_workloads'))
-        ),
+        'namespaces': (_scoped_total(clusters, 'namespaces') if scoped else integer(inventory_snapshot.get('total_namespaces'))),
+        'workloads': (_scoped_total(clusters, 'workloads') if scoped else integer(inventory_snapshot.get('total_workloads'))),
         'pods': _scoped_total(clusters, 'pods') if scoped else integer(inventory_snapshot.get('total_pods')),
-        'services': (
-            _scoped_total(clusters, 'services')
-            if scoped
-            else integer(inventory_snapshot.get('total_services'))
-        ),
+        'services': (_scoped_total(clusters, 'services') if scoped else integer(inventory_snapshot.get('total_services'))),
         'ingresses': integer(inventory_snapshot.get('total_ingresses')),
-        'storage': (
-            _scoped_total(clusters, 'storage')
-            if scoped
-            else integer(inventory_snapshot.get('total_storage'))
-        ),
+        'storage': (_scoped_total(clusters, 'storage') if scoped else integer(inventory_snapshot.get('total_storage'))),
         'configuration': integer(inventory_snapshot.get('total_configuration')),
     }
 
