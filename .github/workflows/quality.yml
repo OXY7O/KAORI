@@ -55,6 +55,7 @@ jobs:
       source_tree: ${{ steps.identity.outputs.source_tree }}
       evidence_run_id: ${{ steps.evidence.outputs.evidence_run_id }}
       evidence_source_sha: ${{ steps.evidence.outputs.evidence_source_sha }}
+      evidence_source_tree: ${{ steps.evidence.outputs.evidence_source_tree }}
       started_epoch: ${{ steps.identity.outputs.started_epoch }}
       toolchain_image: ${{ steps.toolchain.outputs.image }}
     steps:
@@ -159,6 +160,37 @@ jobs:
               --current-tree "${{ steps.identity.outputs.source_tree }}" \
             >> "$GITHUB_OUTPUT"
 
+      - name: Verify Transition Lineage
+        id: lineage
+        if: ${{ steps.routing.outputs.execution == 'fast' && steps.evidence.outputs.reusable == 'true' }}
+        shell: bash
+        env:
+          PROFILE: ${{ steps.routing.outputs.profile }}
+          SOURCE_SHA: ${{ steps.identity.outputs.source_sha }}
+          SOURCE_TREE: ${{ steps.identity.outputs.source_tree }}
+          EXPECTED_BEFORE: ${{ github.event.before }}
+          EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
+          EVIDENCE_SOURCE_SHA: ${{ steps.evidence.outputs.evidence_source_sha }}
+          EVIDENCE_SOURCE_TREE: ${{ steps.evidence.outputs.evidence_source_tree }}
+          CI_TOOLCHAIN_IMAGE: ${{ steps.toolchain.outputs.image }}
+        run: |
+          set -Eeuo pipefail
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --env HOME=/tmp \
+            --volume "$PWD:/workspace" \
+            --workdir /workspace \
+            "$CI_TOOLCHAIN_IMAGE" \
+            python scripts/ci_admission.py verify-lineage \
+              --profile "$PROFILE" \
+              --source-sha "$SOURCE_SHA" \
+              --source-tree "$SOURCE_TREE" \
+              --expected-before "${EXPECTED_BEFORE:-}" \
+              --expected-base "${EXPECTED_BASE:-}" \
+              --evidence-source-sha "$EVIDENCE_SOURCE_SHA" \
+              --evidence-source-tree "$EVIDENCE_SOURCE_TREE" \
+            >> "$GITHUB_OUTPUT"
+
       - name: Finalize Validation Profile
         id: final
         shell: bash
@@ -169,6 +201,8 @@ jobs:
           ROUTED_REASON: ${{ steps.routing.outputs.reason }}
           REUSABLE: ${{ steps.evidence.outputs.reusable }}
           EVIDENCE_REASON: ${{ steps.evidence.outputs.evidence_reason }}
+          LINEAGE_REUSABLE: ${{ steps.lineage.outputs.lineage_reusable }}
+          LINEAGE_REASON: ${{ steps.lineage.outputs.lineage_reason }}
         run: |
           set -Eeuo pipefail
           execution="$ROUTED_EXECUTION"
@@ -178,6 +212,10 @@ jobs:
             execution=full
             fallback=true
             reason="FALLBACK — ${EVIDENCE_REASON:-exact Full Admission evidence unavailable}"
+          elif [[ "$ROUTED_EXECUTION" == "fast" && "${LINEAGE_REUSABLE:-false}" != "true" ]]; then
+            execution=full
+            fallback=true
+            reason="FALLBACK — ${LINEAGE_REASON:-transition lineage could not be proven}"
           fi
           {
             printf 'profile=%s\n' "$PROFILE"
@@ -435,16 +473,16 @@ jobs:
               [[ "$result" == "success" ]] || { echo 'selected Full Admission gate failed'; exit 1; }
             done
             {
-              echo 'coverage=Foundation & Governance; Reports/Domain Contracts; Code Quality & Type Safety; Functional & Integration; Frontend; Security & Runtime'
-              echo 'fresh=Foundation & Governance|Reports/Domain Contracts|Code Quality & Type Safety|Functional & Integration|Frontend|Security & Runtime'
+              echo 'coverage=Foundation & Governance; Domain & Capability Contracts; Engineering Quality; Functional & Integration; Frontend; Security & Runtime'
+              echo 'fresh=Foundation & Governance|Domain & Capability Contracts|Engineering Quality|Functional & Integration|Frontend|Security & Runtime'
               echo 'reused='
             } >> "$GITHUB_OUTPUT"
           else
             [[ "$INTEGRATION_SMOKE" == "success" ]] || { echo 'fast integration smoke failed'; exit 1; }
             {
               echo 'coverage=Exact Full Admission evidence reused with fresh lineage and integration smoke.'
-              echo 'fresh=Admission evidence identity|syntax/architecture/import/migration smoke|release contracts|E2E smoke'
-              echo 'reused=Foundation & Governance|Reports/Domain Contracts|Code Quality & Type Safety|Functional & Integration|Frontend|Security & Runtime'
+              echo 'fresh=Admission evidence identity|transition lineage|syntax/architecture/import/migration smoke|release contracts|E2E smoke'
+              echo 'reused=Foundation & Governance|Domain & Capability Contracts|Engineering Quality|Functional & Integration|Frontend|Security & Runtime'
             } >> "$GITHUB_OUTPUT"
           fi
 

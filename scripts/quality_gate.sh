@@ -39,6 +39,10 @@ pytest_result_line() {
         | sed -E 's/^[[:space:]]+//'
 }
 
+filter_pytest_progress() {
+    sed -E '/^[.FEsxX]+[[:space:]]+\[[[:space:]]*[0-9]+%\]$/d'
+}
+
 print_pytest_failure_excerpt() {
     local log_file="$1"
     local first_failure
@@ -62,7 +66,7 @@ print_pytest_failure_excerpt() {
     ' "$log_file" >&2
 
     printf '%s\n' '--- short test summary info / final output ---' >&2
-    tail -n 80 "$log_file" >&2
+    tail -n 80 "$log_file" | filter_pytest_progress >&2
 }
 
 run_pytest_capture() {

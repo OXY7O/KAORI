@@ -5,16 +5,19 @@ import argparse
 import io
 import json
 import os
+import subprocess
 import sys
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET  # nosec B405
 import zipfile
 from collections.abc import Mapping, Sequence
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, NamedTuple
 
 PROFILE_VERSION = '2'
+EVIDENCE_MAX_AGE_SECONDS = 14 * 24 * 60 * 60
 FULL_GATE_NAMES = (
     'Static, Architecture, and Governance',
     'Secrets, SAST, Dependencies, and Workflow Security',
@@ -31,6 +34,7 @@ SENSITIVE_PREFIXES = (
     'scripts/quality_gate.sh',
     'scripts/verify_',
     'tests/contracts/release/',
+    'docs/engineering/KAORI_DELIVERY_WORKFLOW.md',
     'Dockerfile',
     'docker-compose',
 )
@@ -108,6 +112,19 @@ def resolve_profile(
     return ProfileDecision(profile, 'fast', 'Eligible for exact Admission evidence reuse.', PROFILE_DISPLAY[profile])
 
 
+def _parse_evidence_timestamp(value: Any) -> datetime | None:
+    raw = str(value or '').strip()
+    if not raw:
+        return None
+    try:
+        parsed = datetime.fromisoformat(raw.replace('Z', '+00:00'))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return None
+    return parsed.astimezone(timezone.utc)
+
+
 def evidence_reuse_decision(
     evidence: Mapping[str, Any],
     *,
@@ -117,12 +134,23 @@ def evidence_reuse_decision(
 ) -> ReuseDecision:
     if str(evidence.get('result', '')).upper() != 'PASS':
         return ReuseDecision(False, 'Full Admission evidence result is not PASS.')
+    if str(evidence.get('profile', 'full')) != 'full':
+        return ReuseDecision(False, 'Admission evidence profile is not Full Admission.')
     if str(evidence.get('profile_version', '')) != required_profile_version:
         return ReuseDecision(False, 'Validation profile version does not match current authority.')
     if str(evidence.get('source_sha', '')) != current_sha:
         return ReuseDecision(False, 'Source commit SHA does not match Admission evidence.')
     if str(evidence.get('source_tree', '')) != current_tree:
         return ReuseDecision(False, 'Source tree does not match Admission evidence.')
+
+    created_at = _parse_evidence_timestamp(evidence.get('created_at'))
+    if created_at is None:
+        return ReuseDecision(False, 'Admission evidence is missing a valid timestamp.')
+    age_seconds = (datetime.now(timezone.utc) - created_at).total_seconds()
+    if age_seconds < -300:
+        return ReuseDecision(False, 'Admission evidence timestamp is unexpectedly in the future.')
+    if age_seconds > EVIDENCE_MAX_AGE_SECONDS:
+        return ReuseDecision(False, 'Admission evidence is stale and must be refreshed.')
 
     gates = evidence.get('gates')
     if not isinstance(gates, Mapping):
@@ -136,6 +164,20 @@ def evidence_reuse_decision(
         run_id = int(evidence.get('full_admission_run_id'))
     except (TypeError, ValueError):
         return ReuseDecision(False, 'Admission evidence is missing a valid Full Admission run ID.')
+    if run_id <= 0:
+        return ReuseDecision(False, 'Admission evidence Full Admission run ID is invalid.')
+
+    run_attempt = evidence.get('run_attempt')
+    if run_attempt is not None:
+        try:
+            if int(run_attempt) <= 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            return ReuseDecision(False, 'Admission evidence run attempt is invalid.')
+    workflow_ref = evidence.get('workflow_ref')
+    if workflow_ref is not None and not str(workflow_ref).strip():
+        return ReuseDecision(False, 'Admission evidence workflow identity is invalid.')
+
     return ReuseDecision(
         True, 'Exact successful Full Admission evidence is reusable.', run_id, current_sha, current_tree
     )
@@ -179,6 +221,90 @@ def promotion_lineage_reuse_decision(
         source_sha=accepted_staging_sha,
         source_tree=accepted_tree,
     )
+
+
+def _local_commit_metadata(sha: str) -> tuple[str, tuple[str, ...]]:
+    tree = subprocess.run(
+        ['git', 'show', '-s', '--format=%T', sha],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    parents_raw = subprocess.run(
+        ['git', 'show', '-s', '--format=%P', sha],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    return tree, tuple(parents_raw.split()) if parents_raw else ()
+
+
+def transition_lineage_reuse_decision(
+    *,
+    profile: str,
+    source_sha: str,
+    source_tree: str,
+    expected_before: str,
+    expected_base: str,
+    evidence_source_sha: str,
+    evidence_source_tree: str,
+) -> ReuseDecision:
+    if not evidence_source_sha or not evidence_source_tree:
+        return ReuseDecision(False, 'Transition lineage cannot be verified without exact Admission source identity.')
+    if source_tree != evidence_source_tree:
+        return ReuseDecision(False, 'Transition tree differs from the admitted evidence tree.')
+
+    try:
+        local_tree, parents = _local_commit_metadata(source_sha)
+    except (OSError, subprocess.CalledProcessError) as exc:
+        return ReuseDecision(False, f'Transition lineage lookup failed closed: {exc}')
+    if local_tree != source_tree:
+        return ReuseDecision(False, 'Checked-out source tree differs from the routed source tree.')
+
+    if profile == 'pr-integration':
+        if not expected_base:
+            return ReuseDecision(False, 'PR Integration is missing the expected staging base authority.')
+        if source_sha != evidence_source_sha:
+            return ReuseDecision(False, 'PR head does not match the exact admitted source SHA.')
+        return ReuseDecision(True, 'PR head and tree match exact Full Admission evidence.', source_sha=source_sha, source_tree=source_tree)
+
+    if profile == 'staging-integration':
+        if not expected_before:
+            return ReuseDecision(False, 'Staging Integration is missing the previous staging authority.')
+        return staging_lineage_reuse_decision(
+            parent_shas=parents,
+            merge_tree=source_tree,
+            expected_staging_parent=expected_before,
+            admitted_head_sha=evidence_source_sha,
+            admitted_tree=evidence_source_tree,
+        )
+
+    if profile == 'promotion':
+        if not expected_base:
+            return ReuseDecision(False, 'Promotion is missing the expected main base authority.')
+        if source_sha == evidence_source_sha:
+            return ReuseDecision(True, 'Promotion head is the exact admitted staging source.', source_sha=source_sha, source_tree=source_tree)
+        if len(parents) >= 2 and parents[1] == evidence_source_sha:
+            return ReuseDecision(True, 'Promotion staging head preserves the admitted merge lineage.', source_sha=source_sha, source_tree=source_tree)
+        return ReuseDecision(False, 'Promotion staging head does not preserve the admitted source lineage.')
+
+    if profile == 'post-promotion':
+        if not expected_before:
+            return ReuseDecision(False, 'Post-promotion is missing the previous main authority.')
+        if len(parents) != 2 or parents[0] != expected_before:
+            return ReuseDecision(False, 'Post-promotion main parents do not match the expected promotion lineage.')
+        accepted_staging_sha = parents[1]
+        try:
+            accepted_tree, accepted_parents = _local_commit_metadata(accepted_staging_sha)
+        except (OSError, subprocess.CalledProcessError) as exc:
+            return ReuseDecision(False, f'Accepted staging lineage lookup failed closed: {exc}')
+        if accepted_tree != source_tree:
+            return ReuseDecision(False, 'Post-promotion tree differs from the accepted staging tree.')
+        if accepted_staging_sha != evidence_source_sha and evidence_source_sha not in accepted_parents:
+            return ReuseDecision(False, 'Accepted staging lineage does not preserve the admitted source SHA.')
+        return ReuseDecision(True, 'Post-promotion main tree preserves the accepted staging and admitted source lineage.', source_sha=accepted_staging_sha, source_tree=accepted_tree)
+
+    return ReuseDecision(False, f'Unsupported fast validation profile for lineage verification: {profile}')
 
 
 def render_operator_summary(
@@ -305,6 +431,7 @@ def build_full_evidence(
         'result': 'PASS',
         'profile': 'full',
         'profile_version': PROFILE_VERSION,
+        'created_at': datetime.now(timezone.utc).isoformat(),
         'source_sha': source_sha,
         'source_tree': source_tree,
         'full_admission_run_id': run_id,
@@ -367,35 +494,40 @@ def find_remote_full_evidence(
     start_sha: str,
     current_tree: str,
 ) -> ReuseDecision:
-    encoded_workflow = urllib.parse.quote(workflow, safe='')
-    for candidate_sha, candidate_tree in _candidate_lineage(repository, token, start_sha):
-        if candidate_tree != current_tree:
-            continue
-        query = urllib.parse.urlencode({'head_sha': candidate_sha, 'status': 'success', 'per_page': 20})
-        runs = _github_request(
-            f'https://api.github.com/repos/{repository}/actions/workflows/{encoded_workflow}/runs?{query}', token
-        ).get('workflow_runs', [])
-        for run in runs:
-            run_id = int(run['id'])
-            artifacts = _github_request(
-                f'https://api.github.com/repos/{repository}/actions/runs/{run_id}/artifacts', token
-            ).get('artifacts', [])
-            for artifact in artifacts:
-                if not str(artifact.get('name', '')).startswith('kaori-full-admission-'):
-                    continue
-                archive = _github_request(str(artifact['archive_download_url']), token, binary=True)
-                with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
-                    if 'admission-evidence.json' not in bundle.namelist():
+    try:
+        encoded_workflow = urllib.parse.quote(workflow, safe='')
+        for candidate_sha, candidate_tree in _candidate_lineage(repository, token, start_sha):
+            if candidate_tree != current_tree:
+                continue
+            query = urllib.parse.urlencode({'head_sha': candidate_sha, 'status': 'success', 'per_page': 20})
+            runs = _github_request(
+                f'https://api.github.com/repos/{repository}/actions/workflows/{encoded_workflow}/runs?{query}', token
+            ).get('workflow_runs', [])
+            for run in runs:
+                run_id = int(run['id'])
+                artifacts = _github_request(
+                    f'https://api.github.com/repos/{repository}/actions/runs/{run_id}/artifacts', token
+                ).get('artifacts', [])
+                for artifact in artifacts:
+                    if not str(artifact.get('name', '')).startswith('kaori-full-admission-'):
                         continue
-                    evidence = json.loads(bundle.read('admission-evidence.json').decode('utf-8'))
-                decision = evidence_reuse_decision(
-                    evidence,
-                    current_sha=candidate_sha,
-                    current_tree=current_tree,
-                    required_profile_version=PROFILE_VERSION,
-                )
-                if decision.reusable:
-                    return decision
+                    if bool(artifact.get('expired')):
+                        continue
+                    archive = _github_request(str(artifact['archive_download_url']), token, binary=True)
+                    with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
+                        if 'admission-evidence.json' not in bundle.namelist():
+                            continue
+                        evidence = json.loads(bundle.read('admission-evidence.json').decode('utf-8'))
+                    decision = evidence_reuse_decision(
+                        evidence,
+                        current_sha=candidate_sha,
+                        current_tree=current_tree,
+                        required_profile_version=PROFILE_VERSION,
+                    )
+                    if decision.reusable:
+                        return decision
+    except (OSError, ValueError, KeyError, TypeError, zipfile.BadZipFile) as exc:
+        return ReuseDecision(False, f'Admission evidence lookup failed closed: {type(exc).__name__}: {exc}')
     return ReuseDecision(False, 'No exact successful Full Admission evidence was found in the source lineage.')
 
 
@@ -446,6 +578,25 @@ def _find_evidence(args: argparse.Namespace) -> int:
             'evidence_source_sha': decision.source_sha or '',
             'evidence_source_tree': decision.source_tree or '',
             'evidence_reason': decision.reason.replace('\n', ' '),
+        }
+    )
+    return 0
+
+
+def _verify_lineage(args: argparse.Namespace) -> int:
+    decision = transition_lineage_reuse_decision(
+        profile=args.profile,
+        source_sha=args.source_sha,
+        source_tree=args.source_tree,
+        expected_before=args.expected_before,
+        expected_base=args.expected_base,
+        evidence_source_sha=args.evidence_source_sha,
+        evidence_source_tree=args.evidence_source_tree,
+    )
+    _write_output(
+        {
+            'lineage_reusable': 'true' if decision.reusable else 'false',
+            'lineage_reason': decision.reason.replace('\n', ' '),
         }
     )
     return 0
@@ -519,6 +670,16 @@ def build_parser() -> argparse.ArgumentParser:
     evidence.add_argument('--start-sha', required=True)
     evidence.add_argument('--current-tree', required=True)
     evidence.set_defaults(func=_find_evidence)
+
+    lineage = sub.add_parser('verify-lineage')
+    lineage.add_argument('--profile', required=True)
+    lineage.add_argument('--source-sha', required=True)
+    lineage.add_argument('--source-tree', required=True)
+    lineage.add_argument('--expected-before', default='')
+    lineage.add_argument('--expected-base', default='')
+    lineage.add_argument('--evidence-source-sha', required=True)
+    lineage.add_argument('--evidence-source-tree', required=True)
+    lineage.set_defaults(func=_verify_lineage)
 
     writer = sub.add_parser('write-evidence')
     writer.add_argument('--source-sha', required=True)
