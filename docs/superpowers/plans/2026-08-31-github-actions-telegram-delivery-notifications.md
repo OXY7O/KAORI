@@ -21,6 +21,7 @@
 - No real credential/destination value in Git.
 - PR CI must not consume or forward Telegram secrets.
 - Telegram failure cannot alter authoritative KAORI CI conclusions.
+- Superseded/cancelled trusted-branch runs remain silent.
 - Notification workflow uses `ubuntu-latest`.
 - `workflow_run`, `pull_request_target`, `workflow_call`, and PR notification callers are prohibited in the active notifier design.
 - CI output-style cleanup remains deferred to Issue #68.
@@ -54,41 +55,44 @@
 - [x] Require no Environment binding in the active notifier workflow.
 - [x] Require exact-SHA run discovery and trusted-push-only event selection.
 - [x] Require PR and promotion profiles to remain Telegram-silent.
+- [x] Require cancelled/superseded trusted pushes to remain Telegram-silent.
 
 ### Task 4: Implement trusted-branch notifier workflow
 
 **File:** `.github/workflows/telegram-github-actions.yml`
 
-- [ ] Replace `workflow_call` with push branches `kaori/staging` and `main`.
-- [ ] Remove Environment binding and caller-specific PR guards.
-- [ ] Guard exact repository + push + trusted branch refs.
-- [ ] Checkout exact push SHA with `persist-credentials: false`.
-- [ ] Read repository secret and repository variables directly.
-- [ ] Invoke notifier in exact-SHA discovery mode.
+- [x] Replace `workflow_call` with push branches `kaori/staging` and `main`.
+- [x] Remove Environment binding and caller-specific PR guards.
+- [x] Guard exact repository + push + trusted branch refs.
+- [x] Checkout exact push SHA with `persist-credentials: false`.
+- [x] Read repository secret and repository variables directly.
+- [x] Invoke notifier in exact-SHA discovery mode.
 
 ### Task 5: Remove Telegram from PR-controlled KAORI CI
 
 **File:** `.github/workflows/quality.yml`
 
-- [ ] Remove `telegram-notification` job completely.
-- [ ] Keep all existing Admission authority/profile behavior unchanged.
-- [ ] Do not rename jobs or polish CI output in this bundle.
+- [x] Remove `telegram-notification` job completely.
+- [x] Keep all existing Admission authority/profile behavior unchanged.
+- [x] Do not rename jobs or polish CI output in this bundle.
 
 ### Task 6: Add exact-SHA KAORI CI discovery and trusted event routing
 
 **File:** `scripts/ci_delivery_notify.py`
 
-- [ ] Add pure matching logic for `push` + exact SHA + exact branch.
-- [ ] Add bounded polling of `quality.yml` runs until matching run is terminal.
-- [ ] Use the discovered KAORI CI run ID/jobs/conclusion/run URL for classification.
-- [ ] Emit only `UAT_REQUIRED`, `PROMOTION_SUCCEEDED`, and trusted-branch `DELIVERY_FAILED`.
-- [ ] Keep PR Integration and promotion-PR profiles silent.
+- [x] Add pure matching logic for `push` + exact SHA + exact branch.
+- [x] Add bounded polling of `quality.yml` runs until matching run is terminal.
+- [x] Use the discovered KAORI CI run ID/jobs/conclusion/run URL for classification.
+- [x] Emit only `UAT_REQUIRED`, `PROMOTION_SUCCEEDED`, and trusted-branch `DELIVERY_FAILED`.
+- [x] Keep PR Integration and promotion-PR profiles silent.
+- [x] Keep cancelled/superseded staging runs silent.
 
 ### Task 7: Validate the one-bundle candidate
 
 - [ ] Run targeted Telegram/release contract tests.
 - [ ] Run formatter/static checks required by the changed Python/YAML/test paths.
-- [ ] Open one Ready candidate PR to `kaori/staging` under Issue #64.
+- [x] Open Draft review PR #72 to `kaori/staging` under Issue #64.
+- [ ] Promote one final reviewed head to Ready.
 - [ ] Run one fresh Full Admission because workflow authority/security boundaries changed.
 - [ ] Freeze the candidate head while Full Admission is authoritative.
 
