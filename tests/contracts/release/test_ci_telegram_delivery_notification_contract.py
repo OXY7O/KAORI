@@ -101,6 +101,15 @@ def test_event_routing_emits_only_trusted_branch_delivery_boundaries() -> None:
             )
             == 'DELIVERY_FAILED'
         )
+        assert (
+            notifier.select_event(
+                profile=profile,
+                execution='full',
+                admission_result='cancelled',
+                security_result='skipped',
+            )
+            is None
+        )
     for profile in ('pr-integration', 'promotion'):
         assert (
             notifier.select_event(
@@ -125,8 +134,22 @@ def test_event_routing_emits_only_trusted_branch_delivery_boundaries() -> None:
 def test_profile_resolution_supports_governed_delivery_boundaries() -> None:
     notifier = load_notifier()
 
-    assert notifier.resolve_profile(event_name='push', head_branch='kaori/staging', base_branch='') == 'staging-integration'
-    assert notifier.resolve_profile(event_name='push', head_branch='main', base_branch='') == 'post-promotion'
+    assert (
+        notifier.resolve_profile(
+            event_name='push',
+            head_branch='kaori/staging',
+            base_branch='',
+        )
+        == 'staging-integration'
+    )
+    assert (
+        notifier.resolve_profile(
+            event_name='push',
+            head_branch='main',
+            base_branch='',
+        )
+        == 'post-promotion'
+    )
 
 
 def test_matching_kaori_ci_run_requires_exact_push_sha_and_branch() -> None:
