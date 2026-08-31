@@ -14,11 +14,12 @@ Idea / Request
   -> Ready
   -> issue-linked work branch
   -> focused development verification
-  -> Review
-  -> PR to kaori/staging
+  -> Draft PR to kaori/staging
+  -> collect and repair review findings
+  -> Ready for Review
+  -> PR Integration
   -> Full Admission once for the immutable source tree + authority fingerprint
      or exact evidence reuse when that pair is already admitted
-  -> PR Integration
   -> kaori/staging integration
   -> Staging Integration (evidence reuse + fresh smoke)
   -> UAT
@@ -32,7 +33,7 @@ Idea / Request
 
 KAORI uses a closed-loop delivery model. Product ideas, operational findings, defects, technical debt, monitoring signals, and user feedback return to the backlog as governed work items.
 
-Development feedback and governed Admission are separate boundaries. Ordinary issue-branch pushes do not need to spend 20–30 minutes recomputing the complete Admission suite. Focused checks run during implementation; comprehensive Admission is paid when a stable candidate reaches the staging Pull Request boundary.
+Development feedback, Draft review, and governed Admission are separate boundaries. Ordinary issue-branch pushes do not spend 20–30 minutes recomputing the complete Admission suite. A Draft PR is used to expose the complete diff, collect findings, and repair the candidate without acquiring the self-hosted runner for governed Admission. Comprehensive Admission is paid only when the staging candidate is intentionally marked Ready for Review.
 
 ## Human-Readable GitHub Standard
 
@@ -136,6 +137,10 @@ Summary
 
 Use `Refs #<issue>` while work is still moving through staging/UAT. Use `Closes #<issue>` only on the final PR whose successful merge is intended to close the work item.
 
+For normal work-branch → `kaori/staging` delivery, open the PR as **Draft** while implementation review and findings are still active. Draft is a collaboration state, not a quality bypass and not a governed Admission state. Repair Critical/Important findings while Draft. Mark the PR **Ready for Review** only when the branch is intended to be evaluated as the complete staging candidate.
+
+A source change after Ready invalidates prior Admission evidence for the changed tree. Minor fixes are still governed by exact tree identity. When substantial findings require another implementation cycle, return the PR to Draft until the new candidate is review-clean, then mark it Ready again.
+
 ### Evidence comments
 
 Technical comments should follow:
@@ -180,11 +185,11 @@ GitHub Project `Status` is the lifecycle authority:
 2. `Backlog` — accepted for consideration/refinement.
 3. `Ready` — Definition of Ready satisfied.
 4. `In Progress` — implementation or remediation underway.
-5. `Review` — implementation is ready for CI/review/integration assessment.
+5. `Review` — Draft/Ready PR review, CI, and integration assessment are active.
 6. `UAT` — integrated staging evidence is ready for explicit Local UAT.
 7. `Done` — Local UAT is accepted and Definition of Done is satisfied.
 
-`workflow:blocked` is exception metadata, not a competing lifecycle Status. Refinement is a Backlog activity; staging is an integration authority; CI and code review are Review activities.
+`workflow:blocked` is exception metadata, not a competing lifecycle Status. Refinement is a Backlog activity; staging is an integration authority; Draft PR review, Ready candidate CI, and code review are Review activities.
 
 ## Sprint and Release
 
@@ -230,13 +235,21 @@ The governing rule is:
 
 Ordinary issue-branch pushes are development activity, not a governed Admission boundary. GitHub Actions does not run the comprehensive pipeline for every `kaori/**` work-branch push.
 
-During implementation, run focused local checks appropriate to the blast radius using existing KAORI quality commands and test suites. This keeps iteration fast while preserving the staging PR as the auditable comprehensive validation boundary.
+During implementation, run focused local checks appropriate to the blast radius using existing KAORI quality commands and test suites.
 
-### Full Admission boundary
+The work-branch PR is opened as a **Draft PR** while findings are collected. Draft PR open/synchronize activity must not acquire the self-hosted runner for governed validation. GitHub may instantiate a workflow record, but `validation-profile` must remain skipped while `github.event.pull_request.draft == true`.
 
-The Pull Request to `kaori/staging` is the first governed Admission boundary for a normal work item.
+The `converted_to_draft` event is part of the workflow lifecycle so returning a Ready PR to Draft uses the same PR concurrency group and cancels obsolete candidate validation.
 
-A new source tree normally has no matching comprehensive evidence, so PR Integration reports **FALLBACK** and runs one Full Admission. Full Admission preserves all authoritative coverage:
+### Ready for Review / Full Admission boundary
+
+The first governed comprehensive Admission boundary for a normal work item is the **Ready for Review** staging candidate, not the Draft PR itself.
+
+When the PR becomes Ready, PR Integration evaluates exact evidence identity. A new source tree normally has no matching comprehensive evidence, so PR Integration reports **FALLBACK** and runs one Full Admission. An unchanged already-admitted candidate may reuse its exact evidence.
+
+If source changes after Ready, evidence for the previous tree cannot authorize the new candidate. A substantial repair cycle should return the PR to Draft; the next Ready candidate is admitted according to its own tree/fingerprint identity.
+
+Full Admission preserves all authoritative coverage:
 
 - source linting and formatter checks;
 - Pyright/type safety;
@@ -283,14 +296,16 @@ A validation-authority change does **not** mean repeating Full Admission at ever
 ### Validation profiles
 
 - **Full Admission** — comprehensive validation for a new tree/fingerprint or any forced fallback.
-- **PR Integration** — evidence lookup before staging merge; a new tree falls back to Full, while an already admitted exact pair may reuse.
+- **PR Integration** — Ready/non-draft evidence lookup before staging merge; a new tree falls back to Full, while an already admitted exact pair may reuse.
 - **Staging Integration** — merge-parent/tree equivalence plus authority fingerprint verification and fresh smoke; produces the machine-verified Local UAT candidate.
 - **Promotion** — verifies the exact UAT-selected staging tree/fingerprint and lineage before `main`.
 - **Post-promotion** — verifies resulting main tree/fingerprint/lineage and performs fresh integrity smoke.
 
+Draft PR activity is outside these execution profiles because the first self-hosted validation job is not scheduled while the PR remains Draft.
+
 ### Fail-closed evidence rules
 
-Evidence is reusable only when all required identity and result checks pass. A missing, failed, skipped, cancelled, neutral, stale, ambiguous, wrong-profile, wrong-tree, or wrong-authority-fingerprint evidence record is not reusable.
+Evidence is reusable only when all required identity and result checks pass. A missing, failed, skipped, cancelled, neutral, stale, malformed, ambiguous, wrong-profile, wrong-tree, or wrong-authority-fingerprint evidence record is not reusable.
 
 A different commit SHA is allowed only at merge transitions where parent lineage proves that the merge preserves the admitted source and the resulting source tree is exactly the same as the admitted tree.
 
@@ -324,7 +339,8 @@ Logical coverage is grouped into Foundation & Governance, Reports/Domain Contrac
 
 ## Failure Return Paths
 
-- Failed Full Admission → remain/return to `In Progress`.
+- Draft review finding → remain Draft / `Review`; repair without governed Admission.
+- Failed Ready-candidate Full Admission → return to `In Progress` or Draft when source remediation is required.
 - Failed PR/Staging Integration → no staging/UAT progression; fix or FALLBACK to Full Admission.
 - Failed Local UAT → return to `In Progress` with UAT evidence.
 - Failed Promotion/Post-promotion → do not mark delivery complete.
@@ -339,7 +355,10 @@ Normal path:
 ```text
 work branch
   -> focused development verification
-  -> PR to kaori/staging
+  -> Draft PR to kaori/staging
+  -> collect and repair findings
+  -> Ready for Review
+  -> PR Integration
   -> Full Admission once for new tree/fingerprint
      or REUSED evidence for an already admitted exact pair
   -> integrate to kaori/staging
@@ -367,7 +386,8 @@ Urgent production fixes use:
 main
   -> kaori/hotfix-<issue>-<slug>
   -> focused development verification
-  -> PR to main
+  -> Draft PR to main when findings are still active
+  -> Ready for Review
   -> Full Admission for the final hotfix tree/fingerprint
   -> applicable UAT
   -> merge
