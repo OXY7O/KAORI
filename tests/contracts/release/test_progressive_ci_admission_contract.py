@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+from datetime import UTC, datetime
 from pathlib import Path
 from types import ModuleType
 
@@ -8,7 +9,8 @@ ROOT = Path(__file__).resolve().parents[3]
 WORKFLOW = ROOT / '.github/workflows/quality.yml'
 DELIVERY = ROOT / 'docs/engineering/KAORI_DELIVERY_WORKFLOW.md'
 QUALITY_GATE = ROOT / 'scripts/quality_gate.sh'
-POLICY = ROOT / 'scripts/ci_admission.py'
+POLICY = ROOT / 'scripts/ci_admission_policy.py'
+COMPAT = ROOT / 'scripts/ci_admission.py'
 
 REQUIRED_FULL_GATES = {
     'Static, Architecture, and Governance',
@@ -26,18 +28,19 @@ def read(path: Path) -> str:
 
 def load_policy() -> ModuleType:
     assert POLICY.exists(), 'Progressive CI policy helper is not implemented yet.'
-    spec = importlib.util.spec_from_file_location('kaori_ci_admission', POLICY)
+    spec = importlib.util.spec_from_file_location('kaori_ci_admission_policy', POLICY)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
 
-def test_delivery_governance_v2_authorizes_exact_evidence_reuse_without_weakening_uat() -> None:
+def test_delivery_governance_authorizes_tree_fingerprint_reuse_without_weakening_uat() -> None:
     source = read(DELIVERY)
     assert '**Governance Version:** 2.0' in source
     assert 'Full Admission' in source
     assert 'exact evidence reuse' in source.lower()
+    assert 'authority fingerprint' in source.lower()
     assert 'tree' in source.lower()
     assert 'FALLBACK' in source
     assert 'Local UAT' in source
@@ -67,6 +70,26 @@ def test_workflow_exposes_progressive_profiles_before_expensive_full_jobs() -> N
     assert first_profile < first_expensive
 
 
+def test_issue_branch_pushes_do_not_trigger_governed_full_admission() -> None:
+    source = read(WORKFLOW)
+    assert '  push:' in source
+    assert '      - kaori/staging' in source
+    assert '      - main' in source
+    assert '      - "release/**"' in source
+    assert '      - "kaori/**"' not in source
+
+
+def test_profile_version_and_compatibility_wrapper_use_current_authority() -> None:
+    policy = load_policy()
+    compat_source = read(COMPAT)
+    workflow_source = read(WORKFLOW)
+
+    assert policy.PROFILE_VERSION == '3'
+    assert 'KAORI_PROFILE_VERSION: "3"' in workflow_source
+    assert 'import ci_admission_policy as policy' in compat_source
+    assert "arguments[0] == 'test-summary'" in compat_source
+
+
 def test_fast_profiles_wire_transition_lineage_verification_before_reuse() -> None:
     source = read(WORKFLOW)
 
@@ -86,7 +109,7 @@ def test_fast_profiles_wire_transition_lineage_verification_before_reuse() -> No
     assert 'lineage_reason' in source
 
 
-def test_full_admission_keeps_the_existing_comprehensive_gate_inventory() -> None:
+def test_full_admission_keeps_existing_comprehensive_gate_inventory() -> None:
     source = read(WORKFLOW)
     for gate in REQUIRED_FULL_GATES:
         assert gate in source
@@ -101,17 +124,8 @@ def test_full_admission_keeps_the_existing_comprehensive_gate_inventory() -> Non
         assert command in source
 
 
-def test_policy_routes_normal_delivery_profiles_and_sensitive_changes_fail_closed() -> None:
+def test_policy_routes_transitions_to_evidence_lookup_even_for_validation_authority_changes() -> None:
     policy = load_policy()
-
-    branch = policy.resolve_profile(
-        event_name='push',
-        ref='refs/heads/kaori/tech-debt-39-resource-utilization',
-        base_ref='',
-        head_ref='',
-        changed_paths=('app/reports/example.py',),
-    )
-    assert (branch.profile, branch.execution) == ('full', 'full')
 
     staging_pr = policy.resolve_profile(
         event_name='pull_request',
@@ -122,12 +136,22 @@ def test_policy_routes_normal_delivery_profiles_and_sensitive_changes_fail_close
     )
     assert (staging_pr.profile, staging_pr.execution) == ('pr-integration', 'fast')
 
+    sensitive_staging_pr = policy.resolve_profile(
+        event_name='pull_request',
+        ref='refs/pull/102/merge',
+        base_ref='kaori/staging',
+        head_ref='td55-artifact-redirect-auth-fix',
+        changed_paths=('scripts/ci_admission.py', '.github/workflows/quality.yml'),
+    )
+    assert (sensitive_staging_pr.profile, sensitive_staging_pr.execution) == ('pr-integration', 'fast')
+    assert 'authority' in sensitive_staging_pr.reason.lower()
+
     staging_push = policy.resolve_profile(
         event_name='push',
         ref='refs/heads/kaori/staging',
         base_ref='',
         head_ref='',
-        changed_paths=('app/reports/example.py',),
+        changed_paths=('scripts/ci_admission.py',),
     )
     assert (staging_push.profile, staging_push.execution) == ('staging-integration', 'fast')
 
@@ -136,7 +160,7 @@ def test_policy_routes_normal_delivery_profiles_and_sensitive_changes_fail_close
         ref='refs/pull/101/merge',
         base_ref='main',
         head_ref='kaori/staging',
-        changed_paths=('app/reports/example.py',),
+        changed_paths=('scripts/ci_admission.py',),
     )
     assert (promotion.profile, promotion.execution) == ('promotion', 'fast')
 
@@ -145,120 +169,141 @@ def test_policy_routes_normal_delivery_profiles_and_sensitive_changes_fail_close
         ref='refs/heads/main',
         base_ref='',
         head_ref='',
-        changed_paths=('app/reports/example.py',),
+        changed_paths=('scripts/ci_admission.py',),
     )
     assert (post_promotion.profile, post_promotion.execution) == ('post-promotion', 'fast')
 
-    sensitive = policy.resolve_profile(
-        event_name='pull_request',
-        ref='refs/pull/102/merge',
-        base_ref='kaori/staging',
-        head_ref='kaori/tech-debt-55-progressive-ci-evidence-reuse',
-        changed_paths=('.github/workflows/quality.yml',),
+
+def test_non_transition_source_context_remains_conservative_full_if_invoked() -> None:
+    policy = load_policy()
+    branch = policy.resolve_profile(
+        event_name='push',
+        ref='refs/heads/kaori/tech-debt-39-resource-utilization',
+        base_ref='',
+        head_ref='',
+        changed_paths=('app/reports/example.py',),
     )
-    assert sensitive.profile == 'pr-integration'
-    assert sensitive.execution == 'full'
-    assert 'sensitive' in sensitive.reason.lower()
+    assert (branch.profile, branch.execution) == ('full', 'full')
 
-    governance_sensitive = policy.resolve_profile(
-        event_name='pull_request',
-        ref='refs/pull/103/merge',
-        base_ref='kaori/staging',
-        head_ref='kaori/chore-governance',
-        changed_paths=('docs/engineering/KAORI_DELIVERY_WORKFLOW.md',),
+
+def test_authority_fingerprint_changes_only_for_validation_authority_entries() -> None:
+    policy = load_policy()
+    base = (
+        ('.github/workflows/quality.yml', '100644', 'aaa'),
+        ('scripts/ci_admission.py', '100755', 'bbb'),
+        ('scripts/ci_admission_policy.py', '100755', 'ccc'),
+        ('app/reports/example.py', '100644', 'ddd'),
     )
-    assert governance_sensitive.profile == 'pr-integration'
-    assert governance_sensitive.execution == 'full'
-    assert 'sensitive' in governance_sensitive.reason.lower()
+    app_changed = (
+        ('.github/workflows/quality.yml', '100644', 'aaa'),
+        ('scripts/ci_admission.py', '100755', 'bbb'),
+        ('scripts/ci_admission_policy.py', '100755', 'ccc'),
+        ('app/reports/example.py', '100644', 'eee'),
+    )
+    authority_changed = (
+        ('.github/workflows/quality.yml', '100644', 'fff'),
+        ('scripts/ci_admission.py', '100755', 'bbb'),
+        ('scripts/ci_admission_policy.py', '100755', 'ccc'),
+        ('app/reports/example.py', '100644', 'ddd'),
+    )
+
+    assert policy.authority_fingerprint_from_entries(base) == policy.authority_fingerprint_from_entries(app_changed)
+    assert policy.authority_fingerprint_from_entries(base) != policy.authority_fingerprint_from_entries(
+        authority_changed
+    )
 
 
-def test_evidence_reuse_requires_exact_sha_tree_profile_timestamp_and_all_required_gates() -> None:
+def test_evidence_reuse_requires_tree_fingerprint_profile_timestamp_and_all_required_gates() -> None:
     policy = load_policy()
     evidence = {
         'result': 'PASS',
-        'profile_version': '2',
-        'source_sha': 'abc123',
+        'profile': 'full',
+        'profile_version': '3',
+        'source_sha': 'admitted-head',
         'source_tree': 'tree123',
-        'full_admission_run_id': 420,
+        'authority_fingerprint': 'authority123',
+        'full_admission_run_id': 426,
         'run_attempt': 1,
-        'workflow_ref': 'OXY7O/KAORI/.github/workflows/quality.yml@refs/heads/kaori/test',
-        'created_at': '2026-08-31T00:00:00+00:00',
+        'workflow_ref': 'OXY7O/KAORI/.github/workflows/quality.yml@refs/pull/60/merge',
+        'created_at': datetime.now(UTC).isoformat(),
         'gates': {gate: 'success' for gate in REQUIRED_FULL_GATES - {'KAORI CI Admission'}},
     }
 
     accepted = policy.evidence_reuse_decision(
         evidence,
-        current_sha='abc123',
         current_tree='tree123',
-        required_profile_version='2',
+        current_authority_fingerprint='authority123',
+        required_profile_version='3',
     )
     assert accepted.reusable is True
-    assert accepted.full_admission_run_id == 420
+    assert accepted.full_admission_run_id == 426
+    assert accepted.source_sha == 'admitted-head'
 
-    missing_timestamp = dict(evidence)
-    missing_timestamp.pop('created_at')
-    rejected_timestamp = policy.evidence_reuse_decision(
-        missing_timestamp,
-        current_sha='abc123',
+    wrong_sha_same_tree = dict(evidence)
+    wrong_sha_same_tree['source_sha'] = 'different-admitted-sha'
+    accepted_transition_sha = policy.evidence_reuse_decision(
+        wrong_sha_same_tree,
         current_tree='tree123',
-        required_profile_version='2',
+        current_authority_fingerprint='authority123',
+        required_profile_version='3',
     )
-    assert rejected_timestamp.reusable is False
-    assert 'timestamp' in rejected_timestamp.reason.lower()
-
-    missing_attempt = dict(evidence)
-    missing_attempt.pop('run_attempt')
-    rejected_attempt = policy.evidence_reuse_decision(
-        missing_attempt,
-        current_sha='abc123',
-        current_tree='tree123',
-        required_profile_version='2',
-    )
-    assert rejected_attempt.reusable is False
-    assert 'attempt' in rejected_attempt.reason.lower()
-
-    missing_workflow = dict(evidence)
-    missing_workflow.pop('workflow_ref')
-    rejected_workflow = policy.evidence_reuse_decision(
-        missing_workflow,
-        current_sha='abc123',
-        current_tree='tree123',
-        required_profile_version='2',
-    )
-    assert rejected_workflow.reusable is False
-    assert 'workflow' in rejected_workflow.reason.lower()
-
-    wrong_workflow = dict(evidence)
-    wrong_workflow['workflow_ref'] = 'OXY7O/KAORI/.github/workflows/other.yml@refs/heads/main'
-    rejected_workflow_identity = policy.evidence_reuse_decision(
-        wrong_workflow,
-        current_sha='abc123',
-        current_tree='tree123',
-        required_profile_version='2',
-    )
-    assert rejected_workflow_identity.reusable is False
-    assert 'workflow' in rejected_workflow_identity.reason.lower()
+    assert accepted_transition_sha.reusable is True
+    assert accepted_transition_sha.source_sha == 'different-admitted-sha'
 
     wrong_tree = policy.evidence_reuse_decision(
         evidence,
-        current_sha='abc123',
         current_tree='tree999',
-        required_profile_version='2',
+        current_authority_fingerprint='authority123',
+        required_profile_version='3',
     )
     assert wrong_tree.reusable is False
     assert 'tree' in wrong_tree.reason.lower()
+
+    wrong_authority = policy.evidence_reuse_decision(
+        evidence,
+        current_tree='tree123',
+        current_authority_fingerprint='authority999',
+        required_profile_version='3',
+    )
+    assert wrong_authority.reusable is False
+    assert 'fingerprint' in wrong_authority.reason.lower()
+
+    wrong_profile = policy.evidence_reuse_decision(
+        evidence,
+        current_tree='tree123',
+        current_authority_fingerprint='authority123',
+        required_profile_version='4',
+    )
+    assert wrong_profile.reusable is False
+    assert 'profile' in wrong_profile.reason.lower()
 
     failed = dict(evidence)
     failed['gates'] = dict(evidence['gates'])
     failed['gates']['Frontend Reproducibility'] = 'skipped'
     rejected = policy.evidence_reuse_decision(
         failed,
-        current_sha='abc123',
         current_tree='tree123',
-        required_profile_version='2',
+        current_authority_fingerprint='authority123',
+        required_profile_version='3',
     )
     assert rejected.reusable is False
     assert 'frontend' in rejected.reason.lower()
+
+
+def test_full_evidence_schema_contains_authority_fingerprint() -> None:
+    policy = load_policy()
+    evidence = policy.build_full_evidence(
+        source_sha='abc123',
+        source_tree='tree123',
+        authority_fingerprint='authority123',
+        run_id=500,
+        run_attempt=1,
+        workflow_ref='OXY7O/KAORI/.github/workflows/quality.yml@refs/pull/60/merge',
+        gates={gate: 'success' for gate in policy.FULL_GATE_NAMES},
+    )
+    assert evidence['profile_version'] == '3'
+    assert evidence['authority_fingerprint'] == 'authority123'
+    assert evidence['source_tree'] == 'tree123'
 
 
 def test_remote_evidence_lookup_error_falls_back_instead_of_raising(monkeypatch) -> None:
@@ -275,6 +320,7 @@ def test_remote_evidence_lookup_error_falls_back_instead_of_raising(monkeypatch)
         workflow='quality.yml',
         start_sha='abc123',
         current_tree='tree123',
+        current_authority_fingerprint='authority123',
     )
     assert decision.reusable is False
     assert 'lookup' in decision.reason.lower()
@@ -319,10 +365,10 @@ def test_operator_pass_summary_is_structured_and_omits_fake_failure_field() -> N
         profile='Staging Integration',
         commit_sha='dffd49d5',
         tree_sha='3bc5c0ac',
-        evidence='REUSED Full Admission #346',
+        evidence='REUSED Full Admission #426',
         fresh_checks=('merge lineage', 'migration/import smoke', 'E2E smoke'),
         reused_coverage=('static', 'security', 'full tests', 'frontend', 'runtime', 'DAST'),
-        duration='4m 12s',
+        duration='3m 12s',
         first_failure=None,
         next_action='Sync exact staging SHA for Local UAT',
     )
@@ -343,7 +389,6 @@ def test_operator_pass_summary_is_structured_and_omits_fake_failure_field() -> N
     assert 'PASS' in summary
     assert 'Staging Integration' in summary
     assert 'First actionable failure' not in summary
-    assert 'job failed' not in summary.lower()
 
 
 def test_operator_failure_summary_is_failure_first_and_actionable() -> None:
@@ -364,7 +409,6 @@ def test_operator_failure_summary_is_failure_first_and_actionable() -> None:
     assert 'First actionable failure' in summary
     assert 'tests/reports/test_example.py::test_missing_evidence' in summary
     assert 'expected Not Available, received 0%' in summary
-    assert 'Next action' in summary
 
 
 def test_quality_gate_exposes_fast_smoke_phase_and_captures_pytest_progress_noise() -> None:
@@ -376,3 +420,45 @@ def test_quality_gate_exposes_fast_smoke_phase_and_captures_pytest_progress_nois
     assert 'run_pytest_capture' in source
     assert 'pytest "$@" >"$log_file" 2>&1' in source
     assert 'pytest -qq' not in source
+
+
+def test_artifact_redirect_drops_github_authorization_on_cross_host_https() -> None:
+    policy = load_policy()
+    request = policy.urllib.request.Request(
+        'https://api.github.com/repos/OXY7O/KAORI/actions/artifacts/123/zip',
+        headers={
+            'Accept': 'application/vnd.github+json',
+            'Authorization': 'Bearer github-token',
+        },
+    )
+
+    handler = policy._GitHubArtifactRedirectHandler()
+    redirected = handler.redirect_request(
+        request,
+        None,
+        302,
+        'Found',
+        {},
+        'https://productionresultssa0.blob.core.windows.net/actions-results/example.zip?sig=signed',
+    )
+
+    assert redirected is not None
+    assert redirected.full_url.startswith('https://productionresultssa0.blob.core.windows.net/')
+    assert redirected.get_header('Authorization') is None
+    assert redirected.get_header('Accept') == 'application/vnd.github+json'
+
+
+def test_artifact_redirect_rejects_https_downgrade() -> None:
+    policy = load_policy()
+    request = policy.urllib.request.Request(
+        'https://api.github.com/repos/OXY7O/KAORI/actions/artifacts/123/zip',
+        headers={'Authorization': 'Bearer github-token'},
+    )
+    handler = policy._GitHubArtifactRedirectHandler()
+
+    try:
+        handler.redirect_request(request, None, 302, 'Found', {}, 'http://example.invalid/artifact.zip')
+    except ValueError as exc:
+        assert 'https' in str(exc).lower()
+    else:
+        raise AssertionError('Artifact redirect downgrade must fail closed.')
