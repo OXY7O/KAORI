@@ -1,6 +1,6 @@
 # KAORI Application Delivery Workflow
 
-**Governance Version:** 1.0  
+**Governance Version:** 2.0  
 **Scope:** KAORI application repository  
 **Authority:** Application-local baseline  
 **Future Authority:** Platform Governance / Platform Workflow standards when formally adopted
@@ -13,19 +13,27 @@ Idea / Request
   -> Backlog / Refinement
   -> Ready
   -> issue-linked work branch
-  -> full branch CI
-  -> Review
+  -> focused development verification
+  -> Draft PR to kaori/staging
+  -> collect and repair review findings
+  -> Ready for Review
+  -> PR Integration
+  -> Full Admission once for the immutable source tree + authority fingerprint
+     or exact evidence reuse when that pair is already admitted
   -> kaori/staging integration
-  -> full staging CI
+  -> Staging Integration (evidence reuse + fresh smoke)
   -> UAT
   -> explicit Local UAT acceptance
-  -> Done
-  -> PR kaori/staging -> main when release/promotion is approved
+  -> Promotion
+  -> PR kaori/staging -> main
   -> merge commit
-  -> main
+  -> Post-promotion integrity
+  -> Done
 ```
 
 KAORI uses a closed-loop delivery model. Product ideas, operational findings, defects, technical debt, monitoring signals, and user feedback return to the backlog as governed work items.
+
+Development feedback, Draft review, and governed Admission are separate boundaries. Ordinary issue-branch pushes do not spend 20–30 minutes recomputing the complete Admission suite. A Draft PR is used to expose the complete diff, collect findings, and repair the candidate without acquiring the self-hosted runner for governed Admission. Comprehensive Admission is paid only when the staging candidate is intentionally marked Ready for Review.
 
 ## Human-Readable GitHub Standard
 
@@ -33,7 +41,7 @@ GitHub history is a long-lived engineering record. Titles, branches, commits, Pu
 
 ### Issue titles
 
-Native GitHub Issue Type is the type authority. Once native Issue Types are configured, do not repeat the type in the title.
+Native GitHub Issue Type is the type authority. Do not repeat the type in the title. Use sentence case, describe one outcome/problem, and omit a trailing period.
 
 Preferred:
 
@@ -52,8 +60,6 @@ fix stuff
 misc cleanup
 ```
 
-Use sentence case, describe one outcome/problem, and omit a trailing period.
-
 ### Issue body
 
 Every work item should make the following understandable to a reviewer:
@@ -65,7 +71,7 @@ Every work item should make the following understandable to a reviewer:
 5. Security, data, migration, observability, and operational impact where applicable.
 6. Verification and UAT requirements.
 
-Chronological execution evidence belongs in Issue comments. Do not repeatedly rewrite historical CI failures in the Issue body; keep the body as the current contract and use comments as the audit timeline.
+Chronological execution evidence belongs in Issue comments. Keep the body as the current contract and use comments as the audit timeline.
 
 ### Branch names
 
@@ -109,22 +115,11 @@ Rules:
 - include the controlling Issue number;
 - do not use vague subjects such as `fix`, `update`, `cleanup`, or `changes` without the affected behavior.
 
-### Pull Request titles
+### Pull Request titles and body
 
-Use the same Conventional Commit subject style, without duplicating the Issue number when the PR body already links it:
+PR titles use the same Conventional Commit subject style. A KAORI PR is written for humans first and auditability second.
 
-```text
-fix(ci): bound tool downloads
-docs(governance): standardize repository workflow
-```
-
-PR titles describe the change; the body owns traceability and evidence.
-
-### Pull Request body
-
-A KAORI PR is written for humans first and auditability second; both are required. The opening sections must let a reviewer understand the purpose and scope without opening the diff.
-
-Canonical reading order:
+Canonical body reading order:
 
 ```text
 Summary
@@ -140,47 +135,26 @@ Summary
   -> Reviewer Checklist
 ```
 
-Keep summaries concise, group related changes, and link exact CI/SHA evidence rather than pasting raw logs. Use `None — <reason>` for impact sections only when the impact is genuinely not applicable.
+Use `Refs #<issue>` while work is still moving through staging/UAT. Use `Closes #<issue>` only on the final PR whose successful merge is intended to close the work item.
 
-### Issue linkage in Pull Requests
+For normal work-branch → `kaori/staging` delivery, open the PR as **Draft** while implementation review and findings are still active. Draft is a collaboration state, not a quality bypass and not a governed Admission state. Repair Critical/Important findings while Draft. Mark the PR **Ready for Review** only when the branch is intended to be evaluated as the complete staging candidate.
 
-Use:
-
-```text
-Refs #<issue>
-```
-
-while work is still moving through staging/UAT.
-
-Use a closing keyword such as:
-
-```text
-Closes #<issue>
-```
-
-only on the final PR whose successful merge is intended to close the work item. Do not close an Issue merely because an implementation branch or validation PR exists.
+A source change after Ready invalidates prior Admission evidence for the changed tree. Minor fixes are still governed by exact tree identity. When substantial findings require another implementation cycle, return the PR to Draft until the new candidate is review-clean, then mark it Ready again.
 
 ### Evidence comments
 
-Technical comments should follow a predictable reading order:
+Technical comments should follow:
 
 ```text
 ## <Evidence / Investigation / Validation> — YYYY-MM-DD
 
 ### Context
-What was being validated and on which SHA/run.
-
 ### Result
-What passed or failed.
-
 ### Evidence
-Exact run/job/SHA and the actionable finding.
-
 ### Decision / Next Step
-What changes, what does not change, and why.
 ```
 
-Keep raw log dumps in GitHub Actions. Issue comments should retain the evidence needed for a human to understand the decision without reading thousands of log lines.
+Keep raw log dumps in GitHub Actions. Issue comments retain the evidence needed for a human to understand the decision without reading thousands of log lines.
 
 ## Branch Authority
 
@@ -189,7 +163,7 @@ Only two branches are long-lived by default:
 - `main` — production-ready baseline and release authority.
 - `kaori/staging` — integration and Local UAT authority.
 
-`kaori/working` is retired only after issue #10 proves all required commits are represented in `kaori/staging`. Temporary work and validation branches are deleted after integration when no active dependency remains. Issues, PRs, commits, Actions runs, releases, and governance records are the durable audit trail; stale branches are not retained for audit purposes.
+`kaori/working` is retired only after issue #10 proves all required commits are represented in `kaori/staging`. Temporary work and validation branches are deleted after integration when no active dependency remains.
 
 ## Work Hierarchy
 
@@ -201,23 +175,21 @@ Epic
      -> Task / Bug
 ```
 
-Spikes may attach to an Epic or Story to resolve uncertainty. Chores and Technical Debt may stand alone when appropriate or attach to a larger outcome. Native GitHub parent/sub-issue relationships are preferred when available.
+Spikes may attach to an Epic or Story. Chores and Technical Debt may stand alone or attach to a larger outcome. Native GitHub parent/sub-issue relationships are preferred.
 
 ## Project Status Model
 
-GitHub Project `Status` is the single lifecycle authority:
+GitHub Project `Status` is the lifecycle authority:
 
 1. `Inbox` — captured but not yet triaged.
-2. `Backlog` — accepted for consideration/refinement, not yet admitted to delivery.
-3. `Ready` — Definition of Ready satisfied and eligible for implementation.
-4. `In Progress` — implementation or active remediation is underway.
-5. `Review` — implementation is complete enough for CI/review/integration assessment.
+2. `Backlog` — accepted for consideration/refinement.
+3. `Ready` — Definition of Ready satisfied.
+4. `In Progress` — implementation or remediation underway.
+5. `Review` — Draft/Ready PR review, CI, and integration assessment are active.
 6. `UAT` — integrated staging evidence is ready for explicit Local UAT.
-7. `Done` — Local UAT is explicitly accepted and the work item satisfies Definition of Done.
+7. `Done` — Local UAT is accepted and Definition of Done is satisfied.
 
-`workflow:blocked` is exception metadata, not a competing lifecycle Status. A blocked item remains at the lifecycle stage where it is blocked and carries blocker evidence in the Issue.
-
-Refinement is a Backlog activity rather than a separate Status. Staging is an integration authority/branch rather than a separate Status. CI and code review are Review activities rather than separate statuses.
+`workflow:blocked` is exception metadata, not a competing lifecycle Status. Refinement is a Backlog activity; staging is an integration authority; Draft PR review, Ready candidate CI, and code review are Review activities.
 
 ## Sprint and Release
 
@@ -228,65 +200,150 @@ The default Sprint cadence is two weeks and remains flexible.
 - Sprint completion does not force a release.
 - Carry-over is allowed when work is incomplete.
 - Expedite/hotfix work may bypass normal sprint sequencing without bypassing validation.
-- Do not create placeholder Milestones merely to populate metadata; create one only for a real release target.
+- Do not create placeholder Milestones merely to populate metadata.
 
 ## Definition of Ready
 
-A User Story, Bug, Task, Chore, or Technical Debt item is Ready when the applicable conditions are satisfied:
-
-- scope is understandable;
-- acceptance criteria are testable;
-- required design decisions are resolved;
-- dependencies are identified;
-- security, data, migration, observability, and operational impact are considered;
-- expected validation is known;
-- Story Points are assigned when sprint planning requires them;
-- no unresolved blocker prevents implementation.
+A User Story, Bug, Task, Chore, or Technical Debt item is Ready when applicable conditions are satisfied: scope is understandable; acceptance criteria are testable; design decisions are resolved; dependencies are identified; security/data/migration/observability/operational impacts are considered; expected validation is known; Story Points are assigned when needed; and no unresolved blocker prevents implementation.
 
 ## Definition of Done
 
-Code complete and green branch CI are necessary but not sufficient.
-
-A work item remains outside `Done` until applicable conditions are satisfied:
+Code complete and Full Admission are necessary but not sufficient. A work item remains outside `Done` until applicable conditions are satisfied:
 
 - implementation complete;
 - automated tests for changed behavior pass;
-- static, architecture, type, frontend, security, integration, runtime, migration, and other applicable quality gates pass;
+- applicable static, architecture, type, frontend, security, integration, runtime, migration, DAST, and other quality authorities pass or are reused only through exact accepted evidence;
 - no known regression remains unresolved;
 - documentation and contracts are aligned;
 - security and migration implications are addressed;
 - operational and observability impact is considered;
 - work is integrated into `kaori/staging`;
-- full staging CI passes;
+- Staging Integration passes;
 - Local UAT is explicitly accepted;
+- promotion lineage is verified when promoted to `main`;
 - Issue/PR history contains relevant evidence.
-
-Only then may the work item move to `Done`.
 
 ## CI and Quality Authority
 
-Every governed implementation branch and `kaori/staging` must run the applicable full KAORI CI pipeline.
+KAORI uses **Full Admission + exact evidence reuse** with a **validation authority fingerprint**.
 
-Caching may accelerate immutable dependency downloads, Docker layers, security databases, and deterministic build inputs. Cache must never bypass or reuse conclusions from:
+The governing rule is:
 
-- source linting;
-- type checks;
-- contract tests;
-- functional/integration tests;
+> **Same immutable source tree + same validation authority fingerprint = never repeat comprehensive validation.**
+
+### Development feedback
+
+Ordinary issue-branch pushes are development activity, not a governed Admission boundary. GitHub Actions does not run the comprehensive pipeline for every `kaori/**` work-branch push.
+
+During implementation, run focused local checks appropriate to the blast radius using existing KAORI quality commands and test suites.
+
+The work-branch PR is opened as a **Draft PR** while findings are collected. Draft PR open/synchronize activity must not acquire the self-hosted runner for governed validation. GitHub may instantiate a workflow record, but `validation-profile` must remain skipped while `github.event.pull_request.draft == true`.
+
+The `converted_to_draft` event is part of the workflow lifecycle so returning a Ready PR to Draft uses the same PR concurrency group and cancels obsolete candidate validation.
+
+### Ready for Review / Full Admission boundary
+
+The first governed comprehensive Admission boundary for a normal work item is the **Ready for Review** staging candidate, not the Draft PR itself.
+
+When the PR becomes Ready, PR Integration evaluates exact evidence identity. A new source tree normally has no matching comprehensive evidence, so PR Integration reports **FALLBACK** and runs one Full Admission. An unchanged already-admitted candidate may reuse its exact evidence.
+
+If source changes after Ready, evidence for the previous tree cannot authorize the new candidate. A substantial repair cycle should return the PR to Draft; the next Ready candidate is admitted according to its own tree/fingerprint identity.
+
+Full Admission preserves all authoritative coverage:
+
+- source linting and formatter checks;
+- Pyright/type safety;
+- architecture/import/reachability checks;
+- contract and migration tests;
+- functional/integration and domain characterization tests;
 - frontend reproducibility;
-- image scanning;
+- secrets/SAST/dependency/workflow security;
+- production image build and vulnerability scan;
 - runtime validation;
-- migration validation;
 - DAST;
-- application logic assertions.
+- application logic assertions;
+- code-health ceilings and exact debt-ledger integrity.
 
-A green workflow badge is insufficient if logs contain unexpected skipped tests, tracebacks, assertion failures, HTTP 5xx responses, migration failures, or runtime failures.
+A successful Full Admission publishes immutable evidence containing:
+
+- source commit SHA;
+- source tree SHA;
+- validation profile version;
+- **validation authority fingerprint**;
+- run ID/attempt;
+- workflow identity;
+- every required comprehensive gate conclusion;
+- timestamp.
+
+### Validation authority fingerprint
+
+The authority fingerprint is derived deterministically from the validation profile version and tracked Git identities for validation-authority files, including:
+
+- `.github/workflows/**`;
+- `.github/ci/**`;
+- `requirements/**`;
+- Admission policy helpers;
+- `scripts/quality_gate.sh`;
+- `scripts/verify_*`;
+- release validation contracts;
+- this delivery workflow authority;
+- Dockerfile and compose authority.
+
+An application change changes the source tree. A validation-authority change changes both the source tree and the authority fingerprint. Either condition invalidates older evidence and requires a new Full Admission once.
+
+A validation-authority change does **not** mean repeating Full Admission at every later staging/main transition. Once the new tree + fingerprint has passed Full Admission, equivalent transitions reuse that evidence.
+
+### Validation profiles
+
+- **Full Admission** — comprehensive validation for a new tree/fingerprint or any forced fallback.
+- **PR Integration** — Ready/non-draft evidence lookup before staging merge; a new tree falls back to Full, while an already admitted exact pair may reuse.
+- **Staging Integration** — merge-parent/tree equivalence plus authority fingerprint verification and fresh smoke; produces the machine-verified Local UAT candidate.
+- **Promotion** — verifies the exact UAT-selected staging tree/fingerprint and lineage before `main`.
+- **Post-promotion** — verifies resulting main tree/fingerprint/lineage and performs fresh integrity smoke.
+
+Draft PR activity is outside these execution profiles because the first self-hosted validation job is not scheduled while the PR remains Draft.
+
+### Fail-closed evidence rules
+
+Evidence is reusable only when all required identity and result checks pass. A missing, failed, skipped, cancelled, neutral, stale, malformed, ambiguous, wrong-profile, wrong-tree, or wrong-authority-fingerprint evidence record is not reusable.
+
+A different commit SHA is allowed only at merge transitions where parent lineage proves that the merge preserves the admitted source and the resulting source tree is exactly the same as the admitted tree.
+
+If equivalence cannot be proven, the workflow reports **FALLBACK** and executes Full Admission. A different tree or fingerprint always invalidates reuse.
+
+Manual dispatch can always force Full Admission.
+
+Caching may still accelerate immutable dependency downloads, Docker layers, security databases, and deterministic build inputs. Caches are not Admission evidence.
+
+A green workflow badge is insufficient if required evidence contains unexpected skipped gates, tracebacks, assertion failures, HTTP 5xx responses, migration failures, or runtime failures.
+
+## Human-Readable CI Evidence
+
+Operator-facing CI output must be concise and stable. Vocabulary is limited to `PASS`, `FAIL`, `SKIP`, `REUSED`, and `FALLBACK`.
+
+Every profile summary presents, in order:
+
+1. Result.
+2. Profile.
+3. Commit SHA.
+4. Tree SHA.
+5. Evidence source/run.
+6. Duration.
+7. Coverage summary.
+8. Fresh checks.
+9. Reused checks.
+10. First actionable failure only when failed.
+11. One Next action.
+
+Logical coverage is grouped into Foundation & Governance, Reports/Domain Contracts, Code Quality & Type Safety, Functional & Integration, Frontend, and Security & Runtime. Raw diagnostic logs remain available, but pytest progress dots and repetitive verifier prose must not dominate the operator summary.
 
 ## Failure Return Paths
 
-- Failed implementation-branch CI → remain/return to `In Progress`; add `workflow:blocked` only when progress genuinely cannot continue.
-- Failed staging CI → no UAT promotion; affected work returns to `In Progress` or remains blocked with evidence.
+- Draft review finding → remain Draft / `Review`; repair without governed Admission.
+- Failed Ready-candidate Full Admission → return to `In Progress` or Draft when source remediation is required.
+- Failed PR/Staging Integration → no staging/UAT progression; fix or FALLBACK to Full Admission.
 - Failed Local UAT → return to `In Progress` with UAT evidence.
+- Failed Promotion/Post-promotion → do not mark delivery complete.
 - No failing or unaccepted change is promoted to `main`.
 
 ## Staging Integration and UAT
@@ -297,24 +354,29 @@ Normal path:
 
 ```text
 work branch
-  -> full CI
+  -> focused development verification
+  -> Draft PR to kaori/staging
+  -> collect and repair findings
+  -> Ready for Review
+  -> PR Integration
+  -> Full Admission once for new tree/fingerprint
+     or REUSED evidence for an already admitted exact pair
   -> integrate to kaori/staging
-  -> full staging CI
+  -> Staging Integration (REUSED evidence + fresh smoke, or FALLBACK)
   -> Project Status UAT
   -> Local UAT
   -> explicit acceptance
-  -> Done
 ```
 
-The user syncs `kaori/staging` into the KAORI Dev Container for UAT. CI is machine verification; Local UAT is human acceptance.
+The user syncs the exact accepted `kaori/staging` SHA into the KAORI Dev Container for UAT. CI is machine verification; Local UAT is human acceptance and must never be fabricated.
 
 ## Main Promotion
 
-Accepted increments are promoted through an explicit PR from `kaori/staging` to `main` when the release/promotion decision is made.
+Accepted increments are promoted through an explicit PR from `kaori/staging` to `main`.
 
-The default merge method is **merge commit**. PR creation and merge into `main` remain explicit human-controlled gates unless a future governance version changes that authority.
+Promotion verifies that the PR head is the exact UAT-selected staging lineage, that `main` has not introduced incompatible drift, and that accepted tree/fingerprint evidence remains valid. Post-promotion verifies the resulting main tree and runs fresh integrity smoke. Ambiguity or identity mismatch triggers FALLBACK to Full Admission.
 
-After merge, synchronize `kaori/staging` back to the exact `main` lineage using fast-forward when possible.
+The default merge method is **merge commit**. After merge, synchronize `kaori/staging` back to the exact `main` lineage using fast-forward when possible.
 
 ## Hotfix
 
@@ -323,18 +385,19 @@ Urgent production fixes use:
 ```text
 main
   -> kaori/hotfix-<issue>-<slug>
-  -> full CI
+  -> focused development verification
+  -> Draft PR to main when findings are still active
+  -> Ready for Review
+  -> Full Admission for the final hotfix tree/fingerprint
   -> applicable UAT
-  -> PR to main
+  -> merge
 ```
 
 After the hotfix merges, synchronize `kaori/staging` from `main` before normal delivery continues.
 
 ## Label Authority
 
-KAORI retains GitHub's built-in `documentation` label as the canonical label for documentation work. It is intentionally not replaced by a custom `scope:documentation` label.
-
-KAORI custom labels use the canonical namespaced vocabulary defined by `docs/engineering/KAORI_GITHUB_LABEL_CATALOG.md`:
+KAORI retains GitHub's built-in `documentation` label. Custom labels use the canonical namespaced vocabulary in `docs/engineering/KAORI_GITHUB_LABEL_CATALOG.md`:
 
 - `area:*`
 - `scope:*`
@@ -342,13 +405,11 @@ KAORI custom labels use the canonical namespaced vocabulary defined by `docs/eng
 - `impact:*`
 - `workflow:*`
 
-Custom labels must not duplicate GitHub-native metadata or the retained built-in documentation label. Native Issue Type remains the authority for Bug, Feature/User Story, Task, Chore, Technical Debt, Spike, and Epic classification; Project fields remain the authority for Status, Priority, and Sprint.
+Custom labels must not duplicate GitHub-native metadata. Native Issue Type remains the authority for Bug, Feature/User Story, Task, Chore, Technical Debt, Spike, and Epic; Project fields remain the authority for Status, Priority, and Sprint.
 
 ## Branch Hygiene
 
-Merged temporary branches are deleted when no active dependency remains. `main` and `kaori/staging` are the only default long-lived branches.
-
-Before deleting a branch, verify that all required commits are represented in the destination lineage. `kaori/working` must not be deleted until issue #10 confirms that no required unique commit would be lost.
+Merged temporary branches are deleted when no active dependency remains. `main` and `kaori/staging` are the only default long-lived branches. Before deleting a branch, verify that all required commits are represented in the destination lineage. `kaori/working` must not be deleted until issue #10 confirms that no required unique commit would be lost.
 
 ## Platform Governance Convergence
 

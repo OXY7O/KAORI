@@ -3,9 +3,18 @@ name: KAORI CI
 on:
   workflow_call:
   workflow_dispatch:
+    inputs:
+      validation_profile:
+        description: Validation profile override
+        required: false
+        default: full
+        type: choice
+        options:
+          - full
+          - auto
   push:
     branches:
-      - "kaori/**"
+      - kaori/staging
       - main
       - "release/**"
   pull_request:
@@ -17,112 +26,256 @@ on:
       - synchronize
       - reopened
       - ready_for_review
+      - converted_to_draft
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: kaori-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
+env:
+  KAORI_PROFILE_VERSION: "3"
+  KAORI_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
 jobs:
+  validation-profile:
+    name: Resolve KAORI Validation Profile
+    if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    timeout-minutes: 10
+    outputs:
+      profile: ${{ steps.final.outputs.profile }}
+      display_profile: ${{ steps.final.outputs.display_profile }}
+      execution: ${{ steps.final.outputs.execution }}
+      reason: ${{ steps.final.outputs.reason }}
+      fallback: ${{ steps.final.outputs.fallback }}
+      source_sha: ${{ steps.identity.outputs.source_sha }}
+      source_tree: ${{ steps.identity.outputs.source_tree }}
+      evidence_run_id: ${{ steps.evidence.outputs.evidence_run_id }}
+      evidence_source_sha: ${{ steps.evidence.outputs.evidence_source_sha }}
+      evidence_source_tree: ${{ steps.evidence.outputs.evidence_source_tree }}
+      started_epoch: ${{ steps.identity.outputs.started_epoch }}
+      toolchain_image: ${{ steps.toolchain.outputs.image }}
+    steps:
+      - name: Check Out Exact Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.KAORI_SOURCE_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve and Reuse CI Toolchain
+        id: toolchain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
+          image="kaori-ci-toolchain:$key"
+          docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
+          printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve Source Identity and Change Set
+        id: identity
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_BEFORE: ${{ github.event.before }}
+        run: |
+          set -Eeuo pipefail
+          source_sha="$(git rev-parse HEAD)"
+          source_tree="$(git show -s --format=%T HEAD)"
+          {
+            printf 'source_sha=%s\n' "$source_sha"
+            printf 'source_tree=%s\n' "$source_tree"
+            printf 'started_epoch=%s\n' "$(date +%s)"
+          } >> "$GITHUB_OUTPUT"
+          mkdir -p tmp/ci-artifacts/profile
+          if [[ "$EVENT_NAME" == "pull_request" && -n "$PR_BASE_SHA" ]]; then
+            git diff --name-only "$PR_BASE_SHA" "$source_sha" > tmp/ci-artifacts/profile/changed-paths.txt
+          elif [[ -n "$EVENT_BEFORE" && ! "$EVENT_BEFORE" =~ ^0+$ ]] && git rev-parse --verify --quiet "$EVENT_BEFORE" >/dev/null; then
+            git diff --name-only "$EVENT_BEFORE" "$source_sha" > tmp/ci-artifacts/profile/changed-paths.txt
+          else
+            git show --pretty='' --name-only "$source_sha" > tmp/ci-artifacts/profile/changed-paths.txt
+          fi
+
+      - name: Resolve Requested Profile
+        id: routing
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_REF: ${{ github.ref }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          DISPATCH_PROFILE: ${{ inputs.validation_profile }}
+          CI_TOOLCHAIN_IMAGE: ${{ steps.toolchain.outputs.image }}
+        run: |
+          set -Eeuo pipefail
+          if [[ "$EVENT_NAME" == "workflow_dispatch" && "${DISPATCH_PROFILE:-full}" == "full" ]]; then
+            {
+              echo 'profile=full'
+              echo 'execution=full'
+              echo 'display_profile=Full Admission'
+              echo 'reason=Manual dispatch requested Full Admission.'
+            } >> "$GITHUB_OUTPUT"
+          else
+            docker run --rm \
+              --user "$(id -u):$(id -g)" \
+              --env HOME=/tmp \
+              --volume "$PWD:/workspace" \
+              --workdir /workspace \
+              "$CI_TOOLCHAIN_IMAGE" \
+              python scripts/ci_admission.py route \
+                --event-name "$EVENT_NAME" \
+                --ref "$EVENT_REF" \
+                --base-ref "${BASE_REF:-}" \
+                --head-ref "${HEAD_REF:-}" \
+                --changed-paths-file tmp/ci-artifacts/profile/changed-paths.txt \
+              >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Locate Exact Full Admission Evidence
+        id: evidence
+        if: ${{ steps.routing.outputs.execution == 'fast' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_TOOLCHAIN_IMAGE: ${{ steps.toolchain.outputs.image }}
+        run: |
+          set -Eeuo pipefail
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --env HOME=/tmp \
+            --env GH_TOKEN \
+            --volume "$PWD:/workspace" \
+            --workdir /workspace \
+            "$CI_TOOLCHAIN_IMAGE" \
+            python scripts/ci_admission.py find-evidence \
+              --repository "$GITHUB_REPOSITORY" \
+              --token "$GH_TOKEN" \
+              --workflow quality.yml \
+              --start-sha "${{ steps.identity.outputs.source_sha }}" \
+              --current-tree "${{ steps.identity.outputs.source_tree }}" \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Verify Transition Lineage
+        id: lineage
+        if: ${{ steps.routing.outputs.execution == 'fast' && steps.evidence.outputs.reusable == 'true' }}
+        shell: bash
+        env:
+          PROFILE: ${{ steps.routing.outputs.profile }}
+          SOURCE_SHA: ${{ steps.identity.outputs.source_sha }}
+          SOURCE_TREE: ${{ steps.identity.outputs.source_tree }}
+          EXPECTED_BEFORE: ${{ github.event.before }}
+          EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
+          EVIDENCE_SOURCE_SHA: ${{ steps.evidence.outputs.evidence_source_sha }}
+          EVIDENCE_SOURCE_TREE: ${{ steps.evidence.outputs.evidence_source_tree }}
+          CI_TOOLCHAIN_IMAGE: ${{ steps.toolchain.outputs.image }}
+        run: |
+          set -Eeuo pipefail
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --env HOME=/tmp \
+            --volume "$PWD:/workspace" \
+            --workdir /workspace \
+            "$CI_TOOLCHAIN_IMAGE" \
+            python scripts/ci_admission.py verify-lineage \
+              --profile "$PROFILE" \
+              --source-sha "$SOURCE_SHA" \
+              --source-tree "$SOURCE_TREE" \
+              --expected-before "${EXPECTED_BEFORE:-}" \
+              --expected-base "${EXPECTED_BASE:-}" \
+              --evidence-source-sha "$EVIDENCE_SOURCE_SHA" \
+              --evidence-source-tree "$EVIDENCE_SOURCE_TREE" \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Finalize Validation Profile
+        id: final
+        shell: bash
+        env:
+          PROFILE: ${{ steps.routing.outputs.profile }}
+          DISPLAY_PROFILE: ${{ steps.routing.outputs.display_profile }}
+          ROUTED_EXECUTION: ${{ steps.routing.outputs.execution }}
+          ROUTED_REASON: ${{ steps.routing.outputs.reason }}
+          REUSABLE: ${{ steps.evidence.outputs.reusable }}
+          EVIDENCE_REASON: ${{ steps.evidence.outputs.evidence_reason }}
+          LINEAGE_REUSABLE: ${{ steps.lineage.outputs.lineage_reusable }}
+          LINEAGE_REASON: ${{ steps.lineage.outputs.lineage_reason }}
+        run: |
+          set -Eeuo pipefail
+          execution="$ROUTED_EXECUTION"
+          reason="$ROUTED_REASON"
+          fallback=false
+          if [[ "$ROUTED_EXECUTION" == "fast" && "${REUSABLE:-false}" != "true" ]]; then
+            execution=full
+            fallback=true
+            reason="FALLBACK — ${EVIDENCE_REASON:-exact Full Admission evidence unavailable}"
+          elif [[ "$ROUTED_EXECUTION" == "fast" && "${LINEAGE_REUSABLE:-false}" != "true" ]]; then
+            execution=full
+            fallback=true
+            reason="FALLBACK — ${LINEAGE_REASON:-transition lineage could not be proven}"
+          fi
+          {
+            printf 'profile=%s\n' "$PROFILE"
+            printf 'display_profile=%s\n' "$DISPLAY_PROFILE"
+            printf 'execution=%s\n' "$execution"
+            printf 'reason=%s\n' "$reason"
+            printf 'fallback=%s\n' "$fallback"
+          } >> "$GITHUB_OUTPUT"
+          printf 'KAORI profile: %s · execution=%s · %s\n' "$DISPLAY_PROFILE" "$execution" "$reason"
+
   static-quality:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ needs.validation-profile.outputs.execution == 'full' }}
+    needs: validation-profile
     name: Static, Architecture, and Governance
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 45
     steps:
-      - name: Check Out Repository
+      - name: Check Out Exact Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ needs.validation-profile.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
-
-      - name: Resolve CI Toolchain Cache Key
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          CI_TOOLCHAIN_KEY="$(cat \
-            .github/ci/Dockerfile \
-            .github/ci/requirements-security.txt \
-            requirements/base.txt \
-            requirements/dev.txt \
-            | sha256sum | cut -c1-20)"
-          echo "CI_TOOLCHAIN_KEY=$CI_TOOLCHAIN_KEY" >> "$GITHUB_ENV"
-          echo "CI_TOOLCHAIN_IMAGE=kaori-ci-toolchain:$CI_TOOLCHAIN_KEY" >> "$GITHUB_ENV"
-
-      - name: Build or Reuse CI Toolchain
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          if docker image inspect "$CI_TOOLCHAIN_IMAGE" >/dev/null 2>&1; then
-            echo "Reusing cached CI toolchain: $CI_TOOLCHAIN_IMAGE"
-            exit 0
-          fi
-          docker build \
-            --file .github/ci/Dockerfile \
-            --tag "$CI_TOOLCHAIN_IMAGE" \
-            .
-
+      - name: Reuse CI Toolchain
+        run: echo "CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}" >> "$GITHUB_ENV"
       - name: Run Static Foundation Gate
         run: >-
-          docker run --rm
-          --user "$(id -u):$(id -g)"
-          --env HOME=/tmp
-          --volume "$PWD:/workspace"
-          --workdir /workspace
-          "$CI_TOOLCHAIN_IMAGE"
+          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp
+          --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE"
           bash scripts/quality_gate.sh --static
+      - name: Upload Static Diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: static-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/static-output
+          if-no-files-found: ignore
+          retention-days: 7
 
   static-security:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ needs.validation-profile.outputs.execution == 'full' && needs.static-quality.result == 'success' }}
+    needs: [validation-profile, static-quality]
     name: Secrets, SAST, Dependencies, and Workflow Security
-    needs: static-quality
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 45
     steps:
-      - name: Check Out Repository
+      - name: Check Out Exact Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ needs.validation-profile.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
-
-      - name: Resolve CI Toolchain Cache Key
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          CI_TOOLCHAIN_KEY="$(cat \
-            .github/ci/Dockerfile \
-            .github/ci/requirements-security.txt \
-            requirements/base.txt \
-            requirements/dev.txt \
-            | sha256sum | cut -c1-20)"
-          echo "CI_TOOLCHAIN_KEY=$CI_TOOLCHAIN_KEY" >> "$GITHUB_ENV"
-          echo "CI_TOOLCHAIN_IMAGE=kaori-ci-toolchain:$CI_TOOLCHAIN_KEY" >> "$GITHUB_ENV"
-
-      - name: Build or Reuse CI Toolchain
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          if docker image inspect "$CI_TOOLCHAIN_IMAGE" >/dev/null 2>&1; then
-            echo "Reusing cached CI toolchain: $CI_TOOLCHAIN_IMAGE"
-            exit 0
-          fi
-          docker build \
-            --file .github/ci/Dockerfile \
-            --tag "$CI_TOOLCHAIN_IMAGE" \
-            .
-
+      - name: Reuse CI Toolchain
+        run: echo "CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}" >> "$GITHUB_ENV"
       - name: Run Free-Plan Static Security Gate
         run: >-
-          docker run --rm
-          --user "$(id -u):$(id -g)"
-          --env HOME=/tmp
-          --volume "$PWD:/workspace"
-          --workdir /workspace
-          "$CI_TOOLCHAIN_IMAGE"
+          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp
+          --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE"
           bash .github/ci/run-security-static.sh
-
       - name: Upload Security Diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -133,183 +286,98 @@ jobs:
           retention-days: 7
 
   functional-tests:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ needs.validation-profile.outputs.execution == 'full' && needs.static-security.result == 'success' }}
+    needs: [validation-profile, static-security]
     name: Functional and Integration Tests
-    needs: static-security
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 60
     steps:
-      - name: Check Out Repository
+      - name: Check Out Exact Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ needs.validation-profile.outputs.source_sha }}
           persist-credentials: false
-
-      - name: Resolve CI Toolchain Cache Key
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          CI_TOOLCHAIN_KEY="$(cat \
-            .github/ci/Dockerfile \
-            .github/ci/requirements-security.txt \
-            requirements/base.txt \
-            requirements/dev.txt \
-            | sha256sum | cut -c1-20)"
-          echo "CI_TOOLCHAIN_KEY=$CI_TOOLCHAIN_KEY" >> "$GITHUB_ENV"
-          echo "CI_TOOLCHAIN_IMAGE=kaori-ci-toolchain:$CI_TOOLCHAIN_KEY" >> "$GITHUB_ENV"
-
       - name: Prepare CI Runtime Contract
         shell: bash
         run: |
           {
             echo "CI_UID=$(id -u)"
             echo "CI_GID=$(id -g)"
-            echo "KAORI_CI_TOOLCHAIN_IMAGE=$CI_TOOLCHAIN_IMAGE"
+            echo "KAORI_CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}"
             echo "COMPOSE_PROJECT_NAME=kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-tests"
           } >> "$GITHUB_ENV"
-
-      - name: Build or Reuse CI Toolchain
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          if docker image inspect "$CI_TOOLCHAIN_IMAGE" >/dev/null 2>&1; then
-            echo "Reusing cached CI toolchain: $CI_TOOLCHAIN_IMAGE"
-            exit 0
-          fi
-          docker build \
-            --file .github/ci/Dockerfile \
-            --tag "$CI_TOOLCHAIN_IMAGE" \
-            .
-
       - name: Start PostgreSQL and Redis
         run: docker compose --file .github/ci/compose.yml up -d postgres redis
-
       - name: Run Functional Test Gate
         run: >-
-          docker compose --file .github/ci/compose.yml
-          run --rm ci bash scripts/quality_gate.sh --tests
-
+          docker compose --file .github/ci/compose.yml run --rm ci
+          bash scripts/quality_gate.sh --tests
+      - name: Upload Test Diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tests-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/test-output
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Cleanup Test Services
         if: ${{ always() }}
         run: docker compose --file .github/ci/compose.yml down --volumes --remove-orphans
 
   frontend:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ needs.validation-profile.outputs.execution == 'full' && needs.functional-tests.result == 'success' }}
+    needs: [validation-profile, functional-tests]
     name: Frontend Reproducibility
-    needs: functional-tests
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 30
     steps:
-      - name: Check Out Repository
+      - name: Check Out Exact Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ needs.validation-profile.outputs.source_sha }}
           persist-credentials: false
-
-      - name: Resolve CI Toolchain Cache Key
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          CI_TOOLCHAIN_KEY="$(cat \
-            .github/ci/Dockerfile \
-            .github/ci/requirements-security.txt \
-            requirements/base.txt \
-            requirements/dev.txt \
-            | sha256sum | cut -c1-20)"
-          echo "CI_TOOLCHAIN_KEY=$CI_TOOLCHAIN_KEY" >> "$GITHUB_ENV"
-          echo "CI_TOOLCHAIN_IMAGE=kaori-ci-toolchain:$CI_TOOLCHAIN_KEY" >> "$GITHUB_ENV"
-
-      - name: Build or Reuse CI Toolchain
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          if docker image inspect "$CI_TOOLCHAIN_IMAGE" >/dev/null 2>&1; then
-            echo "Reusing cached CI toolchain: $CI_TOOLCHAIN_IMAGE"
-            exit 0
-          fi
-          docker build \
-            --file .github/ci/Dockerfile \
-            --tag "$CI_TOOLCHAIN_IMAGE" \
-            .
-
+      - name: Reuse CI Toolchain
+        run: echo "CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}" >> "$GITHUB_ENV"
       - name: Build and Verify Frontend
         run: >-
-          docker run --rm
-          --user "$(id -u):$(id -g)"
-          --env HOME=/tmp
-          --volume "$PWD:/workspace"
-          --workdir /workspace
-          "$CI_TOOLCHAIN_IMAGE"
+          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp
+          --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE"
           bash scripts/quality_gate.sh --frontend
 
   production-runtime:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ needs.validation-profile.outputs.execution == 'full' && needs.frontend.result == 'success' }}
+    needs: [validation-profile, frontend]
     name: Production Image, Container Security, Runtime, and DAST
-    needs: frontend
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 75
     steps:
-      - name: Check Out Repository
+      - name: Check Out Exact Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ needs.validation-profile.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
-
-      - name: Resolve CI Toolchain Cache Key
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          CI_TOOLCHAIN_KEY="$(cat \
-            .github/ci/Dockerfile \
-            .github/ci/requirements-security.txt \
-            requirements/base.txt \
-            requirements/dev.txt \
-            | sha256sum | cut -c1-20)"
-          echo "CI_TOOLCHAIN_KEY=$CI_TOOLCHAIN_KEY" >> "$GITHUB_ENV"
-          echo "CI_TOOLCHAIN_IMAGE=kaori-ci-toolchain:$CI_TOOLCHAIN_KEY" >> "$GITHUB_ENV"
-
       - name: Prepare Runtime Contract
         shell: bash
         run: |
           {
             echo "CI_UID=$(id -u)"
             echo "CI_GID=$(id -g)"
-            echo "KAORI_CI_TOOLCHAIN_IMAGE=$CI_TOOLCHAIN_IMAGE"
+            echo "KAORI_CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}"
+            echo "CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}"
             echo "COMPOSE_PROJECT_NAME=kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-runtime"
-            echo "VALIDATION_IMAGE=kaori:ci-${GITHUB_SHA}"
+            echo "VALIDATION_IMAGE=kaori:ci-${{ needs.validation-profile.outputs.source_sha }}"
           } >> "$GITHUB_ENV"
-
-      - name: Build or Reuse CI Toolchain
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          if docker image inspect "$CI_TOOLCHAIN_IMAGE" >/dev/null 2>&1; then
-            echo "Reusing cached CI toolchain: $CI_TOOLCHAIN_IMAGE"
-            exit 0
-          fi
-          docker build \
-            --file .github/ci/Dockerfile \
-            --tag "$CI_TOOLCHAIN_IMAGE" \
-            .
-
       - name: Build Production Validation Image
         run: docker build --target production --tag "$VALIDATION_IMAGE" .
-
       - name: Scan Production Validation Image
         run: >-
-          docker run --rm
-          --volume /var/run/docker.sock:/var/run/docker.sock
-          --volume kaori-trivy-cache:/root/.cache/trivy
-          "$CI_TOOLCHAIN_IMAGE"
-          trivy image
-          --cache-dir /root/.cache/trivy
-          --exit-code 1
-          --ignore-unfixed
-          --severity HIGH,CRITICAL
-          --scanners vuln
-          "$VALIDATION_IMAGE"
-
+          docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock
+          --volume kaori-trivy-cache:/root/.cache/trivy "$CI_TOOLCHAIN_IMAGE"
+          trivy image --cache-dir /root/.cache/trivy --exit-code 1 --ignore-unfixed
+          --severity HIGH,CRITICAL --scanners vuln "$VALIDATION_IMAGE"
       - name: Validate Production Runtime
         run: bash .github/ci/run-runtime-validation.sh "$VALIDATION_IMAGE"
-
       - name: Upload Runtime Diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -320,7 +388,6 @@ jobs:
             tmp/ci-artifacts/zap
           if-no-files-found: ignore
           retention-days: 7
-
       - name: Cleanup Runtime Resources
         if: ${{ always() }}
         shell: bash
@@ -328,39 +395,206 @@ jobs:
           docker compose --project-name "$COMPOSE_PROJECT_NAME" --file .github/ci/compose.yml --profile dast down --volumes --remove-orphans || true
           docker image rm "$VALIDATION_IMAGE" >/dev/null 2>&1 || true
 
+  integration-smoke:
+    if: ${{ needs.validation-profile.outputs.execution == 'fast' }}
+    needs: validation-profile
+    name: KAORI Fast Integration Smoke
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    timeout-minutes: 15
+    steps:
+      - name: Check Out Exact Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.validation-profile.outputs.source_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare Smoke Runtime Contract
+        shell: bash
+        run: |
+          {
+            echo "CI_UID=$(id -u)"
+            echo "CI_GID=$(id -g)"
+            echo "KAORI_CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}"
+            echo "COMPOSE_PROJECT_NAME=kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-smoke"
+          } >> "$GITHUB_ENV"
+      - name: Start Smoke Dependencies
+        run: docker compose --file .github/ci/compose.yml up -d postgres redis
+      - name: Run Integration Smoke
+        run: >-
+          docker compose --file .github/ci/compose.yml run --rm ci
+          bash scripts/quality_gate.sh --smoke
+      - name: Upload Smoke Diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: smoke-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/test-output
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Cleanup Smoke Dependencies
+        if: ${{ always() }}
+        run: docker compose --file .github/ci/compose.yml down --volumes --remove-orphans
+
   admission:
     name: KAORI CI Admission
-    if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: ${{ always() && needs.validation-profile.result == 'success' }}
     needs:
+      - validation-profile
       - static-quality
       - static-security
       - functional-tests
       - frontend
       - production-runtime
+      - integration-smoke
     runs-on: [self-hosted, linux, x64, kaori-ci]
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
-      - name: Assert Required Gates
+      - name: Check Out Exact Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.validation-profile.outputs.source_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Assert Selected Validation Path
+        id: result
         shell: bash
         env:
+          EXECUTION: ${{ needs.validation-profile.outputs.execution }}
           STATIC_QUALITY: ${{ needs.static-quality.result }}
           STATIC_SECURITY: ${{ needs.static-security.result }}
           FUNCTIONAL_TESTS: ${{ needs.functional-tests.result }}
           FRONTEND: ${{ needs.frontend.result }}
           PRODUCTION_RUNTIME: ${{ needs.production-runtime.result }}
+          INTEGRATION_SMOKE: ${{ needs.integration-smoke.result }}
         run: |
-          printf 'static-quality=%s\n' "$STATIC_QUALITY"
-          printf 'static-security=%s\n' "$STATIC_SECURITY"
-          printf 'functional-tests=%s\n' "$FUNCTIONAL_TESTS"
-          printf 'frontend=%s\n' "$FRONTEND"
-          printf 'production-runtime=%s\n' "$PRODUCTION_RUNTIME"
-          for result in \
-            "$STATIC_QUALITY" \
-            "$STATIC_SECURITY" \
-            "$FUNCTIONAL_TESTS" \
-            "$FRONTEND" \
-            "$PRODUCTION_RUNTIME"
-          do
-            [[ "$result" == "success" ]] || exit 1
-          done
-          printf 'PASS — KAORI CI Admission\n'
+          set -Eeuo pipefail
+          if [[ "$EXECUTION" == "full" ]]; then
+            for result in "$STATIC_QUALITY" "$STATIC_SECURITY" "$FUNCTIONAL_TESTS" "$FRONTEND" "$PRODUCTION_RUNTIME"; do
+              [[ "$result" == "success" ]] || { echo 'selected Full Admission gate failed'; exit 1; }
+            done
+            {
+              echo 'coverage=Foundation & Governance; Domain & Capability Contracts; Engineering Quality; Functional & Integration; Frontend; Security & Runtime'
+              echo 'fresh=Foundation & Governance|Domain & Capability Contracts|Engineering Quality|Functional & Integration|Frontend|Security & Runtime'
+              echo 'reused='
+            } >> "$GITHUB_OUTPUT"
+          else
+            [[ "$INTEGRATION_SMOKE" == "success" ]] || { echo 'fast integration smoke failed'; exit 1; }
+            {
+              echo 'coverage=Exact Full Admission evidence reused with fresh lineage and integration smoke.'
+              echo 'fresh=Admission evidence identity|transition lineage|syntax/architecture/import/migration smoke|release contracts|E2E smoke'
+              echo 'reused=Foundation & Governance|Domain & Capability Contracts|Engineering Quality|Functional & Integration|Frontend|Security & Runtime'
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish Immutable Full Admission Evidence
+        if: ${{ needs.validation-profile.outputs.execution == 'full' }}
+        shell: bash
+        env:
+          CI_TOOLCHAIN_IMAGE: ${{ needs.validation-profile.outputs.toolchain_image }}
+        run: |
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --env HOME=/tmp \
+            --volume "$PWD:/workspace" \
+            --workdir /workspace \
+            "$CI_TOOLCHAIN_IMAGE" \
+            python scripts/ci_admission.py write-evidence \
+              --source-sha "${{ needs.validation-profile.outputs.source_sha }}" \
+              --source-tree "${{ needs.validation-profile.outputs.source_tree }}" \
+              --run-id "$GITHUB_RUN_ID" \
+              --run-attempt "$GITHUB_RUN_ATTEMPT" \
+              --workflow-ref "$GITHUB_WORKFLOW_REF" \
+              --static-quality "${{ needs.static-quality.result }}" \
+              --static-security "${{ needs.static-security.result }}" \
+              --functional-tests "${{ needs.functional-tests.result }}" \
+              --frontend "${{ needs.frontend.result }}" \
+              --production-runtime "${{ needs.production-runtime.result }}" \
+              --output admission-evidence.json
+
+      - name: Upload Full Admission Evidence
+        if: ${{ needs.validation-profile.outputs.execution == 'full' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kaori-full-admission-${{ needs.validation-profile.outputs.source_sha }}
+          path: admission-evidence.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Write Human-Readable Admission Summary
+        if: ${{ always() }}
+        shell: bash
+        env:
+          CI_TOOLCHAIN_IMAGE: ${{ needs.validation-profile.outputs.toolchain_image }}
+          EXECUTION: ${{ needs.validation-profile.outputs.execution }}
+          PROFILE: ${{ needs.validation-profile.outputs.display_profile }}
+          FALLBACK: ${{ needs.validation-profile.outputs.fallback }}
+          REASON: ${{ needs.validation-profile.outputs.reason }}
+          EVIDENCE_RUN: ${{ needs.validation-profile.outputs.evidence_run_id }}
+          STARTED_EPOCH: ${{ needs.validation-profile.outputs.started_epoch }}
+          FRESH: ${{ steps.result.outputs.fresh }}
+          REUSED: ${{ steps.result.outputs.reused }}
+          COVERAGE: ${{ steps.result.outputs.coverage }}
+          STATIC_QUALITY: ${{ needs.static-quality.result }}
+          STATIC_SECURITY: ${{ needs.static-security.result }}
+          FUNCTIONAL_TESTS: ${{ needs.functional-tests.result }}
+          FRONTEND: ${{ needs.frontend.result }}
+          PRODUCTION_RUNTIME: ${{ needs.production-runtime.result }}
+          INTEGRATION_SMOKE: ${{ needs.integration-smoke.result }}
+        run: |
+          set -Eeuo pipefail
+          elapsed=$(( $(date +%s) - STARTED_EPOCH ))
+          duration="$(printf '%dm %02ds' $((elapsed / 60)) $((elapsed % 60)))"
+          evidence='Fresh Full Admission'
+          if [[ "$EXECUTION" == "fast" ]]; then
+            evidence="REUSED Full Admission #${EVIDENCE_RUN}"
+          elif [[ "$FALLBACK" == "true" ]]; then
+            evidence="FALLBACK — ${REASON}; fresh Full Admission executed"
+          fi
+
+          RESULT=PASS
+          FIRST_FAILURE=''
+          if [[ "$EXECUTION" == "full" ]]; then
+            if [[ "$STATIC_QUALITY" != "success" ]]; then RESULT=FAIL; FIRST_FAILURE="Static, Architecture, and Governance — $STATIC_QUALITY";
+            elif [[ "$STATIC_SECURITY" != "success" ]]; then RESULT=FAIL; FIRST_FAILURE="Secrets, SAST, Dependencies, and Workflow Security — $STATIC_SECURITY";
+            elif [[ "$FUNCTIONAL_TESTS" != "success" ]]; then RESULT=FAIL; FIRST_FAILURE="Functional and Integration Tests — $FUNCTIONAL_TESTS";
+            elif [[ "$FRONTEND" != "success" ]]; then RESULT=FAIL; FIRST_FAILURE="Frontend Reproducibility — $FRONTEND";
+            elif [[ "$PRODUCTION_RUNTIME" != "success" ]]; then RESULT=FAIL; FIRST_FAILURE="Production Image, Container Security, Runtime, and DAST — $PRODUCTION_RUNTIME";
+            fi
+          elif [[ "$INTEGRATION_SMOKE" != "success" ]]; then
+            RESULT=FAIL
+            FIRST_FAILURE="KAORI Fast Integration Smoke — $INTEGRATION_SMOKE"
+          fi
+
+          next='Ready for PR Integration'
+          if [[ "$RESULT" == "FAIL" ]]; then
+            next='Repair the first actionable failure, then rerun this validation profile'
+          else
+            case "${{ needs.validation-profile.outputs.profile }}" in
+              pr-integration) next='Ready to merge into kaori/staging' ;;
+              staging-integration) next='Sync exact staging SHA for Local UAT' ;;
+              promotion) next='Ready to promote accepted staging lineage to main' ;;
+              post-promotion) next='Production lineage verified; delivery evidence complete' ;;
+            esac
+          fi
+
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --env HOME=/tmp \
+            --volume "$PWD:/workspace" \
+            --workdir /workspace \
+            "$CI_TOOLCHAIN_IMAGE" \
+            python scripts/ci_admission.py summary \
+              --result "$RESULT" \
+              --profile "$PROFILE" \
+              --commit-sha "${{ needs.validation-profile.outputs.source_sha }}" \
+              --tree-sha "${{ needs.validation-profile.outputs.source_tree }}" \
+              --evidence "$evidence" \
+              --duration "$duration" \
+              --coverage-summary "${COVERAGE:-Selected validation path did not complete.}" \
+              --fresh-checks "$FRESH" \
+              --reused-checks "$REUSED" \
+              --first-failure "$FIRST_FAILURE" \
+              --next-action "$next" \
+            >> "$GITHUB_STEP_SUMMARY"
+          printf '%s — KAORI %s · %s · %s\n' "$RESULT" "$PROFILE" "$duration" "$next"

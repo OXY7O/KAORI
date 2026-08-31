@@ -23,7 +23,9 @@ def test_release_test_preflight_runs_before_full_pytest() -> None:
     run_tests = quality_gate.split('run_tests() {', 1)[1].split('run_frontend() {', 1)[0]
 
     assert 'python scripts/verify_test_prerequisites.py' in run_tests
-    assert run_tests.index('verify_test_prerequisites.py') < run_tests.index("pytest -q -m 'not debug and not e2e'")
+    assert "'Functional Tests'" in run_tests
+    assert 'run_pytest_capture' in run_tests
+    assert run_tests.index('verify_test_prerequisites.py') < run_tests.index("'Functional Tests'")
 
 
 def test_test_module_basenames_are_unique() -> None:
