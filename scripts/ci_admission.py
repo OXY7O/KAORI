@@ -266,7 +266,12 @@ def transition_lineage_reuse_decision(
             return ReuseDecision(False, 'PR Integration is missing the expected staging base authority.')
         if source_sha != evidence_source_sha:
             return ReuseDecision(False, 'PR head does not match the exact admitted source SHA.')
-        return ReuseDecision(True, 'PR head and tree match exact Full Admission evidence.', source_sha=source_sha, source_tree=source_tree)
+        return ReuseDecision(
+            True,
+            'PR head and tree match exact Full Admission evidence.',
+            source_sha=source_sha,
+            source_tree=source_tree,
+        )
 
     if profile == 'staging-integration':
         if not expected_before:
@@ -283,9 +288,19 @@ def transition_lineage_reuse_decision(
         if not expected_base:
             return ReuseDecision(False, 'Promotion is missing the expected main base authority.')
         if source_sha == evidence_source_sha:
-            return ReuseDecision(True, 'Promotion head is the exact admitted staging source.', source_sha=source_sha, source_tree=source_tree)
+            return ReuseDecision(
+                True,
+                'Promotion head is the exact admitted staging source.',
+                source_sha=source_sha,
+                source_tree=source_tree,
+            )
         if len(parents) >= 2 and parents[1] == evidence_source_sha:
-            return ReuseDecision(True, 'Promotion staging head preserves the admitted merge lineage.', source_sha=source_sha, source_tree=source_tree)
+            return ReuseDecision(
+                True,
+                'Promotion staging head preserves the admitted merge lineage.',
+                source_sha=source_sha,
+                source_tree=source_tree,
+            )
         return ReuseDecision(False, 'Promotion staging head does not preserve the admitted source lineage.')
 
     if profile == 'post-promotion':
@@ -302,7 +317,12 @@ def transition_lineage_reuse_decision(
             return ReuseDecision(False, 'Post-promotion tree differs from the accepted staging tree.')
         if accepted_staging_sha != evidence_source_sha and evidence_source_sha not in accepted_parents:
             return ReuseDecision(False, 'Accepted staging lineage does not preserve the admitted source SHA.')
-        return ReuseDecision(True, 'Post-promotion main tree preserves the accepted staging and admitted source lineage.', source_sha=accepted_staging_sha, source_tree=accepted_tree)
+        return ReuseDecision(
+            True,
+            'Post-promotion main tree preserves the accepted staging and admitted source lineage.',
+            source_sha=accepted_staging_sha,
+            source_tree=accepted_tree,
+        )
 
     return ReuseDecision(False, f'Unsupported fast validation profile for lineage verification: {profile}')
 
