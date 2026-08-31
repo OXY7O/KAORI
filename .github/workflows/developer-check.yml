@@ -1,0 +1,244 @@
+name: KAORI Developer Check
+
+on:
+  pull_request:
+    branches:
+      - kaori/staging
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - converted_to_draft
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kaori-developer-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  KAORI_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+
+jobs:
+  route:
+    name: Route Checks
+    if: ${{ github.event.pull_request.draft == true && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      python: ${{ steps.route.outputs.python }}
+      templates: ${{ steps.route.outputs.templates }}
+      frontend: ${{ steps.route.outputs.frontend }}
+      migrations: ${{ steps.route.outputs.migrations }}
+      contracts: ${{ steps.route.outputs.contracts }}
+      wide: ${{ steps.route.outputs.wide }}
+      test_paths: ${{ steps.route.outputs.test_paths }}
+      summary: ${{ steps.route.outputs.summary }}
+    steps:
+      - name: Check Out Draft Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.KAORI_SOURCE_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve Changed Paths
+        id: route
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          changed_file="$(mktemp)"
+          git diff --name-only "$BASE_SHA" "$KAORI_SOURCE_SHA" > "$changed_file"
+
+          python=false
+          templates=false
+          frontend=false
+          migrations=false
+          contracts=false
+          wide=false
+          declare -A selected_tests=()
+
+          while IFS= read -r path; do
+            [[ -n "$path" ]] || continue
+
+            case "$path" in
+              .github/*|.github/ci/*|requirements/*|Dockerfile*|docker-compose*|scripts/ci_admission.py|scripts/ci_admission_policy.py|scripts/quality_gate.sh|tests/contracts/release/*|docs/engineering/KAORI_DELIVERY_WORKFLOW.md)
+                wide=true
+                python=true
+                templates=true
+                frontend=true
+                migrations=true
+                contracts=true
+                ;;
+            esac
+
+            case "$path" in
+              *.py) python=true ;;
+            esac
+            case "$path" in
+              app/templates/*|app/*/templates/*|app/*/templates/**/*) templates=true ;;
+            esac
+            case "$path" in
+              app/static/*|app/static/**/*|frontend/*|frontend/**/*|package.json|package-lock.json)
+                frontend=true
+                ;;
+            esac
+            case "$path" in
+              migrations/*|migrations/**/*|app/*/models.py|app/*/models/*)
+                migrations=true
+                contracts=true
+                ;;
+            esac
+
+            case "$path" in
+              app/welcome/*|tests/welcome/*) selected_tests[tests/welcome]=1 ;;
+              app/access/*|app/users/*|tests/access/*) selected_tests[tests/access]=1 ;;
+              app/integrations/*|tests/integrations/*) selected_tests[tests/integrations]=1 ;;
+              app/kubernetes/*|tests/kubernetes/*) selected_tests[tests/kubernetes]=1 ;;
+              app/storage/*|app/object_storage/*|tests/storage/*|tests/object_storage/*)
+                selected_tests[tests/storage]=1
+                [[ -d tests/object_storage ]] && selected_tests[tests/object_storage]=1
+                ;;
+              app/platform_operations/*|tests/platform_operations/*) selected_tests[tests/platform_operations]=1 ;;
+              app/reports/*|tests/reports/*) selected_tests[tests/reports]=1 ;;
+              app/settings/*|tests/settings/*) selected_tests[tests/settings]=1 ;;
+              app/intelligence/*|tests/intelligence/*) [[ -d tests/intelligence ]] && selected_tests[tests/intelligence]=1 ;;
+              app/vault/*|tests/vault/*)
+                [[ -d tests/vault ]] && selected_tests[tests/vault]=1
+                selected_tests[tests/access]=1
+                ;;
+              app/*)
+                contracts=true
+                ;;
+              tests/contracts/*)
+                contracts=true
+                ;;
+            esac
+          done < "$changed_file"
+
+          if [[ "$wide" == "true" ]]; then
+            selected_tests[tests/contracts/release]=1
+            selected_tests[tests/migrations]=1
+          fi
+
+          test_paths=''
+          for path in "${!selected_tests[@]}"; do
+            [[ -e "$path" ]] || continue
+            test_paths+="${test_paths:+ }$path"
+          done
+
+          summary="python=$python templates=$templates frontend=$frontend migrations=$migrations contracts=$contracts wide=$wide tests=${test_paths:-none}"
+          {
+            printf 'python=%s\n' "$python"
+            printf 'templates=%s\n' "$templates"
+            printf 'frontend=%s\n' "$frontend"
+            printf 'migrations=%s\n' "$migrations"
+            printf 'contracts=%s\n' "$contracts"
+            printf 'wide=%s\n' "$wide"
+            printf 'test_paths=%s\n' "$test_paths"
+            printf 'summary=%s\n' "$summary"
+          } >> "$GITHUB_OUTPUT"
+
+          printf '📦 Developer Check route — %s\n' "$summary"
+
+  developer-check:
+    name: Developer Check
+    needs: route
+    if: ${{ always() && needs.route.result == 'success' }}
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    timeout-minutes: 20
+    steps:
+      - name: Check Out Draft Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.KAORI_SOURCE_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve CI Toolchain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
+          image="kaori-ci-toolchain:$key"
+          docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
+          printf 'CI_TOOLCHAIN_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
+
+      - name: Run Path-Aware Checks
+        shell: bash
+        env:
+          CHECK_PYTHON: ${{ needs.route.outputs.python }}
+          CHECK_TEMPLATES: ${{ needs.route.outputs.templates }}
+          CHECK_FRONTEND: ${{ needs.route.outputs.frontend }}
+          CHECK_MIGRATIONS: ${{ needs.route.outputs.migrations }}
+          CHECK_CONTRACTS: ${{ needs.route.outputs.contracts }}
+          CHECK_WIDE: ${{ needs.route.outputs.wide }}
+          TEST_PATHS: ${{ needs.route.outputs.test_paths }}
+          ROUTE_SUMMARY: ${{ needs.route.outputs.summary }}
+        run: |
+          set -Eeuo pipefail
+          started="$(date +%s)"
+
+          run_toolchain() {
+            local label="$1"
+            shift
+            local check_started elapsed
+            check_started="$(date +%s)"
+            printf '⏳ %s\n' "$label"
+            docker run --rm \
+              --user "$(id -u):$(id -g)" \
+              --env HOME=/tmp \
+              --volume "$PWD:/workspace" \
+              --workdir /workspace \
+              "$CI_TOOLCHAIN_IMAGE" \
+              "$@"
+            elapsed=$(( $(date +%s) - check_started ))
+            printf '✅ %s · ⏱ %dm %02ds\n' "$label" $((elapsed / 60)) $((elapsed % 60))
+          }
+
+          if [[ "$CHECK_PYTHON" == "true" ]]; then
+            run_toolchain 'Ruff Check' python -m ruff check app migrations tests scripts
+            run_toolchain 'Ruff Format' python -m ruff format --check app migrations tests scripts
+          fi
+
+          if [[ "$CHECK_TEMPLATES" == "true" ]]; then
+            run_toolchain 'DjLint' python -m djlint app/templates --check
+          fi
+
+          if [[ "$CHECK_PYTHON" == "true" && ( "$CHECK_WIDE" == "true" || "$CHECK_CONTRACTS" == "true" ) ]]; then
+            run_toolchain 'Pyright' python -m pyright --project pyrightconfig.json
+          fi
+
+          if [[ "$CHECK_MIGRATIONS" == "true" ]]; then
+            run_toolchain 'Migration Graph' python scripts/verify_migration_graph.py
+          fi
+
+          if [[ "$CHECK_CONTRACTS" == "true" ]]; then
+            paths="$TEST_PATHS"
+            if [[ -z "$paths" ]]; then
+              paths='tests/contracts/release'
+            fi
+            printf '⏳ Focused Tests — %s\n' "$paths"
+            # TEST_PATHS is assembled only from the static whitelist above.
+            # shellcheck disable=SC2086
+            run_toolchain 'Focused Tests' bash -lc "pytest -q --tb=short $paths"
+          elif [[ -n "$TEST_PATHS" ]]; then
+            printf '⏳ Focused Tests — %s\n' "$TEST_PATHS"
+            # TEST_PATHS is assembled only from the static whitelist above.
+            # shellcheck disable=SC2086
+            run_toolchain 'Focused Tests' bash -lc "pytest -q --tb=short $TEST_PATHS"
+          fi
+
+          if [[ "$CHECK_FRONTEND" == "true" ]]; then
+            run_toolchain 'Frontend Format' bash -lc 'npm ci --no-audit --no-fund && npm run check-format'
+          fi
+
+          elapsed=$(( $(date +%s) - started ))
+          printf '\n✅ Developer Check PASS\n'
+          printf '📦 %s\n' "$ROUTE_SUMMARY"
+          printf '⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
+          printf '➡️ Keep the PR Draft until review findings are batch-repaired; mark Ready only after the latest Developer Check is green.\n'
