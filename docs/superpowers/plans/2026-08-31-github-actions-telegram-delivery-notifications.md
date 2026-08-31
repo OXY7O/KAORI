@@ -92,7 +92,8 @@
 - [ ] Run targeted Telegram/release contract tests.
 - [ ] Run formatter/static checks required by the changed Python/YAML/test paths.
 - [x] Open Draft review PR #72 to `kaori/staging` under Issue #64.
-- [ ] Promote one final reviewed head to Ready.
+- [x] Complete pre-Ready trust-boundary review with no unresolved Critical/Important findings.
+- [ ] Open Ready candidate from the exact reviewed branch head (Draft→Ready connector fallback may require a replacement PR).
 - [ ] Run one fresh Full Admission because workflow authority/security boundaries changed.
 - [ ] Freeze the candidate head while Full Admission is authoritative.
 
