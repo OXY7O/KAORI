@@ -1,81 +1,122 @@
-# KAORI Progressive CI and Admission Evidence Reuse Design
+# KAORI Draft-to-Ready Progressive CI and Admission Evidence Reuse Design
 
 ## Status
 
 Revised and approved in chat on 2026-08-31 under Issue #55.
 
-This revision supersedes the earlier rule that validation-authority changes must repeat Full Admission at every affected transition. The governing principle is now:
+This revision makes the collaboration boundary explicit:
+
+> **Draft PR = collect findings without governed Full Admission. Ready for Review = final staging-candidate Admission boundary.**
+
+The evidence rule remains:
 
 > **Same immutable source tree + same validation authority fingerprint = never repeat comprehensive validation.**
 
-A change to validation authority creates a new fingerprint and therefore requires one fresh Full Admission for that tree/fingerprint pair. Once that pair is admitted, later staging/main transitions reuse the immutable evidence instead of recomputing the same comprehensive gates.
+A source-tree or validation-authority change creates a new evidence identity and requires one fresh Full Admission. Once that exact tree/fingerprint/profile tuple is admitted, later staging/main transitions reuse the immutable evidence instead of recomputing the same comprehensive gates.
 
 ## Problem
 
-KAORI has been paying approximately 20–30 minutes for comprehensive CI repeatedly across work-branch push, staging PR, staging merge, promotion PR, and main merge. On the single self-hosted runner this can become 1–2 hours of machine waiting even when later transitions contain the same source tree and the same validation contract.
+KAORI previously paid approximately 20–30 minutes for comprehensive CI repeatedly across issue-branch pushes, staging PR activity, staging merge, promotion PR, and main merge. On the single self-hosted runner this created long lead time and queue contention even when later transitions preserved the same content.
 
-That behavior is safe but not information-efficient. Re-running the same Static, Security, Functional/Integration, Frontend, Production Image, Runtime, and DAST conclusions against equivalent content does not materially increase confidence.
+The rollout also exposed a second inefficiency: opening a staging PR while implementation and review findings are still evolving causes expensive validation to start before the candidate is actually ready. Every subsequent fix changes the source tree and makes the previous Full Admission obsolete.
+
+The required model therefore separates three activities:
+
+1. **development feedback** — focused checks while coding;
+2. **Draft PR review/findings** — collaboration without governed Full Admission;
+3. **Ready candidate Admission** — comprehensive, auditable validation of the intended final staging candidate.
 
 ## Goals
 
-- Keep Issue → branch → PR → staging → Local UAT → main governance intact.
-- Make development iteration fast by not running governed Full Admission on ordinary issue-branch pushes.
-- Run comprehensive Full Admission once for each immutable source tree under one validation-authority fingerprint.
-- Reuse that evidence through staging/main transitions when tree, fingerprint, result, age, and lineage are valid.
+- Keep Issue → branch → Draft PR → findings/review → Ready for Review → staging → Local UAT → main governance intact.
+- Do not run governed Full Admission on ordinary issue-branch pushes.
+- Do not acquire the self-hosted CI runner for Draft PR open/synchronize activity.
+- Use `ready_for_review` as the first comprehensive staging-candidate Admission event.
+- Run comprehensive Full Admission once for each immutable source tree under one validation-authority fingerprint and profile version.
+- Reuse that evidence through staging/main transitions when tree, fingerprint, result, age, profile, and lineage are valid.
 - Fail closed to Full Admission whenever equivalence cannot be proven.
-- Preserve all existing comprehensive quality and security gates.
-- Keep Local UAT explicit and human.
-- Target fast transition wall-clock at 2–5 minutes.
+- Preserve all existing comprehensive quality/security/runtime/DAST gates.
+- Keep Local Dev Container UAT explicit and human.
+- Target eligible fast transitions at 2–5 minutes wall-clock excluding unrelated runner queue delay.
 
 ## Non-goals
 
-- No quality threshold increase.
+- No application feature or report semantic/layout change.
+- No code-health threshold increase; defaults remain `800 / 160 / 30 / 8`.
 - No security, runtime, migration, DAST, test, frontend, architecture, type, or code-health gate removal from Full Admission.
 - No evidence reuse across a different source tree.
-- No evidence reuse across a different validation-authority fingerprint.
-- No fabricated UAT.
+- No evidence reuse across a different validation-authority fingerprint/profile version.
+- No automated or fabricated Local UAT.
 - No mutable `latest` evidence.
-- No duplicate-pytest optimization in this change; that remains a separate performance improvement after #55 rollout proof.
+- No duplicate-pytest optimization inside Full Admission in this change.
 
 ## Delivery Model
 
-### Development iteration
+### 1. Issue branch development
 
-Ordinary issue branches remain issue-linked `kaori/<type>-<issue>-<slug>` branches, but GitHub Actions no longer runs the governed Full Admission on every branch push.
+Normal work starts from the governed Issue on an isolated issue-linked branch. Ordinary issue-branch pushes are development activity, not governed Admission events.
 
-During implementation the developer runs focused local checks appropriate to the blast radius using existing KAORI commands and test suites. The expensive governed Admission boundary moves to the staging Pull Request, where the candidate source tree is stable enough for comprehensive validation to be worth the cost.
+The developer uses existing focused KAORI checks/tests appropriate to the blast radius. This keeps iteration responsive without weakening the eventual comprehensive candidate validation.
 
-This intentionally separates:
+### 2. Draft PR to `kaori/staging`
 
-- **development feedback** — focused and iterative; and
-- **governed Admission** — comprehensive and auditable.
+A Draft PR is opened while implementation review and structured findings are still being collected.
 
-### PR to `kaori/staging`
+Draft PR responsibilities:
 
-The staging PR is the first governed Admission boundary.
+- expose the complete candidate diff for review;
+- collect architectural, security, reliability, test, governance, and maintainability findings;
+- repair findings while the PR remains Draft;
+- keep Issue/PR traceability and metadata current.
 
-The resolver first looks for reusable Full Admission evidence for the current immutable tree and current authority fingerprint. A normal new source tree will not have that evidence, so the workflow reports `FALLBACK` and runs Full Admission once. An unchanged retry of an already admitted PR may reuse its existing evidence.
+Draft PR open/synchronize activity is **not** a governed Admission boundary and must not acquire the self-hosted runner for Full Admission or fast smoke.
 
-### Staging integration
+GitHub may instantiate a workflow record for supported PR events, but the first self-hosted job is guarded by `pull_request.draft == false`. Therefore a Draft event produces no KAORI validation job.
 
-After merge to `kaori/staging`, the merge commit may have a different commit SHA while preserving exactly the same source tree as the admitted PR head.
+`converted_to_draft` is included in the event set so returning a Ready PR to Draft creates the same PR concurrency group and cancels obsolete candidate validation.
 
-If all of the following are true, comprehensive validation is reused:
+### 3. Ready for Review — final staging candidate
+
+When Critical/Important findings are resolved and the branch is intended to be admitted as the complete staging candidate, the PR is marked **Ready for Review**.
+
+The `ready_for_review` event starts `PR Integration`.
+
+The resolver looks for reusable Full Admission evidence for:
+
+`source tree SHA + validation authority fingerprint + profile version`
+
+For a normal new candidate no matching evidence exists, so PR Integration reports `FALLBACK` and runs comprehensive Full Admission once. A successful run publishes immutable Admission evidence for that exact identity.
+
+An unchanged retry may reuse the exact evidence. If source changes after Ready, prior evidence cannot authorize the new tree. Significant remediation should return the PR to Draft until the next candidate is review-clean; the later Ready candidate then receives the validation required by its own identity.
+
+### 4. Merge and Staging Integration
+
+Merge to `kaori/staging` occurs only when:
+
+- final Ready candidate Admission is PASS;
+- structured review has no unresolved Critical/Important finding;
+- no source drift occurred after the accepted candidate.
+
+The merge commit SHA may differ from the admitted PR head while preserving exactly the same source tree. Comprehensive validation is reused only when:
 
 - merge tree equals the admitted tree;
 - validation-authority fingerprint equals the admitted fingerprint;
-- evidence result is PASS and all required gates succeeded;
 - profile version is current;
+- evidence result is PASS and every required Full gate succeeded;
 - evidence is within the accepted age window;
 - merge-parent lineage proves the admitted head was integrated without reconstruction.
 
-The transition then runs only fresh integration smoke and produces the machine-verified Local UAT candidate.
+Staging Integration then runs only fresh deterministic integration/runtime smoke and produces the machine-verified Local UAT candidate.
 
-### Promotion and post-promotion
+### 5. Explicit Local Dev Container UAT
 
-Promotion from `kaori/staging` to `main`, and the resulting main merge, reuse the same Full Admission evidence when the accepted tree/fingerprint and lineage remain intact. Fresh smoke still runs at the transition boundary.
+The exact machine-verified `kaori/staging` lineage is synchronized into the Local Dev Container. UAT remains explicit human acceptance and is never inferred from CI.
 
-A changed tree, changed fingerprint, stale/missing evidence, failed/skipped gate, or ambiguous lineage falls back to comprehensive Full Admission.
+### 6. Promotion and Post-promotion
+
+A governed `kaori/staging` → `main` PR promotes only the exact UAT-accepted staging lineage. Promotion and post-promotion reuse the same immutable Full Admission evidence when tree/fingerprint/profile/lineage remain valid and execute fresh integrity smoke.
+
+Any changed tree, changed fingerprint, stale/missing evidence, failed/skipped gate, or ambiguous lineage falls back to comprehensive Full Admission.
 
 ## Validation Authority Fingerprint
 
@@ -83,12 +124,12 @@ Evidence identity is:
 
 `source tree SHA + validation authority fingerprint + profile version`
 
-The fingerprint is deterministic and derived from tracked Git identities for validation-authority files. It includes the profile version and tracked blobs/modes for the following authority families:
+The fingerprint is deterministic and derived from tracked Git identities for validation-authority files, including:
 
 - `.github/workflows/**`;
 - `.github/ci/**`;
 - `requirements/**`;
-- `scripts/ci_admission.py` and the active Admission helper;
+- `scripts/ci_admission.py` and active Admission policy helper;
 - `scripts/quality_gate.sh`;
 - `scripts/verify_*`;
 - `tests/contracts/release/**`;
@@ -96,9 +137,7 @@ The fingerprint is deterministic and derived from tracked Git identities for val
 - `Dockerfile*`;
 - `docker-compose*`.
 
-Application-only file changes do not change the authority fingerprint, but they change the source tree SHA and therefore still require a new Admission.
-
-Validation-authority changes alter both the tree and fingerprint. They therefore require a fresh Full Admission once, but **do not force another Full Admission at staging/main when the admitted tree/fingerprint is unchanged**.
+Application-only changes leave the fingerprint unchanged but change the source tree, so they still require a new Full Admission once. Validation-authority changes alter both tree and fingerprint; after the new pair passes Full Admission once, later equivalent transitions reuse it.
 
 ## Evidence Schema
 
@@ -113,25 +152,52 @@ A successful Full Admission artifact records at minimum:
 - workflow run ID and attempt;
 - workflow/ref identity;
 - timestamp;
-- each authoritative Full Admission gate conclusion.
+- every authoritative Full Admission gate conclusion.
 
-Artifact names are not trusted as evidence. The JSON payload is parsed and verified.
+Artifact names are never trusted as evidence. The JSON payload is parsed and verified.
 
 ## Profiles
 
-KAORI retains these governed profiles:
+KAORI retains five governed profiles:
 
-1. **Full Admission** — all comprehensive gates.
-2. **PR Integration** — evidence lookup; falls back to Full for a new tree, otherwise reuse + smoke.
-3. **Staging Integration** — tree/fingerprint/lineage verification + smoke.
-4. **Promotion** — accepted staging tree/fingerprint/lineage verification + smoke.
-5. **Post-promotion** — resulting main tree/fingerprint/lineage verification + smoke.
+1. **Full Admission** — comprehensive validation for a new evidence identity or fail-closed fallback.
+2. **PR Integration** — Ready/non-draft staging candidate evidence lookup; new identity falls back to Full, admitted identity uses reuse + smoke.
+3. **Staging Integration** — tree/fingerprint/lineage verification + fresh smoke.
+4. **Promotion** — exact UAT-selected staging tree/fingerprint/lineage verification + fresh smoke.
+5. **Post-promotion** — resulting main tree/fingerprint/lineage verification + fresh integrity smoke.
 
-Ordinary issue-branch pushes are development activity, not a governed Admission profile, and are therefore removed from the expensive Actions push trigger.
+Draft PR activity is deliberately outside these execution profiles because no self-hosted validation job is scheduled while `draft == true`.
+
+## Workflow Event and Runner Contract
+
+The workflow retains PR events required for lifecycle control:
+
+```yaml
+pull_request:
+  branches:
+    - main
+    - kaori/staging
+  types:
+    - opened
+    - synchronize
+    - reopened
+    - ready_for_review
+    - converted_to_draft
+```
+
+The first self-hosted job must require either a non-PR event or a same-repository PR whose `draft` state is false.
+
+Consequences:
+
+- opening a Draft PR: no KAORI self-hosted job;
+- pushing findings/fixes while Draft: no KAORI self-hosted job;
+- marking Ready: governed candidate validation starts;
+- synchronizing a Ready PR: new identity is re-evaluated and old evidence cannot authorize changed source;
+- converting Ready back to Draft: obsolete run is cancelled through the existing PR concurrency group and no Draft job runs.
 
 ## Full Admission Gate Inventory
 
-The comprehensive profile remains unchanged and must include:
+The comprehensive profile remains unchanged and includes:
 
 - Static, Architecture, and Governance;
 - Secrets, SAST, Dependencies, and Workflow Security;
@@ -147,40 +213,61 @@ Reuse is rejected if any of the following is true:
 - source tree differs;
 - authority fingerprint differs;
 - profile version differs;
-- source identity in the evidence is missing;
+- source identity is missing;
 - evidence is missing, expired, stale, malformed, or ambiguous;
 - any required Full gate is not `success`;
 - workflow identity is not KAORI `quality.yml`;
 - lineage cannot prove the transition preserves the admitted source.
 
-A reuse rejection produces `FALLBACK` and comprehensive Full Admission. It never silently passes.
+A rejection produces `FALLBACK` and comprehensive Full Admission. It never silently passes.
 
 ## Artifact Download Security
 
-Initial GitHub API requests remain restricted to HTTPS `api.github.com` and may carry the workflow token. GitHub artifact downloads may redirect to signed HTTPS blob storage. The GitHub `Authorization` header must be stripped when the redirect changes host, and non-HTTPS redirects are rejected.
+Initial authenticated GitHub API requests are restricted to HTTPS `api.github.com`. Artifact archive retrieval may redirect to signed HTTPS blob storage. When the redirect changes host, the GitHub `Authorization` header is removed while non-secret request headers may remain. Any non-HTTPS redirect fails closed.
+
+This fixes the rollout defect observed after PR #59 routed correctly to PR Integration but the blob endpoint rejected the forwarded GitHub Bearer credential with HTTP 401.
+
+## Human-Readable CI Evidence
+
+Operator output uses only `PASS`, `FAIL`, `SKIP`, `REUSED`, and `FALLBACK` status vocabulary and exposes:
+
+1. result;
+2. profile;
+3. exact source SHA/tree;
+4. evidence source/run;
+5. duration;
+6. fresh coverage;
+7. reused coverage;
+8. first actionable failure when failed;
+9. one next action.
+
+Raw diagnostics remain retained separately. Readability must never suppress a validation assertion.
 
 ## Expected Lead Time
 
 Normal stable work item:
 
-- development pushes: no governed Full Admission wait;
-- staging PR: Full Admission approximately 20–30 minutes once for a new tree/fingerprint;
+- branch development: no governed Full Admission wait;
+- Draft PR review/finding cycles: no governed Full Admission wait;
+- Ready staging candidate: approximately one 20–30 minute Full Admission for a new tree/fingerprint;
 - staging merge: target 2–5 minutes;
 - Local UAT: human time;
 - promotion: target 2–5 minutes;
 - post-promotion: target 2–5 minutes.
 
-The target is roughly 30–40 minutes of governed machine validation for a normal work item instead of several repeated 20–30 minute runs.
+The model intentionally spends comprehensive machine time only when the candidate is intended to be accepted.
 
 ## Rollout Acceptance
 
-#55 is not complete until live evidence proves:
+#55 is complete only when live and deterministic evidence proves:
 
-1. a final staging PR source tree receives Full Admission once;
-2. the subsequent staging merge with the same tree/fingerprint reuses that evidence and completes within 5 minutes excluding unrelated runner queue blockage;
-3. a later eligible transition also reuses evidence;
-4. a controlled tree/fingerprint/evidence mismatch is proven fail-closed without manufacturing an unnecessary long live run when deterministic contract evidence is sufficient;
-5. all comprehensive gates remain present and successful;
-6. Local UAT remains explicit.
+1. Draft PR open/synchronize/converted-to-draft activity does not acquire the self-hosted runner;
+2. a final Ready staging PR tree/fingerprint receives Full Admission once;
+3. the subsequent staging merge preserves that tree/fingerprint, reuses the evidence, and completes within 5 minutes excluding unrelated runner queue delay;
+4. a later eligible transition also reuses evidence;
+5. controlled tree/fingerprint/evidence mismatch remains fail-closed;
+6. all comprehensive gates and thresholds remain present;
+7. structured review has no unresolved Critical/Important finding before staging merge;
+8. Local UAT remains explicit and is recorded on the exact staging lineage.
 
 Only after that proof may #39 proceed under the optimized delivery path.
