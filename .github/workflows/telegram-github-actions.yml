@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   actions: read
+  pull-requests: read
 
 concurrency:
   group: kaori-telegram-github-actions-${{ github.event.workflow_run.id }}
@@ -41,18 +42,14 @@ jobs:
           WORKFLOW_EVENT: ${{ github.event.workflow_run.event }}
           WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           WORKFLOW_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
-          WORKFLOW_BASE_BRANCH: ${{ github.event.workflow_run.pull_requests[0].base.ref }}
           WORKFLOW_SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
           WORKFLOW_RUN_URL: ${{ github.event.workflow_run.html_url }}
-          WORKFLOW_PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
         run: >-
           python scripts/ci_delivery_notify.py
           --workflow-run-id "$WORKFLOW_RUN_ID"
           --workflow-event "$WORKFLOW_EVENT"
           --workflow-conclusion "$WORKFLOW_CONCLUSION"
           --head-branch "$WORKFLOW_HEAD_BRANCH"
-          --base-branch "$WORKFLOW_BASE_BRANCH"
           --source-sha "$WORKFLOW_SOURCE_SHA"
           --repository "$GITHUB_REPOSITORY"
           --run-url "$WORKFLOW_RUN_URL"
-          --pr-number "$WORKFLOW_PR_NUMBER"
