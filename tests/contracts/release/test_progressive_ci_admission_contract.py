@@ -172,7 +172,7 @@ def test_policy_routes_normal_delivery_profiles_and_sensitive_changes_fail_close
     assert 'sensitive' in governance_sensitive.reason.lower()
 
 
-def test_evidence_reuse_requires_exact_sha_tree_profile_and_all_required_gates() -> None:
+def test_evidence_reuse_requires_exact_sha_tree_profile_timestamp_and_all_required_gates() -> None:
     policy = load_policy()
     evidence = {
         'result': 'PASS',
@@ -180,6 +180,7 @@ def test_evidence_reuse_requires_exact_sha_tree_profile_and_all_required_gates()
         'source_sha': 'abc123',
         'source_tree': 'tree123',
         'full_admission_run_id': 420,
+        'created_at': '2026-08-31T00:00:00+00:00',
         'gates': {gate: 'success' for gate in REQUIRED_FULL_GATES - {'KAORI CI Admission'}},
     }
 
@@ -191,6 +192,17 @@ def test_evidence_reuse_requires_exact_sha_tree_profile_and_all_required_gates()
     )
     assert accepted.reusable is True
     assert accepted.full_admission_run_id == 420
+
+    missing_timestamp = dict(evidence)
+    missing_timestamp.pop('created_at')
+    rejected_timestamp = policy.evidence_reuse_decision(
+        missing_timestamp,
+        current_sha='abc123',
+        current_tree='tree123',
+        required_profile_version='2',
+    )
+    assert rejected_timestamp.reusable is False
+    assert 'timestamp' in rejected_timestamp.reason.lower()
 
     wrong_tree = policy.evidence_reuse_decision(
         evidence,
@@ -212,6 +224,25 @@ def test_evidence_reuse_requires_exact_sha_tree_profile_and_all_required_gates()
     )
     assert rejected.reusable is False
     assert 'frontend' in rejected.reason.lower()
+
+
+def test_remote_evidence_lookup_error_falls_back_instead_of_raising(monkeypatch) -> None:
+    policy = load_policy()
+    monkeypatch.setattr(policy, '_candidate_lineage', lambda *args, **kwargs: [('abc123', 'tree123')])
+
+    def fail_lookup(*args, **kwargs):
+        raise OSError('GitHub API unavailable')
+
+    monkeypatch.setattr(policy, '_github_request', fail_lookup)
+    decision = policy.find_remote_full_evidence(
+        repository='OXY7O/KAORI',
+        token='token',
+        workflow='quality.yml',
+        start_sha='abc123',
+        current_tree='tree123',
+    )
+    assert decision.reusable is False
+    assert 'lookup' in decision.reason.lower()
 
 
 def test_merge_lineage_reuse_requires_expected_parents_and_equivalent_tree() -> None:
