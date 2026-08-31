@@ -160,6 +160,17 @@ def test_policy_routes_normal_delivery_profiles_and_sensitive_changes_fail_close
     assert sensitive.execution == 'full'
     assert 'sensitive' in sensitive.reason.lower()
 
+    governance_sensitive = policy.resolve_profile(
+        event_name='pull_request',
+        ref='refs/pull/103/merge',
+        base_ref='kaori/staging',
+        head_ref='kaori/chore-governance',
+        changed_paths=('docs/engineering/KAORI_DELIVERY_WORKFLOW.md',),
+    )
+    assert governance_sensitive.profile == 'pr-integration'
+    assert governance_sensitive.execution == 'full'
+    assert 'sensitive' in governance_sensitive.reason.lower()
+
 
 def test_evidence_reuse_requires_exact_sha_tree_profile_and_all_required_gates() -> None:
     policy = load_policy()
