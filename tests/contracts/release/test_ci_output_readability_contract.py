@@ -22,7 +22,8 @@ def test_pytest_failure_output_is_failure_first_and_bounded() -> None:
 
     assert 'short test summary info' in source
     assert 'FAILURES' in source
-    assert 'tail -n' in source
+    assert 'filter_pytest_progress' in source
+    assert 'tail -n 80 "$log_file" | filter_pytest_progress' in source
     assert 'First actionable failure' in source
 
 
