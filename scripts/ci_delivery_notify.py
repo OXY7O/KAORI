@@ -4,13 +4,15 @@ import argparse
 import json
 import os
 import sys
-from typing import Final
+from typing import Any, Final
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
 _TELEGRAM_API: Final = 'https://api.telegram.org'
+_GITHUB_API: Final = 'https://api.github.com'
 _TRUE_VALUES: Final = frozenset({'1', 'true', 'yes', 'on'})
+_FAILURE_RESULTS: Final = frozenset({'failure', 'cancelled', 'timed_out', 'action_required'})
 
 _EVENT_TITLES: Final = {
     'FULL_ADMISSION_PASSED': '✅ KAORI · Full Admission Passed',
@@ -46,6 +48,20 @@ _ACTIONS: Final = {
     'PROMOTION_SUCCEEDED': 'No delivery action required; promoted lineage is verified on main.',
 }
 
+_FULL_GATE_NAMES: Final = (
+    'Static, Architecture, and Governance',
+    'Secrets, SAST, Dependencies, and Workflow Security',
+    'Functional and Integration Tests',
+    'Frontend Reproducibility',
+    'Production Image, Container Security, Runtime, and DAST',
+)
+_FAILURE_ORDER: Final = (
+    'Resolve KAORI Validation Profile',
+    *_FULL_GATE_NAMES,
+    'KAORI Fast Integration Smoke',
+    'KAORI CI Admission',
+)
+
 
 def select_event(
     *,
@@ -54,10 +70,12 @@ def select_event(
     admission_result: str,
     security_result: str,
 ) -> str | None:
-    if admission_result != 'success':
+    if admission_result in _FAILURE_RESULTS:
         if security_result == 'failure':
             return 'SECURITY_GATE_FAILED'
         return 'DELIVERY_FAILED'
+    if admission_result != 'success':
+        return None
 
     if profile == 'staging-integration':
         return 'UAT_REQUIRED'
@@ -68,6 +86,18 @@ def select_event(
     if profile == 'pr-integration' and execution == 'full':
         return 'FULL_ADMISSION_PASSED'
     return None
+
+
+def resolve_profile(*, event_name: str, head_branch: str, base_branch: str) -> str:
+    if event_name == 'pull_request' and base_branch == 'kaori/staging':
+        return 'pr-integration'
+    if event_name == 'pull_request' and base_branch == 'main' and head_branch == 'kaori/staging':
+        return 'promotion'
+    if event_name == 'push' and head_branch == 'kaori/staging':
+        return 'staging-integration'
+    if event_name == 'push' and head_branch == 'main':
+        return 'post-promotion'
+    return 'full'
 
 
 def event_category(event: str) -> str:
@@ -141,6 +171,58 @@ def _evidence_summary(*, event: str, execution: str) -> str:
     return ''
 
 
+def infer_execution(jobs: list[dict[str, Any]]) -> str:
+    conclusions = _job_conclusions(jobs)
+    if conclusions.get('KAORI Fast Integration Smoke') == 'success':
+        return 'fast'
+    return 'full'
+
+
+def first_failure(jobs: list[dict[str, Any]]) -> str:
+    conclusions = _job_conclusions(jobs)
+    for name in _FAILURE_ORDER:
+        conclusion = conclusions.get(name, '')
+        if conclusion in _FAILURE_RESULTS:
+            return f'{name} — {conclusion}'
+    return ''
+
+
+def _job_conclusions(jobs: list[dict[str, Any]]) -> dict[str, str]:
+    return {
+        str(job.get('name') or ''): str(job.get('conclusion') or '')
+        for job in jobs
+        if isinstance(job, dict) and job.get('name')
+    }
+
+
+def fetch_workflow_jobs(*, repository: str, run_id: str, token: str) -> list[dict[str, Any]]:
+    if not token.strip():
+        raise RuntimeError('GitHub Actions read token is unavailable.')
+    safe_repository = '/'.join(quote(part, safe='') for part in repository.split('/', 1))
+    url = f'{_GITHUB_API}/repos/{safe_repository}/actions/runs/{quote(str(run_id), safe="")}/jobs?per_page=100'
+    request = Request(
+        url,
+        headers={
+            'Accept': 'application/vnd.github+json',
+            'Authorization': f'Bearer {token}',
+            'X-GitHub-Api-Version': '2022-11-28',
+        },
+        method='GET',
+    )
+    try:
+        with urlopen(request, timeout=10) as response:  # noqa: S310  # nosec B310 - fixed GitHub HTTPS authority
+            payload = json.loads(response.read().decode('utf-8'))
+    except HTTPError as exc:
+        raise RuntimeError(f'GitHub Actions job lookup failed with HTTP {exc.code}.') from exc
+    except (URLError, TimeoutError, OSError, ValueError) as exc:
+        raise RuntimeError('GitHub Actions job lookup is unavailable or invalid.') from exc
+
+    jobs = payload.get('jobs') if isinstance(payload, dict) else None
+    if not isinstance(jobs, list):
+        raise RuntimeError('GitHub Actions job lookup returned an invalid payload.')
+    return [job for job in jobs if isinstance(job, dict)]
+
+
 def send_message(
     *,
     bot_token: str,
@@ -164,7 +246,7 @@ def send_message(
         method='POST',
     )
     try:
-        with urlopen(  # noqa: S310  # nosec B310 - fixed HTTPS Telegram authority
+        with urlopen(  # noqa: S310  # nosec B310 - fixed Telegram HTTPS authority
             request,
             timeout=max(int(timeout_seconds), 1),
         ) as response:
@@ -183,9 +265,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description='Send categorized KAORI GitHub Actions notifications to a Telegram topic.'
     )
-    parser.add_argument('--profile', required=True)
-    parser.add_argument('--execution', required=True)
-    parser.add_argument('--admission-result', required=True)
+    parser.add_argument('--workflow-run-id', default='')
+    parser.add_argument('--workflow-event', default='')
+    parser.add_argument('--workflow-conclusion', default='')
+    parser.add_argument('--head-branch', default='')
+    parser.add_argument('--base-branch', default='')
+    parser.add_argument('--profile', default='')
+    parser.add_argument('--execution', default='')
+    parser.add_argument('--admission-result', default='')
     parser.add_argument('--security-result', default='skipped')
     parser.add_argument('--source-sha', required=True)
     parser.add_argument('--repository', required=True)
@@ -197,15 +284,6 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    event = select_event(
-        profile=args.profile,
-        execution=args.execution,
-        admission_result=args.admission_result,
-        security_result=args.security_result,
-    )
-    if event is None:
-        print('SKIP — Current Admission boundary has no actionable GitHub Actions notification.')
-        return 0
 
     bot_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
     chat_id = os.environ.get('TELEGRAM_CHAT_ID', '')
@@ -221,15 +299,52 @@ def main(argv: list[str] | None = None) -> int:
         print(f'SKIP — {reason}')
         return 0
 
+    profile = args.profile
+    execution = args.execution
+    admission_result = args.admission_result
+    security_result = args.security_result
+    failure_detail = args.failure_detail
+
+    if args.workflow_run_id:
+        try:
+            jobs = fetch_workflow_jobs(
+                repository=args.repository,
+                run_id=args.workflow_run_id,
+                token=os.environ.get('GH_TOKEN', ''),
+            )
+        except RuntimeError as exc:
+            print(f'FAIL — {exc}', file=sys.stderr)
+            return 1
+        conclusions = _job_conclusions(jobs)
+        profile = resolve_profile(
+            event_name=args.workflow_event,
+            head_branch=args.head_branch,
+            base_branch=args.base_branch,
+        )
+        execution = infer_execution(jobs)
+        admission_result = conclusions.get('KAORI CI Admission') or args.workflow_conclusion
+        security_result = conclusions.get('Secrets, SAST, Dependencies, and Workflow Security', 'skipped')
+        failure_detail = first_failure(jobs)
+
+    event = select_event(
+        profile=profile,
+        execution=execution,
+        admission_result=admission_result,
+        security_result=security_result,
+    )
+    if event is None:
+        print('SKIP — Completed KAORI CI run has no actionable GitHub Actions notification.')
+        return 0
+
     message = render_message(
         event=event,
-        profile=args.profile,
-        execution=args.execution,
+        profile=profile,
+        execution=execution,
         source_sha=args.source_sha,
         repository=args.repository,
         run_url=args.run_url,
         pr_number=args.pr_number,
-        failure_detail=args.failure_detail,
+        failure_detail=failure_detail,
     )
     delivered, detail = send_message(
         bot_token=bot_token,
