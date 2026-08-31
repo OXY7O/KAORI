@@ -69,10 +69,7 @@ def resource_posture_page(state: OverviewState) -> dict[str, Any]:
     return {
         'cpu': resource_posture_card(state.resource_metrics, 'cpu'),
         'memory': resource_posture_card(state.resource_metrics, 'memory'),
-        'shared_rows': [
-            resource_posture_card(state.resource_metrics, key)
-            for key in ('cpu', 'memory', 'storage', 'pods')
-        ],
+        'shared_rows': [resource_posture_card(state.resource_metrics, key) for key in ('cpu', 'memory', 'storage', 'pods')],
         'capacity_rows': capacity_rows(
             resource_metrics=state.resource_metrics,
             capacity_snapshot=state.capacity_snapshot,
