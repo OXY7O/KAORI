@@ -71,19 +71,19 @@
 
 - [x] Reopen Draft review companion #65 after the security redesign.
 - [x] Close superseded final candidate #66 unmerged.
-- [ ] Complete structured review of the reusable trust boundary.
-- [ ] Repair all Critical/Important findings while Draft.
-- [ ] Open a new non-draft final candidate after review is clean.
-- [ ] Run one fresh Full Admission for the final bootstrap tree/fingerprint.
+- [x] Complete structured review of the reusable trust boundary.
+- [x] Repair all Critical/Important findings while Draft.
+- [x] Open final bootstrap candidate #67 after review is clean.
+- [x] Run fresh Full Admission #455 for final bootstrap head `48be73d9c821616a954dc6d49b63bb44714848ca`.
 
 ### Task 6: Bootstrap staging, UAT, and promotion
 
-- [ ] Merge bootstrap candidate to `kaori/staging` after Full Admission PASS.
-- [ ] Verify Staging Integration reuses exact evidence + Fast Integration Smoke.
-- [ ] Record explicit human UAT.
-- [ ] Promote bootstrap lineage to `main`.
-- [ ] Verify post-promotion reuse + Fast Integration Smoke.
-- [ ] Record exact trusted `main` SHA containing the reusable notifier.
+- [x] Merge bootstrap candidate #67 to `kaori/staging` after Full Admission PASS.
+- [x] Verify Staging Integration #456 reuses exact evidence + Fast Integration Smoke PASS.
+- [x] Record explicit human UAT acceptance on 2026-08-31.
+- [x] Promote accepted staging lineage through PR #69 to `main`.
+- [x] Verify promotion #457 and post-promotion #458 reuse exact evidence + Fast Integration Smoke PASS.
+- [x] Record trusted `main` SHA `43ca843a09835a53bd72a7513a82f891164736d6` containing the reusable notifier.
 
 ### Task 7: Activate notifier from KAORI CI
 
@@ -91,11 +91,11 @@
 
 This task starts only after Task 6 establishes the reusable workflow on trusted `main`.
 
-- [ ] Create follow-up branch/PR under Issue #64.
-- [ ] Add a final notification caller job to `quality.yml` using the trusted reusable workflow from `main`, preferably pinned to the exact bootstrap promotion SHA.
-- [ ] Ensure the caller waits for the jobs required to classify PASS/FAIL/UAT/promotion state.
-- [ ] Use `if: always()` where failure notification must still run.
-- [ ] Keep the called workflow, Environment secret handling, and Telegram transport outside PR-controlled executable code.
+- [x] Create follow-up branch `feat-64-telegram-quality-caller` and Draft PR #70 under Issue #64.
+- [x] Add a final notification caller job to `quality.yml` pinned to trusted main SHA `43ca843a09835a53bd72a7513a82f891164736d6`.
+- [x] Ensure the caller waits for authoritative `admission` completion before classification.
+- [x] Use `if: always()` so actionable Admission failures can still be classified.
+- [x] Keep the called workflow, Environment secret handling, and Telegram transport outside PR-controlled executable code.
 - [ ] Run Draft review → Ready Full Admission → staging reuse/smoke → UAT → promotion.
 
 ### Task 8: Enable and prove live Telegram delivery
@@ -103,8 +103,8 @@ This task starts only after Task 6 establishes the reusable workflow on trusted 
 - [x] Create `KAORI Operations` Telegram Supergroup/Topics.
 - [x] Create/configure target Topic `🔄 GitHub Actions`.
 - [x] Configure GitHub Environment `kaori-github-actions` with real secret/variables outside Git.
-- [ ] Keep `TELEGRAM_NOTIFICATIONS_ENABLED=false` until the phase-2 caller is governed and ready for live proof.
-- [ ] Enable notifications at the controlled test boundary.
-- [ ] Prove one real categorized message reaches `🔄 GitHub Actions`.
+- [x] Keep `TELEGRAM_NOTIFICATIONS_ENABLED=false` through Phase-2 Draft implementation/review.
+- [ ] Enable notifications at the controlled staging-test boundary after Phase-2 Ready Full Admission PASS.
+- [ ] Prove one real categorized `UAT_REQUIRED` message reaches `🔄 GitHub Actions`.
 - [ ] Verify no credential value appears in logs/artifacts.
 - [ ] Close #64 only after live delivery and final Project metadata are synchronized.
