@@ -13,7 +13,7 @@ def read(path: Path) -> str:
 def test_ci_toolchain_cache_key_uses_immutable_toolchain_inputs() -> None:
     source = read(QUALITY)
 
-    assert 'Resolve CI Toolchain Cache Key' in source
+    assert 'Resolve and Reuse CI Toolchain' in source
     for input_path in (
         '.github/ci/Dockerfile',
         '.github/ci/requirements-security.txt',
@@ -22,15 +22,20 @@ def test_ci_toolchain_cache_key_uses_immutable_toolchain_inputs() -> None:
     ):
         assert input_path in source
 
+    assert 'sha256sum | cut -c1-20' in source
+    assert 'kaori-ci-toolchain:$key' in source
     assert 'kaori-ci-toolchain:${{ github.sha }}' not in source
 
 
 def test_existing_local_toolchain_image_is_reused() -> None:
     source = read(QUALITY)
 
-    assert 'Build or Reuse CI Toolchain' in source
-    assert 'docker image inspect "$CI_TOOLCHAIN_IMAGE"' in source
-    assert 'Reusing cached CI toolchain' in source
+    resolver = source.split('- name: Resolve and Reuse CI Toolchain', 1)[1].split('- name: Resolve Source Identity', 1)[
+        0
+    ]
+    assert 'docker image inspect "$image"' in resolver
+    assert '|| docker build' in resolver
+    assert '--file .github/ci/Dockerfile' in resolver
 
 
 def test_buildkit_caches_downloads_without_replacing_install_steps() -> None:
@@ -73,13 +78,14 @@ def test_hadolint_exceptions_are_local_to_intentional_os_package_strategy() -> N
     assert 'USER kaori' in production_source
 
 
-def test_trivy_database_is_cached_but_each_validation_image_is_scanned() -> None:
+def test_trivy_database_is_cached_but_each_exact_validation_image_is_scanned() -> None:
     source = read(QUALITY)
 
     assert 'kaori-trivy-cache' in source
     assert 'trivy image' in source
     assert '--exit-code 1' in source
-    assert 'VALIDATION_IMAGE=kaori:ci-${GITHUB_SHA}' in source
+    assert 'VALIDATION_IMAGE=kaori:ci-${{ needs.validation-profile.outputs.source_sha }}' in source
+    assert 'Scan Production Validation Image' in source
 
 
 def test_cache_optimization_preserves_required_validation_gates() -> None:
