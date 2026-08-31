@@ -13,11 +13,14 @@ Idea / Request
   -> Backlog / Refinement
   -> Ready
   -> issue-linked work branch
-  -> Full Admission on exact implementation source tree
+  -> focused development verification
   -> Review
+  -> PR to kaori/staging
+  -> Full Admission once for the immutable source tree + authority fingerprint
+     or exact evidence reuse when that pair is already admitted
   -> PR Integration
   -> kaori/staging integration
-  -> Staging Integration
+  -> Staging Integration (evidence reuse + fresh smoke)
   -> UAT
   -> explicit Local UAT acceptance
   -> Promotion
@@ -28,6 +31,8 @@ Idea / Request
 ```
 
 KAORI uses a closed-loop delivery model. Product ideas, operational findings, defects, technical debt, monitoring signals, and user feedback return to the backlog as governed work items.
+
+Development feedback and governed Admission are separate boundaries. Ordinary issue-branch pushes do not need to spend 20–30 minutes recomputing the complete Admission suite. Focused checks run during implementation; comprehensive Admission is paid when a stable candidate reaches the staging Pull Request boundary.
 
 ## Human-Readable GitHub Standard
 
@@ -215,9 +220,23 @@ Code complete and Full Admission are necessary but not sufficient. A work item r
 
 ## CI and Quality Authority
 
-KAORI uses **Full Admission + exact evidence reuse**.
+KAORI uses **Full Admission + exact evidence reuse** with a **validation authority fingerprint**.
 
-Every governed implementation source tree receives one comprehensive **Full Admission**. Full Admission preserves all authoritative coverage:
+The governing rule is:
+
+> **Same immutable source tree + same validation authority fingerprint = never repeat comprehensive validation.**
+
+### Development feedback
+
+Ordinary issue-branch pushes are development activity, not a governed Admission boundary. GitHub Actions does not run the comprehensive pipeline for every `kaori/**` work-branch push.
+
+During implementation, run focused local checks appropriate to the blast radius using existing KAORI quality commands and test suites. This keeps iteration fast while preserving the staging PR as the auditable comprehensive validation boundary.
+
+### Full Admission boundary
+
+The Pull Request to `kaori/staging` is the first governed Admission boundary for a normal work item.
+
+A new source tree normally has no matching comprehensive evidence, so PR Integration reports **FALLBACK** and runs one Full Admission. Full Admission preserves all authoritative coverage:
 
 - source linting and formatter checks;
 - Pyright/type safety;
@@ -232,25 +251,52 @@ Every governed implementation source tree receives one comprehensive **Full Admi
 - application logic assertions;
 - code-health ceilings and exact debt-ledger integrity.
 
-A successful Full Admission publishes immutable evidence containing the source commit SHA, source tree SHA, validation profile version, run ID/attempt, workflow identity, and each required gate conclusion.
+A successful Full Admission publishes immutable evidence containing:
 
-Later delivery transitions may use **exact evidence reuse** only when source/tree lineage proves that the already-admitted source is unchanged. Evidence reuse is validation reuse, not test removal.
+- source commit SHA;
+- source tree SHA;
+- validation profile version;
+- **validation authority fingerprint**;
+- run ID/attempt;
+- workflow identity;
+- every required comprehensive gate conclusion;
+- timestamp.
+
+### Validation authority fingerprint
+
+The authority fingerprint is derived deterministically from the validation profile version and tracked Git identities for validation-authority files, including:
+
+- `.github/workflows/**`;
+- `.github/ci/**`;
+- `requirements/**`;
+- Admission policy helpers;
+- `scripts/quality_gate.sh`;
+- `scripts/verify_*`;
+- release validation contracts;
+- this delivery workflow authority;
+- Dockerfile and compose authority.
+
+An application change changes the source tree. A validation-authority change changes both the source tree and the authority fingerprint. Either condition invalidates older evidence and requires a new Full Admission once.
+
+A validation-authority change does **not** mean repeating Full Admission at every later staging/main transition. Once the new tree + fingerprint has passed Full Admission, equivalent transitions reuse that evidence.
 
 ### Validation profiles
 
-- **Full Admission** — comprehensive validation for implementation source trees and any forced fallback.
-- **PR Integration** — exact head/tree evidence verification plus fresh integration smoke before `kaori/staging` merge.
-- **Staging Integration** — merge-parent/tree equivalence plus fresh smoke; produces the machine-verified Local UAT candidate.
-- **Promotion** — verifies the exact UAT-selected staging lineage before `main`.
-- **Post-promotion** — verifies resulting main lineage and performs fresh integrity smoke.
+- **Full Admission** — comprehensive validation for a new tree/fingerprint or any forced fallback.
+- **PR Integration** — evidence lookup before staging merge; a new tree falls back to Full, while an already admitted exact pair may reuse.
+- **Staging Integration** — merge-parent/tree equivalence plus authority fingerprint verification and fresh smoke; produces the machine-verified Local UAT candidate.
+- **Promotion** — verifies the exact UAT-selected staging tree/fingerprint and lineage before `main`.
+- **Post-promotion** — verifies resulting main tree/fingerprint/lineage and performs fresh integrity smoke.
 
 ### Fail-closed evidence rules
 
-Evidence is reusable only when all required identity and result checks pass. A missing, failed, skipped, cancelled, neutral, stale, ambiguous, wrong-profile, wrong-SHA, or wrong-tree evidence record is not reusable.
+Evidence is reusable only when all required identity and result checks pass. A missing, failed, skipped, cancelled, neutral, stale, ambiguous, wrong-profile, wrong-tree, or wrong-authority-fingerprint evidence record is not reusable.
 
-If equivalence cannot be proven, the workflow reports **FALLBACK** and executes Full Admission. A different tree always invalidates reuse.
+A different commit SHA is allowed only at merge transitions where parent lineage proves that the merge preserves the admitted source and the resulting source tree is exactly the same as the admitted tree.
 
-Changes to CI/workflow authority, security tooling, dependency definitions, Docker/runtime validation, migrations, validation contracts, or quality-gate code force Full Admission where applicable. Manual dispatch can always force Full Admission.
+If equivalence cannot be proven, the workflow reports **FALLBACK** and executes Full Admission. A different tree or fingerprint always invalidates reuse.
+
+Manual dispatch can always force Full Admission.
 
 Caching may still accelerate immutable dependency downloads, Docker layers, security databases, and deterministic build inputs. Caches are not Admission evidence.
 
@@ -292,8 +338,10 @@ Normal path:
 
 ```text
 work branch
-  -> Full Admission
-  -> PR Integration (REUSED evidence + fresh smoke, or FALLBACK)
+  -> focused development verification
+  -> PR to kaori/staging
+  -> Full Admission once for new tree/fingerprint
+     or REUSED evidence for an already admitted exact pair
   -> integrate to kaori/staging
   -> Staging Integration (REUSED evidence + fresh smoke, or FALLBACK)
   -> Project Status UAT
@@ -307,7 +355,7 @@ The user syncs the exact accepted `kaori/staging` SHA into the KAORI Dev Contain
 
 Accepted increments are promoted through an explicit PR from `kaori/staging` to `main`.
 
-Promotion verifies that the PR head is the exact UAT-selected staging lineage, that `main` has not introduced incompatible drift, and that accepted evidence remains valid. Post-promotion verifies the resulting main tree and runs fresh integrity smoke. Ambiguity triggers FALLBACK to Full Admission.
+Promotion verifies that the PR head is the exact UAT-selected staging lineage, that `main` has not introduced incompatible drift, and that accepted tree/fingerprint evidence remains valid. Post-promotion verifies the resulting main tree and runs fresh integrity smoke. Ambiguity or identity mismatch triggers FALLBACK to Full Admission.
 
 The default merge method is **merge commit**. After merge, synchronize `kaori/staging` back to the exact `main` lineage using fast-forward when possible.
 
@@ -318,9 +366,11 @@ Urgent production fixes use:
 ```text
 main
   -> kaori/hotfix-<issue>-<slug>
-  -> Full Admission
-  -> applicable UAT
+  -> focused development verification
   -> PR to main
+  -> Full Admission for the final hotfix tree/fingerprint
+  -> applicable UAT
+  -> merge
 ```
 
 After the hotfix merges, synchronize `kaori/staging` from `main` before normal delivery continues.
