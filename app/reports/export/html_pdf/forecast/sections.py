@@ -5,7 +5,6 @@ from typing import Any
 
 from .model import (
     CRITICAL_THRESHOLD,
-    FORECAST_PAGE_TITLES,
     RESOURCE_META,
     WARNING_THRESHOLD,
     ForecastState,

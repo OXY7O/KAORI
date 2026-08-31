@@ -4,10 +4,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from app.kubernetes.analytics.forecast.contracts import (
-    CRITICAL_THRESHOLD as FORECAST_CRITICAL_THRESHOLD,
-    WARNING_THRESHOLD as FORECAST_WARNING_THRESHOLD,
-)
+from app.kubernetes.analytics.forecast.contracts import CRITICAL_THRESHOLD, WARNING_THRESHOLD
 from app.reports.export.html_pdf.normalization import sanitize_text
 
 from .charts import combined_chart_svg, single_chart_svg
@@ -30,8 +27,6 @@ RESOURCE_META = {
     'pods': {'label': 'Pods', 'color': '#15803D'},
     'storage': {'label': 'Storage', 'color': '#D97706'},
 }
-WARNING_THRESHOLD = FORECAST_WARNING_THRESHOLD
-CRITICAL_THRESHOLD = FORECAST_CRITICAL_THRESHOLD
 
 
 @dataclass(frozen=True, slots=True)
