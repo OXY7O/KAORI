@@ -208,7 +208,9 @@ def test_authority_fingerprint_changes_only_for_validation_authority_entries() -
     )
 
     assert policy.authority_fingerprint_from_entries(base) == policy.authority_fingerprint_from_entries(app_changed)
-    assert policy.authority_fingerprint_from_entries(base) != policy.authority_fingerprint_from_entries(authority_changed)
+    assert policy.authority_fingerprint_from_entries(base) != policy.authority_fingerprint_from_entries(
+        authority_changed
+    )
 
 
 def test_evidence_reuse_requires_tree_fingerprint_profile_timestamp_and_all_required_gates() -> None:
