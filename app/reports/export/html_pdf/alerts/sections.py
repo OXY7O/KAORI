@@ -193,7 +193,9 @@ def build_ownership(state: AlertsState) -> dict[str, Any]:
                 'Owner Coverage',
                 str(sum(1 for item in state.alerts if item['owner'] != 'Not Available')),
                 'Committed',
-                'normal' if state.alerts and all(item['owner'] != 'Not Available' for item in state.alerts) else 'warning',
+                'normal'
+                if state.alerts and all(item['owner'] != 'Not Available' for item in state.alerts)
+                else 'warning',
             ),
             metric(
                 'Runbook Coverage',
