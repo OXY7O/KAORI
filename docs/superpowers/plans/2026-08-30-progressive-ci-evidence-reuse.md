@@ -1,222 +1,212 @@
-# KAORI Progressive CI Evidence Reuse Implementation Plan
+# KAORI Single Full Admission Evidence Reuse Implementation Plan
 
-> Issue: #55 — Reduce CI lead time with exact admission evidence reuse
-> Approved design: `docs/superpowers/specs/2026-08-30-progressive-ci-evidence-reuse-design.md`
-> Base authority: `kaori/staging@864dbfbf60a7a4f361b526a215b60a7076b868f3`
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-## Objective
+**Goal:** Ensure one comprehensive Full Admission is paid once per immutable source tree + validation-authority fingerprint, while ordinary issue development avoids repeated 20–30 minute GitHub Actions waits.
 
-Replace repeated full-pipeline recomputation with one comprehensive Full Admission per exact implementation tree plus short, fail-closed evidence-verification profiles for staging/main transitions. Preserve all current quality/security gates and make operator output concise, structured, and human readable.
+**Architecture:** Ordinary `kaori/<type>-<issue>-<slug>` branch pushes are removed from the governed Actions push trigger; development feedback remains focused/local. The staging PR becomes the first governed Admission boundary. Full Admission evidence is keyed by source tree, validation-authority fingerprint, and profile version, then reused through staging/main when lineage proves the admitted tree was preserved.
 
-## Guardrails
+**Tech Stack:** GitHub Actions, Python stdlib, Bash, Docker/Compose, pytest contracts.
 
-- No application behavior changes.
-- No code-health threshold changes; retain `800 / 160 / 30 / 8`.
-- No removal of Ruff, formatter, Pyright, architecture, contracts, migrations, functional/integration, frontend, security, image scan, runtime, or DAST from Full Admission.
-- Missing/stale/failed/skipped/ambiguous evidence or identity mismatch must produce `FALLBACK` to Full Admission.
-- CI/workflow/security/dependency/runtime/migration/validation-contract changes force Full Admission.
-- Local Dev Container UAT remains explicit human acceptance.
-- Output vocabulary: `PASS`, `FAIL`, `SKIP`, `REUSED`, `FALLBACK`.
+**Spec:** `docs/superpowers/specs/2026-08-30-progressive-ci-evidence-reuse-design.md`
 
-## Task 1 — Lock progressive-routing and evidence policy in RED contracts
+## Global Constraints
 
-**Files**
-- Create: `tests/contracts/release/test_progressive_ci_admission_contract.py`
+- Keep Issue → branch → PR → `kaori/staging` → Local UAT → `main` governance.
+- Keep all existing Full Admission quality/security gates.
+- A different source tree always requires new comprehensive evidence.
+- A different validation-authority fingerprint always requires new comprehensive evidence.
+- Missing/stale/failed/skipped/ambiguous evidence or lineage must fail closed to Full Admission.
+- Local UAT stays explicit and human.
+- No duplicate-pytest optimization in this change.
+- Fast transition hard acceptance ceiling is 5 minutes excluding unrelated runner queue blockage.
+- Do not run governed Full Admission on ordinary issue-branch pushes.
 
-**RED behaviors**
-1. Delivery governance version is `2.0` and describes Full Admission + exact evidence reuse.
-2. Workflow contains an explicit profile-resolution job before expensive jobs.
-3. Branch push routes to Full Admission.
-4. PR to `kaori/staging` routes to PR Integration when exact reusable evidence is valid.
-5. Push to `kaori/staging` routes to Staging Integration when merge lineage/tree is equivalent.
-6. PR `kaori/staging -> main` routes to Promotion.
-7. Push to `main` routes to Post-promotion.
-8. Sensitive paths force Full Admission.
-9. Failed/skipped/cancelled/missing evidence cannot be reused.
-10. Full Admission still contains all six current authoritative gate names.
+---
 
-**Verification**
-- Push RED-only commit.
-- Confirm KAORI CI Static Foundation fails only on the intended progressive-CI contract assertions.
-- Record exact run/head in Issue #55.
+### Task 1: Lock single-Admission policy in contracts
 
-## Task 2 — Implement deterministic CI policy helper
+**Files:**
+- Modify: `tests/contracts/release/test_progressive_ci_admission_contract.py`
+- Modify: `tests/contracts/release/test_kaori_delivery_governance_contract.py`
 
-**Files**
-- Create: `scripts/ci_admission.py`
-- Extend: `tests/contracts/release/test_progressive_ci_admission_contract.py`
+**Interfaces:**
+- Consumes: existing `resolve_profile`, evidence and lineage helpers.
+- Produces: contracts for branch-trigger scope, tree+fingerprint evidence identity, and transition reuse.
 
-**Responsibilities**
-- `resolve_profile(...)` from event/ref/base/head/changed paths.
-- `is_sensitive_change(paths)`.
-- `validate_evidence(...)` using exact commit/tree/profile version and required-gate conclusions.
-- `validate_staging_lineage(...)` using expected merge parents and tree equivalence.
-- `validate_promotion_lineage(...)` / post-promotion parent/tree checks.
-- Render concise operator summary records.
-- CLI subcommands expose deterministic JSON/key-value output for Actions.
+- [ ] **Step 1: Write failing tests**
 
-**TDD cycle**
-- RED: pure-function tests for each decision/fallback reason.
-- GREEN: minimal helper implementation.
-- Refactor only after focused tests pass.
+Lock these behaviors:
 
-## Task 3 — Add immutable Admission evidence publication and lookup
+```python
+assert '      - kaori/staging' in workflow
+assert '      - "kaori/**"' not in workflow
+assert policy.PROFILE_VERSION == '3'
+assert sensitive_pr.execution == 'fast'
+assert evidence_tree_and_fingerprint.reusable is True
+assert different_fingerprint.reusable is False
+```
 
-**Files**
-- Update: `.github/workflows/quality.yml`
-- Update: `scripts/ci_admission.py`
-- Extend: `tests/contracts/release/test_progressive_ci_admission_contract.py`
+Also lock that all comprehensive gate names and commands remain present.
 
-**Evidence schema**
-- profile schema/version (`2`);
-- result `PASS`;
-- source commit SHA;
-- source tree SHA;
-- workflow run ID / attempt;
-- event/ref identity;
-- required Full Admission gate results;
-- upstream Full Admission run ID for reused profiles;
-- timestamp.
+- [ ] **Step 2: Verify RED**
 
-**Implementation**
-- Full Admission final job writes evidence JSON only after every existing required gate succeeds.
-- Upload evidence as a run-scoped artifact.
-- Fast-profile resolver uses read-only GitHub Actions API access to locate successful evidence for the exact source authority.
-- Download/parse with Python stdlib; never trust artifact name alone.
-- Evidence lookup failures return `FALLBACK`, never PASS.
+Run focused contract tests before implementation. Expected failures are branch trigger still matching `kaori/**`, profile version still `2`, sensitive-path routing still forcing Full, and missing authority fingerprint support.
 
-**Security**
-- Workflow permissions remain minimal: `contents: read`, add only `actions: read` where required.
-- No write token is required for evidence lookup.
+- [ ] **Step 3: Implement only after RED is observed**
 
-## Task 4 — Route workflow into Full vs fast profiles
+Proceed to Tasks 2–4.
 
-**Files**
-- Update: `.github/workflows/quality.yml`
-- Extend contracts.
+- [ ] **Step 4: Verify GREEN**
 
-**Workflow structure**
-1. `validation-profile` — checkout, compute changed paths/tree/lineage, resolve requested profile and execution mode (`full` or `fast`).
-2. Existing expensive jobs run only when execution mode is `full`.
-3. `integration-smoke` runs only for validated fast profiles.
-4. Final `KAORI CI Admission` accepts either:
-   - successful comprehensive Full Admission, or
-   - successful exact-evidence verification + fast smoke.
-5. Any resolver uncertainty switches execution mode to `full` rather than failing open.
+Run:
 
-**Sensitive path families**
-- `.github/workflows/**`
-- `.github/ci/**`
-- `scripts/quality_gate.sh`
-- `scripts/ci_admission.py`
-- `tests/contracts/release/**` when validation authority is changed
-- `requirements/**`
-- `Dockerfile*`, compose/runtime/security authority
-- `migrations/**`
-- governance delivery/CI authority documents
+```bash
+pytest -q tests/contracts/release/test_progressive_ci_admission_contract.py tests/contracts/release/test_kaori_delivery_governance_contract.py
+```
 
-## Task 5 — Add a short fresh integration smoke profile
+Expected: PASS.
 
-**Files**
-- Update: `scripts/quality_gate.sh`
-- Extend: `tests/contracts/release/test_progressive_ci_admission_contract.py`
+### Task 2: Add deterministic validation-authority fingerprint
 
-**New phase**
-- `--smoke`
+**Files:**
+- Modify: `scripts/ci_admission.py`
 
-**Fresh checks**
-- Python syntax/import/reachability sanity;
-- migration graph sanity;
-- release/delivery contract subset;
-- explicit E2E smoke suite;
-- no full functional suite, frontend rebuild, image rebuild/scan, or DAST when comprehensive evidence is exactly reusable.
+**Interfaces:**
+- Produces: `authority_fingerprint_from_entries(entries)` and `compute_authority_fingerprint()`.
+- Evidence schema adds `authority_fingerprint`.
 
-These expensive conclusions are shown as `REUSED`, not silently skipped.
+- [ ] **Step 1: Implement authority-path classification**
 
-## Task 6 — Make Actions output human readable
+Authority includes `.github/workflows/**`, `.github/ci/**`, `requirements/**`, `scripts/ci_admission.py`, `scripts/quality_gate.sh`, `scripts/verify_*`, `tests/contracts/release/**`, delivery workflow authority, Dockerfiles, and compose files.
 
-**Files**
-- Update: `scripts/quality_gate.sh`
-- Update: `.github/workflows/quality.yml`
-- Extend: `tests/contracts/release/test_verifier_output_readability_contract.py`
-- Extend: `tests/contracts/release/test_progressive_ci_admission_contract.py`
+- [ ] **Step 2: Build fingerprint from tracked Git identities**
 
-**Step Summary contract**
-- Result
-- Profile
-- Commit SHA / tree SHA
-- Evidence source / Full Admission run
-- Fresh checks
-- Reused coverage
-- Duration
-- First actionable failure
-- Next action
+Use `git ls-files -s -z`; hash profile version plus sorted path/mode/blob tuples. Application-only paths are ignored by the fingerprint.
 
-**Log presentation**
-- Raw verbose verifier/pytest output stays inside clearly named GitHub log groups or diagnostics artifacts.
-- Success path prints concise group results/counts rather than dozens of unrelated prose PASS lines.
-- Failure path surfaces the first failing check/test and source path before raw detail.
-- Pytest keeps short traceback and final counts.
+- [ ] **Step 3: Raise profile version to `3`**
 
-## Task 7 — Update governance authority to v2.0
+The fingerprint contract itself is a validation-authority change, so prior profile-v2 evidence is not reusable.
 
-**Files**
-- Update: `docs/engineering/KAORI_DELIVERY_WORKFLOW.md`
-- Update: `tests/contracts/release/test_kaori_delivery_governance_contract.py`
+### Task 3: Make evidence reuse tree + fingerprint based
 
-**Changes**
-- Lifecycle wording becomes Full Admission → exact evidence reuse where valid → staging integration → UAT → promotion.
-- Replace absolute `never reuse conclusions` rule with exact immutable evidence policy.
-- Define fallback conditions and sensitive-change comprehensive validation.
-- Keep Local UAT and review authority unchanged.
-- Governance version `2.0`.
+**Files:**
+- Modify: `scripts/ci_admission.py`
 
-## Task 8 — GREEN verification on #55 implementation branch
+**Interfaces:**
+- `evidence_reuse_decision(...)` requires current source tree and current authority fingerprint.
+- `find_remote_full_evidence(...)` searches source lineage and returns the admitted source SHA from verified evidence.
 
-Run canonical CI via branch push and require:
-- Static / Architecture / Governance PASS;
-- Security PASS;
-- Functional/Integration PASS;
-- Frontend PASS;
-- Production Image/Runtime/DAST PASS;
-- final Full Admission PASS;
-- evidence artifact emitted for exact final branch tree;
-- operator Step Summary readable and complete.
+- [ ] **Step 1: Stop requiring transition commit SHA equality**
 
-Because #55 changes CI authority itself, the #55 implementation branch and sensitive staging/main transitions intentionally receive Full Admission.
+The evidence payload must contain a source SHA, but a staging/main merge commit may differ from the admitted PR head SHA when its source tree is identical.
 
-## Task 9 — Governed staging integration and rollout proof
+- [ ] **Step 2: Require exact source tree + fingerprint + profile version**
 
-1. Open governed PR to `kaori/staging` after final branch Full Admission.
-2. Sensitive-path detection must force Full Admission for the #55 PR itself.
-3. Merge only after review/CI/no-drift.
-4. Post-merge staging must also remain comprehensive if sensitive-change policy requires it.
-5. Perform explicit Local Dev Container UAT focused on Actions summary/readability and unchanged application behavior.
-6. Promote to `main` through governed PR and complete post-main verification.
+Reject wrong tree, wrong fingerprint, wrong profile, stale evidence, invalid workflow identity, or any required gate not `success`.
 
-## Task 10 — Prove the optimized fast path before #39
+- [ ] **Step 3: Preserve artifact download security**
 
-Use a small #55-owned non-sensitive rollout probe after the new workflow is authoritative:
+Initial requests stay HTTPS `api.github.com`; cross-host HTTPS artifact redirects strip `Authorization`; non-HTTPS redirects fail closed.
 
-1. Create a temporary issue-linked probe branch from current staging with one meaningful non-sensitive rollout-evidence documentation change.
-2. Branch push receives Full Admission and publishes exact evidence.
-3. PR to staging must resolve `PR Integration` and reuse that exact Full Admission.
-4. Verify duration and Step Summary.
-5. Merge and prove `Staging Integration` reuse.
-6. Deliberately execute a controlled evidence/tree mismatch scenario and prove resolver reports `FALLBACK` and selects Full Admission.
-7. Record before/after timing in #55.
+- [ ] **Step 4: Include fingerprint in Full Admission evidence**
 
-Only after both reuse and fallback are proven may #39 become active.
+`write-evidence` computes the fingerprint from the checked-out source and publishes it in `admission-evidence.json`.
+
+### Task 4: Move Full Admission boundary from issue branch to staging PR
+
+**Files:**
+- Modify: `.github/workflows/quality.yml`
+- Modify: `scripts/ci_admission.py`
+
+**Interfaces:**
+- Issue branch push: no governed Actions trigger.
+- PR to `kaori/staging`: candidate `PR Integration`; missing evidence falls back to one Full Admission.
+- Staging/main transitions: reuse same tree/fingerprint evidence + fresh smoke.
+
+- [ ] **Step 1: Restrict push trigger**
+
+Use:
+
+```yaml
+push:
+  branches:
+    - kaori/staging
+    - main
+    - "release/**"
+```
+
+Do not trigger governed CI on every `kaori/**` issue-branch push.
+
+- [ ] **Step 2: Remove path-name based repeated-Full routing**
+
+Transition routing no longer says “sensitive file therefore Full at every transition”. Validation-authority changes are represented by the fingerprint: new fingerprint → no reusable evidence → one Full; unchanged fingerprint/tree → reuse.
+
+- [ ] **Step 3: Set workflow profile version to `3`**
+
+Keep all comprehensive jobs unchanged.
+
+- [ ] **Step 4: Keep fast integration smoke unchanged**
+
+Fast transition still runs syntax/architecture/import/migration/release/E2E smoke and reports heavy comprehensive groups as `REUSED`.
+
+### Task 5: Align KAORI governance documentation
+
+**Files:**
+- Modify: `docs/engineering/KAORI_DELIVERY_WORKFLOW.md`
+- Modify: `docs/superpowers/specs/2026-08-30-progressive-ci-evidence-reuse-design.md`
+
+**Interfaces:**
+- Development feedback and governed Admission are separate boundaries.
+- Authority fingerprint is part of reusable evidence identity.
+
+- [ ] **Step 1: Update lifecycle wording**
+
+Issue branch development uses focused local checks; staging PR is the first comprehensive Admission boundary.
+
+- [ ] **Step 2: Update sensitive-change rule**
+
+A validation-authority change requires one Full Admission for the new tree/fingerprint; it does not cause repeated Full runs at staging/main when identity is unchanged.
+
+- [ ] **Step 3: Preserve Local UAT and promotion authority**
+
+No automated UAT or review bypass.
+
+### Task 6: Verify once, then reopen the governed PR once
+
+**Files:**
+- No new implementation files.
+
+- [ ] **Step 1: Keep PR #60 closed while assembling commits**
+
+The branch `td55-artifact-redirect-auth-fix` does not match the expensive push trigger. This prevents each documentation/code edit from creating a new 20–30 minute workflow.
+
+- [ ] **Step 2: Review final diff**
+
+Confirm only #55 CI/governance files changed and no comprehensive gate was deleted.
+
+- [ ] **Step 3: Reopen PR #60 once**
+
+The final tree must receive one governed Full Admission. Because profile-v3 evidence does not yet exist for that tree/fingerprint, PR Integration must report FALLBACK and execute Full once.
+
+- [ ] **Step 4: Merge after PASS/review**
+
+After merge, staging push must reuse the PR Full Admission evidence because the merge preserves tree + fingerprint.
+
+- [ ] **Step 5: Measure fast transition**
+
+Hard acceptance: <=5 minutes excluding unrelated runner queue delay. If it falls back to Full unexpectedly, stop and debug evidence/fingerprint/lineage; do not start a new speculative long run.
 
 ## Completion Evidence
 
 #55 is complete only when:
+
+- ordinary issue branch pushes no longer trigger governed Full Admission;
+- the final staging PR receives Full Admission once for its tree/fingerprint;
+- staging integration reuses that evidence;
+- a later eligible transition also reuses evidence;
+- fast transition execution is <=5 minutes excluding unrelated queue blockage;
+- fail-closed mismatch behavior is contract-proven;
 - comprehensive gate inventory is unchanged;
-- progressive profiles are deterministic and contract-tested;
-- evidence identity is exact and fail-closed;
-- governance v2.0 is aligned;
-- human-readable output is visibly improved;
-- real fast-path reuse is demonstrated;
-- deliberate mismatch fallback is demonstrated;
-- staging/UAT/main lifecycle passes;
-- measured lead time is recorded against the old ~25-minute repeated-run history.
+- Local UAT remains explicit;
+- timing and exact run/evidence identity are recorded in Issue #55.
