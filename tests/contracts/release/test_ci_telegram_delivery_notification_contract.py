@@ -8,10 +8,7 @@ ROOT = Path(__file__).resolve().parents[3]
 QUALITY_WORKFLOW = ROOT / '.github/workflows/quality.yml'
 NOTIFY_WORKFLOW = ROOT / '.github/workflows/telegram-github-actions.yml'
 NOTIFIER = ROOT / 'scripts/ci_delivery_notify.py'
-SPEC = (
-    ROOT
-    / 'docs/superpowers/specs/2026-08-31-github-actions-telegram-delivery-notifications-design.md'
-)
+SPEC = ROOT / 'docs/superpowers/specs/2026-08-31-github-actions-telegram-delivery-notifications-design.md'
 
 
 def read(path: Path) -> str:
@@ -19,9 +16,7 @@ def read(path: Path) -> str:
 
 
 def load_notifier() -> ModuleType:
-    assert NOTIFIER.exists(), (
-        'GitHub Actions Telegram notification helper is not implemented yet.'
-    )
+    assert NOTIFIER.exists(), 'GitHub Actions Telegram notification helper is not implemented yet.'
     spec = importlib.util.spec_from_file_location('kaori_ci_delivery_notify', NOTIFIER)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -42,18 +37,9 @@ def test_notification_workflow_is_separate_environment_scoped_and_trusted() -> N
     assert 'pull-requests: read' in source
     assert 'TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}' in source
     assert 'TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}' in source
-    assert (
-        'TELEGRAM_GITHUB_ACTIONS_TOPIC_ID: '
-        '${{ vars.TELEGRAM_GITHUB_ACTIONS_TOPIC_ID }}' in source
-    )
-    assert (
-        'TELEGRAM_NOTIFICATIONS_ENABLED: '
-        '${{ vars.TELEGRAM_NOTIFICATIONS_ENABLED }}' in source
-    )
-    assert (
-        'github.event.workflow_run.head_repository.full_name == github.repository'
-        in source
-    )
+    assert 'TELEGRAM_GITHUB_ACTIONS_TOPIC_ID: ${{ vars.TELEGRAM_GITHUB_ACTIONS_TOPIC_ID }}' in source
+    assert 'TELEGRAM_NOTIFICATIONS_ENABLED: ${{ vars.TELEGRAM_NOTIFICATIONS_ENABLED }}' in source
+    assert 'github.event.workflow_run.head_repository.full_name == github.repository' in source
     assert 'continue-on-error: true' in source
     assert 'workflow_run.pull_requests[0]' not in source
     assert 'KAORI_UAT_URL' not in source
