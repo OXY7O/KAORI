@@ -58,19 +58,13 @@ def build_forecast_state(payload: Mapping[str, Any]) -> ForecastState:
     resources = {key: resource_presentation(key, mapping(items.get(key))) for key in RESOURCE_META}
     available = [item for item in resources.values() if item['available']]
     highest = (
-        max(available, key=lambda item: float_value(item.get('peak_projected_percent')) or 0.0)
-        if available
-        else None
+        max(available, key=lambda item: float_value(item.get('peak_projected_percent')) or 0.0) if available else None
     )
     warning_count = sum(
-        1
-        for item in available
-        if (float_value(item.get('peak_projected_percent')) or 0.0) >= WARNING_THRESHOLD
+        1 for item in available if (float_value(item.get('peak_projected_percent')) or 0.0) >= WARNING_THRESHOLD
     )
     critical_count = sum(
-        1
-        for item in available
-        if (float_value(item.get('peak_projected_percent')) or 0.0) >= CRITICAL_THRESHOLD
+        1 for item in available if (float_value(item.get('peak_projected_percent')) or 0.0) >= CRITICAL_THRESHOLD
     )
     coverage_count = len(available)
     method = sanitize_text(

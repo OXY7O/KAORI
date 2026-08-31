@@ -220,10 +220,7 @@ def owner_summary(rows: Sequence[Mapping[str, Any]]) -> str:
     for item in rows:
         owner = sanitize_text(item.get('owner'), fallback='Platform Operations')
         counts[owner] = counts.get(owner, 0) + 1
-    return (
-        '; '.join(f'{owner}: {count} action(s)' for owner, count in counts.items())
-        or 'No owner assignment available.'
-    )
+    return '; '.join(f'{owner}: {count} action(s)' for owner, count in counts.items()) or 'No owner assignment available.'
 
 
 def format_datetime(value: Any) -> str:

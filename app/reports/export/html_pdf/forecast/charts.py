@@ -28,8 +28,7 @@ def combined_chart_svg(resources: Mapping[str, Mapping[str, Any]]) -> str:
             f'stroke="{color}" stroke-width="1"{dash}/>'
         )
         parts.append(
-            f'<text x="{left - 10}" y="{y + 4:.1f}" text-anchor="end" font-size="10" '
-            f'fill="#64748B">{value}%</text>'
+            f'<text x="{left - 10}" y="{y + 4:.1f}" text-anchor="end" font-size="10" fill="#64748B">{value}%</text>'
         )
     cutoff_x = left + chart_w * 0.68
     parts.append(
@@ -132,8 +131,7 @@ def single_chart_svg(
             f'stroke="{grid}" stroke-width="1"{dash}/>'
         )
         parts.append(
-            f'<text x="{left - 10}" y="{y + 4:.1f}" text-anchor="end" font-size="10" '
-            f'fill="#64748B">{value}%</text>'
+            f'<text x="{left - 10}" y="{y + 4:.1f}" text-anchor="end" font-size="10" fill="#64748B">{value}%</text>'
         )
     parts.append(
         f'<line x1="{cutoff_x:.1f}" y1="{top}" x2="{cutoff_x:.1f}" y2="{top + chart_h}" '
@@ -199,9 +197,6 @@ def series_points(values: list[float], start_x: float, end_x: float, top: float,
         values = [values[0], values[0]]
     step = (end_x - start_x) / max(len(values) - 1, 1)
     return ' '.join(
-        (
-            f'{start_x + index * step:.1f},'
-            f'{top + chart_h - chart_h * max(0.0, min(100.0, value)) / 100.0:.1f}'
-        )
+        (f'{start_x + index * step:.1f},{top + chart_h - chart_h * max(0.0, min(100.0, value)) / 100.0:.1f}')
         for index, value in enumerate(values)
     )

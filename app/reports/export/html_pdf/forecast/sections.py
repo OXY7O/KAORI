@@ -95,10 +95,7 @@ def build_portfolio(state: ForecastState) -> dict[str, Any]:
             for item in state.resources.values()
         ),
         'chart_svg': state.combined_chart,
-        'rows': tuple(
-            portfolio_row(state.resources[key], index + 1)
-            for index, key in enumerate(RESOURCE_META)
-        ),
+        'rows': tuple(portfolio_row(state.resources[key], index + 1) for index, key in enumerate(RESOURCE_META)),
         'interpretation': portfolio_interpretation(state.resources, state.horizon),
     }
 
@@ -132,9 +129,7 @@ def build_resource_page(resource: Mapping[str, Any], title: str) -> dict[str, An
                 'Warning ETA',
                 resource['warning_eta'],
                 'Threshold Timing',
-                'warning'
-                if resource['warning_eta'] not in {'Not projected', 'Not Available'}
-                else 'muted',
+                'warning' if resource['warning_eta'] not in {'Not projected', 'Not Available'} else 'muted',
             ),
         ),
         'assessment_title': assessment_title,
@@ -275,10 +270,7 @@ def build_exposure(state: ForecastState) -> dict[str, Any]:
                 'warning' if state.coverage_count < len(RESOURCE_META) else 'normal',
             ),
         ),
-        'rows': tuple(
-            exposure_row(state.resources[key], index + 1)
-            for index, key in enumerate(RESOURCE_META)
-        ),
+        'rows': tuple(exposure_row(state.resources[key], index + 1) for index, key in enumerate(RESOURCE_META)),
         'confidence_title': confidence_title(state.resources),
         'confidence_body': confidence_body(state.resources),
         'boundary_title': 'Committed observations define the forecast boundary.',
@@ -402,11 +394,7 @@ def headroom_row(resource: Mapping[str, Any], ref: str) -> dict[str, Any]:
     return {
         'ref': ref,
         'dimension': f'{resource["label"]} Projected Headroom',
-        'current': (
-            percent(max(0.0, 100.0 - resource['current_percent']))
-            if resource['available']
-            else 'Not Available'
-        ),
+        'current': (percent(max(0.0, 100.0 - resource['current_percent'])) if resource['available'] else 'Not Available'),
         'projection': resource['headroom_display'],
         'evidence': 'Derived' if resource['available'] else 'Missing',
         'status': 'Available' if resource['available'] else 'Not Available',
@@ -507,8 +495,4 @@ def portfolio_interpretation(resources: Mapping[str, Mapping[str, Any]], horizon
 
 
 def horizon_status(count: int, horizon: str) -> str:
-    return (
-        f'Within {human_window(horizon)}'
-        if count
-        else f'None within {human_window(horizon)}'
-    )
+    return f'Within {human_window(horizon)}' if count else f'None within {human_window(horizon)}'
