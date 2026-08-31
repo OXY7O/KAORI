@@ -91,7 +91,14 @@ All categories share the same Telegram topic.
 | UAT | `UAT_REQUIRED` | exact staging lineage is machine-verified and ready for human UAT |
 | Promotion | `PROMOTION_VALIDATED`, `PROMOTION_SUCCEEDED` | staging→main validation or verified main lineage |
 
-Future `Release` and `Deployment` categories may be added by later Issues without changing the Telegram topic or bot.
+Reserved future categories, intentionally not emitted by #64:
+
+| Category | Future events | Intended use |
+| --- | --- | --- |
+| Release | `RELEASE_PUBLISHED`, `RELEASE_FAILED` | governed release/tag/image lifecycle |
+| Deployment | `DEPLOYMENT_STARTED`, `DEPLOYMENT_SUCCEEDED`, `DEPLOYMENT_FAILED`, `ROLLBACK_REQUIRED` | production deployment lifecycle |
+
+These future categories stay in the same `🔄 GitHub Actions` topic unless notification volume later justifies a separate Telegram topic.
 
 ## Event Routing
 
