@@ -215,21 +215,11 @@ def _job_conclusions(jobs: list[dict[str, Any]]) -> dict[str, str]:
     }
 
 
-def fetch_workflow_jobs(
-    *,
-    repository: str,
-    run_id: str,
-    token: str,
-) -> list[dict[str, Any]]:
+def _github_api_get(*, path: str, token: str) -> Any:
     if not token.strip():
         raise RuntimeError('GitHub Actions read token is unavailable.')
-    safe_repository = '/'.join(
-        quote(part, safe='') for part in repository.split('/', 1)
-    )
-    safe_run_id = quote(str(run_id), safe='')
-    url = f'{_GITHUB_API}/repos/{safe_repository}/actions/runs/{safe_run_id}/jobs?per_page=100'
     request = Request(
-        url,
+        f'{_GITHUB_API}{path}',
         headers={
             'Accept': 'application/vnd.github+json',
             'Authorization': f'Bearer {token}',
@@ -242,20 +232,90 @@ def fetch_workflow_jobs(
             request,
             timeout=10,
         ) as response:
-            payload = json.loads(response.read().decode('utf-8'))
+            return json.loads(response.read().decode('utf-8'))
     except HTTPError as exc:
         raise RuntimeError(
-            f'GitHub Actions job lookup failed with HTTP {exc.code}.'
+            f'GitHub Actions metadata lookup failed with HTTP {exc.code}.'
         ) from exc
     except (URLError, TimeoutError, OSError, ValueError) as exc:
         raise RuntimeError(
-            'GitHub Actions job lookup is unavailable or invalid.'
+            'GitHub Actions metadata lookup is unavailable or invalid.'
         ) from exc
 
+
+def _safe_repository(repository: str) -> str:
+    return '/'.join(quote(part, safe='') for part in repository.split('/', 1))
+
+
+def fetch_workflow_jobs(
+    *,
+    repository: str,
+    run_id: str,
+    token: str,
+) -> list[dict[str, Any]]:
+    safe_repository = _safe_repository(repository)
+    safe_run_id = quote(str(run_id), safe='')
+    payload = _github_api_get(
+        path=f'/repos/{safe_repository}/actions/runs/{safe_run_id}/jobs?per_page=100',
+        token=token,
+    )
     jobs = payload.get('jobs') if isinstance(payload, dict) else None
     if not isinstance(jobs, list):
         raise RuntimeError('GitHub Actions job lookup returned an invalid payload.')
     return [job for job in jobs if isinstance(job, dict)]
+
+
+def fetch_associated_pull_requests(
+    *,
+    repository: str,
+    source_sha: str,
+    token: str,
+) -> list[dict[str, Any]]:
+    safe_repository = _safe_repository(repository)
+    safe_sha = quote(source_sha, safe='')
+    payload = _github_api_get(
+        path=f'/repos/{safe_repository}/commits/{safe_sha}/pulls?per_page=100',
+        token=token,
+    )
+    if not isinstance(payload, list):
+        raise RuntimeError('GitHub pull request lookup returned an invalid payload.')
+    return [pull for pull in payload if isinstance(pull, dict)]
+
+
+def select_pull_request_context(
+    *,
+    pull_requests: list[dict[str, Any]],
+    head_branch: str,
+    source_sha: str,
+) -> tuple[str, str]:
+    candidates: list[dict[str, Any]] = []
+    for pull in pull_requests:
+        head = pull.get('head')
+        base = pull.get('base')
+        if not isinstance(head, dict) or not isinstance(base, dict):
+            continue
+        if str(head.get('ref') or '') != head_branch:
+            continue
+        if str(head.get('sha') or '') != source_sha:
+            continue
+        if str(base.get('ref') or '') not in {'kaori/staging', 'main'}:
+            continue
+        candidates.append(pull)
+
+    open_candidates = [pull for pull in candidates if pull.get('state') == 'open']
+    if len(open_candidates) == 1:
+        selected = open_candidates[0]
+    elif len(candidates) == 1:
+        selected = candidates[0]
+    else:
+        return '', ''
+
+    base = selected.get('base')
+    if not isinstance(base, dict):
+        return '', ''
+    base_branch = str(base.get('ref') or '')
+    number = str(selected.get('number') or '')
+    return base_branch, number
 
 
 def send_message(
@@ -344,22 +404,39 @@ def main(argv: list[str] | None = None) -> int:
     admission_result = args.admission_result
     security_result = args.security_result
     failure_detail = args.failure_detail
+    base_branch = args.base_branch
+    pr_number = args.pr_number
 
     if args.workflow_run_id:
+        token = os.environ.get('GH_TOKEN', '')
         try:
             jobs = fetch_workflow_jobs(
                 repository=args.repository,
                 run_id=args.workflow_run_id,
-                token=os.environ.get('GH_TOKEN', ''),
+                token=token,
             )
+            if args.workflow_event == 'pull_request' and not base_branch:
+                pull_requests = fetch_associated_pull_requests(
+                    repository=args.repository,
+                    source_sha=args.source_sha,
+                    token=token,
+                )
+                base_branch, resolved_pr_number = select_pull_request_context(
+                    pull_requests=pull_requests,
+                    head_branch=args.head_branch,
+                    source_sha=args.source_sha,
+                )
+                if not pr_number:
+                    pr_number = resolved_pr_number
         except RuntimeError as exc:
             print(f'FAIL — {exc}', file=sys.stderr)
             return 1
+
         conclusions = _job_conclusions(jobs)
         profile = resolve_profile(
             event_name=args.workflow_event,
             head_branch=args.head_branch,
-            base_branch=args.base_branch,
+            base_branch=base_branch,
         )
         execution = infer_execution(jobs)
         admission_result = conclusions.get('KAORI CI Admission', '')
@@ -393,7 +470,7 @@ def main(argv: list[str] | None = None) -> int:
         source_sha=args.source_sha,
         repository=args.repository,
         run_url=args.run_url,
-        pr_number=args.pr_number,
+        pr_number=pr_number,
         failure_detail=failure_detail,
     )
     delivered, detail = send_message(
