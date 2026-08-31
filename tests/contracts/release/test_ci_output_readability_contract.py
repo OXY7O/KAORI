@@ -24,7 +24,8 @@ def test_pytest_failure_output_is_failure_first_and_bounded() -> None:
     assert 'FAILURES' in source
     assert 'filter_pytest_progress' in source
     assert 'tail -n 80 "$log_file" | filter_pytest_progress' in source
-    assert 'First actionable failure' in source
+    assert '❌ First actionable failure' in source
+    assert '➡️ Repair the first actionable failure' in source
 
 
 def test_static_operator_rollup_uses_kaori_architecture_level_categories() -> None:
@@ -48,22 +49,22 @@ def test_admission_summary_uses_same_architecture_level_coverage_categories() ->
     assert 'Code Quality & Type Safety' not in workflow
 
 
-def test_successful_static_groups_emit_one_operator_row_instead_of_one_pass_per_verifier() -> None:
+def test_successful_static_groups_emit_progress_then_one_rollup_row() -> None:
     source = QUALITY_GATE.read_text(encoding='utf-8')
 
-    assert 'printf \'  PASS — %s\\n\' "$label"' not in source
+    assert "printf '⏳ %s — %s\\n' \"$group\" \"$label\"" in source
     assert 'group_pass_count' in source
-    assert 'PASS — KAORI %s · %s checks' in source
-    assert 'Detailed PASS output is retained in' in source
+    assert "printf '✅ %s · %s checks · ⏱ %dm %02ds\\n'" in source
+    assert 'Detailed output is retained in' in source
 
 
 def test_failed_static_verifier_remains_failure_first_and_names_the_check() -> None:
     source = QUALITY_GATE.read_text(encoding='utf-8')
 
-    assert 'printf \'  FAIL — %s\\n\' "$label"' in source
-    assert 'First actionable failure' in source
-    assert 'Diagnostic excerpt' in source
-    assert 'Next action' in source
+    assert "printf '❌ %s\\n' \"$label\"" in source
+    assert '❌ First actionable failure' in source
+    assert '📦 Diagnostic excerpt' in source
+    assert '➡️ Repair %s, collect remaining findings' in source
 
 
 def test_release_suite_emits_junit_for_taxonomy_summary_without_duplicate_execution() -> None:
@@ -104,13 +105,13 @@ def test_taxonomy_summary_groups_existing_junit_by_kaori_test_purpose(tmp_path: 
 
     assert completed.returncode == 0, completed.stderr
     for expected in (
-        'PASS — KAORI Unit Tests · 1 test',
-        'PASS — KAORI Functional Tests · 1 test',
-        'PASS — KAORI Integration Tests · 1 test',
-        'PASS — KAORI Security Regression · 1 test',
-        'PASS — KAORI Rendering / UI · 1 test',
-        'PASS — KAORI Contract Tests · 1 test',
-        'PASS — KAORI Migration Tests · 1 test',
+        '✅ Unit Tests · 1 test',
+        '✅ Functional Tests · 1 test',
+        '✅ Integration Tests · 1 test',
+        '✅ Security Regression · 1 test',
+        '✅ Rendering / UI · 1 test',
+        '✅ Contract Tests · 1 test',
+        '✅ Migration Tests · 1 test',
     ):
         assert expected in completed.stdout
 
@@ -133,3 +134,15 @@ def test_admission_summary_reports_real_failure_state_instead_of_hardcoded_pass(
     assert '--result "$RESULT"' in workflow
     assert '--first-failure "$FIRST_FAILURE"' in workflow
     assert '--result PASS' not in workflow
+    assert "printf '✅ %s · ⏱ %s\\n'" in workflow
+    assert "printf '❌ %s · ⏱ %s\\n'" in workflow
+    assert "printf '📦 %s\\n'" in workflow
+    assert "printf '➡️ %s\\n'" in workflow
+
+
+def test_long_static_gate_has_periodic_heartbeat() -> None:
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+
+    assert 'Static & Governance still running' in workflow
+    assert 'sleep 60' in workflow
+    assert '⏱ %dm %02ds' in workflow
