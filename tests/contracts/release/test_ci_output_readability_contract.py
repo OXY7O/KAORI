@@ -38,6 +38,15 @@ def test_static_operator_rollup_uses_kaori_architecture_level_categories() -> No
     assert "run_static_group 'Code Quality & Type Safety'" not in source
 
 
+def test_admission_summary_uses_same_architecture_level_coverage_categories() -> None:
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+
+    assert 'Domain & Capability Contracts' in workflow
+    assert 'Engineering Quality' in workflow
+    assert 'Reports/Domain Contracts' not in workflow
+    assert 'Code Quality & Type Safety' not in workflow
+
+
 def test_successful_static_groups_emit_one_operator_row_instead_of_one_pass_per_verifier() -> None:
     source = QUALITY_GATE.read_text(encoding='utf-8')
 
