@@ -21,6 +21,15 @@ _EVENT_TITLES: Final = {
     'PROMOTION_SUCCEEDED': '🚀 KAORI · Promotion Succeeded',
 }
 
+_EVENT_CATEGORIES: Final = {
+    'FULL_ADMISSION_PASSED': 'CI / Quality',
+    'DELIVERY_FAILED': 'CI / Quality',
+    'SECURITY_GATE_FAILED': 'Security',
+    'UAT_REQUIRED': 'UAT',
+    'PROMOTION_VALIDATED': 'Promotion',
+    'PROMOTION_SUCCEEDED': 'Promotion',
+}
+
 _PROFILE_CONTEXT: Final = {
     'pr-integration': ('PR Integration', 'Staging Candidate'),
     'staging-integration': ('Staging Integration', 'Staging'),
@@ -61,12 +70,22 @@ def select_event(
     return None
 
 
-def configuration_status(*, enabled: str, bot_token: str, chat_id: str) -> tuple[bool, str]:
+def event_category(event: str) -> str:
+    return _EVENT_CATEGORIES.get(event, 'CI / Quality')
+
+
+def configuration_status(
+    *,
+    enabled: str,
+    bot_token: str,
+    chat_id: str,
+    topic_id: str,
+) -> tuple[bool, str]:
     if enabled.strip().lower() not in _TRUE_VALUES:
-        return False, 'Telegram delivery is not enabled.'
-    if not bot_token.strip() or not chat_id.strip():
-        return False, 'Telegram delivery configuration is incomplete.'
-    return True, 'Telegram delivery is configured.'
+        return False, 'Telegram GitHub Actions notifications are not enabled.'
+    if not bot_token.strip() or not chat_id.strip() or not topic_id.strip():
+        return False, 'Telegram GitHub Actions notification configuration is incomplete.'
+    return True, 'Telegram GitHub Actions notifications are configured.'
 
 
 def render_message(
@@ -78,7 +97,7 @@ def render_message(
     repository: str,
     run_url: str,
     pr_number: str,
-    uat_url: str,
+    failure_detail: str = '',
 ) -> str:
     title = _EVENT_TITLES.get(event, f'ℹ️ KAORI · {event.replace("_", " ").title()}')
     boundary, environment = _PROFILE_CONTEXT.get(profile, (profile or 'Delivery', 'Delivery'))
@@ -88,7 +107,7 @@ def render_message(
     lines = [
         title,
         '',
-        f'Event: {event}',
+        f'Category: {event_category(event)}',
         f'Boundary: {boundary}',
         f'Environment: {environment}',
         f'Result: {result}',
@@ -101,12 +120,12 @@ def render_message(
     evidence = _evidence_summary(event=event, execution=execution)
     if evidence:
         lines.append(f'Evidence: {evidence}')
-    lines.append(f'Action: {_ACTIONS.get(event, "Review the workflow result.")}')
+    if failure_detail.strip() and result == 'FAIL':
+        lines.append(f'First Failure: {failure_detail.strip()}')
 
+    lines.append(f'Action: {_ACTIONS.get(event, "Review the workflow result.")}')
     if run_url.strip():
         lines.extend(['', f'View Run: {run_url.strip()}'])
-    if event == 'UAT_REQUIRED' and uat_url.strip():
-        lines.append(f'Open KAORI UAT: {uat_url.strip()}')
     return '\n'.join(lines).strip()
 
 
@@ -126,12 +145,18 @@ def send_message(
     *,
     bot_token: str,
     chat_id: str,
+    topic_id: str,
     message: str,
     timeout_seconds: int = 10,
 ) -> tuple[bool, str]:
-    body = urlencode({'chat_id': chat_id, 'text': message, 'link_preview_options': json.dumps({'is_disabled': True})}).encode(
-        'utf-8'
-    )
+    body = urlencode(
+        {
+            'chat_id': chat_id,
+            'message_thread_id': topic_id,
+            'text': message,
+            'link_preview_options': json.dumps({'is_disabled': True}, separators=(',', ':')),
+        }
+    ).encode('utf-8')
     request = Request(
         f'{_TELEGRAM_API}/bot{bot_token}/sendMessage',
         data=body,
@@ -151,11 +176,13 @@ def send_message(
 
     if not isinstance(payload, dict) or not bool(payload.get('ok')):
         return False, 'Telegram rejected the notification.'
-    return True, 'Telegram delivery notification sent.'
+    return True, 'Telegram GitHub Actions notification sent.'
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description='Send actionable KAORI delivery notifications to Telegram.')
+    parser = argparse.ArgumentParser(
+        description='Send categorized KAORI GitHub Actions notifications to a Telegram topic.'
+    )
     parser.add_argument('--profile', required=True)
     parser.add_argument('--execution', required=True)
     parser.add_argument('--admission-result', required=True)
@@ -164,6 +191,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--repository', required=True)
     parser.add_argument('--run-url', required=True)
     parser.add_argument('--pr-number', default='')
+    parser.add_argument('--failure-detail', default='')
     return parser
 
 
@@ -176,14 +204,19 @@ def main(argv: list[str] | None = None) -> int:
         security_result=args.security_result,
     )
     if event is None:
-        print('SKIP — Current Admission boundary has no actionable Telegram delivery event.')
+        print('SKIP — Current Admission boundary has no actionable GitHub Actions notification.')
         return 0
 
     bot_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
-    chat_id = os.environ.get('TELEGRAM_DELIVERY_CHAT_ID', '')
-    enabled = os.environ.get('TELEGRAM_DELIVERY_ENABLED', '')
-    uat_url = os.environ.get('KAORI_UAT_URL', '')
-    configured, reason = configuration_status(enabled=enabled, bot_token=bot_token, chat_id=chat_id)
+    chat_id = os.environ.get('TELEGRAM_CHAT_ID', '')
+    topic_id = os.environ.get('TELEGRAM_GITHUB_ACTIONS_TOPIC_ID', '')
+    enabled = os.environ.get('TELEGRAM_NOTIFICATIONS_ENABLED', '')
+    configured, reason = configuration_status(
+        enabled=enabled,
+        bot_token=bot_token,
+        chat_id=chat_id,
+        topic_id=topic_id,
+    )
     if not configured:
         print(f'SKIP — {reason}')
         return 0
@@ -196,13 +229,18 @@ def main(argv: list[str] | None = None) -> int:
         repository=args.repository,
         run_url=args.run_url,
         pr_number=args.pr_number,
-        uat_url=uat_url,
+        failure_detail=args.failure_detail,
     )
-    delivered, detail = send_message(bot_token=bot_token, chat_id=chat_id, message=message)
+    delivered, detail = send_message(
+        bot_token=bot_token,
+        chat_id=chat_id,
+        topic_id=topic_id,
+        message=message,
+    )
     if not delivered:
         print(f'FAIL — {detail}', file=sys.stderr)
         return 1
-    print(f'PASS — {detail} Event={event}.')
+    print(f'PASS — {detail} Category={event_category(event)} Event={event}.')
     return 0
 
 
