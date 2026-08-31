@@ -13,10 +13,7 @@ def alerts(alert_detail: Mapping[str, Any]) -> list[dict[str, Any]]:
             continue
         severity = text(item.get('severity') or item.get('severity_label'), 'Info')
         resource = text(
-            item.get('affected_resource')
-            or item.get('resource_name')
-            or item.get('resource')
-            or item.get('instance'),
+            item.get('affected_resource') or item.get('resource_name') or item.get('resource') or item.get('instance'),
             'Not Available',
         )
         rows.append(
@@ -68,9 +65,7 @@ def alert_metrics(
     critical = integer(
         summary.get('critical') or summary.get('critical_alerts') or alerts_snapshot.get('critical_alerts')
     )
-    warning = integer(
-        summary.get('warning') or summary.get('warning_alerts') or alerts_snapshot.get('warning_alerts')
-    )
+    warning = integer(summary.get('warning') or summary.get('warning_alerts') or alerts_snapshot.get('warning_alerts'))
     info = integer(summary.get('info') or summary.get('info_alerts'))
     anomaly_count = integer(summary.get('anomalies') or alerts_snapshot.get('recent_anomalies'))
     return [
@@ -191,10 +186,7 @@ def alert_intelligence_summary(
     critical = integer(alerts_snapshot.get('critical_alerts'))
     warning = integer(alerts_snapshot.get('warning_alerts'))
     if critical or warning:
-        return (
-            f'{critical} critical and {warning} warning alert(s) require operational ownership '
-            'and response validation.'
-        )
+        return f'{critical} critical and {warning} warning alert(s) require operational ownership and response validation.'
     if alert_rows:
         return 'Active alert details are available, but no critical or warning total was reported.'
     return 'No active alert detail was returned for the selected reporting boundary.'
