@@ -35,14 +35,10 @@ def forecast_series(forecast_snapshot: Mapping[str, Any]) -> list[dict[str, Any]
     if not points:
         return []
     historical_values = [
-        number(item.get('value'))
-        for item in points
-        if str(item.get('kind') or '').lower() == 'historical'
+        number(item.get('value')) for item in points if str(item.get('kind') or '').lower() == 'historical'
     ]
     forecast_values = [
-        number(item.get('value'))
-        for item in points
-        if str(item.get('kind') or '').lower() == 'forecast'
+        number(item.get('value')) for item in points if str(item.get('kind') or '').lower() == 'forecast'
     ]
     all_values = historical_values + forecast_values
     if not all_values:
@@ -74,18 +70,13 @@ def _chart_points(values: Sequence[float], start: float, end: float) -> str:
     else:
         step = (end - start) / (len(values) - 1)
         xs = [start + index * step for index in range(len(values))]
-    return ' '.join(
-        f'{x:.2f},{100.0 - max(0.0, min(value, 100.0)):.2f}'
-        for x, value in zip(xs, values, strict=False)
-    )
+    return ' '.join(f'{x:.2f},{100.0 - max(0.0, min(value, 100.0)):.2f}' for x, value in zip(xs, values, strict=False))
 
 
 def forecast_headline(forecast_snapshot: Mapping[str, Any]) -> str:
     resource = text(forecast_snapshot.get('highest_projected_resource'), 'No resource')
     value = forecast_snapshot.get('highest_projected_percent')
-    nearest = mapping(forecast_snapshot.get('nearest_critical')) or mapping(
-        forecast_snapshot.get('nearest_warning')
-    )
+    nearest = mapping(forecast_snapshot.get('nearest_critical')) or mapping(forecast_snapshot.get('nearest_warning'))
     eta = text(nearest.get('label'), '')
     if value is None:
         return 'No forecast threshold breach is currently projected.'
