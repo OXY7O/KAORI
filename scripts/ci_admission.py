@@ -12,7 +12,7 @@ import urllib.request
 import xml.etree.ElementTree as ET  # nosec B405
 import zipfile
 from collections.abc import Mapping, Sequence
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, NamedTuple
 
@@ -122,7 +122,7 @@ def _parse_evidence_timestamp(value: Any) -> datetime | None:
         return None
     if parsed.tzinfo is None:
         return None
-    return parsed.astimezone(timezone.utc)
+    return parsed.astimezone(UTC)
 
 
 def evidence_reuse_decision(
@@ -146,7 +146,7 @@ def evidence_reuse_decision(
     created_at = _parse_evidence_timestamp(evidence.get('created_at'))
     if created_at is None:
         return ReuseDecision(False, 'Admission evidence is missing a valid timestamp.')
-    age_seconds = (datetime.now(timezone.utc) - created_at).total_seconds()
+    age_seconds = (datetime.now(UTC) - created_at).total_seconds()
     if age_seconds < -300:
         return ReuseDecision(False, 'Admission evidence timestamp is unexpectedly in the future.')
     if age_seconds > EVIDENCE_MAX_AGE_SECONDS:
@@ -431,7 +431,7 @@ def build_full_evidence(
         'result': 'PASS',
         'profile': 'full',
         'profile_version': PROFILE_VERSION,
-        'created_at': datetime.now(timezone.utc).isoformat(),
+        'created_at': datetime.now(UTC).isoformat(),
         'source_sha': source_sha,
         'source_tree': source_tree,
         'full_admission_run_id': run_id,
