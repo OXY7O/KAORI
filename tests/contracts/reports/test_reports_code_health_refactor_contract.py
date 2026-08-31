@@ -100,7 +100,7 @@ def test_quality_gate_presents_concise_test_evidence() -> None:
     assert '--tb=short' in quality_gate
     assert 'run_pytest_capture' in quality_gate
     assert "'Functional Tests'" in quality_gate
-    assert "'Contract & Migration Tests'" in quality_gate
+    assert "'Contract & Migration Safety'" in quality_gate
     assert "'End-to-End Tests'" in quality_gate
     assert 'GITHUB_STEP_SUMMARY' in quality_gate
     assert 'pytest "$@" >"$log_file" 2>&1' in quality_gate
