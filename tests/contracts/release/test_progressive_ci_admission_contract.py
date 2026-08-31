@@ -93,7 +93,7 @@ def test_profile_version_and_compatibility_wrapper_use_current_authority() -> No
 def test_fast_profiles_wire_transition_lineage_verification_before_reuse() -> None:
     source = read(WORKFLOW)
 
-    assert 'Verify Transition Lineage' in source
+    assert 'Verify Lineage' in source
     assert 'ci_admission.py verify-lineage' in source
     for token in (
         '--profile "$PROFILE"',
@@ -109,10 +109,20 @@ def test_fast_profiles_wire_transition_lineage_verification_before_reuse() -> No
     assert 'lineage_reason' in source
 
 
-def test_full_admission_keeps_existing_comprehensive_gate_inventory() -> None:
+def test_full_admission_keeps_canonical_evidence_inventory_under_concise_job_names() -> None:
     source = read(WORKFLOW)
-    for gate in REQUIRED_FULL_GATES:
-        assert gate in source
+    policy = load_policy()
+
+    assert set(policy.FULL_GATE_NAMES) == REQUIRED_FULL_GATES - {'KAORI CI Admission'}
+    for job_name in (
+        'name: Static & Governance',
+        'name: Security',
+        'name: Functional Tests',
+        'name: Frontend',
+        'name: Runtime & DAST',
+        'name: CI Admission',
+    ):
+        assert job_name in source
     for command in (
         'bash scripts/quality_gate.sh --static',
         'bash .github/ci/run-security-static.sh',
