@@ -376,3 +376,29 @@ def test_quality_gate_exposes_fast_smoke_phase_and_captures_pytest_progress_nois
     assert 'run_pytest_capture' in source
     assert 'pytest "$@" >"$log_file" 2>&1' in source
     assert 'pytest -qq' not in source
+
+
+def test_artifact_redirect_drops_github_authorization_on_cross_host_https() -> None:
+    policy = load_policy()
+    request = policy.urllib.request.Request(
+        'https://api.github.com/repos/OXY7O/KAORI/actions/artifacts/123/zip',
+        headers={
+            'Accept': 'application/vnd.github+json',
+            'Authorization': 'Bearer github-token',
+        },
+    )
+
+    handler = policy._GitHubArtifactRedirectHandler()
+    redirected = handler.redirect_request(
+        request,
+        None,
+        302,
+        'Found',
+        {},
+        'https://productionresultssa0.blob.core.windows.net/actions-results/example.zip?sig=signed',
+    )
+
+    assert redirected is not None
+    assert redirected.full_url.startswith('https://productionresultssa0.blob.core.windows.net/')
+    assert redirected.get_header('Authorization') is None
+    assert redirected.get_header('Accept') == 'application/vnd.github+json'
