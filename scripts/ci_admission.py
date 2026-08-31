@@ -472,6 +472,30 @@ def _validated_github_url(url: str) -> str:
     return parsed.geturl()
 
 
+class _GitHubArtifactRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(
+        self,
+        req: urllib.request.Request,
+        fp: Any,
+        code: int,
+        msg: str,
+        headers: Any,
+        newurl: str,
+    ) -> urllib.request.Request | None:
+        target = urllib.parse.urlparse(newurl)
+        if target.scheme != 'https':
+            raise ValueError('KAORI CI Admission artifact redirects must remain HTTPS.')
+
+        redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if redirected is None:
+            return None
+
+        source_host = urllib.parse.urlparse(req.full_url).hostname
+        if target.hostname != source_host:
+            redirected.remove_header('Authorization')
+        return redirected
+
+
 def _github_request(url: str, token: str, *, binary: bool = False) -> Any:
     request = urllib.request.Request(
         _validated_github_url(url),
@@ -482,9 +506,14 @@ def _github_request(url: str, token: str, *, binary: bool = False) -> Any:
             'User-Agent': 'KAORI-CI-Admission',
         },
     )
-    # URL is validated above to HTTPS api.github.com with no embedded credentials.
+    # Initial URL is validated to HTTPS api.github.com. Binary artifact redirects
+    # may move to GitHub-managed signed storage, where the GitHub token must not follow.
+    if binary:
+        opener = urllib.request.build_opener(_GitHubArtifactRedirectHandler())
+        with opener.open(request, timeout=60) as response:  # nosec B310
+            return response.read()
     with urllib.request.urlopen(request, timeout=60) as response:  # nosec B310
-        return response.read() if binary else json.load(response)
+        return json.load(response)
 
 
 def _commit_metadata(repository: str, token: str, sha: str) -> tuple[str, tuple[str, ...]]:
