@@ -8,7 +8,10 @@ ROOT = Path(__file__).resolve().parents[3]
 QUALITY_WORKFLOW = ROOT / '.github/workflows/quality.yml'
 NOTIFY_WORKFLOW = ROOT / '.github/workflows/telegram-github-actions.yml'
 NOTIFIER = ROOT / 'scripts/ci_delivery_notify.py'
-SPEC = ROOT / 'docs/superpowers/specs/2026-08-31-github-actions-telegram-delivery-notifications-design.md'
+SPEC = (
+    ROOT
+    / 'docs/superpowers/specs/2026-08-31-github-actions-telegram-delivery-notifications-design.md'
+)
 
 
 def read(path: Path) -> str:
@@ -16,7 +19,9 @@ def read(path: Path) -> str:
 
 
 def load_notifier() -> ModuleType:
-    assert NOTIFIER.exists(), 'GitHub Actions Telegram notification helper is not implemented yet.'
+    assert NOTIFIER.exists(), (
+        'GitHub Actions Telegram notification helper is not implemented yet.'
+    )
     spec = importlib.util.spec_from_file_location('kaori_ci_delivery_notify', NOTIFIER)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -35,9 +40,18 @@ def test_notification_workflow_is_separate_environment_scoped_and_trusted() -> N
     assert 'runs-on: ubuntu-latest' in source
     assert 'TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}' in source
     assert 'TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}' in source
-    assert 'TELEGRAM_GITHUB_ACTIONS_TOPIC_ID: ${{ vars.TELEGRAM_GITHUB_ACTIONS_TOPIC_ID }}' in source
-    assert 'TELEGRAM_NOTIFICATIONS_ENABLED: ${{ vars.TELEGRAM_NOTIFICATIONS_ENABLED }}' in source
-    assert 'github.event.workflow_run.head_repository.full_name == github.repository' in source
+    assert (
+        'TELEGRAM_GITHUB_ACTIONS_TOPIC_ID: '
+        '${{ vars.TELEGRAM_GITHUB_ACTIONS_TOPIC_ID }}' in source
+    )
+    assert (
+        'TELEGRAM_NOTIFICATIONS_ENABLED: '
+        '${{ vars.TELEGRAM_NOTIFICATIONS_ENABLED }}' in source
+    )
+    assert (
+        'github.event.workflow_run.head_repository.full_name == github.repository'
+        in source
+    )
     assert 'continue-on-error: true' in source
     assert 'KAORI_UAT_URL' not in source
     assert 'KAORI GitHub Actions Telegram Notification' not in quality
@@ -45,22 +59,114 @@ def test_notification_workflow_is_separate_environment_scoped_and_trusted() -> N
 
 def test_event_routing_is_actionable_and_profile_aware() -> None:
     notifier = load_notifier()
-    assert notifier.select_event(profile='pr-integration', execution='full', admission_result='success', security_result='success') == 'FULL_ADMISSION_PASSED'
-    assert notifier.select_event(profile='staging-integration', execution='fast', admission_result='success', security_result='skipped') == 'UAT_REQUIRED'
-    assert notifier.select_event(profile='promotion', execution='fast', admission_result='success', security_result='skipped') == 'PROMOTION_VALIDATED'
-    assert notifier.select_event(profile='post-promotion', execution='fast', admission_result='success', security_result='skipped') == 'PROMOTION_SUCCEEDED'
-    assert notifier.select_event(profile='pr-integration', execution='full', admission_result='failure', security_result='failure') == 'SECURITY_GATE_FAILED'
-    assert notifier.select_event(profile='staging-integration', execution='fast', admission_result='failure', security_result='skipped') == 'DELIVERY_FAILED'
-    assert notifier.select_event(profile='pr-integration', execution='fast', admission_result='success', security_result='skipped') is None
-    assert notifier.select_event(profile='pr-integration', execution='full', admission_result='skipped', security_result='skipped') is None
+    assert (
+        notifier.select_event(
+            profile='pr-integration',
+            execution='full',
+            admission_result='success',
+            security_result='success',
+        )
+        == 'FULL_ADMISSION_PASSED'
+    )
+    assert (
+        notifier.select_event(
+            profile='staging-integration',
+            execution='fast',
+            admission_result='success',
+            security_result='skipped',
+        )
+        == 'UAT_REQUIRED'
+    )
+    assert (
+        notifier.select_event(
+            profile='promotion',
+            execution='fast',
+            admission_result='success',
+            security_result='skipped',
+        )
+        == 'PROMOTION_VALIDATED'
+    )
+    assert (
+        notifier.select_event(
+            profile='post-promotion',
+            execution='fast',
+            admission_result='success',
+            security_result='skipped',
+        )
+        == 'PROMOTION_SUCCEEDED'
+    )
+    assert (
+        notifier.select_event(
+            profile='pr-integration',
+            execution='full',
+            admission_result='failure',
+            security_result='failure',
+        )
+        == 'SECURITY_GATE_FAILED'
+    )
+    assert (
+        notifier.select_event(
+            profile='staging-integration',
+            execution='fast',
+            admission_result='failure',
+            security_result='skipped',
+        )
+        == 'DELIVERY_FAILED'
+    )
+    assert (
+        notifier.select_event(
+            profile='pr-integration',
+            execution='fast',
+            admission_result='success',
+            security_result='skipped',
+        )
+        is None
+    )
+    assert (
+        notifier.select_event(
+            profile='pr-integration',
+            execution='full',
+            admission_result='skipped',
+            security_result='skipped',
+        )
+        is None
+    )
 
 
 def test_profile_resolution_supports_governed_delivery_boundaries() -> None:
     notifier = load_notifier()
-    assert notifier.resolve_profile(event_name='pull_request', head_branch='feature', base_branch='kaori/staging') == 'pr-integration'
-    assert notifier.resolve_profile(event_name='push', head_branch='kaori/staging', base_branch='') == 'staging-integration'
-    assert notifier.resolve_profile(event_name='pull_request', head_branch='kaori/staging', base_branch='main') == 'promotion'
-    assert notifier.resolve_profile(event_name='push', head_branch='main', base_branch='') == 'post-promotion'
+    assert (
+        notifier.resolve_profile(
+            event_name='pull_request',
+            head_branch='feature',
+            base_branch='kaori/staging',
+        )
+        == 'pr-integration'
+    )
+    assert (
+        notifier.resolve_profile(
+            event_name='push',
+            head_branch='kaori/staging',
+            base_branch='',
+        )
+        == 'staging-integration'
+    )
+    assert (
+        notifier.resolve_profile(
+            event_name='pull_request',
+            head_branch='kaori/staging',
+            base_branch='main',
+        )
+        == 'promotion'
+    )
+    assert (
+        notifier.resolve_profile(
+            event_name='push',
+            head_branch='main',
+            base_branch='',
+        )
+        == 'post-promotion'
+    )
 
 
 def test_event_categories_are_stable_and_operator_facing() -> None:
@@ -104,15 +210,30 @@ def test_uat_message_contains_category_exact_operator_action_and_github_link() -
 
 def test_configuration_is_disabled_unless_explicitly_enabled_and_complete() -> None:
     notifier = load_notifier()
-    assert notifier.configuration_status(enabled='', bot_token='', chat_id='', topic_id='') == (
+    assert notifier.configuration_status(
+        enabled='',
+        bot_token='',
+        chat_id='',
+        topic_id='',
+    ) == (
         False,
         'Telegram GitHub Actions notifications are not enabled.',
     )
-    assert notifier.configuration_status(enabled='true', bot_token='secret', chat_id='-100123', topic_id='') == (
+    assert notifier.configuration_status(
+        enabled='true',
+        bot_token='secret',
+        chat_id='-100123',
+        topic_id='',
+    ) == (
         False,
         'Telegram GitHub Actions notification configuration is incomplete.',
     )
-    assert notifier.configuration_status(enabled='true', bot_token='secret', chat_id='-100123', topic_id='42') == (
+    assert notifier.configuration_status(
+        enabled='true',
+        bot_token='secret',
+        chat_id='-100123',
+        topic_id='42',
+    ) == (
         True,
         'Telegram GitHub Actions notifications are configured.',
     )
