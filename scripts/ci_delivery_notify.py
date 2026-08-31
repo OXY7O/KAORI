@@ -12,7 +12,9 @@ from urllib.request import Request, urlopen
 _TELEGRAM_API: Final = 'https://api.telegram.org'
 _GITHUB_API: Final = 'https://api.github.com'
 _TRUE_VALUES: Final = frozenset({'1', 'true', 'yes', 'on'})
-_FAILURE_RESULTS: Final = frozenset({'failure', 'cancelled', 'timed_out', 'action_required'})
+_FAILURE_RESULTS: Final = frozenset(
+    {'failure', 'cancelled', 'timed_out', 'action_required'}
+)
 
 _EVENT_TITLES: Final = {
     'FULL_ADMISSION_PASSED': '✅ KAORI · Full Admission Passed',
@@ -40,12 +42,20 @@ _PROFILE_CONTEXT: Final = {
 }
 
 _ACTIONS: Final = {
-    'FULL_ADMISSION_PASSED': 'Review the final candidate and merge to kaori/staging when approved.',
-    'SECURITY_GATE_FAILED': 'Review security evidence, repair the finding, then rerun Admission.',
-    'DELIVERY_FAILED': 'Review the first failing delivery gate, repair it, then rerun Admission.',
+    'FULL_ADMISSION_PASSED': (
+        'Review the final candidate and merge to kaori/staging when approved.'
+    ),
+    'SECURITY_GATE_FAILED': (
+        'Review security evidence, repair the finding, then rerun Admission.'
+    ),
+    'DELIVERY_FAILED': (
+        'Review the first failing delivery gate, repair it, then rerun Admission.'
+    ),
     'UAT_REQUIRED': 'Complete UAT before promotion to main.',
     'PROMOTION_VALIDATED': 'Merge the accepted staging lineage to main.',
-    'PROMOTION_SUCCEEDED': 'No delivery action required; promoted lineage is verified on main.',
+    'PROMOTION_SUCCEEDED': (
+        'No delivery action required; promoted lineage is verified on main.'
+    ),
 }
 
 _FULL_GATE_NAMES: Final = (
@@ -91,7 +101,11 @@ def select_event(
 def resolve_profile(*, event_name: str, head_branch: str, base_branch: str) -> str:
     if event_name == 'pull_request' and base_branch == 'kaori/staging':
         return 'pr-integration'
-    if event_name == 'pull_request' and base_branch == 'main' and head_branch == 'kaori/staging':
+    if (
+        event_name == 'pull_request'
+        and base_branch == 'main'
+        and head_branch == 'kaori/staging'
+    ):
         return 'promotion'
     if event_name == 'push' and head_branch == 'kaori/staging':
         return 'staging-integration'
@@ -129,8 +143,14 @@ def render_message(
     pr_number: str,
     failure_detail: str = '',
 ) -> str:
-    title = _EVENT_TITLES.get(event, f'ℹ️ KAORI · {event.replace("_", " ").title()}')
-    boundary, environment = _PROFILE_CONTEXT.get(profile, (profile or 'Delivery', 'Delivery'))
+    title = _EVENT_TITLES.get(
+        event,
+        f'ℹ️ KAORI · {event.replace("_", " ").title()}',
+    )
+    boundary, environment = _PROFILE_CONTEXT.get(
+        profile,
+        (profile or 'Delivery', 'Delivery'),
+    )
     result = 'FAIL' if event in {'SECURITY_GATE_FAILED', 'DELIVERY_FAILED'} else 'PASS'
     short_sha = source_sha[:12] if source_sha else 'unknown'
 
@@ -195,11 +215,19 @@ def _job_conclusions(jobs: list[dict[str, Any]]) -> dict[str, str]:
     }
 
 
-def fetch_workflow_jobs(*, repository: str, run_id: str, token: str) -> list[dict[str, Any]]:
+def fetch_workflow_jobs(
+    *,
+    repository: str,
+    run_id: str,
+    token: str,
+) -> list[dict[str, Any]]:
     if not token.strip():
         raise RuntimeError('GitHub Actions read token is unavailable.')
-    safe_repository = '/'.join(quote(part, safe='') for part in repository.split('/', 1))
-    url = f'{_GITHUB_API}/repos/{safe_repository}/actions/runs/{quote(str(run_id), safe="")}/jobs?per_page=100'
+    safe_repository = '/'.join(
+        quote(part, safe='') for part in repository.split('/', 1)
+    )
+    safe_run_id = quote(str(run_id), safe='')
+    url = f'{_GITHUB_API}/repos/{safe_repository}/actions/runs/{safe_run_id}/jobs?per_page=100'
     request = Request(
         url,
         headers={
@@ -210,12 +238,19 @@ def fetch_workflow_jobs(*, repository: str, run_id: str, token: str) -> list[dic
         method='GET',
     )
     try:
-        with urlopen(request, timeout=10) as response:  # noqa: S310  # nosec B310 - fixed GitHub HTTPS authority
+        with urlopen(  # noqa: S310  # nosec B310 - fixed GitHub HTTPS authority
+            request,
+            timeout=10,
+        ) as response:
             payload = json.loads(response.read().decode('utf-8'))
     except HTTPError as exc:
-        raise RuntimeError(f'GitHub Actions job lookup failed with HTTP {exc.code}.') from exc
+        raise RuntimeError(
+            f'GitHub Actions job lookup failed with HTTP {exc.code}.'
+        ) from exc
     except (URLError, TimeoutError, OSError, ValueError) as exc:
-        raise RuntimeError('GitHub Actions job lookup is unavailable or invalid.') from exc
+        raise RuntimeError(
+            'GitHub Actions job lookup is unavailable or invalid.'
+        ) from exc
 
     jobs = payload.get('jobs') if isinstance(payload, dict) else None
     if not isinstance(jobs, list):
@@ -236,7 +271,10 @@ def send_message(
             'chat_id': chat_id,
             'message_thread_id': topic_id,
             'text': message,
-            'link_preview_options': json.dumps({'is_disabled': True}, separators=(',', ':')),
+            'link_preview_options': json.dumps(
+                {'is_disabled': True},
+                separators=(',', ':'),
+            ),
         }
     ).encode('utf-8')
     request = Request(
@@ -263,7 +301,9 @@ def send_message(
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description='Send categorized KAORI GitHub Actions notifications to a Telegram topic.'
+        description=(
+            'Send categorized KAORI GitHub Actions notifications to a Telegram topic.'
+        )
     )
     parser.add_argument('--workflow-run-id', default='')
     parser.add_argument('--workflow-event', default='')
@@ -322,8 +362,16 @@ def main(argv: list[str] | None = None) -> int:
             base_branch=args.base_branch,
         )
         execution = infer_execution(jobs)
-        admission_result = conclusions.get('KAORI CI Admission') or args.workflow_conclusion
-        security_result = conclusions.get('Secrets, SAST, Dependencies, and Workflow Security', 'skipped')
+        admission_result = conclusions.get('KAORI CI Admission', '')
+        if (
+            admission_result not in _FAILURE_RESULTS | {'success'}
+            and args.workflow_conclusion in _FAILURE_RESULTS
+        ):
+            admission_result = args.workflow_conclusion
+        security_result = conclusions.get(
+            'Secrets, SAST, Dependencies, and Workflow Security',
+            'skipped',
+        )
         failure_detail = first_failure(jobs)
 
     event = select_event(
@@ -333,7 +381,9 @@ def main(argv: list[str] | None = None) -> int:
         security_result=security_result,
     )
     if event is None:
-        print('SKIP — Completed KAORI CI run has no actionable GitHub Actions notification.')
+        print(
+            'SKIP — Completed KAORI CI run has no actionable GitHub Actions notification.'
+        )
         return 0
 
     message = render_message(
