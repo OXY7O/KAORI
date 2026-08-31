@@ -42,7 +42,10 @@ def test_notification_workflow_is_reusable_environment_scoped_and_trusted() -> N
     assert 'github.event.pull_request.head.repo.full_name == github.repository' in source
     assert 'ref: ${{ github.event.repository.default_branch }}' in source
     assert 'persist-credentials: false' in source
-    assert 'continue-on-error: true' in source
+    assert 'id: trusted_checkout' in source
+    assert source.count('continue-on-error: true') == 2
+    assert "steps.trusted_checkout.outcome != 'success'" in source
+    assert "steps.trusted_checkout.outcome == 'success'" in source
     assert 'TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}' in source
     assert 'TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}' in source
     assert 'TELEGRAM_GITHUB_ACTIONS_TOPIC_ID: ${{ vars.TELEGRAM_GITHUB_ACTIONS_TOPIC_ID }}' in source
@@ -73,73 +76,106 @@ def test_caller_metadata_flows_through_environment_before_shell_use() -> None:
 def test_event_routing_is_actionable_and_profile_aware() -> None:
     notifier = load_notifier()
 
-    assert notifier.select_event(
-        profile='pr-integration',
-        execution='full',
-        admission_result='success',
-        security_result='success',
-    ) == 'FULL_ADMISSION_PASSED'
-    assert notifier.select_event(
-        profile='staging-integration',
-        execution='fast',
-        admission_result='success',
-        security_result='skipped',
-    ) == 'UAT_REQUIRED'
-    assert notifier.select_event(
-        profile='promotion',
-        execution='fast',
-        admission_result='success',
-        security_result='skipped',
-    ) == 'PROMOTION_VALIDATED'
-    assert notifier.select_event(
-        profile='post-promotion',
-        execution='fast',
-        admission_result='success',
-        security_result='skipped',
-    ) == 'PROMOTION_SUCCEEDED'
-    assert notifier.select_event(
-        profile='pr-integration',
-        execution='full',
-        admission_result='failure',
-        security_result='failure',
-    ) == 'SECURITY_GATE_FAILED'
-    assert notifier.select_event(
-        profile='staging-integration',
-        execution='fast',
-        admission_result='failure',
-        security_result='skipped',
-    ) == 'DELIVERY_FAILED'
-    assert notifier.select_event(
-        profile='pr-integration',
-        execution='fast',
-        admission_result='success',
-        security_result='skipped',
-    ) is None
+    assert (
+        notifier.select_event(
+            profile='pr-integration',
+            execution='full',
+            admission_result='success',
+            security_result='success',
+        )
+        == 'FULL_ADMISSION_PASSED'
+    )
+    assert (
+        notifier.select_event(
+            profile='staging-integration',
+            execution='fast',
+            admission_result='success',
+            security_result='skipped',
+        )
+        == 'UAT_REQUIRED'
+    )
+    assert (
+        notifier.select_event(
+            profile='promotion',
+            execution='fast',
+            admission_result='success',
+            security_result='skipped',
+        )
+        == 'PROMOTION_VALIDATED'
+    )
+    assert (
+        notifier.select_event(
+            profile='post-promotion',
+            execution='fast',
+            admission_result='success',
+            security_result='skipped',
+        )
+        == 'PROMOTION_SUCCEEDED'
+    )
+    assert (
+        notifier.select_event(
+            profile='pr-integration',
+            execution='full',
+            admission_result='failure',
+            security_result='failure',
+        )
+        == 'SECURITY_GATE_FAILED'
+    )
+    assert (
+        notifier.select_event(
+            profile='staging-integration',
+            execution='fast',
+            admission_result='failure',
+            security_result='skipped',
+        )
+        == 'DELIVERY_FAILED'
+    )
+    assert (
+        notifier.select_event(
+            profile='pr-integration',
+            execution='fast',
+            admission_result='success',
+            security_result='skipped',
+        )
+        is None
+    )
 
 
 def test_profile_resolution_supports_governed_delivery_boundaries() -> None:
     notifier = load_notifier()
 
-    assert notifier.resolve_profile(
-        event_name='pull_request',
-        head_branch='feature',
-        base_branch='kaori/staging',
-    ) == 'pr-integration'
-    assert notifier.resolve_profile(
-        event_name='push',
-        head_branch='kaori/staging',
-        base_branch='',
-    ) == 'staging-integration'
-    assert notifier.resolve_profile(
-        event_name='pull_request',
-        head_branch='kaori/staging',
-        base_branch='main',
-    ) == 'promotion'
-    assert notifier.resolve_profile(
-        event_name='push',
-        head_branch='main',
-        base_branch='',
-    ) == 'post-promotion'
+    assert (
+        notifier.resolve_profile(
+            event_name='pull_request',
+            head_branch='feature',
+            base_branch='kaori/staging',
+        )
+        == 'pr-integration'
+    )
+    assert (
+        notifier.resolve_profile(
+            event_name='push',
+            head_branch='kaori/staging',
+            base_branch='',
+        )
+        == 'staging-integration'
+    )
+    assert (
+        notifier.resolve_profile(
+            event_name='pull_request',
+            head_branch='kaori/staging',
+            base_branch='main',
+        )
+        == 'promotion'
+    )
+    assert (
+        notifier.resolve_profile(
+            event_name='push',
+            head_branch='main',
+            base_branch='',
+        )
+        == 'post-promotion'
+    )
 
 
 def test_event_categories_are_stable_and_future_categories_are_reserved() -> None:
@@ -190,24 +226,33 @@ def test_uat_message_contains_exact_operator_action_and_github_link() -> None:
 def test_configuration_is_disabled_unless_explicitly_enabled_and_complete() -> None:
     notifier = load_notifier()
 
-    assert notifier.configuration_status(
-        enabled='',
-        bot_token='',
-        chat_id='',
-        topic_id='',
-    ) == (False, 'Telegram GitHub Actions notifications are not enabled.')
-    assert notifier.configuration_status(
-        enabled='true',
-        bot_token='secret',
-        chat_id='-100123',
-        topic_id='',
-    ) == (False, 'Telegram GitHub Actions notification configuration is incomplete.')
-    assert notifier.configuration_status(
-        enabled='true',
-        bot_token='secret',
-        chat_id='-100123',
-        topic_id='42',
-    ) == (True, 'Telegram GitHub Actions notifications are configured.')
+    assert (
+        notifier.configuration_status(
+            enabled='',
+            bot_token='',
+            chat_id='',
+            topic_id='',
+        )
+        == (False, 'Telegram GitHub Actions notifications are not enabled.')
+    )
+    assert (
+        notifier.configuration_status(
+            enabled='true',
+            bot_token='secret',
+            chat_id='-100123',
+            topic_id='',
+        )
+        == (False, 'Telegram GitHub Actions notification configuration is incomplete.')
+    )
+    assert (
+        notifier.configuration_status(
+            enabled='true',
+            bot_token='secret',
+            chat_id='-100123',
+            topic_id='42',
+        )
+        == (True, 'Telegram GitHub Actions notifications are configured.')
+    )
 
 
 def test_transport_contract_is_https_topic_aware_and_secret_safe() -> None:
