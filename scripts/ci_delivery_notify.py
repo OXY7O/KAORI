@@ -225,10 +225,7 @@ def fetch_quality_workflow_runs(
     safe_repository = _safe_repository(repository)
     safe_branch = quote(head_branch, safe='')
     payload = _github_api_get(
-        path=(
-            f'/repos/{safe_repository}/actions/workflows/quality.yml/runs'
-            f'?branch={safe_branch}&event=push&per_page=50'
-        ),
+        path=(f'/repos/{safe_repository}/actions/workflows/quality.yml/runs?branch={safe_branch}&event=push&per_page=50'),
         token=token,
     )
     runs = payload.get('workflow_runs') if isinstance(payload, dict) else None
