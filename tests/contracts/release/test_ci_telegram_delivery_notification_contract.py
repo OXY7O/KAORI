@@ -226,33 +226,24 @@ def test_uat_message_contains_exact_operator_action_and_github_link() -> None:
 def test_configuration_is_disabled_unless_explicitly_enabled_and_complete() -> None:
     notifier = load_notifier()
 
-    assert (
-        notifier.configuration_status(
-            enabled='',
-            bot_token='',
-            chat_id='',
-            topic_id='',
-        )
-        == (False, 'Telegram GitHub Actions notifications are not enabled.')
-    )
-    assert (
-        notifier.configuration_status(
-            enabled='true',
-            bot_token='secret',
-            chat_id='-100123',
-            topic_id='',
-        )
-        == (False, 'Telegram GitHub Actions notification configuration is incomplete.')
-    )
-    assert (
-        notifier.configuration_status(
-            enabled='true',
-            bot_token='secret',
-            chat_id='-100123',
-            topic_id='42',
-        )
-        == (True, 'Telegram GitHub Actions notifications are configured.')
-    )
+    assert notifier.configuration_status(
+        enabled='',
+        bot_token='',
+        chat_id='',
+        topic_id='',
+    ) == (False, 'Telegram GitHub Actions notifications are not enabled.')
+    assert notifier.configuration_status(
+        enabled='true',
+        bot_token='secret',
+        chat_id='-100123',
+        topic_id='',
+    ) == (False, 'Telegram GitHub Actions notification configuration is incomplete.')
+    assert notifier.configuration_status(
+        enabled='true',
+        bot_token='secret',
+        chat_id='-100123',
+        topic_id='42',
+    ) == (True, 'Telegram GitHub Actions notifications are configured.')
 
 
 def test_transport_contract_is_https_topic_aware_and_secret_safe() -> None:
