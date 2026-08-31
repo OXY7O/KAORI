@@ -18,12 +18,12 @@ GitHub Actions remains the CI/CD source of truth. Telegram is a best-effort oper
 
 ## Goals
 
-- Let operators follow KAORI CI/CD state without continuously watching GitHub.
-- Send only actionable lifecycle boundaries and failures.
-- Signal exactly when staging is ready for human UAT.
-- Categorize notifications without creating unnecessary Telegram topics.
-- Keep Telegram credentials and destination IDs out of repository content and logs.
+- Signal exactly when trusted staging is ready for human UAT.
+- Signal verified main promotion completion and trusted-branch delivery failures.
+- Keep PR validation inside GitHub Actions only.
+- Keep the Telegram bot token out of PR-controlled `quality.yml`.
 - Keep Telegram transport independent from authoritative KAORI CI conclusions.
+- Work correctly with the current GitHub Free organization and private KAORI repository.
 
 ## Non-Goals
 
@@ -31,6 +31,7 @@ GitHub Actions remains the CI/CD source of truth. Telegram is a best-effort oper
 - Changes to `🚨 KAORI Alerts` routing.
 - Creating a second bot.
 - Mirroring every GitHub Actions job or step.
+- Sending Telegram notifications for PR Full Admission or promotion-PR validation.
 - Release or production deployment workflow implementation in #64.
 
 ## Telegram Destination Contract
@@ -41,75 +42,76 @@ All #64 notifications go to topic `🔄 GitHub Actions`.
 - `TELEGRAM_GITHUB_ACTIONS_TOPIC_ID` is the Telegram `message_thread_id` for `🔄 GitHub Actions`.
 - The existing bot receives only the minimum permission required to post messages.
 
-## GitHub Environment Contract
+## Repository Configuration Contract
 
-Environment: `kaori-github-actions`
+The current organization plan is GitHub Free and KAORI is private. Live proof confirmed that Environment variables are available but the Environment secret `TELEGRAM_BOT_TOKEN` is not injected into the private-repository runner. Telegram therefore uses repository-scoped Actions configuration.
 
-Secret:
+Repository secret:
 
 - `TELEGRAM_BOT_TOKEN` — existing KAORI bot token.
 
-Variables:
+Repository variables:
 
 - `TELEGRAM_CHAT_ID` — numeric Supergroup ID.
 - `TELEGRAM_GITHUB_ACTIONS_TOPIC_ID` — numeric Topic `message_thread_id`.
 - `TELEGRAM_NOTIFICATIONS_ENABLED` — explicit enable switch; absent/false means safe `SKIP`.
 
-No real token, chat ID, or topic ID is committed.
+No real token, chat ID, or topic ID is committed. The former Environment `kaori-github-actions` is not part of the active notifier contract after migration.
 
 ## Security Architecture
 
 The original `workflow_run` subscriber design was rejected by KAORI Security Admission. Zizmor classifies `workflow_run` as a dangerous privileged trigger. KAORI does **not** suppress that finding.
 
-The notifier is therefore implemented as a reusable workflow:
+The later reusable `workflow_call` design protected the notifier implementation but depended on an Environment secret. That design cannot deliver the bot token on the current GitHub Free/private-repository combination.
 
-`.github/workflows/telegram-github-actions.yml`
-
-with only:
+The active design is therefore **trusted-branch push delivery**:
 
 ```text
-on: workflow_call
+PR / Ready
+├── Full Admission PASS/FAIL
+└── GitHub Actions UI only
+
+kaori/staging push
+├── wait for exact-SHA KAORI CI
+├── PASS → UAT_REQUIRED
+└── FAIL → DELIVERY_FAILED
+
+main push
+├── wait for exact-SHA KAORI CI
+├── PASS → PROMOTION_SUCCEEDED
+└── FAIL → DELIVERY_FAILED
 ```
 
-The reusable workflow:
+`.github/workflows/telegram-github-actions.yml`:
 
-- has no autonomous privileged trigger;
-- uses `contents: read` and `actions: read` only;
-- rejects foreign-repository and Draft PR caller contexts;
-- references GitHub Environment `kaori-github-actions` only inside the trusted notification job;
-- checks out notifier code from the governed default branch, never from the PR source SHA;
-- passes GitHub event metadata through environment variables before shell use;
-- runs on `ubuntu-latest`, not the KAORI self-hosted runner;
-- marks Telegram transport `continue-on-error`, so Telegram cannot change Admission authority.
+- triggers only on `push` to `kaori/staging` and `main`;
+- has no `pull_request`, `pull_request_target`, `workflow_run`, `workflow_call`, or `workflow_dispatch` trigger;
+- uses only `contents: read` and `actions: read`;
+- runs on `ubuntu-latest`;
+- checks out the exact trusted push SHA with credentials disabled;
+- reads `TELEGRAM_BOT_TOKEN` only from repository secrets;
+- reads destination/enable values from repository variables;
+- discovers the authoritative `quality.yml` run for the exact same SHA and branch;
+- waits for that KAORI CI run to become terminal before classification;
+- never sends based on the notifier workflow's own conclusion.
 
-## Two-Phase Trust Bootstrap
+`.github/workflows/quality.yml` contains no Telegram caller, token, destination, or notifier reference. PR-controlled CI therefore has no direct path to the Telegram secret.
 
-### Phase 1 — Bootstrap trusted notifier
+### Residual Risk
 
-The reusable workflow, notifier helper, tests, and documentation are admitted through the normal Draft → Ready → Full Admission → staging → UAT → main lifecycle.
-
-During this phase `quality.yml` does **not** call the notifier. Therefore Environment credentials cannot be consumed by branch-controlled notifier code and no Telegram message is emitted by the bootstrap PR itself.
-
-After promotion, the reusable workflow exists on trusted `main` and becomes an eligible trust anchor.
-
-### Phase 2 — Activate from KAORI CI
-
-A follow-up PR under Issue #64 updates `quality.yml` to call the already-trusted reusable workflow from `main`, preferably using the exact bootstrap promotion SHA.
-
-The caller waits for the governed CI jobs required to classify the lifecycle boundary and invokes the reusable notifier with `if: always()` semantics where failure notification is required. The called workflow receives the caller's GitHub context, inspects the current KAORI CI run using `actions: read`, derives the event category, and sends only an actionable notification.
-
-The caller PR cannot replace the trusted reusable workflow implementation because the call is pinned outside the PR source tree.
+Repository secrets are repository-scoped and are not security-equivalent to Environment secrets. A malicious workflow change merged to a trusted branch could attempt to consume a repository secret. KAORI mitigates this under the current plan through the governed Draft → Ready → Full Admission → staging/UAT → main process and explicit workflow-security contracts. If OXY7O upgrades to a plan supporting Environment secrets for private repositories, the token should move back to an Environment secret without changing the Telegram message contract.
 
 ## Notification Categories
 
-All categories share the same Telegram topic.
+All emitted events share the same Telegram topic.
 
 | Category | Events | Meaning |
 | --- | --- | --- |
-| CI / Quality | `FULL_ADMISSION_PASSED`, `DELIVERY_FAILED` | final Admission success or actionable non-security CI failure |
-| Security | `SECURITY_GATE_FAILED` | security gate failure requiring review |
+| CI / Quality | `DELIVERY_FAILED` | trusted staging/main delivery path failed |
 | UAT | `UAT_REQUIRED` | exact staging lineage is machine-verified and ready for human UAT |
-| Promotion | `PROMOTION_VALIDATED`, `PROMOTION_SUCCEEDED` | staging→main validation or verified main lineage |
+| Promotion | `PROMOTION_SUCCEEDED` | verified main lineage completed successfully |
+
+PR Full Admission and staging→main promotion validation remain visible in GitHub Actions only.
 
 Reserved future categories:
 
@@ -118,31 +120,34 @@ Reserved future categories:
 | Release | `RELEASE_PUBLISHED`, `RELEASE_FAILED` | governed release/tag/image lifecycle |
 | Deployment | `DEPLOYMENT_STARTED`, `DEPLOYMENT_SUCCEEDED`, `DEPLOYMENT_FAILED`, `ROLLBACK_REQUIRED` | production deployment lifecycle |
 
-These future categories remain in `🔄 GitHub Actions` unless later notification volume justifies another Telegram Topic.
-
 ## Event Routing
 
 | Event | Trigger condition |
 | --- | --- |
-| `FULL_ADMISSION_PASSED` | final PR Integration succeeds with fresh Full execution |
-| `SECURITY_GATE_FAILED` | selected Admission fails and Security gate failed |
-| `DELIVERY_FAILED` | selected Admission fails for another reason |
-| `UAT_REQUIRED` | Staging Integration succeeds |
-| `PROMOTION_VALIDATED` | staging→main Promotion succeeds |
-| `PROMOTION_SUCCEEDED` | main Post-promotion succeeds |
+| `UAT_REQUIRED` | exact-SHA `kaori/staging` KAORI CI succeeds |
+| `PROMOTION_SUCCEEDED` | exact-SHA `main` KAORI CI succeeds |
+| `DELIVERY_FAILED` | exact-SHA staging/main KAORI CI reaches an actionable failed conclusion |
 
-A successful reused PR Integration retry remains silent to avoid duplicate success noise. Draft PRs remain silent.
+Draft PRs, Ready PRs, Full Admission PR successes/failures, and promotion PR validation are silent in Telegram.
 
 ## Profile Resolution
 
-The notifier derives the boundary from caller GitHub metadata:
+Only trusted push profiles emit Telegram events:
 
-- pull request → `kaori/staging`: `pr-integration`;
 - push → `kaori/staging`: `staging-integration`;
-- pull request `kaori/staging` → `main`: `promotion`;
 - push → `main`: `post-promotion`.
 
 Execution mode is inferred from completed jobs. A successful `KAORI Fast Integration Smoke` means `fast`; otherwise the selected path is Full for evidence wording.
+
+## Exact-SHA Run Discovery
+
+The notifier starts independently from KAORI CI on the same trusted branch push. It queries the GitHub Actions API for `quality.yml` runs and accepts only a run matching all of:
+
+- event `push`;
+- exact `head_sha` equal to the notifier source SHA;
+- exact `head_branch` equal to `kaori/staging` or `main`.
+
+The notifier waits with a bounded retry window until the matching run reaches `completed`. A missing or non-terminal run never produces a Telegram success notification.
 
 ## Message Contract
 
@@ -153,11 +158,11 @@ Messages are plain text and contain:
 - boundary/environment;
 - PASS/FAIL result;
 - short source SHA;
-- repository and PR where applicable;
+- repository;
 - evidence summary;
 - first failed job when applicable;
 - exactly one next action;
-- direct GitHub Actions run link.
+- direct authoritative GitHub Actions run link.
 
 Example:
 
@@ -176,16 +181,20 @@ Action: Complete UAT before promotion to main.
 View Run: https://github.com/OXY7O/KAORI/actions/runs/123
 ```
 
-There is no KAORI application URL in this contract.
-
 ## Failure Semantics
 
 - `TELEGRAM_NOTIFICATIONS_ENABLED` missing/false: `SKIP`.
-- Enabled but token/chat/topic incomplete: `SKIP`.
-- Draft/non-actionable lifecycle boundary: `SKIP`.
-- GitHub job inspection failure: notifier reports failure but original KAORI CI remains authoritative.
+- Enabled but repository token/chat/topic incomplete: `SKIP`.
+- PR or other non-trusted lifecycle boundary: no notifier workflow run.
+- Exact-SHA KAORI CI cannot be found/completed inside the bounded wait: notifier fails without changing KAORI CI authority.
 - Telegram API/network rejection: notifier reports failure while original KAORI CI result remains unchanged.
 
-## Rollout State
+## Rollout
 
-The maintainer has configured GitHub Environment `kaori-github-actions`. Real values remain outside Git. Delivery must remain disabled until the trusted reusable workflow has been promoted and the phase-2 caller has passed its governed lifecycle.
+1. Admit the redesign as one Issue #64 bundle.
+2. Configure repository secret/variables outside Git.
+3. Merge the admitted bundle to `kaori/staging`.
+4. Verify exact Full Admission evidence reuse + Fast Smoke.
+5. Verify a real `UAT_REQUIRED` message in `KAORI Operations → 🔄 GitHub Actions`.
+6. Human UAT, then promote the accepted staging lineage to `main`.
+7. Verify `PROMOTION_SUCCEEDED`, then close #64 after metadata synchronization.
