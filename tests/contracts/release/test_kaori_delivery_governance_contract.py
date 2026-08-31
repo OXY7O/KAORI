@@ -36,6 +36,7 @@ def test_delivery_workflow_locks_current_lifecycle_branch_and_uat_authority() ->
         'kaori/working',
         'Full Admission',
         'exact evidence reuse',
+        'authority fingerprint',
         'FALLBACK',
         'Local UAT',
         'merge commit',
@@ -149,13 +150,16 @@ def test_label_catalog_preserves_documentation_and_avoids_native_metadata_duplic
         assert forbidden not in source
 
 
-def test_progressive_ci_routes_governed_branches_and_staging_prs_without_losing_full_authority() -> None:
+def test_progressive_ci_routes_only_governed_integration_pushes_and_staging_prs() -> None:
     source = read(QUALITY_WORKFLOW)
-    assert '- "kaori/**"' in source
     assert '- kaori/staging' in source
+    assert '- main' in source
+    assert '- "release/**"' in source
+    assert '- "kaori/**"' not in source
     assert '- kaori/working' not in source
     assert 'validation-profile:' in source
     assert 'integration-smoke:' in source
     assert "needs.validation-profile.outputs.execution == 'full'" in source
     assert "needs.validation-profile.outputs.execution == 'fast'" in source
+    assert 'KAORI_PROFILE_VERSION: "3"' in source
     assert 'KAORI CI Admission' in source
