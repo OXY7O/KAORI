@@ -57,6 +57,16 @@ def test_notification_workflow_is_separate_environment_scoped_and_trusted() -> N
     assert 'KAORI GitHub Actions Telegram Notification' not in quality
 
 
+def test_workflow_event_metadata_is_not_interpolated_directly_into_shell() -> None:
+    source = read(NOTIFY_WORKFLOW)
+    assert 'WORKFLOW_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}' in source
+    assert 'WORKFLOW_RUN_URL: ${{ github.event.workflow_run.html_url }}' in source
+    assert '--head-branch "$WORKFLOW_HEAD_BRANCH"' in source
+    assert '--run-url "$WORKFLOW_RUN_URL"' in source
+    assert '--head-branch "${{ github.event.workflow_run.head_branch }}"' not in source
+    assert '--run-url "${{ github.event.workflow_run.html_url }}"' not in source
+
+
 def test_event_routing_is_actionable_and_profile_aware() -> None:
     notifier = load_notifier()
     assert (
