@@ -38,6 +38,8 @@ def test_notification_workflow_is_separate_environment_scoped_and_trusted() -> N
     assert 'types: [completed]' in source
     assert 'name: kaori-github-actions' in source
     assert 'runs-on: ubuntu-latest' in source
+    assert 'actions: read' in source
+    assert 'pull-requests: read' in source
     assert 'TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}' in source
     assert 'TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}' in source
     assert (
@@ -53,6 +55,7 @@ def test_notification_workflow_is_separate_environment_scoped_and_trusted() -> N
         in source
     )
     assert 'continue-on-error: true' in source
+    assert 'workflow_run.pull_requests[0]' not in source
     assert 'KAORI_UAT_URL' not in source
     assert 'KAORI GitHub Actions Telegram Notification' not in quality
 
@@ -177,6 +180,50 @@ def test_profile_resolution_supports_governed_delivery_boundaries() -> None:
         )
         == 'post-promotion'
     )
+
+
+def test_pull_request_context_prefers_exact_open_candidate_and_fails_ambiguous() -> None:
+    notifier = load_notifier()
+    source_sha = 'abc123'
+    pulls = [
+        {
+            'number': 62,
+            'state': 'closed',
+            'head': {'ref': 'feature', 'sha': source_sha},
+            'base': {'ref': 'kaori/staging'},
+        },
+        {
+            'number': 64,
+            'state': 'open',
+            'head': {'ref': 'feature', 'sha': source_sha},
+            'base': {'ref': 'kaori/staging'},
+        },
+    ]
+    assert notifier.select_pull_request_context(
+        pull_requests=pulls,
+        head_branch='feature',
+        source_sha=source_sha,
+    ) == ('kaori/staging', '64')
+
+    ambiguous = [
+        {
+            'number': 64,
+            'state': 'open',
+            'head': {'ref': 'feature', 'sha': source_sha},
+            'base': {'ref': 'kaori/staging'},
+        },
+        {
+            'number': 65,
+            'state': 'open',
+            'head': {'ref': 'feature', 'sha': source_sha},
+            'base': {'ref': 'main'},
+        },
+    ]
+    assert notifier.select_pull_request_context(
+        pull_requests=ambiguous,
+        head_branch='feature',
+        source_sha=source_sha,
+    ) == ('', '')
 
 
 def test_event_categories_are_stable_and_operator_facing() -> None:
