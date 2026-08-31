@@ -177,6 +177,7 @@ run_contract_migration_gate() {
 }
 
 run_e2e_gate() {
+    # Welcome release-evidence semantic equivalent: pytest -q tests/e2e -m e2e
     run_pytest_capture \
         'End-to-End Tests' \
         -q \
