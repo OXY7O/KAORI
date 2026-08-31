@@ -1,0 +1,110 @@
+# GitHub Actions Telegram Notifications Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans or subagent-driven-development to implement this plan task-by-task.
+
+**Goal:** Send secure, categorized GitHub Actions lifecycle notifications to the `🔄 GitHub Actions` Telegram topic using the existing KAORI bot.
+
+**Architecture:** A Python standard-library notifier classifies KAORI CI results. Notification delivery lives in a reusable `workflow_call` workflow. The reusable workflow is first promoted to trusted `main`; only then does a follow-up `quality.yml` change call that trusted workflow. This avoids `workflow_run` and keeps Telegram non-authoritative to Admission.
+
+**Tech Stack:** GitHub Actions YAML, Python 3 standard library, pytest release contracts.
+
+**Spec:** `docs/superpowers/specs/2026-08-31-github-actions-telegram-delivery-notifications-design.md`
+
+## Global Constraints
+
+- GitHub Actions only; no KAORI application integration.
+- Telegram parent: `KAORI Operations`; target Topic: `🔄 GitHub Actions`.
+- Reuse existing KAORI bot.
+- GitHub Environment: `kaori-github-actions`.
+- Secret: `TELEGRAM_BOT_TOKEN`.
+- Variables: `TELEGRAM_CHAT_ID`, `TELEGRAM_GITHUB_ACTIONS_TOPIC_ID`, `TELEGRAM_NOTIFICATIONS_ENABLED`.
+- No real credential/destination value in Git.
+- Categories: `CI / Quality`, `Security`, `UAT`, `Promotion`.
+- Reserved future categories: `Release`, `Deployment`.
+- Telegram failure cannot alter authoritative KAORI CI conclusions.
+- Notification workflow uses `ubuntu-latest`.
+- Telegram transport is HTTPS-only and topic-aware.
+- `workflow_run` and `pull_request_target` are prohibited for this notifier.
+
+---
+
+### Task 1: Lock notification semantics
+
+- [x] Define CI / Quality, Security, UAT, and Promotion event mapping.
+- [x] Define concise operator-facing messages with one next action.
+- [x] Define topic-aware configuration and safe disabled state.
+- [x] Reserve Release and Deployment categories without emitting them.
+
+### Task 2: Implement classifier and Telegram transport
+
+**Files:**
+- `scripts/ci_delivery_notify.py`
+- `tests/contracts/release/test_ci_telegram_delivery_notification_contract.py`
+
+- [x] Implement event/profile resolution.
+- [x] Inspect KAORI CI jobs through `actions: read`.
+- [x] Infer fast/full execution and first actionable failure.
+- [x] Send Telegram `sendMessage` with `message_thread_id`.
+- [x] Keep bot/chat/topic values out of logs.
+- [x] Keep disabled/incomplete configuration as safe `SKIP`.
+
+### Task 3: Bootstrap trusted reusable workflow
+
+**File:** `.github/workflows/telegram-github-actions.yml`
+
+- [x] Replace rejected `workflow_run` trigger with `workflow_call` only.
+- [x] Keep permissions at `contents: read` + `actions: read`.
+- [x] Reject foreign-repository and Draft PR caller contexts.
+- [x] Checkout notifier code from governed default branch, never caller PR source SHA.
+- [x] Route caller metadata through environment variables before shell use.
+- [x] Reference Environment `kaori-github-actions` inside the called workflow.
+- [x] Keep Telegram send step `continue-on-error: true`.
+
+### Task 4: Security finding repair
+
+- [x] Record Full Admission #445 failure: Zizmor `dangerous-triggers` on `workflow_run`.
+- [x] Reject suppression as the fix.
+- [x] Adopt Zizmor-recommended reusable-workflow architecture.
+- [x] Add regression contract: `workflow_run` and `pull_request_target` must not appear.
+
+### Task 5: Bootstrap Draft review and Full Admission
+
+- [x] Reopen Draft review companion #65 after the security redesign.
+- [x] Close superseded final candidate #66 unmerged.
+- [ ] Complete structured review of the reusable trust boundary.
+- [ ] Repair all Critical/Important findings while Draft.
+- [ ] Open a new non-draft final candidate after review is clean.
+- [ ] Run one fresh Full Admission for the final bootstrap tree/fingerprint.
+
+### Task 6: Bootstrap staging, UAT, and promotion
+
+- [ ] Merge bootstrap candidate to `kaori/staging` after Full Admission PASS.
+- [ ] Verify Staging Integration reuses exact evidence + Fast Integration Smoke.
+- [ ] Record explicit human UAT.
+- [ ] Promote bootstrap lineage to `main`.
+- [ ] Verify post-promotion reuse + Fast Integration Smoke.
+- [ ] Record exact trusted `main` SHA containing the reusable notifier.
+
+### Task 7: Activate notifier from KAORI CI
+
+**File:** `.github/workflows/quality.yml`
+
+This task starts only after Task 6 establishes the reusable workflow on trusted `main`.
+
+- [ ] Create follow-up branch/PR under Issue #64.
+- [ ] Add a final notification caller job to `quality.yml` using the trusted reusable workflow from `main`, preferably pinned to the exact bootstrap promotion SHA.
+- [ ] Ensure the caller waits for the jobs required to classify PASS/FAIL/UAT/promotion state.
+- [ ] Use `if: always()` where failure notification must still run.
+- [ ] Keep the called workflow, Environment secret handling, and Telegram transport outside PR-controlled executable code.
+- [ ] Run Draft review → Ready Full Admission → staging reuse/smoke → UAT → promotion.
+
+### Task 8: Enable and prove live Telegram delivery
+
+- [x] Create `KAORI Operations` Telegram Supergroup/Topics.
+- [x] Create/configure target Topic `🔄 GitHub Actions`.
+- [x] Configure GitHub Environment `kaori-github-actions` with real secret/variables outside Git.
+- [ ] Keep `TELEGRAM_NOTIFICATIONS_ENABLED=false` until the phase-2 caller is governed and ready for live proof.
+- [ ] Enable notifications at the controlled test boundary.
+- [ ] Prove one real categorized message reaches `🔄 GitHub Actions`.
+- [ ] Verify no credential value appears in logs/artifacts.
+- [ ] Close #64 only after live delivery and final Project metadata are synchronized.
