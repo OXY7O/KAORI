@@ -14,7 +14,7 @@ on:
           - auto
   push:
     branches:
-      - "kaori/**"
+      - kaori/staging
       - main
       - "release/**"
   pull_request:
@@ -36,7 +36,7 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
-  KAORI_PROFILE_VERSION: "2"
+  KAORI_PROFILE_VERSION: "3"
   KAORI_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
