@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, cast
 
 from app.reports.export.html_pdf.analytics_publication_standard import (
     ANALYTICS_CANONICAL_REFERENCE,
@@ -12,6 +12,7 @@ from app.reports.export.html_pdf.analytics_publication_standard import (
 from app.reports.export.html_pdf.builder_context import ReportDocumentContext
 from app.reports.export.html_pdf.utilization.actions import build_recommendations, build_source_rows
 from app.reports.export.html_pdf.utilization.charts import build_utilization_charts
+from app.reports.export.html_pdf.utilization.context import resolve_utilization_context
 from app.reports.export.html_pdf.utilization.model import build_utilization_state
 from app.reports.export.html_pdf.utilization.sections import (
     build_cover,
@@ -38,14 +39,18 @@ _RESOURCE_UTILIZATION_PAGE_TITLES = (
 
 
 def build_resource_utilization_presentation(
-    payload: Mapping[str, Any],
+    report_or_payload: Any,
+    payload: Mapping[str, Any] | None = None,
     *,
-    context: ReportDocumentContext,
+    context: ReportDocumentContext | None = None,
     classification: str,
+    **legacy_context: Any,
 ) -> dict[str, Any]:
-    state = build_utilization_state(payload)
+    source = cast(Mapping[str, Any], report_or_payload) if payload is None else payload
+    resolved_context = resolve_utilization_context(context, legacy_context)
+    state = build_utilization_state(source)
     charts = build_utilization_charts(state)
-    source_rows = build_source_rows(state, context.period_label)
+    source_rows = build_source_rows(state, resolved_context.period_label)
 
     return {
         'page_count': len(_RESOURCE_UTILIZATION_PAGE_TITLES),
@@ -57,19 +62,19 @@ def build_resource_utilization_presentation(
             page_count=9,
             table_policy='concise-register-plus-reference',
         ),
-        'report_id': context.report_id,
-        'report_name': context.report_name,
+        'report_id': resolved_context.report_id,
+        'report_name': resolved_context.report_name,
         'report_title': 'Resource Utilization',
         'report_subtitle': 'Kubernetes Operational Intelligence Report',
         'classification': classification,
-        'cluster_scope': context.cluster_scope,
-        'namespace_scope': context.namespace_scope,
-        'period_label': context.period_label,
-        'data_cutoff': context.data_cutoff,
-        'generated_at': context.generated_at_label,
-        'generated_by': context.generated_by_label,
+        'cluster_scope': resolved_context.cluster_scope,
+        'namespace_scope': resolved_context.namespace_scope,
+        'period_label': resolved_context.period_label,
+        'data_cutoff': resolved_context.data_cutoff,
+        'generated_at': resolved_context.generated_at_label,
+        'generated_by': resolved_context.generated_by_label,
         'page_titles': _RESOURCE_UTILIZATION_PAGE_TITLES,
-        'cover': build_cover(state, cluster_scope=context.cluster_scope),
+        'cover': build_cover(state, cluster_scope=resolved_context.cluster_scope),
         'executive': build_executive(state, source_rows=source_rows),
         'cpu': build_cpu(state, chart_svg=charts['cpu']),
         'memory': build_memory(state, chart_svg=charts['memory']),
@@ -80,9 +85,9 @@ def build_resource_utilization_presentation(
         'methodology': build_methodology(
             state,
             source_rows=source_rows,
-            namespace_scope=context.namespace_scope,
-            period_label=context.period_label,
-            data_cutoff=context.data_cutoff,
+            namespace_scope=resolved_context.namespace_scope,
+            period_label=resolved_context.period_label,
+            data_cutoff=resolved_context.data_cutoff,
         ),
         'storage_context': state.storage,
     }
