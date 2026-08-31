@@ -52,7 +52,7 @@ def test_admission_summary_uses_same_architecture_level_coverage_categories() ->
 def test_successful_static_groups_emit_progress_then_one_rollup_row() -> None:
     source = QUALITY_GATE.read_text(encoding='utf-8')
 
-    assert "printf '⏳ %s — %s\\n' \"$group\" \"$label\"" in source
+    assert 'printf \'⏳ %s — %s\\n\' "$group" "$label"' in source
     assert 'group_pass_count' in source
     assert "printf '✅ %s · %s checks · ⏱ %dm %02ds\\n'" in source
     assert 'Detailed output is retained in' in source
@@ -61,7 +61,7 @@ def test_successful_static_groups_emit_progress_then_one_rollup_row() -> None:
 def test_failed_static_verifier_remains_failure_first_and_names_the_check() -> None:
     source = QUALITY_GATE.read_text(encoding='utf-8')
 
-    assert "printf '❌ %s\\n' \"$label\"" in source
+    assert 'printf \'❌ %s\\n\' "$label"' in source
     assert '❌ First actionable failure' in source
     assert '📦 Diagnostic excerpt' in source
     assert '➡️ Repair %s, collect remaining findings' in source
