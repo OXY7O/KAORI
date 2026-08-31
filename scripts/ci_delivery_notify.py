@@ -13,7 +13,7 @@ from urllib.request import Request, urlopen
 _TELEGRAM_API: Final = 'https://api.telegram.org'
 _GITHUB_API: Final = 'https://api.github.com'
 _TRUE_VALUES: Final = frozenset({'1', 'true', 'yes', 'on'})
-_FAILURE_RESULTS: Final = frozenset({'failure', 'cancelled', 'timed_out', 'action_required'})
+_FAILURE_RESULTS: Final = frozenset({'failure', 'timed_out', 'action_required'})
 _WORKFLOW_WAIT_ATTEMPTS: Final = 90
 _WORKFLOW_WAIT_SECONDS: Final = 10
 
