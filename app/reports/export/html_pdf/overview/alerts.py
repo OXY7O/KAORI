@@ -186,7 +186,9 @@ def alert_intelligence_summary(
     critical = integer(alerts_snapshot.get('critical_alerts'))
     warning = integer(alerts_snapshot.get('warning_alerts'))
     if critical or warning:
-        return f'{critical} critical and {warning} warning alert(s) require operational ownership and response validation.'
+        return (
+            f'{critical} critical and {warning} warning alert(s) require operational ownership and response validation.'
+        )
     if alert_rows:
         return 'Active alert details are available, but no critical or warning total was reported.'
     return 'No active alert detail was returned for the selected reporting boundary.'
