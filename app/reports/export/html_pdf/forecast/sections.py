@@ -394,7 +394,9 @@ def headroom_row(resource: Mapping[str, Any], ref: str) -> dict[str, Any]:
     return {
         'ref': ref,
         'dimension': f'{resource["label"]} Projected Headroom',
-        'current': (percent(max(0.0, 100.0 - resource['current_percent'])) if resource['available'] else 'Not Available'),
+        'current': (
+            percent(max(0.0, 100.0 - resource['current_percent'])) if resource['available'] else 'Not Available'
+        ),
         'projection': resource['headroom_display'],
         'evidence': 'Derived' if resource['available'] else 'Missing',
         'status': 'Available' if resource['available'] else 'Not Available',
