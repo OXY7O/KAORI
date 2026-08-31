@@ -13,10 +13,7 @@ def read(path: Path) -> str:
 
 def test_quality_calls_trusted_telegram_notifier_after_admission() -> None:
     source = read(QUALITY_WORKFLOW)
-    trusted_call = (
-        'uses: OXY7O/KAORI/.github/workflows/telegram-github-actions.yml@'
-        f'{TRUSTED_NOTIFIER_SHA}'
-    )
+    trusted_call = f'uses: OXY7O/KAORI/.github/workflows/telegram-github-actions.yml@{TRUSTED_NOTIFIER_SHA}'
 
     assert 'telegram-notification:' in source
     assert 'name: GitHub Actions Telegram Delivery' in source
