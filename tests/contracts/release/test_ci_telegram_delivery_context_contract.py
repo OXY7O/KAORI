@@ -40,42 +40,60 @@ def test_trusted_notifier_observes_pr_failures_without_privileged_pr_trigger() -
 def test_actionable_delivery_boundaries_have_stage_specific_events() -> None:
     notifier = load_notifier()
 
-    assert notifier.select_event(
-        profile='pr-integration',
-        execution='full',
-        admission_result='failure',
-        security_result='failure',
-    ) == 'CANDIDATE_BLOCKED'
-    assert notifier.select_event(
-        profile='promotion',
-        execution='fast',
-        admission_result='failure',
-        security_result='skipped',
-    ) == 'PROMOTION_BLOCKED'
-    assert notifier.select_event(
-        profile='staging-integration',
-        execution='fast',
-        admission_result='failure',
-        security_result='skipped',
-    ) == 'STAGING_DELIVERY_FAILED'
-    assert notifier.select_event(
-        profile='post-promotion',
-        execution='fast',
-        admission_result='failure',
-        security_result='skipped',
-    ) == 'PRODUCTION_VERIFICATION_FAILED'
-    assert notifier.select_event(
-        profile='staging-integration',
-        execution='fast',
-        admission_result='success',
-        security_result='skipped',
-    ) == 'UAT_REQUIRED'
-    assert notifier.select_event(
-        profile='post-promotion',
-        execution='fast',
-        admission_result='success',
-        security_result='skipped',
-    ) == 'DELIVERY_COMPLETE'
+    assert (
+        notifier.select_event(
+            profile='pr-integration',
+            execution='full',
+            admission_result='failure',
+            security_result='failure',
+        )
+        == 'CANDIDATE_BLOCKED'
+    )
+    assert (
+        notifier.select_event(
+            profile='promotion',
+            execution='fast',
+            admission_result='failure',
+            security_result='skipped',
+        )
+        == 'PROMOTION_BLOCKED'
+    )
+    assert (
+        notifier.select_event(
+            profile='staging-integration',
+            execution='fast',
+            admission_result='failure',
+            security_result='skipped',
+        )
+        == 'STAGING_DELIVERY_FAILED'
+    )
+    assert (
+        notifier.select_event(
+            profile='post-promotion',
+            execution='fast',
+            admission_result='failure',
+            security_result='skipped',
+        )
+        == 'PRODUCTION_VERIFICATION_FAILED'
+    )
+    assert (
+        notifier.select_event(
+            profile='staging-integration',
+            execution='fast',
+            admission_result='success',
+            security_result='skipped',
+        )
+        == 'UAT_REQUIRED'
+    )
+    assert (
+        notifier.select_event(
+            profile='post-promotion',
+            execution='fast',
+            admission_result='success',
+            security_result='skipped',
+        )
+        == 'DELIVERY_COMPLETE'
+    )
 
 
 def test_friendly_uat_message_explains_work_testability_and_tracking() -> None:
