@@ -3,7 +3,13 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from .overview.context import OverviewContext
+from .analytics_publication_standard import (
+    ANALYTICS_CANONICAL_REFERENCE,
+    ANALYTICS_PUBLICATION_FAMILY,
+    ANALYTICS_PUBLICATION_STANDARD,
+    analytics_layout_contract,
+)
+from .overview.context import ANALYTICS_PAGE_TITLES, OverviewContext
 from .overview.presentation import build_overview_presentation
 
 
@@ -23,7 +29,7 @@ def build_analytics_overview_presentation(
     overall_posture: str,
     overall_tone: str,
 ) -> dict[str, Any]:
-    return build_overview_presentation(
+    presentation = build_overview_presentation(
         OverviewContext(
             report=report,
             payload=payload,
@@ -40,3 +46,19 @@ def build_analytics_overview_presentation(
             overall_tone=overall_tone,
         )
     )
+    return {**presentation, **_publication_contract()}
+
+
+def _publication_contract() -> dict[str, Any]:
+    return {
+        'publication_family': ANALYTICS_PUBLICATION_FAMILY,
+        'publication_standard': ANALYTICS_PUBLICATION_STANDARD,
+        'canonical_reference': ANALYTICS_CANONICAL_REFERENCE,
+        'layout_contract': analytics_layout_contract(
+            page_count=len(ANALYTICS_PAGE_TITLES),
+            table_policy='concise-register-plus-reference',
+            section_page_breaks=True,
+            truncate_identities=False,
+            identity_policy='reference-register',
+        ),
+    }
