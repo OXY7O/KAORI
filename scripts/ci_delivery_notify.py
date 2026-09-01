@@ -15,11 +15,9 @@ try:
         DeliveryContext,
         fetch_notification_artifacts,
         fetch_recent_pr_quality_runs,
-        linked_issue_number,
         pr_run_profile,
         resolve_delivery_context,
         safe_repository,
-        select_delivery_pr,
         select_unnotified_pr_failure,
     )
 except ModuleNotFoundError:
@@ -27,11 +25,9 @@ except ModuleNotFoundError:
         DeliveryContext,
         fetch_notification_artifacts,
         fetch_recent_pr_quality_runs,
-        linked_issue_number,
         pr_run_profile,
         resolve_delivery_context,
         safe_repository,
-        select_delivery_pr,
         select_unnotified_pr_failure,
     )
 
