@@ -208,12 +208,9 @@ def metrics_from_mapping(
     return tuple(metrics)
 
 
-def findings_from_value(value: Any, *, limit: int = 8) -> tuple[ReportFinding, ...]:
-    findings: list[ReportFinding] = []
-    items: list[Any]
-
+def _finding_items(value: Any) -> list[Any]:
     if isinstance(value, Mapping):
-        items = []
+        items: list[Any] = []
         for key, item in value.items():
             if not should_include_key(str(key)):
                 continue
@@ -230,28 +227,32 @@ def findings_from_value(value: Any, *, limit: int = 8) -> tuple[ReportFinding, .
                     )
             elif is_scalar(item) and isinstance(item, str) and len(item) > 24:
                 items.append({'title': humanize_key(str(key)), 'description': item})
-    elif isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
-        items = list(value)
-    else:
-        items = [value]
+        return items
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        return list(value)
+    return [value]
 
-    for index, item in enumerate(items, start=1):
-        if isinstance(item, Mapping):
-            title = item.get('title') or item.get('label') or item.get('name') or f'Finding {index}'
-            description = (
-                item.get('description')
-                or item.get('message')
-                or item.get('summary')
-                or item.get('recommendation')
-                or item.get('reason')
-                or ''
-            )
-            tone_value = item.get('tone') or item.get('severity') or item.get('priority') or item.get('status')
-        else:
-            title = f'Finding {index}'
-            description = item
-            tone_value = item
 
+def _finding_fields(item: Any, index: int) -> tuple[Any, Any, Any]:
+    if isinstance(item, Mapping):
+        title = item.get('title') or item.get('label') or item.get('name') or f'Finding {index}'
+        description = (
+            item.get('description')
+            or item.get('message')
+            or item.get('summary')
+            or item.get('recommendation')
+            or item.get('reason')
+            or ''
+        )
+        tone_value = item.get('tone') or item.get('severity') or item.get('priority') or item.get('status')
+        return title, description, tone_value
+    return f'Finding {index}', item, item
+
+
+def findings_from_value(value: Any, *, limit: int = 8) -> tuple[ReportFinding, ...]:
+    findings: list[ReportFinding] = []
+    for index, item in enumerate(_finding_items(value), start=1):
+        title, description, tone_value = _finding_fields(item, index)
         title_text = sanitize_text(title, fallback=f'Finding {index}')
         description_text = sanitize_text(description, fallback='')
         if not description_text and title_text == sanitize_text(item, fallback=''):
