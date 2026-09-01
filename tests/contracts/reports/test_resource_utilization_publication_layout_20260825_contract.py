@@ -29,15 +29,16 @@ def test_node_participation_card_keeps_labels_and_values_inside_card() -> None:
 
 def test_memory_concentration_center_value_is_owned_by_svg() -> None:
     template = read('app/templates/reports/pdf/resource_utilization.html')
-    renderer = read('app/reports/export/html_pdf/resource_utilization.py')
+    sections = read('app/reports/export/html_pdf/utilization/sections.py')
+    charts = read('app/reports/export/html_pdf/utilization/charts.py')
     css = read('app/static/reports/pdf/resource_utilization.css')
 
     assert 'donut-center' not in template
     assert '.donut-center' not in css
-    assert "'memory_donut_svg': _donut_svg(memory_consumers[:3])" in renderer
-    assert 'def _donut_svg(items: list[dict[str, Any]]) -> str:' in renderer
-    assert '>{total:.2f}</text>' in renderer
-    assert '>GiB displayed</text>' in renderer
+    assert "'memory_donut_svg': donut_svg(state.memory_consumers[:3])" in sections
+    assert 'def donut_svg(items: list[dict[str, Any]]) -> str:' in charts
+    assert '>{total:.2f}</text>' in charts
+    assert '>GiB displayed</text>' in charts
 
 
 def test_cpu_concentration_uses_reference_codes_without_utilization_threshold_markers() -> None:

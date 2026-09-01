@@ -105,10 +105,17 @@ jobs:
                 selected_tests[tests/storage]=1
                 [[ -d tests/object_storage ]] && selected_tests[tests/object_storage]=1
                 ;;
-              app/platform_operations/*|tests/platform_operations/*) selected_tests[tests/platform_operations]=1 ;;
-              app/reports/*|tests/reports/*|scripts/verify_analytics_pdf_publication.py)
+              app/platform_operations/*|tests/platform_operations/*|tests/contracts/platform_operations/*)
+                contracts=true
+                selected_tests[tests/platform_operations]=1
+                selected_tests[tests/contracts/platform_operations]=1
+                ;;
+              app/reports/*|tests/reports/*|tests/contracts/reports/*|tests/contracts/analytics/*|scripts/verify_analytics_pdf_publication.py)
                 reports=true
+                contracts=true
                 selected_tests[tests/reports]=1
+                selected_tests[tests/contracts/reports]=1
+                selected_tests[tests/contracts/analytics]=1
                 ;;
               app/settings/*|tests/settings/*) selected_tests[tests/settings]=1 ;;
               app/intelligence/*|tests/intelligence/*) [[ -d tests/intelligence ]] && selected_tests[tests/intelligence]=1 ;;
@@ -126,7 +133,7 @@ jobs:
           done < "$changed_file"
 
           if [[ "$wide" == "true" ]]; then
-            selected_tests[tests/contracts/release]=1
+            selected_tests[tests/contracts]=1
             selected_tests[tests/migrations]=1
           fi
 
