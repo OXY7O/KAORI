@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from .common import integer, number, sequence, text, tone
+from .common import integer, mapping, number, sequence, text, tone
 
 
 def alerts(alert_detail: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -61,7 +61,7 @@ def alert_metrics(
     alerts_snapshot: Mapping[str, Any],
     alert_detail: Mapping[str, Any],
 ) -> list[dict[str, Any]]:
-    summary = alert_detail.get('summary') if isinstance(alert_detail.get('summary'), Mapping) else {}
+    summary = mapping(alert_detail.get('summary'))
     critical = integer(
         summary.get('critical') or summary.get('critical_alerts') or alerts_snapshot.get('critical_alerts')
     )
