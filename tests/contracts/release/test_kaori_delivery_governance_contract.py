@@ -47,6 +47,35 @@ def test_delivery_workflow_locks_current_lifecycle_branch_and_uat_authority() ->
         assert token in source
 
 
+def test_delivery_governance_locks_artifact_backed_vps_release_path() -> None:
+    workflow = read(WORKFLOW)
+    project = read(PROJECT_SETUP)
+    template = read(PR_TEMPLATE)
+
+    for token in (
+        'immutable OCI image',
+        'OCI digest',
+        'VPS UAT',
+        'https://kaori.cloud',
+        'Semantic Versioning',
+        'without rebuilding',
+    ):
+        assert token in workflow
+
+    for token in (
+        'OCI digest',
+        'VPS UAT',
+        'Semantic Versioning',
+        'production RUN',
+    ):
+        assert token in project
+
+    assert 'Project Metadata' in workflow
+    assert 'must not' in workflow
+    assert 'Artifact / Release Evidence' in template
+    assert 'UAT-approved OCI digest' in template
+
+
 def test_issue_forms_use_native_issue_type_without_title_prefixes() -> None:
     expected = {
         'epic.yml': 'Epic',
