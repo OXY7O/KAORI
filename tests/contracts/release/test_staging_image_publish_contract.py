@@ -1,27 +1,41 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-WORKFLOW = ROOT / '.github' / 'workflows' / 'quality.yml'
+QUALITY_WORKFLOW = ROOT / '.github' / 'workflows' / 'quality.yml'
+PUBLISH_WORKFLOW = ROOT / '.github' / 'workflows' / 'publish-staging-image.yml'
 DOCKERFILE = ROOT / 'Dockerfile'
 
 
-def test_staging_publish_runs_only_after_trusted_staging_admission() -> None:
-    workflow = WORKFLOW.read_text(encoding='utf-8')
+def publish_source() -> str:
+    assert PUBLISH_WORKFLOW.exists(), 'trusted staging image publish workflow is missing'
+    return PUBLISH_WORKFLOW.read_text(encoding='utf-8')
 
-    assert 'publish-staging-image:' in workflow
-    assert 'name: Publish Accepted Staging Image' in workflow
+
+def test_staging_publish_is_trusted_push_only_and_waits_for_exact_ci() -> None:
+    workflow = publish_source()
+    quality = QUALITY_WORKFLOW.read_text(encoding='utf-8')
+
+    assert 'name: KAORI Staging Image Publish' in workflow
+    assert 'push:' in workflow
+    assert '- kaori/staging' in workflow
     assert "github.event_name == 'push'" in workflow
     assert "github.ref == 'refs/heads/kaori/staging'" in workflow
-    assert "needs.ci-admission.result == 'success'" in workflow
+    assert 'actions: read' in workflow
+    assert 'quality.yml' in workflow
+    assert 'GITHUB_SHA' in workflow
+    assert 'conclusion' in workflow
+    assert 'success' in workflow
     assert 'KAORI_DOCKER_REGISTRY_HOST' in workflow
     assert 'KAORI_DOCKER_REGISTRY_IMAGE' in workflow
     assert 'KAORI_DOCKER_REGISTRY_USERNAME' in workflow
     assert 'KAORI_DOCKER_REGISTRY_PASSWORD' in workflow
+    assert 'KAORI_DOCKER_REGISTRY_USERNAME' not in quality
+    assert 'KAORI_DOCKER_REGISTRY_PASSWORD' not in quality
     assert 'ghcr.io/oxy7o/kaori' not in workflow.lower()
 
 
 def test_staging_publish_validates_exact_image_before_registry_push() -> None:
-    workflow = WORKFLOW.read_text(encoding='utf-8')
+    workflow = publish_source()
 
     assert 'CANDIDATE_TAG="sha-${GITHUB_SHA}"' in workflow
     assert 'CANDIDATE_IMAGE="$REGISTRY_IMAGE:$CANDIDATE_TAG"' in workflow
@@ -33,12 +47,13 @@ def test_staging_publish_validates_exact_image_before_registry_push() -> None:
     assert 'docker login "$REGISTRY_HOST"' in workflow
     assert '--password-stdin' in workflow
     assert 'docker push "$CANDIDATE_IMAGE"' in workflow
+    assert 'docker pull "$CANDIDATE_IMAGE"' in workflow
     assert 'RepoDigests' in workflow
-    assert 'latest' not in workflow.lower().split('publish accepted staging image', 1)[-1]
+    assert 'latest' not in workflow.lower()
 
 
 def test_staging_publish_records_immutable_digest_evidence() -> None:
-    workflow = WORKFLOW.read_text(encoding='utf-8')
+    workflow = publish_source()
 
     for token in (
         'KAORI_IMAGE_NAME=',
