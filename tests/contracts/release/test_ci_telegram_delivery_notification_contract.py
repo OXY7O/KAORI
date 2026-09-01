@@ -71,46 +71,28 @@ def test_push_metadata_flows_through_environment_before_shell_use() -> None:
     assert '--source-sha "${{' not in source
 
 
-def test_event_routing_emits_only_trusted_branch_delivery_boundaries() -> None:
+def test_event_routing_emits_actionable_governed_delivery_boundaries() -> None:
     notifier = load_notifier()
 
-    assert (
-        notifier.select_event(
-            profile='staging-integration',
-            execution='fast',
-            admission_result='success',
-            security_result='skipped',
-        )
-        == 'UAT_REQUIRED'
-    )
-    assert (
-        notifier.select_event(
-            profile='post-promotion',
-            execution='fast',
-            admission_result='success',
-            security_result='skipped',
-        )
-        == 'PROMOTION_SUCCEEDED'
-    )
-    for profile in ('staging-integration', 'post-promotion'):
+    expected = {
+        ('staging-integration', 'success'): 'UAT_REQUIRED',
+        ('post-promotion', 'success'): 'DELIVERY_COMPLETE',
+        ('pr-integration', 'failure'): 'CANDIDATE_BLOCKED',
+        ('staging-integration', 'failure'): 'STAGING_DELIVERY_FAILED',
+        ('promotion', 'failure'): 'PROMOTION_BLOCKED',
+        ('post-promotion', 'failure'): 'PRODUCTION_VERIFICATION_FAILED',
+    }
+    for (profile, result), event in expected.items():
         assert (
             notifier.select_event(
                 profile=profile,
-                execution='full',
-                admission_result='failure',
-                security_result='failure',
-            )
-            == 'DELIVERY_FAILED'
-        )
-        assert (
-            notifier.select_event(
-                profile=profile,
-                execution='full',
-                admission_result='cancelled',
+                execution='fast' if result == 'success' else 'full',
+                admission_result=result,
                 security_result='skipped',
             )
-            is None
+            == event
         )
+
     for profile in ('pr-integration', 'promotion'):
         assert (
             notifier.select_event(
@@ -121,12 +103,13 @@ def test_event_routing_emits_only_trusted_branch_delivery_boundaries() -> None:
             )
             is None
         )
+    for profile in ('pr-integration', 'staging-integration', 'promotion', 'post-promotion'):
         assert (
             notifier.select_event(
                 profile=profile,
                 execution='full',
-                admission_result='failure',
-                security_result='failure',
+                admission_result='cancelled',
+                security_result='skipped',
             )
             is None
         )
@@ -210,9 +193,11 @@ def test_notifier_understands_concise_and_legacy_ci_job_names() -> None:
 def test_event_categories_are_stable_and_future_categories_are_reserved() -> None:
     notifier = load_notifier()
 
-    assert notifier.event_category('DELIVERY_FAILED') == 'CI / Quality'
+    assert notifier.event_category('CANDIDATE_BLOCKED') == 'CI / Quality'
+    assert notifier.event_category('STAGING_DELIVERY_FAILED') == 'CI / Quality'
     assert notifier.event_category('UAT_REQUIRED') == 'UAT'
-    assert notifier.event_category('PROMOTION_SUCCEEDED') == 'Promotion'
+    assert notifier.event_category('PROMOTION_BLOCKED') == 'Promotion'
+    assert notifier.event_category('DELIVERY_COMPLETE') == 'Promotion'
 
     spec = read(SPEC)
     assert '| CI / Quality |' in spec
@@ -226,8 +211,18 @@ def test_event_categories_are_stable_and_future_categories_are_reserved() -> Non
     assert 'DEPLOYMENT_SUCCEEDED' not in emitted
 
 
-def test_uat_message_contains_exact_operator_action_and_github_link() -> None:
+def test_uat_message_contains_operator_action_evidence_and_tracking() -> None:
     notifier = load_notifier()
+    context = notifier.DeliveryContext(
+        issue_number='77',
+        issue_title='Improve GitHub Actions Telegram delivery context and failure coverage',
+        issue_status='Open',
+        issue_url='https://github.com/OXY7O/KAORI/issues/77',
+        pr_number='79',
+        pr_title='feat(ci): improve Telegram delivery context #77',
+        pr_status='Merged',
+        pr_url='https://github.com/OXY7O/KAORI/pull/79',
+    )
     message = notifier.render_message(
         event='UAT_REQUIRED',
         profile='staging-integration',
@@ -235,16 +230,19 @@ def test_uat_message_contains_exact_operator_action_and_github_link() -> None:
         source_sha='1234567890abcdef',
         repository='OXY7O/KAORI',
         run_url='https://github.com/OXY7O/KAORI/actions/runs/123',
-        pr_number='',
+        context=context,
     )
 
-    assert '🧪 KAORI · UAT Required' in message
-    assert 'Category: UAT' in message
-    assert 'Environment: Staging' in message
+    assert '🧪 KAORI · Ready for UAT' in message
+    assert 'Stage: Staging Integration' in message
+    assert 'Status: READY FOR UAT' in message
+    assert 'Environment: kaori/staging' in message
     assert 'Commit: 1234567890ab' in message
     assert 'Full Admission evidence reused + Fast Integration Smoke PASS' in message
-    assert 'Action: Complete UAT before promotion to main.' in message
-    assert 'View Run: https://github.com/OXY7O/KAORI/actions/runs/123' in message
+    assert 'Complete human UAT before promotion to main.' in message
+    assert 'Issue: #77 · Open' in message
+    assert 'PR: #79 · Merged' in message
+    assert 'CI: https://github.com/OXY7O/KAORI/actions/runs/123' in message
 
 
 def test_configuration_is_disabled_unless_explicitly_enabled_and_complete() -> None:

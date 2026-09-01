@@ -5,39 +5,79 @@ import json
 import os
 import sys
 import time
-from typing import Any, Final
+from typing import Any, Final, TypedDict
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
+try:
+    from ci_delivery_context import (
+        DeliveryContext,
+        fetch_notification_artifacts,
+        fetch_recent_pr_quality_runs,
+        pr_run_profile,
+        resolve_delivery_context,
+        safe_repository,
+        select_unnotified_pr_failure,
+    )
+except ModuleNotFoundError:
+    from scripts.ci_delivery_context import (
+        DeliveryContext,
+        fetch_notification_artifacts,
+        fetch_recent_pr_quality_runs,
+        pr_run_profile,
+        resolve_delivery_context,
+        safe_repository,
+        select_unnotified_pr_failure,
+    )
+
 _TELEGRAM_API: Final = 'https://api.telegram.org'
-_GITHUB_API: Final = 'https://api.github.com'
 _TRUE_VALUES: Final = frozenset({'1', 'true', 'yes', 'on'})
 _FAILURE_RESULTS: Final = frozenset({'failure', 'timed_out', 'action_required'})
-_WORKFLOW_WAIT_ATTEMPTS: Final = 90
+_WORKFLOW_WAIT_ATTEMPTS: Final = 300
 _WORKFLOW_WAIT_SECONDS: Final = 10
 
 _EVENT_TITLES: Final = {
-    'DELIVERY_FAILED': '❌ KAORI · Delivery Failed',
-    'UAT_REQUIRED': '🧪 KAORI · UAT Required',
-    'PROMOTION_SUCCEEDED': '🚀 KAORI · Promotion Succeeded',
+    'CANDIDATE_BLOCKED': '❌ KAORI · Candidate Blocked',
+    'STAGING_DELIVERY_FAILED': '❌ KAORI · Staging Delivery Failed',
+    'PROMOTION_BLOCKED': '❌ KAORI · Promotion Blocked',
+    'PRODUCTION_VERIFICATION_FAILED': '❌ KAORI · Production Lineage Verification Failed',
+    'UAT_REQUIRED': '🧪 KAORI · Ready for UAT',
+    'DELIVERY_COMPLETE': '🚀 KAORI · Delivery Complete',
 }
 
 _EVENT_CATEGORIES: Final = {
-    'DELIVERY_FAILED': 'CI / Quality',
+    'CANDIDATE_BLOCKED': 'CI / Quality',
+    'STAGING_DELIVERY_FAILED': 'CI / Quality',
+    'PROMOTION_BLOCKED': 'Promotion',
+    'PRODUCTION_VERIFICATION_FAILED': 'Promotion',
     'UAT_REQUIRED': 'UAT',
-    'PROMOTION_SUCCEEDED': 'Promotion',
+    'DELIVERY_COMPLETE': 'Promotion',
 }
 
 _PROFILE_CONTEXT: Final = {
-    'staging-integration': ('Staging Integration', 'Staging'),
-    'post-promotion': ('Post-promotion', 'Main'),
+    'pr-integration': ('Full Admission', 'PR → kaori/staging'),
+    'staging-integration': ('Staging Integration', 'kaori/staging'),
+    'promotion': ('Promotion Validation', 'kaori/staging → main'),
+    'post-promotion': ('Post-promotion', 'main'),
+}
+
+_EVENT_STATUS: Final = {
+    'CANDIDATE_BLOCKED': 'BLOCKED',
+    'STAGING_DELIVERY_FAILED': 'FAILED',
+    'PROMOTION_BLOCKED': 'BLOCKED',
+    'PRODUCTION_VERIFICATION_FAILED': 'FAILED',
+    'UAT_REQUIRED': 'READY FOR UAT',
+    'DELIVERY_COMPLETE': 'COMPLETE',
 }
 
 _ACTIONS: Final = {
-    'DELIVERY_FAILED': 'Review the first failing delivery gate, repair it, then rerun Admission.',
-    'UAT_REQUIRED': 'Complete UAT before promotion to main.',
-    'PROMOTION_SUCCEEDED': 'No delivery action required; promoted lineage is verified on main.',
+    'CANDIDATE_BLOCKED': 'Return the work to Draft repair, pass Developer Check, then freeze a new Ready candidate.',
+    'STAGING_DELIVERY_FAILED': 'Do not perform UAT. Repair the staging delivery failure before continuing.',
+    'PROMOTION_BLOCKED': 'Keep main unchanged. Repair the promotion candidate and rerun governed validation.',
+    'PRODUCTION_VERIFICATION_FAILED': 'Review production-lineage verification before declaring the delivery complete.',
+    'UAT_REQUIRED': 'Complete human UAT before promotion to main.',
+    'DELIVERY_COMPLETE': 'No delivery action required; the accepted lineage is verified on main.',
 }
 
 _FAILURE_ORDER: Final = (
@@ -49,7 +89,6 @@ _FAILURE_ORDER: Final = (
     'Runtime & DAST',
     'Fast Smoke',
     'CI Admission',
-    # Transitional compatibility for runs created before Issue #68.
     'Resolve KAORI Validation Profile',
     'Static, Architecture, and Governance',
     'Secrets, SAST, Dependencies, and Workflow Security',
@@ -61,6 +100,26 @@ _FAILURE_ORDER: Final = (
 )
 
 
+class TransportConfig:
+    __slots__ = ('bot_token', 'chat_id', 'topic_id')
+
+    def __init__(self, *, bot_token: str, chat_id: str, topic_id: str) -> None:
+        self.bot_token = bot_token
+        self.chat_id = chat_id
+        self.topic_id = topic_id
+
+
+class DeliveryNotice(TypedDict):
+    event: str
+    profile: str
+    execution: str
+    source_sha: str
+    repository: str
+    run_url: str
+    context: DeliveryContext
+    failure_detail: str
+
+
 def select_event(
     *,
     profile: str,
@@ -69,23 +128,31 @@ def select_event(
     security_result: str,
 ) -> str | None:
     del execution, security_result
-    if profile not in {'staging-integration', 'post-promotion'}:
-        return None
     if admission_result in _FAILURE_RESULTS:
-        return 'DELIVERY_FAILED'
+        return {
+            'pr-integration': 'CANDIDATE_BLOCKED',
+            'staging-integration': 'STAGING_DELIVERY_FAILED',
+            'promotion': 'PROMOTION_BLOCKED',
+            'post-promotion': 'PRODUCTION_VERIFICATION_FAILED',
+        }.get(profile)
     if admission_result != 'success':
         return None
     if profile == 'staging-integration':
         return 'UAT_REQUIRED'
-    return 'PROMOTION_SUCCEEDED'
+    if profile == 'post-promotion':
+        return 'DELIVERY_COMPLETE'
+    return None
 
 
 def resolve_profile(*, event_name: str, head_branch: str, base_branch: str) -> str:
-    del base_branch
     if event_name == 'push' and head_branch == 'kaori/staging':
         return 'staging-integration'
     if event_name == 'push' and head_branch == 'main':
         return 'post-promotion'
+    if event_name == 'pull_request' and base_branch == 'kaori/staging':
+        return 'pr-integration'
+    if event_name == 'pull_request' and base_branch == 'main' and head_branch == 'kaori/staging':
+        return 'promotion'
     return 'full'
 
 
@@ -115,44 +182,83 @@ def render_message(
     source_sha: str,
     repository: str,
     run_url: str,
-    pr_number: str,
+    context: DeliveryContext,
     failure_detail: str = '',
 ) -> str:
-    del pr_number
     title = _EVENT_TITLES.get(event, f'ℹ️ KAORI · {event.replace("_", " ").title()}')
-    boundary, environment = _PROFILE_CONTEXT.get(profile, (profile or 'Delivery', 'Delivery'))
-    result = 'FAIL' if event == 'DELIVERY_FAILED' else 'PASS'
+    stage, environment = _PROFILE_CONTEXT.get(profile, (profile or 'Delivery', repository))
     short_sha = source_sha[:12] if source_sha else 'unknown'
-
-    lines = [
-        title,
-        '',
-        f'Category: {event_category(event)}',
-        f'Boundary: {boundary}',
-        f'Environment: {environment}',
-        f'Result: {result}',
-        f'Commit: {short_sha}',
-        f'Repository: {repository}',
-    ]
+    lines = [title, '', '📌 Work', _work_summary(context)]
+    lines.extend(
+        [
+            '',
+            '📍 Delivery',
+            f'Stage: {stage}',
+            f'Status: {_EVENT_STATUS.get(event, "INFO")}',
+            f'Environment: {environment}',
+            '',
+            '🧪 Testing',
+        ]
+    )
+    lines.extend(_testing_lines(event=event, context=context))
+    if failure_detail.strip() and event not in {'UAT_REQUIRED', 'DELIVERY_COMPLETE'}:
+        lines.extend(['', '🚨 Failure', f'Failure: {failure_detail.strip()}'])
+    lines.extend(['', '✅ Evidence'])
     evidence = _evidence_summary(event=event, execution=execution)
     if evidence:
-        lines.append(f'Evidence: {evidence}')
-    if failure_detail.strip() and result == 'FAIL':
-        lines.append(f'First Failure: {failure_detail.strip()}')
-    lines.append(f'Action: {_ACTIONS.get(event, "Review the workflow result.")}')
-    if run_url.strip():
-        lines.extend(['', f'View Run: {run_url.strip()}'])
+        lines.append(evidence)
+    lines.extend([f'Commit: {short_sha}', '', '➡️ Next', _ACTIONS.get(event, 'Review the workflow result.')])
+    lines.extend(['', '🔗 Tracking', *_tracking_lines(context=context, run_url=run_url)])
     return '\n'.join(lines).strip()
 
 
+def _work_summary(context: DeliveryContext) -> str:
+    if context.issue_number and context.issue_title:
+        return f'#{context.issue_number} {context.issue_title}'
+    if context.pr_number and context.pr_title:
+        return f'PR #{context.pr_number} {context.pr_title}'
+    return 'Delivery context unavailable'
+
+
+def _testing_lines(*, event: str, context: DeliveryContext) -> list[str]:
+    if event == 'UAT_REQUIRED':
+        guidance = context.test_guidance or context.issue_title or context.pr_title or 'the linked delivery scope'
+        return ['Ready for UAT', f'Validate: {guidance}']
+    if event == 'DELIVERY_COMPLETE':
+        return ['No additional delivery test required']
+    return ['Do not test yet']
+
+
+def _tracking_lines(*, context: DeliveryContext, run_url: str) -> list[str]:
+    lines: list[str] = []
+    if context.issue_number:
+        lines.append(f'Issue: #{context.issue_number} · {context.issue_status or "Unknown"}')
+        if context.issue_url:
+            lines.append(context.issue_url)
+    if context.pr_number:
+        lines.append(f'PR: #{context.pr_number} · {context.pr_status or "Unknown"}')
+        if context.pr_url:
+            lines.append(context.pr_url)
+    if run_url.strip():
+        lines.append(f'CI: {run_url.strip()}')
+    return lines
+
+
 def _evidence_summary(*, event: str, execution: str) -> str:
-    if event in {'UAT_REQUIRED', 'PROMOTION_SUCCEEDED'}:
+    if event == 'UAT_REQUIRED':
         if execution == 'fast':
             return 'Full Admission evidence reused + Fast Integration Smoke PASS'
         return 'Selected Admission path PASS'
-    if event == 'DELIVERY_FAILED':
-        return 'Selected Admission path failed'
-    return ''
+    if event == 'DELIVERY_COMPLETE':
+        if execution == 'fast':
+            return 'Accepted staging lineage reused + Fast Integration Smoke PASS + production lineage verified'
+        return 'Production lineage verified'
+    return {
+        'CANDIDATE_BLOCKED': 'Full Admission did not complete successfully',
+        'STAGING_DELIVERY_FAILED': 'Staging integration did not complete successfully',
+        'PROMOTION_BLOCKED': 'Promotion validation did not complete successfully',
+        'PRODUCTION_VERIFICATION_FAILED': 'Post-promotion verification did not complete successfully',
+    }.get(event, '')
 
 
 def infer_execution(jobs: list[dict[str, Any]]) -> str:
@@ -180,31 +286,9 @@ def _job_conclusions(jobs: list[dict[str, Any]]) -> dict[str, str]:
 
 
 def _github_api_get(*, path: str, token: str) -> Any:
-    if not token.strip():
-        raise RuntimeError('GitHub Actions read token is unavailable.')
-    request = Request(
-        f'{_GITHUB_API}{path}',
-        headers={
-            'Accept': 'application/vnd.github+json',
-            'Authorization': f'Bearer {token}',
-            'X-GitHub-Api-Version': '2022-11-28',
-        },
-        method='GET',
-    )
-    try:
-        with urlopen(  # noqa: S310  # nosec B310 - fixed GitHub HTTPS authority
-            request,
-            timeout=10,
-        ) as response:
-            return json.loads(response.read().decode('utf-8'))
-    except HTTPError as exc:
-        raise RuntimeError(f'GitHub Actions metadata lookup failed with HTTP {exc.code}.') from exc
-    except (URLError, TimeoutError, OSError, ValueError) as exc:
-        raise RuntimeError('GitHub Actions metadata lookup is unavailable or invalid.') from exc
+    from ci_delivery_context import github_api_get
 
-
-def _safe_repository(repository: str) -> str:
-    return '/'.join(quote(part, safe='') for part in repository.split('/', 1))
+    return github_api_get(path=path, token=token)
 
 
 def fetch_workflow_jobs(
@@ -213,10 +297,9 @@ def fetch_workflow_jobs(
     run_id: str,
     token: str,
 ) -> list[dict[str, Any]]:
-    safe_repository = _safe_repository(repository)
     safe_run_id = quote(str(run_id), safe='')
     payload = _github_api_get(
-        path=f'/repos/{safe_repository}/actions/runs/{safe_run_id}/jobs?per_page=100',
+        path=f'/repos/{safe_repository(repository)}/actions/runs/{safe_run_id}/jobs?per_page=100',
         token=token,
     )
     jobs = payload.get('jobs') if isinstance(payload, dict) else None
@@ -231,11 +314,11 @@ def fetch_quality_workflow_runs(
     head_branch: str,
     token: str,
 ) -> list[dict[str, Any]]:
-    safe_repository = _safe_repository(repository)
     safe_branch = quote(head_branch, safe='')
     payload = _github_api_get(
         path=(
-            f'/repos/{safe_repository}/actions/workflows/quality.yml/runs?branch={safe_branch}&event=push&per_page=50'
+            f'/repos/{safe_repository(repository)}/actions/workflows/quality.yml/'
+            f'runs?branch={safe_branch}&event=push&per_page=50'
         ),
         token=token,
     )
@@ -258,9 +341,7 @@ def select_matching_workflow_run(
         and str(run.get('head_sha') or '') == source_sha
         and str(run.get('head_branch') or '') == head_branch
     ]
-    if not matches:
-        return None
-    return max(matches, key=lambda run: int(run.get('id') or 0))
+    return max(matches, key=lambda run: int(run.get('id') or 0)) if matches else None
 
 
 def wait_for_quality_workflow_run(
@@ -275,13 +356,12 @@ def wait_for_quality_workflow_run(
     attempts = max(int(attempts), 1)
     interval_seconds = max(int(interval_seconds), 0)
     for attempt in range(attempts):
-        runs = fetch_quality_workflow_runs(
-            repository=repository,
-            head_branch=head_branch,
-            token=token,
-        )
         selected = select_matching_workflow_run(
-            runs=runs,
+            runs=fetch_quality_workflow_runs(
+                repository=repository,
+                head_branch=head_branch,
+                token=token,
+            ),
             source_sha=source_sha,
             head_branch=head_branch,
         )
@@ -305,10 +385,7 @@ def send_message(
             'chat_id': chat_id,
             'message_thread_id': topic_id,
             'text': message,
-            'link_preview_options': json.dumps(
-                {'is_disabled': True},
-                separators=(',', ':'),
-            ),
+            'link_preview_options': json.dumps({'is_disabled': True}, separators=(',', ':')),
         }
     ).encode('utf-8')
     request = Request(
@@ -327,132 +404,216 @@ def send_message(
         return False, f'Telegram rejected the notification with HTTP {exc.code}.'
     except (URLError, TimeoutError, OSError, ValueError):
         return False, 'Telegram is unreachable or returned an invalid response.'
-
     if not isinstance(payload, dict) or not bool(payload.get('ok')):
         return False, 'Telegram rejected the notification.'
     return True, 'Telegram GitHub Actions notification sent.'
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description='Send trusted-branch KAORI GitHub Actions notifications to a Telegram topic.'
+def _delivery_results(
+    *,
+    jobs: list[dict[str, Any]],
+    workflow_conclusion: str,
+) -> tuple[str, str, str, str]:
+    conclusions = _job_conclusions(jobs)
+    admission_result = conclusions.get('CI Admission') or conclusions.get('KAORI CI Admission', '')
+    if admission_result not in _FAILURE_RESULTS | {'success'} and workflow_conclusion in _FAILURE_RESULTS:
+        admission_result = workflow_conclusion
+    security_result = conclusions.get(
+        'Security',
+        conclusions.get('Secrets, SAST, Dependencies, and Workflow Security', 'skipped'),
     )
-    parser.add_argument('--discover-workflow-run', action='store_true')
-    parser.add_argument('--workflow-run-id', default='')
-    parser.add_argument('--workflow-event', default='')
-    parser.add_argument('--workflow-conclusion', default='')
-    parser.add_argument('--head-branch', default='')
-    parser.add_argument('--base-branch', default='')
-    parser.add_argument('--profile', default='')
-    parser.add_argument('--execution', default='')
-    parser.add_argument('--admission-result', default='')
-    parser.add_argument('--security-result', default='skipped')
-    parser.add_argument('--source-sha', required=True)
-    parser.add_argument('--repository', required=True)
-    parser.add_argument('--run-url', default='')
-    parser.add_argument('--pr-number', default='')
-    parser.add_argument('--failure-detail', default='')
-    return parser
+    return infer_execution(jobs), admission_result, security_result, first_failure(jobs)
 
 
-def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
-
-    bot_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
-    chat_id = os.environ.get('TELEGRAM_CHAT_ID', '')
-    topic_id = os.environ.get('TELEGRAM_GITHUB_ACTIONS_TOPIC_ID', '')
-    enabled = os.environ.get('TELEGRAM_NOTIFICATIONS_ENABLED', '')
-    configured, reason = configuration_status(
-        enabled=enabled,
-        bot_token=bot_token,
-        chat_id=chat_id,
-        topic_id=topic_id,
-    )
-    if not configured:
-        print(f'SKIP — {reason}')
-        return 0
-
-    profile = args.profile
-    execution = args.execution
-    admission_result = args.admission_result
-    security_result = args.security_result
-    failure_detail = args.failure_detail
-    workflow_run_id = args.workflow_run_id
-    workflow_conclusion = args.workflow_conclusion
-    run_url = args.run_url
-
-    token = os.environ.get('GH_TOKEN', '')
-    if args.discover_workflow_run:
-        try:
-            workflow_run = wait_for_quality_workflow_run(
-                repository=args.repository,
-                source_sha=args.source_sha,
-                head_branch=args.head_branch,
-                token=token,
-            )
-        except RuntimeError as exc:
-            print(f'FAIL — {exc}', file=sys.stderr)
-            return 1
-        workflow_run_id = str(workflow_run.get('id') or '')
-        workflow_conclusion = str(workflow_run.get('conclusion') or '')
-        run_url = str(workflow_run.get('html_url') or '')
-
-    if workflow_run_id:
-        try:
-            jobs = fetch_workflow_jobs(
-                repository=args.repository,
-                run_id=workflow_run_id,
-                token=token,
-            )
-        except RuntimeError as exc:
-            print(f'FAIL — {exc}', file=sys.stderr)
-            return 1
-        conclusions = _job_conclusions(jobs)
-        profile = resolve_profile(
-            event_name=args.workflow_event,
-            head_branch=args.head_branch,
-            base_branch=args.base_branch,
-        )
-        execution = infer_execution(jobs)
-        admission_result = conclusions.get('CI Admission') or conclusions.get('KAORI CI Admission', '')
-        if admission_result not in _FAILURE_RESULTS | {'success'} and workflow_conclusion in _FAILURE_RESULTS:
-            admission_result = workflow_conclusion
-        security_result = conclusions.get(
-            'Security',
-            conclusions.get('Secrets, SAST, Dependencies, and Workflow Security', 'skipped'),
-        )
-        failure_detail = first_failure(jobs)
-
-    event = select_event(
-        profile=profile,
-        execution=execution,
-        admission_result=admission_result,
-        security_result=security_result,
-    )
-    if event is None:
-        print('SKIP — Completed KAORI CI run has no trusted-branch Telegram notification.')
-        return 0
-
+def _emit_notification(*, notice: DeliveryNotice, transport: TransportConfig) -> int:
     message = render_message(
-        event=event,
-        profile=profile,
-        execution=execution,
-        source_sha=args.source_sha,
-        repository=args.repository,
-        run_url=run_url,
-        pr_number=args.pr_number,
-        failure_detail=failure_detail,
+        event=notice['event'],
+        profile=notice['profile'],
+        execution=notice['execution'],
+        source_sha=notice['source_sha'],
+        repository=notice['repository'],
+        run_url=notice['run_url'],
+        context=notice['context'],
+        failure_detail=notice['failure_detail'],
     )
     delivered, detail = send_message(
-        bot_token=bot_token,
-        chat_id=chat_id,
-        topic_id=topic_id,
+        bot_token=transport.bot_token,
+        chat_id=transport.chat_id,
+        topic_id=transport.topic_id,
         message=message,
     )
     if not delivered:
         print(f'FAIL — {detail}', file=sys.stderr)
         return 1
-    print(f'PASS — {detail} Category={event_category(event)} Event={event}.')
+    print(f'PASS — {detail} Category={event_category(notice["event"])} Event={notice["event"]}.')
+    return 0
+
+
+def _write_output(name: str, value: str) -> None:
+    output_path = os.environ.get('GITHUB_OUTPUT', '')
+    if not output_path or not value:
+        return
+    with open(output_path, 'a', encoding='utf-8') as output:  # noqa: PTH123
+        output.write(f'{name}={value}\n')
+
+
+def _scan_pr_failures(
+    *,
+    repository: str,
+    token: str,
+    transport: TransportConfig,
+) -> int:
+    try:
+        selected = select_unnotified_pr_failure(
+            runs=fetch_recent_pr_quality_runs(repository=repository, token=token),
+            artifacts=fetch_notification_artifacts(repository=repository, token=token),
+        )
+        if selected is None:
+            print('SKIP — No unnotified actionable PR delivery failure found.')
+            return 0
+        run_id = str(selected.get('id') or '')
+        jobs = fetch_workflow_jobs(repository=repository, run_id=run_id, token=token)
+        profile = pr_run_profile(selected)
+        execution, admission_result, security_result, failure_detail = _delivery_results(
+            jobs=jobs,
+            workflow_conclusion=str(selected.get('conclusion') or ''),
+        )
+        event = select_event(
+            profile=profile,
+            execution=execution,
+            admission_result=admission_result,
+            security_result=security_result,
+        )
+        if event is None:
+            print('SKIP — Selected PR run has no actionable Telegram event.')
+            return 0
+        pull_requests = selected.get('pull_requests')
+        pr_number = ''
+        if isinstance(pull_requests, list) and pull_requests and isinstance(pull_requests[0], dict):
+            pr_number = str(pull_requests[0].get('number') or '')
+        source_sha = str(selected.get('head_sha') or '')
+        context = resolve_delivery_context(
+            repository=repository,
+            source_sha=source_sha,
+            profile=profile,
+            token=token,
+            pr_number=pr_number,
+        )
+        notice: DeliveryNotice = {
+            'event': event,
+            'profile': profile,
+            'execution': execution,
+            'source_sha': source_sha,
+            'repository': repository,
+            'run_url': str(selected.get('html_url') or ''),
+            'context': context,
+            'failure_detail': failure_detail,
+        }
+    except RuntimeError as exc:
+        print(f'FAIL — {exc}', file=sys.stderr)
+        return 1
+    result = _emit_notification(notice=notice, transport=transport)
+    if result == 0:
+        _write_output('quality_run_id', run_id)
+    return result
+
+
+def _notify_trusted_push(
+    *,
+    args: argparse.Namespace,
+    token: str,
+    transport: TransportConfig,
+) -> int:
+    try:
+        workflow_run = wait_for_quality_workflow_run(
+            repository=args.repository,
+            source_sha=args.source_sha,
+            head_branch=args.head_branch,
+            token=token,
+        )
+        jobs = fetch_workflow_jobs(
+            repository=args.repository,
+            run_id=str(workflow_run.get('id') or ''),
+            token=token,
+        )
+        profile = resolve_profile(
+            event_name=args.workflow_event,
+            head_branch=args.head_branch,
+            base_branch=args.base_branch,
+        )
+        execution, admission_result, security_result, failure_detail = _delivery_results(
+            jobs=jobs,
+            workflow_conclusion=str(workflow_run.get('conclusion') or ''),
+        )
+        event = select_event(
+            profile=profile,
+            execution=execution,
+            admission_result=admission_result,
+            security_result=security_result,
+        )
+        if event is None:
+            print('SKIP — Completed KAORI CI run has no trusted delivery Telegram notification.')
+            return 0
+        context = resolve_delivery_context(
+            repository=args.repository,
+            source_sha=args.source_sha,
+            profile=profile,
+            token=token,
+            pr_number=args.pr_number,
+        )
+        notice: DeliveryNotice = {
+            'event': event,
+            'profile': profile,
+            'execution': execution,
+            'source_sha': args.source_sha,
+            'repository': args.repository,
+            'run_url': str(workflow_run.get('html_url') or ''),
+            'context': context,
+            'failure_detail': failure_detail,
+        }
+    except RuntimeError as exc:
+        print(f'FAIL — {exc}', file=sys.stderr)
+        return 1
+    return _emit_notification(notice=notice, transport=transport)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description='Send trusted KAORI GitHub Actions delivery notifications to a Telegram topic.'
+    )
+    parser.add_argument('--discover-workflow-run', action='store_true')
+    parser.add_argument('--scan-pr-failures', action='store_true')
+    parser.add_argument('--workflow-event', default='')
+    parser.add_argument('--head-branch', default='')
+    parser.add_argument('--base-branch', default='')
+    parser.add_argument('--source-sha', required=True)
+    parser.add_argument('--repository', required=True)
+    parser.add_argument('--pr-number', default='')
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    transport = TransportConfig(
+        bot_token=os.environ.get('TELEGRAM_BOT_TOKEN', ''),
+        chat_id=os.environ.get('TELEGRAM_CHAT_ID', ''),
+        topic_id=os.environ.get('TELEGRAM_GITHUB_ACTIONS_TOPIC_ID', ''),
+    )
+    configured, reason = configuration_status(
+        enabled=os.environ.get('TELEGRAM_NOTIFICATIONS_ENABLED', ''),
+        bot_token=transport.bot_token,
+        chat_id=transport.chat_id,
+        topic_id=transport.topic_id,
+    )
+    if not configured:
+        print(f'SKIP — {reason}')
+        return 0
+    token = os.environ.get('GH_TOKEN', '')
+    if args.scan_pr_failures:
+        return _scan_pr_failures(repository=args.repository, token=token, transport=transport)
+    if args.discover_workflow_run:
+        return _notify_trusted_push(args=args, token=token, transport=transport)
+    print('SKIP — No Telegram delivery discovery mode was requested.')
     return 0
 
 
