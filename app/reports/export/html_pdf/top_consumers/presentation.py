@@ -189,9 +189,7 @@ def build_recommendation_section(recommendations: list[dict[str, Any]]) -> dict[
             {
                 'field': 'Primary Action',
                 'requirement': (
-                    recommendations[0]['title']
-                    if recommendations
-                    else 'Continue consumer evidence monitoring.'
+                    recommendations[0]['title'] if recommendations else 'Continue consumer evidence monitoring.'
                 ),
             },
             {

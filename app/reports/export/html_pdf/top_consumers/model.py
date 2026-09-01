@@ -208,9 +208,7 @@ def with_ref(row: dict[str, Any], index: int) -> dict[str, Any]:
     return item
 
 
-def namespace_rows_for(
-    cpu_rows: list[dict[str, Any]], memory_rows: list[dict[str, Any]]
-) -> list[dict[str, Any]]:
+def namespace_rows_for(cpu_rows: list[dict[str, Any]], memory_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
     index = 1
     for resource, rows in (('CPU', cpu_rows), ('Memory', memory_rows)):

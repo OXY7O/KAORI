@@ -165,9 +165,7 @@ def recommendation_metrics(items: list[dict[str, Any]]) -> list[dict[str, str]]:
     ]
 
 
-def primary_interpretation(
-    cpu_rows: list[dict[str, Any]], memory_rows: list[dict[str, Any]]
-) -> dict[str, str]:
+def primary_interpretation(cpu_rows: list[dict[str, Any]], memory_rows: list[dict[str, Any]]) -> dict[str, str]:
     if memory_rows and len({row['namespace'] for row in memory_rows}) == 1:
         namespace = memory_rows[0]['namespace']
         return {
