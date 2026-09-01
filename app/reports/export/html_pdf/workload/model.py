@@ -348,7 +348,10 @@ def _configuration_stats(rows: list[dict[str, Any]]) -> _ConfigurationStats:
         right_size=sum(
             1
             for row in rows
-            if any(token in text(row.get('recommendation'), '').lower() for token in ('reduce', 'increase', 'right-size'))
+            if any(
+                token in text(row.get('recommendation'), '').lower()
+                for token in ('reduce', 'increase', 'right-size')
+            )
         ),
         available=bool(rows),
     )
