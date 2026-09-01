@@ -8,18 +8,27 @@ ROOT = Path(__file__).resolve().parents[3]
 QUALITY_WORKFLOW = ROOT / '.github/workflows/quality.yml'
 NOTIFY_WORKFLOW = ROOT / '.github/workflows/telegram-github-actions.yml'
 NOTIFIER = ROOT / 'scripts/ci_delivery_notify.py'
+CONTEXT = ROOT / 'scripts/ci_delivery_context.py'
 
 
 def read(path: Path) -> str:
     return path.read_text(encoding='utf-8')
 
 
-def load_notifier() -> ModuleType:
-    spec = importlib.util.spec_from_file_location('kaori_ci_delivery_notify_context', NOTIFIER)
+def load_module(path: Path, name: str) -> ModuleType:
+    spec = importlib.util.spec_from_file_location(name, path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def load_notifier() -> ModuleType:
+    return load_module(NOTIFIER, 'kaori_ci_delivery_notify_context')
+
+
+def load_context() -> ModuleType:
+    return load_module(CONTEXT, 'kaori_ci_delivery_context_contract')
 
 
 def test_trusted_notifier_observes_pr_failures_without_privileged_pr_trigger() -> None:
@@ -191,18 +200,18 @@ def test_missing_delivery_metadata_degrades_without_fabricated_issue_or_pr() -> 
 
 
 def test_issue_and_pr_context_helpers_follow_governed_linkage() -> None:
-    notifier = load_notifier()
+    context_module = load_context()
 
-    assert notifier.linked_issue_number('Refs #77') == 77
-    assert notifier.linked_issue_number('Closes #35') == 35
-    assert notifier.linked_issue_number('No governed issue link here') is None
+    assert context_module.linked_issue_number('Refs #77') == 77
+    assert context_module.linked_issue_number('Closes #35') == 35
+    assert context_module.linked_issue_number('No governed issue link here') is None
 
     pull_requests = [
         {'number': 90, 'base': {'ref': 'main'}, 'head': {'ref': 'kaori/staging'}},
         {'number': 79, 'base': {'ref': 'kaori/staging'}, 'head': {'ref': 'feat-77'}},
     ]
-    assert notifier.select_delivery_pr(pull_requests, profile='staging-integration')['number'] == 79
-    assert notifier.select_delivery_pr(pull_requests, profile='post-promotion')['number'] == 90
+    assert context_module.select_delivery_pr(pull_requests, profile='staging-integration')['number'] == 79
+    assert context_module.select_delivery_pr(pull_requests, profile='post-promotion')['number'] == 90
 
 
 def test_scheduled_failure_observer_selects_only_unnotified_actionable_pr_run() -> None:
