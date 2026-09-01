@@ -68,7 +68,7 @@ jobs:
             [[ -n "$path" ]] || continue
 
             case "$path" in
-              .github/*|.github/ci/*|requirements/*|Dockerfile*|docker-compose*|scripts/ci_admission.py|scripts/ci_admission_policy.py|scripts/quality_gate.sh|scripts/verify_analytics_pdf_publication.py|scripts/verify_pre_release_type_safety.py|scripts/verify_code_health.py|scripts/verify_code_health_baseline_integrity.py|docs/architecture/code-health-debt-baseline.json|tests/contracts/release/*|docs/engineering/KAORI_DELIVERY_WORKFLOW.md)
+              .github/*|requirements/*|Dockerfile*|docker-compose*|scripts/ci_admission.py|scripts/ci_admission_policy.py|scripts/quality_gate.sh|scripts/verify_analytics_pdf_publication.py|scripts/verify_pre_release_type_safety.py|scripts/verify_code_health.py|scripts/verify_code_health_baseline_integrity.py|docs/architecture/code-health-debt-baseline.json|tests/contracts/release/*|docs/engineering/KAORI_DELIVERY_WORKFLOW.md)
                 wide=true
                 python=true
                 templates=true
@@ -82,15 +82,15 @@ jobs:
               *.py) python=true ;;
             esac
             case "$path" in
-              app/templates/*|app/*/templates/*|app/*/templates/**/*) templates=true ;;
+              app/templates/*|app/*/templates/*) templates=true ;;
             esac
             case "$path" in
-              app/static/*|app/static/**/*|frontend/*|frontend/**/*|package.json|package-lock.json)
+              app/static/*|frontend/*|package.json|package-lock.json)
                 frontend=true
                 ;;
             esac
             case "$path" in
-              migrations/*|migrations/**/*|app/*/models.py|app/*/models/*)
+              migrations/*|app/*/models.py|app/*/models/*)
                 migrations=true
                 contracts=true
                 ;;
@@ -213,6 +213,10 @@ jobs:
             elapsed=$(( $(date +%s) - check_started ))
             printf '✅ %s · ⏱ %dm %02ds\n' "$label" $((elapsed / 60)) $((elapsed % 60))
           }
+
+          if [[ "$CHECK_WIDE" == "true" ]]; then
+            run_toolchain 'Workflow Lint' bash -lc 'actionlint .github/workflows/*.yml'
+          fi
 
           if [[ "$CHECK_PYTHON" == "true" ]]; then
             run_toolchain 'Ruff Check' python -m ruff check app migrations tests scripts

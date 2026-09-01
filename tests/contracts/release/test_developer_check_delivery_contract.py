@@ -65,11 +65,21 @@ def test_developer_check_routes_changed_paths_and_fails_safe_for_authority_chang
     ):
         assert token in source
 
+    for redundant_pattern in (
+        '.github/*|.github/ci/*',
+        'app/templates/*|app/*/templates/*|app/*/templates/**/*',
+        'app/static/*|app/static/**/*',
+        'frontend/*|frontend/**/*',
+        'migrations/*|migrations/**/*',
+    ):
+        assert redundant_pattern not in source
+
 
 def test_developer_check_uses_existing_validation_commands() -> None:
     source = read(DEVELOPER_WORKFLOW)
 
     for command in (
+        'actionlint .github/workflows/*.yml',
         'python -m ruff check',
         'python -m ruff format --check',
         'python -m djlint',
