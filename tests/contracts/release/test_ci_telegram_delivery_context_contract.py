@@ -48,6 +48,14 @@ def test_trusted_notifier_observes_pr_failures_without_privileged_pr_trigger() -
     assert 'TELEGRAM_BOT_TOKEN' not in quality
 
 
+def test_trusted_notifier_wait_budget_covers_comprehensive_admission() -> None:
+    notifier = load_notifier()
+    source = read(NOTIFY_WORKFLOW)
+
+    assert notifier._WORKFLOW_WAIT_ATTEMPTS * notifier._WORKFLOW_WAIT_SECONDS >= 45 * 60
+    assert 'timeout-minutes: 60' in source
+
+
 def test_actionable_delivery_boundaries_have_stage_specific_events() -> None:
     notifier = load_notifier()
 

@@ -34,7 +34,7 @@ except ModuleNotFoundError:
 _TELEGRAM_API: Final = 'https://api.telegram.org'
 _TRUE_VALUES: Final = frozenset({'1', 'true', 'yes', 'on'})
 _FAILURE_RESULTS: Final = frozenset({'failure', 'timed_out', 'action_required'})
-_WORKFLOW_WAIT_ATTEMPTS: Final = 90
+_WORKFLOW_WAIT_ATTEMPTS: Final = 300
 _WORKFLOW_WAIT_SECONDS: Final = 10
 
 _EVENT_TITLES: Final = {
