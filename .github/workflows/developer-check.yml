@@ -68,7 +68,7 @@ jobs:
             [[ -n "$path" ]] || continue
 
             case "$path" in
-              .github/*|.github/ci/*|requirements/*|Dockerfile*|docker-compose*|scripts/ci_admission.py|scripts/ci_admission_policy.py|scripts/quality_gate.sh|scripts/verify_analytics_pdf_publication.py|scripts/verify_pre_release_type_safety.py|tests/contracts/release/*|docs/engineering/KAORI_DELIVERY_WORKFLOW.md)
+              .github/*|.github/ci/*|requirements/*|Dockerfile*|docker-compose*|scripts/ci_admission.py|scripts/ci_admission_policy.py|scripts/quality_gate.sh|scripts/verify_analytics_pdf_publication.py|scripts/verify_pre_release_type_safety.py|scripts/verify_code_health.py|scripts/verify_code_health_baseline_integrity.py|docs/architecture/code-health-debt-baseline.json|tests/contracts/release/*|docs/engineering/KAORI_DELIVERY_WORKFLOW.md)
                 wide=true
                 python=true
                 templates=true
@@ -217,6 +217,8 @@ jobs:
           fi
 
           if [[ "$CHECK_PYTHON" == "true" && ( "$CHECK_WIDE" == "true" || "$CHECK_CONTRACTS" == "true" ) ]]; then
+            run_toolchain 'Code Health' python scripts/verify_code_health.py
+            run_toolchain 'Code Health Baseline Integrity' python scripts/verify_code_health_baseline_integrity.py
             run_toolchain 'Pyright' python -m pyright --project pyrightconfig.json
             run_toolchain 'Pre-release Type Safety' python scripts/verify_pre_release_type_safety.py
           fi
