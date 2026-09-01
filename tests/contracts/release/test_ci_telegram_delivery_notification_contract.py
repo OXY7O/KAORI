@@ -28,7 +28,8 @@ def test_notification_workflow_is_trusted_branch_only_and_repository_scoped() ->
     source = read(NOTIFY_WORKFLOW)
     quality = read(QUALITY_WORKFLOW)
 
-    assert 'name: KAORI GitHub Actions Telegram Notification' in source
+    assert 'name: KAORI Telegram Notify' in source
+    assert 'name: Notify' in source
     assert 'push:' in source
     assert '- kaori/staging' in source
     assert '- main' in source
@@ -188,6 +189,22 @@ def test_matching_kaori_ci_run_requires_exact_push_sha_and_branch() -> None:
         )
         == runs[2]
     )
+
+
+def test_notifier_understands_concise_and_legacy_ci_job_names() -> None:
+    notifier = load_notifier()
+
+    concise = [
+        {'name': 'Fast Smoke', 'conclusion': 'success'},
+        {'name': 'CI Admission', 'conclusion': 'success'},
+    ]
+    legacy = [
+        {'name': 'KAORI Fast Integration Smoke', 'conclusion': 'success'},
+        {'name': 'KAORI CI Admission', 'conclusion': 'success'},
+    ]
+    assert notifier.infer_execution(concise) == 'fast'
+    assert notifier.infer_execution(legacy) == 'fast'
+    assert notifier.first_failure([{'name': 'Security', 'conclusion': 'failure'}]) == 'Security — failure'
 
 
 def test_event_categories_are_stable_and_future_categories_are_reserved() -> None:

@@ -1,4 +1,4 @@
-name: KAORI GitHub Actions Telegram Notification
+name: KAORI Telegram Notify
 
 on:
   push:
@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   notify:
-    name: KAORI GitHub Actions Notification
+    name: Notify
     if: ${{ github.repository == 'OXY7O/KAORI' && github.event_name == 'push' && (github.ref == 'refs/heads/kaori/staging' || github.ref == 'refs/heads/main') }}
     runs-on: ubuntu-latest
     timeout-minutes: 20

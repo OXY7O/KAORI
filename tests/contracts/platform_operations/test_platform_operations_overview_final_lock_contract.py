@@ -124,7 +124,11 @@ def test_platform_operations_overview_final_lock_is_release_gated() -> None:
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_OVERVIEW_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md').exists()
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V2_0_AUDIT_2026_08_08.md').exists()
     quality_gate = read('scripts/quality_gate.sh')
-    assert 'pytest -q tests/contracts tests/migrations' in quality_gate
+    assert 'run_contract_migration_gate' in quality_gate
+    assert "'Contract & Migration Safety'" in quality_gate
+    assert 'tests/contracts' in quality_gate
+    assert 'tests/migrations' in quality_gate
+    assert "-m 'contract or migration'" in quality_gate
     assert 'verify_platform_operations_overview_final_lock.py' not in quality_gate
 
 

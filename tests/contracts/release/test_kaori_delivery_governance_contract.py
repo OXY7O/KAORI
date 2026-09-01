@@ -8,6 +8,7 @@ PROJECT_SETUP = ROOT / 'docs/engineering/KAORI_GITHUB_PROJECT_SETUP.md'
 LABEL_CATALOG = ROOT / 'docs/engineering/KAORI_GITHUB_LABEL_CATALOG.md'
 ISSUE_DIR = ROOT / '.github/ISSUE_TEMPLATE'
 QUALITY_WORKFLOW = ROOT / '.github/workflows/quality.yml'
+DEVELOPER_WORKFLOW = ROOT / '.github/workflows/developer-check.yml'
 PR_TEMPLATE = ROOT / '.github/PULL_REQUEST_TEMPLATE.md'
 
 
@@ -34,6 +35,8 @@ def test_delivery_workflow_locks_current_lifecycle_branch_and_uat_authority() ->
         'main',
         'kaori/staging',
         'kaori/working',
+        'Developer Check',
+        'Pre-Ready',
         'Full Admission',
         'exact evidence reuse',
         'authority fingerprint',
@@ -162,4 +165,16 @@ def test_progressive_ci_routes_only_governed_integration_pushes_and_staging_prs(
     assert "needs.validation-profile.outputs.execution == 'full'" in source
     assert "needs.validation-profile.outputs.execution == 'fast'" in source
     assert 'KAORI_PROFILE_VERSION: "3"' in source
-    assert 'KAORI CI Admission' in source
+    assert 'name: CI Admission' in source
+
+
+def test_draft_developer_check_is_path_aware_and_non_authoritative() -> None:
+    source = read(DEVELOPER_WORKFLOW)
+
+    assert 'name: KAORI Developer Check' in source
+    assert 'github.event.pull_request.draft == true' in source
+    assert 'name: Route Checks' in source
+    assert 'name: Developer Check' in source
+    assert 'wide=true' in source
+    assert 'scripts/quality_gate.sh --static' not in source
+    assert 'run-runtime-validation.sh' not in source

@@ -115,14 +115,16 @@ def test_forecast_legacy_partial_route_is_removed() -> None:
 
 
 def test_forecast_report_uses_canonical_thresholds_and_peak_projection() -> None:
-    report = read('app/reports/export/html_pdf/forecast_analysis.py')
+    model = read('app/reports/export/html_pdf/forecast/model.py')
+    sections = read('app/reports/export/html_pdf/forecast/sections.py')
+    contracts = read('app/kubernetes/analytics/forecast/contracts.py')
     payload = read('app/reports/export/payloads/forecast.py')
 
-    assert 'from app.kubernetes.analytics.forecast.contracts import CRITICAL_THRESHOLD, WARNING_THRESHOLD' in report
-    assert "'setting': '75% / 90%'" in report
-    assert "'warning': '75%'" in report
-    assert "'critical': '90%'" in report
-    assert "_float(item.get('peak_projected_percent')) or 0.0) >= _WARNING_THRESHOLD" in report
-    assert "_float(item.get('peak_projected_percent')) or 0.0) >= _CRITICAL_THRESHOLD" in report
+    assert 'from app.kubernetes.analytics.forecast.contracts import CRITICAL_THRESHOLD, WARNING_THRESHOLD' in model
+    assert 'WARNING_THRESHOLD = 75.0' in contracts
+    assert 'CRITICAL_THRESHOLD = 90.0' in contracts
+    assert "'setting': '75% / 90%'" in sections
+    assert "(float_value(item.get('peak_projected_percent')) or 0.0) >= WARNING_THRESHOLD" in model
+    assert "(float_value(item.get('peak_projected_percent')) or 0.0) >= CRITICAL_THRESHOLD" in model
     assert "'freshness': '75% / 90%'" in payload
     assert payload.count("'has_data': False") == 1

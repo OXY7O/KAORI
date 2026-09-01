@@ -41,6 +41,15 @@ _ACTIONS: Final = {
 }
 
 _FAILURE_ORDER: Final = (
+    'Resolve Profile',
+    'Static & Governance',
+    'Security',
+    'Functional Tests',
+    'Frontend',
+    'Runtime & DAST',
+    'Fast Smoke',
+    'CI Admission',
+    # Transitional compatibility for runs created before Issue #68.
     'Resolve KAORI Validation Profile',
     'Static, Architecture, and Governance',
     'Secrets, SAST, Dependencies, and Workflow Security',
@@ -148,7 +157,7 @@ def _evidence_summary(*, event: str, execution: str) -> str:
 
 def infer_execution(jobs: list[dict[str, Any]]) -> str:
     conclusions = _job_conclusions(jobs)
-    if conclusions.get('KAORI Fast Integration Smoke') == 'success':
+    if conclusions.get('Fast Smoke') == 'success' or conclusions.get('KAORI Fast Integration Smoke') == 'success':
         return 'fast'
     return 'full'
 
@@ -405,12 +414,12 @@ def main(argv: list[str] | None = None) -> int:
             base_branch=args.base_branch,
         )
         execution = infer_execution(jobs)
-        admission_result = conclusions.get('KAORI CI Admission', '')
+        admission_result = conclusions.get('CI Admission') or conclusions.get('KAORI CI Admission', '')
         if admission_result not in _FAILURE_RESULTS | {'success'} and workflow_conclusion in _FAILURE_RESULTS:
             admission_result = workflow_conclusion
         security_result = conclusions.get(
-            'Secrets, SAST, Dependencies, and Workflow Security',
-            'skipped',
+            'Security',
+            conclusions.get('Secrets, SAST, Dependencies, and Workflow Security', 'skipped'),
         )
         failure_detail = first_failure(jobs)
 

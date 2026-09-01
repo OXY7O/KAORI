@@ -110,14 +110,14 @@ def render_test_taxonomy_summary(junit_paths: Sequence[Path]) -> str:
                 details.append(f'{passed} passed')
             if skipped:
                 details.append(f'{skipped} skipped')
-            lines.append(f'FAIL — KAORI {label} · {" / ".join(details)}')
+            lines.append(f'❌ {label} · {" / ".join(details)}')
         elif passed:
             detail = f'{total} {_test_word(total)}'
             if skipped:
                 detail = f'{passed} passed / {skipped} skipped'
-            lines.append(f'PASS — KAORI {label} · {detail}')
+            lines.append(f'✅ {label} · {detail}')
         else:
-            lines.append(f'SKIP — KAORI {label} · {skipped} skipped')
+            lines.append(f'⚠️ {label} · {skipped} skipped')
     return '\n'.join(lines)
 
 

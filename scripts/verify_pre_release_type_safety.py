@@ -86,11 +86,21 @@ def main() -> None:
         '_cluster_health_rows, pagination = paginate_sequence(',
         'dashboard pagination result separation',
     )
-    _require(
-        'app/reports/export/html_pdf/forecast_analysis.py',
-        'projected is not None and projected >= _CRITICAL_THRESHOLD',
-        'forecast PDF optional projection guard',
-    )
+    for needle, description in (
+        (
+            "available = bool(item.get('has_data')) and projected is not None",
+            'forecast PDF optional projection availability guard',
+        ),
+        (
+            'if projected is not None and (history or projection):',
+            'forecast PDF optional projection evidence guard',
+        ),
+        (
+            'if projected is None:\n        projected = 0.0',
+            'forecast PDF optional projection normalization guard',
+        ),
+    ):
+        _require('app/reports/export/html_pdf/forecast/model.py', needle, description)
     _require(
         'app/reports/export/xlsx/style.py',
         'footer = sheet.oddFooter',
