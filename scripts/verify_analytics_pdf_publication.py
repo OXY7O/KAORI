@@ -37,6 +37,15 @@ PRESENTATION_MODULES = (
     'object_storage_analysis.py',
 )
 
+PRESENTATION_OWNERSHIP_PACKAGES = {
+    'analytics_overview.py': 'overview',
+    'resource_utilization.py': 'utilization',
+    'workload_analysis.py': 'workload',
+    'forecast_analysis.py': 'forecast',
+    'top_consumers_analysis.py': 'top_consumers',
+    'alerts_anomalies.py': 'alerts',
+}
+
 SECTION_DESCRIPTION_MAX_CHARS = 72
 
 REFERENCE_TEMPLATES = (
@@ -51,6 +60,15 @@ REFERENCE_TEMPLATES = (
 
 def read(path: Path) -> str:
     return path.read_text(encoding='utf-8')
+
+
+def read_presentation_ownership(filename: str) -> str:
+    sources = [read(HTML_PDF_ROOT / filename)]
+    package = PRESENTATION_OWNERSHIP_PACKAGES.get(filename)
+    if package:
+        package_root = HTML_PDF_ROOT / package
+        sources.extend(read(path) for path in sorted(package_root.glob('*.py')))
+    return '\n'.join(sources)
 
 
 def require(condition: bool, message: str, errors: list[str]) -> None:
@@ -298,7 +316,7 @@ def main() -> int:
         require(not legacy.exists(), f'Legacy PDF publication path still exists: {legacy.relative_to(ROOT)}', errors)
 
     for filename in PRESENTATION_MODULES:
-        source = read(HTML_PDF_ROOT / filename)
+        source = read_presentation_ownership(filename)
         require("'presentation_version': 'v3.0-" in source, f'{filename} is not marked as a v3.0 presentation.', errors)
         require(
             "table_policy='concise-register-plus-reference'" in source,
@@ -317,7 +335,7 @@ def main() -> int:
     chart_helper = read(HTML_PDF_ROOT / 'chart_labels.py')
     require('def resolve_vertical_labels(' in chart_helper, 'Chart collision resolver is missing.', errors)
     for filename in ('forecast_analysis.py', 'resource_utilization.py'):
-        source = read(HTML_PDF_ROOT / filename)
+        source = read_presentation_ownership(filename)
         require(
             'resolve_vertical_labels' in source,
             f'{filename} does not use the collision-safe chart label resolver.',
@@ -330,8 +348,8 @@ def main() -> int:
         errors,
     )
 
-    resource_source = read(HTML_PDF_ROOT / 'resource_utilization.py')
-    overview_source = read(HTML_PDF_ROOT / 'analytics_overview.py')
+    resource_source = read_presentation_ownership('resource_utilization.py')
+    overview_source = read_presentation_ownership('analytics_overview.py')
     require(
         '/ 1024 ** 3' in resource_source or '/ 1024**3' in resource_source,
         'Resource Utilization does not normalize byte memory values to GiB.',
