@@ -160,7 +160,7 @@ def test_family_pairs_reserve_bottom_clearance_and_align_descriptions() -> None:
 
 
 def test_workload_half_width_signal_register_uses_compact_labels() -> None:
-    presenter = read('app/reports/export/html_pdf/workload_analysis.py')
+    presenter = read('app/reports/export/html_pdf/workload/actions.py')
     copy_rules = read('app/reports/export/html_pdf/publication_copy.py')
     assert 'compact_governance_signal' in presenter
     for label in ('ResourceQuota Gap', 'Requests Gap', 'Memory Limit Review', 'BestEffort Review'):
@@ -219,7 +219,7 @@ def test_overview_uses_shared_status_language_component() -> None:
 
 
 def test_workload_signal_labels_do_not_depend_on_counts() -> None:
-    presenter = read('app/reports/export/html_pdf/workload_analysis.py')
+    presenter = read('app/reports/export/html_pdf/workload/actions.py')
     copy_rules = read('app/reports/export/html_pdf/publication_copy.py')
     assert "'Without ResourceQuota': 'ResourceQuota Gap'" in copy_rules
     assert "'With Incomplete Requests': 'Requests Gap'" in copy_rules
@@ -239,9 +239,9 @@ def test_storage_count_donut_wraps_long_center_label() -> None:
 
 
 def test_top_consumer_totals_normalize_memory_before_display() -> None:
-    presenter = read('app/reports/export/html_pdf/top_consumers_analysis.py')
-    assert 'def _normalized_usage_value(' in presenter
-    assert '_normalized_usage_value(row)' in presenter
+    model = read('app/reports/export/html_pdf/top_consumers/model.py')
+    assert 'def normalized_usage_value(' in model
+    assert 'normalized_usage_value(row)' in model
 
 
 def test_top_consumer_namespace_register_allocates_all_six_columns() -> None:
@@ -315,22 +315,23 @@ def test_dense_storage_and_alert_pages_compact_internals_not_typography() -> Non
 
 
 def test_top_consumer_namespace_charts_use_reference_codes() -> None:
-    presenter = read('app/reports/export/html_pdf/top_consumers_analysis.py')
+    model = read('app/reports/export/html_pdf/top_consumers/model.py')
+    presentation = read('app/reports/export/html_pdf/top_consumers/presentation.py')
     template = read('app/templates/reports/pdf/top_consumers_analysis.html')
 
-    assert "cpu_namespace_rows = [item for item in namespace_rows if item['signal'] == 'CPU']" in presenter
-    assert "memory_namespace_rows = [item for item in namespace_rows if item['signal'] == 'Memory']" in presenter
-    assert "'cpu_rows': cpu_namespace_rows" in presenter
-    assert "'memory_rows': memory_namespace_rows" in presenter
+    assert "cpu_namespace_rows=[item for item in namespace_rows if item['signal'] == 'CPU']" in model
+    assert "memory_namespace_rows=[item for item in namespace_rows if item['signal'] == 'Memory']" in model
+    assert "'cpu_rows': state.cpu_namespace_rows" in presentation
+    assert "'memory_rows': state.memory_namespace_rows" in presentation
     assert template.count('<strong>{{ item.ref }}</strong>') >= 2
     assert '<strong>{{ item.namespace }}</strong>' not in template
 
 
 def test_top_consumer_resource_totals_use_normalized_values_everywhere() -> None:
-    presenter = read('app/reports/export/html_pdf/top_consumers_analysis.py')
-    assert 'total = sum(_normalized_usage_value(row) for row in rows)' in presenter
-    assert 'memory_total = sum(_normalized_usage_value(row) for row in memory_rows)' in presenter
-    assert "bucket['value'] += _normalized_usage_value(row)" in presenter
+    model = read('app/reports/export/html_pdf/top_consumers/model.py')
+    assert 'total = sum(max(normalized_usage_value(row), 0.0) for row in displayed)' in model
+    assert 'memory_total = sum(normalized_usage_value(row) for row in memory_rows)' in model
+    assert "bucket['value'] += normalized_usage_value(row)" in model
 
 
 def test_report_specific_css_does_not_override_shared_publication_typography() -> None:

@@ -80,16 +80,16 @@ def test_chart_collision_resolver_is_used_by_multi_series_reports() -> None:
     assert 'dedicated label gutter' in helper.lower()
 
     for path in (
-        'app/reports/export/html_pdf/forecast_analysis.py',
-        'app/reports/export/html_pdf/resource_utilization.py',
+        'app/reports/export/html_pdf/forecast/charts.py',
+        'app/reports/export/html_pdf/utilization/charts.py',
         'app/reports/export/html_pdf/capacity/charts.py',
     ):
         assert 'resolve_vertical_labels' in read(path), path
 
 
 def test_memory_values_are_normalized_before_presentation() -> None:
-    resource = read('app/reports/export/html_pdf/resource_utilization.py')
-    overview = read('app/reports/export/html_pdf/analytics_overview.py')
+    resource = read('app/reports/export/html_pdf/utilization/model.py')
+    overview = read('app/reports/export/html_pdf/overview/consumers.py')
 
     assert 'return value / 1024**3' in resource
     assert 'raw_value = raw_value / 1024**3' in overview

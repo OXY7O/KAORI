@@ -8,6 +8,15 @@ phase="${1:---all}"
 TEST_OUTPUT_DIR="tmp/ci-artifacts/test-output"
 STATIC_OUTPUT_DIR="tmp/ci-artifacts/static-output"
 
+status_icon() {
+    case "$1" in
+        PASS) printf '✅' ;;
+        FAIL) printf '❌' ;;
+        SKIP|REUSED|FALLBACK) printf '⚠️' ;;
+        *) printf '•' ;;
+    esac
+}
+
 append_test_summary() {
     local status="$1"
     local label="$2"
@@ -18,7 +27,7 @@ append_test_summary() {
     fi
 
     {
-        printf -- '- **%s — KAORI %s**\n' "$status" "$label"
+        printf -- '- **%s %s**\n' "$(status_icon "$status")" "$label"
         printf '  - %s\n' "$detail"
     } >>"$GITHUB_STEP_SUMMARY"
 }
@@ -28,7 +37,7 @@ record_test_result() {
     local label="$2"
     local detail="$3"
 
-    printf '\n%s — KAORI %s · %s\n' "$status" "$label" "$detail"
+    printf '\n%s %s · %s\n' "$(status_icon "$status")" "$label" "$detail"
     append_test_summary "$status" "$label" "$detail"
 }
 
@@ -55,8 +64,8 @@ print_pytest_failure_excerpt() {
         first_failure='Pytest exited non-zero; inspect the retained raw diagnostic log.'
     fi
 
-    printf 'First actionable failure — %s\n' "$first_failure" >&2
-    printf 'Diagnostic excerpt — bounded; full pytest output is retained at %s\n' "$log_file" >&2
+    printf '❌ First actionable failure — %s\n' "$first_failure" >&2
+    printf '📦 Diagnostic excerpt — bounded; full pytest output is retained at %s\n' "$log_file" >&2
 
     awk '
         /={3,} FAILURES ={3,}/ {capture=1}
@@ -72,26 +81,30 @@ print_pytest_failure_excerpt() {
 run_pytest_capture() {
     local label="$1"
     shift
-    local slug log_file result_line status
+    local slug log_file result_line status started elapsed
 
     mkdir -p "$TEST_OUTPUT_DIR"
     slug="$(printf '%s' "$label" | tr '[:upper:] ' '[:lower:]-' | tr -cd 'a-z0-9_-')"
     log_file="$(mktemp "$TEST_OUTPUT_DIR/${slug}.XXXXXX.log")"
+    started="$(date +%s)"
+    printf '⏳ %s\n' "$label"
 
     if pytest "$@" >"$log_file" 2>&1; then
+        elapsed=$(( $(date +%s) - started ))
         result_line="$(pytest_result_line "$log_file" || true)"
         [[ -n "$result_line" ]] || result_line='Pytest completed successfully.'
-        record_test_result 'PASS' "$label" "$result_line"
+        record_test_result 'PASS' "$label" "$result_line · ⏱ $(printf '%dm %02ds' $((elapsed / 60)) $((elapsed % 60)))"
         return 0
     else
         status=$?
     fi
 
+    elapsed=$(( $(date +%s) - started ))
     result_line="$(pytest_result_line "$log_file" || true)"
     [[ -n "$result_line" ]] || result_line="Pytest exited with status $status."
-    record_test_result 'FAIL' "$label" "$result_line" >&2
+    record_test_result 'FAIL' "$label" "$result_line · ⏱ $(printf '%dm %02ds' $((elapsed / 60)) $((elapsed % 60)))" >&2
     print_pytest_failure_excerpt "$log_file"
-    printf 'Next action — repair the first actionable failure above, then rerun this gate.\n' >&2
+    printf '➡️ Repair the first actionable failure above, collect remaining findings, then rerun this gate.\n' >&2
     return "$status"
 }
 
@@ -99,11 +112,13 @@ run_command_capture() {
     local group="$1"
     local label="$2"
     shift 2
-    local slug log_file status first_failure
+    local slug log_file status first_failure started
 
     mkdir -p "$STATIC_OUTPUT_DIR"
     slug="$(printf '%s-%s' "$group" "$label" | tr '[:upper:] /&' '[:lower:]----' | tr -cd 'a-z0-9_-')"
     log_file="$(mktemp "$STATIC_OUTPUT_DIR/${slug}.XXXXXX.log")"
+    started="$(date +%s)"
+    printf '⏳ %s — %s\n' "$group" "$label"
 
     if "$@" >"$log_file" 2>&1; then
         return 0
@@ -113,11 +128,12 @@ run_command_capture() {
 
     first_failure="$(grep -m1 -E '^(FAIL|FAILED|ERROR|E[[:space:]]|[A-Z][0-9]{3}[[:space:]])' "$log_file" || true)"
     [[ -n "$first_failure" ]] || first_failure="Command exited with status $status."
-    printf '  FAIL — %s\n' "$label" >&2
-    printf 'First actionable failure — %s\n' "$first_failure" >&2
-    printf 'Diagnostic excerpt — bounded; full output retained at %s\n' "$log_file" >&2
+    printf '❌ %s\n' "$label" >&2
+    printf '❌ First actionable failure — %s\n' "$first_failure" >&2
+    printf '⏱ %dm %02ds\n' $((($(date +%s) - started) / 60)) $((($(date +%s) - started) % 60)) >&2
+    printf '📦 Diagnostic excerpt — bounded; full output retained at %s\n' "$log_file" >&2
     tail -n 60 "$log_file" >&2
-    printf 'Next action — repair %s, then rerun %s.\n' "$label" "$group" >&2
+    printf '➡️ Repair %s, collect remaining findings, then rerun %s.\n' "$label" "$group" >&2
     return "$status"
 }
 
@@ -125,6 +141,8 @@ run_static_group() {
     local group="$1"
     shift
     local group_pass_count=0
+    local group_started
+    group_started="$(date +%s)"
 
     while (( "$#" )); do
         local label="$1"
@@ -140,16 +158,15 @@ run_static_group() {
         fi
     done
 
-    printf 'PASS — KAORI %s · %s checks\n' "$group" "$group_pass_count"
+    local elapsed=$(( $(date +%s) - group_started ))
+    printf '✅ %s · %s checks · ⏱ %dm %02ds\n' "$group" "$group_pass_count" $((elapsed / 60)) $((elapsed % 60))
     append_test_summary \
         'PASS' \
         "$group" \
-        "$group_pass_count checks. Detailed PASS output is retained in $STATIC_OUTPUT_DIR."
+        "$group_pass_count checks · $(printf '%dm %02ds' $((elapsed / 60)) $((elapsed % 60))). Detailed output is retained in $STATIC_OUTPUT_DIR."
 }
 
 run_contract_migration_gate() {
-    # Canonical contract/migration coverage is executed through run_pytest_capture;
-    # semantic equivalent of: pytest -q tests/contracts tests/migrations
     run_pytest_capture \
         'Contract & Migration Safety' \
         -q \
@@ -321,7 +338,7 @@ run_frontend() {
 }
 
 run_smoke() {
-    printf 'KAORI CI — Integration Smoke\n'
+    printf '⏳ Integration Smoke\n'
     python scripts/verify_python_syntax.py
     python scripts/verify_architecture_boundaries.py
     python scripts/verify_internal_import_symbols.py
