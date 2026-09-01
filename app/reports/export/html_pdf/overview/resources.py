@@ -35,13 +35,7 @@ def _set_metric_percent(
             'chart_percent': value,
             'headroom_percent': max(0.0, 100.0 - value),
             'available': True,
-            'status': (
-                'Critical'
-                if metric_tone == 'critical'
-                else 'Warning'
-                if metric_tone == 'warning'
-                else 'Normal'
-            ),
+            'status': ('Critical' if metric_tone == 'critical' else 'Warning' if metric_tone == 'warning' else 'Normal'),
             'tone': metric_tone,
             'description': source_note,
         }
@@ -83,9 +77,7 @@ def reconcile_resource_metrics(
         storage_used = max(0.0, 100.0 - number(storage_snapshot.get('free_percent')))
     storage_metric = result.get('storage', {})
     storage_current = storage_metric.get('percent') if storage_metric.get('available') else None
-    if storage_used is not None and (
-        storage_current is None or (storage_current <= 0.0 and storage_used >= 0.5)
-    ):
+    if storage_used is not None and (storage_current is None or (storage_current <= 0.0 and storage_used >= 0.5)):
         result['storage'] = _set_metric_percent(
             storage_metric,
             storage_used,
@@ -175,12 +167,7 @@ def resource_metrics(
         card = mapping(resource_snapshot.get(key))
         current_percent = percent(card)
         card_status = status(card.get('status'), '')
-        available = (
-            bool(card)
-            and current_percent is not None
-            and evidence_available
-            and not _unavailable_state(card_status)
-        )
+        available = bool(card) and current_percent is not None and evidence_available and not _unavailable_state(card_status)
         if current_percent is not None and available:
             metric_tone = tone(card.get('tone') or card.get('status'))
             current_status = card_status or 'Current'
@@ -233,13 +220,7 @@ def storage_headroom_metric(storage: Mapping[str, Any]) -> dict[str, Any]:
         metric_status = 'Review' if risks else 'Not Available'
     else:
         metric_tone = 'critical' if free < 10 else 'warning' if risks or free < 30 else 'normal'
-        metric_status = (
-            'Critical'
-            if metric_tone == 'critical'
-            else 'Review'
-            if metric_tone == 'warning'
-            else 'Normal'
-        )
+        metric_status = 'Critical' if metric_tone == 'critical' else 'Review' if metric_tone == 'warning' else 'Normal'
     return {
         'label': 'PVC Headroom',
         'value': display_percent(free),
@@ -281,11 +262,7 @@ def capacity_rows(
         ('pods_remaining',),
         ('pod_capacity', 'remaining'),
     )
-    pods_total = (
-        pods_used_count + int(round(pods_remaining or 0))
-        if pods_used_count and pods_remaining is not None
-        else 0
-    )
+    pods_total = pods_used_count + int(round(pods_remaining or 0)) if pods_used_count and pods_remaining is not None else 0
     pods_capacity_label = (
         f'{pods_total} Total'
         if pods_total
@@ -302,13 +279,7 @@ def capacity_rows(
         storage_tone = 'warning' if storage_risks or storage_free < 30.0 else 'normal'
     storage_status = status(storage_snapshot.get('status'), '')
     if not storage_status:
-        storage_status = (
-            'Review'
-            if storage_tone == 'warning'
-            else 'Critical'
-            if storage_tone == 'critical'
-            else 'Normal'
-        )
+        storage_status = 'Review' if storage_tone == 'warning' else 'Critical' if storage_tone == 'critical' else 'Normal'
     storage_used_percent = max(0.0, min(100.0, 100.0 - storage_free))
     return [
         {

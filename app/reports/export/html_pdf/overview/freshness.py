@@ -324,10 +324,7 @@ def _freshness_history(raw_history: Sequence[Any]) -> tuple[list[float], list[st
 def _freshness_points(values: Sequence[float]) -> list[tuple[float, float]]:
     left, right, top, bottom = 42.0, 606.0, 18.0, 116.0
     step = (right - left) / (len(values) - 1)
-    return [
-        (left + index * step, bottom - (value / 100.0) * (bottom - top))
-        for index, value in enumerate(values)
-    ]
+    return [(left + index * step, bottom - (value / 100.0) * (bottom - top)) for index, value in enumerate(values)]
 
 
 def _empty_freshness_svg() -> str:
