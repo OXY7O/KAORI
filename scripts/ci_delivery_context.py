@@ -11,9 +11,7 @@ from urllib.request import Request, urlopen
 _GITHUB_API: Final = 'https://api.github.com'
 _FAILURE_RESULTS: Final = frozenset({'failure', 'timed_out', 'action_required'})
 _RECEIPT_PREFIX: Final = 'kaori-telegram-quality-run-'
-_LINKED_ISSUE_RE: Final = re.compile(
-    r'(?im)\b(?:refs?|closes?|fixes?|resolves?)\s+#(?P<number>\d+)\b'
-)
+_LINKED_ISSUE_RE: Final = re.compile(r'(?im)\b(?:refs?|closes?|fixes?|resolves?)\s+#(?P<number>\d+)\b')
 _MERGE_PR_RE: Final = re.compile(r'(?im)^Merge pull request #(?P<number>\d+)\b')
 
 
@@ -104,11 +102,7 @@ def select_unnotified_pr_failure(
     runs: list[dict[str, Any]],
     artifacts: list[dict[str, Any]],
 ) -> dict[str, Any] | None:
-    receipts = {
-        str(artifact.get('name') or '')
-        for artifact in artifacts
-        if isinstance(artifact, dict)
-    }
+    receipts = {str(artifact.get('name') or '') for artifact in artifacts if isinstance(artifact, dict)}
     candidates = [
         run
         for run in runs
@@ -153,9 +147,7 @@ def _fetch_commit_pull_requests(
     token: str,
 ) -> list[dict[str, Any]]:
     payload = github_api_get(
-        path=(
-            f'/repos/{safe_repository(repository)}/commits/{quote(source_sha, safe="")}/pulls?per_page=100'
-        ),
+        path=(f'/repos/{safe_repository(repository)}/commits/{quote(source_sha, safe="")}/pulls?per_page=100'),
         token=token,
     )
     if not isinstance(payload, list):
@@ -250,9 +242,7 @@ def _resolve_pull_request(
             pr_number=int(selected.get('number') or 0),
             token=token,
         )
-    merge_pr_number = _merge_commit_pr_number(
-        _fetch_commit(repository=repository, source_sha=source_sha, token=token)
-    )
+    merge_pr_number = _merge_commit_pr_number(_fetch_commit(repository=repository, source_sha=source_sha, token=token))
     if merge_pr_number is None:
         return None
     return _fetch_pull_request(
@@ -282,9 +272,7 @@ def resolve_delivery_context(
 
     issue_number = linked_issue_number(str(pull_request.get('body') or ''))
     issue = (
-        _fetch_issue(repository=repository, issue_number=issue_number, token=token)
-        if issue_number is not None
-        else {}
+        _fetch_issue(repository=repository, issue_number=issue_number, token=token) if issue_number is not None else {}
     )
     return DeliveryContext(
         issue_number=str(issue_number or ''),
