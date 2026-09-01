@@ -26,10 +26,15 @@ Idea / Request
   -> Staging Integration: exact evidence reuse + Fast Smoke
   -> UAT
   -> explicit Local UAT acceptance
+  -> when release-bound: immutable OCI image + OCI digest
+  -> when release-bound: deploy exact digest to https://kaori.cloud
+  -> when release-bound: VPS UAT against accepted staging SHA + digest
   -> Promotion PR kaori/staging -> main
   -> evidence reuse + Fast Smoke
   -> merge commit
   -> Post-promotion integrity
+  -> when release-bound: Semantic Versioning release of the same digest without rebuilding
+  -> when release-bound: production RUN + rollback evidence
   -> Done
 ```
 
@@ -44,6 +49,14 @@ Full Admission is the final-candidate admission boundary. It is not the normal d
 ## Human-Readable GitHub Standard
 
 GitHub history is a long-lived engineering record. Titles, branches, commits, Pull Requests, comments, and CI evidence must be readable without reconstructing intent from source code.
+
+### Metadata authority
+
+GitHub-native and GitHub Project fields are the metadata authority. Issue and PR bodies **must not** recreate those fields in a `Project Metadata` table or another duplicate metadata block.
+
+Applicable Issue metadata belongs in GitHub-native surfaces: assignees, Project membership, Status, Sprint, Native Issue Type, Priority, Story Points, Milestone, canonical labels, native relationships, and Development links. Applicable PR metadata belongs in reviewers, assignees, labels, Project/Status/Sprint/Milestone where supported, and Development linkage to the governing Issue.
+
+When connected tooling cannot mutate a Project/custom field or relationship, report the exact missing field and intended value to the maintainer. Do not duplicate unavailable metadata into the body as a workaround.
 
 ### Issue titles
 
@@ -104,6 +117,7 @@ Summary
   -> Verification Evidence
   -> Security / Migration / Operational Impact
   -> UAT
+  -> Artifact / Release Evidence when applicable
   -> Release Impact
   -> Reviewer Checklist
 ```
@@ -128,8 +142,8 @@ GitHub Project `Status` is the lifecycle authority:
 3. `Ready` — Definition of Ready satisfied.
 4. `In Progress` — implementation or remediation underway.
 5. `Review` — Draft/Ready PR review, Developer Check, CI, and integration assessment are active.
-6. `UAT` — integrated staging evidence is ready for explicit Local UAT.
-7. `Done` — Local UAT is accepted and Definition of Done is satisfied.
+6. `UAT` — integrated staging evidence is ready for explicit human acceptance; release-bound work remains here while artifact/VPS acceptance or final promotion is pending.
+7. `Done` — applicable acceptance and Definition of Done are satisfied.
 
 `workflow:blocked` is exception metadata, not a competing lifecycle Status.
 
@@ -151,6 +165,8 @@ Code complete and Full Admission are necessary but not sufficient. Applicable co
 - explicit Local UAT acceptance;
 - promotion lineage verified when promoted to `main`;
 - Issue/PR evidence recorded.
+
+For work entering the artifact-backed release path, completion additionally requires immutable artifact identity, VPS UAT against that exact artifact, Semantic Versioning release of the accepted digest without rebuilding, production RUN verification, and rollback evidence.
 
 ## Developer Check — Draft Development Loop
 
@@ -298,8 +314,10 @@ A small issue still follows Issue -> Draft -> Developer Check -> Pre-Ready -> Re
 - Draft finding -> remain Draft / `Review`; batch repair through Developer Check.
 - Ready Full Admission FAIL -> return to Draft / `In Progress`, collect all findings, batch repair, then create a new frozen candidate.
 - Staging Integration FAIL -> no UAT progression; repair or FALLBACK.
-- Local UAT FAIL -> return to `In Progress` with UAT evidence.
+- Artifact publication or digest-verification FAIL -> do not start VPS UAT.
+- Local UAT or VPS UAT FAIL -> return to `In Progress` with UAT evidence.
 - Promotion/Post-promotion FAIL -> do not mark delivery complete.
+- Release digest mismatch or production RUN FAIL -> do not mark release-bound work Done.
 - No failing or unaccepted change is promoted to `main`.
 
 ## Staging Integration and UAT
@@ -321,15 +339,36 @@ admitted Ready candidate
 
 CI is machine verification; Local UAT is human acceptance and must never be fabricated.
 
+## Artifact-Backed VPS and Release Boundary
+
+The artifact-backed path applies when a governed increment is being prepared for VPS UAT and production release under #47–#51. It extends the normal staging authority; it does not replace Developer Check, Full Admission, staging evidence reuse, or Local UAT semantics for ordinary increments.
+
+After an accepted `kaori/staging` SHA passes its required staging gates:
+
+1. Trusted staging automation builds the production target and produces an **immutable OCI image** in the approved configurable Docker Registry.
+2. Evidence records the accepted staging SHA, candidate tag, image name, and **OCI digest**. `latest` is never deployment authority.
+3. The exact digest is deployed by the production-like Docker Compose stack to the dedicated VPS behind `https://kaori.cloud`.
+4. **VPS UAT** explicitly references the deployed staging SHA and OCI digest. Acceptance of a mutable tag without the digest is insufficient.
+5. Only the accepted staging lineage may enter the governed `kaori/staging` -> `main` promotion PR; unreviewed source drift invalidates the acceptance pair.
+6. The production release uses **Semantic Versioning** and promotes/tags the exact UAT-approved digest **without rebuilding** application bits.
+7. Post-promotion integrity, production readiness/health, workers, HTTPS and applicable security checks establish **production RUN** evidence.
+8. The previous known-good digest is retained as the rollback target.
+
+The Docker Registry host/repository are configuration rather than provider-specific source assumptions. Registry push credentials and VPS pull credentials remain GitHub/runtime secret authority and must never be committed or copied into Issue/PR bodies.
+
+Release-bound work stays in Project Status `UAT` while artifact publication, VPS UAT, main promotion, or release verification is pending. It reaches `Done` only when the required release/RUN boundary is complete.
+
 ## Main Promotion
 
 Accepted increments are promoted through an explicit PR from `kaori/staging` to `main`. Promotion verifies exact accepted staging lineage, evidence identity, and fresh Fast Smoke. After merge, Post-promotion verifies the resulting main lineage.
+
+For artifact-backed releases, the promotion PR also records the UAT-approved OCI digest. Main source promotion and release tagging must not rebuild the accepted application image; the release must reference the same digest accepted during VPS UAT.
 
 The default merge method is **merge commit**. Synchronize `kaori/staging` back to the accepted `main` lineage when required so long-lived branches do not accumulate avoidable drift.
 
 ## Hotfix
 
-Urgent production fixes use the same quality boundaries: Draft + Developer Check, Pre-Ready, frozen Ready candidate, Full Admission, applicable UAT, and merge. Expedite sequencing is allowed; validation bypass is not.
+Urgent production fixes use the same quality boundaries: Draft + Developer Check, Pre-Ready, frozen Ready candidate, Full Admission, applicable UAT, and merge. Expedite sequencing is allowed; validation bypass is not. If a hotfix is released through the artifact-backed path, immutable digest, applicable VPS acceptance, release identity, production RUN, and rollback evidence remain required.
 
 ## Label Authority
 
