@@ -78,9 +78,7 @@ def test_production_image_carries_oci_source_and_revision_labels() -> None:
 
 def test_staging_publish_wait_does_not_occupy_kaori_ci_runner() -> None:
     workflow = publish_source()
-    wait_section = workflow.split('  wait-for-quality:\n', 1)[1].split(
-        '\n  publish:\n', 1
-    )[0]
+    wait_section = workflow.split('  wait-for-quality:\n', 1)[1].split('\n  publish:\n', 1)[0]
     publish_section = workflow.split('\n  publish:\n', 1)[1]
 
     assert 'runs-on: ubuntu-latest' in wait_section
