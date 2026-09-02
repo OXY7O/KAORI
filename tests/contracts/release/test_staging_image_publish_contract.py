@@ -74,3 +74,15 @@ def test_production_image_carries_oci_source_and_revision_labels() -> None:
     assert 'ARG OCI_REVISION' in dockerfile
     assert 'org.opencontainers.image.source' in dockerfile
     assert 'org.opencontainers.image.revision' in dockerfile
+
+
+def test_staging_publish_wait_does_not_occupy_kaori_ci_runner() -> None:
+    workflow = publish_source()
+    wait_section = workflow.split('  wait-for-quality:\n', 1)[1].split(
+        '\n  publish:\n', 1
+    )[0]
+    publish_section = workflow.split('\n  publish:\n', 1)[1]
+
+    assert 'runs-on: ubuntu-latest' in wait_section
+    assert 'runs-on: [self-hosted, linux, x64, kaori-ci]' not in wait_section
+    assert 'runs-on: [self-hosted, linux, x64, kaori-ci]' in publish_section
