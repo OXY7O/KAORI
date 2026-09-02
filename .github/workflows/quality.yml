@@ -20,7 +20,6 @@ on:
   pull_request:
     branches:
       - main
-      - kaori/staging
     types:
       - opened
       - synchronize
@@ -582,12 +581,11 @@ jobs:
             FIRST_FAILURE="Fast Smoke — $INTEGRATION_SMOKE"
           fi
 
-          next='Ready for PR Integration'
+          next='Ready for staging integration'
           if [[ "$RESULT" == "FAIL" ]]; then
-            next='Collect all actionable findings, return to Draft, batch repair, then rerun Developer Check before the next Ready candidate'
+            next='Collect all actionable findings on the governed integration branch before any promotion or UAT progression'
           else
             case "${{ needs.validation-profile.outputs.profile }}" in
-              pr-integration) next='Ready to merge into kaori/staging' ;;
               staging-integration) next='Ready for human UAT on the exact staging SHA' ;;
               promotion) next='Ready to promote accepted staging lineage to main' ;;
               post-promotion) next='Production lineage verified; delivery evidence complete' ;;
