@@ -81,6 +81,9 @@ jobs:
     if: ${{ needs.wait-for-quality.outputs.conclusion == 'success' }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 180
+    permissions:
+      contents: write
+      actions: read
     env:
       REGISTRY_HOST: ${{ vars.KAORI_DOCKER_REGISTRY_HOST }}
       REGISTRY_IMAGE: ${{ vars.KAORI_DOCKER_REGISTRY_IMAGE }}
@@ -103,6 +106,61 @@ jobs:
             exit 1
           }
 
+      - name: Resolve Automatic SemVer Candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch --force --tags origin
+          INITIAL_VERSION='0.1.0'
+          latest_stable_tag="$(
+            git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname |
+              grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
+              head -n 1 || true
+          )"
+
+          if [[ -z "$latest_stable_tag" ]]; then
+            NEXT_VERSION="$INITIAL_VERSION"
+            printf 'No stable KAORI tag exists; bootstrap release train is %s\n' "$NEXT_VERSION"
+          else
+            version="${latest_stable_tag#v}"
+            IFS='.' read -r major minor patch <<<"$version"
+            range="${latest_stable_tag}..HEAD"
+            subjects="$(git log --format='%s' "$range")"
+            bodies="$(git log --format='%b' "$range")"
+
+            if grep -Eq '^[[:alnum:]_-]+(\([^)]*\))?!:' <<<"$subjects" || \
+              grep -Eq '^BREAKING CHANGE:' <<<"$bodies"; then
+              major=$((major + 1))
+              minor=0
+              patch=0
+            elif grep -Eq '^feat(\([^)]*\))?:' <<<"$subjects"; then
+              minor=$((minor + 1))
+              patch=0
+            else
+              patch=$((patch + 1))
+            fi
+            NEXT_VERSION="${major}.${minor}.${patch}"
+          fi
+
+          latest_rc=0
+          while IFS= read -r tag; do
+            [[ -n "$tag" ]] || continue
+            rc="${tag##*.}"
+            if [[ "$rc" =~ ^[0-9]+$ ]] && (( rc > latest_rc )); then
+              latest_rc="$rc"
+            fi
+          done < <(git tag --list "v${NEXT_VERSION}-rc.*" --sort=version:refname)
+          NEXT_RC=$((latest_rc + 1))
+          CANDIDATE_TAG="v${NEXT_VERSION}-rc.${NEXT_RC}"
+          CANDIDATE_IMAGE="$REGISTRY_IMAGE:$CANDIDATE_TAG"
+          {
+            printf 'NEXT_VERSION=%s\n' "$NEXT_VERSION"
+            printf 'NEXT_RC=%s\n' "$NEXT_RC"
+            printf 'CANDIDATE_TAG=%s\n' "$CANDIDATE_TAG"
+            printf 'CANDIDATE_IMAGE=%s\n' "$CANDIDATE_IMAGE"
+          } >> "$GITHUB_ENV"
+          printf 'Resolved KAORI staging candidate: %s at %s\n' "$CANDIDATE_TAG" "$GITHUB_SHA"
+
       - name: Resolve CI Toolchain
         shell: bash
         run: |
@@ -116,12 +174,6 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          CANDIDATE_TAG="sha-${GITHUB_SHA}"
-          CANDIDATE_IMAGE="$REGISTRY_IMAGE:$CANDIDATE_TAG"
-          {
-            printf 'CANDIDATE_TAG=%s\n' "$CANDIDATE_TAG"
-            printf 'CANDIDATE_IMAGE=%s\n' "$CANDIDATE_IMAGE"
-          } >> "$GITHUB_ENV"
           docker build \
             --target production \
             --build-arg OCI_SOURCE="https://github.com/${GITHUB_REPOSITORY}" \
@@ -185,6 +237,25 @@ jobs:
           path: staging-image.env
           if-no-files-found: error
           retention-days: 30
+
+      - name: Create Published RC Git Tag
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          payload="$(jq -nc \
+            --arg ref "refs/tags/${CANDIDATE_TAG}" \
+            --arg sha "$GITHUB_SHA" \
+            '{ref: $ref, sha: $sha}')"
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            --data "$payload" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/refs"
+          printf 'Published RC Git tag %s -> %s\n' "$CANDIDATE_TAG" "$GITHUB_SHA"
 
       - name: Log Out from Docker Registry
         if: ${{ always() }}
