@@ -135,10 +135,10 @@ jobs:
             exit 1
           }
           port="${KAORI_VPS_PORT:-22}"
-          [[ "$port" =~ ^[0-9]{1,5}$ ]] && (( port >= 1 && port <= 65535 )) || {
+          if ! [[ "$port" =~ ^[0-9]{1,5}$ ]] || (( port < 1 || port > 65535 )); then
             printf 'KAORI_VPS_PORT is invalid.\n' >&2
             exit 1
-          }
+          fi
           root="${KAORI_VPS_DEPLOY_ROOT:-/opt/kaori}"
           [[ "$root" =~ ^/[A-Za-z0-9._/-]+$ ]] || {
             printf 'KAORI_VPS_DEPLOY_ROOT is invalid.\n' >&2
@@ -202,14 +202,15 @@ jobs:
             -o UserKnownHostsFile="$known_hosts_file"
           )
 
-          ssh "${ssh_opts[@]}" "$target" \
-            "mkdir -p '$remote_release/deploy' '$deploy_root/releases'"
+          printf -v remote_mkdir '%q ' mkdir -p \
+            "$remote_release/deploy" "$deploy_root/releases"
+          ssh "${ssh_opts[@]}" "$target" "$remote_mkdir"
           scp "${scp_opts[@]}" compose.production.yml \
             "$target:$remote_release/compose.production.yml"
           scp "${scp_opts[@]}" -r deploy/vps \
             "$target:$remote_release/deploy/"
-          ssh "${ssh_opts[@]}" "$target" \
-            "chmod 700 '$remote_release'/deploy/vps/*.sh"
+          printf -v remote_chmod '%q ' chmod 700 "$remote_release"/deploy/vps/*.sh
+          ssh "${ssh_opts[@]}" "$target" "$remote_chmod"
 
           printf -v remote_command '%q ' \
             bash "$remote_release/deploy/vps/deploy.sh" "$REQUESTED_IMAGE" "$REQUESTED_SHA"
