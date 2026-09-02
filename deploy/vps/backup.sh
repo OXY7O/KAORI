@@ -30,5 +30,5 @@ compose=(docker compose --env-file "$KAORI_ENV_FILE" -f "$BASE_COMPOSE" -f "$VPS
 
 [[ -s "$backup_file" ]] || fail 'pg_dump produced an empty backup'
 sha256sum "$backup_file" > "$backup_file.sha256"
-chmod 600 "$backup_file" "$backup_file.sha256"
+chmod 0600 "$backup_file" "$backup_file.sha256"
 printf '%s\n' "$backup_file"
