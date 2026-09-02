@@ -93,6 +93,14 @@ RUN mkdir -p app/static/css app/static/vendor app/static/fonts \
 
 FROM base AS production
 
+ARG OCI_SOURCE=""
+ARG OCI_REVISION=""
+ARG OCI_VERSION=""
+
+LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
+      org.opencontainers.image.revision="${OCI_REVISION}" \
+      org.opencontainers.image.version="${OCI_VERSION}"
+
 RUN groupadd --system kaori \
     && useradd --system --gid kaori --create-home --home-dir /app kaori
 
