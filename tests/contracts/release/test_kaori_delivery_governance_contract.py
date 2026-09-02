@@ -182,6 +182,35 @@ def test_label_catalog_preserves_documentation_and_avoids_native_metadata_duplic
         assert forbidden not in source
 
 
+def test_github_metadata_hygiene_and_recovery_contract_is_documented() -> None:
+    workflow = read(WORKFLOW)
+    project = read(PROJECT_SETUP)
+    catalog = read(LABEL_CATALOG)
+
+    for token in (
+        'Read-first recovery order',
+        'Repository Metadata Hygiene Gate',
+        'repo:OXY7O/KAORI is:pr no:label',
+        'repo:OXY7O/KAORI is:pr no:assignee',
+        'Never run comprehensive KAORI CI on a work branch',
+    ):
+        assert token in workflow
+
+    for token in (
+        'Metadata Synchronization Gate',
+        'Every governed Issue and PR must be added to the KAORI Project',
+        'Project fields cannot be mutated by connected tooling',
+    ):
+        assert token in project
+
+    for token in (
+        'Label Admission Gate',
+        'An uncataloged label must not be used',
+        'name, color, and description',
+    ):
+        assert token in catalog
+
+
 def test_progressive_ci_routes_only_governed_integration_pushes_and_staging_prs() -> None:
     source = read(QUALITY_WORKFLOW)
     assert '- kaori/staging' in source
