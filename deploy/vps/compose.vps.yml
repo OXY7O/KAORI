@@ -1,13 +1,13 @@
 services:
   postgres:
-    image: postgres:16
+    image: ${KAORI_POSTGRES_IMAGE:?Set KAORI_POSTGRES_IMAGE to an immutable digest-qualified PostgreSQL image}
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in the server environment file}
       POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in the server environment file}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the server environment file}
     volumes:
-      - kaori_vps_postgres:/var/lib/postgresql/data
+      - kaori_vps_postgres_data:/var/lib/postgresql/data
     networks:
       - kaori_production
     healthcheck:
@@ -22,7 +22,7 @@ services:
       - no-new-privileges:true
 
   redis:
-    image: redis:7
+    image: ${KAORI_REDIS_IMAGE:?Set KAORI_REDIS_IMAGE to an immutable digest-qualified Redis image}
     restart: unless-stopped
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in the server environment file}
@@ -31,7 +31,7 @@ services:
       - -ec
       - exec redis-server --appendonly yes --appendfsync everysec --requirepass "$$REDIS_PASSWORD"
     volumes:
-      - kaori_vps_redis:/data
+      - kaori_vps_redis_data:/data
     networks:
       - kaori_production
     healthcheck:
@@ -46,7 +46,7 @@ services:
       - no-new-privileges:true
 
 volumes:
-  kaori_vps_postgres:
-    name: kaori-vps-postgres
-  kaori_vps_redis:
-    name: kaori-vps-redis
+  kaori_vps_postgres_data:
+    name: kaori-vps-postgres-data
+  kaori_vps_redis_data:
+    name: kaori-vps-redis-data
