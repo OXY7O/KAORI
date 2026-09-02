@@ -11,15 +11,15 @@ def publish_source() -> str:
     return PUBLISH_WORKFLOW.read_text(encoding='utf-8')
 
 
-def test_staging_publish_is_trusted_push_only_and_waits_for_exact_ci() -> None:
+def test_rc_publish_is_explicit_dispatch_only_and_waits_for_exact_ci() -> None:
     workflow = publish_source()
     quality = QUALITY_WORKFLOW.read_text(encoding='utf-8')
 
     assert 'name: KAORI Staging Image Publish' in workflow
-    assert 'push:' in workflow
-    assert '- kaori/staging' in workflow
-    assert "github.event_name == 'push'" in workflow
-    assert "github.ref == 'refs/heads/kaori/staging'" in workflow
+    assert 'workflow_dispatch:' in workflow
+    assert '\n  push:\n' not in workflow
+    assert "github.event_name == 'push'" not in workflow
+    assert "refs/heads/kaori/staging" in workflow
     assert 'actions: read' in workflow
     assert 'quality.yml' in workflow
     assert 'GITHUB_SHA' in workflow
