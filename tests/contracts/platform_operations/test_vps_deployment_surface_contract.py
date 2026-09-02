@@ -32,15 +32,15 @@ def test_production_compose_accepts_server_side_environment_file() -> None:
     assert '127.0.0.1' in source
 
 
-def test_vps_overlay_keeps_state_private_and_persistent() -> None:
+def test_vps_overlay_keeps_state_private_persistent_and_immutable() -> None:
     source = _read(COMPOSE_OVERLAY)
 
     assert 'postgres:' in source
     assert 'redis:' in source
-    assert 'postgres:16' in source
-    assert 'redis:7' in source
-    assert 'kaori_vps_postgres' in source
-    assert 'kaori_vps_redis' in source
+    assert '${KAORI_POSTGRES_IMAGE:?' in source
+    assert '${KAORI_REDIS_IMAGE:?' in source
+    assert 'kaori_vps_postgres_data' in source
+    assert 'kaori_vps_redis_data' in source
     assert 'pg_isready' in source
     assert 'REDISCLI_AUTH' in source
     assert 'requirepass' in source
@@ -61,12 +61,13 @@ def test_deploy_is_digest_pinned_fail_closed_and_ephemeral_for_registry_auth() -
     assert 'trap' in source
     assert 'compose.production.yml' in source
     assert 'compose.vps.yml' in source
-    assert 'run --rm validate' in source
-    assert 'run --rm migrate' in source
+    assert 'run_validate' in source
+    assert 'run_migrate' in source
     assert 'backup.sh' in source
     assert 'verify.sh' in source
     assert 'current-image' in source
     assert 'previous-image' in source
+    assert '--pull never' in source
 
     assert 'StrictHostKeyChecking=no' not in source
     assert 'latest' not in source.lower()
@@ -81,6 +82,7 @@ def test_backup_restore_and_rollback_are_explicit_operator_surfaces() -> None:
     assert 'pg_restore' in restore
     assert '@sha256:' in rollback
     assert 'previous-image' in rollback
+    assert '--restore-backup' in rollback
     assert 'deploy.sh' in rollback
 
 
@@ -102,15 +104,17 @@ def test_verify_checks_loopback_readiness_and_full_runtime_shape() -> None:
     assert 'resolver-execution-worker' in source
     assert 'resolver-maintenance-worker' in source
     assert 'beat' in source
+    assert 'active_queues' in source
 
 
 def test_manual_vps_workflow_uses_encrypted_ssh_and_pinned_host_key() -> None:
     source = _read(WORKFLOW)
 
     assert 'workflow_dispatch:' in source
+    assert 'candidate_tag:' in source
     assert 'KAORI_VPS_SSH_PRIVATE_KEY' in source
     assert 'KAORI_VPS_SSH_PASSPHRASE' in source
-    assert 'KAORI_VPS_SSH_KNOWN_HOSTS' in source
+    assert 'KAORI_VPS_KNOWN_HOSTS' in source
     assert 'KAORI_VPS_HOST' in source
     assert 'KAORI_VPS_USER' in source
     assert 'KAORI_VPS_PORT' in source
@@ -121,6 +125,8 @@ def test_manual_vps_workflow_uses_encrypted_ssh_and_pinned_host_key() -> None:
     assert 'scp' in source
     assert 'ssh' in source
     assert '@sha256:' in source
+    assert 'publish-staging-image.yml' in source
+    assert 'staging-image-' in source
     assert 'StrictHostKeyChecking=no' not in source
 
 
