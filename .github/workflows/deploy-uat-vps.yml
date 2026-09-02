@@ -1,0 +1,217 @@
+name: KAORI UAT VPS Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: Digest-qualified KAORI image (registry/repository@sha256:...)
+        required: true
+        type: string
+      source_sha:
+        description: Exact admitted kaori/staging source SHA
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: kaori-uat-vps-deploy
+  cancel-in-progress: false
+
+jobs:
+  admission:
+    name: Require Exact Admitted Staging SHA
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      accepted_sha: ${{ steps.authority.outputs.accepted_sha }}
+    steps:
+      - name: Validate Dispatch Authority and Image Identity
+        id: authority
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_IMAGE: ${{ inputs.image }}
+          REQUESTED_SHA: ${{ inputs.source_sha }}
+        run: |
+          set -Eeuo pipefail
+          [[ "$GITHUB_REF" == 'refs/heads/kaori/staging' ]] || {
+            printf 'UAT VPS deployment must be dispatched from kaori/staging.\n' >&2
+            exit 1
+          }
+          [[ "$REQUESTED_IMAGE" =~ @sha256:[0-9a-f]{64}$ ]] || {
+            printf 'Image must be digest-qualified with @sha256:<64 lowercase hex>.\n' >&2
+            exit 1
+          }
+          [[ "$REQUESTED_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+            printf 'source_sha must be exactly 40 lowercase hex characters.\n' >&2
+            exit 1
+          }
+
+          ref_api="https://api.github.com/repos/${GITHUB_REPOSITORY}/git/ref/heads/kaori/staging"
+          ref_json="$(curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "$ref_api")"
+          accepted_sha="$(jq -r '.object.sha' <<<"$ref_json")"
+          [[ "$accepted_sha" == "$REQUESTED_SHA" ]] || {
+            printf 'Requested source %s is stale; current staging is %s.\n' \
+              "$REQUESTED_SHA" "$accepted_sha" >&2
+            exit 1
+          }
+          [[ "$GITHUB_SHA" == "$accepted_sha" ]] || {
+            printf 'Dispatch SHA %s does not equal current staging %s.\n' \
+              "$GITHUB_SHA" "$accepted_sha" >&2
+            exit 1
+          }
+
+          runs_api="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/quality.yml/runs?branch=kaori%2Fstaging&event=push&per_page=100"
+          runs_json="$(curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "$runs_api")"
+          record="$(jq -c --arg sha "$accepted_sha" \
+            '[.workflow_runs[] | select(.head_sha == $sha)] | sort_by(.run_number) | last // empty' \
+            <<<"$runs_json")"
+          [[ -n "$record" ]] || {
+            printf 'No KAORI CI run exists for admitted staging SHA %s.\n' "$accepted_sha" >&2
+            exit 1
+          }
+          [[ "$(jq -r '.status' <<<"$record")" == 'completed' ]] || {
+            printf 'KAORI CI for %s is not completed.\n' "$accepted_sha" >&2
+            exit 1
+          }
+          [[ "$(jq -r '.conclusion' <<<"$record")" == 'success' ]] || {
+            printf 'KAORI CI for %s did not pass.\n' "$accepted_sha" >&2
+            exit 1
+          }
+
+          printf 'accepted_sha=%s\n' "$accepted_sha" >> "$GITHUB_OUTPUT"
+          printf 'Admitted staging authority: %s\n' "$accepted_sha"
+
+  deploy:
+    name: Deploy Immutable Candidate to UAT VPS
+    needs: admission
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    environment: uat
+    timeout-minutes: 30
+    env:
+      KAORI_VPS_HOST: ${{ vars.KAORI_VPS_HOST }}
+      KAORI_VPS_USER: ${{ vars.KAORI_VPS_USER }}
+      KAORI_VPS_PORT: ${{ vars.KAORI_VPS_PORT }}
+      KAORI_VPS_DEPLOY_ROOT: ${{ vars.KAORI_VPS_DEPLOY_ROOT }}
+      KAORI_VPS_SSH_PRIVATE_KEY: ${{ secrets.KAORI_VPS_SSH_PRIVATE_KEY }}
+      KAORI_VPS_SSH_PASSPHRASE: ${{ secrets.KAORI_VPS_SSH_PASSPHRASE }}
+      KAORI_VPS_SSH_KNOWN_HOSTS: ${{ secrets.KAORI_VPS_SSH_KNOWN_HOSTS }}
+      KAORI_DOCKER_REGISTRY_USERNAME: ${{ secrets.KAORI_DOCKER_REGISTRY_USERNAME }}
+      KAORI_DOCKER_REGISTRY_PASSWORD: ${{ secrets.KAORI_DOCKER_REGISTRY_PASSWORD }}
+      REQUESTED_IMAGE: ${{ inputs.image }}
+      REQUESTED_SHA: ${{ needs.admission.outputs.accepted_sha }}
+    steps:
+      - name: Check Out Exact Admitted Staging SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.admission.outputs.accepted_sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Validate Deployment Inputs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          : "${KAORI_VPS_HOST:?Missing KAORI_VPS_HOST variable}"
+          : "${KAORI_VPS_USER:?Missing KAORI_VPS_USER variable}"
+          : "${KAORI_VPS_SSH_PRIVATE_KEY:?Missing KAORI_VPS_SSH_PRIVATE_KEY secret}"
+          : "${KAORI_VPS_SSH_PASSPHRASE:?Missing KAORI_VPS_SSH_PASSPHRASE secret}"
+          : "${KAORI_VPS_SSH_KNOWN_HOSTS:?Missing KAORI_VPS_SSH_KNOWN_HOSTS secret}"
+          : "${KAORI_DOCKER_REGISTRY_USERNAME:?Missing KAORI_DOCKER_REGISTRY_USERNAME secret}"
+          : "${KAORI_DOCKER_REGISTRY_PASSWORD:?Missing KAORI_DOCKER_REGISTRY_PASSWORD secret}"
+          [[ "$KAORI_VPS_USER" =~ ^[A-Za-z0-9._-]+$ ]] || {
+            printf 'KAORI_VPS_USER contains unsupported characters.\n' >&2
+            exit 1
+          }
+          port="${KAORI_VPS_PORT:-22}"
+          [[ "$port" =~ ^[0-9]{1,5}$ ]] && (( port >= 1 && port <= 65535 )) || {
+            printf 'KAORI_VPS_PORT is invalid.\n' >&2
+            exit 1
+          }
+          root="${KAORI_VPS_DEPLOY_ROOT:-/opt/kaori}"
+          [[ "$root" =~ ^/[A-Za-z0-9._/-]+$ ]] || {
+            printf 'KAORI_VPS_DEPLOY_ROOT is invalid.\n' >&2
+            exit 1
+          }
+
+      - name: Deploy Through Pinned SSH Trust
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          key_file="$(mktemp)"
+          known_hosts_file="$(mktemp)"
+          askpass_file="$(mktemp)"
+          agent_started=false
+
+          cleanup() {
+            if [[ "$agent_started" == 'true' ]]; then
+              ssh-agent -k >/dev/null 2>&1 || true
+            fi
+            rm -f -- "$key_file" "$known_hosts_file" "$askpass_file"
+          }
+          trap cleanup EXIT INT TERM HUP
+
+          printf '%s\n' "$KAORI_VPS_SSH_PRIVATE_KEY" > "$key_file"
+          printf '%s\n' "$KAORI_VPS_SSH_KNOWN_HOSTS" > "$known_hosts_file"
+          chmod 600 "$key_file" "$known_hosts_file"
+
+          cat > "$askpass_file" <<'ASKPASS'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          printf '%s\n' "$KAORI_VPS_SSH_PASSPHRASE"
+          ASKPASS
+          chmod 700 "$askpass_file"
+
+          eval "$(ssh-agent -s)" >/dev/null
+          agent_started=true
+          export SSH_ASKPASS="$askpass_file"
+          export SSH_ASKPASS_REQUIRE=force
+          export DISPLAY=:0
+          setsid -w ssh-add "$key_file" </dev/null >/dev/null
+
+          port="${KAORI_VPS_PORT:-22}"
+          deploy_root="${KAORI_VPS_DEPLOY_ROOT:-/opt/kaori}"
+          remote_release="$deploy_root/releases/$REQUESTED_SHA"
+          target="$KAORI_VPS_USER@$KAORI_VPS_HOST"
+          ssh_opts=(
+            -p "$port"
+            -o BatchMode=yes
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o UserKnownHostsFile="$known_hosts_file"
+          )
+          scp_opts=(
+            -P "$port"
+            -o BatchMode=yes
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o UserKnownHostsFile="$known_hosts_file"
+          )
+
+          ssh "${ssh_opts[@]}" "$target" \
+            "mkdir -p '$remote_release/deploy' '$deploy_root/releases'"
+          scp "${scp_opts[@]}" compose.production.yml \
+            "$target:$remote_release/compose.production.yml"
+          scp "${scp_opts[@]}" -r deploy/vps \
+            "$target:$remote_release/deploy/"
+          ssh "${ssh_opts[@]}" "$target" \
+            "chmod 700 '$remote_release'/deploy/vps/*.sh"
+
+          printf -v remote_command '%q ' \
+            bash "$remote_release/deploy/vps/deploy.sh" "$REQUESTED_IMAGE" "$REQUESTED_SHA"
+          {
+            printf '%s\n' "$KAORI_DOCKER_REGISTRY_USERNAME"
+            printf '%s\n' "$KAORI_DOCKER_REGISTRY_PASSWORD"
+          } | ssh "${ssh_opts[@]}" "$target" "$remote_command"
