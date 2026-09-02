@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 OLD_BOOTSTRAP = ROOT / "scripts" / "bootstrap_github_runner_host.sh"
 OPS_ROOT = ROOT / "ops" / "github-runner"
