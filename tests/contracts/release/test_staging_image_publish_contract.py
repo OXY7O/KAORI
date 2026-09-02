@@ -34,13 +34,23 @@ def test_staging_publish_is_trusted_push_only_and_waits_for_exact_ci() -> None:
     assert 'ghcr.io/oxy7o/kaori' not in workflow.lower()
 
 
+def test_staging_publish_uses_semver_prerelease_candidate_tag() -> None:
+    workflow = publish_source()
+
+    assert 'KAORI_RELEASE_VERSION' in workflow
+    assert 'RELEASE_VERSION: ${{ vars.KAORI_RELEASE_VERSION }}' in workflow
+    assert 'CANDIDATE_TAG="v${RELEASE_VERSION}-rc.${GITHUB_RUN_NUMBER}"' in workflow
+    assert 'CANDIDATE_TAG="sha-${GITHUB_SHA}"' not in workflow
+    assert ':latest' not in workflow.lower()
+
+
 def test_staging_publish_validates_exact_image_before_registry_push() -> None:
     workflow = publish_source()
 
-    assert 'CANDIDATE_TAG="sha-${GITHUB_SHA}"' in workflow
     assert 'CANDIDATE_IMAGE="$REGISTRY_IMAGE:$CANDIDATE_TAG"' in workflow
     assert '--build-arg OCI_SOURCE=' in workflow
     assert '--build-arg OCI_REVISION=' in workflow
+    assert '--build-arg OCI_VERSION=' in workflow
     assert 'trivy image' in workflow
     assert '"$CANDIDATE_IMAGE"' in workflow
     assert 'run-runtime-validation.sh "$CANDIDATE_IMAGE"' in workflow
@@ -49,7 +59,6 @@ def test_staging_publish_validates_exact_image_before_registry_push() -> None:
     assert 'docker push "$CANDIDATE_IMAGE"' in workflow
     assert 'docker pull "$CANDIDATE_IMAGE"' in workflow
     assert 'RepoDigests' in workflow
-    assert ':latest' not in workflow.lower()
 
 
 def test_staging_publish_records_immutable_digest_evidence() -> None:
