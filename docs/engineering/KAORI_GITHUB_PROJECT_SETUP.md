@@ -158,6 +158,14 @@ PR metadata is also optional by applicability. A governed PR may use:
 
 A PR does not need Priority, Story Points, or Native Issue Type merely because its controlling Issue has those values. Do not manufacture duplicate PR labels or body fields when the Project does not expose a field for the PR card.
 
+## Metadata Synchronization Gate
+
+Every governed Issue and PR must be added to the KAORI Project. Use `00 - Work Register` as the primary metadata-audit surface and synchronize applicable fields at Issue creation/triage, work start, PR creation, Pre-Ready, staging merge, staging acceptance/UAT admission, UAT acceptance, promotion PR, main merge, and final Done/close.
+
+At each gate verify the applicable ownership, Status, Sprint, Native Issue Type, Priority, Story Points, Milestone, canonical labels, relationships, and Development linkage. PR cards may still leave Issue-only planning fields empty where GitHub does not expose them.
+
+Project fields cannot be mutated by connected tooling in every environment. When a required Project/custom field cannot be changed automatically, report the exact card, field, current value when known, and intended value to the maintainer. Do not mirror unavailable Project fields into Issue/PR bodies or invent duplicate labels as a workaround.
+
 ## Canonical Project Views
 
 The accepted KAORI Project contains nine governed views in this order.

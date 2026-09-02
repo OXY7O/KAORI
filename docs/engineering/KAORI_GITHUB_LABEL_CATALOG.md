@@ -41,6 +41,14 @@ Canonical namespaces:
 
 Use the smallest meaningful label set. A normal Issue should usually have one primary area label and only the additional scope, quality, impact, or workflow labels that materially apply.
 
+## Label Admission Gate
+
+An uncataloged label must not be used on a governed Issue or Pull Request. Before repository use, the proposed label must have its canonical name, color, and description recorded in this catalog and must use an approved namespace or explicitly retained GitHub built-in label.
+
+Admission also requires confirming that the label does not duplicate lifecycle, Native Issue Type, Priority, Sprint, Story Points, Milestone/release target, or another existing canonical label. Labels with a blank description, undocumented alias, alternate spelling, or overlapping authority are non-canonical until a governed catalog change is admitted.
+
+When retiring a used label, migrate all Issue/PR references first. Only then may the obsolete repository label definition be removed.
+
 ## Area Labels
 
 | Label | Color | Description |

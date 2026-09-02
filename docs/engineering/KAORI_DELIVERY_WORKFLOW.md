@@ -124,6 +124,38 @@ Summary
 
 Use `Refs #<issue>` while work is moving through staging/UAT. Use `Closes #<issue>` only on the final PR whose successful merge is intended to close the work item.
 
+## Repository Metadata Hygiene Gate
+
+Repository metadata is part of the durable engineering evidence and is checked at Issue creation, work start, PR creation, Pre-Ready, staging integration, UAT admission, promotion, and completion.
+
+At minimum, audit Pull Requests with:
+
+```text
+repo:OXY7O/KAORI is:pr no:label
+repo:OXY7O/KAORI is:pr no:assignee
+```
+
+The expected governed result is zero. Closed, merged, and superseded PRs remain part of the audit trail and must not be left without applicable canonical labels or ownership merely because execution has ended.
+
+Project synchronization is required at the same delivery boundaries. If connected tooling cannot mutate Project/custom fields, report the exact card, field, and intended value to the maintainer instead of copying Project metadata into Issue or PR bodies.
+
+Never run comprehensive KAORI CI on a work branch. Metadata repair does not change branch validation authority: every `kaori/*` branch except exact `kaori/staging` remains under path-aware Developer Check / targeted validation.
+
+## Read-first recovery order
+
+Repository truth is the recovery authority when a new session or agent no longer has reliable conversational context. Read in this order before changing delivery state:
+
+1. `docs/engineering/KAORI_DELIVERY_WORKFLOW.md`.
+2. `docs/engineering/KAORI_GITHUB_PROJECT_SETUP.md`.
+3. `docs/engineering/KAORI_GITHUB_LABEL_CATALOG.md`.
+4. `.github/PULL_REQUEST_TEMPLATE.md`.
+5. The governing Issue and its current relationships/dependencies.
+6. The current work branch and Pull Request exact SHA.
+7. Current GitHub Actions evidence for that exact SHA.
+8. Current `kaori/staging` and `main` lineage.
+
+If conversational memory disagrees with current admitted repository documentation or exact GitHub evidence, use repository truth and record any required governance correction through a governed Issue/branch/PR.
+
 ## Branch Authority
 
 Only two branches are long-lived by default:
