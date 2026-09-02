@@ -1,28 +1,84 @@
-name: KAORI Staging Image Publish
+name: KAORI Release Candidate Cut
 
 on:
+  workflow_dispatch:
   push:
     branches:
-      - kaori/staging
+      - kaori/rc-request
 
 permissions:
   contents: read
   actions: read
 
 concurrency:
-  group: kaori-staging-image-${{ github.sha }}
+  group: kaori-release-candidate-${{ github.sha }}
   cancel-in-progress: false
+
+env:
+  REGISTRY_HOST: ${{ vars.KAORI_DOCKER_REGISTRY_HOST }}
+  REGISTRY_IMAGE: ${{ vars.KAORI_DOCKER_REGISTRY_IMAGE }}
 
 jobs:
   wait-for-quality:
-    name: Wait for Exact KAORI CI
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/kaori/staging' }}
+    name: Resolve Accepted Staging and Quality Evidence
+    if: >-
+      ${{ (github.event_name == 'push' && github.ref == 'refs/heads/kaori/rc-request') ||
+          (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/kaori/staging') }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     outputs:
+      accepted_sha: ${{ steps.staging.outputs.accepted_sha }}
       quality_run_id: ${{ steps.quality.outputs.quality_run_id }}
       conclusion: ${{ steps.quality.outputs.conclusion }}
+      should_publish: ${{ steps.candidate.outputs.should_publish }}
+      candidate_tag: ${{ steps.candidate.outputs.candidate_tag }}
+      candidate_image: ${{ steps.candidate.outputs.candidate_image }}
+      compare_base: ${{ steps.candidate.outputs.compare_base }}
     steps:
+      - name: Resolve Exact Accepted Staging SHA
+        id: staging
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}/git/ref/heads/kaori/staging"
+          response="$(curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "$api")"
+          ACCEPTED_SHA="$(jq -r '.object.sha' <<<"$response")"
+          [[ "$ACCEPTED_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+            printf 'Unable to resolve current kaori/staging SHA.\n' >&2
+            exit 1
+          }
+
+          if [[ "$GITHUB_EVENT_NAME" == 'push' ]]; then
+            [[ "$GITHUB_REF" == 'refs/heads/kaori/rc-request' ]] || {
+              printf 'Push-based RC cuts are allowed only from kaori/rc-request.\n' >&2
+              exit 1
+            }
+          elif [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
+            [[ "$GITHUB_REF" == 'refs/heads/kaori/staging' ]] || {
+              printf 'Manual RC cuts must be dispatched against kaori/staging.\n' >&2
+              exit 1
+            }
+          else
+            printf 'Unsupported RC cut event: %s\n' "$GITHUB_EVENT_NAME" >&2
+            exit 1
+          fi
+
+          [[ "$GITHUB_SHA" == "$ACCEPTED_SHA" ]] || {
+            printf 'RC request SHA %s is stale; current kaori/staging is %s.\n' \
+              "$GITHUB_SHA" "$ACCEPTED_SHA" >&2
+            exit 1
+          }
+
+          printf 'accepted_sha=%s\n' "$ACCEPTED_SHA" >> "$GITHUB_OUTPUT"
+          printf 'ACCEPTED_SHA=%s\n' "$ACCEPTED_SHA" >> "$GITHUB_ENV"
+          printf 'Accepted staging authority: %s\n' "$ACCEPTED_SHA"
+
       - name: Require Exact Successful KAORI CI
         id: quality
         shell: bash
@@ -39,12 +95,12 @@ jobs:
               --header 'Accept: application/vnd.github+json' \
               --header 'X-GitHub-Api-Version: 2022-11-28' \
               "$api")"
-            record="$(jq -c --arg sha "$GITHUB_SHA" \
+            record="$(jq -c --arg sha "$ACCEPTED_SHA" \
               '[.workflow_runs[] | select(.head_sha == $sha)] | sort_by(.run_number) | last // empty' \
               <<<"$response")"
 
             if [[ -z "$record" ]]; then
-              printf 'Waiting for quality.yml run for %s\n' "$GITHUB_SHA"
+              printf 'Waiting for quality.yml run for %s\n' "$ACCEPTED_SHA"
               sleep 10
               continue
             fi
@@ -53,15 +109,16 @@ jobs:
             conclusion="$(jq -r '.conclusion // ""' <<<"$record")"
             quality_run_id="$(jq -r '.id' <<<"$record")"
             printf 'quality.yml run=%s status=%s conclusion=%s sha=%s\n' \
-              "$quality_run_id" "$status" "${conclusion:-pending}" "$GITHUB_SHA"
+              "$quality_run_id" "$status" "${conclusion:-pending}" "$ACCEPTED_SHA"
 
-            if [[ "$status" != "completed" ]]; then
+            if [[ "$status" != 'completed' ]]; then
               sleep 15
               continue
             fi
 
-            [[ "$conclusion" == "success" ]] || {
-              printf 'Exact KAORI CI did not pass for %s: %s\n' "$GITHUB_SHA" "$conclusion" >&2
+            [[ "$conclusion" == 'success' ]] || {
+              printf 'Exact KAORI CI did not pass for %s: %s\n' \
+                "$ACCEPTED_SHA" "$conclusion" >&2
               exit 1
             }
 
@@ -72,29 +129,8 @@ jobs:
             exit 0
           done
 
-          printf 'Timed out waiting for exact quality.yml success for %s\n' "$GITHUB_SHA" >&2
+          printf 'Timed out waiting for exact quality.yml success for %s\n' "$ACCEPTED_SHA" >&2
           exit 1
-
-  publish:
-    name: Publish Accepted Staging Image
-    needs: wait-for-quality
-    if: ${{ needs.wait-for-quality.outputs.conclusion == 'success' }}
-    runs-on: [self-hosted, linux, x64, kaori-ci]
-    timeout-minutes: 180
-    permissions:
-      contents: write
-      actions: read
-    env:
-      REGISTRY_HOST: ${{ vars.KAORI_DOCKER_REGISTRY_HOST }}
-      REGISTRY_IMAGE: ${{ vars.KAORI_DOCKER_REGISTRY_IMAGE }}
-    steps:
-      - name: Check Out Exact Accepted Staging SHA
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 0
-          fetch-tags: true
-          persist-credentials: false
 
       - name: Validate Registry Identity
         shell: bash
@@ -107,11 +143,56 @@ jobs:
             exit 1
           }
 
-      - name: Resolve Automatic SemVer Candidate
+      - name: Check Out Exact Accepted Staging SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.staging.outputs.accepted_sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Resolve Intentional SemVer Candidate
+        id: candidate
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
           INITIAL_VERSION='0.1.0'
+          api_root="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+
+          existing_rc="$(
+            git tag --points-at "$ACCEPTED_SHA" |
+              grep -E '^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$' |
+              sort -V |
+              head -n 1 || true
+          )"
+          if [[ -n "$existing_rc" ]]; then
+            if ! release_json="$(curl --fail-with-body --silent --show-error \
+              --header "Authorization: Bearer ${GH_TOKEN}" \
+              --header 'Accept: application/vnd.github+json' \
+              --header 'X-GitHub-Api-Version: 2022-11-28' \
+              "${api_root}/releases/tags/${existing_rc}")"; then
+              printf 'RC tag %s already targets %s but its GitHub prerelease evidence is missing.\n' \
+                "$existing_rc" "$ACCEPTED_SHA" >&2
+              exit 1
+            fi
+            [[ "$(jq -r '.prerelease' <<<"$release_json")" == 'true' ]] || {
+              printf 'Existing RC %s is not recorded as a GitHub prerelease.\n' "$existing_rc" >&2
+              exit 1
+            }
+            existing_image="$REGISTRY_IMAGE:$existing_rc"
+            {
+              printf 'should_publish=false\n'
+              printf 'candidate_tag=%s\n' "$existing_rc"
+              printf 'candidate_image=%s\n' "$existing_image"
+              printf 'compare_base=%s\n' "$existing_rc"
+            } >> "$GITHUB_OUTPUT"
+            printf 'Accepted source %s already owns %s; no new RC will be consumed.\n' \
+              "$ACCEPTED_SHA" "$existing_rc"
+            exit 0
+          fi
+
           latest_stable_tag="$(
             git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname |
               grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
@@ -124,7 +205,7 @@ jobs:
           else
             version="${latest_stable_tag#v}"
             IFS='.' read -r major minor patch <<<"$version"
-            range="${latest_stable_tag}..HEAD"
+            range="${latest_stable_tag}..${ACCEPTED_SHA}"
             subjects="$(git log --format='%s' "$range")"
             bodies="$(git log --format='%b' "$range")"
 
@@ -142,6 +223,10 @@ jobs:
             NEXT_VERSION="${major}.${minor}.${patch}"
           fi
 
+          previous_rc="$(
+            git tag --list "v${NEXT_VERSION}-rc.*" --sort=-version:refname |
+              head -n 1 || true
+          )"
           latest_rc=0
           while IFS= read -r tag; do
             [[ -n "$tag" ]] || continue
@@ -153,13 +238,52 @@ jobs:
           NEXT_RC=$((latest_rc + 1))
           CANDIDATE_TAG="v${NEXT_VERSION}-rc.${NEXT_RC}"
           CANDIDATE_IMAGE="$REGISTRY_IMAGE:$CANDIDATE_TAG"
+          compare_base="${previous_rc:-$latest_stable_tag}"
           {
-            printf 'NEXT_VERSION=%s\n' "$NEXT_VERSION"
-            printf 'NEXT_RC=%s\n' "$NEXT_RC"
-            printf 'CANDIDATE_TAG=%s\n' "$CANDIDATE_TAG"
-            printf 'CANDIDATE_IMAGE=%s\n' "$CANDIDATE_IMAGE"
-          } >> "$GITHUB_ENV"
-          printf 'Resolved KAORI staging candidate: %s at %s\n' "$CANDIDATE_TAG" "$GITHUB_SHA"
+            printf 'should_publish=true\n'
+            printf 'next_version=%s\n' "$NEXT_VERSION"
+            printf 'next_rc=%s\n' "$NEXT_RC"
+            printf 'candidate_tag=%s\n' "$CANDIDATE_TAG"
+            printf 'candidate_image=%s\n' "$CANDIDATE_IMAGE"
+            printf 'compare_base=%s\n' "$compare_base"
+          } >> "$GITHUB_OUTPUT"
+          printf 'Resolved intentional KAORI RC: %s at %s\n' \
+            "$CANDIDATE_TAG" "$ACCEPTED_SHA"
+
+  publish:
+    name: Publish Intentional Release Candidate
+    needs: wait-for-quality
+    if: ${{ needs.wait-for-quality.outputs.should_publish == 'true' }}
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    timeout-minutes: 180
+    permissions:
+      contents: write
+      actions: read
+    env:
+      ACCEPTED_SHA: ${{ needs.wait-for-quality.outputs.accepted_sha }}
+      QUALITY_RUN_ID: ${{ needs.wait-for-quality.outputs.quality_run_id }}
+      CANDIDATE_TAG: ${{ needs.wait-for-quality.outputs.candidate_tag }}
+      CANDIDATE_IMAGE: ${{ needs.wait-for-quality.outputs.candidate_image }}
+      COMPARE_BASE: ${{ needs.wait-for-quality.outputs.compare_base }}
+    steps:
+      - name: Check Out Accepted Staging Candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.wait-for-quality.outputs.accepted_sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Validate Registry Identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          : "${REGISTRY_HOST:?Missing repository variable KAORI_DOCKER_REGISTRY_HOST}"
+          : "${REGISTRY_IMAGE:?Missing repository variable KAORI_DOCKER_REGISTRY_IMAGE}"
+          [[ "$REGISTRY_IMAGE" == "$REGISTRY_HOST/"* ]] || {
+            printf 'KAORI_DOCKER_REGISTRY_IMAGE must be rooted at KAORI_DOCKER_REGISTRY_HOST\n' >&2
+            exit 1
+          }
 
       - name: Resolve CI Toolchain
         shell: bash
@@ -167,7 +291,8 @@ jobs:
           set -Eeuo pipefail
           key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
           image="kaori-ci-toolchain:$key"
-          docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
+          docker image inspect "$image" >/dev/null 2>&1 || \
+            docker build --file .github/ci/Dockerfile --tag "$image" .
           printf 'CI_TOOLCHAIN_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
 
       - name: Build Exact Candidate
@@ -177,7 +302,7 @@ jobs:
           docker build \
             --target production \
             --build-arg OCI_SOURCE="https://github.com/${GITHUB_REPOSITORY}" \
-            --build-arg OCI_REVISION="$GITHUB_SHA" \
+            --build-arg OCI_REVISION="$ACCEPTED_SHA" \
             --build-arg OCI_VERSION="$CANDIDATE_TAG" \
             --tag "$CANDIDATE_IMAGE" \
             .
@@ -223,39 +348,106 @@ jobs:
           image_ref="$REGISTRY_IMAGE@$digest"
           {
             printf 'KAORI_IMAGE_NAME=%s\n' "$REGISTRY_IMAGE"
-            printf 'KAORI_SOURCE_SHA=%s\n' "$GITHUB_SHA"
+            printf 'KAORI_SOURCE_SHA=%s\n' "$ACCEPTED_SHA"
             printf 'KAORI_CANDIDATE_TAG=%s\n' "$CANDIDATE_TAG"
             printf 'KAORI_IMAGE_DIGEST=%s\n' "$digest"
             printf 'KAORI_IMAGE_REF=%s\n' "$image_ref"
           } > staging-image.env
+          {
+            printf 'KAORI_IMAGE_DIGEST=%s\n' "$digest"
+            printf 'KAORI_IMAGE_REF=%s\n' "$image_ref"
+          } >> "$GITHUB_ENV"
           cat staging-image.env
 
       - name: Upload Staging Image Evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: staging-image-${{ github.sha }}
+          name: staging-image-${{ needs.wait-for-quality.outputs.accepted_sha }}
           path: staging-image.env
           if-no-files-found: error
           retention-days: 30
 
-      - name: Create Published RC Git Tag
+      - name: Build Human-Friendly RC Release Notes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if [[ -n "$COMPARE_BASE" ]] && git rev-parse --verify "$COMPARE_BASE^{commit}" >/dev/null 2>&1; then
+            change_range="${COMPARE_BASE}..${ACCEPTED_SHA}"
+            changed_files="$(git diff --name-only "$COMPARE_BASE" "$ACCEPTED_SHA")"
+            changes="$(git log --format='- %s (%h)' "$change_range" | head -n 30)"
+          else
+            changed_files="$(git show --format='' --name-only "$ACCEPTED_SHA")"
+            changes="$(git log --format='- %s (%h)' -n 20 "$ACCEPTED_SHA")"
+          fi
+          [[ -n "$changes" ]] || changes='- No source changes detected in the selected comparison range.'
+
+          if grep -Eq '^migrations/' <<<"$changed_files"; then
+            migration_impact='Migration files changed in this candidate; validate upgrade/rollback behavior during UAT.'
+          else
+            migration_impact='No migration files changed in the selected release comparison range.'
+          fi
+
+          cat > rc-release-notes.md <<EOF
+          ## Release Candidate
+          **${CANDIDATE_TAG}** is an intentional KAORI prerelease cut from the exact admitted \`kaori/staging\` source below. Publication does not imply UAT or production acceptance.
+
+          ## What Changed
+          ${changes}
+
+          ## Security
+          Trivy HIGH/CRITICAL image scanning passed before registry publication. Production runtime validation and baseline DAST also passed before the image was pushed.
+
+          ## Migration / Data Impact
+          ${migration_impact}
+
+          ## Validation
+          Exact \`kaori/staging\` KAORI CI: **PASS**  
+          Quality run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${QUALITY_RUN_ID}  
+          Image scan: **PASS**  
+          Runtime & DAST: **PASS**
+
+          ## Source
+          Staging source SHA: \`${ACCEPTED_SHA}\`
+
+          ## Artifact
+          Candidate image: \`${CANDIDATE_IMAGE}\`  
+          Immutable digest: \`${KAORI_IMAGE_DIGEST}\`  
+          Deployment authority: \`${KAORI_IMAGE_REF}\`
+
+          ## UAT
+          **Pending.** This RC must be deployed and explicitly accepted through the governed UAT path before stable promotion.
+
+          ## Known Limitations
+          This prerelease does not perform VPS deployment, TLS/ingress acceptance, or stable production promotion. Those boundaries remain governed separately.
+
+          ## Promotion Rule
+          Promote only after explicit UAT acceptance of this exact source SHA and immutable image digest. Stable \`vX.Y.Z\` promotion must reuse the accepted digest and must not rebuild application bits.
+          EOF
+
+      - name: Create Human-Friendly GitHub Prerelease
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
+          RELEASES_PATH="/releases"
+          repo_api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          release_name="KAORI ${CANDIDATE_TAG}"
+          release_body="$(cat rc-release-notes.md)"
           payload="$(jq -nc \
-            --arg ref "refs/tags/${CANDIDATE_TAG}" \
-            --arg sha "$GITHUB_SHA" \
-            '{ref: $ref, sha: $sha}')"
+            --arg tag "$CANDIDATE_TAG" \
+            --arg sha "$ACCEPTED_SHA" \
+            --arg name "$release_name" \
+            --arg body "$release_body" \
+            '{tag_name: $tag, target_commitish: $sha, name: $name, body: $body, draft: false, prerelease: true, make_latest: "false"}')"
           curl --fail-with-body --silent --show-error \
             --request POST \
             --header "Authorization: Bearer ${GH_TOKEN}" \
             --header 'Accept: application/vnd.github+json' \
             --header 'X-GitHub-Api-Version: 2022-11-28' \
             --data "$payload" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/refs"
-          printf 'Published RC Git tag %s -> %s\n' "$CANDIDATE_TAG" "$GITHUB_SHA"
+            "${repo_api}${RELEASES_PATH}"
+          printf 'Published GitHub prerelease %s -> %s\n' "$CANDIDATE_TAG" "$ACCEPTED_SHA"
 
       - name: Log Out from Docker Registry
         if: ${{ always() }}
