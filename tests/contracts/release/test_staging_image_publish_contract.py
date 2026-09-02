@@ -43,7 +43,7 @@ def test_staging_publish_derives_semver_rc_tag_from_git_history() -> None:
     assert "grep -Eq '^[[:alnum:]_-]+(\\([^)]*\\))?!:'" in workflow
     assert "grep -Eq '^BREAKING CHANGE:'" in workflow
     assert "grep -Eq '^feat(\\([^)]*\\))?:'" in workflow
-    assert "git tag --list \"v${NEXT_VERSION}-rc.*\"" in workflow
+    assert 'git tag --list "v${NEXT_VERSION}-rc.*"' in workflow
     assert 'CANDIDATE_TAG="v${NEXT_VERSION}-rc.${NEXT_RC}"' in workflow
     assert 'CANDIDATE_TAG="sha-${GITHUB_SHA}"' not in workflow
     assert 'KAORI_RELEASE_VERSION' not in workflow
