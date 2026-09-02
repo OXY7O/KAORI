@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: ${KAORI_POSTGRES_IMAGE:?Set KAORI_POSTGRES_IMAGE to an immutable digest-qualified PostgreSQL image}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in the server environment file}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in the server environment file}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the server environment file}
+    volumes:
+      - kaori_vps_postgres_data:/var/lib/postgresql/data
+    networks:
+      - kaori_production
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+
+  redis:
+    image: ${KAORI_REDIS_IMAGE:?Set KAORI_REDIS_IMAGE to an immutable digest-qualified Redis image}
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in the server environment file}
+    command:
+      - sh
+      - -ec
+      - exec redis-server --appendonly yes --appendfsync everysec --requirepass "$$REDIS_PASSWORD"
+    volumes:
+      - kaori_vps_redis_data:/data
+    networks:
+      - kaori_production
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -q PONG
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  kaori_vps_postgres_data:
+    name: kaori-vps-postgres-data
+  kaori_vps_redis_data:
+    name: kaori-vps-redis-data
