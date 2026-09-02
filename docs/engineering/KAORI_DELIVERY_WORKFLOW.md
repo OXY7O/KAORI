@@ -124,6 +124,36 @@ Summary
 
 Use `Refs #<issue>` while work is moving through staging/UAT. Use `Closes #<issue>` only on the final PR whose successful merge is intended to close the work item.
 
+### Read-first recovery order
+
+When work resumes after context loss, handoff, tool interruption, or stale conversation memory, recover authority from the repository before making a mutation. The **Read-first recovery order** is:
+
+1. `docs/engineering/KAORI_DELIVERY_WORKFLOW.md`.
+2. `docs/engineering/KAORI_GITHUB_PROJECT_SETUP.md`.
+3. `docs/engineering/KAORI_GITHUB_LABEL_CATALOG.md`.
+4. `.github/PULL_REQUEST_TEMPLATE.md` and relevant `tests/contracts/release/` governance contracts.
+5. The governing Issue contract and its current relationships/dependencies.
+6. The current work branch / PR exact head SHA and compare against current `kaori/staging`.
+7. Current Actions evidence for that exact source SHA.
+8. Current `kaori/staging` / `main` lineage and accepted integration evidence.
+
+If remembered guidance conflicts with admitted repository authority, the admitted repository source wins. Do not ask the maintainer to repeat a rule that can be recovered from these sources.
+
+### Repository Metadata Hygiene Gate
+
+Repository metadata is delivery evidence and is checked at every applicable synchronization boundary. Before a candidate is treated as Pre-Ready, before staging integration, and before final completion, audit at minimum:
+
+```text
+repo:OXY7O/KAORI is:pr no:label
+repo:OXY7O/KAORI is:pr no:assignee
+```
+
+Expected result is **0** for governed PRs. Closed, merged, or superseded PRs remain audit evidence and must not be left without applicable labels/assignee merely because they are no longer source authority.
+
+Also verify the governing Issue/PR Project membership, lifecycle Status, Sprint, Native Issue Type, Priority, Story Points, Milestone, relationships, and Development linkage where applicable. Unsupported Project/custom-field mutations must be reported to the maintainer with exact card, field, and intended value; never copy them into a duplicate body table or invent replacement labels.
+
+**Never run comprehensive KAORI CI on a work branch.** Metadata repair, review, and implementation remain under the path-aware Developer Check until merge to exact `kaori/staging`.
+
 ## Branch Authority
 
 Only two branches are long-lived by default:

@@ -33,6 +33,21 @@ If connected tooling cannot update a Project/custom field, Native Issue Type, re
 
 PR cards are integration evidence, not a second planning work item. When GitHub Project does not expose Issue-only planning metadata such as Priority, Story Points, Sprint, or Native Issue Type on a PR card, leave those values empty. Do not recreate them with labels.
 
+## Metadata Synchronization Gate
+
+Every governed Issue and PR must be added to the KAORI Project. Metadata is synchronized at the minimum delivery boundaries: Issue creation, work start, PR creation, Pre-Ready, staging merge, staging PASS/UAT admission, UAT acceptance, promotion PR, main merge, and final Done/close.
+
+At each applicable boundary, verify the native/Project authority instead of copying values into the body:
+
+- Issue: assignee, Project membership, Status, Sprint, Native Issue Type, Priority, Story Points, Milestone, canonical labels, relationships, and Development linkage.
+- PR: reviewer when a real reviewer exists, assignee, canonical labels, Project membership, Status, Sprint, Milestone, and Development linkage to the governing Issue.
+- Closed or superseded PRs remain audit evidence; applicable assignee, labels, and Project metadata must not be left empty merely because the PR no longer carries source authority.
+- `workflow:blocked` is removed as soon as the recorded unblock evidence exists.
+
+Project fields cannot be mutated by connected tooling in every environment. When that limitation applies, the agent must tell the maintainer the exact Project card, field, current/intended value, and any related Status, Type, Priority, Story Points, Sprint, Milestone, or relationship update that requires GitHub UI action. Do not duplicate that field into the Issue/PR body and do not invent a replacement label.
+
+Use `00 - Work Register` as the primary Project audit surface and the relevant lifecycle view for current execution. A metadata gap blocks the applicable synchronization gate until it is either repaired directly or reported explicitly for manual Project action.
+
 ## Canonical Lifecycle
 
 Configure `Status` with exactly these values and preserve this order:
@@ -314,6 +329,7 @@ The Project v2 configuration is maintained in GitHub UI. Verify the following wh
 9. Label definitions remain aligned with the canonical label catalog.
 10. Issue and PR bodies do not contain duplicate `Project Metadata` tables.
 11. Release-bound work in `UAT` remains visible until immutable artifact identity, VPS UAT, main promotion, Semantic Versioning release, and production RUN evidence are complete.
+12. Metadata Synchronization Gate is audited at each required delivery boundary, with unsupported Project mutations reported explicitly rather than duplicated into bodies.
 
 The connected repository agent should update supported repository and Issue/PR metadata directly. Project v2 custom-field/view changes, Native Issue Type changes, relationships, or other metadata operations remain explicit GitHub UI operations whenever the available connector does not expose those mutations.
 

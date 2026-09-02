@@ -23,6 +23,20 @@ The repository uses one authority per concern:
 
 Do not create custom labels that duplicate lifecycle, work type, priority, sprint, estimate, release target, or the retained built-in documentation label.
 
+## Label Admission Gate
+
+An uncataloged label must not be used. Before a new KAORI-owned label is created or applied, this catalog must define its **name, color, and description**, its namespace must be one of the canonical families, and its meaning must not overlap an existing native/Project authority or catalog entry.
+
+Admission checks:
+
+1. Confirm the label communicates portable context that is not already owned by Status, Native Issue Type, Priority, Story Points, Sprint, Milestone, ownership, or relationships.
+2. Confirm the exact lowercase namespaced name is canonical and has no competing alias.
+3. Record the deliberate color and concise applicability description in this catalog before repository use.
+4. Use the smallest meaningful label set; do not add labels merely to make metadata look complete.
+5. When connected tooling cannot administer the repository label definition, report the exact label name, color, description, and intended Issue/PR usage to the maintainer before applying it.
+
+A label with no description, an uncataloged KAORI-owned label, or a label that duplicates native/Project metadata is non-canonical until it passes this gate.
+
 ## Naming Standard
 
 KAORI-owned labels use lowercase namespaced names:

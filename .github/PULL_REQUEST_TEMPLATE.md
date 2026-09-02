@@ -83,6 +83,8 @@ State the release target or Milestone when one exists, plus compatibility/rollou
 - [ ] The title is concise, human-readable, and follows the KAORI Conventional Commit subject style.
 - [ ] Scope and out-of-scope boundaries are clear.
 - [ ] Linked work and acceptance coverage are traceable.
+- [ ] Assignee, canonical labels, Project membership, lifecycle Status, Sprint, and Milestone are synchronized where applicable; Issue-only planning fields are not duplicated onto the PR.
+- [ ] The PR body does not contain a duplicate `Project Metadata` table or substitute labels for Project/native fields.
 - [ ] Required CI evidence is green with no unexplained failure, traceback, HTTP 5xx, migration error, runtime error, or unexpected skip.
 - [ ] Security, migration/data, and operational impacts are addressed.
 - [ ] Documentation/contracts are aligned when applicable.
