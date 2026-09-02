@@ -49,6 +49,21 @@ def test_staging_publish_derives_semver_rc_tag_from_git_history() -> None:
     assert 'KAORI_RELEASE_VERSION' not in workflow
 
 
+def test_semver_uses_checkout_tags_without_persisted_git_credentials() -> None:
+    workflow = publish_source()
+    checkout_section = workflow.split('      - name: Check Out Exact Accepted Staging SHA\n', 1)[1].split(
+        '\n      - name: Validate Registry Identity', 1
+    )[0]
+    semver_section = workflow.split('      - name: Resolve Automatic SemVer Candidate\n', 1)[1].split(
+        '\n      - name: Resolve CI Toolchain', 1
+    )[0]
+
+    assert 'fetch-depth: 0' in checkout_section
+    assert 'fetch-tags: true' in checkout_section
+    assert 'persist-credentials: false' in checkout_section
+    assert 'git fetch --force --tags origin' not in semver_section
+
+
 def test_staging_publish_validates_exact_image_before_registry_push() -> None:
     workflow = publish_source()
 
