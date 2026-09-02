@@ -19,7 +19,7 @@ def test_rc_publish_is_explicit_dispatch_only_and_waits_for_exact_ci() -> None:
     assert 'workflow_dispatch:' in workflow
     assert '\n  push:\n' not in workflow
     assert "github.event_name == 'push'" not in workflow
-    assert "refs/heads/kaori/staging" in workflow
+    assert 'refs/heads/kaori/staging' in workflow
     assert 'actions: read' in workflow
     assert 'quality.yml' in workflow
     assert 'GITHUB_SHA' in workflow
