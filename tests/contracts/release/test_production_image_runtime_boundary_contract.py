@@ -42,7 +42,7 @@ def test_production_stage_does_not_copy_development_or_governance_surfaces() -> 
         '.devcontainer',
         '.vscode',
         'deploy',
-        'frontend',
+        'frontend/',
         'package.json',
         'package-lock.json',
         'pyproject.toml',
