@@ -65,6 +65,9 @@ printf '%s\n' "$registry_password" | \
 registry_password=''
 
 docker pull "$image" >/dev/null
+image_revision="$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$image")"
+[[ "$image_revision" == "$source_sha" ]] || \
+  fail "image revision label does not match requested source SHA (image=$image_revision source=$source_sha)"
 
 "${compose[@]}" up -d postgres redis
 
