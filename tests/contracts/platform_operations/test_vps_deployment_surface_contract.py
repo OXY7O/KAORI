@@ -130,6 +130,17 @@ def test_manual_vps_workflow_uses_encrypted_ssh_and_pinned_host_key() -> None:
     assert 'StrictHostKeyChecking=no' not in source
 
 
+def test_remote_ssh_commands_are_streamed_without_client_side_command_expansion() -> None:
+    source = _read(WORKFLOW)
+
+    assert "'$target'" not in source
+    assert "'bash -s'" in source
+    assert 'printf -v remote_mkdir' not in source
+    assert 'printf -v remote_chmod' not in source
+    assert 'printf -v remote_command' not in source
+    assert 'chmod 700 -- "$remote_release"/deploy/vps/*.sh' in source
+
+
 def test_operator_contract_keeps_real_environment_server_side() -> None:
     source = _read(README)
 
