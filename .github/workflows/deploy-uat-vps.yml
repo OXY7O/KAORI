@@ -229,16 +229,42 @@ jobs:
           ssh_opts=(-p "$port" -i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$known_hosts_file")
           scp_opts=(-P "$port" -i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$known_hosts_file")
 
-          printf -v remote_mkdir '%q ' mkdir -p "$remote_release/deploy" "$deploy_root/releases"
-          ssh "${ssh_opts[@]}" "$target" "$remote_mkdir"
+          run_remote_script() {
+            ssh "${ssh_opts[@]}" "$target" 'bash -s'
+          }
+
+          {
+            printf 'set -Eeuo pipefail\n'
+            printf 'remote_release=%q\n' "$remote_release"
+            printf 'deploy_root=%q\n' "$deploy_root"
+            cat <<'REMOTE_PREPARE'
+          mkdir -p -- "$remote_release/deploy" "$deploy_root/releases"
+          REMOTE_PREPARE
+          } | run_remote_script
+
           scp "${scp_opts[@]}" compose.production.yml "$target:$remote_release/compose.production.yml"
           scp "${scp_opts[@]}" -r deploy/vps "$target:$remote_release/deploy/"
-          printf -v remote_chmod '%q ' chmod 700 "$remote_release"/deploy/vps/*.sh
-          ssh "${ssh_opts[@]}" "$target" "$remote_chmod"
+
+          {
+            printf 'set -Eeuo pipefail\n'
+            printf 'remote_release=%q\n' "$remote_release"
+            cat <<'REMOTE_PERMISSIONS'
+          chmod 700 -- "$remote_release"/deploy/vps/*.sh
+          REMOTE_PERMISSIONS
+          } | run_remote_script
 
           # Registry auth remains remote and ephemeral; deploy.sh uses docker login --password-stdin.
-          printf -v remote_command '%q ' bash "$remote_release/deploy/vps/deploy.sh" "$REQUESTED_IMAGE" "$REQUESTED_SHA"
           {
-            printf '%s\n' "$KAORI_DOCKER_REGISTRY_USERNAME"
-            printf '%s\n' "$KAORI_DOCKER_REGISTRY_PASSWORD"
-          } | ssh "${ssh_opts[@]}" "$target" "$remote_command"
+            printf 'set -Eeuo pipefail\n'
+            printf 'deploy_script=%q\n' "$remote_release/deploy/vps/deploy.sh"
+            printf 'requested_image=%q\n' "$REQUESTED_IMAGE"
+            printf 'requested_sha=%q\n' "$REQUESTED_SHA"
+            printf 'registry_user=%q\n' "$KAORI_DOCKER_REGISTRY_USERNAME"
+            printf 'registry_password=%q\n' "$KAORI_DOCKER_REGISTRY_PASSWORD"
+            cat <<'REMOTE_DEPLOY'
+          {
+            printf '%s\n' "$registry_user"
+            printf '%s\n' "$registry_password"
+          } | bash "$deploy_script" "$requested_image" "$requested_sha"
+          REMOTE_DEPLOY
+          } | run_remote_script
