@@ -13,17 +13,18 @@ def read(path: Path) -> str:
     return path.read_text(encoding='utf-8')
 
 
-def test_draft_developer_check_is_separate_from_governed_admission() -> None:
+def test_work_branch_developer_check_is_separate_from_governed_admission() -> None:
     workflow = yaml.safe_load(read(DEVELOPER_WORKFLOW))
 
     assert workflow['name'] == 'KAORI Developer Check'
-    assert workflow[True]['pull_request']['branches'] == ['kaori/staging', 'main']
+    assert workflow[True]['pull_request']['branches'] == ['kaori/staging']
     jobs = workflow['jobs']
     assert set(jobs) == {'route', 'developer-check'}
     assert jobs['route']['name'] == 'Route Checks'
     assert jobs['route']['if'] == (
-        '${{ github.event.pull_request.draft == true && '
-        'github.event.pull_request.head.repo.full_name == github.repository }}'
+        "${{ github.event.pull_request.head.repo.full_name == github.repository && "
+        "startsWith(github.event.pull_request.head.ref, 'kaori/') && "
+        "github.event.pull_request.head.ref != 'kaori/staging' }}"
     )
     assert jobs['developer-check']['name'] == 'Developer Check'
     assert jobs['developer-check']['if'].startswith('${{ always()')
@@ -103,7 +104,8 @@ def test_developer_check_output_is_progress_visible_and_actionable() -> None:
     for token in ('⏳', '✅', '📦', '⏱', '➡️'):
         assert token in source
     assert 'Developer Check PASS' in source
-    assert 'Keep the PR Draft until review findings are batch-repaired' in source
+    assert 'Work-branch validation stays targeted in both Draft and Ready states' in source
+    assert 'comprehensive validation begins only after merge to kaori/staging' in source
 
 
 def test_governed_ci_graph_uses_concise_job_names() -> None:
