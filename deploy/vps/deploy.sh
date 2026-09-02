@@ -25,13 +25,12 @@ source_sha="$2"
 [[ -f "$BASE_COMPOSE" ]] || fail "base Compose file is missing: $BASE_COMPOSE"
 [[ -f "$VPS_COMPOSE" ]] || fail "VPS Compose overlay is missing: $VPS_COMPOSE"
 
-env_mode="$(stat -c '%a' "$KAORI_ENV_FILE")"
-[[ "$env_mode" == '600' ]] || fail "environment file must use mode 600, found $env_mode"
-
-for command_name in docker curl sha256sum stat mktemp; do
+for command_name in docker curl stat mktemp; do
   command -v "$command_name" >/dev/null 2>&1 || fail "$command_name is required"
 done
 
+env_mode="$(stat -c '%a' "$KAORI_ENV_FILE")"
+[[ "$env_mode" == '600' ]] || fail "environment file must use mode 600, found $env_mode"
 docker info >/dev/null 2>&1 || fail 'Docker daemon is not reachable by the deploy user'
 docker compose version >/dev/null 2>&1 || fail 'Docker Compose plugin is required'
 
@@ -60,93 +59,102 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM HUP
 
-printf '%s\n' "$registry_password" | \
-  docker login "$registry_host" --username "$registry_user" --password-stdin >/dev/null
+printf '%s\n' "$registry_password" | docker login "$registry_host" --username "$registry_user" --password-stdin >/dev/null
 registry_password=''
-
 docker pull "$image" >/dev/null
 image_revision="$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$image")"
-[[ "$image_revision" == "$source_sha" ]] || \
-  fail "image revision label does not match requested source SHA (image=$image_revision source=$source_sha)"
-
-"${compose[@]}" up -d postgres redis
+[[ "$image_revision" == "$source_sha" ]] || fail "image revision label does not match requested source SHA (image=$image_revision source=$source_sha)"
 
 wait_healthy() {
   local service="$1"
   local deadline=$(( $(date +%s) + 180 ))
   local cid health
-
   while (( $(date +%s) < deadline )); do
     cid="$("${compose[@]}" ps -q "$service")"
     if [[ -n "$cid" ]]; then
       health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$cid")"
-      if [[ "$health" == 'healthy' ]]; then
-        return 0
-      fi
-      if [[ "$health" == 'unhealthy' || "$health" == 'exited' || "$health" == 'dead' ]]; then
-        fail "$service entered terminal health state: $health"
-      fi
+      [[ "$health" == 'healthy' ]] && return 0
+      [[ "$health" == 'unhealthy' || "$health" == 'exited' || "$health" == 'dead' ]] && fail "$service entered terminal health state: $health"
     fi
     sleep 3
   done
-
   fail "$service did not become healthy before timeout"
 }
 
-wait_healthy postgres
-wait_healthy redis
+start_dependencies() {
+  "${compose[@]}" pull postgres redis
+  "${compose[@]}" up -d --pull never postgres redis
+}
 
-"${compose[@]}" run --rm validate
-
-has_existing_state="$(
-  "${compose[@]}" exec -T postgres sh -ec \
-    'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname NOT IN ('\''pg_catalog'\'', '\''information_schema'\''));"' |
-    tr -d '[:space:]'
-)"
+wait_for_dependencies() {
+  wait_healthy postgres
+  wait_healthy redis
+}
 
 backup_path='none'
-if [[ "$has_existing_state" == 't' ]]; then
-  backup_path="$(bash "$SCRIPT_DIR/backup.sh")"
-  [[ -n "$backup_path" ]] || fail 'pre-migration backup path was not returned'
-fi
+existing_database_requires_backup() {
+  local has_existing_state
+  has_existing_state="$(
+    "${compose[@]}" exec -T postgres sh -ec \
+      'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname NOT IN ('\''pg_catalog'\'', '\''information_schema'\''));"' |
+      tr -d '[:space:]'
+  )"
+  if [[ "$has_existing_state" == 't' ]]; then
+    backup_path="$(bash "$SCRIPT_DIR/backup.sh")"
+    [[ -n "$backup_path" && -s "$backup_path" ]] || fail 'pre-migration backup was not created successfully'
+  fi
+}
 
-"${compose[@]}" run --rm migrate
-migration_result='pass'
+run_validate() {
+  "${compose[@]}" run --rm --pull never validate
+}
 
-runtime_services=(
-  postgres
-  redis
-  web
-  worker
-  maintenance-worker
-  runtime-worker
-  validation-worker
-  analytics-worker
-  reports-worker
-  forecasting-worker
-  resolver-execution-worker
-  resolver-maintenance-worker
-  beat
+run_migrate() {
+  "${compose[@]}" run --rm --pull never migrate
+}
+
+application_services=(
+  web worker maintenance-worker runtime-worker validation-worker analytics-worker
+  reports-worker forecasting-worker resolver-execution-worker resolver-maintenance-worker beat
 )
-"${compose[@]}" up -d --remove-orphans "${runtime_services[@]}"
+start_application_services() {
+  "${compose[@]}" up -d --remove-orphans --pull never "${application_services[@]}"
+}
 
-bash "$SCRIPT_DIR/verify.sh"
-verification_result='pass'
+run_verify() {
+  KAORI_EXPECTED_IMAGE="$image" bash "$SCRIPT_DIR/verify.sh" --restart-check
+}
 
-if [[ -f "$KAORI_STATE_DIR/current-image" ]]; then
-  cp -- "$KAORI_STATE_DIR/current-image" "$KAORI_STATE_DIR/previous-image"
-fi
-if [[ -f "$KAORI_STATE_DIR/source-sha" ]]; then
-  cp -- "$KAORI_STATE_DIR/source-sha" "$KAORI_STATE_DIR/previous-source-sha"
-fi
+record_deployment() {
+  if [[ -f "$KAORI_STATE_DIR/current-image" ]]; then
+    cp -- "$KAORI_STATE_DIR/current-image" "$KAORI_STATE_DIR/previous-image"
+  fi
+  if [[ -f "$KAORI_STATE_DIR/source-sha" ]]; then
+    cp -- "$KAORI_STATE_DIR/source-sha" "$KAORI_STATE_DIR/previous-source-sha"
+  fi
+  if [[ "$backup_path" != 'none' ]]; then
+    printf '%s\n' "$backup_path" > "$KAORI_STATE_DIR/previous-backup"
+  else
+    rm -f -- "$KAORI_STATE_DIR/previous-backup"
+  fi
 
-printf '%s\n' "$image" > "$KAORI_STATE_DIR/current-image"
-printf '%s\n' "$source_sha" > "$KAORI_STATE_DIR/source-sha"
-printf '%s\n' "$migration_result" > "$KAORI_STATE_DIR/migration-result"
-printf '%s\n' "$verification_result" > "$KAORI_STATE_DIR/verification-result"
-printf '%s\n' "$backup_path" > "$KAORI_STATE_DIR/pre-migration-backup"
-date -u +%Y-%m-%dT%H:%M:%SZ > "$KAORI_STATE_DIR/deployed-at"
-chmod 600 "$KAORI_STATE_DIR"/*
+  printf '%s\n' "$image" > "$KAORI_STATE_DIR/current-image"
+  printf '%s\n' "$source_sha" > "$KAORI_STATE_DIR/source-sha"
+  printf '%s\n' "$backup_path" > "$KAORI_STATE_DIR/pre-migration-backup"
+  printf '%s\n' 'pass' > "$KAORI_STATE_DIR/migration-result"
+  printf '%s\n' 'pass' > "$KAORI_STATE_DIR/verification-result"
+  date -u +%Y-%m-%dT%H:%M:%SZ > "$KAORI_STATE_DIR/deployed-at"
+  chmod 600 "$KAORI_STATE_DIR"/*
+}
+
+start_dependencies
+wait_for_dependencies
+existing_database_requires_backup
+run_validate
+run_migrate
+start_application_services
+run_verify
+record_deployment
 
 printf 'KAORI VPS deployment PASS\n'
 printf 'source_sha=%s\n' "$source_sha"
