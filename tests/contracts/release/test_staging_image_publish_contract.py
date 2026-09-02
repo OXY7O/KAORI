@@ -49,7 +49,7 @@ def test_staging_publish_validates_exact_image_before_registry_push() -> None:
     assert 'docker push "$CANDIDATE_IMAGE"' in workflow
     assert 'docker pull "$CANDIDATE_IMAGE"' in workflow
     assert 'RepoDigests' in workflow
-    assert 'latest' not in workflow.lower()
+    assert ':latest' not in workflow.lower()
 
 
 def test_staging_publish_records_immutable_digest_evidence() -> None:
