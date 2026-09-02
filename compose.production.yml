@@ -3,7 +3,7 @@ name: kaori-production
 x-kaori-image: &kaori-image
   image: ${KAORI_IMAGE:?Set KAORI_IMAGE in .env.production}
   env_file:
-    - .env.production
+    - ${KAORI_ENV_FILE:-.env.production}
   environment:
     APP_ENV: production
   volumes:
