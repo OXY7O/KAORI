@@ -389,7 +389,7 @@ jobs:
 
           cat > rc-release-notes.md <<EOF
           ## Release Candidate
-          **${CANDIDATE_TAG}** is an intentional KAORI prerelease cut from the exact admitted `kaori/staging` source below. Publication does not imply UAT or production acceptance.
+          **${CANDIDATE_TAG}** is an intentional KAORI prerelease cut from the exact admitted \`kaori/staging\` source below. Publication does not imply UAT or production acceptance.
 
           ## What Changed
           ${changes}
@@ -401,18 +401,18 @@ jobs:
           ${migration_impact}
 
           ## Validation
-          Exact `kaori/staging` KAORI CI: **PASS**  
+          Exact \`kaori/staging\` KAORI CI: **PASS**  
           Quality run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${QUALITY_RUN_ID}  
           Image scan: **PASS**  
           Runtime & DAST: **PASS**
 
           ## Source
-          Staging source SHA: `${ACCEPTED_SHA}`
+          Staging source SHA: \`${ACCEPTED_SHA}\`
 
           ## Artifact
-          Candidate image: `${CANDIDATE_IMAGE}`  
-          Immutable digest: `${KAORI_IMAGE_DIGEST}`  
-          Deployment authority: `${KAORI_IMAGE_REF}`
+          Candidate image: \`${CANDIDATE_IMAGE}\`  
+          Immutable digest: \`${KAORI_IMAGE_DIGEST}\`  
+          Deployment authority: \`${KAORI_IMAGE_REF}\`
 
           ## UAT
           **Pending.** This RC must be deployed and explicitly accepted through the governed UAT path before stable promotion.
@@ -421,7 +421,7 @@ jobs:
           This prerelease does not perform VPS deployment, TLS/ingress acceptance, or stable production promotion. Those boundaries remain governed separately.
 
           ## Promotion Rule
-          Promote only after explicit UAT acceptance of this exact source SHA and immutable image digest. Stable `vX.Y.Z` promotion must reuse the accepted digest and must not rebuild application bits.
+          Promote only after explicit UAT acceptance of this exact source SHA and immutable image digest. Stable \`vX.Y.Z\` promotion must reuse the accepted digest and must not rebuild application bits.
           EOF
 
       - name: Create Human-Friendly GitHub Prerelease
