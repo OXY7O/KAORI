@@ -22,7 +22,7 @@ def test_work_branch_developer_check_is_separate_from_governed_admission() -> No
     assert set(jobs) == {'route', 'developer-check'}
     assert jobs['route']['name'] == 'Route Checks'
     assert jobs['route']['if'] == (
-        "${{ github.event.pull_request.head.repo.full_name == github.repository && "
+        '${{ github.event.pull_request.head.repo.full_name == github.repository && '
         "startsWith(github.event.pull_request.head.ref, 'kaori/') && "
         "github.event.pull_request.head.ref != 'kaori/staging' }}"
     )
