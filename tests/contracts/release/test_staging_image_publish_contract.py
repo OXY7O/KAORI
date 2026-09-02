@@ -11,18 +11,22 @@ def publish_source() -> str:
     return PUBLISH_WORKFLOW.read_text(encoding='utf-8')
 
 
-def test_rc_publish_is_explicit_dispatch_only_and_waits_for_exact_ci() -> None:
+def test_rc_publish_uses_only_deliberate_triggers_and_exact_staging_authority() -> None:
     workflow = publish_source()
     quality = QUALITY_WORKFLOW.read_text(encoding='utf-8')
+    trigger_section = workflow.split('on:\n', 1)[1].split('\npermissions:', 1)[0]
 
-    assert 'name: KAORI Staging Image Publish' in workflow
-    assert 'workflow_dispatch:' in workflow
-    assert '\n  push:\n' not in workflow
-    assert "github.event_name == 'push'" not in workflow
+    assert 'name: KAORI Release Candidate Cut' in workflow
+    assert 'workflow_dispatch:' in trigger_section
+    assert 'push:' in trigger_section
+    assert '- kaori/rc-request' in trigger_section
+    assert '- kaori/staging' not in trigger_section
+    assert "github.ref == 'refs/heads/kaori/rc-request'" in workflow
     assert 'refs/heads/kaori/staging' in workflow
+    assert '/git/ref/heads/kaori/staging' in workflow
+    assert 'ACCEPTED_SHA' in workflow
     assert 'actions: read' in workflow
     assert 'quality.yml' in workflow
-    assert 'GITHUB_SHA' in workflow
     assert 'conclusion' in workflow
     assert 'success' in workflow
     assert 'KAORI_DOCKER_REGISTRY_HOST' in workflow
@@ -49,19 +53,34 @@ def test_staging_publish_derives_semver_rc_tag_from_git_history() -> None:
     assert 'KAORI_RELEASE_VERSION' not in workflow
 
 
-def test_semver_uses_checkout_tags_without_persisted_git_credentials() -> None:
+def test_semver_uses_accepted_staging_checkout_without_persisted_git_credentials() -> None:
     workflow = publish_source()
     checkout_section = workflow.split('      - name: Check Out Exact Accepted Staging SHA\n', 1)[1].split(
-        '\n      - name: Validate Registry Identity', 1
+        '\n      - name: Resolve Intentional SemVer Candidate', 1
     )[0]
-    semver_section = workflow.split('      - name: Resolve Automatic SemVer Candidate\n', 1)[1].split(
-        '\n      - name: Resolve CI Toolchain', 1
+    semver_section = workflow.split('      - name: Resolve Intentional SemVer Candidate\n', 1)[1].split(
+        '\n  publish:\n', 1
     )[0]
 
+    assert 'ref: ${{ steps.staging.outputs.accepted_sha }}' in checkout_section
     assert 'fetch-depth: 0' in checkout_section
     assert 'fetch-tags: true' in checkout_section
     assert 'persist-credentials: false' in checkout_section
     assert 'git fetch --force --tags origin' not in semver_section
+
+
+def test_rc_publish_does_not_consume_another_rc_for_same_source_sha() -> None:
+    workflow = publish_source()
+    semver_section = workflow.split('      - name: Resolve Intentional SemVer Candidate\n', 1)[1].split(
+        '\n  publish:\n', 1
+    )[0]
+
+    assert 'git tag --points-at "$ACCEPTED_SHA"' in semver_section
+    assert 'existing_rc=' in semver_section
+    assert 'should_publish=false' in semver_section
+    assert '/releases/tags/${existing_rc}' in semver_section
+    assert semver_section.index('existing_rc=') < semver_section.index('NEXT_RC=')
+    assert "needs.wait-for-quality.outputs.should_publish == 'true'" in workflow
 
 
 def test_staging_publish_validates_exact_image_before_registry_push() -> None:
@@ -69,7 +88,7 @@ def test_staging_publish_validates_exact_image_before_registry_push() -> None:
 
     assert 'CANDIDATE_IMAGE="$REGISTRY_IMAGE:$CANDIDATE_TAG"' in workflow
     assert '--build-arg OCI_SOURCE=' in workflow
-    assert '--build-arg OCI_REVISION=' in workflow
+    assert '--build-arg OCI_REVISION="$ACCEPTED_SHA"' in workflow
     assert '--build-arg OCI_VERSION=' in workflow
     assert 'trivy image' in workflow
     assert '"$CANDIDATE_IMAGE"' in workflow
@@ -82,7 +101,7 @@ def test_staging_publish_validates_exact_image_before_registry_push() -> None:
     assert ':latest' not in workflow.lower()
 
 
-def test_staging_publish_records_immutable_digest_evidence_before_tagging_rc() -> None:
+def test_rc_publish_records_digest_and_human_friendly_github_prerelease() -> None:
     workflow = publish_source()
 
     for token in (
@@ -94,10 +113,29 @@ def test_staging_publish_records_immutable_digest_evidence_before_tagging_rc() -
         'staging-image.env',
     ):
         assert token in workflow
+
     assert 'Upload Staging Image Evidence' in workflow
-    assert 'Create Published RC Git Tag' in workflow
-    assert 'refs/tags/${CANDIDATE_TAG}' in workflow
-    assert workflow.index('Record Immutable Digest Evidence') < workflow.index('Create Published RC Git Tag')
+    assert 'Build Human-Friendly RC Release Notes' in workflow
+    assert 'Create Human-Friendly GitHub Prerelease' in workflow
+    assert '"/releases"' in workflow
+    assert 'prerelease: true' in workflow
+    assert 'make_latest: "false"' in workflow
+    for heading in (
+        '## Release Candidate',
+        '## What Changed',
+        '## Security',
+        '## Migration / Data Impact',
+        '## Validation',
+        '## Source',
+        '## Artifact',
+        '## UAT',
+        '## Known Limitations',
+        '## Promotion Rule',
+    ):
+        assert heading in workflow
+    assert workflow.index('Record Immutable Digest Evidence') < workflow.index(
+        'Create Human-Friendly GitHub Prerelease'
+    )
 
 
 def test_production_image_carries_oci_source_and_revision_labels() -> None:
