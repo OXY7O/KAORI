@@ -187,6 +187,7 @@ jobs:
           target="$KAORI_VPS_USER@$KAORI_VPS_HOST"
           ssh_opts=(
             -p "$port"
+            -i "$key_file"
             -o BatchMode=yes
             -o IdentitiesOnly=yes
             -o StrictHostKeyChecking=yes
@@ -194,6 +195,7 @@ jobs:
           )
           scp_opts=(
             -P "$port"
+            -i "$key_file"
             -o BatchMode=yes
             -o IdentitiesOnly=yes
             -o StrictHostKeyChecking=yes
