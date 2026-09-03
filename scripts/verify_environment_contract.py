@@ -30,7 +30,11 @@ INHERITED_OPTIONAL_KEYS = {
     'ARCHIVE_S3_PREFIX',
     'ARCHIVE_S3_FORCE_PATH_STYLE',
 }
-COMPOSE_COMPAT_KEYS = {'KAORI_ENV_FILE', 'KAORI_BIND_ADDRESS', 'KAORI_PORT'}
+# These Compose interpolation values are compatibility/transient inputs rather
+# than persistent configuration authorities. KAORI_RELEASE_ENV_FILE points at
+# candidate-release.env during admission and is promoted to the active path only
+# after verification succeeds.
+COMPOSE_COMPAT_KEYS = {'KAORI_ENV_FILE', 'KAORI_BIND_ADDRESS', 'KAORI_PORT', 'KAORI_RELEASE_ENV_FILE'}
 
 COMMON_EXTRA_KEYS = {
     'ADMIN_EMAIL',
