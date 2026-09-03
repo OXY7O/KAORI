@@ -1,11 +1,17 @@
 name: kaori-production
 
+x-kaori-environment: &kaori-environment
+  APP_ENV: production
+  KAORI_IMAGE: ${KAORI_IMAGE:?KAORI_IMAGE is supplied by governed deployment}
+  APP_VERSION: ${APP_VERSION:?APP_VERSION is supplied by governed deployment}
+  APP_BUILD_SHA: ${APP_BUILD_SHA:?APP_BUILD_SHA is supplied by governed deployment}
+  APP_BUILD_DATE: ${APP_BUILD_DATE:?APP_BUILD_DATE is supplied by governed deployment}
+
 x-kaori-image: &kaori-image
-  image: ${KAORI_IMAGE:?Set KAORI_IMAGE in .env.production}
+  image: ${KAORI_IMAGE:?KAORI_IMAGE is supplied by governed deployment}
   env_file:
     - ${KAORI_ENV_FILE:-.env.production}
-  environment:
-    APP_ENV: production
+  environment: *kaori-environment
   volumes:
     - kaori_production_instance:/app/instance
   networks:
@@ -24,7 +30,7 @@ services:
   validate:
     <<: *kaori-image
     environment:
-      APP_ENV: production
+      <<: *kaori-environment
       WAIT_FOR_DB: "false"
     command:
       - python
@@ -34,7 +40,7 @@ services:
   migrate:
     <<: *kaori-image
     environment:
-      APP_ENV: production
+      <<: *kaori-environment
       WAIT_FOR_DB: "true"
     command:
       - flask
@@ -47,7 +53,7 @@ services:
   web:
     <<: *kaori-image
     environment:
-      APP_ENV: production
+      <<: *kaori-environment
       WAIT_FOR_DB: "true"
     init: true
     restart: unless-stopped
@@ -73,7 +79,7 @@ services:
   worker:
     <<: *kaori-image
     environment:
-      APP_ENV: production
+      <<: *kaori-environment
       WAIT_FOR_DB: "true"
     init: true
     restart: unless-stopped
@@ -96,7 +102,7 @@ services:
   maintenance-worker:
     <<: *kaori-image
     environment:
-      APP_ENV: production
+      <<: *kaori-environment
       WAIT_FOR_DB: "true"
     init: true
     restart: unless-stopped
@@ -119,7 +125,7 @@ services:
   runtime-worker:
     <<: *kaori-image
     environment:
-      APP_ENV: production
+      <<: *kaori-environment
       WAIT_FOR_DB: "true"
     init: true
     restart: unless-stopped
@@ -142,7 +148,7 @@ services:
   validation-worker:
     <<: *kaori-image
     environment:
-      APP_ENV: production
+      <<: *kaori-environment
       WAIT_FOR_DB: "true"
     init: true
     restart: unless-stopped
@@ -165,7 +171,7 @@ services:
   analytics-worker:
     <<: *kaori-image
     environment:
-      APP_ENV: production
+      <<: *kaori-environment
       WAIT_FOR_DB: "true"
     init: true
     restart: unless-stopped
@@ -188,7 +194,7 @@ services:
   reports-worker:
     <<: *kaori-image
     environment:
-      APP_ENV: production
+      <<: *kaori-environment
       WAIT_FOR_DB: "true"
     init: true
     restart: unless-stopped
@@ -212,7 +218,7 @@ services:
   forecasting-worker:
     <<: *kaori-image
     environment:
-      APP_ENV: production
+      <<: *kaori-environment
       WAIT_FOR_DB: "true"
     init: true
     restart: unless-stopped
@@ -235,7 +241,7 @@ services:
   resolver-execution-worker:
     <<: *kaori-image
     environment:
-      APP_ENV: production
+      <<: *kaori-environment
       WAIT_FOR_DB: "true"
     init: true
     restart: unless-stopped
@@ -258,7 +264,7 @@ services:
   resolver-maintenance-worker:
     <<: *kaori-image
     environment:
-      APP_ENV: production
+      <<: *kaori-environment
       WAIT_FOR_DB: "true"
     init: true
     restart: unless-stopped
@@ -282,7 +288,7 @@ services:
   beat:
     <<: *kaori-image
     environment:
-      APP_ENV: production
+      <<: *kaori-environment
       WAIT_FOR_DB: "true"
     init: true
     restart: unless-stopped
