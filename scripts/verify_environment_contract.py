@@ -13,6 +13,14 @@ ENV_ACCESS = re.compile(
 )
 COMPOSE_ENV = re.compile(r'\$\$?\{([A-Z][A-Z0-9_]*)(?::[-+?][^}]*)?\}')
 
+APP_TEMPLATE = 'deploy/env/app.env.example'
+SECRETS_TEMPLATE = 'deploy/env/secrets.env.example'
+DEPLOY_TEMPLATE = 'deploy/env/deploy.env.example'
+DEPRECATED_PRODUCTION_TEMPLATE = '.env.production.example'
+PERSISTENT_PRODUCTION_TEMPLATES = (APP_TEMPLATE, SECRETS_TEMPLATE, DEPLOY_TEMPLATE)
+RELEASE_KEYS = {'KAORI_IMAGE', 'APP_VERSION', 'APP_BUILD_SHA', 'APP_BUILD_DATE'}
+COMPOSE_COMPAT_KEYS = {'KAORI_ENV_FILE', 'KAORI_BIND_ADDRESS', 'KAORI_PORT'}
+
 COMMON_EXTRA_KEYS = {
     'ADMIN_EMAIL',
     'ADMIN_PASSWORD',
@@ -22,19 +30,6 @@ COMMON_EXTRA_KEYS = {
     'KAORI_GITHUB_CLIENT_SECRET',
     'KAORI_GOOGLE_CLIENT_SECRET',
     'WAIT_FOR_DB',
-}
-
-PRODUCTION_ONLY_KEYS = {
-    'GUNICORN_GRACEFUL_TIMEOUT',
-    'GUNICORN_KEEPALIVE',
-    'GUNICORN_LOG_LEVEL',
-    'GUNICORN_THREADS',
-    'GUNICORN_TIMEOUT',
-    'GUNICORN_WORKERS',
-    'KAORI_BIND_ADDRESS',
-    'KAORI_IMAGE',
-    'KAORI_PORT',
-    'TRUSTED_HOSTS',
 }
 
 FORBIDDEN_ENV_TOKENS = {
@@ -65,6 +60,43 @@ FORBIDDEN_ENV_TOKENS = {
     'REPORT_TELEGRAM_BOT_TOKEN',
     'REPORT_TELEGRAM_CHAT_ID',
     'REPORT_DELIVERY_TIMEOUT_SECONDS',
+}
+
+SENSITIVE_KEYS = {
+    'SECRET_KEY',
+    'INTEGRATION_CREDENTIAL_KEY',
+    'INTEGRATION_CREDENTIAL_PREVIOUS_KEYS',
+    'POSTGRES_PASSWORD',
+    'REDIS_PASSWORD',
+    'DATABASE_URL',
+    'REDIS_URL',
+    'CELERY_BROKER_URL',
+    'CELERY_RESULT_BACKEND',
+    'RATELIMIT_STORAGE_URI',
+    'REPORT_S3_ACCESS_KEY_ID',
+    'REPORT_S3_SECRET_ACCESS_KEY',
+    'ADMIN_PASSWORD',
+    'KAORI_LDAP_BIND_PASSWORD',
+    'KAORI_GOOGLE_CLIENT_SECRET',
+    'KAORI_GITHUB_CLIENT_SECRET',
+    'RESOLVER_TOKEN_SIGNING_KEY',
+}
+
+DEPLOYMENT_KEYS = {
+    'KAORI_APP_ENV_FILE',
+    'KAORI_SECRETS_ENV_FILE',
+    'KAORI_ACTIVE_RELEASE_ENV_FILE',
+    'POSTGRES_DB',
+    'POSTGRES_USER',
+    'KAORI_POSTGRES_IMAGE',
+    'KAORI_REDIS_IMAGE',
+    'KAORI_NGINX_IMAGE',
+    'KAORI_CERTBOT_IMAGE',
+    'KAORI_PUBLIC_DOMAIN',
+    'KAORI_PUBLIC_IP',
+    'KAORI_LETSENCRYPT_EMAIL',
+    'KAORI_NGINX_RELOAD_INTERVAL_SECONDS',
+    'KAORI_CERTBOT_RENEW_INTERVAL_SECONDS',
 }
 
 
@@ -105,37 +137,72 @@ def assert_no_duplicates(relative: str) -> None:
         raise AssertionError(f'{relative} contains duplicate active variables: {", ".join(duplicates)}')
 
 
-def assert_documented(relative: str, required: set[str]) -> None:
-    missing = sorted(required - documented_env_keys(relative))
-    if missing:
-        raise AssertionError(f'{relative} is missing environment contract keys: {", ".join(missing)}')
-
-
 def verify() -> None:
     default_keys = accessed_env_keys('app/config/default.py')
     notification_keys = accessed_env_keys('app/integrations/delivery/notification_channels/config.py')
     common_keys = default_keys | notification_keys | COMMON_EXTRA_KEYS
-
-    development_compose_keys = compose_env_keys(
-        'compose.yml',
-        '.devcontainer/compose.devcontainer.yml',
-    )
-    production_compose_keys = compose_env_keys('compose.production.yml')
+    development_compose_keys = compose_env_keys('compose.yml', '.devcontainer/compose.devcontainer.yml')
     production_config_keys = accessed_env_keys('app/config/production.py', 'gunicorn.conf.py')
 
     assert_no_duplicates('.env.example')
-    assert_no_duplicates('.env.production.example')
+    for relative in PERSISTENT_PRODUCTION_TEMPLATES:
+        assert_no_duplicates(relative)
 
-    assert_documented('.env.example', common_keys | development_compose_keys)
-    assert_documented(
-        '.env.production.example',
-        common_keys | production_compose_keys | production_config_keys | PRODUCTION_ONLY_KEYS,
+    development_keys = documented_env_keys('.env.example')
+    missing_development = sorted((common_keys | development_compose_keys) - development_keys)
+    if missing_development:
+        raise AssertionError('.env.example is missing environment contract keys: ' + ', '.join(missing_development))
+
+    persistent_sets = {relative: documented_env_keys(relative) for relative in PERSISTENT_PRODUCTION_TEMPLATES}
+    persistent_union = set().union(*persistent_sets.values())
+    required_runtime = common_keys | production_config_keys
+    missing_runtime = sorted(required_runtime - persistent_union)
+    if missing_runtime:
+        raise AssertionError('Split production environment is missing runtime keys: ' + ', '.join(missing_runtime))
+
+    ownership: dict[str, list[str]] = {}
+    for relative, keys in persistent_sets.items():
+        for key in keys:
+            ownership.setdefault(key, []).append(relative)
+    overlaps = {key: paths for key, paths in ownership.items() if len(paths) > 1}
+    if overlaps:
+        details = '; '.join(f'{key}: {", ".join(paths)}' for key, paths in sorted(overlaps.items()))
+        raise AssertionError('Persistent production environment keys must have one authority: ' + details)
+
+    app_keys = persistent_sets[APP_TEMPLATE]
+    secret_keys = persistent_sets[SECRETS_TEMPLATE]
+    deploy_keys = persistent_sets[DEPLOY_TEMPLATE]
+    missing_sensitive = sorted(SENSITIVE_KEYS - secret_keys)
+    if missing_sensitive:
+        raise AssertionError('secrets.env.example is missing sensitive keys: ' + ', '.join(missing_sensitive))
+    leaked_sensitive = sorted(SENSITIVE_KEYS & (app_keys | deploy_keys))
+    if leaked_sensitive:
+        raise AssertionError('Sensitive keys leaked outside secrets.env.example: ' + ', '.join(leaked_sensitive))
+    missing_deployment = sorted(DEPLOYMENT_KEYS - deploy_keys)
+    if missing_deployment:
+        raise AssertionError('deploy.env.example is missing adapter keys: ' + ', '.join(missing_deployment))
+
+    for key in RELEASE_KEYS:
+        if key in persistent_union:
+            raise AssertionError(f'Persistent production environment must not define release-managed {key}')
+
+    production_compose_keys = compose_env_keys('compose.production.yml', 'deploy/vps/compose.vps.yml')
+    undocumented_compose = sorted(
+        production_compose_keys - persistent_union - RELEASE_KEYS - COMPOSE_COMPAT_KEYS
     )
+    if undocumented_compose:
+        raise AssertionError('Compose references undocumented production keys: ' + ', '.join(undocumented_compose))
+
+    deprecated = read(DEPRECATED_PRODUCTION_TEMPLATE)
+    if 'DEPRECATED' not in deprecated or 'deploy/env/app.env.example' not in deprecated:
+        raise AssertionError('.env.production.example must point operators to the split environment contract')
+    if active_env_keys(DEPRECATED_PRODUCTION_TEMPLATE):
+        raise AssertionError('.env.production.example must not remain an active production authority')
 
     source_contract = '\n'.join(
         (
             read('.env.example'),
-            read('.env.production.example'),
+            *(read(relative) for relative in PERSISTENT_PRODUCTION_TEMPLATES),
             read('app/config/default.py'),
             read('app/config/development.py'),
             read('app/config/production.py'),
@@ -146,39 +213,27 @@ def verify() -> None:
     if forbidden_hits:
         raise AssertionError('Legacy/obsolete environment variables remain: ' + ', '.join(forbidden_hits))
 
-    for relative in ('.env.example', '.env.production.example'):
-        source = read(relative)
-        for token in (
-            'KAORI_PUBLIC_BASE_URL=',
-            'TLS_CERTIFICATE_RENEWAL_WINDOW_DAYS=',
-            'TLS_CERTIFICATE_CRITICAL_WINDOW_DAYS=',
-            'INTEGRATION_RUNTIME_MONITORING_ENABLED=',
-            'INTEGRATION_RUNTIME_MONITORING_INTERVAL_MINUTES=',
-            'INTEGRATION_RUNTIME_MAX_TASKS_PER_CHILD=',
-            'INTEGRATION_VALIDATION_MAX_TASKS_PER_CHILD=',
-            'ALERT_SIGNAL_EVALUATION_ENABLED=',
-            'ALERT_SIGNAL_EVALUATION_INTERVAL_MINUTES=',
-            'ALERT_SIGNAL_FRESHNESS_MINUTES=',
-            'ALERT_INTELLIGENCE_NOTIFICATION_ENABLED=',
-            'ALERT_INTELLIGENCE_NOTIFICATION_INTERVAL_MINUTES=',
-            'NOTIFICATION_DELIVERY_TIMEOUT_SECONDS=',
-            'NOTIFICATION_DELIVERY_MAX_ATTEMPTS=',
-        ):
-            if token not in source:
-                raise AssertionError(f'{relative} is missing required operational setting {token[:-1]}')
-
-    production = read('.env.production.example')
+    operational = read(APP_TEMPLATE)
     for token in (
+        'KAORI_PUBLIC_BASE_URL=',
+        'TLS_CERTIFICATE_RENEWAL_WINDOW_DAYS=',
+        'TLS_CERTIFICATE_CRITICAL_WINDOW_DAYS=',
+        'INTEGRATION_RUNTIME_MONITORING_ENABLED=',
+        'INTEGRATION_RUNTIME_MONITORING_INTERVAL_MINUTES=',
+        'ALERT_SIGNAL_EVALUATION_ENABLED=',
+        'ALERT_SIGNAL_EVALUATION_INTERVAL_MINUTES=',
+        'ALERT_INTELLIGENCE_NOTIFICATION_ENABLED=',
+        'NOTIFICATION_DELIVERY_TIMEOUT_SECONDS=',
         'JOB_MAINTENANCE_WORKER_CPU_LIMIT=',
         'JOB_MAINTENANCE_WORKER_MEMORY_LIMIT=',
     ):
-        if token not in production:
-            raise AssertionError(f'.env.production.example is missing deployment resource control {token[:-1]}')
+        if token not in operational:
+            raise AssertionError(f'{APP_TEMPLATE} is missing required operational setting {token[:-1]}')
 
     print(
         'PASS — KAORI Environment Contract · '
-        f'{len(documented_env_keys(".env.example"))} development keys / '
-        f'{len(documented_env_keys(".env.production.example"))} production keys'
+        f'{len(development_keys)} development keys / '
+        f'{len(app_keys)} app + {len(secret_keys)} secret + {len(deploy_keys)} deploy keys'
     )
 
 
