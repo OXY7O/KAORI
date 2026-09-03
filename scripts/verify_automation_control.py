@@ -33,7 +33,7 @@ def main() -> int:
     )
     config = read('app/config/default.py')
     env_example = read('.env.example')
-    env_production = read('.env.production.example')
+    env_production = read('deploy/env/app.env.example')
     main_template = read('app/templates/intelligence/automation_control.html')
     overview = read('app/templates/intelligence/partials/automation_control/_overview.html')
     runbooks = read('app/templates/intelligence/partials/automation_control/_runbooks.html')
