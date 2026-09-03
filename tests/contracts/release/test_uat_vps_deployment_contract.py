@@ -81,7 +81,7 @@ def test_app_version_normalizes_governed_git_tag_without_v_prefix() -> None:
     assert 'release_version="$(tr -d' in release_state
     assert 'APP_VERSION="${release_version#v}"' in release_state
     assert 'validate_release_identity' in release_state
-    assert "${APP_VERSION:-}" in release_state
+    assert '${APP_VERSION:-}' in release_state
     assert '(-rc\\.[0-9]+)?$' in release_state
 
 
@@ -179,7 +179,7 @@ def test_uat_workflow_resolves_evidence_before_opening_ssh() -> None:
 def test_deploy_orders_data_safety_before_public_promotion() -> None:
     source = _read(DEPLOY)
     ordered_markers = (
-        "Starting PostgreSQL and Redis",
+        'Starting PostgreSQL and Redis',
         'Creating pre-migration PostgreSQL backup',
         'Validating portable KAORI runtime configuration',
         'Running database migrations',
