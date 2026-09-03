@@ -187,9 +187,7 @@ def verify() -> None:
             raise AssertionError(f'Persistent production environment must not define release-managed {key}')
 
     production_compose_keys = compose_env_keys('compose.production.yml', 'deploy/vps/compose.vps.yml')
-    undocumented_compose = sorted(
-        production_compose_keys - persistent_union - RELEASE_KEYS - COMPOSE_COMPAT_KEYS
-    )
+    undocumented_compose = sorted(production_compose_keys - persistent_union - RELEASE_KEYS - COMPOSE_COMPAT_KEYS)
     if undocumented_compose:
         raise AssertionError('Compose references undocumented production keys: ' + ', '.join(undocumented_compose))
 
