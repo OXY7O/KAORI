@@ -19,6 +19,17 @@ DEPLOY_TEMPLATE = 'deploy/env/deploy.env.example'
 DEPRECATED_PRODUCTION_TEMPLATE = '.env.production.example'
 PERSISTENT_PRODUCTION_TEMPLATES = (APP_TEMPLATE, SECRETS_TEMPLATE, DEPLOY_TEMPLATE)
 RELEASE_KEYS = {'KAORI_IMAGE', 'APP_VERSION', 'APP_BUILD_SHA', 'APP_BUILD_DATE'}
+# Archive storage may intentionally inherit the canonical REPORT_* storage
+# profile. These are supported override knobs, not mandatory persistent values.
+INHERITED_OPTIONAL_KEYS = {
+    'ARCHIVE_STORAGE_BACKEND',
+    'ARCHIVE_LOCAL_STORAGE_DIR',
+    'ARCHIVE_S3_BUCKET',
+    'ARCHIVE_S3_REGION',
+    'ARCHIVE_S3_ENDPOINT_URL',
+    'ARCHIVE_S3_PREFIX',
+    'ARCHIVE_S3_FORCE_PATH_STYLE',
+}
 COMPOSE_COMPAT_KEYS = {'KAORI_ENV_FILE', 'KAORI_BIND_ADDRESS', 'KAORI_PORT'}
 
 COMMON_EXTRA_KEYS = {
@@ -75,6 +86,8 @@ SENSITIVE_KEYS = {
     'RATELIMIT_STORAGE_URI',
     'REPORT_S3_ACCESS_KEY_ID',
     'REPORT_S3_SECRET_ACCESS_KEY',
+    'ARCHIVE_S3_ACCESS_KEY_ID',
+    'ARCHIVE_S3_SECRET_ACCESS_KEY',
     'ADMIN_PASSWORD',
     'KAORI_LDAP_BIND_PASSWORD',
     'KAORI_GOOGLE_CLIENT_SECRET',
@@ -155,7 +168,7 @@ def verify() -> None:
 
     persistent_sets = {relative: documented_env_keys(relative) for relative in PERSISTENT_PRODUCTION_TEMPLATES}
     persistent_union = set().union(*persistent_sets.values())
-    required_runtime = common_keys | production_config_keys
+    required_runtime = (common_keys | production_config_keys) - RELEASE_KEYS - INHERITED_OPTIONAL_KEYS
     missing_runtime = sorted(required_runtime - persistent_union)
     if missing_runtime:
         raise AssertionError('Split production environment is missing runtime keys: ' + ', '.join(missing_runtime))
