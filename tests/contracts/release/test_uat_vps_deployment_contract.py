@@ -136,7 +136,7 @@ def test_uat_workflow_can_bootstrap_without_existing_on_default_branch() -> None
     assert 'push:' in source
     assert '- kaori/uat-request' in source
     assert 'refs/heads/kaori/uat-request' in source
-    assert "github.event_name == 'push'" in source
+    assert 'if [[ "$GITHUB_EVENT_NAME" == \'push\' ]]; then' in source
     assert 'releases?per_page=100' in source
     assert 'target_commitish' in source
     assert 'current_staging' in source
