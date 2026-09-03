@@ -24,6 +24,9 @@ release_version="$3"
 [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || fail 'source SHA must be exactly 40 lowercase hex characters'
 [[ "$release_version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]] || \
   fail 'release version must be a governed vX.Y.Z or vX.Y.Z-rc.N identity'
+app_version="${release_version#v}"
+[[ "$app_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]] || \
+  fail 'normalized APP_VERSION must be X.Y.Z or X.Y.Z-rc.N without the Git-tag v prefix'
 [[ -r "$KAORI_ENV_FILE" ]] || fail "environment file is not readable: $KAORI_ENV_FILE"
 [[ -f "$BASE_COMPOSE" ]] || fail "base Compose file is missing: $BASE_COMPOSE"
 [[ -f "$VPS_COMPOSE" ]] || fail "VPS Compose overlay is missing: $VPS_COMPOSE"
@@ -66,9 +69,10 @@ image_created="$(docker image inspect --format '{{.Created}}' "$image")"
 
 # Release identity is supplied by the governed deployment transaction. The
 # persistent server environment contains long-lived configuration/secrets and
-# is never rewritten merely because the application release changes.
+# is never rewritten merely because the application release changes. Git tags
+# retain the v prefix; APP_VERSION intentionally uses canonical SemVer without v.
 export KAORI_IMAGE="$image"
-export APP_VERSION="$release_version"
+export APP_VERSION="$app_version"
 export APP_BUILD_SHA="$source_sha"
 export APP_BUILD_DATE="$image_created"
 export KAORI_ENV_FILE
@@ -179,6 +183,7 @@ record_deployment
 printf 'KAORI VPS deployment PASS\n'
 printf 'source_sha=%s\n' "$source_sha"
 printf 'release_version=%s\n' "$release_version"
+printf 'app_version=%s\n' "$app_version"
 printf 'current_image=%s\n' "$image"
 printf 'app_build_date=%s\n' "$image_created"
 printf 'pre_migration_backup=%s\n' "$backup_path"

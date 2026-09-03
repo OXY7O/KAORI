@@ -18,22 +18,24 @@ The VPS production environment is stored at `/etc/kaori/.env.production`. It is 
 The following values are deployment-supplied runtime identity rather than persistent server configuration:
 
 - `KAORI_IMAGE` — exact digest-qualified application image selected from governed RC evidence;
-- `APP_VERSION` — intentional RC or stable SemVer identity selected by the governed release workflow;
+- `APP_VERSION` — canonical application SemVer/RC identity **without** the Git-tag `v` prefix, derived from the governed release tag;
 - `APP_BUILD_SHA` — exact accepted source SHA;
 - `APP_BUILD_DATE` — immutable image creation timestamp resolved from the pulled image when available.
+
+The governed release identity accepted by `deploy.sh` retains the Git tag form `vX.Y.Z` or `vX.Y.Z-rc.N`. `deploy.sh` validates that tag and strips only the leading `v` when exporting `APP_VERSION`. Deployment state keeps the governed tag form in `current-version`/`previous-version` so rollback can replay the exact release identity, while standalone backup/restore/verify derives the no-`v` `APP_VERSION` before parsing Compose.
 
 Compose explicitly injects these values into the application containers so they override any accidental stale values in an older host environment file. `.env.production.example` documents that these values are deployment-managed and does not require operators to maintain release-specific values there.
 
 ## Deployment transaction
-A deployment accepts only an image reference containing `@sha256:<64 lowercase hex characters>`, an exact 40-character lowercase source SHA, and a governed release version. Mutable-only tags and `latest` are rejected as deployment authority.
+A deployment accepts only an image reference containing `@sha256:<64 lowercase hex characters>`, an exact 40-character lowercase source SHA, and a governed Git release version in `vX.Y.Z` or `vX.Y.Z-rc.N` form. Mutable-only tags and `latest` are rejected as deployment authority.
 
 The deployment script validates prerequisites and environment permissions, creates an ephemeral `DOCKER_CONFIG`, reads registry username/password from standard input, authenticates with `docker login --password-stdin`, and removes the temporary Docker credential directory through an exit trap.
 
-After pulling the immutable application image, the deployment script verifies the image OCI revision against the requested source SHA and resolves the image creation timestamp. It exports the release identity only for the current Compose transaction. It never rewrites `/etc/kaori/.env.production` as part of an ordinary release.
+After pulling the immutable application image, the deployment script verifies the image OCI revision against the requested source SHA and resolves the image creation timestamp. It exports the release identity only for the current Compose transaction: immutable `KAORI_IMAGE`, `APP_VERSION` normalized without `v`, exact `APP_BUILD_SHA`, and image-derived `APP_BUILD_DATE`. It never rewrites `/etc/kaori/.env.production` as part of an ordinary release.
 
 The sequence is:
 
-1. Validate immutable image, source SHA, release version, and server environment permissions.
+1. Validate immutable image, source SHA, governed Git release version, normalized application version, and server environment permissions.
 2. Authenticate ephemerally and pull the exact application image digest.
 3. Verify the image OCI revision and resolve runtime release metadata.
 4. Validate Compose with persistent configuration plus deployment-supplied release identity.
@@ -44,19 +46,19 @@ The sequence is:
 9. Run the one-shot database migration.
 10. Start the complete application graph from the exact immutable image.
 11. Verify all expected services, exact image identity, worker queues, single Beat, and loopback web readiness.
-12. Record exact source SHA, release version, current image digest, previous release identity, migration result, deployment timestamp, and verification result under the server deployment-state directory.
+12. Record exact source SHA, governed release tag, current image digest, previous release identity, migration result, deployment timestamp, and verification result under the server deployment-state directory.
 
 A failed validation, dependency health check, backup, migration, or readiness check fails the deployment closed. Automatic destructive database restore is not performed.
 
 ## Backup, restore, and rollback
 `backup.sh` writes PostgreSQL custom-format dumps to a restricted server backup directory and records a SHA256 checksum. `restore.sh` requires an explicit backup file, verifies the checksum when available, and restores through PostgreSQL tooling after an operator has intentionally selected the recovery point.
 
-`rollback.sh` reads the recorded previous immutable image, previous source SHA, and previous release version and invokes the same governed deploy path. Image rollback is explicitly distinct from database rollback. If the failed rollout included an incompatible migration, the operator must pair image rollback with the reviewed database restore procedure.
+`rollback.sh` reads the recorded previous immutable image, previous source SHA, and previous governed release version and invokes the same deploy path. The deploy path reconstructs `APP_VERSION` by removing the leading `v`. Image rollback is explicitly distinct from database rollback. If the failed rollout included an incompatible migration, the operator must pair image rollback with the reviewed database restore procedure.
 
 ## Remote delivery workflow
 `.github/workflows/deploy-uat-vps.yml` is manual-only (`workflow_dispatch`). It is dispatched from `kaori/staging` with one human-facing input: an intentional `candidate_tag` previously published by the RC workflow.
 
-Before SSH is opened, the workflow verifies that the requested tag is a GitHub prerelease, resolves its exact source SHA, proves that source equals current admitted `kaori/staging`, finds exact successful `quality.yml` evidence, finds successful RC publication evidence, and loads the unexpired `staging-image-<sha>` artifact. The artifact supplies the immutable application image digest. The workflow then passes the resolved image digest, accepted source SHA, and candidate version to the remote deploy script.
+Before SSH is opened, the workflow verifies that the requested tag is a GitHub prerelease, resolves its exact source SHA, proves that source equals current admitted `kaori/staging`, finds exact successful `quality.yml` evidence, finds successful RC publication evidence, and loads the unexpired `staging-image-<sha>` artifact. The artifact supplies the immutable application image digest. The workflow then passes the resolved image digest, accepted source SHA, and governed candidate tag to the remote deploy script.
 
 SSH uses:
 - `KAORI_VPS_SSH_PRIVATE_KEY` secret;
@@ -69,12 +71,12 @@ The encrypted RSA key is loaded into an ephemeral `ssh-agent` with an ephemeral 
 The workflow copies only the deployment bundle needed by the VPS, then invokes the remote deploy script. Registry credentials are consumed from GitHub Secrets and streamed to the remote script over the encrypted SSH session; they are not persisted in repository content or a long-lived server Docker config.
 
 ## Single active VPS slot
-The current environment has one physical VPS and one active KAORI Compose project. A newer staging/RC deployment replaces the active image. Parallel staging and production stacks are intentionally out of scope. Current and previous immutable image, source SHA, and release version identities are recorded so the previous candidate remains a coherent rollback target.
+The current environment has one physical VPS and one active KAORI Compose project. A newer staging/RC deployment replaces the active image. Parallel staging and production stacks are intentionally out of scope. Current and previous immutable image, source SHA, and governed release-tag identities are recorded so the previous candidate remains a coherent rollback target.
 
 ## Ingress dependency
 Issue #49 proves `127.0.0.1:5000/health/ready` and full internal runtime health. Issue #50 subsequently owns Nginx, TLS/ACME, DNS, unknown-host rejection, public port minimization, SSH/firewall hardening, and external DAST. No public PostgreSQL, Redis, Docker API, or direct KAORI application port is introduced by this design.
 
 ## Validation
-Work-branch validation is the path-aware Developer Check. The contract under `tests/contracts/release/test_uat_vps_deployment_contract.py` locks the deployment boundary, immutable image policy, persistent-vs-release environment boundary, private state services, ephemeral registry authentication, backup/restore/rollback ownership, loopback readiness, and pinned SSH host verification.
+Work-branch validation is the path-aware Developer Check. The contract under `tests/contracts/release/test_uat_vps_deployment_contract.py` locks the deployment boundary, immutable image policy, persistent-vs-release environment boundary, Git-tag-to-APP_VERSION normalization, private state services, ephemeral registry authentication, backup/restore/rollback ownership, loopback readiness, and pinned SSH host verification.
 
 After merge to `kaori/staging`, comprehensive KAORI CI is authoritative. Actual VPS UAT remains separate evidence and does not authorize `main` promotion without explicit maintainer acceptance under Issue #51.
