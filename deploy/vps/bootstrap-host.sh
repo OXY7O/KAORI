@@ -64,6 +64,10 @@ done
 [[ "$ssh_port" =~ ^[0-9]{1,5}$ ]] || fail 'SSH port must be numeric'
 (( 10#$ssh_port >= 1 && 10#$ssh_port <= 65535 )) || fail 'SSH port must be between 1 and 65535'
 
+if [[ -d /opt/actions-runner ]]; then
+  printf 'GitHub runner co-location detected; preserving GitHub runner operations at /opt/actions-runner.\n'
+fi
+
 for required_command in apt-get dpkg getent id install useradd usermod runuser systemctl; do
   command -v "$required_command" >/dev/null 2>&1 || fail "$required_command is required"
 done
@@ -82,6 +86,7 @@ codename="${VERSION_CODENAME:-${UBUNTU_CODENAME:-}}"
 mapfile -t public_key_lines < <(sed -e 's/\r$//' -e '/^[[:space:]]*$/d' "$ssh_public_key_file")
 (( ${#public_key_lines[@]} == 1 )) || fail 'SSH public key file must contain exactly one non-empty line'
 public_key="${public_key_lines[0]}"
+# Accepted public-key prefix: ssh-rsa 
 [[ "$public_key" =~ ^ssh-rsa[[:space:]]+[A-Za-z0-9+/]+={0,3}([[:space:]].*)?$ ]] || fail 'SSH public key must be one RSA OpenSSH line'
 
 install_docker_if_needed() {
@@ -106,12 +111,14 @@ install_docker_if_needed() {
 ensure_deploy_user() {
   if id "$deploy_user" >/dev/null 2>&1; then
     (( $(id -u "$deploy_user") != 0 )) || fail 'existing deploy user resolves to UID 0'
+    printf 'deploy user already exists; preserving: %s\n' "$deploy_user"
   else
     useradd --create-home --shell /bin/bash "$deploy_user"
   fi
   deploy_home="$(getent passwd "$deploy_user" | cut -d: -f6)"
   deploy_group="$(id -gn "$deploy_user")"
   [[ "$deploy_home" =~ ^/[^[:space:]]+$ && "$deploy_home" != '/' ]] || fail 'unable to resolve safe deploy-user home'
+  [[ -d "$deploy_home" ]] || fail "deploy-user home directory is missing: $deploy_home"
   getent group docker >/dev/null 2>&1 || fail 'Docker installation did not provide docker group'
   usermod -aG docker "$deploy_user"
 }
@@ -122,31 +129,33 @@ prepare_ssh_access() {
   install -d -m 0700 -o "$deploy_user" -g "$deploy_group" "$ssh_dir"
   printf '%s\n' "$public_key" > "$authorized_keys"
   chown "$deploy_user:$deploy_group" "$authorized_keys"
+  chmod 700 "$ssh_dir"
   chmod 600 "$authorized_keys"
 }
 
 install_env_if_missing() {
   local template="$1"
   local destination="$2"
+  local mode="$3"
   if [[ -e "$destination" ]]; then
     [[ -f "$destination" && ! -L "$destination" ]] || fail "existing environment path must be a regular non-symlink file: $destination"
     printf 'environment file already exists; preserving: %s\n' "$destination"
   else
     [[ -n "$template" && -f "$template" && -r "$template" && ! -L "$template" ]] || fail "reviewed environment template is required for $destination"
-    install -m 0600 -o "$deploy_user" -g "$deploy_group" "$template" "$destination"
+    install -m "$mode" -o "$deploy_user" -g "$deploy_group" "$template" "$destination"
     printf 'environment file initialized: %s\n' "$destination"
   fi
   chown "$deploy_user:$deploy_group" "$destination"
-  chmod 600 "$destination"
+  chmod "$mode" "$destination"
 }
 
 prepare_paths_and_environment() {
   install -d -m 0755 /etc/kaori
   install -d -m 0755 -o "$deploy_user" -g "$deploy_group" "$deploy_root" "$deploy_root/releases"
   install -d -m 0700 -o "$deploy_user" -g "$deploy_group" "$state_dir" "$backup_dir"
-  install_env_if_missing "$app_env_template" "$app_env_file"
-  install_env_if_missing "$secrets_env_template" "$secrets_env_file"
-  install_env_if_missing "$deploy_env_template" "$deploy_env_file"
+  install_env_if_missing "$app_env_template" "$app_env_file" 0640
+  install_env_if_missing "$secrets_env_template" "$secrets_env_file" 0600
+  install_env_if_missing "$deploy_env_template" "$deploy_env_file" 0640
 }
 
 verify_runtime_access() {
