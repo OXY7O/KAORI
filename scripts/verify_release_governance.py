@@ -6,6 +6,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SEMVER = re.compile(r'^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$')
+RELEASE_KEYS = ('KAORI_IMAGE', 'APP_VERSION', 'APP_BUILD_SHA', 'APP_BUILD_DATE')
+PERSISTENT_TEMPLATES = (
+    'deploy/env/app.env.example',
+    'deploy/env/secrets.env.example',
+    'deploy/env/deploy.env.example',
+)
 
 
 def read(relative: str) -> str:
@@ -22,14 +28,9 @@ def env_value(source: str, key: str) -> str:
     return match.group(1).strip()
 
 
-def require_documented_env_key(source: str, key: str) -> None:
-    if not re.search(rf'(?m)^\s*#?\s*{re.escape(key)}=', source):
-        raise AssertionError(f'Production environment contract must document {key}')
-
-
-def reject_active_env_key(source: str, key: str) -> None:
+def reject_active_env_key(source: str, key: str, authority: str) -> None:
     if re.search(rf'(?m)^{re.escape(key)}=', source):
-        raise AssertionError(f'Production persistent environment must not actively define deployment-managed {key}')
+        raise AssertionError(f'{authority} must not actively define deployment-managed {key}')
 
 
 def verify() -> None:
@@ -41,9 +42,11 @@ def verify() -> None:
     system_information_template = read('app/templates/settings/general/partials/_system_information.html')
     default_config = read('app/config/default.py')
     env_example = read('.env.example')
-    env_production = read('.env.production.example')
+    deprecated_production = read('.env.production.example')
+    persistent_sources = {relative: read(relative) for relative in PERSISTENT_TEMPLATES}
     production_compose = read('compose.production.yml')
     vps_deploy = read('deploy/vps/deploy.sh')
+    release_state = read('deploy/vps/release-state.sh')
     quality_gate = read('scripts/quality_gate.sh')
 
     version_example = env_value(env_example, 'APP_VERSION')
@@ -55,9 +58,32 @@ def verify() -> None:
     for key in ('APP_BUILD_SHA', 'APP_BUILD_DATE'):
         env_value(env_example, key)
 
-    for key in ('KAORI_IMAGE', 'APP_VERSION', 'APP_BUILD_SHA', 'APP_BUILD_DATE'):
-        require_documented_env_key(env_production, key)
-        reject_active_env_key(env_production, key)
+    for relative, source in persistent_sources.items():
+        for key in RELEASE_KEYS:
+            reject_active_env_key(source, key, relative)
+
+    if 'DEPRECATED' not in deprecated_production:
+        raise AssertionError('.env.production.example must be a deprecation pointer')
+    for marker in (
+        'deploy/env/app.env.example',
+        'deploy/env/secrets.env.example',
+        'deploy/env/deploy.env.example',
+        '/var/lib/kaori/deploy-state/release.env',
+    ):
+        if marker not in deprecated_production:
+            raise AssertionError(f'Deprecated production env pointer is missing {marker}')
+
+    for key in RELEASE_KEYS:
+        if key not in release_state:
+            raise AssertionError(f'release-state.sh must own generated {key}')
+    for marker in (
+        'KAORI_ACTIVE_RELEASE_ENV_FILE',
+        '/var/lib/kaori/deploy-state/release.env',
+        'validate_release_identity',
+        'load_release_env_file',
+    ):
+        if marker not in release_state:
+            raise AssertionError(f'Release-state authority is missing {marker}')
 
     for marker in (
         'KAORI_IMAGE: ${KAORI_IMAGE:?',
@@ -71,10 +97,12 @@ def verify() -> None:
     for marker in (
         'usage: deploy.sh IMAGE@sha256:<digest> SOURCE_SHA RELEASE_VERSION',
         'app_version="${release_version#v}"',
+        'candidate-release.env',
         'export KAORI_IMAGE="$image"',
         'export APP_VERSION="$app_version"',
         'export APP_BUILD_SHA="$source_sha"',
         'export APP_BUILD_DATE="$image_created"',
+        'mv -- "$candidate_release_env" "$active_release_env"',
     ):
         if marker not in vps_deploy:
             raise AssertionError(f'VPS deployment is missing governed release identity behavior: {marker}')
