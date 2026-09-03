@@ -2,12 +2,13 @@
 
 `deploy/vps/` owns KAORI application deployment to the single UAT/production-like VPS. It is intentionally separate from `ops/github-runner/`, which owns only GitHub self-hosted runner host lifecycle.
 
-`compose.production.yml` remains the canonical KAORI application graph. `deploy/vps/compose.vps.yml` adds private PostgreSQL and Redis state services plus deployment, verification, backup, restore, and rollback operator surfaces.
+`compose.production.yml` remains the canonical KAORI application graph. `deploy/vps/compose.vps.yml` adds private PostgreSQL and Redis state services plus deployment, verification, backup, restore, rollback, and host-preparation operator surfaces.
 
 ## Security and ownership model
 
 - Use a dedicated non-root deploy user. Docker access is root-equivalent privilege and must be granted deliberately.
-- SSH is key-only. The UAT workflow uses a passphrase-protected RSA key from GitHub Secrets and the reviewed `KAORI_VPS_KNOWN_HOSTS` record. `StrictHostKeyChecking=yes` is mandatory.
+- SSH is key-only. Generate the passphrase-protected RSA keypair on the operator laptop. Only the public `.pub` key is copied to the VPS; the private key never belongs on the deployment host.
+- The UAT workflow receives the encrypted private key and passphrase from GitHub Environment secrets and uses the reviewed `KAORI_VPS_KNOWN_HOSTS` record. `StrictHostKeyChecking=yes` is mandatory.
 - Registry credentials come from GitHub Secrets. The remote deploy uses `docker login --password-stdin` with an ephemeral `DOCKER_CONFIG` directory that is deleted after the rollout.
 - The real application environment exists only on the VPS at `/etc/kaori/.env.production`, mode `600`. Never commit it or upload it as an Actions artifact.
 - PostgreSQL and Redis have no host `ports` mapping. KAORI web stays on `127.0.0.1:5000`; public ingress belongs to `deploy/nginx/` and Issue #50.
@@ -15,19 +16,113 @@
 
 ## One-time VPS preparation
 
-Install Docker Engine and the Docker Compose plugin through the approved host-management process. Prepare the non-root deploy user and directories:
+`deploy/vps/bootstrap-host.sh` prepares the application-deployment host only. It creates the deploy user, installs/verifies Docker and the Compose plugin, installs the operator-provided RSA public key, prepares the canonical release/state/backup paths, and initializes the server-side environment file if it does not already exist.
+
+It does **not** generate an SSH keypair, change `sshd_config`, configure the firewall, install Nginx/Certbot, change DNS, or expose KAORI publicly. Those host-ingress hardening responsibilities remain Issue #50.
+
+### 1. Generate the deployment RSA keypair on the laptop
+
+Run this on the operator laptop, not on the VPS:
 
 ```bash
-sudo install -d -m 0755 /etc/kaori
-sudo install -d -m 0700 -o <deploy-user> -g <deploy-user> /var/lib/kaori/deploy-state
-sudo install -d -m 0700 -o <deploy-user> -g <deploy-user> /var/lib/kaori/backups
-sudo install -d -m 0755 -o <deploy-user> -g <deploy-user> /opt/kaori/releases
+ssh-keygen -t rsa -b 4096 -o -a 100 \
+  -f ~/.ssh/kaori-uat-deploy \
+  -C 'kaori-uat-deploy'
 ```
 
-Copy `.env.production.example` to the server only, then populate real values manually or through the approved secret-management process:
+Use a strong passphrase when prompted.
+
+This produces:
+
+- `~/.ssh/kaori-uat-deploy` — **private key**. Keep it on the laptop and later copy its contents only to the GitHub Environment secret `KAORI_VPS_SSH_PRIVATE_KEY`.
+- `~/.ssh/kaori-uat-deploy.pub` — public key. This is the only key file that may be copied to the VPS for bootstrap.
+
+The private-key passphrase is stored separately in `KAORI_VPS_SSH_PASSPHRASE`. Never copy the private key or its passphrase into `/opt/kaori`, `/etc/kaori`, a release directory, or an Actions artifact.
+
+### 2. Copy bootstrap material and the public key to the VPS
+
+Use the initial trusted administrative access supplied for the VPS. For example, from a reviewed KAORI checkout on the laptop:
 
 ```bash
-sudo install -m 0600 -o <deploy-user> -g <deploy-user> .env.production.example /etc/kaori/.env.production
+ssh root@<vps-host> 'install -d -m 0700 /root/kaori-bootstrap'
+
+scp \
+  ~/.ssh/kaori-uat-deploy.pub \
+  deploy/vps/bootstrap-host.sh \
+  .env.production.example \
+  root@<vps-host>:/root/kaori-bootstrap/
+```
+
+Only non-secret repository bootstrap material and the public `.pub` key are copied here.
+
+### 3. Run the bootstrap on the VPS
+
+On the VPS:
+
+```bash
+sudo bash /root/kaori-bootstrap/bootstrap-host.sh \
+  --ssh-public-key-file /root/kaori-bootstrap/kaori-uat-deploy.pub \
+  --env-template /root/kaori-bootstrap/.env.production.example
+```
+
+Defaults:
+
+- deploy user: `kaori-deploy`;
+- deploy root: `/opt/kaori`;
+- environment: `/etc/kaori/.env.production`;
+- deployment state: `/var/lib/kaori/deploy-state`;
+- backups: `/var/lib/kaori/backups`;
+- SSH port metadata: `22`.
+
+Override only when the real host requires it:
+
+```bash
+sudo bash /root/kaori-bootstrap/bootstrap-host.sh \
+  --ssh-public-key-file /root/kaori-bootstrap/kaori-uat-deploy.pub \
+  --env-template /root/kaori-bootstrap/.env.production.example \
+  --deploy-user kaori-deploy \
+  --deploy-root /opt/kaori \
+  --ssh-port 22
+```
+
+The script is idempotent. If `/etc/kaori/.env.production` already exists, its content is preserved and only the governed ownership/mode is reasserted. The dedicated deploy user's `authorized_keys` is replaced with the one operator-supplied public key, which makes deliberate key rotation deterministic.
+
+Docker group membership is intentionally granted to the deploy user because the current deployment surface uses Docker Compose directly. Treat that membership as root-equivalent privilege and keep the account dedicated to KAORI deployment.
+
+### 4. Verify the new deploy identity from the laptop
+
+After bootstrap completes:
+
+```bash
+ssh -i ~/.ssh/kaori-uat-deploy kaori-deploy@<vps-host>
+```
+
+Then verify the runtime prerequisites:
+
+```bash
+docker info
+docker compose version
+stat -c '%a %U %G %n' /etc/kaori/.env.production
+```
+
+The environment file must report mode `600` and the deploy-user ownership expected by the deployment scripts.
+
+### 5. Pin the VPS host key before GitHub deployment
+
+Do not learn-and-trust the SSH host key inside the deployment workflow. Collect a candidate host-key record from a trusted operator machine, then verify its fingerprint independently through the VPS/provider console or another trusted channel before storing it in GitHub:
+
+```bash
+ssh-keyscan -p 22 <vps-host> > kaori-vps.known_hosts.candidate
+ssh-keygen -lf kaori-vps.known_hosts.candidate
+```
+
+Only after the fingerprint is independently verified should the exact known-hosts record become the `KAORI_VPS_KNOWN_HOSTS` GitHub Environment secret.
+
+### 6. Complete the server-side production environment
+
+Edit the real host file after bootstrap:
+
+```bash
 sudoedit /etc/kaori/.env.production
 ```
 
@@ -59,18 +154,18 @@ Use the GitHub Environment `uat` for deployment credentials and protection polic
 
 Secrets:
 
-- `KAORI_VPS_SSH_PRIVATE_KEY`
-- `KAORI_VPS_SSH_PASSPHRASE`
-- `KAORI_VPS_KNOWN_HOSTS`
-- `KAORI_DOCKER_REGISTRY_USERNAME`
-- `KAORI_DOCKER_REGISTRY_PASSWORD`
+- `KAORI_VPS_SSH_PRIVATE_KEY` — contents of the private `~/.ssh/kaori-uat-deploy` file retained off-host;
+- `KAORI_VPS_SSH_PASSPHRASE` — the private-key passphrase stored separately;
+- `KAORI_VPS_KNOWN_HOSTS` — independently verified host-key record;
+- `KAORI_DOCKER_REGISTRY_USERNAME`;
+- `KAORI_DOCKER_REGISTRY_PASSWORD`.
 
 Variables:
 
-- `KAORI_VPS_HOST`
-- `KAORI_VPS_USER`
-- `KAORI_VPS_PORT` (normally `22`)
-- `KAORI_VPS_DEPLOY_ROOT` (optional; defaults to `/opt/kaori`)
+- `KAORI_VPS_HOST`;
+- `KAORI_VPS_USER` (default bootstrap value `kaori-deploy`);
+- `KAORI_VPS_PORT` (normally `22`);
+- `KAORI_VPS_DEPLOY_ROOT` (optional; defaults to `/opt/kaori`).
 
 `KAORI_VPS_KNOWN_HOSTS` must contain the reviewed host-key entry for the exact VPS endpoint. Deployment must never learn-and-trust a host key automatically.
 
@@ -87,7 +182,7 @@ Before any SSH connection is opened, the workflow verifies:
 5. the `staging-image-<sha>` artifact exists and is unexpired;
 6. `staging-image.env` agrees on `KAORI_CANDIDATE_TAG`, `KAORI_SOURCE_SHA`, and immutable `KAORI_IMAGE_REF`.
 
-Free-form image/SHA deployment is not an authorized UAT path.
+Free-form image/SHA deployment is not an authorized UAT path. After a staging source change, cut a fresh intentional RC from that newly admitted exact staging SHA instead of deploying an older historical RC.
 
 ## Deployment lifecycle
 
