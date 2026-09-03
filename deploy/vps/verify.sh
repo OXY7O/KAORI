@@ -24,6 +24,9 @@ fi
 command -v docker >/dev/null 2>&1 || fail 'docker is required'
 command -v curl >/dev/null 2>&1 || fail 'curl is required'
 [[ -r "$KAORI_ENV_FILE" ]] || fail "environment file is not readable: $KAORI_ENV_FILE"
+# shellcheck source=deploy/vps/release-state.sh
+source "$SCRIPT_DIR/release-state.sh"
+load_current_release_identity || fail 'current release identity is unavailable; verification requires an active or recorded release'
 compose=(docker compose --env-file "$KAORI_ENV_FILE" -f "$BASE_COMPOSE" -f "$VPS_COMPOSE")
 
 application_services=(
