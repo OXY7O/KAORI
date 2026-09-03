@@ -9,6 +9,7 @@ VERIFY = VPS_ROOT / 'verify.sh'
 BACKUP = VPS_ROOT / 'backup.sh'
 RESTORE = VPS_ROOT / 'restore.sh'
 ROLLBACK = VPS_ROOT / 'rollback.sh'
+RELEASE_STATE = VPS_ROOT / 'release-state.sh'
 README = VPS_ROOT / 'README.md'
 WORKFLOW = ROOT / '.github' / 'workflows' / 'deploy-uat-vps.yml'
 DOCKERFILE = ROOT / 'Dockerfile'
@@ -50,7 +51,6 @@ def test_release_identity_is_supplied_by_governed_deployment() -> None:
     assert 'usage: deploy.sh IMAGE@sha256:<digest> SOURCE_SHA RELEASE_VERSION' in deploy
     for marker in (
         'export KAORI_IMAGE="$image"',
-        'export APP_VERSION="$release_version"',
         'export APP_BUILD_SHA="$source_sha"',
         'export APP_BUILD_DATE="$image_created"',
         'org.opencontainers.image.revision',
@@ -61,6 +61,17 @@ def test_release_identity_is_supplied_by_governed_deployment() -> None:
     assert 'REQUESTED_VERSION:' in workflow
     assert 'requested_version=' in workflow
     assert 'bash "$deploy_script" "$requested_image" "$requested_sha" "$requested_version"' in workflow
+
+
+def test_app_version_normalizes_governed_git_tag_without_v_prefix() -> None:
+    deploy = _read(DEPLOY)
+    release_state = _read(RELEASE_STATE)
+
+    assert 'app_version="${release_version#v}"' in deploy
+    assert 'export APP_VERSION="$app_version"' in deploy
+    assert 'release_version="$(tr -d' in release_state
+    assert 'APP_VERSION="${release_version#v}"' in release_state
+    assert '[[ "$APP_VERSION" =~ ^[0-9]+\\.[0-9]+\\.[0-9]+(-rc\\.[0-9]+)?$ ]]' in release_state
 
 
 def test_rollback_restores_coherent_previous_release_identity() -> None:
