@@ -34,20 +34,27 @@ def test_vps_host_bootstrap_accepts_only_operator_generated_rsa_public_key() -> 
     assert 'StrictHostKeyChecking=no' not in source
 
 
-def test_vps_host_bootstrap_prepares_persistent_paths_without_overwriting_env() -> None:
+def test_vps_host_bootstrap_prepares_split_environment_without_overwriting_existing_files() -> None:
     source = _read(BOOTSTRAP)
 
     for marker in (
         '/opt/kaori',
-        '/etc/kaori/.env.production',
+        '/etc/kaori/app.env',
+        '/etc/kaori/secrets.env',
+        '/etc/kaori/deploy.env',
         '/var/lib/kaori/deploy-state',
         '/var/lib/kaori/backups',
-        '.env.production.example',
+        'deploy/env/app.env.example',
+        'deploy/env/secrets.env.example',
+        'deploy/env/deploy.env.example',
         'environment file already exists; preserving',
     ):
         assert marker in source
 
-    assert 'chmod 600 "$env_file"' in source
+    assert 'install_env_if_missing "$app_env_template" "$app_env_file" 0640' in source
+    assert 'install_env_if_missing "$secrets_env_template" "$secrets_env_file" 0600' in source
+    assert 'install_env_if_missing "$deploy_env_template" "$deploy_env_file" 0640' in source
+    assert '/etc/kaori/.env.production' not in source
 
 
 def test_vps_host_bootstrap_installs_and_verifies_docker_compose() -> None:
