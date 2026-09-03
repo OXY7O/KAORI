@@ -16,6 +16,9 @@ fail() {
 command -v docker >/dev/null 2>&1 || fail 'docker is required'
 command -v sha256sum >/dev/null 2>&1 || fail 'sha256sum is required'
 [[ -r "$KAORI_ENV_FILE" ]] || fail "environment file is not readable: $KAORI_ENV_FILE"
+# shellcheck source=deploy/vps/release-state.sh
+source "$SCRIPT_DIR/release-state.sh"
+load_current_release_identity || fail 'current release identity is unavailable; complete one governed deployment first'
 
 umask 077
 mkdir -p "$KAORI_BACKUP_DIR"
