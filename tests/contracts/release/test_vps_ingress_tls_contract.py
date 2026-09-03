@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 NGINX_TEMPLATE = ROOT / "deploy/nginx/kaori.conf.template"
 BOOTSTRAP = ROOT / "deploy/nginx/bootstrap-ingress.sh"
