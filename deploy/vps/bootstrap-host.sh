@@ -80,9 +80,14 @@ done
 [[ -n "$ssh_public_key_file" ]] || fail '--ssh-public-key-file is required'
 [[ "$deploy_user" =~ ^[a-z_][a-z0-9_-]{0,30}$ ]] || fail 'deploy user contains unsupported characters'
 [[ "$deploy_user" != 'root' ]] || fail 'deploy user must not be root'
+[[ "$deploy_user" != 'github-runner' ]] || fail 'deploy user must remain separate from the GitHub runner account'
 [[ "$deploy_root" =~ ^/[A-Za-z0-9._/-]+$ && "$deploy_root" != '/' ]] || fail 'deploy root must be a safe absolute path below /'
 [[ "$ssh_port" =~ ^[0-9]{1,5}$ ]] || fail 'SSH port must be numeric'
 (( 10#$ssh_port >= 1 && 10#$ssh_port <= 65535 )) || fail 'SSH port must be between 1 and 65535'
+
+if [[ -d /opt/actions-runner ]]; then
+  printf 'GitHub runner co-location detected; preserving GitHub runner operations at /opt/actions-runner.\n'
+fi
 
 for required_command in apt-get dpkg getent id install useradd usermod runuser systemctl; do
   command -v "$required_command" >/dev/null 2>&1 || fail "$required_command is required"
