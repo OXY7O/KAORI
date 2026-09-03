@@ -107,7 +107,7 @@ def test_verify_checks_internal_readiness_and_full_runtime_shape() -> None:
     source = _read(VERIFY)
 
     assert source.startswith('#!/usr/bin/env bash\nset -Eeuo pipefail\n')
-    assert "http://127.0.0.1:5000/health/ready" in source
+    assert 'http://127.0.0.1:5000/health/ready' in source
     assert 'postgres' in source
     assert 'redis' in source
     assert 'web' in source
