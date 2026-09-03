@@ -83,6 +83,23 @@ def test_rc_publish_does_not_consume_another_rc_for_same_source_sha() -> None:
     assert "needs.wait-for-quality.outputs.should_publish == 'true'" in workflow
 
 
+def test_rc_publish_reserves_tag_and_refuses_registry_tag_reuse() -> None:
+    workflow = publish_source()
+    semver_section = workflow.split('      - name: Resolve Intentional SemVer Candidate\n', 1)[1].split(
+        '\n  publish:\n', 1
+    )[0]
+    publish_section = workflow.split('\n  publish:\n', 1)[1]
+
+    assert 'Reserved RC tag has no GitHub prerelease; its number remains consumed.' in semver_section
+    assert 'Reserve RC Git Tag' in publish_section
+    assert 'refs/tags/${CANDIDATE_TAG}' in publish_section
+    assert '"sha": "${ACCEPTED_SHA}"' in publish_section
+    assert 'Refuse Existing Registry Tag' in publish_section
+    assert 'docker manifest inspect "$CANDIDATE_IMAGE"' in publish_section
+    assert publish_section.index('Reserve RC Git Tag') < publish_section.index('Refuse Existing Registry Tag')
+    assert publish_section.index('Refuse Existing Registry Tag') < publish_section.index('Push Exact Candidate')
+
+
 def test_staging_publish_validates_exact_image_before_registry_push() -> None:
     workflow = publish_source()
 
