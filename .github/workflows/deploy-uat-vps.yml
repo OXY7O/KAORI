@@ -202,6 +202,7 @@ jobs:
       KAORI_VPS_USER: ${{ vars.KAORI_VPS_USER }}
       KAORI_VPS_PORT: ${{ vars.KAORI_VPS_PORT }}
       KAORI_VPS_DEPLOY_ROOT: ${{ vars.KAORI_VPS_DEPLOY_ROOT }}
+      KAORI_LETSENCRYPT_EMAIL: ${{ vars.KAORI_LETSENCRYPT_EMAIL }}
       KAORI_VPS_SSH_PRIVATE_KEY: ${{ secrets.KAORI_VPS_SSH_PRIVATE_KEY }}
       KAORI_VPS_SSH_PASSPHRASE: ${{ secrets.KAORI_VPS_SSH_PASSPHRASE }}
       KAORI_VPS_KNOWN_HOSTS: ${{ secrets.KAORI_VPS_KNOWN_HOSTS }}
@@ -224,6 +225,7 @@ jobs:
           set -Eeuo pipefail
           : "${KAORI_VPS_HOST:?Missing KAORI_VPS_HOST variable}"
           : "${KAORI_VPS_USER:?Missing KAORI_VPS_USER variable}"
+          : "${KAORI_LETSENCRYPT_EMAIL:?Missing KAORI_LETSENCRYPT_EMAIL variable}"
           : "${KAORI_VPS_SSH_PRIVATE_KEY:?Missing KAORI_VPS_SSH_PRIVATE_KEY secret}"
           : "${KAORI_VPS_SSH_PASSPHRASE:?Missing KAORI_VPS_SSH_PASSPHRASE secret}"
           : "${KAORI_VPS_KNOWN_HOSTS:?Missing KAORI_VPS_KNOWN_HOSTS secret}"
@@ -316,7 +318,9 @@ jobs:
             printf 'requested_version=%q\n' "$REQUESTED_VERSION"
             printf 'registry_user=%q\n' "$KAORI_DOCKER_REGISTRY_USERNAME"
             printf 'registry_password=%q\n' "$KAORI_DOCKER_REGISTRY_PASSWORD"
+            printf 'letsencrypt_email=%q\n' "$KAORI_LETSENCRYPT_EMAIL"
             cat <<'REMOTE_DEPLOY'
+          export KAORI_LETSENCRYPT_EMAIL="$letsencrypt_email"
           {
             printf '%s\n' "$registry_user"
             printf '%s\n' "$registry_password"
