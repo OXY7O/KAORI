@@ -430,17 +430,24 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
-          if gh release view "$CANDIDATE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            printf 'GitHub release %s already exists; refusing to overwrite immutable prerelease evidence.\n' \
-              "$CANDIDATE_TAG" >&2
-            exit 1
-          fi
-          gh release create "$CANDIDATE_TAG" \
-            --repo "$GITHUB_REPOSITORY" \
-            --target "$ACCEPTED_SHA" \
-            --title "$CANDIDATE_TAG" \
-            --notes-file rc-release-notes.md \
-            --prerelease
+          RELEASES_PATH="/releases"
+          repo_api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          release_name="KAORI ${CANDIDATE_TAG}"
+          release_body="$(cat rc-release-notes.md)"
+          payload="$(jq -nc \
+            --arg tag "$CANDIDATE_TAG" \
+            --arg sha "$ACCEPTED_SHA" \
+            --arg name "$release_name" \
+            --arg body "$release_body" \
+            '{tag_name: $tag, target_commitish: $sha, name: $name, body: $body, draft: false, prerelease: true, make_latest: "false"}')"
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            --data "$payload" \
+            "${repo_api}${RELEASES_PATH}"
+          printf 'Published GitHub prerelease %s -> %s\n' "$CANDIDATE_TAG" "$ACCEPTED_SHA"
 
       - name: Log Out from Docker Registry
         if: ${{ always() }}
