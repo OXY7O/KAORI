@@ -4,6 +4,7 @@ ROOT = Path(__file__).resolve().parents[3]
 VPS_ROOT = ROOT / 'deploy' / 'vps'
 BOOTSTRAP = VPS_ROOT / 'bootstrap-host.sh'
 README = VPS_ROOT / 'README.md'
+RUNNER_README = ROOT / 'ops' / 'github-runner' / 'README.md'
 
 
 def _read(path: Path) -> str:
@@ -72,3 +73,36 @@ def test_vps_runbook_documents_laptop_key_generation_and_bootstrap_sequence() ->
     assert '--ssh-public-key-file' in source
     assert 'private key' in source.lower()
     assert 'GitHub Environment' in source
+
+
+def test_vps_host_bootstrap_preserves_runner_identity_when_colocated() -> None:
+    source = _read(BOOTSTRAP)
+
+    assert "!= 'github-runner'" in source
+    assert '/opt/actions-runner' in source
+    assert 'preserving GitHub runner operations' in source
+
+
+def test_vps_runbooks_document_shared_host_without_collapsing_trust_boundary() -> None:
+    deployment = _read(README)
+    runner = _read(RUNNER_README)
+
+    for marker in (
+        'same physical VPS',
+        'github-runner',
+        'kaori-deploy',
+        '/opt/actions-runner',
+        '/opt/kaori',
+        'SSH remains the deployment boundary',
+        'temporary UAT',
+    ):
+        assert marker in deployment
+
+    for marker in (
+        'same physical VPS',
+        '/opt/kaori',
+        '/etc/kaori',
+        '/var/lib/kaori',
+        'deployment credentials',
+    ):
+        assert marker in runner
