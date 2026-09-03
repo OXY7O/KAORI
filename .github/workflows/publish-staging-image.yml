@@ -374,7 +374,7 @@ jobs:
           if [[ -n "$COMPARE_BASE" ]] && git rev-parse --verify "$COMPARE_BASE^{commit}" >/dev/null 2>&1; then
             change_range="${COMPARE_BASE}..${ACCEPTED_SHA}"
             changed_files="$(git diff --name-only "$COMPARE_BASE" "$ACCEPTED_SHA")"
-            changes="$(git log --format='- %s (%h)' "$change_range" | head -n 30)"
+            changes="$(git log --format='- %s (%h)' "$change_range" | sed -n '1,30p')"
           else
             changed_files="$(git show --format='' --name-only "$ACCEPTED_SHA")"
             changes="$(git log --format='- %s (%h)' -n 20 "$ACCEPTED_SHA")"
