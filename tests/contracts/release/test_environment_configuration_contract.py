@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -72,6 +74,19 @@ def test_environment_contract_uses_canonical_storage_and_public_url_names() -> N
     assert 'REPORT_STORAGE_BACKEND=s3' in production
     assert 'REPORT_S3_BUCKET=kaori-production' in production
     assert 'KAORI_PUBLIC_BASE_URL=https://kaori.cloud' in production
+
+
+def test_split_environment_contract_verifier_passes() -> None:
+    result = subprocess.run(
+        [sys.executable, 'scripts/verify_environment_contract.py'],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, f'{result.stdout}\n{result.stderr}'
+    assert 'PASS — KAORI Environment Contract' in result.stdout
 
 
 def test_environment_contract_verifier_is_a_release_gate() -> None:
