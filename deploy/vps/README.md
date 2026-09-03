@@ -14,6 +14,19 @@
 - PostgreSQL and Redis have no host `ports` mapping. KAORI web stays on `127.0.0.1:5000`; public ingress belongs to `deploy/nginx/` and Issue #50.
 - KAORI, PostgreSQL, and Redis deployment images must use immutable digest authority. Do not use `latest` or mutable dependency tags for UAT/production deployment.
 
+## Temporary UAT co-location with the GitHub runner
+
+During UAT, the GitHub self-hosted runner and the KAORI deployment target may share the **same physical VPS** because of the current infrastructure constraint. Physical co-location does not merge their operational domains or Unix identities.
+
+- The runner remains `github-runner` under `/opt/actions-runner` and is owned only by `ops/github-runner/`.
+- KAORI deployment remains `kaori-deploy` under `/opt/kaori` and is owned only by `deploy/vps/`.
+- `/etc/kaori/.env.production` and `/var/lib/kaori/` remain application deployment/runtime state and must not be copied into the runner workspace.
+- `deploy/vps/bootstrap-host.sh` rejects `github-runner` as the deploy user and does not modify runner registration, runner service files, or `/opt/actions-runner`.
+- **SSH remains the deployment boundary** even when the self-hosted runner and target currently resolve to the same host. Configure `KAORI_VPS_HOST` with the reviewed VPS hostname/IP and retain pinned `KAORI_VPS_KNOWN_HOSTS`; do not add a localhost/direct-execution bypass.
+- Docker access for both identities is root-equivalent privilege. This co-location is an accepted **temporary UAT** constraint, not the desired long-term production isolation posture.
+
+When infrastructure capacity permits, move the GitHub runner to a separate host or runner pool. The governed SSH deployment interface should remain unchanged when that happens.
+
 ## One-time VPS preparation
 
 `deploy/vps/bootstrap-host.sh` prepares the application-deployment host only. It creates the deploy user, installs/verifies Docker and the Compose plugin, installs the operator-provided RSA public key, prepares the canonical release/state/backup paths, and initializes the server-side environment file if it does not already exist.
@@ -88,6 +101,8 @@ sudo bash /root/kaori-bootstrap/bootstrap-host.sh \
 The script is idempotent. If `/etc/kaori/.env.production` already exists, its content is preserved and only the governed ownership/mode is reasserted. The dedicated deploy user's `authorized_keys` is replaced with the one operator-supplied public key, which makes deliberate key rotation deterministic.
 
 Docker group membership is intentionally granted to the deploy user because the current deployment surface uses Docker Compose directly. Treat that membership as root-equivalent privilege and keep the account dedicated to KAORI deployment.
+
+If `/opt/actions-runner` already exists on this VPS, the bootstrap reports the co-location and preserves that path. It never uses the `github-runner` account for KAORI deployment.
 
 ### 4. Verify the new deploy identity from the laptop
 
@@ -168,6 +183,8 @@ Variables:
 - `KAORI_VPS_DEPLOY_ROOT` (optional; defaults to `/opt/kaori`).
 
 `KAORI_VPS_KNOWN_HOSTS` must contain the reviewed host-key entry for the exact VPS endpoint. Deployment must never learn-and-trust a host key automatically.
+
+When the runner is co-located, `KAORI_VPS_HOST` still identifies the reviewed VPS endpoint. Do not replace the SSH trust boundary with `localhost` merely because the current runner happens to run on the target host.
 
 ## Intentional RC deployment authority
 
