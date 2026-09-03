@@ -296,12 +296,14 @@ jobs:
 
           scp "${scp_opts[@]}" compose.production.yml "$target:$remote_release/compose.production.yml"
           scp "${scp_opts[@]}" -r deploy/vps "$target:$remote_release/deploy/"
+          scp "${scp_opts[@]}" -r deploy/nginx "$target:$remote_release/deploy/"
 
           {
             printf 'set -Eeuo pipefail\n'
             printf 'remote_release=%q\n' "$remote_release"
             cat <<'REMOTE_PERMISSIONS'
           chmod 700 -- "$remote_release"/deploy/vps/*.sh
+          chmod 700 -- "$remote_release"/deploy/nginx/*.sh
           REMOTE_PERMISSIONS
           } | run_remote_script
 

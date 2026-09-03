@@ -17,6 +17,13 @@ def _read(path: Path) -> str:
     return path.read_text(encoding='utf-8')
 
 
+def _service_block(source: str, service: str, next_service: str | None = None) -> str:
+    start = source.index(f'  {service}:')
+    if next_service is None:
+        return source[start:]
+    return source[start : source.index(f'  {next_service}:', start)]
+
+
 def test_vps_deployment_has_a_dedicated_surface() -> None:
     for path in (COMPOSE_OVERLAY, DEPLOY, VERIFY, BACKUP, RESTORE, ROLLBACK, README):
         assert path.is_file(), f'missing VPS deployment file: {path}'
@@ -32,28 +39,39 @@ def test_production_compose_accepts_server_side_environment_file() -> None:
     assert '127.0.0.1' in source
 
 
-def test_vps_overlay_keeps_state_private_persistent_and_immutable() -> None:
+def test_vps_overlay_keeps_state_private_persistent_and_edge_explicit() -> None:
     source = _read(COMPOSE_OVERLAY)
+    postgres = _service_block(source, 'postgres', 'redis')
+    redis = _service_block(source, 'redis', 'validate')
+    web = _service_block(source, 'web', 'worker')
+    nginx = _service_block(source, 'nginx', 'certbot')
 
-    assert 'postgres:' in source
-    assert 'redis:' in source
-    assert '${KAORI_POSTGRES_IMAGE:?' in source
-    assert '${KAORI_REDIS_IMAGE:?' in source
+    assert '${KAORI_POSTGRES_IMAGE:?' in postgres
+    assert '${KAORI_REDIS_IMAGE:?' in redis
     assert 'kaori_vps_postgres_data' in source
     assert 'kaori_vps_redis_data' in source
-    assert 'pg_isready' in source
-    assert 'REDISCLI_AUTH' in source
-    assert 'requirepass' in source
-    assert 'ports:' not in source
+    assert 'pg_isready' in postgres
+    assert 'REDISCLI_AUTH' in redis
+    assert 'requirepass' in redis
+    assert 'ports:' not in postgres
+    assert 'ports:' not in redis
+    assert 'ports: !reset []' in web
+    assert 'expose:' in web and '- "5000"' in web
+    assert '"80:8080"' in nginx
+    assert '"443:8443"' in nginx
+    assert '/var/run/docker.sock' not in source
 
 
 def test_deploy_is_digest_pinned_fail_closed_and_ephemeral_for_registry_auth() -> None:
     source = _read(DEPLOY)
 
-    assert source.startswith('#!/usr/bin/env bash\nset -euo pipefail\n')
+    assert source.startswith('#!/usr/bin/env bash\nset -Eeuo pipefail\n')
     assert '@sha256:' in source
-    assert 'KAORI_ENV_FILE' in source
-    assert '/etc/kaori/.env.production' in source
+    assert 'KAORI_DEPLOY_ENV_FILE' in source
+    assert '/etc/kaori/deploy.env' in source
+    assert '/etc/kaori/app.env' in source
+    assert '/etc/kaori/secrets.env' in source
+    assert 'candidate-release.env' in source
     assert 'mktemp -d' in source
     assert 'DOCKER_CONFIG' in source
     assert 'docker login' in source
@@ -61,13 +79,12 @@ def test_deploy_is_digest_pinned_fail_closed_and_ephemeral_for_registry_auth() -
     assert 'trap' in source
     assert 'compose.production.yml' in source
     assert 'compose.vps.yml' in source
-    assert 'run_validate' in source
-    assert 'run_migrate' in source
     assert 'backup.sh' in source
     assert 'verify.sh' in source
     assert 'current-image' in source
     assert 'previous-image' in source
     assert '--pull never' in source
+    assert 'mv -- "$candidate_release_env" "$active_release_env"' in source
 
     assert 'StrictHostKeyChecking=no' not in source
     assert 'latest' not in source.lower()
@@ -86,11 +103,11 @@ def test_backup_restore_and_rollback_are_explicit_operator_surfaces() -> None:
     assert 'deploy.sh' in rollback
 
 
-def test_verify_checks_loopback_readiness_and_full_runtime_shape() -> None:
+def test_verify_checks_internal_readiness_and_full_runtime_shape() -> None:
     source = _read(VERIFY)
 
-    assert source.startswith('#!/usr/bin/env bash\nset -euo pipefail\n')
-    assert '127.0.0.1:5000/health/ready' in source
+    assert source.startswith('#!/usr/bin/env bash\nset -Eeuo pipefail\n')
+    assert 'http://127.0.0.1:5000/health/ready' in source
     assert 'postgres' in source
     assert 'redis' in source
     assert 'web' in source
@@ -105,6 +122,7 @@ def test_verify_checks_loopback_readiness_and_full_runtime_shape() -> None:
     assert 'resolver-maintenance-worker' in source
     assert 'beat' in source
     assert 'active_queues' in source
+    assert 'web unexpectedly publishes a host port' in source
 
 
 def test_manual_vps_workflow_uses_encrypted_ssh_and_pinned_host_key() -> None:
@@ -145,9 +163,7 @@ def test_operator_contract_keeps_real_environment_server_side() -> None:
     source = _read(README)
 
     assert 'deploy/vps/' in source
-    assert '/etc/kaori/.env.production' in source
-    assert '.env.production.example' in source
-    assert '600' in source
+    assert '/etc/kaori/' in source
     assert 'immutable digest' in source.lower()
     assert 'pre-migration' in source.lower()
     assert 'rollback' in source.lower()

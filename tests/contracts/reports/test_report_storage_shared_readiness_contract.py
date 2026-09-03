@@ -31,7 +31,7 @@ def test_report_storage_readiness_is_shared_through_redis_with_freshness_metadat
 
 
 def test_storage_readiness_defaults_are_documented_for_local_and_production_envs() -> None:
-    for path in ('.env.example', '.env.production.example'):
+    for path in ('.env.example', 'deploy/env/app.env.example'):
         source = read(path)
         assert 'REPORT_STORAGE_HEALTH_MONITOR_ENABLED=true' in source
         assert 'REPORT_STORAGE_HEALTH_INTERVAL_MINUTES=1' in source
@@ -53,8 +53,6 @@ def test_periodic_storage_probe_is_lightweight_and_routed_to_maintenance() -> No
     assert "source='periodic'" in tasks
     assert 'refresh_report_storage_readiness' in tasks
 
-    # The periodic path is a connectivity probe. Strong write/exists/delete
-    # verification remains owned by the manual Storage action.
     refresh_start = storage.index('def refresh_report_storage_readiness(')
     refresh_end = storage.index('\ndef mark_report_storage_backend_unavailable(', refresh_start)
     refresh_body = storage[refresh_start:refresh_end]
@@ -172,7 +170,6 @@ def test_storage_page_exposes_monitor_state_without_exposing_credentials() -> No
     storage = read('app/templates/reports/storage/index.html')
     service = read('app/reports/storage/service.py')
 
-    assert 'data-report-storage-readiness-monitor="true"' in storage
     assert 'data-report-storage-readiness-monitor="true"' in storage
     assert 'Every {{ payload.readiness_monitor.interval_minutes }} min' in storage
     assert 'payload.readiness_monitor.interval_minutes' in storage

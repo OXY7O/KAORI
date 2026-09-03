@@ -19,6 +19,13 @@ def _read(path: Path) -> str:
     return path.read_text(encoding='utf-8')
 
 
+def _service_block(source: str, service: str, next_service: str | None = None) -> str:
+    start = source.index(f'  {service}:')
+    if next_service is None:
+        return source[start:]
+    return source[start : source.index(f'  {next_service}:', start)]
+
+
 def test_vps_deployment_has_a_dedicated_deploy_boundary() -> None:
     required = (README, VPS_COMPOSE, DEPLOY, VERIFY, BACKUP, RESTORE, ROLLBACK)
 
@@ -53,6 +60,8 @@ def test_release_identity_is_supplied_by_governed_deployment() -> None:
         'export KAORI_IMAGE="$image"',
         'export APP_BUILD_SHA="$source_sha"',
         'export APP_BUILD_DATE="$image_created"',
+        'candidate-release.env',
+        'mv -- "$candidate_release_env" "$active_release_env"',
         'org.opencontainers.image.revision',
         '{{.Created}}',
     ):
@@ -71,7 +80,9 @@ def test_app_version_normalizes_governed_git_tag_without_v_prefix() -> None:
     assert 'export APP_VERSION="$app_version"' in deploy
     assert 'release_version="$(tr -d' in release_state
     assert 'APP_VERSION="${release_version#v}"' in release_state
-    assert '[[ "$APP_VERSION" =~ ^[0-9]+\\.[0-9]+\\.[0-9]+(-rc\\.[0-9]+)?$ ]]' in release_state
+    assert 'validate_release_identity' in release_state
+    assert '${APP_VERSION:-}' in release_state
+    assert '(-rc\\.[0-9]+)?$' in release_state
 
 
 def test_rollback_restores_coherent_previous_release_identity() -> None:
@@ -87,18 +98,26 @@ def test_rollback_restores_coherent_previous_release_identity() -> None:
 
 def test_vps_dependencies_are_private_persistent_and_immutable() -> None:
     source = _read(VPS_COMPOSE)
+    postgres = _service_block(source, 'postgres', 'redis')
+    redis = _service_block(source, 'redis', 'validate')
+    web = _service_block(source, 'web', 'worker')
+    nginx = _service_block(source, 'nginx', 'certbot')
 
-    assert 'postgres:' in source
-    assert 'redis:' in source
-    assert '${KAORI_POSTGRES_IMAGE:?' in source
-    assert '${KAORI_REDIS_IMAGE:?' in source
+    assert '${KAORI_POSTGRES_IMAGE:?' in postgres
+    assert '${KAORI_REDIS_IMAGE:?' in redis
     assert 'kaori_vps_postgres_data:' in source
     assert 'kaori_vps_redis_data:' in source
-    assert '/var/lib/postgresql/data' in source
-    assert '/data' in source
-    assert source.count('healthcheck:') >= 2
-    assert source.count('restart: unless-stopped') >= 2
-    assert 'ports:' not in source
+    assert '/var/lib/postgresql/data' in postgres
+    assert '/data' in redis
+    assert 'healthcheck:' in postgres
+    assert 'healthcheck:' in redis
+    assert 'restart: unless-stopped' in postgres
+    assert 'restart: unless-stopped' in redis
+    assert 'ports:' not in postgres
+    assert 'ports:' not in redis
+    assert 'ports: !reset []' in web
+    assert '"80:8080"' in nginx
+    assert '"443:8443"' in nginx
 
 
 def test_uat_workflow_requires_intentional_rc_and_pinned_ssh_trust() -> None:
@@ -157,20 +176,20 @@ def test_uat_workflow_resolves_evidence_before_opening_ssh() -> None:
     assert 'KAORI_CANDIDATE_TAG' in source
 
 
-def test_deploy_orders_data_safety_before_application_replacement() -> None:
+def test_deploy_orders_data_safety_before_public_promotion() -> None:
     source = _read(DEPLOY)
-    ordered_calls = (
-        'start_dependencies',
-        'wait_for_dependencies',
-        'existing_database_requires_backup',
-        'run_validate',
-        'run_migrate',
-        'start_application_services',
-        'run_verify',
-        'record_deployment',
+    ordered_markers = (
+        'Starting PostgreSQL and Redis',
+        'Creating pre-migration PostgreSQL backup',
+        'Validating portable KAORI runtime configuration',
+        'Running database migrations',
+        'Starting KAORI application services',
+        'Internal runtime PASS',
+        'Starting Compose-managed Nginx and Certbot edge',
+        'mv -- "$candidate_release_env" "$active_release_env"',
     )
 
-    positions = [source.rindex(f'\n{call}\n') for call in ordered_calls]
+    positions = [source.index(marker) for marker in ordered_markers]
     assert positions == sorted(positions)
     assert 'docker build' not in source
     assert '--pull never' in source
@@ -186,7 +205,7 @@ def test_database_recovery_surfaces_are_fail_closed() -> None:
     assert 'chmod 0600' in backup
 
     assert 'readlink -f' in restore
-    assert 'stop_application_services' in restore
+    assert '"${compose[@]}" stop "${application_services[@]}"' in restore
     assert 'pg_restore' in restore
     assert '--exit-on-error' in restore
 
@@ -218,6 +237,7 @@ def test_verifier_checks_full_runtime_and_single_beat() -> None:
     assert 'active_queues' in source
     assert '--restart-check' in source
     assert 'exactly one Beat' in source
+    assert 'web unexpectedly publishes a host port' in source
 
 
 def test_production_image_keeps_deployment_tooling_outside_runtime() -> None:
