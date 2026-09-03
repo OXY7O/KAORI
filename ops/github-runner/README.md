@@ -26,6 +26,16 @@ Registration credentials are never committed here. A GitHub registration token i
 
 The bootstrap pins GitHub Actions Runner `2.328.0` and validates the archive with an architecture-specific SHA256 before extraction. Override the version only together with the matching reviewed SHA256 values.
 
+## Temporary UAT co-location
+
+During UAT, the GitHub runner and the KAORI deployment target may share the **same physical VPS** because of the current infrastructure constraint. Co-location does not transfer application deployment ownership into this directory.
+
+`ops/github-runner/` owns only the runner identity, `/opt/actions-runner`, runner registration, runner service lifecycle, runner health, and its Docker execution substrate. It does **not** own `/opt/kaori`, `/etc/kaori`, `/var/lib/kaori`, KAORI deployment credentials, application environment state, Compose rollout, database migration, backup/restore, or application lifecycle.
+
+The application deployment identity remains `kaori-deploy`, and the governed UAT workflow still crosses the SSH trust boundary even while the target is currently the same VPS. Do not replace that interface with a localhost shortcut from the runner account.
+
+Both runner and deploy identities currently need Docker access; Docker group membership is root-equivalent privilege. Treat this as a temporary UAT infrastructure constraint. When capacity permits, move the runner to a separate host or runner pool without changing the KAORI deployment interface.
+
 ## 1. Bootstrap the host
 
 Provision host prerequisites without preparing a runner archive:
