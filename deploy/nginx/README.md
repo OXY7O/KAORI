@@ -1,117 +1,113 @@
-# KAORI Host Ingress
+# KAORI Compose Edge
 
-This directory owns the root-managed public ingress boundary for the KAORI VPS. Ordinary application releases continue through `deploy/vps/` as `kaori-deploy`; that account intentionally remains non-sudo and does not manage Nginx, certificates, DNS, or host firewall policy.
+This directory owns the **Compose-managed Nginx + Certbot edge** used by the KAORI VPS UAT runtime. Nginx and Certbot are part of the governed Docker Compose project; the VPS does not require a separate host-managed Nginx or Certbot service.
 
 ## Target path
 
 ```text
 Internet :80/:443
         ↓
-Host Nginx
+Compose-managed Nginx
         ↓
-127.0.0.1:5000
+Docker network
         ↓
-KAORI web
+web:5000
+        ↓
+KAORI
 ```
 
-PostgreSQL and Redis remain on the private Compose network and must not have host listeners.
+Only Nginx publishes public ports. KAORI web, PostgreSQL, and Redis stay private to the Compose network and must not expose host listeners on 5000, 5432, or 6379.
 
-## 1. DNS
+## Runtime authority
 
-The initial UAT hostname is the apex only:
+The deployment adapter is `/etc/kaori/deploy.env`. It must identify the reviewed public endpoint and immutable infrastructure images:
+
+```dotenv
+KAORI_PUBLIC_DOMAIN=kaori.cloud
+KAORI_PUBLIC_IP=62.171.187.206
+KAORI_LETSENCRYPT_EMAIL=<reviewed-acme-email>
+KAORI_NGINX_IMAGE=nginx@sha256:<reviewed-digest>
+KAORI_CERTBOT_IMAGE=certbot/certbot@sha256:<reviewed-digest>
+```
+
+PostgreSQL and Redis image authorities are stored in the same deployment adapter as `KAORI_POSTGRES_IMAGE` and `KAORI_REDIS_IMAGE`. Application behavior remains in `/etc/kaori/app.env`, secrets remain in `/etc/kaori/secrets.env`, and active release identity is generated at `/var/lib/kaori/deploy-state/release.env` only after successful deployment verification.
+
+The GitHub UAT workflow may supply `KAORI_LETSENCRYPT_EMAIL` as a reviewed deployment override. `deploy.sh` keeps the persistent deployment adapter as the default authority while allowing that explicit workflow value to override the email for the candidate transaction.
+
+## DNS
+
+Initial UAT authority is the apex only:
 
 ```text
 Type:  A
 Name:  @
 Value: 62.171.187.206
-TTL:   300 seconds during UAT, or the provider default
 ```
 
-Do not request a certificate until public DNS resolves `kaori.cloud` to `62.171.187.206`. `bootstrap-ingress.sh` also verifies that the resolved IPv4 is assigned to the VPS and fails closed when DNS is stale or points elsewhere.
+`kaori.cloud` must resolve to the reviewed VPS IPv4 before certificate issuance. `www.kaori.cloud` is outside the initial certificate contract.
 
-`www.kaori.cloud` is not part of the initial certificate or ingress contract.
+## Compose lifecycle
 
-## 2. Repository admission
-
-Run host changes only from an admitted KAORI revision. The #50 branch first passes Developer Check, merges to `kaori/staging`, and then requires exact staging Full Admission before the scripts below become UAT authority.
-
-Do not copy `kaori.conf.example` into `/etc/nginx`. The canonical configuration is `kaori.conf.template`, rendered by the bootstrap script.
-
-## 3. Root bootstrap
-
-The full KAORI Compose runtime must already be healthy at:
+`deploy/vps/deploy.sh` owns the governed sequence. After immutable application/image evidence, database safety, migration, and application readiness have passed, it starts the edge services:
 
 ```text
-http://127.0.0.1:5000/health/ready
+🐳 immutable application/infrastructure images
+✅ PostgreSQL / Redis private readiness
+💾 pre-migration backup when required
+🗃️ migration
+🚀 KAORI application services
+🩺 internal web-container readiness
+🌐 Nginx HTTP ACME edge
+🔒 Certbot certificate issue / renewal
+🔄 Nginx TLS activation / reload
+🩺 public HTTPS readiness
+✅ release identity promotion
 ```
 
-Then, from the admitted repository checkout on the VPS, run as root:
+Nginx bootstraps the ACME HTTP-01 path before the certificate exists. Certbot writes certificate material into the shared persistent certificate volume. Nginx detects the certificate and activates the TLS configuration. Renewal runs inside the Certbot service; the Nginx entrypoint detects certificate changes and reloads without Docker socket access.
 
-```bash
-bash deploy/nginx/bootstrap-ingress.sh \
-  --domain kaori.cloud \
-  --email '<operator-acme-email>'
-```
+## Nginx authority
 
-The script performs these stages in order:
+The reviewed configuration surfaces are:
 
-```text
-🩺 loopback KAORI readiness
-🌐 DNS-to-this-VPS admission
-📦 Nginx/Certbot prerequisite installation when needed
-✅ HTTP-only ACME bootstrap config + nginx -t
-🔒 Let's Encrypt HTTP-01 certificate issuance/retention
-✅ final HTTPS reverse-proxy config + nginx -t
-🔒 Certbot renewal timer + renew --dry-run
-```
+- `kaori-http.conf.template` — HTTP-only ACME bootstrap state;
+- `kaori.conf.template` — final TLS reverse proxy to `web:5000`;
+- `nginx-entrypoint.sh` — renders the appropriate configuration and reloads when certificate state changes;
+- `certbot-entrypoint.sh` — certificate issuance and renewal loop;
+- `verify-ingress.sh` — public/private ingress acceptance.
 
-It never adds `kaori-deploy` to an administrative group and never edits SSH authorization policy.
+Do not publish `web:5000` on the VPS to make Nginx work. Container-to-container routing must use the Docker network service name `web:5000`.
 
-## 4. Verify
+## Verification
 
-After bootstrap:
+The deployment transaction runs the verifier automatically. For an admitted release checkout it can also be executed explicitly:
 
 ```bash
 bash deploy/nginx/verify-ingress.sh \
   --domain kaori.cloud \
-  --expected-ip 62.171.187.206
+  --expected-ip 62.171.187.206 \
+  --renewal-dry-run
 ```
 
 The verifier requires:
 
-- DNS includes the reviewed VPS IPv4;
-- HTTP redirects exactly to HTTPS;
-- the public certificate is trusted, contains `DNS:kaori.cloud`, and has more than seven days remaining;
+- DNS contains `62.171.187.206`;
+- HTTP redirects to the exact HTTPS path;
+- the public TLS certificate is trusted, contains `DNS:kaori.cloud`, and has more than seven days remaining;
 - HSTS is present;
 - `https://kaori.cloud/health/ready` passes;
-- `http://127.0.0.1:5000/health/ready` still passes;
-- port 5000 is not bound beyond loopback;
-- ports 5432 and 6379 are not host listeners;
-- an unknown HTTP Host is rejected;
-- an unknown TLS SNI handshake is rejected.
+- the KAORI web container passes its internal readiness check;
+- host listeners do not expose 5000, 5432, or 6379;
+- running Nginx and Certbot images match `KAORI_NGINX_IMAGE` and `KAORI_CERTBOT_IMAGE` immutable digests;
+- unknown HTTP Host and TLS SNI are rejected;
+- the Certbot renewal dry-run passes when requested.
 
-## 5. Firewall and external evidence
+## Host boundary
 
-Nginx does not replace the VPS/provider firewall. Public UAT requires TCP 80 and 443 to reach this VPS. SSH remains a separately governed management path.
+Compose manages the application edge, but it does not replace host governance. The VPS/provider firewall must permit public TCP 80 and 443 and keep private application/state ports closed. SSH, the Docker daemon, kernel/network policy, and administrative account hardening remain host responsibilities.
 
-Before UAT acceptance, verify externally that no unexpected application/state service is reachable. In particular, public access to 5000, 5432, 6379, or a Docker API is prohibited.
-
-Do not disable root SSH merely to satisfy a checklist while `kaori-deploy` is the only non-root account available for deployment: it intentionally has no sudo. Establish and test a separate sudo-capable management identity first, then perform SSH daemon hardening as a dedicated host-admin change so administrative access cannot be locked out.
-
-## 6. Renewal
-
-`bootstrap-ingress.sh` enables `certbot.timer` when the distribution exposes that unit and requires:
-
-```bash
-certbot renew --dry-run
-```
-
-to pass during initial ingress admission. Periodically confirm the timer remains active:
-
-```bash
-systemctl status certbot.timer
-```
+Do not give `kaori-deploy` sudo merely to manage ingress; Compose edge lifecycle does not require that privilege escalation. Docker-group membership remains root-equivalent and must stay treated as a privileged deployment boundary.
 
 ## UAT acceptance boundary
 
-Public HTTPS availability is necessary but not sufficient for stable promotion. Issue #50 must record DNS, Nginx, certificate/renewal, public readiness, unknown-host rejection and external exposure evidence. The maintainer must then explicitly accept the exact source SHA and immutable RC digest before Issue #51 may promote `kaori/staging` to `main`.
+A successful `https://kaori.cloud` check is necessary but not sufficient for stable promotion. Issue #50 must retain exact staging SHA, RC tag, OCI digest, DNS/TLS/renewal evidence, private-port proof, and the successful governed UAT deployment run. Human UAT must then explicitly accept that exact source SHA and digest before Issue #51 may promote `kaori/staging` to `main`.
