@@ -7,7 +7,6 @@ NGINX_TEMPLATE = ROOT / 'deploy/nginx/kaori.conf.template'
 NGINX_ENTRYPOINT = ROOT / 'deploy/nginx/nginx-entrypoint.sh'
 CERTBOT_ENTRYPOINT = ROOT / 'deploy/nginx/certbot-entrypoint.sh'
 VERIFY = ROOT / 'deploy/nginx/verify-ingress.sh'
-COMPOSE = ROOT / 'compose.production.yml'
 VPS_COMPOSE = ROOT / 'deploy/vps/compose.vps.yml'
 LEGACY_ENV_EXAMPLE = ROOT / '.env.production.example'
 APP_ENV_EXAMPLE = ROOT / 'deploy/env/app.env.example'
@@ -31,17 +30,17 @@ def _service_block(text: str, service: str, next_service: str | None = None) -> 
     return text[start:end]
 
 
-def test_production_web_is_compose_internal_only_and_uses_portable_env_files():
-    text = _read(COMPOSE)
+def test_vps_overlay_makes_web_internal_only_and_replaces_runtime_env_files():
+    text = _read(VPS_COMPOSE)
     web = _service_block(text, 'web', 'worker')
 
-    assert '${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}' in text
-    assert '${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}' in text
-    assert '${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}' in text
+    assert 'ports: !reset []' in web
     assert 'expose:' in web
     assert '- "5000"' in web
-    assert 'ports:' not in web
-    assert 'KAORI_BIND_ADDRESS' not in web
+    assert 'env_file: !override' in web
+    assert '${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}' in web
+    assert '${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}' in web
+    assert '${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}' in web
 
 
 def test_vps_overlay_adds_immutable_nginx_and_certbot_without_docker_socket():
@@ -58,7 +57,7 @@ def test_vps_overlay_adds_immutable_nginx_and_certbot_without_docker_socket():
     assert '/var/run/docker.sock' not in text
 
     postgres = _service_block(text, 'postgres', 'redis')
-    redis = _service_block(text, 'redis', 'nginx')
+    redis = _service_block(text, 'redis', 'validate')
     assert 'ports:' not in postgres
     assert 'ports:' not in redis
 
@@ -192,6 +191,13 @@ def test_release_identity_is_generated_separately_from_persistent_configuration(
         assert f'{key}=' in deploy
     assert 'mv -- "$candidate_release_env" "$active_release_env"' in deploy
     assert '/var/lib/kaori/deploy-state/release.env' in state
+
+
+def test_deploy_requires_compose_override_capability():
+    deploy = _read(DEPLOY_SCRIPT)
+
+    assert '2.24.4' in deploy
+    assert 'docker compose version --short' in deploy
 
 
 def test_uat_delivery_copies_ingress_assets_to_release_directory():
