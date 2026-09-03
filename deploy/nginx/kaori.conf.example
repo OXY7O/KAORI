@@ -1,11 +1,5 @@
-# Compatibility pointer for operators who previously used this example directly.
-#
-# The canonical KAORI host-ingress configuration is now:
+# Deprecated standalone example.
+# KAORI VPS ingress is now Compose-managed. The canonical templates are:
+#   deploy/nginx/kaori-http.conf.template
 #   deploy/nginx/kaori.conf.template
-#
-# Do not copy this file directly into /etc/nginx. Render and install the
-# canonical template through:
-#   sudo bash deploy/nginx/bootstrap-ingress.sh --domain kaori.cloud --email <acme-email>
-#
-# That flow preserves the required unknown-host rejection, ACME bootstrap,
-# TLS configuration, loopback-only upstream, and renewal validation contract.
+# and are rendered by deploy/nginx/nginx-entrypoint.sh inside the Nginx container.
