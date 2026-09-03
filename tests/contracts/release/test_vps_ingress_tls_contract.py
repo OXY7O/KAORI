@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -5,6 +6,7 @@ NGINX_TEMPLATE = ROOT / 'deploy/nginx/kaori.conf.template'
 BOOTSTRAP = ROOT / 'deploy/nginx/bootstrap-ingress.sh'
 VERIFY = ROOT / 'deploy/nginx/verify-ingress.sh'
 COMPOSE = ROOT / 'compose.production.yml'
+UAT_WORKFLOW = ROOT / '.github/workflows/deploy-uat-vps.yml'
 
 
 def _read(path: Path) -> str:
@@ -69,6 +71,24 @@ def test_verifier_checks_public_https_and_private_runtime_boundary():
     assert '🔒' in text
     assert '🩺' in text
     assert '✅' in text
+
+
+def test_ingress_shell_surfaces_parse_with_bash():
+    for path in (BOOTSTRAP, VERIFY):
+        result = subprocess.run(
+            ['bash', '-n', str(path)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, f'{path.relative_to(ROOT)}: {result.stderr}'
+
+
+def test_uat_delivery_copies_ingress_assets_to_release_directory():
+    text = _read(UAT_WORKFLOW)
+
+    assert 'scp "${scp_opts[@]}" -r deploy/nginx "$target:$remote_release/deploy/"' in text
+    assert 'chmod 700 -- "$remote_release"/deploy/nginx/*.sh' in text
 
 
 def test_production_compose_keeps_web_on_loopback_and_state_ports_private():
