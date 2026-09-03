@@ -59,9 +59,10 @@ def test_bucket_detail_surfaces_usage_strategy_and_source() -> None:
 
 
 def test_environment_examples_keep_provider_metrics_opt_in() -> None:
-    for relative in ('.env.example', '.env.production.example'):
-        content = read(relative)
+    development = read('.env.example')
+    production = read('deploy/env/app.env.example')
+
+    for content in (development, production):
         assert 'OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE=disabled' in content
-        assert 'provider_metrics' in content
-        assert 'admin:DataUsageInfo' in content
-        assert 'full_scan' in content
+    for marker in ('provider_metrics', 'admin:DataUsageInfo', 'full_scan'):
+        assert marker in development
