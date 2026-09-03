@@ -7,6 +7,9 @@ on:
         description: Intentional KAORI RC tag already published by publish-staging-image.yml (for example v0.1.0-rc.1)
         required: true
         type: string
+  push:
+    branches:
+      - kaori/uat-request
 
 permissions:
   contents: read
@@ -34,14 +37,6 @@ jobs:
           CANDIDATE_TAG: ${{ inputs.candidate_tag }}
         run: |
           set -Eeuo pipefail
-          [[ "$GITHUB_REF" == 'refs/heads/kaori/staging' ]] || {
-            printf 'UAT VPS deployment must be dispatched from kaori/staging.\n' >&2
-            exit 1
-          }
-          [[ "$CANDIDATE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$ ]] || {
-            printf 'candidate_tag is not a KAORI RC tag.\n' >&2
-            exit 1
-          }
 
           api_root="https://api.github.com/repos/${GITHUB_REPOSITORY}"
           headers=(
@@ -50,10 +45,66 @@ jobs:
             --header 'X-GitHub-Api-Version: 2022-11-28'
           )
 
+          staging_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
+            "$api_root/git/ref/heads/kaori/staging")"
+          current_staging="$(jq -r '.object.sha' <<<"$staging_json")"
+          [[ "$current_staging" =~ ^[0-9a-f]{40}$ ]] || {
+            printf 'Unable to resolve current kaori/staging SHA.\n' >&2
+            exit 1
+          }
+
+          if [[ "$GITHUB_EVENT_NAME" == 'push' ]]; then
+            [[ "$GITHUB_REF" == 'refs/heads/kaori/uat-request' ]] || {
+              printf 'Push-based UAT requests are allowed only from kaori/uat-request.\n' >&2
+              exit 1
+            }
+            [[ "$GITHUB_SHA" == "$current_staging" ]] || {
+              printf 'UAT request SHA %s is stale; current kaori/staging is %s.\n' \
+                "$GITHUB_SHA" "$current_staging" >&2
+              exit 1
+            }
+
+            releases_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
+              "$api_root/releases?per_page=100")"
+            matching_releases="$(jq -c --arg sha "$current_staging" \
+              '[.[] | select(.prerelease == true and .target_commitish == $sha and (.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+-rc\\.[0-9]+$")))]' \
+              <<<"$releases_json")"
+            matching_count="$(jq 'length' <<<"$matching_releases")"
+            [[ "$matching_count" == '1' ]] || {
+              printf 'Expected exactly one intentional RC for admitted staging %s, found %s.\n' \
+                "$current_staging" "$matching_count" >&2
+              exit 1
+            }
+            CANDIDATE_TAG="$(jq -r '.[0].tag_name' <<<"$matching_releases")"
+          elif [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
+            [[ "$GITHUB_REF" == 'refs/heads/kaori/staging' ]] || {
+              printf 'Manual UAT deployment must be dispatched from kaori/staging.\n' >&2
+              exit 1
+            }
+            [[ "$GITHUB_SHA" == "$current_staging" ]] || {
+              printf 'Manual UAT dispatch SHA %s is stale; current kaori/staging is %s.\n' \
+                "$GITHUB_SHA" "$current_staging" >&2
+              exit 1
+            }
+          else
+            printf 'Unsupported UAT deployment event: %s\n' "$GITHUB_EVENT_NAME" >&2
+            exit 1
+          fi
+
+          [[ "$CANDIDATE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$ ]] || {
+            printf 'candidate_tag is not a KAORI RC tag.\n' >&2
+            exit 1
+          }
+
           release_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
             "$api_root/releases/tags/$CANDIDATE_TAG")"
           [[ "$(jq -r '.prerelease' <<<"$release_json")" == 'true' ]] || {
             printf '%s is not an intentional GitHub prerelease.\n' "$CANDIDATE_TAG" >&2
+            exit 1
+          }
+          [[ "$(jq -r '.target_commitish' <<<"$release_json")" == "$current_staging" ]] || {
+            printf '%s does not target current admitted staging %s.\n' \
+              "$CANDIDATE_TAG" "$current_staging" >&2
             exit 1
           }
 
@@ -64,10 +115,6 @@ jobs:
             printf 'Unable to resolve RC source SHA.\n' >&2
             exit 1
           }
-
-          staging_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
-            "$api_root/git/ref/heads/kaori/staging")"
-          current_staging="$(jq -r '.object.sha' <<<"$staging_json")"
           [[ "$accepted_sha" == "$current_staging" && "$GITHUB_SHA" == "$current_staging" ]] || {
             printf 'RC source %s is not current admitted staging %s.\n' "$accepted_sha" "$current_staging" >&2
             exit 1

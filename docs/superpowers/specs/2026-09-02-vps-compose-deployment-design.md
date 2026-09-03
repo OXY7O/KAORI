@@ -56,9 +56,15 @@ A failed validation, dependency health check, backup, migration, or readiness ch
 `rollback.sh` reads the recorded previous immutable image, previous source SHA, and previous governed release version and invokes the same deploy path. The deploy path reconstructs `APP_VERSION` by removing the leading `v`. Image rollback is explicitly distinct from database rollback. If the failed rollout included an incompatible migration, the operator must pair image rollback with the reviewed database restore procedure.
 
 ## Remote delivery workflow
-`.github/workflows/deploy-uat-vps.yml` is manual-only (`workflow_dispatch`). It is dispatched from `kaori/staging` with one human-facing input: an intentional `candidate_tag` previously published by the RC workflow.
+`.github/workflows/deploy-uat-vps.yml` supports two governed request paths that converge on the same evidence and SSH deployment transaction.
 
-Before SSH is opened, the workflow verifies that the requested tag is a GitHub prerelease, resolves its exact source SHA, proves that source equals current admitted `kaori/staging`, finds exact successful `quality.yml` evidence, finds successful RC publication evidence, and loads the unexpired `staging-image-<sha>` artifact. The artifact supplies the immutable application image digest. The workflow then passes the resolved image digest, accepted source SHA, and governed candidate tag to the remote deploy script.
+The bootstrap/current path is a push to the dedicated `kaori/uat-request` branch. This exists because GitHub accepts `workflow_dispatch` only when the workflow file already exists on the repository default branch, while KAORI requires UAT before staging may be promoted to `main`. The request branch removes that circular dependency without bypassing staging admission. A push request is accepted only when its exact SHA equals current `kaori/staging`; the workflow then requires exactly one intentional GitHub prerelease whose `target_commitish` is that same SHA and resolves its RC tag automatically.
+
+After the workflow has reached the default branch through normal promotion, `workflow_dispatch` remains available as the human-facing path. Manual dispatch must be launched against `kaori/staging` with the intentional `candidate_tag`; the selected workflow SHA must still equal current staging.
+
+For either trigger, before SSH is opened the workflow verifies that the candidate is a GitHub prerelease, its release target and tag SHA equal current admitted `kaori/staging`, exact successful `quality.yml` evidence exists, successful RC publication evidence exists, and the unexpired `staging-image-<sha>` artifact agrees on `KAORI_CANDIDATE_TAG`, `KAORI_SOURCE_SHA`, and immutable `KAORI_IMAGE_REF`. The workflow then passes the resolved image digest, accepted source SHA, and governed candidate tag to the remote deploy script.
+
+The governed bootstrap order is therefore: merge reviewed work to `kaori/staging` → Full Admission PASS on the exact staging SHA → cut a fresh intentional RC for that SHA → move `kaori/uat-request` to the same SHA → UAT workflow admission/deploy. Moving `kaori/uat-request` before the fresh RC exists is expected to fail closed.
 
 SSH uses:
 - `KAORI_VPS_SSH_PRIVATE_KEY` secret;
@@ -77,6 +83,6 @@ The current environment has one physical VPS and one active KAORI Compose projec
 Issue #49 proves `127.0.0.1:5000/health/ready` and full internal runtime health. Issue #50 subsequently owns Nginx, TLS/ACME, DNS, unknown-host rejection, public port minimization, SSH/firewall hardening, and external DAST. No public PostgreSQL, Redis, Docker API, or direct KAORI application port is introduced by this design.
 
 ## Validation
-Work-branch validation is the path-aware Developer Check. The contract under `tests/contracts/release/test_uat_vps_deployment_contract.py` locks the deployment boundary, immutable image policy, persistent-vs-release environment boundary, Git-tag-to-APP_VERSION normalization, private state services, ephemeral registry authentication, backup/restore/rollback ownership, loopback readiness, and pinned SSH host verification.
+Work-branch validation is the path-aware Developer Check. The contract under `tests/contracts/release/test_uat_vps_deployment_contract.py` locks the deployment boundary, immutable image policy, persistent-vs-release environment boundary, Git-tag-to-APP_VERSION normalization, private state services, ephemeral registry authentication, backup/restore/rollback ownership, loopback readiness, pinned SSH host verification, and default-branch-independent governed UAT request path.
 
 After merge to `kaori/staging`, comprehensive KAORI CI is authoritative. Actual VPS UAT remains separate evidence and does not authorize `main` promotion without explicit maintainer acceptance under Issue #51.

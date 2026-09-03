@@ -194,16 +194,31 @@ When the runner is co-located, `KAORI_VPS_HOST` still identifies the reviewed VP
 
 ## Intentional RC deployment authority
 
-`.github/workflows/deploy-uat-vps.yml` is the normal remote entry point. Dispatch it from `kaori/staging` with one input only: the intentional RC `candidate_tag` previously published by `.github/workflows/publish-staging-image.yml`.
+`.github/workflows/deploy-uat-vps.yml` supports two governed request paths.
 
-Before any SSH connection is opened, the workflow verifies:
+For the initial/current bootstrap path, use the dedicated `kaori/uat-request` branch. GitHub only exposes `workflow_dispatch` when the workflow file already exists on the repository default branch, while KAORI deliberately requires UAT before staging is promoted to `main`. Therefore the first governed UAT request is branch-driven rather than a manual Actions button.
 
-1. the requested tag is a GitHub prerelease;
-2. its tag SHA is the current `kaori/staging` SHA;
-3. exact `quality.yml` Full Admission succeeded for that SHA;
-4. the corresponding successful `publish-staging-image.yml` run exists;
-5. the `staging-image-<sha>` artifact exists and is unexpired;
-6. `staging-image.env` agrees on `KAORI_CANDIDATE_TAG`, `KAORI_SOURCE_SHA`, and immutable `KAORI_IMAGE_REF`.
+The required order is:
+
+1. merge reviewed work to `kaori/staging`;
+2. wait for exact Full Admission (`quality.yml`) PASS on that staging SHA;
+3. cut the fresh intentional RC for that exact SHA;
+4. move `kaori/uat-request` to that same exact staging SHA;
+5. let `KAORI UAT VPS Deploy` auto-resolve the one intentional prerelease targeting that SHA and continue through the normal evidence/SSH deployment transaction.
+
+Do not move `kaori/uat-request` before the fresh RC exists. A stale request SHA, missing RC, or ambiguous RC evidence fails closed before SSH.
+
+After `deploy-uat-vps.yml` has reached the default branch through normal promotion, the manual path remains available: dispatch `KAORI UAT VPS Deploy` against `kaori/staging` with the intentional RC `candidate_tag`. Manual dispatch does not weaken the same exact-SHA/evidence checks.
+
+Before any SSH connection is opened, either path verifies:
+
+1. the request SHA is the current `kaori/staging` SHA;
+2. the candidate is a GitHub prerelease targeting that exact SHA;
+3. its tag SHA is the current `kaori/staging` SHA;
+4. exact `quality.yml` Full Admission succeeded for that SHA;
+5. the corresponding successful `publish-staging-image.yml` run exists;
+6. the `staging-image-<sha>` artifact exists and is unexpired;
+7. `staging-image.env` agrees on `KAORI_CANDIDATE_TAG`, `KAORI_SOURCE_SHA`, and immutable `KAORI_IMAGE_REF`.
 
 The workflow passes three release-authority values to the remote transaction: the immutable application image digest, the exact accepted source SHA, and the exact candidate version. `deploy.sh` derives `APP_BUILD_DATE` from the pulled immutable image metadata. No ordinary application release edits `/etc/kaori/.env.production`.
 
