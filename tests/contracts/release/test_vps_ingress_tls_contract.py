@@ -9,7 +9,12 @@ CERTBOT_ENTRYPOINT = ROOT / 'deploy/nginx/certbot-entrypoint.sh'
 VERIFY = ROOT / 'deploy/nginx/verify-ingress.sh'
 COMPOSE = ROOT / 'compose.production.yml'
 VPS_COMPOSE = ROOT / 'deploy/vps/compose.vps.yml'
-ENV_EXAMPLE = ROOT / '.env.production.example'
+LEGACY_ENV_EXAMPLE = ROOT / '.env.production.example'
+APP_ENV_EXAMPLE = ROOT / 'deploy/env/app.env.example'
+SECRETS_ENV_EXAMPLE = ROOT / 'deploy/env/secrets.env.example'
+DEPLOY_ENV_EXAMPLE = ROOT / 'deploy/env/deploy.env.example'
+DEPLOY_SCRIPT = ROOT / 'deploy/vps/deploy.sh'
+RELEASE_STATE = ROOT / 'deploy/vps/release-state.sh'
 UAT_WORKFLOW = ROOT / '.github/workflows/deploy-uat-vps.yml'
 
 
@@ -26,10 +31,13 @@ def _service_block(text: str, service: str, next_service: str | None = None) -> 
     return text[start:end]
 
 
-def test_production_web_is_compose_internal_only():
+def test_production_web_is_compose_internal_only_and_uses_portable_env_files():
     text = _read(COMPOSE)
     web = _service_block(text, 'web', 'worker')
 
+    assert '${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}' in text
+    assert '${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}' in text
+    assert '${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}' in text
     assert 'expose:' in web
     assert '- "5000"' in web
     assert 'ports:' not in web
@@ -80,7 +88,7 @@ def test_nginx_templates_reject_unknown_hosts_and_proxy_only_to_compose_web():
         'X-Forwarded-For $proxy_add_x_forwarded_for',
         'X-Forwarded-Proto $scheme',
         'X-Forwarded-Host $host',
-        'X-Forwarded-Port $server_port',
+        'X-Forwarded-Port 443',
     ):
         assert f'proxy_set_header {header};' in tls_text
 
@@ -137,18 +145,53 @@ def test_verifier_checks_public_https_and_private_host_boundary():
     assert '✅' in text
 
 
-def test_environment_example_documents_compose_edge_contract():
-    text = _read(ENV_EXAMPLE)
+def test_runtime_environment_contract_is_split_by_authority():
+    app = _read(APP_ENV_EXAMPLE)
+    secrets = _read(SECRETS_ENV_EXAMPLE)
+    deploy = _read(DEPLOY_ENV_EXAMPLE)
+    legacy = _read(LEGACY_ENV_EXAMPLE)
+
+    for key in ('APP_ENV=', 'KAORI_PUBLIC_BASE_URL=', 'TRUSTED_HOSTS=', 'PROXY_FIX_ENABLED='):
+        assert key in app
+    for forbidden in ('SECRET_KEY=', 'KAORI_NGINX_IMAGE=', 'KAORI_LETSENCRYPT_EMAIL='):
+        assert forbidden not in app
+
+    for key in ('SECRET_KEY=', 'INTEGRATION_CREDENTIAL_KEY=', 'POSTGRES_PASSWORD=', 'REDIS_PASSWORD='):
+        assert key in secrets
+    for forbidden in ('KAORI_NGINX_IMAGE=', 'KAORI_PUBLIC_DOMAIN=', 'APP_VERSION='):
+        assert forbidden not in secrets
 
     for key in (
-        'KAORI_PUBLIC_DOMAIN=',
-        'KAORI_PUBLIC_IP=',
-        'KAORI_LETSENCRYPT_EMAIL=',
+        'KAORI_POSTGRES_IMAGE=',
+        'KAORI_REDIS_IMAGE=',
         'KAORI_NGINX_IMAGE=',
         'KAORI_CERTBOT_IMAGE=',
+        'KAORI_PUBLIC_DOMAIN=kaori.cloud',
+        'KAORI_PUBLIC_IP=62.171.187.206',
     ):
-        assert key in text
-    assert 'KAORI_BIND_ADDRESS=' not in text
+        assert key in deploy
+    for forbidden in ('SECRET_KEY=', 'APP_VERSION=', 'APP_BUILD_SHA=', 'APP_BUILD_DATE='):
+        assert forbidden not in deploy
+
+    assert 'deprecated' in legacy.lower()
+    assert 'deploy/env/app.env.example' in legacy
+    assert 'deploy/env/secrets.env.example' in legacy
+    assert 'deploy/env/deploy.env.example' in legacy
+
+
+def test_release_identity_is_generated_separately_from_persistent_configuration():
+    deploy = _read(DEPLOY_SCRIPT)
+    state = _read(RELEASE_STATE)
+
+    assert '/etc/kaori/app.env' in deploy
+    assert '/etc/kaori/secrets.env' in deploy
+    assert '/etc/kaori/deploy.env' in deploy
+    assert '/var/lib/kaori/deploy-state/release.env' in deploy
+    assert 'candidate-release.env' in deploy
+    for key in ('KAORI_IMAGE', 'APP_VERSION', 'APP_BUILD_SHA', 'APP_BUILD_DATE'):
+        assert f'{key}=' in deploy
+    assert 'mv -- "$candidate_release_env" "$active_release_env"' in deploy
+    assert '/var/lib/kaori/deploy-state/release.env' in state
 
 
 def test_uat_delivery_copies_ingress_assets_to_release_directory():
