@@ -34,6 +34,46 @@ def test_production_compose_supports_server_side_environment_file() -> None:
     assert '${KAORI_IMAGE:?' in source
 
 
+def test_release_identity_is_supplied_by_governed_deployment() -> None:
+    compose = _read(BASE_COMPOSE)
+    deploy = _read(DEPLOY)
+    workflow = _read(WORKFLOW)
+
+    for marker in (
+        'KAORI_IMAGE: ${KAORI_IMAGE:?',
+        'APP_VERSION: ${APP_VERSION:?',
+        'APP_BUILD_SHA: ${APP_BUILD_SHA:?',
+        'APP_BUILD_DATE: ${APP_BUILD_DATE:?',
+    ):
+        assert marker in compose
+
+    assert 'usage: deploy.sh IMAGE@sha256:<digest> SOURCE_SHA RELEASE_VERSION' in deploy
+    for marker in (
+        'export KAORI_IMAGE="$image"',
+        'export APP_VERSION="$release_version"',
+        'export APP_BUILD_SHA="$source_sha"',
+        'export APP_BUILD_DATE="$image_created"',
+        'org.opencontainers.image.revision',
+        "{{.Created}}",
+    ):
+        assert marker in deploy
+
+    assert 'REQUESTED_VERSION:' in workflow
+    assert 'requested_version=' in workflow
+    assert 'bash "$deploy_script" "$requested_image" "$requested_sha" "$requested_version"' in workflow
+
+
+def test_rollback_restores_coherent_previous_release_identity() -> None:
+    deploy = _read(DEPLOY)
+    rollback = _read(ROLLBACK)
+
+    assert 'current-version' in deploy
+    assert 'previous-version' in deploy
+    assert 'previous_version_file=' in rollback
+    assert 'previous_version=' in rollback
+    assert '"$previous_version"' in rollback
+
+
 def test_vps_dependencies_are_private_persistent_and_immutable() -> None:
     source = _read(VPS_COMPOSE)
 
