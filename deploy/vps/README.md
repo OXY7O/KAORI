@@ -268,3 +268,5 @@ The rollback surface restores the reviewed database recovery point, then redeplo
 ## Public ingress boundary
 
 Issue #49 establishes the private VPS runtime and governed UAT deployment surface. Issue #50 owns DNS, Nginx reverse proxy, TLS/ACME renewal, default-host rejection, public port minimization, firewall/SSH hardening, and external HTTPS/DAST acceptance.
+
+No `main` promotion or stable release is authorized by Issue #49. Stable promotion remains Issue #51 and requires explicit UAT acceptance of the exact staging SHA and immutable application image digest; promotion must reuse the accepted digest without rebuilding the image.
