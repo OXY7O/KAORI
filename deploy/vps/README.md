@@ -11,6 +11,8 @@
 - The UAT workflow receives the encrypted private key and passphrase from GitHub Environment secrets and uses the reviewed `KAORI_VPS_KNOWN_HOSTS` record. `StrictHostKeyChecking=yes` is mandatory.
 - Registry credentials come from GitHub Secrets. The remote deploy uses `docker login --password-stdin` with an ephemeral `DOCKER_CONFIG` directory that is deleted after the rollout.
 - The real application environment exists only on the VPS at `/etc/kaori/.env.production`, mode `600`. Never commit it or upload it as an Actions artifact.
+- `/etc/kaori/.env.production` is **long-lived operator configuration**. Ordinary application releases do not rewrite it and do not require manual image/version edits.
+- Application `KAORI_IMAGE`, `APP_VERSION`, `APP_BUILD_SHA`, and `APP_BUILD_DATE` are governed release identity supplied ephemerally by the deployment transaction and recorded under `/var/lib/kaori/deploy-state` after success.
 - PostgreSQL and Redis have no host `ports` mapping. KAORI web stays on `127.0.0.1:5000`; public ingress belongs to `deploy/nginx/` and Issue #50.
 - KAORI, PostgreSQL, and Redis deployment images must use immutable digest authority. Do not use `latest` or mutable dependency tags for UAT/production deployment.
 
@@ -133,7 +135,7 @@ ssh-keygen -lf kaori-vps.known_hosts.candidate
 
 Only after the fingerprint is independently verified should the exact known-hosts record become the `KAORI_VPS_KNOWN_HOSTS` GitHub Environment secret.
 
-### 6. Complete the server-side production environment
+### 6. Complete the server-side production environment once
 
 Edit the real host file after bootstrap:
 
@@ -162,6 +164,10 @@ KAORI_PORT=5000
 ```
 
 Use URL-safe passwords or URL-encode credentials embedded in connection URLs. Populate the remaining application, S3/MinIO, authentication, integration, and worker settings from `.env.production.example`. Remove `ADMIN_PASSWORD` after first administrator bootstrap.
+
+Do **not** add or update `KAORI_IMAGE`, `APP_VERSION`, `APP_BUILD_SHA`, or `APP_BUILD_DATE` for ordinary releases. Those four values are resolved from governed release evidence and the immutable image by `deploy.sh`. If a pre-contract host file still contains historical values for those keys, they are not release authority because Compose explicitly overrides them with deployment-supplied values; remove the stale entries during a reviewed maintenance edit to keep the host file unambiguous.
+
+PostgreSQL/Redis image digests are different: they are long-lived state-dependency configuration. Change `KAORI_POSTGRES_IMAGE` or `KAORI_REDIS_IMAGE` only as a deliberate infrastructure/database upgrade, not as part of every KAORI application release.
 
 ## GitHub Environment configuration
 
@@ -199,43 +205,47 @@ Before any SSH connection is opened, the workflow verifies:
 5. the `staging-image-<sha>` artifact exists and is unexpired;
 6. `staging-image.env` agrees on `KAORI_CANDIDATE_TAG`, `KAORI_SOURCE_SHA`, and immutable `KAORI_IMAGE_REF`.
 
+The workflow passes three release-authority values to the remote transaction: the immutable application image digest, the exact accepted source SHA, and the exact candidate version. `deploy.sh` derives `APP_BUILD_DATE` from the pulled immutable image metadata. No ordinary application release edits `/etc/kaori/.env.production`.
+
 Free-form image/SHA deployment is not an authorized UAT path. After a staging source change, cut a fresh intentional RC from that newly admitted exact staging SHA instead of deploying an older historical RC.
 
 ## Deployment lifecycle
 
 The remote `deploy.sh` performs, in order:
 
-1. validate the digest-qualified application image and its OCI source revision;
-2. validate `/etc/kaori/.env.production` and Compose configuration;
-3. use ephemeral registry authentication;
-4. pull and start immutable PostgreSQL/Redis dependencies without public ports;
-5. wait for both state services to become healthy;
-6. detect an existing application schema and require a successful pre-migration PostgreSQL backup;
-7. run KAORI environment validation;
-8. run the one-shot database migration;
-9. replace the application graph using the already-pulled immutable image with `--pull never`;
-10. verify runtime services, worker queue introspection, single Beat, exact image identity, private state ports, and loopback readiness;
-11. record deployment and recovery evidence in `/var/lib/kaori/deploy-state`.
+1. validate the digest-qualified application image, exact source SHA, governed release version, host prerequisites, and persistent env-file permissions;
+2. use ephemeral registry authentication and pull the exact immutable application image;
+3. verify the image OCI revision equals the requested source SHA and derive the image creation timestamp;
+4. export `KAORI_IMAGE`, `APP_VERSION`, `APP_BUILD_SHA`, and `APP_BUILD_DATE` only for the deployment transaction, then validate Compose;
+5. pull and start immutable PostgreSQL/Redis dependencies without public ports;
+6. wait for both state services to become healthy;
+7. detect an existing application schema and require a successful pre-migration PostgreSQL backup;
+8. run KAORI environment validation with deployment-supplied release identity;
+9. run the one-shot database migration;
+10. replace the application graph using the already-pulled immutable image with `--pull never`;
+11. verify runtime services, worker queue introspection, single Beat, exact image identity, private state ports, and loopback readiness;
+12. record current/previous immutable image, source SHA, release version, build timestamp, migration result, backup evidence, and verification result in `/var/lib/kaori/deploy-state`.
 
 ## Verification
 
-Run independently:
+After at least one successful governed deployment, verification reloads the recorded current release identity automatically; it does not need release fields in `/etc/kaori/.env.production`:
 
 ```bash
 KAORI_ENV_FILE=/etc/kaori/.env.production \
-  KAORI_EXPECTED_IMAGE='registry.example/kaori@sha256:<digest>' \
   bash deploy/vps/verify.sh --restart-check
 ```
 
+During an active deployment, `deploy.sh` supplies the expected immutable image directly to the verifier.
+
 ## Backup and restore
 
-Create a PostgreSQL custom-format backup with checksum:
+Create a PostgreSQL custom-format backup with checksum. The backup command reloads current release identity from deployment state when it is not already running inside a deploy transaction:
 
 ```bash
 KAORI_ENV_FILE=/etc/kaori/.env.production bash deploy/vps/backup.sh
 ```
 
-Restore is fail-closed: the dump must be under `/var/lib/kaori/backups`, have its SHA256 sidecar, and application services are stopped before `pg_restore --exit-on-error` runs.
+Restore is fail-closed: the dump must be under `/var/lib/kaori/backups`, have its SHA256 sidecar, and application services are stopped before `pg_restore --exit-on-error` runs. Current release identity is likewise recovered from deployment state for Compose parsing.
 
 ```bash
 KAORI_ENV_FILE=/etc/kaori/.env.production \
@@ -253,10 +263,10 @@ KAORI refuses image-only rollback because a newer schema may be incompatible wit
 } | bash deploy/vps/rollback.sh --restore-backup
 ```
 
-The rollback surface restores the reviewed database recovery point, then redeploys the recorded previous immutable image/source through the same governed `deploy.sh` path.
+The rollback surface restores the reviewed database recovery point, then redeploys the recorded previous immutable image, previous source SHA, and previous release version through the same governed `deploy.sh` path. The build timestamp is re-derived from that immutable image.
 
 ## Public ingress boundary
 
 Issue #49 establishes the private VPS runtime and governed UAT deployment surface. Issue #50 owns DNS, Nginx reverse proxy, TLS/ACME renewal, default-host rejection, public port minimization, firewall/SSH hardening, and external HTTPS/DAST acceptance.
 
-No `main` promotion or stable release is authorized here. Stable promotion remains Issue #51 after explicit UAT review of the exact RC digest.
+No `main` promotion or stable release is authorized by Issue #49. Stable promotion remains Issue #51 and requires explicit UAT acceptance of the exact staging SHA and immutable application image digest; promotion must reuse the accepted digest without rebuilding the image.

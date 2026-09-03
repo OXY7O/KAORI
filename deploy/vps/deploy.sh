@@ -14,13 +14,19 @@ fail() {
   exit 1
 }
 
-[[ $# -eq 2 ]] || fail 'usage: deploy.sh IMAGE@sha256:<digest> SOURCE_SHA'
+[[ $# -eq 3 ]] || fail 'usage: deploy.sh IMAGE@sha256:<digest> SOURCE_SHA RELEASE_VERSION'
 image="$1"
 source_sha="$2"
+release_version="$3"
 
 [[ "$image" =~ @sha256:[0-9a-f]{64}$ ]] || fail 'image must be digest-qualified with @sha256:<64 lowercase hex>'
 [[ "$image" == */* ]] || fail 'image must include an explicit registry host'
 [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || fail 'source SHA must be exactly 40 lowercase hex characters'
+[[ "$release_version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]] || \
+  fail 'release version must be a governed vX.Y.Z or vX.Y.Z-rc.N identity'
+app_version="${release_version#v}"
+[[ "$app_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]] || \
+  fail 'normalized APP_VERSION must be X.Y.Z or X.Y.Z-rc.N without the Git-tag v prefix'
 [[ -r "$KAORI_ENV_FILE" ]] || fail "environment file is not readable: $KAORI_ENV_FILE"
 [[ -f "$BASE_COMPOSE" ]] || fail "base Compose file is missing: $BASE_COMPOSE"
 [[ -f "$VPS_COMPOSE" ]] || fail "VPS Compose overlay is missing: $VPS_COMPOSE"
@@ -33,12 +39,6 @@ env_mode="$(stat -c '%a' "$KAORI_ENV_FILE")"
 [[ "$env_mode" == '600' ]] || fail "environment file must use mode 600, found $env_mode"
 docker info >/dev/null 2>&1 || fail 'Docker daemon is not reachable by the deploy user'
 docker compose version >/dev/null 2>&1 || fail 'Docker Compose plugin is required'
-
-export KAORI_IMAGE="$image"
-export KAORI_ENV_FILE
-export KAORI_BACKUP_DIR
-compose=(docker compose --env-file "$KAORI_ENV_FILE" -f "$BASE_COMPOSE" -f "$VPS_COMPOSE")
-"${compose[@]}" config --quiet || fail 'Compose configuration validation failed'
 
 umask 077
 mkdir -p "$KAORI_STATE_DIR" "$KAORI_BACKUP_DIR"
@@ -64,6 +64,22 @@ registry_password=''
 docker pull "$image" >/dev/null
 image_revision="$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$image")"
 [[ "$image_revision" == "$source_sha" ]] || fail "image revision label does not match requested source SHA (image=$image_revision source=$source_sha)"
+image_created="$(docker image inspect --format '{{.Created}}' "$image")"
+[[ -n "$image_created" ]] || fail 'image creation timestamp is missing from immutable image metadata'
+
+# Release identity is supplied by the governed deployment transaction. The
+# persistent server environment contains long-lived configuration/secrets and
+# is never rewritten merely because the application release changes. Git tags
+# retain the v prefix; APP_VERSION intentionally uses canonical SemVer without v.
+export KAORI_IMAGE="$image"
+export APP_VERSION="$app_version"
+export APP_BUILD_SHA="$source_sha"
+export APP_BUILD_DATE="$image_created"
+export KAORI_ENV_FILE
+export KAORI_BACKUP_DIR
+
+compose=(docker compose --env-file "$KAORI_ENV_FILE" -f "$BASE_COMPOSE" -f "$VPS_COMPOSE")
+"${compose[@]}" config --quiet || fail 'Compose configuration validation failed'
 
 wait_healthy() {
   local service="$1"
@@ -132,6 +148,12 @@ record_deployment() {
   if [[ -f "$KAORI_STATE_DIR/source-sha" ]]; then
     cp -- "$KAORI_STATE_DIR/source-sha" "$KAORI_STATE_DIR/previous-source-sha"
   fi
+  if [[ -f "$KAORI_STATE_DIR/current-version" ]]; then
+    cp -- "$KAORI_STATE_DIR/current-version" "$KAORI_STATE_DIR/previous-version"
+  fi
+  if [[ -f "$KAORI_STATE_DIR/current-build-date" ]]; then
+    cp -- "$KAORI_STATE_DIR/current-build-date" "$KAORI_STATE_DIR/previous-build-date"
+  fi
   if [[ "$backup_path" != 'none' ]]; then
     printf '%s\n' "$backup_path" > "$KAORI_STATE_DIR/previous-backup"
   else
@@ -140,6 +162,8 @@ record_deployment() {
 
   printf '%s\n' "$image" > "$KAORI_STATE_DIR/current-image"
   printf '%s\n' "$source_sha" > "$KAORI_STATE_DIR/source-sha"
+  printf '%s\n' "$release_version" > "$KAORI_STATE_DIR/current-version"
+  printf '%s\n' "$image_created" > "$KAORI_STATE_DIR/current-build-date"
   printf '%s\n' "$backup_path" > "$KAORI_STATE_DIR/pre-migration-backup"
   printf '%s\n' 'pass' > "$KAORI_STATE_DIR/migration-result"
   printf '%s\n' 'pass' > "$KAORI_STATE_DIR/verification-result"
@@ -158,5 +182,8 @@ record_deployment
 
 printf 'KAORI VPS deployment PASS\n'
 printf 'source_sha=%s\n' "$source_sha"
+printf 'release_version=%s\n' "$release_version"
+printf 'app_version=%s\n' "$app_version"
 printf 'current_image=%s\n' "$image"
+printf 'app_build_date=%s\n' "$image_created"
 printf 'pre_migration_backup=%s\n' "$backup_path"

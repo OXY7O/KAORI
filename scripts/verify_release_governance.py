@@ -22,6 +22,16 @@ def env_value(source: str, key: str) -> str:
     return match.group(1).strip()
 
 
+def require_documented_env_key(source: str, key: str) -> None:
+    if not re.search(rf'(?m)^\s*#?\s*{re.escape(key)}=', source):
+        raise AssertionError(f'Production environment contract must document {key}')
+
+
+def reject_active_env_key(source: str, key: str) -> None:
+    if re.search(rf'(?m)^{re.escape(key)}=', source):
+        raise AssertionError(f'Production persistent environment must not actively define deployment-managed {key}')
+
+
 def verify() -> None:
     changelog = read('CHANGELOG.md')
     governance = read('docs/deployment/RELEASE_GOVERNANCE.md')
@@ -32,23 +42,42 @@ def verify() -> None:
     default_config = read('app/config/default.py')
     env_example = read('.env.example')
     env_production = read('.env.production.example')
+    production_compose = read('compose.production.yml')
+    vps_deploy = read('deploy/vps/deploy.sh')
     quality_gate = read('scripts/quality_gate.sh')
 
     version_example = env_value(env_example, 'APP_VERSION')
-    version_production = env_value(env_production, 'APP_VERSION')
-    image_production = env_value(env_production, 'KAORI_IMAGE')
-    if version_example != version_production:
-        raise AssertionError('APP_VERSION differs between development and production examples')
     if not SEMVER.fullmatch(version_example):
         raise AssertionError(f'APP_VERSION must be strict Semantic Versioning, got {version_example!r}')
     if f"'{version_example}'" not in default_config:
-        raise AssertionError('Default APP_VERSION must match environment examples')
-    if not image_production.endswith(f':v{version_example}'):
-        raise AssertionError('Production KAORI_IMAGE example must use the same vX.Y.Z tag as APP_VERSION')
+        raise AssertionError('Default APP_VERSION must match the development environment example')
 
-    for source_name, source in (('.env.example', env_example), ('.env.production.example', env_production)):
-        for key in ('APP_BUILD_SHA', 'APP_BUILD_DATE'):
-            env_value(source, key)
+    for key in ('APP_BUILD_SHA', 'APP_BUILD_DATE'):
+        env_value(env_example, key)
+
+    for key in ('KAORI_IMAGE', 'APP_VERSION', 'APP_BUILD_SHA', 'APP_BUILD_DATE'):
+        require_documented_env_key(env_production, key)
+        reject_active_env_key(env_production, key)
+
+    for marker in (
+        'KAORI_IMAGE: ${KAORI_IMAGE:?',
+        'APP_VERSION: ${APP_VERSION:?',
+        'APP_BUILD_SHA: ${APP_BUILD_SHA:?',
+        'APP_BUILD_DATE: ${APP_BUILD_DATE:?',
+    ):
+        if marker not in production_compose:
+            raise AssertionError(f'Production Compose is missing deployment-managed release identity: {marker}')
+
+    for marker in (
+        'usage: deploy.sh IMAGE@sha256:<digest> SOURCE_SHA RELEASE_VERSION',
+        'app_version="${release_version#v}"',
+        'export KAORI_IMAGE="$image"',
+        'export APP_VERSION="$app_version"',
+        'export APP_BUILD_SHA="$source_sha"',
+        'export APP_BUILD_DATE="$image_created"',
+    ):
+        if marker not in vps_deploy:
+            raise AssertionError(f'VPS deployment is missing governed release identity behavior: {marker}')
 
     if '## [Unreleased]' not in changelog:
         raise AssertionError('CHANGELOG.md is missing required release structure: ## [Unreleased]')

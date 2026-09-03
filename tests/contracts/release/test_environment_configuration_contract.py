@@ -28,6 +28,22 @@ def test_environment_templates_cover_current_operational_contract() -> None:
             assert token in source
 
 
+def test_production_environment_keeps_release_identity_deployment_managed() -> None:
+    production = read('.env.production.example')
+    normalized = f'\n{production}'
+
+    for variable in (
+        'KAORI_IMAGE',
+        'APP_VERSION',
+        'APP_BUILD_SHA',
+        'APP_BUILD_DATE',
+    ):
+        assert f'\n{variable}=' not in normalized
+
+    assert 'governed deployment' in production.lower()
+    assert 'ordinary release' in production.lower()
+
+
 def test_environment_contract_uses_canonical_storage_and_public_url_names() -> None:
     sources = '\n'.join(
         (
