@@ -54,7 +54,7 @@ def test_release_identity_is_supplied_by_governed_deployment() -> None:
         'export APP_BUILD_SHA="$source_sha"',
         'export APP_BUILD_DATE="$image_created"',
         'org.opencontainers.image.revision',
-        "{{.Created}}",
+        '{{.Created}}',
     ):
         assert marker in deploy
 
