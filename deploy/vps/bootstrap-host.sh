@@ -10,7 +10,6 @@ deploy_root='/opt/kaori'
 env_template="${ROOT_DIR:+$ROOT_DIR/.env.production.example}"
 ssh_public_key_file=''
 ssh_port='22'
-env_dir='/etc/kaori'
 env_file='/etc/kaori/.env.production'
 state_dir='/var/lib/kaori/deploy-state'
 backup_dir='/var/lib/kaori/backups'
@@ -85,7 +84,7 @@ done
 [[ "$ssh_port" =~ ^[0-9]{1,5}$ ]] || fail 'SSH port must be numeric'
 (( 10#$ssh_port >= 1 && 10#$ssh_port <= 65535 )) || fail 'SSH port must be between 1 and 65535'
 
-for required_command in apt-get curl dpkg getent id install useradd usermod runuser systemctl; do
+for required_command in apt-get dpkg getent id install useradd usermod runuser systemctl; do
   command -v "$required_command" >/dev/null 2>&1 || fail "$required_command is required"
 done
 
@@ -116,6 +115,7 @@ install_docker_if_needed() {
   export DEBIAN_FRONTEND=noninteractive
   apt-get update
   apt-get install -y ca-certificates curl
+  command -v curl >/dev/null 2>&1 || fail 'curl installation did not provide an executable'
   install -d -m 0755 /etc/apt/keyrings
   curl --fail --silent --show-error --location \
     "https://download.docker.com/linux/${ID}/gpg" \
@@ -140,9 +140,10 @@ ensure_deploy_user() {
 
   deploy_home="$(getent passwd "$deploy_user" | cut -d: -f6)"
   deploy_group="$(id -gn "$deploy_user")"
-  [[ "$deploy_home" =~ ^/[^[:space:]]+$ ]] || fail 'unable to resolve a safe deploy-user home directory'
+  [[ "$deploy_home" =~ ^/[^[:space:]]+$ && "$deploy_home" != '/' ]] || fail 'unable to resolve a safe deploy-user home directory'
   [[ -d "$deploy_home" ]] || fail "deploy-user home directory is missing: $deploy_home"
 
+  getent group docker >/dev/null 2>&1 || fail 'Docker installation did not provide the docker group'
   usermod -aG docker "$deploy_user"
 }
 
