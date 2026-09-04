@@ -1,10 +1,10 @@
-name: KAORI UAT VPS Deploy
+name: KAORI Staging Deployment
 
 on:
   workflow_dispatch:
     inputs:
       candidate_tag:
-        description: Intentional KAORI RC tag already published by publish-staging-image.yml (for example v0.1.0-rc.1)
+        description: Accepted KAORI RC tag (for example v0.1.0-rc.11)
         required: true
         type: string
   push:
@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   admission:
-    name: Resolve Intentional RC Evidence
+    name: Resolve Staging Release Evidence
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -29,7 +29,7 @@ jobs:
       image_ref: ${{ steps.evidence.outputs.image_ref }}
       candidate_tag: ${{ steps.evidence.outputs.candidate_tag }}
     steps:
-      - name: Resolve RC, Full Admission, and Immutable Image Evidence
+      - name: Resolve Release Evidence
         id: evidence
         shell: bash
         env:
@@ -55,11 +55,11 @@ jobs:
 
           if [[ "$GITHUB_EVENT_NAME" == 'push' ]]; then
             [[ "$GITHUB_REF" == 'refs/heads/kaori/uat-request' ]] || {
-              printf 'Push-based UAT requests are allowed only from kaori/uat-request.\n' >&2
+              printf 'Staging deployment requests are allowed only from kaori/uat-request.\n' >&2
               exit 1
             }
             [[ "$GITHUB_SHA" == "$current_staging" ]] || {
-              printf 'UAT request SHA %s is stale; current kaori/staging is %s.\n' \
+              printf 'Staging request SHA %s is stale; current kaori/staging is %s.\n' \
                 "$GITHUB_SHA" "$current_staging" >&2
               exit 1
             }
@@ -78,16 +78,16 @@ jobs:
             CANDIDATE_TAG="$(jq -r '.[0].tag_name' <<<"$matching_releases")"
           elif [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
             [[ "$GITHUB_REF" == 'refs/heads/kaori/staging' ]] || {
-              printf 'Manual UAT deployment must be dispatched from kaori/staging.\n' >&2
+              printf 'Manual staging deployment must be dispatched from kaori/staging.\n' >&2
               exit 1
             }
             [[ "$GITHUB_SHA" == "$current_staging" ]] || {
-              printf 'Manual UAT dispatch SHA %s is stale; current kaori/staging is %s.\n' \
+              printf 'Manual staging dispatch SHA %s is stale; current kaori/staging is %s.\n' \
                 "$GITHUB_SHA" "$current_staging" >&2
               exit 1
             }
           else
-            printf 'Unsupported UAT deployment event: %s\n' "$GITHUB_EVENT_NAME" >&2
+            printf 'Unsupported staging deployment event: %s\n' "$GITHUB_EVENT_NAME" >&2
             exit 1
           fi
 
@@ -189,10 +189,10 @@ jobs:
             printf 'image_ref=%s\n' "$KAORI_IMAGE_REF"
             printf 'candidate_tag=%s\n' "$CANDIDATE_TAG"
           } >> "$GITHUB_OUTPUT"
-          printf 'UAT authority resolved: %s %s\n' "$CANDIDATE_TAG" "$accepted_sha"
+          printf 'Staging authority resolved: %s %s\n' "$CANDIDATE_TAG" "$accepted_sha"
 
   deploy:
-    name: Deploy Immutable Candidate to UAT VPS
+    name: Deploy Immutable Candidate to Staging Host
     needs: admission
     runs-on: [self-hosted, linux, x64, kaori-ci]
     environment: uat
@@ -212,7 +212,7 @@ jobs:
       REQUESTED_SHA: ${{ needs.admission.outputs.accepted_sha }}
       REQUESTED_VERSION: ${{ needs.admission.outputs.candidate_tag }}
     steps:
-      - name: Check Out Exact Admitted Staging SHA
+      - name: Check Out Admitted Staging SHA
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.admission.outputs.accepted_sha }}
@@ -244,7 +244,7 @@ jobs:
           root="${KAORI_VPS_DEPLOY_ROOT:-/opt/kaori}"
           [[ "$root" =~ ^/[A-Za-z0-9._/-]+$ ]] || exit 1
 
-      - name: Deploy Through Pinned SSH Trust
+      - name: Deploy via Pinned SSH Trust
         shell: bash
         run: |
           set -Eeuo pipefail
