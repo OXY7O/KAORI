@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 WORKFLOW = (
     Path(__file__).resolve().parents[3] / ".github/workflows/release-image.yml"
 ).read_text(encoding="utf-8")
