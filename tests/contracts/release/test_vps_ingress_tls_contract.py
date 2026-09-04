@@ -204,4 +204,5 @@ def test_uat_delivery_copies_ingress_assets_to_release_directory():
     text = _read(UAT_WORKFLOW)
 
     assert 'scp "${scp_opts[@]}" -r deploy/nginx "$target:$remote_release/deploy/"' in text
-    assert 'chmod 700 -- "$remote_release"/deploy/nginx/*.sh' in text
+    assert 'chmod 700 -- "$remote_release"/deploy/vps/*.sh' in text
+    assert 'chmod 755 -- "$remote_release"/deploy/nginx/*.sh' in text

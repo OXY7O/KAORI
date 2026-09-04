@@ -305,7 +305,7 @@ jobs:
             printf 'remote_release=%q\n' "$remote_release"
             cat <<'REMOTE_PERMISSIONS'
           chmod 700 -- "$remote_release"/deploy/vps/*.sh
-          chmod 700 -- "$remote_release"/deploy/nginx/*.sh
+          chmod 755 -- "$remote_release"/deploy/nginx/*.sh
           REMOTE_PERMISSIONS
           } | run_remote_script
 
