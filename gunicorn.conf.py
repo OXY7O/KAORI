@@ -16,5 +16,6 @@ accesslog = '-'
 errorlog = '-'
 loglevel = os.getenv('GUNICORN_LOG_LEVEL', 'info')
 capture_output = True
+control_socket_disable = True
 
 preload_app = False
