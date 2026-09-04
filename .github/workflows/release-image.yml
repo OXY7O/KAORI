@@ -315,6 +315,7 @@ jobs:
           docker run --rm \
             --env ACTIONS_ID_TOKEN_REQUEST_TOKEN \
             --env ACTIONS_ID_TOKEN_REQUEST_URL \
+            --env DOCKER_CONFIG=/root/.docker \
             --volume "$HOME/.docker:/root/.docker:ro" \
             "$COSIGN_IMAGE" \
             sign --yes "$source_ref"
@@ -324,6 +325,7 @@ jobs:
         run: |
           source_ref="${REGISTRY_IMAGE}@${RC_IMAGE_DIGEST}"
           docker run --rm \
+            --env DOCKER_CONFIG=/root/.docker \
             --volume "$HOME/.docker:/root/.docker:ro" \
             "$COSIGN_IMAGE" \
             verify \

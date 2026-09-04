@@ -40,6 +40,11 @@ def test_stable_release_verifies_registry_rc_and_promotes_same_digest() -> None:
     assert 'verify-labels "$source_ref" "$CANDIDATE_TAG" "$RC_SOURCE_SHA"' in WORKFLOW
 
 
+def test_stable_release_passes_registry_auth_to_cosign_container() -> None:
+    assert '--env DOCKER_CONFIG=/root/.docker' in WORKFLOW
+    assert '--volume "$HOME/.docker:/root/.docker:ro"' in WORKFLOW
+
+
 def test_stable_release_builds_release_evidence_from_accepted_rc_not_legacy_docs() -> None:
     assert 'Build Stable Release Notes' in WORKFLOW
     assert 'Generate Stable Release Manifest' in WORKFLOW
