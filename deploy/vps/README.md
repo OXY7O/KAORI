@@ -77,7 +77,7 @@ Do not place `KAORI_IMAGE`, `APP_VERSION`, `APP_BUILD_SHA`, or `APP_BUILD_DATE` 
 
 ## Temporary UAT runner co-location
 
-During UAT, the self-hosted GitHub runner and KAORI may share the same physical VPS. Physical co-location does not merge their operational ownership.
+During this temporary UAT phase, the self-hosted GitHub runner and KAORI may share the same physical VPS. Physical co-location does not merge their operational ownership.
 
 - Runner identity: `github-runner`, path `/opt/actions-runner`.
 - Deployment identity: `kaori-deploy`, path `/opt/kaori`.
