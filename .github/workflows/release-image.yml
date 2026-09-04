@@ -62,12 +62,13 @@ jobs:
             exit 1
           }
           expected_prefix="v${RELEASE_INPUT_VERSION}-rc."
-          [[ "$CANDIDATE_TAG" == "$expected_prefix"* ]] && \
-            [[ "${CANDIDATE_TAG#"$expected_prefix"}" =~ ^[1-9][0-9]*$ ]] || {
+          if [[ "$CANDIDATE_TAG" != "$expected_prefix"* ]] || \
+            [[ ! "${CANDIDATE_TAG#"$expected_prefix"}" =~ ^[1-9][0-9]*$ ]]
+          then
             printf 'Stable promotion requires an accepted RC prerelease for v%s, got %s\n' \
               "$RELEASE_INPUT_VERSION" "$CANDIDATE_TAG" >&2
             exit 1
-          }
+          fi
           : "${REGISTRY_HOST:?Missing repository variable KAORI_DOCKER_REGISTRY_HOST}"
           : "${REGISTRY_IMAGE:?Missing repository variable KAORI_DOCKER_REGISTRY_IMAGE}"
           [[ "$REGISTRY_IMAGE" == "$REGISTRY_HOST/"* ]] || {
@@ -130,9 +131,9 @@ jobs:
             exit 1
           }
           release_body="$(jq -r '.body // ""' <<<"$release_json")"
-          body_source="$(grep -oE 'Staging source SHA: `[0-9a-f]{40}`' <<<"$release_body" | \
+          body_source="$(grep -oE "Staging source SHA: \`[0-9a-f]{40}\`" <<<"$release_body" | \
             head -n 1 | grep -oE '[0-9a-f]{40}' || true)"
-          RC_IMAGE_DIGEST="$(grep -oE 'Immutable digest: `sha256:[0-9a-f]{64}`' <<<"$release_body" | \
+          RC_IMAGE_DIGEST="$(grep -oE "Immutable digest: \`sha256:[0-9a-f]{64}\`" <<<"$release_body" | \
             head -n 1 | grep -oE 'sha256:[0-9a-f]{64}' || true)"
           [[ "$body_source" == "$RC_SOURCE_SHA" ]] || {
             printf 'RC release body source %s differs from tag source %s.\n' \
