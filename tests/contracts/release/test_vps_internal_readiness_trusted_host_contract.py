@@ -2,6 +2,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 VERIFY_SCRIPT = ROOT / 'deploy' / 'vps' / 'verify.sh'
+COMPOSE_PRODUCTION = ROOT / 'compose.production.yml'
 APP_ENV_TEMPLATE = ROOT / 'deploy' / 'env' / 'app.env.example'
 
 
@@ -14,3 +15,13 @@ def test_internal_readiness_uses_trusted_host_without_widening_allowlist() -> No
     assert (
         "urllib.request.Request('http://127.0.0.1:5000/health/ready', headers={'Host': 'localhost'})" in verify_source
     )
+
+
+def test_compose_web_healthcheck_uses_trusted_host_without_widening_allowlist() -> None:
+    compose_source = COMPOSE_PRODUCTION.read_text(encoding='utf-8')
+    app_env_source = APP_ENV_TEMPLATE.read_text(encoding='utf-8')
+
+    assert 'TRUSTED_HOSTS=kaori.cloud,localhost' in app_env_source
+    assert 'TRUSTED_HOSTS=kaori.cloud,localhost,127.0.0.1' not in app_env_source
+    assert "'http://127.0.0.1:5000/health/ready'" in compose_source
+    assert "headers={'Host': 'localhost'}" in compose_source
