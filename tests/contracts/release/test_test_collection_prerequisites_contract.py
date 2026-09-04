@@ -13,8 +13,8 @@ def test_pdf_reader_dependency_is_owned_by_development_requirements() -> None:
     dev_in = read('requirements/dev.in')
     dev_lock = read('requirements/dev.txt')
 
-    assert 'pypdf==6.15.0' in dev_in
-    assert 'pypdf==6.15.0' in dev_lock
+    assert 'pypdf==6.16.2' in dev_in
+    assert 'pypdf==6.16.2' in dev_lock
     assert 'pypdf' not in read('requirements/base.in')
 
 
@@ -42,7 +42,7 @@ def test_prerequisite_verifier_owns_concise_pass_and_actionable_failures() -> No
 
     assert "print('PASS — KAORI Test Prerequisites')" in verifier
     assert "print('FAIL — KAORI Test Prerequisites')" in verifier
-    assert "'pypdf': '6.15.0'" in verifier
+    assert "'pypdf': '6.16.2'" in verifier
     assert 'expected locked version' in verifier
     assert 'install requirements/dev.txt or rebuild the Dev Container' in verifier
     assert 'duplicate pytest module basename' in verifier

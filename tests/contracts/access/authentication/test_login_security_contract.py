@@ -76,13 +76,13 @@ def test_logout_and_revocation_clear_persistent_remember_cookie() -> None:
 def test_remember_me_window_is_bounded_for_infrastructure_access() -> None:
     config = read('app/config/default.py')
     env_example = read('.env.example')
-    production_example = read('.env.production.example')
+    production_app = read('deploy/env/app.env.example')
 
     assert 'AUTH_REMEMBER_ME_DAYS = _bounded_env_int(' in config
     assert "'AUTH_REMEMBER_ME_DAYS'," in config
     assert 'REMEMBER_COOKIE_DURATION = timedelta(days=AUTH_REMEMBER_ME_DAYS)' in config
     assert 'AUTH_REMEMBER_ME_DAYS=7' in env_example
-    assert 'AUTH_REMEMBER_ME_DAYS=7' in production_example
+    assert 'AUTH_REMEMBER_ME_DAYS=7' in production_app
 
 
 def test_authentication_rate_limits_are_audited() -> None:

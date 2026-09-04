@@ -1,0 +1,202 @@
+services:
+  postgres:
+    image: ${KAORI_POSTGRES_IMAGE:?Set KAORI_POSTGRES_IMAGE in /etc/kaori/deploy.env}
+    restart: unless-stopped
+    env_file:
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in /etc/kaori/deploy.env}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in /etc/kaori/deploy.env}
+    volumes:
+      - kaori_vps_postgres_data:/var/lib/postgresql/data
+    networks:
+      - kaori_production
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+
+  redis:
+    image: ${KAORI_REDIS_IMAGE:?Set KAORI_REDIS_IMAGE in /etc/kaori/deploy.env}
+    restart: unless-stopped
+    env_file:
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+    command:
+      - sh
+      - -ec
+      - exec redis-server --appendonly yes --appendfsync everysec --requirepass "$$REDIS_PASSWORD"
+    volumes:
+      - kaori_vps_redis_data:/data
+    networks:
+      - kaori_production
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -q PONG
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+    security_opt:
+      - no-new-privileges:true
+
+  validate:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  migrate:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  web:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+    ports: !reset []
+    expose:
+      - "5000"
+
+  worker:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  maintenance-worker:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  runtime-worker:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  validation-worker:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  analytics-worker:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  reports-worker:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  forecasting-worker:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  resolver-execution-worker:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  resolver-maintenance-worker:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  beat:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  nginx:
+    image: ${KAORI_NGINX_IMAGE:?Set KAORI_NGINX_IMAGE in /etc/kaori/deploy.env}
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      KAORI_PUBLIC_DOMAIN: ${KAORI_PUBLIC_DOMAIN:?Set KAORI_PUBLIC_DOMAIN in /etc/kaori/deploy.env}
+      KAORI_NGINX_RELOAD_INTERVAL_SECONDS: ${KAORI_NGINX_RELOAD_INTERVAL_SECONDS:-30}
+    entrypoint:
+      - /bin/sh
+      - /usr/local/bin/kaori-nginx-entrypoint
+    ports:
+      - "80:8080"
+      - "443:8443"
+    volumes:
+      - ./deploy/nginx/nginx-entrypoint.sh:/usr/local/bin/kaori-nginx-entrypoint:ro
+      - ./deploy/nginx/kaori-http.conf.template:/etc/kaori-nginx/kaori-http.conf.template:ro
+      - ./deploy/nginx/kaori.conf.template:/etc/kaori-nginx/kaori.conf.template:ro
+      - kaori_vps_letsencrypt:/etc/letsencrypt:ro
+      - kaori_vps_acme_webroot:/var/www/certbot:ro
+    tmpfs:
+      - /etc/nginx/conf.d:rw,noexec,nosuid,size=2m
+      - /var/cache/nginx:rw,noexec,nosuid,size=16m
+      - /var/run:rw,noexec,nosuid,size=2m
+      - /tmp:rw,noexec,nosuid,size=8m
+    networks:
+      - kaori_production
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
+  certbot:
+    image: ${KAORI_CERTBOT_IMAGE:?Set KAORI_CERTBOT_IMAGE in /etc/kaori/deploy.env}
+    restart: unless-stopped
+    environment:
+      KAORI_PUBLIC_DOMAIN: ${KAORI_PUBLIC_DOMAIN:?Set KAORI_PUBLIC_DOMAIN in /etc/kaori/deploy.env}
+      KAORI_LETSENCRYPT_EMAIL: ${KAORI_LETSENCRYPT_EMAIL:?Set KAORI_LETSENCRYPT_EMAIL in /etc/kaori/deploy.env or deployment environment}
+      KAORI_CERTBOT_RENEW_INTERVAL_SECONDS: ${KAORI_CERTBOT_RENEW_INTERVAL_SECONDS:-43200}
+    entrypoint:
+      - /bin/sh
+      - /usr/local/bin/kaori-certbot-entrypoint
+    volumes:
+      - ./deploy/nginx/certbot-entrypoint.sh:/usr/local/bin/kaori-certbot-entrypoint:ro
+      - kaori_vps_letsencrypt:/etc/letsencrypt
+      - kaori_vps_acme_webroot:/var/www/certbot
+    tmpfs:
+      - /var/lib/letsencrypt:rw,noexec,nosuid,size=16m
+      - /var/log/letsencrypt:rw,noexec,nosuid,size=16m
+      - /tmp:rw,noexec,nosuid,size=8m
+    networks:
+      - kaori_production
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  kaori_vps_postgres_data:
+    name: kaori-vps-postgres-data
+  kaori_vps_redis_data:
+    name: kaori-vps-redis-data
+  kaori_vps_letsencrypt:
+    name: kaori-vps-letsencrypt
+  kaori_vps_acme_webroot:
+    name: kaori-vps-acme-webroot

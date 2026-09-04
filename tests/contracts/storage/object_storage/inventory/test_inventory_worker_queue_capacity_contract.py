@@ -23,7 +23,7 @@ def test_production_inventory_worker_uses_same_inventory_specific_contract():
 
 
 def test_inventory_worker_environment_examples_are_documented():
-    for path in ('.env.example', '.env.production.example'):
+    for path in ('.env.example', 'deploy/env/app.env.example'):
         env = read(path)
         assert 'INVENTORY_WORKER_CONCURRENCY=2' in env
         assert 'INVENTORY_WORKER_PREFETCH_MULTIPLIER=1' in env

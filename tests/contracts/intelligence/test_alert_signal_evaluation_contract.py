@@ -42,11 +42,11 @@ def test_alert_signal_snapshot_is_durable_and_freshness_aware() -> None:
 def test_alert_signal_task_is_registered_and_configured() -> None:
     default = read('app/config/default.py')
     env_example = read('.env.example')
-    env_production = read('.env.production.example')
+    production_app = read('deploy/env/app.env.example')
 
     assert "'app.intelligence.alert_signals.tasks'" in default
     assert "'app.intelligence.alert_signals.tasks.refresh_alert_signals'" in default
-    for source in (env_example, env_production):
+    for source in (env_example, production_app):
         assert 'ALERT_SIGNAL_EVALUATION_ENABLED=true' in source
         assert 'ALERT_SIGNAL_EVALUATION_INTERVAL_MINUTES=5' in source
         assert 'ALERT_SIGNAL_FRESHNESS_MINUTES=10' in source

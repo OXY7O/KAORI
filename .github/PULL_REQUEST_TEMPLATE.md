@@ -56,6 +56,24 @@ State logging, metrics, alerts, runtime behavior, rollback, support, deployment,
 
 A change is not `Done` merely because implementation and branch CI are complete.
 
+## Artifact / Release Evidence
+
+Complete this section when the change enters the artifact-backed VPS/release path. Use `N/A` for normal increments that are not yet being released; do not invent values.
+
+- **Accepted staging SHA:**
+- **Registry image:**
+- **Candidate tag:**
+- **OCI digest:**
+- **Digest-qualified image reference:**
+- **VPS deployment:** `https://kaori.cloud` / N/A
+- **VPS UAT:** Pending / PASS / N/A
+- **UAT-approved OCI digest:**
+- **Semantic Versioning release:**
+- **Rollback digest:**
+- **Production RUN:** Pending / PASS / N/A
+
+For release-bound work, VPS UAT must reference the exact accepted staging SHA and OCI digest. A stable release promotes/tags that same UAT-approved OCI digest without rebuilding application bits.
+
 ## Release Impact
 
 State the release target or Milestone when one exists, plus compatibility/rollout considerations. Do not invent a Milestone for work without a release target.
@@ -65,8 +83,12 @@ State the release target or Milestone when one exists, plus compatibility/rollou
 - [ ] The title is concise, human-readable, and follows the KAORI Conventional Commit subject style.
 - [ ] Scope and out-of-scope boundaries are clear.
 - [ ] Linked work and acceptance coverage are traceable.
+- [ ] Assignee, canonical labels, Project membership, lifecycle Status, Sprint, and Milestone are synchronized where applicable; Issue-only planning fields are not duplicated onto the PR.
+- [ ] The PR body does not contain a duplicate `Project Metadata` table or substitute labels for Project/native fields.
 - [ ] Required CI evidence is green with no unexplained failure, traceback, HTTP 5xx, migration error, runtime error, or unexpected skip.
 - [ ] Security, migration/data, and operational impacts are addressed.
 - [ ] Documentation/contracts are aligned when applicable.
 - [ ] `kaori/staging` CI and Local UAT exist before the work is marked `Done`.
+- [ ] Artifact/release evidence identifies the exact accepted SHA and digest when the VPS/release path applies.
 - [ ] Promotion to `main`, when applicable, is explicitly approved and uses a merge commit.
+- [ ] Stable release promotion reuses the UAT-approved OCI digest without rebuilding application bits.

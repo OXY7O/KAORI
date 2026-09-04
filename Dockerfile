@@ -29,7 +29,8 @@ COPY requirements/base.txt /tmp/requirements/base.txt
 
 RUN --mount=type=cache,target=/root/.cache/pip \
     PIP_NO_CACHE_DIR=0 python -m pip install "pip==${PIP_VERSION}" \
-    && PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/requirements/base.txt
+    && PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/requirements/base.txt \
+    && rm -f /tmp/requirements/base.txt
 
 COPY docker/entrypoint.sh /usr/local/bin/kaori-entrypoint
 RUN chmod 0755 /usr/local/bin/kaori-entrypoint
@@ -93,10 +94,24 @@ RUN mkdir -p app/static/css app/static/vendor app/static/fonts \
 
 FROM base AS production
 
+ARG OCI_SOURCE=""
+ARG OCI_REVISION=""
+ARG OCI_VERSION=""
+
+LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
+      org.opencontainers.image.revision="${OCI_REVISION}" \
+      org.opencontainers.image.version="${OCI_VERSION}"
+
 RUN groupadd --system kaori \
     && useradd --system --gid kaori --create-home --home-dir /app kaori
 
-COPY --chown=kaori:kaori . /app
+COPY --chown=kaori:kaori app /app/app
+COPY --chown=kaori:kaori migrations /app/migrations
+COPY --chown=kaori:kaori run.py celery_worker.py gunicorn.conf.py /app/
+COPY --chown=kaori:kaori \
+    scripts/wait_for_db.py \
+    scripts/validate_production_env.py \
+    /app/scripts/
 COPY --from=frontend-build --chown=kaori:kaori \
     /build/app/static/css/output.css \
     /app/app/static/css/output.css
