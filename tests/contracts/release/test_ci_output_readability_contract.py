@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 QUALITY_GATE = ROOT / 'scripts/quality_gate.sh'
 WORKFLOW = ROOT / '.github/workflows/quality.yml'
+STAGING_DEPLOY_WORKFLOW = ROOT / '.github/workflows/deploy-uat-vps.yml'
 CI_ADMISSION = ROOT / 'scripts/ci_admission.py'
 
 
@@ -146,3 +147,15 @@ def test_long_static_gate_has_periodic_heartbeat() -> None:
     assert 'Static & Governance still running' in workflow
     assert 'sleep 60' in workflow
     assert '⏱ %dm %02ds' in workflow
+
+
+def test_staging_deploy_action_uses_operator_facing_staging_host_vocabulary() -> None:
+    workflow = STAGING_DEPLOY_WORKFLOW.read_text(encoding='utf-8')
+
+    assert 'name: KAORI Staging Deployment' in workflow
+    assert 'name: Resolve Staging Release Evidence' in workflow
+    assert 'name: Deploy Immutable Candidate to Staging Host' in workflow
+    assert 'description: Accepted KAORI RC tag' in workflow
+    assert "printf 'Staging authority resolved:" in workflow
+    assert 'KAORI UAT VPS Deploy' not in workflow
+    assert 'Deploy Immutable Candidate to UAT VPS' not in workflow
