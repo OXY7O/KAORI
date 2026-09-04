@@ -6,6 +6,7 @@ x-kaori-environment: &kaori-environment
   APP_VERSION: ${APP_VERSION:?APP_VERSION is supplied by governed deployment}
   APP_BUILD_SHA: ${APP_BUILD_SHA:?APP_BUILD_SHA is supplied by governed deployment}
   APP_BUILD_DATE: ${APP_BUILD_DATE:?APP_BUILD_DATE is supplied by governed deployment}
+  XDG_CACHE_HOME: /tmp/.cache
 
 x-kaori-image: &kaori-image
   image: ${KAORI_IMAGE:?KAORI_IMAGE is supplied by governed deployment}
