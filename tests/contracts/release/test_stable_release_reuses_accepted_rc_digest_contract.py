@@ -26,7 +26,7 @@ def test_stable_release_allows_only_reviewed_release_control_drift_after_uat() -
 
 
 def test_stable_release_grants_reusable_quality_workflow_required_permissions() -> None:
-    permissions_block = WORKFLOW.split('permissions:', 1)[1].split('concurrency:', 1)[0]
+    permissions_block = WORKFLOW.split('permissions:', maxsplit=1)[1].split('concurrency:', maxsplit=1)[0]
     assert 'contents: read' in permissions_block
     assert 'actions: read' in permissions_block
 
