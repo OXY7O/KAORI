@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 VERIFY_SCRIPT = ROOT / 'deploy' / 'vps' / 'verify.sh'
 APP_ENV_TEMPLATE = ROOT / 'deploy' / 'env' / 'app.env.example'
