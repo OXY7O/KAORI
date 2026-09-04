@@ -168,29 +168,49 @@ jobs:
               head -n 1 || true
           )"
           if [[ -n "$existing_rc" ]]; then
-            if ! release_json="$(curl --fail-with-body --silent --show-error \
+            release_file="$(mktemp)"
+            if ! release_status="$(curl --silent --show-error \
+              --output "$release_file" \
+              --write-out '%{http_code}' \
               --header "Authorization: Bearer ${GH_TOKEN}" \
               --header 'Accept: application/vnd.github+json' \
               --header 'X-GitHub-Api-Version: 2022-11-28' \
               "${api_root}/releases/tags/${existing_rc}")"; then
-              printf 'RC tag %s already targets %s but its GitHub prerelease evidence is missing.\n' \
-                "$existing_rc" "$ACCEPTED_SHA" >&2
+              printf 'Unable to query GitHub prerelease evidence for reserved RC %s.\n' \
+                "$existing_rc" >&2
+              rm -f "$release_file"
               exit 1
             fi
-            [[ "$(jq -r '.prerelease' <<<"$release_json")" == 'true' ]] || {
-              printf 'Existing RC %s is not recorded as a GitHub prerelease.\n' "$existing_rc" >&2
+
+            if [[ "$release_status" == '404' ]]; then
+              printf 'Reserved RC tag has no GitHub prerelease; its number remains consumed. tag=%s sha=%s\n' \
+                "$existing_rc" "$ACCEPTED_SHA"
+            elif [[ "$release_status" =~ ^2[0-9][0-9]$ ]]; then
+              release_json="$(cat "$release_file")"
+              [[ "$(jq -r '.prerelease' <<<"$release_json")" == 'true' ]] || {
+                printf 'Existing RC %s is not recorded as a GitHub prerelease.\n' "$existing_rc" >&2
+                rm -f "$release_file"
+                exit 1
+              }
+              existing_image="$REGISTRY_IMAGE:$existing_rc"
+              {
+                printf 'should_publish=false\n'
+                printf 'candidate_tag=%s\n' "$existing_rc"
+                printf 'candidate_image=%s\n' "$existing_image"
+                printf 'compare_base=%s\n' "$existing_rc"
+              } >> "$GITHUB_OUTPUT"
+              printf 'Accepted source %s already owns %s; no new RC will be consumed.\n' \
+                "$ACCEPTED_SHA" "$existing_rc"
+              rm -f "$release_file"
+              exit 0
+            else
+              printf 'GitHub prerelease evidence lookup failed for %s with HTTP %s.\n' \
+                "$existing_rc" "$release_status" >&2
+              cat "$release_file" >&2 || true
+              rm -f "$release_file"
               exit 1
-            }
-            existing_image="$REGISTRY_IMAGE:$existing_rc"
-            {
-              printf 'should_publish=false\n'
-              printf 'candidate_tag=%s\n' "$existing_rc"
-              printf 'candidate_image=%s\n' "$existing_image"
-              printf 'compare_base=%s\n' "$existing_rc"
-            } >> "$GITHUB_OUTPUT"
-            printf 'Accepted source %s already owns %s; no new RC will be consumed.\n' \
-              "$ACCEPTED_SHA" "$existing_rc"
-            exit 0
+            fi
+            rm -f "$release_file"
           fi
 
           latest_stable_tag="$(
@@ -317,6 +337,36 @@ jobs:
       - name: Validate Exact Candidate Runtime and DAST
         run: bash .github/ci/run-runtime-validation.sh "$CANDIDATE_IMAGE"
 
+      - name: Reserve RC Git Tag
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          repo_api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          payload="$(cat <<EOF_JSON
+          {"ref": "refs/tags/${CANDIDATE_TAG}", "sha": "${ACCEPTED_SHA}"}
+          EOF_JSON
+          )"
+          response="$(curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            --data "$payload" \
+            "${repo_api}/git/refs")"
+          [[ "$(jq -r '.ref' <<<"$response")" == "refs/tags/${CANDIDATE_TAG}" ]] || {
+            printf 'GitHub did not reserve expected RC ref refs/tags/%s.\n' "$CANDIDATE_TAG" >&2
+            exit 1
+          }
+          [[ "$(jq -r '.object.sha' <<<"$response")" == "$ACCEPTED_SHA" ]] || {
+            printf 'Reserved RC tag %s does not target accepted SHA %s.\n' \
+              "$CANDIDATE_TAG" "$ACCEPTED_SHA" >&2
+            exit 1
+          }
+          printf 'Reserved RC tag %s -> %s before registry mutation.\n' \
+            "$CANDIDATE_TAG" "$ACCEPTED_SHA"
+
       - name: Log In to Docker Registry
         shell: bash
         env:
@@ -328,6 +378,27 @@ jobs:
           : "${REGISTRY_PASSWORD:?Missing repository secret KAORI_DOCKER_REGISTRY_PASSWORD}"
           printf '%s' "$REGISTRY_PASSWORD" | \
             docker login "$REGISTRY_HOST" --username "$REGISTRY_USERNAME" --password-stdin
+
+      - name: Refuse Existing Registry Tag
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          set +e
+          manifest_output="$(docker manifest inspect "$CANDIDATE_IMAGE" 2>&1)"
+          manifest_status=$?
+          set -e
+          if (( manifest_status == 0 )); then
+            printf 'Registry tag already exists and will not be overwritten: %s\n' \
+              "$CANDIDATE_IMAGE" >&2
+            exit 1
+          fi
+          if ! grep -Eqi 'no such manifest|manifest unknown|not found' <<<"$manifest_output"; then
+            printf 'Unable to prove registry tag is unused: %s\n' "$CANDIDATE_IMAGE" >&2
+            printf '%s\n' "$manifest_output" >&2
+            exit 1
+          fi
+          printf 'Registry tag is unused and eligible for first publication: %s\n' \
+            "$CANDIDATE_IMAGE"
 
       - name: Push Exact Candidate
         run: docker push "$CANDIDATE_IMAGE"
