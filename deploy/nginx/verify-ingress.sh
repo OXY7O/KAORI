@@ -121,7 +121,7 @@ verify_public_readiness() {
 
 verify_internal_runtime() {
   "${compose[@]}" exec -T web python -c \
-    "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health/ready', timeout=10).read()" \
+    "import urllib.request; request = urllib.request.Request('http://127.0.0.1:5000/health/ready', headers={'Host': 'localhost'}); urllib.request.urlopen(request, timeout=10).read()" \
     >/dev/null || fail 'internal web readiness failed inside the web container'
 
   local endpoint port
