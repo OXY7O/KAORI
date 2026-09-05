@@ -1,0 +1,7 @@
+type: S3
+config:
+  bucket: thanos
+  endpoint: minio:9000
+  access_key: kaori-demo
+  secret_key: kaori-demo-secret
+  insecure: true
