@@ -35,6 +35,9 @@ node_modules
 .vscode
 .devcontainer
 
+# Integration examples are repository/demo assets, never production runtime input.
+example/
+
 *.log
 *.zip
 celerybeat-schedule
