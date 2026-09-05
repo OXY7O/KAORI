@@ -472,20 +472,20 @@ jobs:
           ${highlights}
 
           ## Operational Impact
-          ${operational_impact}  
+          ${operational_impact}
           ${migration_impact}
 
           ## Validation Evidence
-          Exact \`kaori/staging\` KAORI CI: **PASS**  
-          Quality run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${QUALITY_RUN_ID}  
-          Trivy HIGH/CRITICAL image scan: **PASS**  
+          Exact \`kaori/staging\` KAORI CI: **PASS**
+          Quality run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${QUALITY_RUN_ID}
+          Trivy HIGH/CRITICAL image scan: **PASS**
           Production runtime & baseline DAST: **PASS**
 
           ### Immutable Evidence
-          Candidate tag: \`${CANDIDATE_TAG}\`  
-          Staging source SHA: \`${ACCEPTED_SHA}\`  
-          Candidate image: \`${CANDIDATE_IMAGE}\`  
-          Immutable digest: \`${KAORI_IMAGE_DIGEST}\`  
+          Candidate tag: \`${CANDIDATE_TAG}\`
+          Staging source SHA: \`${ACCEPTED_SHA}\`
+          Candidate image: \`${CANDIDATE_IMAGE}\`
+          Immutable digest: \`${KAORI_IMAGE_DIGEST}\`
           Deployment authority: \`${KAORI_IMAGE_REF}\`
 
           ## Known Limitations
