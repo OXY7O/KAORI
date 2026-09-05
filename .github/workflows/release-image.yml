@@ -102,6 +102,7 @@ jobs:
             'tests/contracts/release/test_stable_release_reuses_accepted_rc_digest_contract.py'
             'tests/contracts/release/test_ci_output_readability_contract.py'
             'tests/contracts/release/test_stable_release_cosign_auth_permissions_contract.py'
+            'tests/contracts/release/test_stable_release_reviewed_control_paths_contract.py'
           )
           mapfile -t changed_paths < <(git diff --name-only "$RC_SOURCE_SHA" "$RELEASE_SHA")
           for path in "${changed_paths[@]}"; do
