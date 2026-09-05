@@ -14,7 +14,7 @@ SECRETS_ENV_EXAMPLE = ROOT / 'deploy/env/secrets.env.example'
 DEPLOY_ENV_EXAMPLE = ROOT / 'deploy/env/deploy.env.example'
 DEPLOY_SCRIPT = ROOT / 'deploy/vps/deploy.sh'
 RELEASE_STATE = ROOT / 'deploy/vps/release-state.sh'
-UAT_WORKFLOW = ROOT / '.github/workflows/deploy-uat-vps.yml'
+UAT_WORKFLOW = ROOT / '.github/workflows/deploy-staging-host.yml'
 
 
 def _read(path: Path) -> str:
