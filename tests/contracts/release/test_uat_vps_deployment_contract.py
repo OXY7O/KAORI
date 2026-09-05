@@ -11,7 +11,7 @@ RESTORE = VPS_ROOT / 'restore.sh'
 ROLLBACK = VPS_ROOT / 'rollback.sh'
 RELEASE_STATE = VPS_ROOT / 'release-state.sh'
 README = VPS_ROOT / 'README.md'
-WORKFLOW = ROOT / '.github' / 'workflows' / 'deploy-uat-vps.yml'
+WORKFLOW = ROOT / '.github' / 'workflows' / 'deploy-staging-host.yml'
 DOCKERFILE = ROOT / 'Dockerfile'
 
 

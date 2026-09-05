@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-WORKFLOW = ROOT / '.github' / 'workflows' / 'deploy-uat-vps.yml'
+WORKFLOW = ROOT / '.github' / 'workflows' / 'deploy-staging-host.yml'
 NGINX_README = ROOT / 'deploy' / 'nginx' / 'README.md'
 
 

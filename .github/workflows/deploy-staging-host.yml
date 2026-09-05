@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   admission:
-    name: Resolve Staging Release Evidence
+    name: Release Evidence
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -192,7 +192,7 @@ jobs:
           printf 'Staging authority resolved: %s %s\n' "$CANDIDATE_TAG" "$accepted_sha"
 
   deploy:
-    name: Deploy Immutable Candidate to Staging Host
+    name: Deploy Staging
     needs: admission
     runs-on: [self-hosted, linux, x64, kaori-ci]
     environment: uat
