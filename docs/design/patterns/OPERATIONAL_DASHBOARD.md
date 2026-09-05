@@ -1,19 +1,44 @@
-# KAORI Operational Dashboard Pattern v1.4
+# KAORI Operational Dashboard Pattern v1.5
 
-**Status:** Locked reference pattern
-**Reference implementations:** Kubernetes Operations Dashboard and Object Storage Operations Dashboard
+**Status:** Locked reference pattern  
+**Reference implementations:** Kubernetes Operations Dashboard and Object Storage Operations Dashboard  
 **Canonical pages:** `app/templates/kubernetes/dashboard/partials/_content.html` and `app/templates/storage/object_storage/dashboard/partials/_content.html`
 
 ## Purpose
 
 This pattern defines a read-only, snapshot-backed operational dashboard that combines scope, operational indicators, peer workspace tabs, tables, charts, and visible action guidance without creating page-local styling systems.
 
-The Kubernetes Operations Dashboard and Object Storage Operations Dashboard are the locked visual and technical references for future KAORI operational dashboards. Domain content may change, but Hero geometry, Operational Signal Overview, integrated workspace tabs, peer-grid composition, data boundaries, interaction, accessibility, wording discipline, and style ownership must remain consistent.
+Kubernetes Operations Dashboard and Object Storage Operations Dashboard are the paired references. Domain content may change nouns and evidence values; Hero grammar, Operational Signal Overview placement, workspace tabs, peer-grid composition, data boundaries, interaction, accessibility, wording discipline, and style ownership remain shared.
+
+## Operational Dashboard Hero Profile
+
+Both paired dashboards must render through:
+
+```jinja
+page_hero.operational_dashboard(...)
+```
+
+The profile owns the complete Hero shell and context structure. Dashboard templates provide semantic values only and must not locally compose `shell_classes()`, `layout_classes()`, `content_classes()`, or `context_panel_classes()`.
+
+Normal Dashboard metadata has exactly three semantic slots in this order:
+
+1. inventory evidence;
+2. metrics/analytics evidence;
+3. alert evidence.
+
+The right-side Dashboard context has exactly two semantic metrics in this order:
+
+1. **Active Scope** — selected cluster/system or aggregate scope;
+2. **Data Authority** — request-time evidence authority. Current paired dashboards use `Committed Snapshots`.
+
+The profile action role is **operational source/readiness management**. Domain labels and routes may vary, but the action role does not. A generic inventory/navigation shortcut must not replace the readiness/source-management action.
+
+Blocked Dashboard state retains the same profile geometry, changes the right-side context to readiness semantics, and does not fabricate normal operational evidence.
 
 ## Canonical composition
 
 ```text
-Canonical Hero
+Operational Dashboard Hero Profile
 Operational Signal Overview
 ├── Scope selector
 ├── Snapshot update context
@@ -32,141 +57,108 @@ Tab Style 1 — Integrated Workspace Tabs
     └── Reporting Summary / Guidance peer grid
 ```
 
-Kubernetes maps the health table to clusters and Object Storage maps it to registered systems. Future dashboards may substitute a domain-specific health register, but the page hierarchy and peer relationships stay the same. The domain may choose whole-tab or inner-section lazy loading as long as visible layout, local loading ownership, URL-backed tabs, and failure isolation preserve this contract.
+Kubernetes maps the health table to clusters and Object Storage maps it to registered systems. Future dashboards may substitute a domain-specific health register, but page hierarchy and peer relationships stay the same.
 
 ## Visual contract
 
-- Use `components/page_hero.html` for the page Hero. The Kubernetes reference uses the canonical **Context Icon Box** in the Hero right-side context header; do not invent a fourth Hero accessory type.
+- Use `components/page_hero.html` and the `operational_dashboard(...)` profile renderer for the Hero.
 - Use `components/operational_metric_card.html` for the KPI grid.
 - Use `components/workspace_tabs.html` with semantic key `integrated-workspace`.
 - Use `components/operational_section_card.html` for repeated section shells.
 - Use `components/peer_content_grid.html` for equal-height peer content.
 - Use `components/operational_flow_steps.html` for visible action and response flows.
-- Use `components/operational_callout.html` for interpretation and supporting guidance.
-- Use `components/forecast_projection_chart.html` for historical and projected utilization.
+- Use `components/operational_callout.html` for interpretation/supporting guidance.
+- Use `components/forecast_projection_chart.html` for historical/projected utilization.
 - Use canonical table, label, empty-state, loading, and pagination components.
-- Do not introduce page-local card shells, tab geometry, label geometry, pagination, chart SVGs, arbitrary typography, or dark-mode colors.
+- Do not introduce page-local Hero/card/tab/label/pagination/chart geometry, arbitrary typography, or dark-mode colors.
 - The dashboard remains neutral-first in dark mode. Violet is limited to identity, active state, focus, links, progress, and primary actions.
 
 ## Information hierarchy
-
-The page follows this sequence:
 
 ```text
 Identity → Scope → Indicators → Peer analysis → Interpretation → Action
 ```
 
-The Hero establishes identity and readiness. The Operational Signal Overview owns scope and high-level indicators. Tabs represent peer perspectives of the same dashboard scope. Each section presents evidence before guidance or action.
+The Hero establishes identity, evidence boundary, and readiness. Operational Signal Overview owns scope and high-level indicators. Tabs are peer perspectives of the same dashboard scope. Evidence precedes interpretation and action.
 
 ## Data-boundary contract
 
 - Web requests read committed database rows and worker snapshots only.
 - Web requests must not query Kubernetes API, Metrics Source, Alertmanager, Object Storage API, or another provider directly.
-- Missing, pending, failed, stale, or expired snapshots are rendered explicitly.
-- All-cluster mode may summarize inventory and per-cluster evidence.
-- Detailed capacity, forecast, consumer, and alert signals require a selected cluster.
-- UI copy must use `snapshot`, `committed`, `available`, or `detailed signals`; it must not imply that the page performs live provider queries.
-- Reporting guidance must remain format-neutral because Analytics supports PDF/CSV and Inventory supports XLSX/CSV.
-- Reporting guidance must place a compact **Reporting Control** information block before the Controlled Reporting Flow. It states the selected scope, committed-evidence boundary, and review requirement; it is not a generic tip.
-
-## Cluster setup blocker
-
-The Kubernetes Operations Dashboard is the canonical visual reference for cluster setup blocking. Its Hero right panel is implemented through `components/cluster/_hero_blocked_context.html` and is shared by Kubernetes Inventory, Operations, and Governance. Blocked pages preserve Hero geometry, show readiness rather than normal posture evidence, and place the registration CTA in the onboarding banner below the Hero.
+- Missing, pending, failed, stale, or expired snapshots are explicit.
+- All-scope modes may summarize inventory and committed evidence.
+- Detailed capacity, forecast, consumer, and alert signals may require a selected domain scope.
+- UI copy uses `snapshot`, `committed`, `available`, or `detailed signals`; it must not imply request-time provider queries.
+- Reporting guidance remains format-neutral.
+- Reporting Control states selected scope, committed-evidence boundary, and review requirement before the controlled reporting flow.
 
 ## Request authorization contract
 
-- Dashboard page and lazy-section views require `dashboard.view`.
-- Authorization must complete before clusterless onboarding, dependency blockers, or dashboard data access.
-- A protected lazy section must not return an authorization-sensitive response from Blueprint `before_request`; clusterless rendering belongs inside the decorated view.
-- Unknown section identifiers return `404` before cluster readiness checks or data reads.
-- Unauthorized requests must not probe cluster readiness, query dashboard repositories, or render onboarding state.
+- Dashboard page and lazy-section views require `dashboard.view` where applicable.
+- Authorization completes before readiness checks or dashboard data access.
+- Unknown section identifiers return `404` before readiness checks/data reads.
+- Unauthorized requests must not probe readiness, repositories, or onboarding state.
 
 ## Request and loading contract
 
-- The first request renders the shell, Hero, scope, inventory aggregate, reporting summary, and local placeholders.
-- Heavy sections load independently through `get_dashboard_section()` and HTMX.
+- First request renders shell, Hero, scope, inventory aggregate, reporting summary, and local placeholders.
+- Heavy sections load independently through HTMX.
 - Hidden tab sections load when revealed.
-- Initial async sections use local skeletons.
-- Tables with pagination or filtering own their loading bar.
+- Loading and failures remain section-owned.
 - Do not add a global dashboard loading overlay.
-- An unavailable section must not prevent the rest of the dashboard from rendering.
+- One unavailable section must not prevent the rest of the dashboard from rendering.
 
 ## Tab interaction contract
 
-Tab Style 1 is URL-backed and accessible:
+Tab Style 1 remains URL-backed and accessible:
 
 - active state is stored in `?tab=`;
-- scope changes preserve the active tab;
+- scope changes preserve active tab;
 - invalid values resolve to `overview`;
 - `role="tablist"`, `role="tab"`, and `role="tabpanel"` are required;
 - only the active tab has `tabindex="0"`;
-- Arrow Left/Right wrap through tabs;
-- Home selects the first tab;
-- End selects the last tab;
+- Arrow Left/Right wrap; Home selects first; End selects last;
 - keyboard selection moves focus and updates the URL.
 
 ## Responsive contract
 
 - Tabs scroll horizontally on narrow screens.
 - KPI cards progress from one to two to four columns.
-- Peer content stacks on smaller screens and becomes equal-height 6/6 or 7/5 content at desktop sizes.
+- Peer content stacks on smaller screens and becomes equal-height peer content at desktop sizes.
 - Tables retain canonical horizontal overflow behavior.
-- Controls remain at least 44 px high where they act as primary interactive targets.
+- Primary interactive targets remain at least 44 px high where required by the component contract.
 
 ## Operational wording
 
-Use these terms consistently:
-
-- `Cluster Signals Available`
-- `Select a Cluster for Detailed Signals`
-- `Alertmanager`
-- `approved output`
-- `stored artifact`
-
-Do not use:
-
-- `Live Signals Enabled`
-- `Select a Cluster for Live Signals`
-- `AlertManager`
-- generic reporting guidance that assumes every artifact is PDF
+Use consistent evidence terminology such as `Cluster Signals Available`, `Select a Cluster for Detailed Signals`, `Alertmanager`, `approved output`, and `stored artifact`. Do not use wording that implies live request-time provider access.
 
 ## Dashboard family consistency
 
-- Kubernetes and Object Storage use the same four workspace tabs, outer `space-y-5` rhythm, Hero placement, Operational Signal Overview placement, peer-grid proportions, and section-card hierarchy.
-- Domain-specific wording changes nouns and evidence semantics only; it must not create a different dashboard visual grammar.
-- Interpretation cards should be concise. Do not add a generic `What This Summary Means` box when the section title, description, status, and evidence already establish meaning.
-- Future Server/VM, HCI, network, backup, or other operational dashboards must start from this pattern rather than copying one-off page-local layout.
-- Reusable layout changes must be made through shared components or the canonical dashboard structure and protected by family-level contract tests.
+- Kubernetes and Object Storage share the same Hero profile, four workspace tabs, outer `space-y-5` rhythm, Operational Signal Overview placement, peer-grid proportions, and section-card hierarchy.
+- Domain-specific wording changes nouns/evidence semantics only; it does not create a different visual grammar.
+- Future Server/VM, HCI, network, backup, and other operational dashboards begin from this pattern and the shared Hero profile.
+- Reusable layout changes happen through shared components/canonical structure and family-level contract tests.
 
 ## Maintainability and performance contract
 
-- Dashboard web code owns no provider clients, compatibility catch-all arguments, orphan public exports, or unused presentation fields.
-- Internal naming must distinguish selected database scope from actual live/provider state.
-- The overview shell does not read analytics snapshots; heavy evidence loads through lazy sections.
-- Cluster Health paginates before inventory and committed-snapshot reads, so work is bounded to the visible page (`5/10/25/50`) rather than the complete cluster fleet.
-- Empty snapshot messaging must describe committed worker evidence; wording such as `the metrics provider returned ...` is prohibited in the web presentation because it implies a direct request-time provider call.
+- Dashboard web code owns no provider clients or request-time provider access.
+- Internal naming distinguishes selected database scope from actual live/provider state.
+- Heavy analytical evidence loads through bounded/lazy sections.
+- Empty snapshot messaging describes committed worker evidence rather than provider request results.
 
 ## Layered release evidence
 
-The reference Dashboard must keep permanent evidence for Static Quality, Contract, Unit, Functional, Integration, Security Regression, Rendering/UI Contract, and End-to-End Smoke. `scripts/verify_feature_test_coverage.py` protects the committed modules, while `scripts/quality_gate.sh` executes the same gates locally and in CI.
+The reference Dashboard keeps evidence for Static Quality, Contract, Unit, Functional, Integration, Security Regression, Rendering/UI Contract, and End-to-End Smoke. `scripts/verify_feature_test_coverage.py` protects committed modules and `scripts/quality_gate.sh` executes the project gates.
 
 ## Change control
 
-The reference dashboard may evolve only when the change improves a reusable KAORI pattern. A visual change must update, in the same commit:
+A dashboard-family change must update, in the same work item:
 
-1. shared component or canonical dashboard implementation;
+1. shared component/canonical dashboard implementation;
 2. this document;
-3. `app/kubernetes/dashboard/README.md` when the data or request boundary changes;
-4. `scripts/verify_operational_dashboard_standard.py`;
-5. dashboard contract tests;
-6. the latest alignment audit when the decision is material.
-7. behavioral characterization when authorization, request ordering, or failure isolation changes.
+3. domain README when data/request boundaries change;
+4. `scripts/verify_operational_dashboard_standard.py` when its protected contract changes;
+5. dashboard/Hero contract tests;
+6. the latest alignment audit for material decisions.
 
-Run:
-
-```bash
-python3 scripts/verify_operational_dashboard_standard.py
-python3 -m pytest -q tests/kubernetes/dashboard/test_kubernetes_dashboard_characterization.py
-python3 -m pytest -q tests/kubernetes/dashboard/test_kubernetes_dashboard_snapshot_flow.py
-python3 -m pytest -q tests/contracts/kubernetes/test_operations_dashboard_styling_guide_contract.py
-```
+Run the operational dashboard verifier and its focused dashboard characterization/contract suites before UAT.
