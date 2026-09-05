@@ -37,7 +37,9 @@ SECTIONS_INIT = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'sections' / '__init
 UNIT_TEST = ROOT / 'tests' / 'unit' / 'kubernetes' / 'dashboard' / 'test_kubernetes_dashboard_domain.py'
 SECURITY_TEST = ROOT / 'tests' / 'security' / 'kubernetes' / 'dashboard' / 'test_kubernetes_dashboard_security.py'
 RENDERING_TEST = ROOT / 'tests' / 'rendering' / 'kubernetes' / 'dashboard' / 'test_kubernetes_dashboard_rendering.py'
-INTEGRATION_TEST = ROOT / 'tests' / 'integration' / 'kubernetes' / 'dashboard' / 'test_kubernetes_dashboard_repository.py'
+INTEGRATION_TEST = (
+    ROOT / 'tests' / 'integration' / 'kubernetes' / 'dashboard' / 'test_kubernetes_dashboard_repository.py'
+)
 E2E_TEST = ROOT / 'tests' / 'e2e' / 'kubernetes' / 'dashboard' / 'test_kubernetes_dashboard_smoke.py'
 
 SECTION_PARTIALS = (
@@ -96,11 +98,14 @@ def _has_permission_decorator(function: ast.FunctionDef, permission: str) -> boo
 
 
 def _call_lines(function: ast.FunctionDef, name: str) -> list[int]:
-    return sorted(
-        node.lineno
-        for node in ast.walk(function)
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == name
-    )
+    lines: list[int] = []
+    for node in ast.walk(function):
+        if not isinstance(node, ast.Call):
+            continue
+        called = node.func
+        if isinstance(called, ast.Name) and called.id == name:
+            lines.append(node.lineno)
+    return sorted(lines)
 
 
 def _verify_route_authorization_order(routes: str) -> None:
@@ -159,7 +164,10 @@ def _verify_dashboard_hero_profile(hero: str, object_hero: str, page_hero: str) 
         ),
         'Object Storage dashboard Hero profile consumer',
     )
-    for owner, source in (('Kubernetes dashboard', hero), ('Object Storage dashboard', object_hero)):
+    for owner, source in (
+        ('Kubernetes dashboard', hero),
+        ('Object Storage dashboard', object_hero),
+    ):
         for primitive in (
             'page_hero.shell_classes()',
             'page_hero.layout_classes()',
@@ -262,17 +270,32 @@ def verify() -> None:
     )
     _require(
         signal_overview,
-        ('Cluster Signals Available', 'Select a Cluster for Detailed Signals', 'hx-push-url="true"'),
+        (
+            'Cluster Signals Available',
+            'Select a Cluster for Detailed Signals',
+            'hx-push-url="true"',
+        ),
         'Kubernetes dashboard scope and signal wording',
     )
     _require(
         object_signal_overview,
-        ('Operational Signal Overview', 'System Signals Available', 'Select a System for Detailed Signals', 'hx-push-url="true"'),
+        (
+            'Operational Signal Overview',
+            'System Signals Available',
+            'Select a System for Detailed Signals',
+            'hx-push-url="true"',
+        ),
         'Object Storage dashboard scope and signal wording',
     )
     _require(
         reporting_guidance,
-        ('approved output', 'stored artifact', 'Reporting Control', 'Controlled Reporting Flow', 'Reporting Tip'),
+        (
+            'approved output',
+            'stored artifact',
+            'Reporting Control',
+            'Controlled Reporting Flow',
+            'Reporting Tip',
+        ),
         'Kubernetes format-neutral reporting guidance',
     )
     _require(
@@ -288,20 +311,36 @@ def verify() -> None:
         ),
         'Object Storage compact alert guidance',
     )
-    if reporting_guidance.index('Reporting Control') >= reporting_guidance.index('Controlled Reporting Flow'):
-        raise AssertionError('Kubernetes reporting guidance must place Reporting Control before the controlled flow')
-    if object_reporting_guidance.index('Reporting Control') >= object_reporting_guidance.index('Controlled Reporting Flow'):
-        raise AssertionError('Object Storage reporting guidance must place Reporting Control before the controlled flow')
+    if reporting_guidance.index('Reporting Control') >= reporting_guidance.index(
+        'Controlled Reporting Flow'
+    ):
+        raise AssertionError(
+            'Kubernetes reporting guidance must place Reporting Control before the controlled flow'
+        )
+    if object_reporting_guidance.index('Reporting Control') >= object_reporting_guidance.index(
+        'Controlled Reporting Flow'
+    ):
+        raise AssertionError(
+            'Object Storage reporting guidance must place Reporting Control before the controlled flow'
+        )
 
     for dashboard_dir in (DASHBOARD_DIR, OBJECT_DASHBOARD_DIR):
-        dashboard_source = '\n'.join(path.read_text(encoding='utf-8') for path in sorted(dashboard_dir.rglob('*.html')))
+        dashboard_source = '\n'.join(
+            path.read_text(encoding='utf-8') for path in sorted(dashboard_dir.rglob('*.html'))
+        )
         if 'What This Summary Means' in dashboard_source:
-            raise AssertionError(f'{dashboard_dir.relative_to(ROOT)} still contains retired summary explanation')
+            raise AssertionError(
+                f'{dashboard_dir.relative_to(ROOT)} still contains retired summary explanation'
+            )
         if 'text-[' in dashboard_source or 'tracking-[' in dashboard_source:
-            raise AssertionError(f'{dashboard_dir.relative_to(ROOT)} contains arbitrary typography')
+            raise AssertionError(
+                f'{dashboard_dir.relative_to(ROOT)} contains arbitrary typography'
+            )
         for stale in STALE_COPY:
             if stale in dashboard_source:
-                raise AssertionError(f'{dashboard_dir.relative_to(ROOT)} contains stale wording: {stale}')
+                raise AssertionError(
+                    f'{dashboard_dir.relative_to(ROOT)} contains stale wording: {stale}'
+                )
 
     _require(
         metric_card,
@@ -352,10 +391,22 @@ def verify() -> None:
     )
     _require(
         service,
-        ('database-only dashboard shell', 'committed worker snapshots only', 'read_dashboard_snapshot(', 'query_for_clusters(', 'paginate_sequence('),
+        (
+            'database-only dashboard shell',
+            'committed worker snapshots only',
+            'read_dashboard_snapshot(',
+            'query_for_clusters(',
+            'paginate_sequence(',
+        ),
         'dashboard service boundary',
     )
-    for token in ('kubernetes.client', 'prometheus_api_client', 'requests.get', 'httpx.get', 'boto3.client'):
+    for token in (
+        'kubernetes.client',
+        'prometheus_api_client',
+        'requests.get',
+        'httpx.get',
+        'boto3.client',
+    ):
         if token in service or token in routes:
             raise AssertionError(f'dashboard web boundary contains live provider access: {token}')
     if '**_: Any' in service:
@@ -417,11 +468,31 @@ def verify() -> None:
         if requirement not in feature_coverage:
             raise AssertionError(f'Dashboard layered release evidence is not protected: {requirement}')
 
-    _require(unit_test, ('test_dashboard_pagination_is_bounded', 'committed_snapshot_not_live_provider_query'), 'dashboard unit evidence')
-    _require(security_test, ('authorization_boundary', 'no_direct_provider_client', 'no_blueprint_before_request'), 'dashboard security evidence')
-    _require(rendering_test, ('valid_jinja', 'canonical_hero_tabs_table_status_and_pagination'), 'dashboard rendering evidence')
-    _require(integration_test, ('sqlite+pysqlite:///:memory:', 'query_all', 'count_records', 'latest_record_timestamp'), 'dashboard integration evidence')
-    _require(e2e_test, ('/dashboards/kubernetes/', 'Quick Actions', 'Notifications', 'kaoriNavbar'), 'dashboard E2E evidence')
+    _require(
+        unit_test,
+        ('test_dashboard_pagination_is_bounded', 'committed_snapshot_not_live_provider_query'),
+        'dashboard unit evidence',
+    )
+    _require(
+        security_test,
+        ('authorization_boundary', 'no_direct_provider_client', 'no_blueprint_before_request'),
+        'dashboard security evidence',
+    )
+    _require(
+        rendering_test,
+        ('valid_jinja', 'canonical_hero_tabs_table_status_and_pagination'),
+        'dashboard rendering evidence',
+    )
+    _require(
+        integration_test,
+        ('sqlite+pysqlite:///:memory:', 'query_all', 'count_records', 'latest_record_timestamp'),
+        'dashboard integration evidence',
+    )
+    _require(
+        e2e_test,
+        ('/dashboards/kubernetes/', 'Quick Actions', 'Notifications', 'kaoriNavbar'),
+        'dashboard E2E evidence',
+    )
     _require(
         characterization,
         (
@@ -437,8 +508,13 @@ def verify() -> None:
     )
     if "return [cluster], [option], 'cluster-1', cluster" not in snapshot_flow_test:
         raise AssertionError('Dashboard snapshot-flow tests still use retired scope contract')
-    if 'lambda _models, _selected' in snapshot_flow_test or 'models, clusters, options, None, None' in snapshot_flow_test:
-        raise AssertionError('Dashboard snapshot-flow tests still target retired service helper signatures')
+    if (
+        'lambda _models, _selected' in snapshot_flow_test
+        or 'models, clusters, options, None, None' in snapshot_flow_test
+    ):
+        raise AssertionError(
+            'Dashboard snapshot-flow tests still target retired service helper signatures'
+        )
 
     print(
         'KAORI operational dashboard standard passed: shared Hero profile parity, canonical composition, '
