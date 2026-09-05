@@ -58,9 +58,10 @@ The `analytics.materialize` policy includes both dashboard and full-page alert d
 
 ## Styling and workspace composition
 
-The Kubernetes Operations Dashboard is the reference implementation for `docs/design/patterns/OPERATIONAL_DASHBOARD.md` v1.4.
+The Kubernetes Operations Dashboard is the reference implementation for `docs/design/patterns/OPERATIONAL_DASHBOARD.md` v1.5.
 
-- Hero: `components/page_hero.html`.
+- Hero: `components/page_hero.html` through the canonical `page_hero.operational_dashboard(...)` profile renderer shared with Object Storage Operations Dashboard.
+- Dashboard Hero context is fixed to `Active Scope` + `Data Authority`; Normal metadata is exactly three evidence slots (inventory, metrics/analytics, alerts).
 - KPI cards: `components/operational_metric_card.html`.
 - Peer navigation: **Tab Style 1 — Integrated Workspace Tabs** (`integrated-workspace`) through `components/workspace_tabs.html`; active state is stored in `?tab=`, preserved during HTMX scope changes, and supports Arrow Left/Right, Home, and End keyboard navigation.
 - Repeated blocks: `components/operational_section_card.html`.
@@ -71,12 +72,12 @@ The Kubernetes Operations Dashboard is the reference implementation for `docs/de
 - Forecast chart: `components/forecast_projection_chart.html`, shared with Kubernetes Analytics.
 - Cluster Health: canonical table, semantic labels, shared empty state, and pagination with default 5 and options 5/10/25/50.
 
-Card titles use `text-base font-semibold`. Dashboard metric values follow the documented KPI hierarchy. Ordinary status labels are borderless and semantic; scope and count labels use metadata labels. Page-local tab, chart, card-shell, label, and pagination geometry is prohibited. Dashboard copy must describe committed or detailed signals rather than implying live provider queries, and Reporting guidance must remain artifact-format neutral.
+Card titles use `text-base font-semibold`. Dashboard metric values follow the documented KPI hierarchy. Ordinary status labels are borderless and semantic; scope and count labels use metadata labels. Page-local tab, chart, card-shell, label, Hero shell/context geometry, and pagination geometry are prohibited. Dashboard copy must describe committed or detailed signals rather than implying live provider queries, and Reporting guidance must remain artifact-format neutral.
 
 Canonical layout:
 
 ```text
-Canonical Hero
+Operational Dashboard Hero Profile
 Scope and Freshness Toolbar
 Operational KPI Grid
 Tab Style 1 — Integrated Workspace Tabs
