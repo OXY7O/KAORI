@@ -1,4 +1,4 @@
-name: KAORI Release Candidate Cut
+name: KAORI Release Candidate
 
 on:
   workflow_dispatch:
@@ -20,7 +20,7 @@ env:
 
 jobs:
   wait-for-quality:
-    name: Resolve Accepted Staging and Quality Evidence
+    name: Staging Gate
     if: >-
       ${{ (github.event_name == 'push' && github.ref == 'refs/heads/kaori/rc-request') ||
           (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/kaori/staging') }}
@@ -271,7 +271,7 @@ jobs:
             "$CANDIDATE_TAG" "$ACCEPTED_SHA"
 
   publish:
-    name: Publish Intentional Release Candidate
+    name: Publish RC
     needs: wait-for-quality
     if: ${{ needs.wait-for-quality.outputs.should_publish == 'true' }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
