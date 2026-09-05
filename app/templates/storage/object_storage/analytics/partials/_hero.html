@@ -1,4 +1,16 @@
 {% import "components/page_hero.html" as page_hero %}
+{% set system_label = system.name if system else 'No System Selected' %}
+{% if dependency_blocker %}
+    {% set meta_icon = 'lock-keyhole' %}
+    {% set meta_label = 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge %}
+{% elif page_key == 'alerts' %}
+    {% set meta_icon = 'radio-tower' %}
+    {% set meta_label = alert_source.resolved_label ~ ' Alerts' if alert_source.connected else ('Automatic Alert Source' if selected_alert_source == 'auto' else selected_alert_source|title ~ ' Alert Source') %}
+{% else %}
+    {% set meta_icon = 'clock-3' %}
+    {% set meta_label = selected_forecast_history_window|upper ~ ' History' if page_key == 'forecast' else selected_time_range|upper ~ ' Window' %}
+{% endif %}
+{% set evidence_label = 'Committed Snapshot Boundary' %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
@@ -6,18 +18,10 @@
                 <h1 class="{{ page_hero.title_classes() }}">{{ page.title }}</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">{{ page.description }}</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
-                    {{ page_hero.meta_label('server', system.name if system else 'No System Selected') }}
-                    {% if dependency_blocker %}
-                        {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
-                    {% else %}
-                        {% if page_key == 'alerts' %}
-                            {{ page_hero.meta_label('radio-tower', alert_source.resolved_label ~ ' Alerts' if alert_source.connected else ('Automatic Alert Source' if selected_alert_source == 'auto' else selected_alert_source|title ~ ' Alert Source') ) }}
-                        {% else %}
-                            {{ page_hero.meta_label('clock-3', selected_forecast_history_window|upper ~ ' History' if page_key == 'forecast' else selected_time_range|upper ~ ' Window') }}
-                        {% endif %}
-                        {% if inventory_observed_at %}
-                            {{ page_hero.meta_label('database-clock', inventory_observed_at|user_datetime('Inventory Not Collected') ) }}
-                        {% endif %}
+                    {{ page_hero.meta_label('database', system_label) }}
+                    {{ page_hero.meta_label(meta_icon, meta_label) }}
+                    {% if not dependency_blocker %}
+                        {{ page_hero.meta_label('layers-3', evidence_label) }}
                     {% endif %}
                 </div>
             {% endcall %}
