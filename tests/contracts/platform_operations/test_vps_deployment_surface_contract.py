@@ -10,7 +10,7 @@ RESTORE = VPS_ROOT / 'restore.sh'
 ROLLBACK = VPS_ROOT / 'rollback.sh'
 README = VPS_ROOT / 'README.md'
 BASE_COMPOSE = ROOT / 'compose.production.yml'
-WORKFLOW = ROOT / '.github' / 'workflows' / 'deploy-uat-vps.yml'
+WORKFLOW = ROOT / '.github' / 'workflows' / 'deploy-staging-host.yml'
 
 
 def _read(path: Path) -> str:
