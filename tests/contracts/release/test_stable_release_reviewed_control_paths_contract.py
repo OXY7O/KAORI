@@ -14,4 +14,4 @@ def test_stable_release_allows_only_reviewed_post_acceptance_control_paths() -> 
 
     for path in required_paths:
         assert f"'{path}'" in WORKFLOW
-    assert 'ALLOWED_POST_UAT_PATHS=(\n            \"*\"' not in WORKFLOW
+    assert 'ALLOWED_POST_UAT_PATHS=(\n            "*"' not in WORKFLOW
