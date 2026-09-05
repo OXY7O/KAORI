@@ -6,10 +6,10 @@ on:
       - kaori/refactor/198-canonical-hero-profiles
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  diagnose:
+  normalize:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 20
     steps:
@@ -17,7 +17,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          persist-credentials: false
 
       - name: Resolve CI Toolchain
         shell: bash
@@ -28,14 +27,40 @@ jobs:
           docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
           printf 'CI_TOOLCHAIN_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
 
-      - name: DjLint Shared Page Hero
-        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python -m djlint app/templates/components/page_hero.html --check
+      - name: Reformat Changed Hero Templates
+        run: |
+          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" \
+            python -m djlint \
+              app/templates/components/page_hero.html \
+              app/templates/kubernetes/dashboard/partials/_hero.html \
+              app/templates/storage/object_storage/dashboard/partials/_hero.html \
+              app/templates/storage/object_storage/analytics/partials/_hero.html \
+              --reformat
 
-      - name: DjLint Kubernetes Dashboard Hero
-        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python -m djlint app/templates/kubernetes/dashboard/partials/_hero.html --check
+      - name: Verify Changed Hero Templates
+        run: |
+          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" \
+            python -m djlint \
+              app/templates/components/page_hero.html \
+              app/templates/kubernetes/dashboard/partials/_hero.html \
+              app/templates/storage/object_storage/dashboard/partials/_hero.html \
+              app/templates/storage/object_storage/analytics/partials/_hero.html \
+              --check
 
-      - name: DjLint Object Storage Dashboard Hero
-        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python -m djlint app/templates/storage/object_storage/dashboard/partials/_hero.html --check
-
-      - name: DjLint Object Storage Analytics Hero
-        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python -m djlint app/templates/storage/object_storage/analytics/partials/_hero.html --check
+      - name: Commit Formatter Output
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            app/templates/components/page_hero.html \
+            app/templates/kubernetes/dashboard/partials/_hero.html \
+            app/templates/storage/object_storage/dashboard/partials/_hero.html \
+            app/templates/storage/object_storage/analytics/partials/_hero.html
+          if git diff --cached --quiet; then
+            echo 'DjLint formatting already canonical.'
+            exit 0
+          fi
+          git commit -m 'style: apply canonical djlint format to hero v1.6 templates (#198)'
+          git push origin HEAD:kaori/refactor/198-canonical-hero-profiles
