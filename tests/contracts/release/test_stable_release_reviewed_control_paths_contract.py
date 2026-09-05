@@ -10,6 +10,7 @@ def test_stable_release_allows_only_reviewed_post_acceptance_control_paths() -> 
         'tests/contracts/release/test_stable_release_reuses_accepted_rc_digest_contract.py',
         'tests/contracts/release/test_ci_output_readability_contract.py',
         'tests/contracts/release/test_stable_release_cosign_auth_permissions_contract.py',
+        'tests/contracts/release/test_stable_release_reviewed_control_paths_contract.py',
     }
 
     for path in required_paths:
