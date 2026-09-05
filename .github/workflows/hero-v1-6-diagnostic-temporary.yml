@@ -1,0 +1,53 @@
+name: Hero v1.6 Temporary Diagnostic
+
+on:
+  push:
+    branches:
+      - kaori/refactor/198-canonical-hero-profiles
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    timeout-minutes: 20
+    steps:
+      - name: Check Out Work Branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve CI Toolchain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
+          image="kaori-ci-toolchain:$key"
+          docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
+          printf 'CI_TOOLCHAIN_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
+
+      - name: Ruff Check
+        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python -m ruff check app migrations tests scripts
+
+      - name: Ruff Format
+        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python -m ruff format --check app migrations tests scripts
+
+      - name: DjLint
+        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python -m djlint app/templates --check
+
+      - name: Code Health
+        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python scripts/verify_code_health.py
+
+      - name: Code Health Baseline Integrity
+        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python scripts/verify_code_health_baseline_integrity.py
+
+      - name: Pyright
+        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python -m pyright --project pyrightconfig.json
+
+      - name: Pre-release Type Safety
+        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python scripts/verify_pre_release_type_safety.py
+
+      - name: Focused Kubernetes and Storage Tests
+        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" bash -lc 'pytest -q --tb=short tests/kubernetes tests/storage'
