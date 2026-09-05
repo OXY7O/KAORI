@@ -79,6 +79,11 @@ def test_release_authority_and_changelog_are_explicit() -> None:
     assert '## [Unreleased]' in changelog
     assert 'docs/releases/README.md' in changelog
 
+    finalizer = _read('scripts/finalize_changelog.py')
+    assert 'finalize_changelog' in finalizer
+    assert 'invalid stable SemVer' in finalizer
+    assert "UNRELEASED = '## [Unreleased]'" in finalizer
+
 
 def test_terminal_and_script_ownership_standards_are_documented() -> None:
     terminal = _read('docs/engineering/TERMINAL_OUTPUT.md')
@@ -91,6 +96,15 @@ def test_terminal_and_script_ownership_standards_are_documented() -> None:
     assert '`example/`' in scripts
     assert '`deploy/`' in scripts
     assert 'application lifecycle' in scripts
+
+
+def test_branch_hygiene_is_ancestry_safe_and_protects_control_branches() -> None:
+    workflow = _read('.github/workflows/branch-hygiene.yml')
+    assert 'git merge-base --is-ancestor' in workflow
+    assert 'git push origin --delete' in workflow
+    for protected in ('main', 'kaori/staging', 'kaori/rc-request', 'kaori/uat-request'):
+        assert protected in workflow
+    assert 'kaori/tenant-*' in workflow
 
 
 def test_example_configuration_contains_no_real_kaori_host() -> None:
