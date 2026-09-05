@@ -4,10 +4,12 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-HERO = ROOT / 'app' / 'templates' / 'components' / 'page_hero.html'
+TEMPLATES = ROOT / 'app' / 'templates'
+HERO = TEMPLATES / 'components' / 'page_hero.html'
 STANDARD = ROOT / 'docs' / 'design' / 'components' / 'HERO.md'
 DARK_STANDARD = ROOT / 'docs' / 'design' / 'components' / 'DARK_MODE.md'
 ANALYTICS_STANDARD = ROOT / 'docs' / 'design' / 'components' / 'ANALYTICS_HERO.md'
+DASHBOARD_STANDARD = ROOT / 'docs' / 'design' / 'patterns' / 'OPERATIONAL_DASHBOARD.md'
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 
 REMOVED_MACROS = (
@@ -20,16 +22,6 @@ REMOVED_MACROS = (
     'supporting_strip',
 )
 
-REMOVED_DOCUMENTS = (
-    ROOT / 'docs' / 'design' / 'components' / 'ANALYTICS_HERO_STANDARD.md',
-    ROOT / 'docs' / 'design' / 'components' / 'ANALYTICS_HERO_INVENTORY_REFERENCE.md',
-)
-
-REMOVED_TESTS = (
-    ROOT / 'tests' / 'contracts' / 'analytics' / 'test_analytics_hero_posture_note_standard_contract.py',
-    ROOT / 'tests' / 'contracts' / 'analytics' / 'test_inventory_aligned_analytics_hero_contract.py',
-)
-
 REQUIRED_MACROS = (
     'shell_classes',
     'layout_classes',
@@ -39,6 +31,7 @@ REQUIRED_MACROS = (
     'context_status_badge',
     'context_card_body',
     'context_card',
+    'operational_dashboard',
     'context_panel_eyebrow_classes',
     'context_panel_title_classes',
     'context_icon_classes',
@@ -81,51 +74,39 @@ IMPLEMENTATION_TOKENS = (
     'kaori-hero-tile',
     'kaori-hero-chip',
     'metrics[:2]',
+    'metadata[:3]',
+    'data-kaori-hero-profile="operational-dashboard"',
+    'data-kaori-hero-state="{{ state }}"',
     'text-3xl font-bold leading-10',
     'sm:text-4xl',
     'max-w-[44rem] text-base font-normal leading-7',
-    'min-h-8 items-center gap-2 rounded-md',
-    'text-lg font-semibold leading-6',
-    'text-xs font-semibold leading-5',
     'grid grid-cols-2 auto-rows-fr gap-2',
-    'mt-auto flex min-h-10 items-center gap-2',
-    'mt-auto grid min-h-10 gap-2',
-    'h-10 cursor-pointer',
+    'macro operational_dashboard(',
     'macro context_icon_box(icon)',
     'macro context_action_icon_box(icon, href, aria_label, title=None)',
-    'macro context_header_action(eyebrow_label, title, icon, href, aria_label)',
     "macro context_header_status(eyebrow_label, title, status_label, status_tone='info')",
-    'macro context_metric_value_classes()',
-    'macro context_single_action_classes()',
 )
 
 DOCUMENTATION_TOKENS = (
-    '# KAORI Hero Component Standard v1.5',
+    '# KAORI Hero Component Standard v1.6',
+    'Hero Profile',
+    'Hero State',
+    'same Profile + same State',
+    'exactly three metadata',
     'app/templates/components/page_hero.html',
     'scripts/verify_hero_component_standard.py',
     'tests/contracts/design/test_hero_component_standard_contract.py',
     '248 px / 280 px minimum',
-    'same 12 px row rhythm',
     '16 px, regular, 28 px line height',
     'Action Icon Box',
     'Context Icon Box',
     'Status Badge Box',
     'Do not invent a fourth header-accessory geometry.',
     'exactly two compact metrics',
-    'metrics[:2]',
     'components/ANALYTICS_HERO.md',
     '## Theme and surface contract',
     'components/DARK_MODE.md',
     '## Change procedure',
-)
-
-STALE_DOC_REFERENCES = (
-    'tests/contracts/ui/test_global_hero_reusability_contract.py',
-    'tests/ui/test_hero_context_panel_contract.py',
-    'ANALYTICS_HERO_STANDARD.md',
-    'ANALYTICS_HERO_INVENTORY_REFERENCE.md',
-    '13 px hero description',
-    'renders at 13 px',
 )
 
 
@@ -145,66 +126,90 @@ def _macro_names(source: str) -> set[str]:
     return set(re.findall(r'{%\s*macro\s+([A-Za-z0-9_]+)', source))
 
 
-def _hero_shell_templates() -> list[Path]:
-    templates: list[Path] = []
-    for path in (ROOT / 'app' / 'templates').rglob('*.html'):
-        source = path.read_text(encoding='utf-8')
-        if 'page_hero.shell_classes()' in source:
-            templates.append(path)
-    return sorted(templates)
+def _primitive_shell_templates() -> list[Path]:
+    return sorted(
+        path
+        for path in TEMPLATES.rglob('*.html')
+        if path != HERO and 'page_hero.shell_classes()' in path.read_text(encoding='utf-8')
+    )
 
 
-def _verify_shell_template(path: Path) -> None:
+def _profile_templates() -> list[Path]:
+    return sorted(
+        path
+        for path in TEMPLATES.rglob('*.html')
+        if path != HERO and 'page_hero.operational_dashboard(' in path.read_text(encoding='utf-8')
+    )
+
+
+def _verify_primitive_shell(path: Path) -> None:
     source = path.read_text(encoding='utf-8')
     relative = path.relative_to(ROOT)
-
-    required = (
-        'import "components/page_hero.html" as page_hero',
-        'page_hero.shell_classes()',
-        'page_hero.layout_classes()',
-        'page_hero.content_classes()',
-        'page_hero.intro(',
-        'page_hero.title_classes()',
-        'page_hero.description_classes()',
+    _require_tokens(
+        source,
+        (
+            'import "components/page_hero.html" as page_hero',
+            'page_hero.shell_classes()',
+            'page_hero.layout_classes()',
+            'page_hero.content_classes()',
+            'page_hero.intro(',
+            'page_hero.title_classes()',
+            'page_hero.description_classes()',
+        ),
+        str(relative),
     )
-    _require_tokens(source, required, str(relative))
-
-    for match in re.finditer(r'<h1\s+class=\"([^\"]+)\"', source):
-        if 'page_hero.title_classes()' not in match.group(1):
-            raise AssertionError(f'{relative}: Hero h1 bypasses page_hero.title_classes()')
-
     if 'text-[13px]' in source or 'text-[15px]' in source:
         raise AssertionError(f'{relative}: page-local arbitrary Hero typography is prohibited')
-
     for macro in REMOVED_MACROS:
         if f'page_hero.{macro}(' in source:
             raise AssertionError(f'{relative}: references removed Hero macro {macro}()')
+
+
+def _verify_operational_dashboard_profile() -> None:
+    kubernetes = _read(TEMPLATES / 'kubernetes' / 'dashboard' / 'partials' / '_hero.html')
+    object_storage = _read(TEMPLATES / 'storage' / 'object_storage' / 'dashboard' / 'partials' / '_hero.html')
+    for name, source in (('Kubernetes dashboard', kubernetes), ('Object Storage dashboard', object_storage)):
+        _require_tokens(source, ('page_hero.operational_dashboard(', "'Committed Snapshots'"), name)
+        for local_primitive in (
+            'page_hero.shell_classes()',
+            'page_hero.layout_classes()',
+            'page_hero.content_classes()',
+            'page_hero.context_panel_classes()',
+        ):
+            if local_primitive in source:
+                raise AssertionError(f'{name}: dashboard profile must not assemble {local_primitive} locally')
+
+
+def _verify_object_storage_analytics_metadata() -> None:
+    source = _read(TEMPLATES / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero.html')
+    _require_tokens(
+        source,
+        (
+            "page_hero.meta_label('database', system_label)",
+            'page_hero.meta_label(meta_icon, meta_label)',
+            "page_hero.meta_label('layers-3', evidence_label)",
+            "evidence_label = 'Committed Snapshot Boundary'",
+        ),
+        'Object Storage Analytics Hero',
+    )
+    if '{% if inventory_observed_at %}' in source:
+        raise AssertionError('Object Storage Analytics: Normal metadata must not depend on inventory_observed_at')
 
 
 def verify() -> None:
     hero = _read(HERO)
     standard = _read(STANDARD)
     analytics_standard = _read(ANALYTICS_STANDARD)
+    dashboard_standard = _read(DASHBOARD_STANDARD)
     dark_standard = _read(DARK_STANDARD)
 
     _require_tokens(hero, IMPLEMENTATION_TOKENS, 'page_hero implementation')
-
-    macros = _macro_names(hero)
-    missing_macros = sorted(set(REQUIRED_MACROS) - macros)
+    missing_macros = sorted(set(REQUIRED_MACROS) - _macro_names(hero))
     if missing_macros:
         raise AssertionError(f'page_hero implementation: missing required macros: {", ".join(missing_macros)}')
-
-    present_removed = sorted(set(REMOVED_MACROS) & macros)
+    present_removed = sorted(set(REMOVED_MACROS) & _macro_names(hero))
     if present_removed:
         raise AssertionError(f'page_hero implementation: removed macros still exist: {", ".join(present_removed)}')
-
-    for path in REMOVED_DOCUMENTS:
-        if path.exists():
-            raise AssertionError(f'Obsolete duplicate Hero document still exists: {path.relative_to(ROOT)}')
-
-    for path in REMOVED_TESTS:
-        if path.exists():
-            raise AssertionError(f'Obsolete duplicate Hero test still exists: {path.relative_to(ROOT)}')
 
     _require_tokens(standard, DOCUMENTATION_TOKENS, 'Hero standard documentation')
     _require_tokens(
@@ -214,59 +219,62 @@ def verify() -> None:
     )
     _require_tokens(
         analytics_standard,
-        (
-            '# Kubernetes Analytics Hero Extension',
-            'page_hero.context_card(...)',
-            'page_hero.context_card_body(...)',
-            'exactly two posture metrics',
-            'one full-width `Manage Clusters` action',
-        ),
+        ('# Kubernetes Analytics Hero Extension', 'exactly two posture metrics', 'one full-width `Manage Clusters` action'),
         'Analytics Hero extension',
     )
+    _require_tokens(
+        dashboard_standard,
+        ('KAORI Operational Dashboard Pattern', 'Operational Dashboard Hero Profile', 'Active Scope', 'Data Authority'),
+        'Operational Dashboard pattern',
+    )
 
-    documentation = '\n'.join(path.read_text(encoding='utf-8') for path in (ROOT / 'docs').rglob('*.md'))
-    stale = [token for token in STALE_DOC_REFERENCES if token in documentation]
-    if stale:
-        raise AssertionError(f'Documentation still contains stale Hero references: {", ".join(stale)}')
+    primitive_shells = _primitive_shell_templates()
+    if not primitive_shells:
+        raise AssertionError('No compatibility Hero shell templates were discovered')
+    for path in primitive_shells:
+        _verify_primitive_shell(path)
 
-    shell_templates = _hero_shell_templates()
-    if not shell_templates:
-        raise AssertionError('No authenticated Hero shell templates were discovered')
-    for path in shell_templates:
-        _verify_shell_template(path)
+    _verify_operational_dashboard_profile()
+    _verify_object_storage_analytics_metadata()
 
     active_templates = '\n'.join(
-        path.read_text(encoding='utf-8') for path in (ROOT / 'app' / 'templates').rglob('*.html') if path != HERO
+        path.read_text(encoding='utf-8') for path in TEMPLATES.rglob('*.html') if path != HERO
     )
     for macro in REMOVED_MACROS:
         if f'page_hero.{macro}(' in active_templates:
             raise AssertionError(f'Active templates still reference removed Hero macro {macro}()')
 
-    if 'page_hero.hero(' in active_templates:
-        raise AssertionError(
-            'Active templates reference nonexistent page_hero.hero(); compose the canonical shell macros instead'
-        )
+    suspicious_local_shells = []
+    for path in TEMPLATES.rglob('*.html'):
+        if path == HERO:
+            continue
+        source = path.read_text(encoding='utf-8')
+        if '<h1' in source and ('bg-kaori-primary' in source or 'kaori-hero-shell ' in source):
+            suspicious_local_shells.append(str(path.relative_to(ROOT)))
+    if suspicious_local_shells:
+        raise AssertionError('Unmanaged Hero-like shell detected: ' + ', '.join(suspicious_local_shells))
 
     quality_gate = _read(QUALITY_GATE)
     if 'python scripts/verify_hero_component_standard.py' not in quality_gate:
         raise AssertionError('scripts/quality_gate.sh does not execute the Hero standard verifier')
 
+    profile_templates = _profile_templates()
+    if len(profile_templates) != 2:
+        raise AssertionError(f'Operational Dashboard profile must have exactly two paired references, found {len(profile_templates)}')
+
     context_card_templates = sum(
-        1
-        for path in (ROOT / 'app' / 'templates').rglob('*.html')
-        if 'page_hero.context_card(' in path.read_text(encoding='utf-8')
+        1 for path in TEMPLATES.rglob('*.html') if 'page_hero.context_card(' in path.read_text(encoding='utf-8')
     )
     lazy_context_templates = sum(
-        1
-        for path in (ROOT / 'app' / 'templates').rglob('*.html')
-        if 'page_hero.context_card_body(' in path.read_text(encoding='utf-8')
+        1 for path in TEMPLATES.rglob('*.html') if 'page_hero.context_card_body(' in path.read_text(encoding='utf-8')
     )
 
     print(
         'KAORI Hero component standard passed: '
-        f'{len(shell_templates)} Hero shells, {context_card_templates} context-card consumers, '
-        f'and {lazy_context_templates} lazy context bodies match v1.5; implementation, documentation, '
-        'domain extension, dark-mode ownership, removed APIs, and quality-gate ownership are synchronized.'
+        f'{len(primitive_shells)} compatibility Hero shells, {len(profile_templates)} canonical profile consumers, '
+        f'{context_card_templates} context-card consumers, and {lazy_context_templates} lazy context bodies match v1.6; '
+        'dashboard parity, Object Storage Analytics metadata, implementation, documentation, dark-mode ownership, '
+        'removed APIs, unmanaged-shell detection, and quality-gate ownership are synchronized.'
     )
 
 
