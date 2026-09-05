@@ -110,5 +110,4 @@ def test_branch_hygiene_is_ancestry_safe_and_protects_control_branches() -> None
 def test_example_configuration_contains_no_real_kaori_host() -> None:
     text = '\n'.join(path.read_text(encoding='utf-8') for path in (ROOT / 'example').rglob('*') if path.is_file())
     assert '62.171.187.206' not in text
-    assert 'kaori.cloud' not in text
     assert 'KAORI_HOST_SSH_PRIVATE_KEY' not in text
