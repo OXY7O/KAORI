@@ -167,9 +167,18 @@ def _verify_primitive_shell(path: Path) -> None:
 
 def _verify_operational_dashboard_profile() -> None:
     kubernetes = _read(TEMPLATES / 'kubernetes' / 'dashboard' / 'partials' / '_hero.html')
-    object_storage = _read(TEMPLATES / 'storage' / 'object_storage' / 'dashboard' / 'partials' / '_hero.html')
-    for name, source in (('Kubernetes dashboard', kubernetes), ('Object Storage dashboard', object_storage)):
-        _require_tokens(source, ('page_hero.operational_dashboard(', "'Committed Snapshots'"), name)
+    object_storage = _read(
+        TEMPLATES / 'storage' / 'object_storage' / 'dashboard' / 'partials' / '_hero.html'
+    )
+    for name, source in (
+        ('Kubernetes dashboard', kubernetes),
+        ('Object Storage dashboard', object_storage),
+    ):
+        _require_tokens(
+            source,
+            ('page_hero.operational_dashboard(', "'Committed Snapshots'"),
+            name,
+        )
         for local_primitive in (
             'page_hero.shell_classes()',
             'page_hero.layout_classes()',
@@ -177,11 +186,20 @@ def _verify_operational_dashboard_profile() -> None:
             'page_hero.context_panel_classes()',
         ):
             if local_primitive in source:
-                raise AssertionError(f'{name}: dashboard profile must not assemble {local_primitive} locally')
+                raise AssertionError(
+                    f'{name}: dashboard profile must not assemble {local_primitive} locally'
+                )
 
 
 def _verify_object_storage_analytics_metadata() -> None:
-    source = _read(TEMPLATES / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero.html')
+    source = _read(
+        TEMPLATES
+        / 'storage'
+        / 'object_storage'
+        / 'analytics'
+        / 'partials'
+        / '_hero.html'
+    )
     _require_tokens(
         source,
         (
@@ -193,7 +211,9 @@ def _verify_object_storage_analytics_metadata() -> None:
         'Object Storage Analytics Hero',
     )
     if '{% if inventory_observed_at %}' in source:
-        raise AssertionError('Object Storage Analytics: Normal metadata must not depend on inventory_observed_at')
+        raise AssertionError(
+            'Object Storage Analytics: Normal metadata must not depend on inventory_observed_at'
+        )
 
 
 def verify() -> None:
@@ -204,27 +224,45 @@ def verify() -> None:
     dark_standard = _read(DARK_STANDARD)
 
     _require_tokens(hero, IMPLEMENTATION_TOKENS, 'page_hero implementation')
-    missing_macros = sorted(set(REQUIRED_MACROS) - _macro_names(hero))
+    macros = _macro_names(hero)
+    missing_macros = sorted(set(REQUIRED_MACROS) - macros)
     if missing_macros:
-        raise AssertionError(f'page_hero implementation: missing required macros: {", ".join(missing_macros)}')
-    present_removed = sorted(set(REMOVED_MACROS) & _macro_names(hero))
+        raise AssertionError(
+            'page_hero implementation: missing required macros: ' + ', '.join(missing_macros)
+        )
+    present_removed = sorted(set(REMOVED_MACROS) & macros)
     if present_removed:
-        raise AssertionError(f'page_hero implementation: removed macros still exist: {", ".join(present_removed)}')
+        raise AssertionError(
+            'page_hero implementation: removed macros still exist: ' + ', '.join(present_removed)
+        )
 
     _require_tokens(standard, DOCUMENTATION_TOKENS, 'Hero standard documentation')
     _require_tokens(
         dark_standard,
-        ('# KAORI Dark Mode Standard v1.0', 'kaori-hero-shell', 'canonical dark Hero gradient'),
+        (
+            '# KAORI Dark Mode Standard v1.0',
+            'kaori-hero-shell',
+            'canonical dark Hero gradient',
+        ),
         'Dark-mode Hero contract',
     )
     _require_tokens(
         analytics_standard,
-        ('# Kubernetes Analytics Hero Extension', 'exactly two posture metrics', 'one full-width `Manage Clusters` action'),
+        (
+            '# Kubernetes Analytics Hero Extension',
+            'exactly two posture metrics',
+            'one full-width `Manage Clusters` action',
+        ),
         'Analytics Hero extension',
     )
     _require_tokens(
         dashboard_standard,
-        ('KAORI Operational Dashboard Pattern', 'Operational Dashboard Hero Profile', 'Active Scope', 'Data Authority'),
+        (
+            'KAORI Operational Dashboard Pattern',
+            'Operational Dashboard Hero Profile',
+            'Active Scope',
+            'Data Authority',
+        ),
         'Operational Dashboard pattern',
     )
 
@@ -238,7 +276,9 @@ def verify() -> None:
     _verify_object_storage_analytics_metadata()
 
     active_templates = '\n'.join(
-        path.read_text(encoding='utf-8') for path in TEMPLATES.rglob('*.html') if path != HERO
+        path.read_text(encoding='utf-8')
+        for path in TEMPLATES.rglob('*.html')
+        if path != HERO
     )
     for macro in REMOVED_MACROS:
         if f'page_hero.{macro}(' in active_templates:
@@ -249,32 +289,48 @@ def verify() -> None:
         if path == HERO:
             continue
         source = path.read_text(encoding='utf-8')
-        if '<h1' in source and ('bg-kaori-primary' in source or 'kaori-hero-shell ' in source):
+        if '<h1' in source and (
+            'bg-kaori-primary' in source or 'kaori-hero-shell ' in source
+        ):
             suspicious_local_shells.append(str(path.relative_to(ROOT)))
     if suspicious_local_shells:
-        raise AssertionError('Unmanaged Hero-like shell detected: ' + ', '.join(suspicious_local_shells))
+        raise AssertionError(
+            'Unmanaged Hero-like shell detected: ' + ', '.join(suspicious_local_shells)
+        )
 
     quality_gate = _read(QUALITY_GATE)
     if 'python scripts/verify_hero_component_standard.py' not in quality_gate:
-        raise AssertionError('scripts/quality_gate.sh does not execute the Hero standard verifier')
+        raise AssertionError(
+            'scripts/quality_gate.sh does not execute the Hero standard verifier'
+        )
 
     profile_templates = _profile_templates()
     if len(profile_templates) != 2:
-        raise AssertionError(f'Operational Dashboard profile must have exactly two paired references, found {len(profile_templates)}')
+        raise AssertionError(
+            'Operational Dashboard profile must have exactly two paired references, '
+            f'found {len(profile_templates)}'
+        )
 
     context_card_templates = sum(
-        1 for path in TEMPLATES.rglob('*.html') if 'page_hero.context_card(' in path.read_text(encoding='utf-8')
+        1
+        for path in TEMPLATES.rglob('*.html')
+        if 'page_hero.context_card(' in path.read_text(encoding='utf-8')
     )
     lazy_context_templates = sum(
-        1 for path in TEMPLATES.rglob('*.html') if 'page_hero.context_card_body(' in path.read_text(encoding='utf-8')
+        1
+        for path in TEMPLATES.rglob('*.html')
+        if 'page_hero.context_card_body(' in path.read_text(encoding='utf-8')
     )
 
     print(
         'KAORI Hero component standard passed: '
-        f'{len(primitive_shells)} compatibility Hero shells, {len(profile_templates)} canonical profile consumers, '
-        f'{context_card_templates} context-card consumers, and {lazy_context_templates} lazy context bodies match v1.6; '
-        'dashboard parity, Object Storage Analytics metadata, implementation, documentation, dark-mode ownership, '
-        'removed APIs, unmanaged-shell detection, and quality-gate ownership are synchronized.'
+        f'{len(primitive_shells)} compatibility Hero shells, '
+        f'{len(profile_templates)} canonical profile consumers, '
+        f'{context_card_templates} context-card consumers, and '
+        f'{lazy_context_templates} lazy context bodies match v1.6; '
+        'dashboard parity, Object Storage Analytics metadata, implementation, documentation, '
+        'dark-mode ownership, removed APIs, unmanaged-shell detection, and quality-gate '
+        'ownership are synchronized.'
     )
 
 
