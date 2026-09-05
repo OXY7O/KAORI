@@ -25,7 +25,11 @@ def test_hero_documentation_has_one_global_contract_and_one_domain_extension() -
     global_standard = (components / 'HERO.md').read_text(encoding='utf-8')
     analytics_extension = (components / 'ANALYTICS_HERO.md').read_text(encoding='utf-8')
 
-    assert 'KAORI Hero Component Standard v1.5' in global_standard
+    assert 'KAORI Hero Component Standard v1.6' in global_standard
+    assert 'Hero Profile' in global_standard
+    assert 'Hero State' in global_standard
+    assert 'same Profile + same State' in global_standard
+    assert 'exactly three metadata' in global_standard
     assert '16 px, regular, 28 px line height' in global_standard
     assert 'Action Icon Box' in global_standard
     assert 'Context Icon Box' in global_standard
@@ -36,6 +40,42 @@ def test_hero_documentation_has_one_global_contract_and_one_domain_extension() -
     assert 'Kubernetes Analytics Hero Extension' in analytics_extension
     assert not (components / 'ANALYTICS_HERO_STANDARD.md').exists()
     assert not (components / 'ANALYTICS_HERO_INVENTORY_REFERENCE.md').exists()
+
+
+def test_operational_dashboard_uses_one_canonical_hero_profile() -> None:
+    component = (ROOT / 'app' / 'templates' / 'components' / 'page_hero.html').read_text(encoding='utf-8')
+    kubernetes = (ROOT / 'app' / 'templates' / 'kubernetes' / 'dashboard' / 'partials' / '_hero.html').read_text(
+        encoding='utf-8'
+    )
+    object_storage = (
+        ROOT / 'app' / 'templates' / 'storage' / 'object_storage' / 'dashboard' / 'partials' / '_hero.html'
+    ).read_text(encoding='utf-8')
+
+    assert 'macro operational_dashboard(' in component
+    assert 'page_hero.operational_dashboard(' in kubernetes
+    assert 'page_hero.operational_dashboard(' in object_storage
+    for source in (kubernetes, object_storage):
+        assert 'page_hero.shell_classes()' not in source
+        assert 'page_hero.layout_classes()' not in source
+        assert 'page_hero.context_panel_classes()' not in source
+
+
+def test_object_storage_analytics_normal_branch_has_three_stable_metadata_slots() -> None:
+    source = (
+        ROOT
+        / 'app'
+        / 'templates'
+        / 'storage'
+        / 'object_storage'
+        / 'analytics'
+        / 'partials'
+        / '_hero.html'
+    ).read_text(encoding='utf-8')
+
+    assert "page_hero.meta_label('database', system_label)" in source
+    assert "page_hero.meta_label(meta_icon, meta_label)" in source
+    assert "page_hero.meta_label('layers-3', evidence_label)" in source
+    assert '{% if inventory_observed_at %}' not in source
 
 
 def test_removed_hero_macros_are_absent_from_implementation() -> None:
