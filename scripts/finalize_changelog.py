@@ -35,7 +35,9 @@ def finalize_changelog(text: str, version: str, release_date: str) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description='Finalize KAORI changelog for a stable SemVer release.')
     parser.add_argument('version', help='Stable SemVer without v prefix, for example 0.1.1')
-    parser.add_argument('--date', dest='release_date', default=date.today().isoformat(), help='ISO date, default: today')
+    parser.add_argument(
+        '--date', dest='release_date', default=date.today().isoformat(), help='ISO date, default: today'
+    )
     parser.add_argument('--path', type=Path, default=Path('CHANGELOG.md'))
     parser.add_argument('--check', action='store_true', help='Validate transformation without writing the file')
     args = parser.parse_args()
