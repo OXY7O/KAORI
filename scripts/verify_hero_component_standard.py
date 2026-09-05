@@ -167,9 +167,7 @@ def _verify_primitive_shell(path: Path) -> None:
 
 def _verify_operational_dashboard_profile() -> None:
     kubernetes = _read(TEMPLATES / 'kubernetes' / 'dashboard' / 'partials' / '_hero.html')
-    object_storage = _read(
-        TEMPLATES / 'storage' / 'object_storage' / 'dashboard' / 'partials' / '_hero.html'
-    )
+    object_storage = _read(TEMPLATES / 'storage' / 'object_storage' / 'dashboard' / 'partials' / '_hero.html')
     for name, source in (
         ('Kubernetes dashboard', kubernetes),
         ('Object Storage dashboard', object_storage),
@@ -186,20 +184,11 @@ def _verify_operational_dashboard_profile() -> None:
             'page_hero.context_panel_classes()',
         ):
             if local_primitive in source:
-                raise AssertionError(
-                    f'{name}: dashboard profile must not assemble {local_primitive} locally'
-                )
+                raise AssertionError(f'{name}: dashboard profile must not assemble {local_primitive} locally')
 
 
 def _verify_object_storage_analytics_metadata() -> None:
-    source = _read(
-        TEMPLATES
-        / 'storage'
-        / 'object_storage'
-        / 'analytics'
-        / 'partials'
-        / '_hero.html'
-    )
+    source = _read(TEMPLATES / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero.html')
     _require_tokens(
         source,
         (
@@ -211,9 +200,7 @@ def _verify_object_storage_analytics_metadata() -> None:
         'Object Storage Analytics Hero',
     )
     if '{% if inventory_observed_at %}' in source:
-        raise AssertionError(
-            'Object Storage Analytics: Normal metadata must not depend on inventory_observed_at'
-        )
+        raise AssertionError('Object Storage Analytics: Normal metadata must not depend on inventory_observed_at')
 
 
 def verify() -> None:
@@ -227,14 +214,10 @@ def verify() -> None:
     macros = _macro_names(hero)
     missing_macros = sorted(set(REQUIRED_MACROS) - macros)
     if missing_macros:
-        raise AssertionError(
-            'page_hero implementation: missing required macros: ' + ', '.join(missing_macros)
-        )
+        raise AssertionError('page_hero implementation: missing required macros: ' + ', '.join(missing_macros))
     present_removed = sorted(set(REMOVED_MACROS) & macros)
     if present_removed:
-        raise AssertionError(
-            'page_hero implementation: removed macros still exist: ' + ', '.join(present_removed)
-        )
+        raise AssertionError('page_hero implementation: removed macros still exist: ' + ', '.join(present_removed))
 
     _require_tokens(standard, DOCUMENTATION_TOKENS, 'Hero standard documentation')
     _require_tokens(
@@ -275,11 +258,7 @@ def verify() -> None:
     _verify_operational_dashboard_profile()
     _verify_object_storage_analytics_metadata()
 
-    active_templates = '\n'.join(
-        path.read_text(encoding='utf-8')
-        for path in TEMPLATES.rglob('*.html')
-        if path != HERO
-    )
+    active_templates = '\n'.join(path.read_text(encoding='utf-8') for path in TEMPLATES.rglob('*.html') if path != HERO)
     for macro in REMOVED_MACROS:
         if f'page_hero.{macro}(' in active_templates:
             raise AssertionError(f'Active templates still reference removed Hero macro {macro}()')
@@ -289,37 +268,26 @@ def verify() -> None:
         if path == HERO:
             continue
         source = path.read_text(encoding='utf-8')
-        if '<h1' in source and (
-            'bg-kaori-primary' in source or 'kaori-hero-shell ' in source
-        ):
+        if '<h1' in source and ('bg-kaori-primary' in source or 'kaori-hero-shell ' in source):
             suspicious_local_shells.append(str(path.relative_to(ROOT)))
     if suspicious_local_shells:
-        raise AssertionError(
-            'Unmanaged Hero-like shell detected: ' + ', '.join(suspicious_local_shells)
-        )
+        raise AssertionError('Unmanaged Hero-like shell detected: ' + ', '.join(suspicious_local_shells))
 
     quality_gate = _read(QUALITY_GATE)
     if 'python scripts/verify_hero_component_standard.py' not in quality_gate:
-        raise AssertionError(
-            'scripts/quality_gate.sh does not execute the Hero standard verifier'
-        )
+        raise AssertionError('scripts/quality_gate.sh does not execute the Hero standard verifier')
 
     profile_templates = _profile_templates()
     if len(profile_templates) != 2:
         raise AssertionError(
-            'Operational Dashboard profile must have exactly two paired references, '
-            f'found {len(profile_templates)}'
+            f'Operational Dashboard profile must have exactly two paired references, found {len(profile_templates)}'
         )
 
     context_card_templates = sum(
-        1
-        for path in TEMPLATES.rglob('*.html')
-        if 'page_hero.context_card(' in path.read_text(encoding='utf-8')
+        1 for path in TEMPLATES.rglob('*.html') if 'page_hero.context_card(' in path.read_text(encoding='utf-8')
     )
     lazy_context_templates = sum(
-        1
-        for path in TEMPLATES.rglob('*.html')
-        if 'page_hero.context_card_body(' in path.read_text(encoding='utf-8')
+        1 for path in TEMPLATES.rglob('*.html') if 'page_hero.context_card_body(' in path.read_text(encoding='utf-8')
     )
 
     print(
