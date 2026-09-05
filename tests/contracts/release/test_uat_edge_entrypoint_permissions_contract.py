@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-WORKFLOW = ROOT / '.github' / 'workflows' / 'deploy-uat-vps.yml'
+WORKFLOW = ROOT / '.github' / 'workflows' / 'deploy-staging-host.yml'
 
 
 def test_uat_edge_entrypoints_are_container_readable_without_relaxing_vps_scripts() -> None:
