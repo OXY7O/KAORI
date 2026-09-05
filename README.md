@@ -43,7 +43,7 @@ Core stack:
 - PostgreSQL with SQLAlchemy and Alembic
 - Redis and Celery
 - Kubernetes, Prometheus, and Alertmanager provider adapters
-- ReportLab for governed PDF publication
+- WeasyPrint for the canonical governed PDF publication pipeline
 - Local FS and S3-compatible storage backends
 - Tailwind CSS with locally built frontend assets
 
