@@ -16,7 +16,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: kaori-uat-vps-deploy
+  group: kaori-staging-host-deploy
   cancel-in-progress: false
 
 jobs:
@@ -198,14 +198,14 @@ jobs:
     environment: uat
     timeout-minutes: 30
     env:
-      KAORI_VPS_HOST: ${{ vars.KAORI_VPS_HOST }}
-      KAORI_VPS_USER: ${{ vars.KAORI_VPS_USER }}
-      KAORI_VPS_PORT: ${{ vars.KAORI_VPS_PORT }}
-      KAORI_VPS_DEPLOY_ROOT: ${{ vars.KAORI_VPS_DEPLOY_ROOT }}
+      KAORI_HOST: ${{ vars.KAORI_HOST || vars.KAORI_VPS_HOST }}
+      KAORI_HOST_USER: ${{ vars.KAORI_HOST_USER || vars.KAORI_VPS_USER }}
+      KAORI_HOST_PORT: ${{ vars.KAORI_HOST_PORT || vars.KAORI_VPS_PORT }}
+      KAORI_HOST_DEPLOY_ROOT: ${{ vars.KAORI_HOST_DEPLOY_ROOT || vars.KAORI_VPS_DEPLOY_ROOT }}
       KAORI_LETSENCRYPT_EMAIL: ${{ vars.KAORI_LETSENCRYPT_EMAIL }}
-      KAORI_VPS_SSH_PRIVATE_KEY: ${{ secrets.KAORI_VPS_SSH_PRIVATE_KEY }}
-      KAORI_VPS_SSH_PASSPHRASE: ${{ secrets.KAORI_VPS_SSH_PASSPHRASE }}
-      KAORI_VPS_KNOWN_HOSTS: ${{ secrets.KAORI_VPS_KNOWN_HOSTS }}
+      KAORI_HOST_SSH_PRIVATE_KEY: ${{ secrets.KAORI_HOST_SSH_PRIVATE_KEY || secrets.KAORI_VPS_SSH_PRIVATE_KEY }}
+      KAORI_HOST_SSH_PASSPHRASE: ${{ secrets.KAORI_HOST_SSH_PASSPHRASE || secrets.KAORI_VPS_SSH_PASSPHRASE }}
+      KAORI_HOST_KNOWN_HOSTS: ${{ secrets.KAORI_HOST_KNOWN_HOSTS || secrets.KAORI_VPS_KNOWN_HOSTS }}
       KAORI_DOCKER_REGISTRY_USERNAME: ${{ secrets.KAORI_DOCKER_REGISTRY_USERNAME }}
       KAORI_DOCKER_REGISTRY_PASSWORD: ${{ secrets.KAORI_DOCKER_REGISTRY_PASSWORD }}
       REQUESTED_IMAGE: ${{ needs.admission.outputs.image_ref }}
@@ -223,25 +223,25 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          : "${KAORI_VPS_HOST:?Missing KAORI_VPS_HOST variable}"
-          : "${KAORI_VPS_USER:?Missing KAORI_VPS_USER variable}"
+          : "${KAORI_HOST:?Missing KAORI_HOST variable}"
+          : "${KAORI_HOST_USER:?Missing KAORI_HOST_USER variable}"
           : "${KAORI_LETSENCRYPT_EMAIL:?Missing KAORI_LETSENCRYPT_EMAIL variable}"
-          : "${KAORI_VPS_SSH_PRIVATE_KEY:?Missing KAORI_VPS_SSH_PRIVATE_KEY secret}"
-          : "${KAORI_VPS_SSH_PASSPHRASE:?Missing KAORI_VPS_SSH_PASSPHRASE secret}"
-          : "${KAORI_VPS_KNOWN_HOSTS:?Missing KAORI_VPS_KNOWN_HOSTS secret}"
+          : "${KAORI_HOST_SSH_PRIVATE_KEY:?Missing KAORI_HOST_SSH_PRIVATE_KEY secret}"
+          : "${KAORI_HOST_SSH_PASSPHRASE:?Missing KAORI_HOST_SSH_PASSPHRASE secret}"
+          : "${KAORI_HOST_KNOWN_HOSTS:?Missing KAORI_HOST_KNOWN_HOSTS secret}"
           : "${KAORI_DOCKER_REGISTRY_USERNAME:?Missing KAORI_DOCKER_REGISTRY_USERNAME secret}"
           : "${KAORI_DOCKER_REGISTRY_PASSWORD:?Missing KAORI_DOCKER_REGISTRY_PASSWORD secret}"
           [[ "$REQUESTED_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$ ]] || {
             printf 'REQUESTED_VERSION is not an intentional KAORI RC identity.\n' >&2
             exit 1
           }
-          [[ "$KAORI_VPS_USER" =~ ^[A-Za-z0-9._-]+$ ]] || exit 1
-          port="${KAORI_VPS_PORT:-22}"
+          [[ "$KAORI_HOST_USER" =~ ^[A-Za-z0-9._-]+$ ]] || exit 1
+          port="${KAORI_HOST_PORT:-22}"
           if ! [[ "$port" =~ ^[0-9]{1,5}$ ]] || (( port < 1 || port > 65535 )); then
-            printf 'KAORI_VPS_PORT is invalid.\n' >&2
+            printf 'KAORI_HOST_PORT is invalid.\n' >&2
             exit 1
           fi
-          root="${KAORI_VPS_DEPLOY_ROOT:-/opt/kaori}"
+          root="${KAORI_HOST_DEPLOY_ROOT:-/opt/kaori}"
           [[ "$root" =~ ^/[A-Za-z0-9._/-]+$ ]] || exit 1
 
       - name: Deploy via Pinned SSH Trust
@@ -259,13 +259,13 @@ jobs:
           }
           trap cleanup EXIT INT TERM HUP
 
-          printf '%s\n' "$KAORI_VPS_SSH_PRIVATE_KEY" > "$key_file"
-          printf '%s\n' "$KAORI_VPS_KNOWN_HOSTS" > "$known_hosts_file"
+          printf '%s\n' "$KAORI_HOST_SSH_PRIVATE_KEY" > "$key_file"
+          printf '%s\n' "$KAORI_HOST_KNOWN_HOSTS" > "$known_hosts_file"
           chmod 600 "$key_file" "$known_hosts_file"
           cat > "$askpass_file" <<'ASKPASS'
           #!/usr/bin/env bash
           set -euo pipefail
-          printf '%s\n' "$KAORI_VPS_SSH_PASSPHRASE"
+          printf '%s\n' "$KAORI_HOST_SSH_PASSPHRASE"
           ASKPASS
           chmod 700 "$askpass_file"
 
@@ -276,10 +276,10 @@ jobs:
           export DISPLAY=:0
           setsid -w ssh-add "$key_file" </dev/null >/dev/null
 
-          port="${KAORI_VPS_PORT:-22}"
-          deploy_root="${KAORI_VPS_DEPLOY_ROOT:-/opt/kaori}"
+          port="${KAORI_HOST_PORT:-22}"
+          deploy_root="${KAORI_HOST_DEPLOY_ROOT:-/opt/kaori}"
           remote_release="$deploy_root/releases/$REQUESTED_SHA"
-          target="$KAORI_VPS_USER@$KAORI_VPS_HOST"
+          target="$KAORI_HOST_USER@$KAORI_HOST"
           ssh_opts=(-p "$port" -i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$known_hosts_file")
           scp_opts=(-P "$port" -i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$known_hosts_file")
 
