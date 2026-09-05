@@ -1,0 +1,12 @@
+groups:
+  - name: kaori-demo
+    rules:
+      - alert: KAORIDemoAlwaysOn
+        expr: vector(1)
+        for: 30s
+        labels:
+          severity: warning
+          source: kaori-example
+        annotations:
+          summary: Representative KAORI demo warning
+          description: This synthetic alert validates Prometheus to Alertmanager integration in the disposable example stack.
