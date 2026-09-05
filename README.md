@@ -13,22 +13,22 @@
   <img alt="License" src="https://img.shields.io/badge/license-internal%20use-7C3AED" />
 </p>
 
-KAORI turns committed infrastructure evidence into inventory, analytics, reports, intelligence, governance, integrations, and controlled operator workflows. It complements Kubernetes, Prometheus, Alertmanager, and object-storage authorities rather than replacing them.
+KAORI turns committed infrastructure evidence into Inventory, Analytics, Reports, Intelligence, Governance, integrations, and controlled operator workflows. It complements Kubernetes, Prometheus, Alertmanager, and Object Storage authorities rather than replacing them.
 
 > **Evidence first.** Operational pages use committed snapshots, live provider access stays explicit, and release promotion is bound to reviewed source plus immutable artifacts.
 
-## ✦ Platform
+## Platform
 
 | Capability | What KAORI provides |
 | --- | --- |
-| Kubernetes | Inventory, topology, workload and storage visibility, analytics, governed operations, and capacity evidence. |
+| Kubernetes | Inventory, topology, workload and storage visibility, Analytics, governed operations, and capacity evidence. |
 | Object Storage | S3-compatible inventory, capacity, growth, request-path, consumer, and operational posture views. |
 | Intelligence | Recommendations, Alert Intelligence, Rule Catalog, accepted-risk workflows, and controlled response evidence. |
 | Reports | Governed web/PDF generation, reusable templates, schedules, retained artifacts, and publication evidence. |
 | Governance | Explicit ownership, auditability, policy controls, and fail-closed boundaries where required. |
 | Integrations | Kubernetes, Prometheus, Alertmanager, MinIO/S3-compatible storage, and related provider adapters. |
 
-## ⚡ Quick Start
+## Quick Start
 
 The supported development path is the VS Code Dev Container described in [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 
@@ -41,7 +41,7 @@ flask --app run:app run --host=0.0.0.0 --port=5000 --debug
 
 Runtime modes and prerequisites are documented in [`docs/RUNNING.md`](docs/RUNNING.md).
 
-## ◈ Standalone Integration Examples
+## Standalone Integration Examples
 
 [`example/`](example/README.md) provides disposable **standalone Docker Compose stacks** for integration testing without the private KAORI environment:
 
@@ -61,7 +61,7 @@ docker compose -f example/alertmanager/compose.yml up -d
 
 No production host, credential, token, or private environment value is required. Demo/example material is explicitly excluded from production runtime artifacts.
 
-## ◇ Architecture
+## Architecture
 
 ```text
 Browser
@@ -81,7 +81,7 @@ Core stack: Flask, Jinja, HTMX, Alpine.js, PostgreSQL, SQLAlchemy/Alembic, Redis
 
 The authoritative architecture map lives in [`docs/architecture/README.md`](docs/architecture/README.md).
 
-## ✓ Quality & Validation
+## Quality & Validation
 
 ```bash
 # concise release audit
@@ -93,7 +93,7 @@ python scripts/verify_final_release.py --all
 
 Use `--runtime` when release services are running and live readiness must also be proven. See [`docs/TESTING.md`](docs/TESTING.md) and [`tests/README.md`](tests/README.md).
 
-## ⬢ Release & Distribution
+## Deployment & Release
 
 KAORI uses a governed immutable promotion path:
 
@@ -104,7 +104,7 @@ Issue
   → kaori/staging
   → Full Admission
   → Staging Validation
-  → Staging Acceptance
+  → explicit UAT acceptance / Staging Acceptance
   → Production Promotion
   → Stable SemVer Release
 ```
@@ -113,18 +113,19 @@ A stable release reuses the exact accepted OCI digest; the application image is 
 
 - [`CHANGELOG.md`](CHANGELOG.md) — product change history and current `[Unreleased]` work.
 - [`docs/deployment/RELEASE_GOVERNANCE.md`](docs/deployment/RELEASE_GOVERNANCE.md) — immutable release authority and promotion rules.
-- [`docs/releases/`](docs/releases/) — historical/detail release records.
+- [`docs/releases/KAORI_2_3_0.md`](docs/releases/KAORI_2_3_0.md) — current application-version release notes retained for the existing `APP_VERSION` baseline.
+- [`docs/releases/README.md`](docs/releases/README.md) — canonical release lifecycle and artifact boundaries.
 - GitHub Releases — stable release notes and release assets.
 
 The production OCI image and downloadable runtime package are application-only boundaries. Tests, examples, CI metadata, docs, development tooling, and private environment content do not belong in the runtime payload.
 
-## 🔒 Security & License
+## Security & License
 
 KAORI is currently an **internal-use proprietary project**. It is not distributed under an OSI open-source license and commercial use or redistribution requires explicit authorization. See [`LICENSE`](LICENSE).
 
 Security issues must be reported privately according to [`SECURITY.md`](SECURITY.md). Do not publish credentials, infrastructure addresses, exploitation details, or sensitive operational evidence in public issues.
 
-## 📚 Documentation
+## Documentation
 
 | Area | Authority |
 | --- | --- |
