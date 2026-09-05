@@ -153,10 +153,45 @@ ensure_annotated_tag() {
     return 0
   fi
 
-  git config user.name 'KAORI Release Automation'
-  git config user.email 'actions@users.noreply.github.com'
-  git tag -a "v$version" "$sha" -m "KAORI $version"
-  git push origin "refs/tags/v$version"
+  : "${GITHUB_TOKEN:?GITHUB_TOKEN is required}"
+  : "${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required}"
+
+  local api auth_header tag_payload tag_response tag_object_sha ref_payload
+  api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+  auth_header="Authorization: Bearer ${GITHUB_TOKEN}"
+  tag_payload="$(jq -nc \
+    --arg tag "v$version" \
+    --arg message "KAORI $version" \
+    --arg object "$sha" \
+    '{tag: $tag, message: $message, object: $object, type: "commit", tagger: {name: "KAORI Release Automation", email: "actions@users.noreply.github.com"}}')"
+  tag_response="$(curl --fail-with-body --silent --show-error \
+    --request POST \
+    --header "$auth_header" \
+    --header 'Accept: application/vnd.github+json' \
+    --header 'X-GitHub-Api-Version: 2022-11-28' \
+    --header 'Content-Type: application/json' \
+    --data "$tag_payload" \
+    "$api/git/tags")"
+  tag_object_sha="$(jq -r '.sha // empty' <<<"$tag_response")"
+  [[ "$tag_object_sha" =~ ^[0-9a-f]{40}$ ]] || {
+    printf 'GitHub did not return a valid annotated tag object SHA for v%s\n' "$version" >&2
+    return 1
+  }
+
+  ref_payload="$(jq -nc \
+    --arg ref "refs/tags/v$version" \
+    --arg sha "$tag_object_sha" \
+    '{ref: $ref, sha: $sha}')"
+  curl --fail-with-body --silent --show-error \
+    --request POST \
+    --header "$auth_header" \
+    --header 'Accept: application/vnd.github+json' \
+    --header 'X-GitHub-Api-Version: 2022-11-28' \
+    --header 'Content-Type: application/json' \
+    --data "$ref_payload" \
+    "$api/git/refs" >/dev/null
+
+  printf 'Created release tag v%s at approved SHA %s\n' "$version" "$sha"
 }
 
 generate_release_manifest() {

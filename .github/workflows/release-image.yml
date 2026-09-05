@@ -99,10 +99,12 @@ jobs:
           ALLOWED_POST_UAT_PATHS=(
             '.github/workflows/release-image.yml'
             '.github/workflows/deploy-uat-vps.yml'
+            '.github/ci/release-lib.sh'
             'tests/contracts/release/test_stable_release_reuses_accepted_rc_digest_contract.py'
             'tests/contracts/release/test_ci_output_readability_contract.py'
             'tests/contracts/release/test_stable_release_cosign_auth_permissions_contract.py'
             'tests/contracts/release/test_stable_release_reviewed_control_paths_contract.py'
+            'tests/contracts/release/test_stable_release_tag_auth_contract.py'
           )
           mapfile -t changed_paths < <(git diff --name-only "$RC_SOURCE_SHA" "$RELEASE_SHA")
           for path in "${changed_paths[@]}"; do
@@ -340,6 +342,8 @@ jobs:
               "$source_ref"
 
       - name: Create or Verify Stable Git Tag
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: bash .github/ci/release-lib.sh tag "$RELEASE_VERSION" "$RELEASE_SHA"
 
       - name: Protect Existing Stable Registry Tags
