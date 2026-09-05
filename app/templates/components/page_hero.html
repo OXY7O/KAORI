@@ -61,6 +61,45 @@
                 action_icon) }}
     </aside>
 {%- endmacro %}
+{% macro operational_dashboard(eyebrow_label, leading_icon, title, description, metadata, active_scope, action_label, action_href, action_icon='settings-2', data_authority='Committed Snapshots', state='normal', blocked_title='Setup Required', blocked_info='Complete setup to activate operational signals.') -%}
+    <section class="{{ shell_classes() }}" data-kaori-hero-profile="operational-dashboard" data-kaori-hero-state="{{ state }}">
+        <div class="{{ layout_classes() }}">
+            <div class="{{ content_classes() }}">
+                {% call intro('layout-dashboard', eyebrow_label, leading_icon) %}
+                    <h1 class="{{ title_classes() }}">{{ title }}</h1>
+                    <p class="mt-2 {{ description_classes() }}">{{ description }}</p>
+                    <div class="{{ metadata_row_classes() }}">
+                        {% for item in metadata[:3] %}
+                            {{ meta_label(item[0], item[1]) }}
+                        {% endfor %}
+                    </div>
+                {% endcall %}
+            </div>
+            <aside class="{{ aside_classes() }}" aria-label="{{ title }} context">
+                <div class="{{ context_panel_classes() }}">
+                    {% if state == 'blocked' %}
+                        {{ context_header_status('Dashboard Readiness', blocked_title, 'Blocked', 'warning') }}
+                        <div class="{{ context_panel_metrics_classes() }}">
+                            {{ context_metric('scan-search', 'Active Scope', active_scope, 'Current dashboard scope', 'text-sm font-semibold leading-5') }}
+                            {{ context_metric('lock-keyhole', 'Data Authority', data_authority, 'Operational evidence boundary', 'text-sm font-semibold leading-5') }}
+                        </div>
+                        {{ context_info('info', blocked_info) }}
+                    {% else %}
+                        {{ context_header('Dashboard Context', 'Operational Signal Scope', 'scan-search') }}
+                        <div class="{{ context_panel_metrics_classes() }}">
+                            {{ context_metric('scan-search', 'Active Scope', active_scope, 'Applied across dashboard signals', 'text-sm font-semibold leading-5') }}
+                            {{ context_metric('database-zap', 'Data Authority', data_authority, 'No live provider query on page load', 'text-sm font-semibold leading-5') }}
+                        </div>
+                        <a href="{{ action_href }}" class="{{ context_single_action_classes() }}">
+                            <i data-lucide="{{ action_icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                            <span>{{ action_label }}</span>
+                        </a>
+                    {% endif %}
+                </div>
+            </aside>
+        </div>
+    </section>
+{%- endmacro %}
 {% macro context_panel_eyebrow_classes() -%}
     text-xs font-semibold uppercase tracking-wider text-brand-foreground-muted
 {%- endmacro %}
