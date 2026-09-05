@@ -1,6 +1,6 @@
 # KAORI Release Lifecycle
 
-KAORI uses one stable Semantic Version as the public release identity. The release workflow input is the release authority for the stable version; development example defaults are not release authority.
+KAORI uses one **Stable Semantic Version** as the public release identity. The release workflow input is the release authority for the stable version; development example defaults are not release authority.
 
 ## Stable release identity
 
@@ -17,7 +17,7 @@ A completed stable release must bind all of the following to one accepted lineag
 - changelog section for the released version and date.
 - rollback identity: previous stable version/source/digest where available.
 
-Stable promotion must reuse the exact digest accepted in Staging Acceptance. It must not rebuild application bits.
+Stable promotion must reuse the exact digest accepted in Staging Acceptance. It must promote **without rebuilding application bits**.
 
 ## Changelog boundary
 
