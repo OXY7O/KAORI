@@ -1,27 +1,67 @@
-# KAORI
+<p align="center">
+  <img src="app/static/images/kaori-logo.svg" alt="KAORI" width="112" />
+</p>
 
-**Knowledge, Automation, Operations, Resilience & Intelligence**
+<h1 align="center">KAORI</h1>
+<p align="center"><strong>Knowledge, Automation, Operations, Resilience & Intelligence</strong></p>
+<p align="center">Evidence-driven operations for Kubernetes and S3-compatible infrastructure.</p>
 
-KAORI is an operations platform for Kubernetes and Object Storage environments. It turns committed infrastructure evidence into inventory, Analytics, Reports, Intelligence, Governance, integrations, and controlled operator workflows without replacing the underlying platform authorities.
+<p align="center">
+  <img alt="KAORI CI" src="https://github.com/OXY7O/KAORI/actions/workflows/quality.yml/badge.svg?branch=main" />
+  <img alt="Release" src="https://img.shields.io/github/v/release/OXY7O/KAORI?display_name=tag&sort=semver" />
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white" />
+  <img alt="License" src="https://img.shields.io/badge/license-internal%20use-7C3AED" />
+</p>
 
-> KAORI favors evidence over guesswork: operational pages read committed snapshots, live provider calls remain explicit, and release promotion is tied to reviewed source plus immutable artifacts.
+KAORI turns committed infrastructure evidence into inventory, analytics, reports, intelligence, governance, integrations, and controlled operator workflows. It complements Kubernetes, Prometheus, Alertmanager, and object-storage authorities rather than replacing them.
 
-## Platform at a Glance
+> **Evidence first.** Operational pages use committed snapshots, live provider access stays explicit, and release promotion is bound to reviewed source plus immutable artifacts.
+
+## ✦ Platform
 
 | Capability | What KAORI provides |
 | --- | --- |
-| Kubernetes Operations | Cluster inventory, nodes, namespaces, workloads, pods, services, ingresses, storage, topology, operational actions, and governed configuration surfaces. |
-| Object Storage | Inventory and capacity evidence for S3-compatible environments, including usage, growth, request-path, consumer, and operational posture views. |
-| Analytics | Utilization, capacity, forecasting, top consumers, alerts, anomalies, and evidence-backed operational interpretation. |
-| Reports | Governed web/PDF report generation, reusable templates, schedules, retained artifacts, and publication evidence. |
-| Intelligence | Recommendations, Alert Intelligence, Rule Catalog, accepted-risk/exception workflows, and controlled response evidence. |
-| Governance | Kubernetes and platform governance controls with explicit ownership, auditability, and fail-closed boundaries where required. |
-| Integrations | Prometheus and Alertmanager provider integrations, with S3-compatible storage and Kubernetes provider adapters. |
-| Operational Evidence | Activity Log, notifications, immutable release lineage, validation results, and operator-verifiable runtime evidence. |
+| Kubernetes | Inventory, topology, workload and storage visibility, analytics, governed operations, and capacity evidence. |
+| Object Storage | S3-compatible inventory, capacity, growth, request-path, consumer, and operational posture views. |
+| Intelligence | Recommendations, Alert Intelligence, Rule Catalog, accepted-risk workflows, and controlled response evidence. |
+| Reports | Governed web/PDF generation, reusable templates, schedules, retained artifacts, and publication evidence. |
+| Governance | Explicit ownership, auditability, policy controls, and fail-closed boundaries where required. |
+| Integrations | Kubernetes, Prometheus, Alertmanager, MinIO/S3-compatible storage, and related provider adapters. |
 
-## Architecture
+## ⚡ Quick Start
 
-KAORI uses a server-rendered application architecture with background workers and provider adapters:
+The supported development path is the VS Code Dev Container described in [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
+
+```bash
+cp .env.example .env
+bash scripts/init_db.sh --bootstrap-admin
+npm run watch-css
+flask --app run:app run --host=0.0.0.0 --port=5000 --debug
+```
+
+Runtime modes and prerequisites are documented in [`docs/RUNNING.md`](docs/RUNNING.md).
+
+## ◈ Standalone Integration Examples
+
+[`example/`](example/README.md) provides disposable **standalone Docker Compose stacks** for integration testing without the private KAORI environment:
+
+- Prometheus
+- Alertmanager
+- MinIO / S3-compatible storage
+- Thanos Query
+- disposable GitHub Actions Runner example
+
+Each component owns its own `compose.yml`, environment/configuration surface, lifecycle, and README. `example/compose.demo.yml` is only a convenience topology for exercising several providers together.
+
+```bash
+cp example/.env.example example/.env
+docker compose -f example/prometheus/compose.yml up -d
+docker compose -f example/alertmanager/compose.yml up -d
+```
+
+No production host, credential, token, or private environment value is required. Demo/example material is explicitly excluded from production runtime artifacts.
+
+## ◇ Architecture
 
 ```text
 Browser
@@ -37,98 +77,70 @@ Application services / governance / analytics
   └─ S3-compatible storage · retained report/object artifacts
 ```
 
-Core stack:
+Core stack: Flask, Jinja, HTMX, Alpine.js, PostgreSQL, SQLAlchemy/Alembic, Redis/Celery, WeasyPrint, Kubernetes APIs, Prometheus, Alertmanager, S3-compatible storage, and Tailwind CSS.
 
-- Flask, Jinja, HTMX, and Alpine.js
-- PostgreSQL with SQLAlchemy and Alembic
-- Redis and Celery
-- Kubernetes, Prometheus, and Alertmanager provider adapters
-- WeasyPrint for the canonical governed PDF publication pipeline
-- Local FS and S3-compatible storage backends
-- Tailwind CSS with locally built frontend assets
+The authoritative architecture map lives in [`docs/architecture/README.md`](docs/architecture/README.md).
 
-Start with [`docs/architecture/README.md`](docs/architecture/README.md) for the authoritative architecture map.
-
-## Quick Start
-
-The supported development path is the VS Code Dev Container documented in [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
-
-Inside the Dev Container:
+## ✓ Quality & Validation
 
 ```bash
-cp .env.example .env
-bash scripts/init_db.sh --bootstrap-admin
-npm run watch-css
-flask --app run:app run --host=0.0.0.0 --port=5000 --debug
-```
-
-For startup modes, prerequisites, and runtime details, use [`docs/RUNNING.md`](docs/RUNNING.md).
-
-## Quality & Validation
-
-Run the concise release audit:
-
-```bash
+# concise release audit
 python scripts/verify_final_release.py
-```
 
-Run the complete release gate before publication:
-
-```bash
+# complete admission gate
 python scripts/verify_final_release.py --all
 ```
 
-Use `--runtime` when the release services are running and live readiness must also be proven. Test ownership and marker conventions are documented in [`tests/README.md`](tests/README.md) and [`docs/TESTING.md`](docs/TESTING.md).
+Use `--runtime` when release services are running and live readiness must also be proven. See [`docs/TESTING.md`](docs/TESTING.md) and [`tests/README.md`](tests/README.md).
 
-## Deployment & Release
+## ⬢ Release & Distribution
 
-KAORI uses a governed promotion path rather than direct deployment from arbitrary source:
+KAORI uses a governed immutable promotion path:
 
 ```text
 Issue
-  → work branch
-  → reviewed PR
+  → Work Branch
+  → Developer Check
   → kaori/staging
   → Full Admission
-  → intentional RC
-  → immutable OCI digest
-  → VPS UAT at kaori.cloud
-  → explicit UAT acceptance
-  → staging-to-main promotion
-  → stable SemVer release using the same accepted digest
+  → Staging Validation
+  → Staging Acceptance
+  → Production Promotion
+  → Stable SemVer Release
 ```
 
-The application image is deployed by immutable digest. A successful CI run, image publication, or technical VPS deployment does not by itself authorize stable promotion. Stable release requires **explicit UAT acceptance** for the exact accepted source SHA and OCI digest, and promotion must not rebuild the accepted application bits.
+A stable release reuses the exact accepted OCI digest; the application image is **not rebuilt** during stable promotion. Release identity binds the Git tag, GitHub Release, source SHA, accepted RC, Docker Hub version tag, OCI digest, runtime metadata, signature, and validation evidence.
 
-Production-like VPS deployment uses split operator configuration, a Compose-managed Nginx/Certbot edge, private application/state ports, PostgreSQL backup evidence, controlled migrations, and exact release identity. See [`deploy/vps/README.md`](deploy/vps/README.md) and [`docs/deployment/RELEASE_GOVERNANCE.md`](docs/deployment/RELEASE_GOVERNANCE.md).
+- [`CHANGELOG.md`](CHANGELOG.md) — product change history and current `[Unreleased]` work.
+- [`docs/deployment/RELEASE_GOVERNANCE.md`](docs/deployment/RELEASE_GOVERNANCE.md) — immutable release authority and promotion rules.
+- [`docs/releases/`](docs/releases/) — historical/detail release records.
+- GitHub Releases — stable release notes and release assets.
 
-## Documentation
+The production OCI image and downloadable runtime package are application-only boundaries. Tests, examples, CI metadata, docs, development tooling, and private environment content do not belong in the runtime payload.
 
-Use the repository documentation as the detailed authority rather than duplicating operational contracts here:
+## 🔒 Security & License
 
-- [Architecture](docs/architecture/README.md) — system boundaries, module structure, jobs, quality, and release-surface coverage.
-- [Development](docs/DEVELOPMENT.md) — supported developer environment and workflow.
-- [Running KAORI](docs/RUNNING.md) — local and runtime startup guidance.
-- [Testing](docs/TESTING.md) — test strategy and execution guidance.
-- [Deployment](docs/DEPLOYMENT.md) — deployment overview and operational prerequisites.
-- [Environment Configuration](docs/deployment/ENVIRONMENT_CONFIGURATION.md) — configuration ownership and environment contracts.
-- [Release Governance](docs/deployment/RELEASE_GOVERNANCE.md) — immutable artifact and promotion authority.
-- [Current Release Notes](docs/releases/KAORI_2_3_0.md) — canonical notes for the current `APP_VERSION` baseline.
-- [KAORI Delivery Workflow](docs/engineering/KAORI_DELIVERY_WORKFLOW.md) — Issue, branch, PR, staging, UAT, and main lifecycle.
-- [Changelog](CHANGELOG.md) — recorded product changes.
+KAORI is currently an **internal-use proprietary project**. It is not distributed under an OSI open-source license and commercial use or redistribution requires explicit authorization. See [`LICENSE`](LICENSE).
+
+Security issues must be reported privately according to [`SECURITY.md`](SECURITY.md). Do not publish credentials, infrastructure addresses, exploitation details, or sensitive operational evidence in public issues.
+
+## 📚 Documentation
+
+| Area | Authority |
+| --- | --- |
+| Architecture | [`docs/architecture/README.md`](docs/architecture/README.md) |
+| Development | [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) |
+| Running KAORI | [`docs/RUNNING.md`](docs/RUNNING.md) |
+| Testing | [`docs/TESTING.md`](docs/TESTING.md) |
+| Deployment | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) |
+| Environment configuration | [`docs/deployment/ENVIRONMENT_CONFIGURATION.md`](docs/deployment/ENVIRONMENT_CONFIGURATION.md) |
+| Release governance | [`docs/deployment/RELEASE_GOVERNANCE.md`](docs/deployment/RELEASE_GOVERNANCE.md) |
+| Delivery workflow | [`docs/engineering/KAORI_DELIVERY_WORKFLOW.md`](docs/engineering/KAORI_DELIVERY_WORKFLOW.md) |
+| Changelog | [`CHANGELOG.md`](CHANGELOG.md) |
+| Standalone examples | [`example/README.md`](example/README.md) |
 
 ## Repository Governance
 
-Executable work is governed by an Issue, isolated branch, reviewable PR, work-branch Developer Check, staging integration, and comprehensive post-merge admission. `main` and `kaori/staging` are long-lived authorities; temporary work branches are retired after integration.
+Executable work is governed by an Issue, isolated branch, reviewable PR, work-branch Developer Check, staging integration, comprehensive Full Admission, and explicit acceptance before production promotion. `main` and `kaori/staging` are the only long-lived product authorities; temporary work branches are retired after integration.
 
-Project metadata belongs in GitHub-native Issue/PR/Project fields rather than duplicate metadata tables inside work-item bodies.
-
-## Source Archives
-
-Build source archives only from a clean Git checkout:
-
-```bash
-bash scripts/build_source_archive.sh
-```
-
-Do not archive an arbitrary working directory containing local or unreviewed state.
+GitHub-native Issue/PR/Project fields remain the metadata authority. Real secrets and environment values are never committed to repository examples or release artifacts.
