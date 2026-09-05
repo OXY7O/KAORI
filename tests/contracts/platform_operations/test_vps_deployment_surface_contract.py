@@ -130,12 +130,12 @@ def test_manual_vps_workflow_uses_encrypted_ssh_and_pinned_host_key() -> None:
 
     assert 'workflow_dispatch:' in source
     assert 'candidate_tag:' in source
-    assert 'KAORI_VPS_SSH_PRIVATE_KEY' in source
-    assert 'KAORI_VPS_SSH_PASSPHRASE' in source
-    assert 'KAORI_VPS_KNOWN_HOSTS' in source
-    assert 'KAORI_VPS_HOST' in source
-    assert 'KAORI_VPS_USER' in source
-    assert 'KAORI_VPS_PORT' in source
+    assert 'KAORI_HOST_SSH_PRIVATE_KEY' in source
+    assert 'KAORI_HOST_SSH_PASSPHRASE' in source
+    assert 'KAORI_HOST_KNOWN_HOSTS' in source
+    assert 'KAORI_HOST' in source
+    assert 'KAORI_HOST_USER' in source
+    assert 'KAORI_HOST_PORT' in source
     assert 'KAORI_DOCKER_REGISTRY_USERNAME' in source
     assert 'KAORI_DOCKER_REGISTRY_PASSWORD' in source
     assert 'StrictHostKeyChecking=yes' in source
