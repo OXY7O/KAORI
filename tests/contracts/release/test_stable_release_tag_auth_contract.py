@@ -14,3 +14,5 @@ def test_stable_tag_publish_uses_explicit_github_token_without_persisted_checkou
     assert '/git/tags' in RELEASE_LIB
     assert '/git/refs' in RELEASE_LIB
     assert 'git push origin "refs/tags/v$version"' not in RELEASE_LIB
+    assert 'git fetch --tags --force origin' not in RELEASE_LIB
+    assert '/git/ref/tags/v$version' in RELEASE_LIB

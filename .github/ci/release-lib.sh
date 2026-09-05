@@ -141,10 +141,43 @@ ensure_annotated_tag() {
   local version="${1:?version required}"
   local sha="${2:?sha required}"
 
-  git fetch --tags --force origin
-  if git show-ref --tags --verify --quiet "refs/tags/v$version"; then
-    local existing
-    existing="$(git rev-list -n 1 "v$version")"
+  : "${GITHUB_TOKEN:?GITHUB_TOKEN is required}"
+  : "${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required}"
+
+  local api auth_header ref_response ref_status ref_type ref_sha existing
+  api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+  auth_header="Authorization: Bearer ${GITHUB_TOKEN}"
+  ref_response="$(mktemp)"
+  ref_status="$(curl --silent --show-error \
+    --output "$ref_response" \
+    --write-out '%{http_code}' \
+    --header "$auth_header" \
+    --header 'Accept: application/vnd.github+json' \
+    --header 'X-GitHub-Api-Version: 2022-11-28' \
+    "$api/git/ref/tags/v$version")"
+
+  if [[ "$ref_status" == "200" ]]; then
+    ref_type="$(jq -r '.object.type // empty' "$ref_response")"
+    ref_sha="$(jq -r '.object.sha // empty' "$ref_response")"
+    rm -f "$ref_response"
+
+    case "$ref_type" in
+      commit)
+        existing="$ref_sha"
+        ;;
+      tag)
+        existing="$(curl --fail-with-body --silent --show-error \
+          --header "$auth_header" \
+          --header 'Accept: application/vnd.github+json' \
+          --header 'X-GitHub-Api-Version: 2022-11-28' \
+          "$api/git/tags/$ref_sha" | jq -r '.object.sha // empty')"
+        ;;
+      *)
+        printf 'Unsupported Git tag ref object type for v%s: %s\n' "$version" "$ref_type" >&2
+        return 1
+        ;;
+    esac
+
     [[ "$existing" == "$sha" ]] || {
       printf 'Refusing to move v%s from %s to %s\n' "$version" "$existing" "$sha" >&2
       return 1
@@ -153,12 +186,15 @@ ensure_annotated_tag() {
     return 0
   fi
 
-  : "${GITHUB_TOKEN:?GITHUB_TOKEN is required}"
-  : "${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required}"
+  if [[ "$ref_status" != "404" ]]; then
+    cat "$ref_response" >&2
+    rm -f "$ref_response"
+    printf 'GitHub tag lookup failed for v%s with HTTP %s\n' "$version" "$ref_status" >&2
+    return 1
+  fi
+  rm -f "$ref_response"
 
-  local api auth_header tag_payload tag_response tag_object_sha ref_payload
-  api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
-  auth_header="Authorization: Bearer ${GITHUB_TOKEN}"
+  local tag_payload tag_response tag_object_sha ref_payload
   tag_payload="$(jq -nc \
     --arg tag "v$version" \
     --arg message "KAORI $version" \
