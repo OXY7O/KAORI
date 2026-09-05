@@ -28,26 +28,14 @@ jobs:
           docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
           printf 'CI_TOOLCHAIN_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
 
-      - name: Ruff Check
-        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python -m ruff check app migrations tests scripts
+      - name: DjLint Shared Page Hero
+        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python -m djlint app/templates/components/page_hero.html --check
 
-      - name: Ruff Format
-        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python -m ruff format --check app migrations tests scripts
+      - name: DjLint Kubernetes Dashboard Hero
+        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python -m djlint app/templates/kubernetes/dashboard/partials/_hero.html --check
 
-      - name: DjLint
-        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python -m djlint app/templates --check
+      - name: DjLint Object Storage Dashboard Hero
+        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python -m djlint app/templates/storage/object_storage/dashboard/partials/_hero.html --check
 
-      - name: Code Health
-        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python scripts/verify_code_health.py
-
-      - name: Code Health Baseline Integrity
-        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python scripts/verify_code_health_baseline_integrity.py
-
-      - name: Pyright
-        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python -m pyright --project pyrightconfig.json
-
-      - name: Pre-release Type Safety
-        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python scripts/verify_pre_release_type_safety.py
-
-      - name: Focused Kubernetes and Storage Tests
-        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" bash -lc 'pytest -q --tb=short tests/kubernetes tests/storage'
+      - name: DjLint Object Storage Analytics Hero
+        run: docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" python -m djlint app/templates/storage/object_storage/analytics/partials/_hero.html --check
