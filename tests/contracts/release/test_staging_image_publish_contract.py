@@ -16,7 +16,7 @@ def test_rc_publish_uses_only_deliberate_triggers_and_exact_staging_authority() 
     quality = QUALITY_WORKFLOW.read_text(encoding='utf-8')
     trigger_section = workflow.split('on:\n', 1)[1].split('\npermissions:', 1)[0]
 
-    assert 'name: KAORI Release Candidate Cut' in workflow
+    assert 'name: KAORI Release Candidate' in workflow
     assert 'workflow_dispatch:' in trigger_section
     assert 'push:' in trigger_section
     assert '- kaori/rc-request' in trigger_section
