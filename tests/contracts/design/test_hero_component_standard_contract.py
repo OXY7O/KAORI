@@ -43,12 +43,27 @@ def test_hero_documentation_has_one_global_contract_and_one_domain_extension() -
 
 
 def test_operational_dashboard_uses_one_canonical_hero_profile() -> None:
-    component = (ROOT / 'app' / 'templates' / 'components' / 'page_hero.html').read_text(encoding='utf-8')
-    kubernetes = (ROOT / 'app' / 'templates' / 'kubernetes' / 'dashboard' / 'partials' / '_hero.html').read_text(
-        encoding='utf-8'
-    )
+    component = (
+        ROOT / 'app' / 'templates' / 'components' / 'page_hero.html'
+    ).read_text(encoding='utf-8')
+    kubernetes = (
+        ROOT
+        / 'app'
+        / 'templates'
+        / 'kubernetes'
+        / 'dashboard'
+        / 'partials'
+        / '_hero.html'
+    ).read_text(encoding='utf-8')
     object_storage = (
-        ROOT / 'app' / 'templates' / 'storage' / 'object_storage' / 'dashboard' / 'partials' / '_hero.html'
+        ROOT
+        / 'app'
+        / 'templates'
+        / 'storage'
+        / 'object_storage'
+        / 'dashboard'
+        / 'partials'
+        / '_hero.html'
     ).read_text(encoding='utf-8')
 
     assert 'macro operational_dashboard(' in component
@@ -73,13 +88,15 @@ def test_object_storage_analytics_normal_branch_has_three_stable_metadata_slots(
     ).read_text(encoding='utf-8')
 
     assert "page_hero.meta_label('database', system_label)" in source
-    assert "page_hero.meta_label(meta_icon, meta_label)" in source
+    assert 'page_hero.meta_label(meta_icon, meta_label)' in source
     assert "page_hero.meta_label('layers-3', evidence_label)" in source
     assert '{% if inventory_observed_at %}' not in source
 
 
 def test_removed_hero_macros_are_absent_from_implementation() -> None:
-    source = (ROOT / 'app' / 'templates' / 'components' / 'page_hero.html').read_text(encoding='utf-8')
+    source = (
+        ROOT / 'app' / 'templates' / 'components' / 'page_hero.html'
+    ).read_text(encoding='utf-8')
     for macro in (
         'context_posture_header',
         'context_posture_note',
@@ -93,21 +110,31 @@ def test_removed_hero_macros_are_absent_from_implementation() -> None:
 
 
 def test_hero_right_header_accessories_have_three_canonical_variants() -> None:
-    source = (ROOT / 'app' / 'templates' / 'components' / 'page_hero.html').read_text(encoding='utf-8')
+    source = (
+        ROOT / 'app' / 'templates' / 'components' / 'page_hero.html'
+    ).read_text(encoding='utf-8')
 
     assert 'macro context_action_icon_box(icon, href, aria_label, title=None)' in source
     assert 'macro context_icon_box(icon)' in source
-    assert "macro context_header_status(eyebrow_label, title, status_label, status_tone='info')" in source
+    assert (
+        "macro context_header_status(eyebrow_label, title, status_label, status_tone='info')"
+        in source
+    )
     assert 'aria-label="{{ aria_label }}"' in source
     assert 'context_status_badge(status_label, status_tone)' in source
 
 
 def test_hero_context_panel_footer_variants_share_one_precise_row_rhythm() -> None:
-    source = (ROOT / 'app' / 'templates' / 'components' / 'page_hero.html').read_text(encoding='utf-8')
+    source = (
+        ROOT / 'app' / 'templates' / 'components' / 'page_hero.html'
+    ).read_text(encoding='utf-8')
 
     assert 'flex h-full min-h-[13rem] flex-col gap-3' in source
     assert 'grid grid-cols-2 auto-rows-fr gap-2' in source
     assert 'kaori-hero-tile mt-auto flex min-h-10 items-center gap-2' in source
-    assert "mt-auto grid min-h-10 gap-2 {{ 'grid-cols-2' if columns == 2 else 'grid-cols-1' }}" in source
+    assert (
+        "mt-auto grid min-h-10 gap-2 {{ 'grid-cols-2' if columns == 2 else 'grid-cols-1' }}"
+        in source
+    )
     assert 'mt-3 grid grid-cols-2 gap-2' not in source
     assert 'mt-auto grid gap-2 pt-3' not in source
