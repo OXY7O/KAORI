@@ -445,54 +445,54 @@ jobs:
           if [[ -n "$COMPARE_BASE" ]] && git rev-parse --verify "$COMPARE_BASE^{commit}" >/dev/null 2>&1; then
             change_range="${COMPARE_BASE}..${ACCEPTED_SHA}"
             changed_files="$(git diff --name-only "$COMPARE_BASE" "$ACCEPTED_SHA")"
-            changes="$(git log --format='- %s (%h)' "$change_range" | sed -n '1,30p')"
+            highlights="$(git log -n 8 --format='- %s (%h)' "$change_range")"
           else
             changed_files="$(git show --format='' --name-only "$ACCEPTED_SHA")"
-            changes="$(git log --format='- %s (%h)' -n 20 "$ACCEPTED_SHA")"
+            highlights="$(git log -n 8 --format='- %s (%h)' "$ACCEPTED_SHA")"
           fi
-          [[ -n "$changes" ]] || changes='- No source changes detected in the selected comparison range.'
+          [[ -n "$highlights" ]] || highlights='- No source changes detected in the selected comparison range.'
 
           if grep -Eq '^migrations/' <<<"$changed_files"; then
-            migration_impact='Migration files changed in this candidate; validate upgrade/rollback behavior during UAT.'
+            migration_impact='Migration files changed in this candidate; validate upgrade and rollback behavior during UAT.'
           else
             migration_impact='No migration files changed in the selected release comparison range.'
           fi
 
+          if grep -Eq '^(deploy/|compose\.production\.yml|\.github/workflows/)' <<<"$changed_files"; then
+            operational_impact='Deployment or release surfaces changed; operators must verify the governed VPS/UAT path for this exact candidate.'
+          else
+            operational_impact='No deployment-surface change was detected in the selected release comparison range.'
+          fi
+
           cat > rc-release-notes.md <<EOF
-          ## Release Candidate
+          ## Overview
           **${CANDIDATE_TAG}** is an intentional KAORI prerelease cut from the exact admitted \`kaori/staging\` source below. Publication does not imply UAT or production acceptance.
 
-          ## What Changed
-          ${changes}
+          ## Highlights
+          ${highlights}
 
-          ## Security
-          Trivy HIGH/CRITICAL image scanning passed before registry publication. Production runtime validation and baseline DAST also passed before the image was pushed.
-
-          ## Migration / Data Impact
+          ## Operational Impact
+          ${operational_impact}
           ${migration_impact}
 
-          ## Validation
-          Exact \`kaori/staging\` KAORI CI: **PASS**  
-          Quality run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${QUALITY_RUN_ID}  
-          Image scan: **PASS**  
-          Runtime & DAST: **PASS**
+          ## Validation Evidence
+          Exact \`kaori/staging\` KAORI CI: **PASS**
+          Quality run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${QUALITY_RUN_ID}
+          Trivy HIGH/CRITICAL image scan: **PASS**
+          Production runtime & baseline DAST: **PASS**
 
-          ## Source
+          ### Immutable Evidence
+          Candidate tag: \`${CANDIDATE_TAG}\`
           Staging source SHA: \`${ACCEPTED_SHA}\`
-
-          ## Artifact
-          Candidate image: \`${CANDIDATE_IMAGE}\`  
-          Immutable digest: \`${KAORI_IMAGE_DIGEST}\`  
+          Candidate image: \`${CANDIDATE_IMAGE}\`
+          Immutable digest: \`${KAORI_IMAGE_DIGEST}\`
           Deployment authority: \`${KAORI_IMAGE_REF}\`
 
-          ## UAT
-          **Pending.** This RC must be deployed and explicitly accepted through the governed UAT path before stable promotion.
-
           ## Known Limitations
-          This prerelease does not perform VPS deployment, TLS/ingress acceptance, or stable production promotion. Those boundaries remain governed separately.
+          This prerelease does not itself perform VPS deployment or stable production promotion. UAT remains pending until the governed VPS path passes and the maintainer explicitly accepts this exact source SHA and immutable digest.
 
-          ## Promotion Rule
-          Promote only after explicit UAT acceptance of this exact source SHA and immutable image digest. Stable \`vX.Y.Z\` promotion must reuse the accepted digest and must not rebuild application bits.
+          ## Promotion Status
+          **Pending UAT.** Stable promotion is prohibited until explicit UAT acceptance of this exact source SHA and immutable image digest. Stable \`vX.Y.Z\` must reuse the accepted digest and must not rebuild application bits.
           EOF
 
       - name: Create Human-Friendly GitHub Prerelease
