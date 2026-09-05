@@ -16,7 +16,7 @@ def test_rc_publish_uses_only_deliberate_triggers_and_exact_staging_authority() 
     quality = QUALITY_WORKFLOW.read_text(encoding='utf-8')
     trigger_section = workflow.split('on:\n', 1)[1].split('\npermissions:', 1)[0]
 
-    assert 'name: KAORI Release Candidate Cut' in workflow
+    assert 'name: KAORI Release Candidate' in workflow
     assert 'workflow_dispatch:' in trigger_section
     assert 'push:' in trigger_section
     assert '- kaori/rc-request' in trigger_section
@@ -138,18 +138,16 @@ def test_rc_publish_records_digest_and_human_friendly_github_prerelease() -> Non
     assert 'prerelease: true' in workflow
     assert 'make_latest: "false"' in workflow
     for heading in (
-        '## Release Candidate',
-        '## What Changed',
-        '## Security',
-        '## Migration / Data Impact',
-        '## Validation',
-        '## Source',
-        '## Artifact',
-        '## UAT',
+        '## Overview',
+        '## Highlights',
+        '## Operational Impact',
+        '## Validation Evidence',
+        '### Immutable Evidence',
         '## Known Limitations',
-        '## Promotion Rule',
+        '## Promotion Status',
     ):
         assert heading in workflow
+    assert '## What Changed' not in workflow
     assert workflow.index('Record Immutable Digest Evidence') < workflow.index(
         'Create Human-Friendly GitHub Prerelease'
     )
