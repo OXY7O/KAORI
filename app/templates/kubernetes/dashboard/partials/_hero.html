@@ -1,41 +1,21 @@
 {% import "components/page_hero.html" as page_hero %}
-<section class="{{ page_hero.shell_classes() }}">
-    <div class="{{ page_hero.layout_classes() }}">
-        <div class="{{ page_hero.content_classes() }}">
-            {% call page_hero.intro('layout-dashboard', 'Kubernetes Operations', 'activity') %}
-                <h1 class="{{ page_hero.title_classes() }}">Kubernetes Operations Dashboard</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">
-                    Unified operational visibility for cluster health, capacity, alerts, inventory, recommendations, and reporting readiness.
-                </p>
-                <div class="{{ page_hero.metadata_row_classes() }}">
-                    {{ page_hero.meta_label('database-zap', 'Inventory Snapshots') }}
-                    {{ page_hero.meta_label('activity', 'Worker Metrics') }}
-                    {{ page_hero.meta_label('siren', 'Worker Alerts') }}
-                </div>
-            {% endcall %}
-        </div>
-        <aside class="{{ page_hero.aside_classes() }}"
-               aria-label="Kubernetes dashboard context">
-            {% if cluster_onboarding.is_blocked %}
-                {% set cluster_blocked_scope = "Dashboard Readiness" %}
-                {% set cluster_blocked_title = "Cluster Setup Required" %}
-                {% set cluster_blocked_state_label = "Dashboard State" %}
-                {% set cluster_blocked_info = "Add a Kubernetes cluster to activate operational signals." %}
-                {% include 'components/cluster/_hero_blocked_context.html' %}
-            {% else %}
-                <div class="{{ page_hero.context_panel_classes() }}">
-                    {{ page_hero.context_header('Dashboard Context', 'Operational Signal Scope', 'scan-search') }}
-                    <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                        {{ page_hero.context_metric('scan-search', 'Active Scope', 'Selected Cluster' if dashboard.selected_cluster_id else 'All Clusters', 'Applied across dashboard signals', 'text-sm font-semibold leading-5') }}
-                        {{ page_hero.context_metric('radio-tower', 'Signal Sources', '3 Sources', 'Inventory, metrics, and alerts', 'text-sm font-semibold leading-5') }}
-                    </div>
-                    <a href="{{ url_for('integrations.kubernetes') }}"
-                       class="{{ page_hero.context_single_action_classes() }}">
-                        <i data-lucide="plug-zap" class="h-4 w-4" aria-hidden="true"></i>
-                        <span>Kubernetes Integrations</span>
-                    </a>
-                </div>
-            {% endif %}
-        </aside>
-    </div>
-</section>
+{% set dashboard_state = 'blocked' if cluster_onboarding.is_blocked else 'normal' %}
+{% set dashboard_scope = 'Selected Cluster' if dashboard.selected_cluster_id else 'All Clusters' %}
+{{ page_hero.operational_dashboard('Kubernetes Operations',
+'activity',
+'Kubernetes Operations Dashboard',
+'Unified operational visibility for cluster health, capacity, alerts, inventory, recommendations, and reporting readiness.',
+[
+('database-zap', 'Inventory Snapshots') ,
+('activity', 'Worker Metrics'),
+('siren', 'Worker Alerts')
+],
+dashboard_scope,
+'Kubernetes Integrations',
+url_for('integrations.kubernetes'),
+'plug-zap',
+'Committed Snapshots',
+dashboard_state,
+'Cluster Setup Required',
+'Add a Kubernetes cluster to activate operational signals.'
+) }}
