@@ -1,16 +1,16 @@
 {% import "components/page_hero.html" as page_hero %}
 {% set system_label = system.name if system else 'No System Selected' %}
 {% if dependency_blocker %}
-    {% set meta_icon = 'lock-keyhole' %}
+    {% set meta_icon = "lock-keyhole" %}
     {% set meta_label = 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge %}
 {% elif page_key == 'alerts' %}
-    {% set meta_icon = 'radio-tower' %}
+    {% set meta_icon = "radio-tower" %}
     {% set meta_label = alert_source.resolved_label ~ ' Alerts' if alert_source.connected else ('Automatic Alert Source' if selected_alert_source == 'auto' else selected_alert_source|title ~ ' Alert Source') %}
 {% else %}
-    {% set meta_icon = 'clock-3' %}
+    {% set meta_icon = "clock-3" %}
     {% set meta_label = selected_forecast_history_window|upper ~ ' History' if page_key == 'forecast' else selected_time_range|upper ~ ' Window' %}
 {% endif %}
-{% set evidence_label = 'Committed Snapshot Boundary' %}
+{% set evidence_label = "Committed Snapshot Boundary" %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">

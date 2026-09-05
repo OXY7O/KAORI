@@ -62,7 +62,9 @@
     </aside>
 {%- endmacro %}
 {% macro operational_dashboard(eyebrow_label, leading_icon, title, description, metadata, active_scope, action_label, action_href, action_icon='settings-2', data_authority='Committed Snapshots', state='normal', blocked_title='Setup Required', blocked_info='Complete setup to activate operational signals.') -%}
-    <section class="{{ shell_classes() }}" data-kaori-hero-profile="operational-dashboard" data-kaori-hero-state="{{ state }}">
+    <section class="{{ shell_classes() }}"
+             data-kaori-hero-profile="operational-dashboard"
+             data-kaori-hero-state="{{ state }}">
         <div class="{{ layout_classes() }}">
             <div class="{{ content_classes() }}">
                 {% call intro('layout-dashboard', eyebrow_label, leading_icon) %}
@@ -90,7 +92,8 @@
                             {{ context_metric('scan-search', 'Active Scope', active_scope, 'Applied across dashboard signals', 'text-sm font-semibold leading-5') }}
                             {{ context_metric('database-zap', 'Data Authority', data_authority, 'No live provider query on page load', 'text-sm font-semibold leading-5') }}
                         </div>
-                        <a href="{{ action_href }}" class="{{ context_single_action_classes() }}">
+                        <a href="{{ action_href }}"
+                           class="{{ context_single_action_classes() }}">
                             <i data-lucide="{{ action_icon }}" class="h-4 w-4" aria-hidden="true"></i>
                             <span>{{ action_label }}</span>
                         </a>

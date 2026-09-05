@@ -1,19 +1,18 @@
 {% import "components/page_hero.html" as page_hero %}
 {% set dashboard_scope = dashboard.selected_system.name if dashboard.selected_system else 'All Systems' %}
-{{ page_hero.operational_dashboard(
-    'Object Storage Operations',
-    'database-zap',
-    'Object Storage Operations Dashboard',
-    'Unified operational visibility for inventory, capacity, bucket demand, forecasts, alerts, and reporting readiness.',
-    [
-        ('database', 'Inventory Snapshots'),
-        ('database-zap', 'Worker Analytics'),
-        ('bell-ring', 'Worker Alerts')
-    ],
-    dashboard_scope,
-    'Object Storage Integrations',
-    url_for('integrations.storage'),
-    'plug-zap',
-    'Committed Snapshots',
-    'normal'
+{{ page_hero.operational_dashboard('Object Storage Operations',
+'database-zap',
+'Object Storage Operations Dashboard',
+'Unified operational visibility for inventory, capacity, bucket demand, forecasts, alerts, and reporting readiness.',
+[
+('database', 'Inventory Snapshots') ,
+('database-zap', 'Worker Analytics'),
+('bell-ring', 'Worker Alerts')
+],
+dashboard_scope,
+'Object Storage Integrations',
+url_for('integrations.storage'),
+'plug-zap',
+'Committed Snapshots',
+'normal'
 ) }}
