@@ -38,6 +38,7 @@ def test_ui_harness_has_browser_smoke_and_visual_regression_authority() -> None:
     smoke_text = smoke.read_text()
     visual_text = visual.read_text()
     assert 'page.goto' in smoke_text
-    assert 'expect(page)' in smoke_text
+    assert 'expect(' in smoke_text
+    assert '.to_be_visible()' in smoke_text
     assert 'page.screenshot' in visual_text
     assert 'KAORI_UPDATE_VISUAL_BASELINES' in visual_text
