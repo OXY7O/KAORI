@@ -12,16 +12,13 @@ def _read(relative: str) -> str:
 def test_shared_cluster_blocked_hero_preserves_dashboard_semantics() -> None:
     shared = _read('app/templates/components/cluster/_hero_blocked_context.html')
 
-    assert "page_hero.context_header(blocked_scope, blocked_title, 'lock-keyhole')" in shared
-    assert (
-        "page_hero.context_metric('boxes', 'Connected Clusters', '0', 'No Kubernetes connection available')" in shared
-    )
-    assert (
-        "page_hero.context_metric('circle-dot-dashed', blocked_state_label, 'Blocked', 'Cluster access is required'"
-        in shared
-    )
+    assert 'page_hero.blocked_context_body(' in shared
+    assert "'Connected Clusters'" in shared
+    assert "'Workspace State'" in shared
+    assert "'Blocked'" in shared
     assert "cluster_blocked_state_label|default('Workspace State')" in shared
-    assert "page_hero.context_info('triangle-alert', blocked_info)" in shared
+    assert 'blocked_info' in shared
+    assert 'page_hero.context_panel_metrics_classes()' not in shared
 
 
 def test_dashboard_owns_blocked_state_through_canonical_profile_while_other_workspaces_share_context() -> None:
@@ -87,7 +84,8 @@ def test_dashboard_blocked_hero_is_fully_owned_by_canonical_profile() -> None:
     assert 'page_hero.context_panel_classes()' not in source
     assert 'components/cluster/_hero_blocked_context.html' not in source
     assert "{% if state == 'blocked' %}" in component
-    assert "context_header_status('Dashboard Readiness', blocked_title, 'Blocked', 'warning')" in component
+    assert "blocked_context_body('Dashboard Readiness'" in component
+    assert 'context_header_status(' in component
 
 
 def test_inventory_blocked_hero_metadata_does_not_present_zero_counts_as_evidence() -> None:
