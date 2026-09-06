@@ -38,7 +38,7 @@
 - [ ] Add assertions that `example/runner/` is absent and `example/kaori/{compose.yml,.env.example,run.sh,README.md}` exists with start/status/logs/stop/reset semantics.
 - [ ] Add Hero v1.7 tests that derive the lower/upper reference word counts and reject descriptions outside that range.
 - [ ] Add blocked Storage Analysis contract asserting `page_hero.analytics_metadata(...)` remains present and blocked values are supplied rather than conditionally dropping the row.
-- [ ] Add CTA contract requiring `Open Orchestration Integration`, `url_for('integrations.kubernetes')`, and unchanged `clusters.manage` permission.
+- [ ] Add CTA contract requiring `Open Cluster Integrations`, `url_for('integrations.kubernetes')`, and unchanged `clusters.manage` permission.
 - [ ] Commit test-only RED evidence before production changes.
 
 ### Task 2: Rename the governed deployment boundary
@@ -119,14 +119,14 @@
 **Interfaces:**
 - Canonical description bounds are derived from the approved minimum and maximum reference sentences.
 - Operational Hero metadata is required in `normal`, `blocked`, and `degraded` states.
-- `cluster_required_blocker()['action_label'] == 'Open Orchestration Integration'`.
+- `cluster_required_blocker()['action_label'] == 'Open Cluster Integrations'`.
 
 - [ ] Update Hero standard to v1.7 and remove the broad blocked-metadata reduction exception.
 - [ ] Extend the canonical verifier to enumerate operational Hero consumers/states and reject deterministic branches that omit metadata.
 - [ ] Keep Kubernetes Analytics exactly-three-slot metadata ownership through `analytics_metadata(...)` for blocked state.
 - [ ] Audit Dashboard, Analytics, Inventory/Operations/Governance, Reports, Object Storage, Integrations, and admin Hero families for metadata parity; repair all deterministic omissions found.
 - [ ] Update description-bound logic to the approved reference range and normalize only descriptions that violate the new range.
-- [ ] Change CTA label to `Open Orchestration Integration`; keep route and permission unchanged.
+- [ ] Change CTA label to `Open Cluster Integrations`; keep route and permission unchanged.
 - [ ] Run canonical Hero verifier plus routed family tests and commit.
 
 ### Task 6: Freeze candidate and integrate to staging
