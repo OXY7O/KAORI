@@ -49,11 +49,13 @@ def test_hero_documentation_has_one_global_contract_and_one_domain_extension() -
     global_standard = (components / 'HERO.md').read_text(encoding='utf-8')
     analytics_extension = (components / 'ANALYTICS_HERO.md').read_text(encoding='utf-8')
 
-    assert 'KAORI Hero Component Standard v1.6' in global_standard
+    assert 'KAORI Hero Component Standard v1.7' in global_standard
     assert 'Hero Profile' in global_standard
     assert 'Hero State' in global_standard
     assert 'same Profile + same State' in global_standard
     assert 'exactly three metadata' in global_standard
+    assert 'normal, blocked, and degraded' in global_standard
+    assert '11–19 word' in global_standard
     assert '16 px, regular, 28 px line height' in global_standard
     assert 'Action Icon Box' in global_standard
     assert 'Context Icon Box' in global_standard
@@ -78,6 +80,8 @@ def test_operational_dashboard_uses_one_canonical_hero_profile() -> None:
     ).read_text(encoding='utf-8')
 
     assert 'macro operational_dashboard(' in component
+    assert 'macro persistent_metadata(' in component
+    assert 'data-kaori-hero-metadata-policy="persistent"' in component
     assert 'page_hero.operational_dashboard(' in kubernetes
     assert 'page_hero.operational_dashboard(' in object_storage
     for source in (kubernetes, object_storage):
@@ -111,6 +115,7 @@ def test_kubernetes_analytics_heroes_use_three_stable_metadata_slots_in_all_stat
     component = (ROOT / 'app' / 'templates' / 'components' / 'page_hero.html').read_text(encoding='utf-8')
     assert 'macro analytics_metadata(' in component
     assert 'data-kaori-analytics-metadata' in component
+    assert 'persistent_metadata(analytics_items)' in component
 
     base = ROOT / 'app' / 'templates' / 'kubernetes' / 'analytics'
     for relative in KUBERNETES_ANALYTICS_HEROES:
@@ -152,10 +157,11 @@ def test_kubernetes_analytics_cluster_remediation_uses_integration_action() -> N
     end = source.index('\n\ndef metrics_source_setup_blocker', start)
     blocker = source[start:end]
 
-    assert "'action_label': 'Open Cluster Integration'" in blocker
+    assert "'action_label': 'Open Cluster Integrations'" in blocker
     assert "'action_url': url_for('integrations.kubernetes')" in blocker
     assert "'permission': 'clusters.manage'" in blocker
     assert "'action_label': 'Add Cluster'" not in blocker
+    assert "'action_label': 'Open Cluster Integration'" not in blocker
     assert "url_for('cluster.add_cluster')" not in blocker
 
 
