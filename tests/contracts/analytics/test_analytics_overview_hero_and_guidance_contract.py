@@ -3,10 +3,12 @@ from pathlib import Path
 
 def test_analytics_overview_hero_caps_metadata_and_uses_manage_clusters_action():
     hero = Path('app/templates/kubernetes/analytics/overview/partials/_hero.html').read_text()
-    assert "page_hero.meta_label('server'" in hero
-    assert "page_hero.meta_label('clock-3'" in hero
-    assert "page_hero.meta_label('bell'" in hero
-    assert "page_hero.meta_label('list-checks'" not in hero
+    assert "page_hero.analytics_metadata('server'" in hero
+    assert 'hero_secondary_icon = "clock-3"' in hero
+    assert 'hero_tertiary_icon = "bell"' in hero
+    assert 'hero_tertiary_label = "Blocked Readiness"' in hero
+    assert "page_hero.meta_label('" not in hero
+    assert 'list-checks' not in hero
 
     posture = Path('app/templates/kubernetes/analytics/overview/partials/_hero_posture.html').read_text()
     assert 'page_hero.context_card_body(' in posture
