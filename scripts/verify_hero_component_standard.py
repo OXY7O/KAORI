@@ -18,6 +18,7 @@ INTEGRATION_TAXONOMY = ROOT / 'app' / 'definitions' / 'catalogs' / 'integrations
 DESCRIPTION_TARGET_MIN = 11
 DESCRIPTION_TARGET_MAX = 19
 DESCRIPTION_HARD_MAX = 19
+CLUSTER_REQUIRED_CONTEXT_SUFFIX = 'with governed context.'
 DESCRIPTION_WORD_PATTERN = re.compile(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*")
 DESCRIPTION_PARAGRAPH_PATTERN = re.compile(
     r'<p\b(?=[^>]*page_hero\.description_classes\(\))[^>]*>(?P<body>.*?)</p>',
@@ -223,6 +224,12 @@ def _static_string(node: ast.AST | None, *, owner: str) -> str:
     raise AssertionError(f'{owner}: Hero copy must be a static string literal')
 
 
+def _effective_cluster_required_description(description: str) -> str:
+    if len(_description_words(description)) >= DESCRIPTION_TARGET_MIN:
+        return description
+    return f"{description.rstrip('.')} {CLUSTER_REQUIRED_CONTEXT_SUFFIX}"
+
+
 def _cluster_required_descriptions() -> dict[str, str]:
     descriptions: dict[str, str] = {}
     for path in sorted((ROOT / 'app').rglob('*.py')):
@@ -259,7 +266,7 @@ def _cluster_required_descriptions() -> dict[str, str]:
                 description = f'{operation} requires a registered Kubernetes cluster and canonical connection.'
             else:
                 description = _static_string(description_node, owner=owner)
-            descriptions[f'cluster_required {owner}'] = description
+            descriptions[f'cluster_required {owner}'] = _effective_cluster_required_description(description)
     return descriptions
 
 
