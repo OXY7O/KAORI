@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import re
 from pathlib import Path
 
@@ -11,6 +12,20 @@ DARK_STANDARD = ROOT / 'docs' / 'design' / 'components' / 'DARK_MODE.md'
 ANALYTICS_STANDARD = ROOT / 'docs' / 'design' / 'components' / 'ANALYTICS_HERO.md'
 DASHBOARD_STANDARD = ROOT / 'docs' / 'design' / 'patterns' / 'OPERATIONAL_DASHBOARD.md'
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
+INTEGRATION_TAXONOMY = ROOT / 'app' / 'definitions' / 'catalogs' / 'integrations' / 'taxonomy.yaml'
+
+DESCRIPTION_TARGET_MIN = 7
+DESCRIPTION_TARGET_MAX = 12
+DESCRIPTION_HARD_MAX = 16
+DESCRIPTION_WORD_PATTERN = re.compile(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*")
+DESCRIPTION_PARAGRAPH_PATTERN = re.compile(
+    r'<p\b(?=[^>]*page_hero\.description_classes\(\))[^>]*>(?P<body>.*?)</p>',
+    flags=re.IGNORECASE | re.DOTALL,
+)
+OPERATIONAL_DASHBOARD_DESCRIPTION_PATTERN = re.compile(
+    r"page_hero\.operational_dashboard\(\s*'[^']*',\s*'[^']*',\s*'[^']*',\s*'(?P<description>[^']*)'",
+    flags=re.DOTALL,
+)
 
 KUBERNETES_ANALYTICS_HEROES = (
     TEMPLATES / 'kubernetes' / 'analytics' / 'overview' / 'partials' / '_hero.html',
@@ -127,6 +142,8 @@ DOCUMENTATION_TOKENS = (
     'components/ANALYTICS_HERO.md',
     '## Theme and surface contract',
     'components/DARK_MODE.md',
+    'The canonical verifier enforces the 7–12 word target',
+    'Integration domain descriptions are audited from',
     '## Change procedure',
 )
 
@@ -145,6 +162,96 @@ def _require_tokens(source: str, tokens: tuple[str, ...], owner: str) -> None:
 
 def _macro_names(source: str) -> set[str]:
     return set(re.findall(r'{%\s*macro\s+([A-Za-z0-9_]+)', source))
+
+
+def _description_words(text: str) -> list[str]:
+    return DESCRIPTION_WORD_PATTERN.findall(text)
+
+
+def _validate_description_budget(text: str, *, owner: str) -> None:
+    word_count = len(_description_words(text))
+    if word_count > DESCRIPTION_HARD_MAX:
+        raise AssertionError(
+            f'{owner}: Hero description has {word_count} words; hard maximum {DESCRIPTION_HARD_MAX} words'
+        )
+    if not DESCRIPTION_TARGET_MIN <= word_count <= DESCRIPTION_TARGET_MAX:
+        raise AssertionError(
+            f'{owner}: Hero description has {word_count} words; expected '
+            f'{DESCRIPTION_TARGET_MIN}-{DESCRIPTION_TARGET_MAX} words'
+        )
+
+
+def _clean_yaml_scalar(value: str) -> str:
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {'\'', '"'}:
+        return value[1:-1]
+    return value
+
+
+def _integration_domain_hero_descriptions() -> dict[str, str]:
+    taxonomy = _read(INTEGRATION_TAXONOMY)
+    domains_section = taxonomy.split('\ncapabilities:', 1)[0]
+    entries = re.finditer(
+        r'(?ms)^- key: [^\n]+\n\s+label: (?P<label>[^\n]+)\n\s+description: (?P<description>[^\n]+)',
+        domains_section,
+    )
+    descriptions = {
+        _clean_yaml_scalar(match.group('label')): _clean_yaml_scalar(match.group('description')) for match in entries
+    }
+    if not descriptions:
+        raise AssertionError('Integration taxonomy: no domain Hero descriptions were discovered')
+    return descriptions
+
+
+def _literal_hero_descriptions(paths: list[Path]) -> dict[str, str]:
+    descriptions: dict[str, str] = {}
+    for path in paths:
+        source = _read(path)
+        match = DESCRIPTION_PARAGRAPH_PATTERN.search(source)
+        if not match:
+            continue
+        body = match.group('body')
+        if '{{' in body or '{%' in body:
+            continue
+        text = re.sub(r'<[^>]+>', ' ', body)
+        text = html.unescape(' '.join(text.split()))
+        if text:
+            descriptions[str(path.relative_to(ROOT))] = text
+    return descriptions
+
+
+def _operational_dashboard_hero_descriptions(paths: list[Path]) -> dict[str, str]:
+    descriptions: dict[str, str] = {}
+    for path in paths:
+        source = _read(path)
+        match = OPERATIONAL_DASHBOARD_DESCRIPTION_PATTERN.search(source)
+        if not match:
+            raise AssertionError(
+                f'{path.relative_to(ROOT)}: operational-dashboard description must be a statically auditable literal'
+            )
+        descriptions[str(path.relative_to(ROOT))] = match.group('description')
+    return descriptions
+
+
+def _verify_description_budgets(primitive_shells: list[Path], profile_templates: list[Path]) -> int:
+    descriptions = _literal_hero_descriptions(primitive_shells)
+    descriptions.update(_operational_dashboard_hero_descriptions(profile_templates))
+    descriptions.update(
+        {
+            f'Integration domain {label}': description
+            for label, description in _integration_domain_hero_descriptions().items()
+        }
+    )
+
+    failures: list[str] = []
+    for owner, description in descriptions.items():
+        try:
+            _validate_description_budget(description, owner=owner)
+        except AssertionError as exc:
+            failures.append(str(exc))
+    if failures:
+        raise AssertionError('Hero description budget violations:\n- ' + '\n- '.join(failures))
+    return len(descriptions)
 
 
 def _has_unmanaged_hero_shell(source: str) -> bool:
@@ -346,6 +453,8 @@ def verify() -> None:
             f'Operational Dashboard profile must have exactly two paired references, found {len(profile_templates)}'
         )
 
+    audited_descriptions = _verify_description_budgets(primitive_shells, profile_templates)
+
     context_card_templates = sum(
         1 for path in TEMPLATES.rglob('*.html') if 'page_hero.context_card(' in path.read_text(encoding='utf-8')
     )
@@ -363,11 +472,12 @@ def verify() -> None:
         'KAORI Hero component standard passed: '
         f'{len(primitive_shells)} compatibility Hero shells, '
         f'{len(profile_templates)} canonical profile consumers, '
+        f'{audited_descriptions} audited Hero descriptions, '
         f'{context_card_templates} context-card consumers, '
         f'{lazy_context_templates} lazy context bodies, '
         f'{blocked_context_templates} shared blocked contexts, and '
         f'{analytics_metadata_templates} shared Analytics metadata consumers match v1.6; '
-        'dashboard parity, blocked readiness ownership, Analytics metadata ownership, '
+        'dashboard parity, blocked readiness ownership, Analytics metadata ownership, description budgets, '
         'implementation, documentation, dark-mode ownership, removed APIs, unmanaged-shell detection, '
         'and quality-gate ownership are synchronized.'
     )
