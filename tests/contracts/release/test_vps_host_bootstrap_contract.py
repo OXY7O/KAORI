@@ -21,7 +21,7 @@ def test_server_host_bootstrap_accepts_only_operator_generated_rsa_public_key() 
 
     for marker in (
         '--ssh-public-key-file',
-        'ssh-rsa ',
+        'ssh-rsa[[:space:]]+',
         'authorized_keys',
         'chmod 700',
         'chmod 600',
