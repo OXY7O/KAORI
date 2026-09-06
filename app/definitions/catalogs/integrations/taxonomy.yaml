@@ -3,13 +3,13 @@ kind: integration_taxonomy
 domains:
 - key: orchestration
   label: Orchestration
-  description: Cluster providers, control-plane access, discovery, and runtime connectivity.
+  description: Cluster providers, control-plane access, discovery, runtime connectivity, and governed orchestration integration workflows.
   icon: boxes
   workspace_endpoint: integrations.orchestration
   order: 10
 - key: observability
   label: Observability
-  description: Metrics, alerting, runtime validation, and operational telemetry providers.
+  description: Metrics, alerting, runtime validation, telemetry providers, and governed observability integration workflows.
   icon: activity
   workspace_endpoint: integrations.observability
   order: 20
@@ -58,18 +58,3 @@ capabilities:
   description: Block-device provider connectivity, inventory, and operational telemetry.
   order: 30
   asset_types: []
-consumer_assets:
-- asset_type: kubernetes_cluster
-  label: Kubernetes Cluster
-  plural_label: Kubernetes Clusters
-  icon: boxes
-  selector_label: cluster
-  selector_placeholder: k8s-production
-  model_key: cluster
-- asset_type: object_storage_system
-  label: Object Storage System
-  plural_label: Object Storage Systems
-  icon: database
-  selector_label: job
-  selector_placeholder: minio-production
-  model_key: object_storage_system
