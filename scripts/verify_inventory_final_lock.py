@@ -180,10 +180,9 @@ def main() -> int:
     topology_hero = read('app/templates/kubernetes/inventory/topology/partials/_hero.html')
     blocked_hero = read('app/templates/components/cluster/_hero_blocked_context.html')
     require(
-        "page_hero.context_metric('boxes', 'Connected Clusters', '0', 'No Kubernetes connection available')"
-        in blocked_hero
-        and "page_hero.context_metric('circle-dot-dashed', blocked_state_label, 'Blocked', 'Cluster access is required'"
-        in blocked_hero,
+        'page_hero.blocked_context_body(' in blocked_hero
+        and "('boxes', 'Connected Clusters', '0', 'No Kubernetes connection available')" in blocked_hero
+        and "('circle-dot-dashed', blocked_state_label, 'Blocked', 'Cluster access is required'" in blocked_hero,
         'Inventory must inherit the canonical Kubernetes setup-blocked Hero context.',
         errors,
     )
