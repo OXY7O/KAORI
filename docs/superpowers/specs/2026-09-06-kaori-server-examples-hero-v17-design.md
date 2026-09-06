@@ -76,7 +76,7 @@ Kubernetes Analytics continues to use `page_hero.analytics_metadata(...)` with e
 
 ### CTA vocabulary
 
-The cluster-readiness remediation CTA becomes `Open Orchestration Integration` and continues to target the orchestration/Kubernetes integration workspace with the same `clusters.manage` authorization boundary.
+The cluster-readiness remediation CTA becomes `Open Cluster Integrations` and continues to target the orchestration/Kubernetes integration workspace with the same `clusters.manage` authorization boundary.
 
 ## Verification
 
@@ -90,6 +90,6 @@ Regression-first tests cover:
 - Hero v1.7 reference bounds;
 - blocked/degraded operational metadata persistence;
 - Storage Analysis blocked metadata presence;
-- Orchestration CTA label/route/permission.
+- Cluster Integrations CTA label/route/permission.
 
 Developer Check is required on the exact work-branch SHA. After merge to `kaori/staging`, Full Admission is authority. An immutable RC must then be published and deployed through the governed staging-server workflow. Human UAT is the boundary before any `main` promotion.
