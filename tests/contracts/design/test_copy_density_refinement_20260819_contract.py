@@ -11,10 +11,10 @@ def read(path: str) -> str:
 
 def test_kubernetes_analytics_hero_copy_follows_canonical_concise_operational_context() -> None:
     expected = {
-        'app/templates/kubernetes/analytics/capacity/partials/_hero.html': 'Review worker headroom, scheduling pressure, and emerging capacity risks.',
-        'app/templates/kubernetes/analytics/workload/partials/_hero.html': 'Review workload governance, utilization, QoS, and right-sizing evidence.',
-        'app/templates/kubernetes/analytics/forecast/partials/_hero.html': 'Review projected demand, growth trends, thresholds, and capacity risk.',
-        'app/templates/kubernetes/analytics/top_consumers/partials/_hero.html': 'Identify leading resource consumers, concentration, and operational pressure.',
+        'app/templates/kubernetes/analytics/capacity/partials/_hero.html': 'Review worker headroom, scheduling pressure, committed capacity, and emerging scaling risks.',
+        'app/templates/kubernetes/analytics/workload/partials/_hero.html': 'Review workload governance, utilization, QoS, right-sizing evidence, and operational efficiency signals.',
+        'app/templates/kubernetes/analytics/forecast/partials/_hero.html': 'Review projected demand, growth trends, forecast thresholds, and emerging capacity risks.',
+        'app/templates/kubernetes/analytics/top_consumers/partials/_hero.html': 'Identify leading resource consumers, concentration trends, and operational pressure across workloads.',
         'app/templates/kubernetes/analytics/alerts/partials/_hero.html': 'Review active alerts, anomalies, routing context, ownership, readiness, and supporting operational evidence.',
     }
 
