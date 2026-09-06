@@ -23,14 +23,7 @@ def test_object_storage_inventory_setup_copy_is_concise() -> None:
 
 def test_object_storage_analytics_uses_shared_three_slot_metadata_renderer() -> None:
     source = (
-        ROOT
-        / 'app'
-        / 'templates'
-        / 'storage'
-        / 'object_storage'
-        / 'analytics'
-        / 'partials'
-        / '_hero.html'
+        ROOT / 'app' / 'templates' / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero.html'
     ).read_text(encoding='utf-8')
 
     assert 'page_hero.analytics_metadata(' in source
