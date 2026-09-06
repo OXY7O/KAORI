@@ -19,25 +19,30 @@ def test_example_components_are_standalone_compose_stacks() -> None:
         'example/minio/compose.yml',
         'example/thanos/compose.yml',
         'example/thanos/bucket.yml',
-        'example/runner/compose.yml',
-        'example/runner/README.md',
+        'example/kaori/compose.yml',
+        'example/kaori/README.md',
+        'example/kaori/run.sh',
+        'example/kaori/.env.example',
     )
     missing = [path for path in required if not (ROOT / path).is_file()]
-    assert not missing, f'missing cycle #188 example files: {missing}'
+    assert not missing, f'missing cycle #188/#218 example files: {missing}'
+    assert not (ROOT / 'example' / 'runner').exists()
 
 
 def test_example_docs_make_standalone_authority_explicit() -> None:
     readme = _read('example/README.md')
     assert 'standalone' in readme.lower()
-    for component in ('Prometheus', 'Alertmanager', 'MinIO', 'Thanos', 'Runner'):
+    for component in ('Prometheus', 'Alertmanager', 'MinIO', 'Thanos'):
         assert component in readme
     assert 'docker compose -f' in readme
+    assert 'CI runner lifecycle' in readme
 
 
 def test_repository_front_has_branding_demo_security_and_license() -> None:
     readme = _read('README.md')
     assert 'app/static/images/kaori-logo.svg' in readme
     assert 'example/README.md' in readme
+    assert 'example/kaori' in readme
     assert 'SECURITY.md' in readme
     assert 'LICENSE' in readme
     assert 'badge.svg?branch=main' in readme
