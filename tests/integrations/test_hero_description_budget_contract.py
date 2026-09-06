@@ -36,3 +36,20 @@ def test_integration_domain_hero_descriptions_are_registered_with_global_budget_
         descriptions['Orchestration'] == 'Cluster providers, control-plane access, discovery, and runtime connectivity.'
     )
     assert set(descriptions) == {'Orchestration', 'Observability', 'Storage'}
+
+
+def test_cluster_required_blocked_hero_descriptions_are_registered_with_global_budget_audit() -> None:
+    namespace = _hero_verifier_namespace()
+    descriptions = namespace['_cluster_required_hero_descriptions']()
+    values = set(descriptions.values())
+
+    assert 'Validate replacement certificate pairing and coverage before rotating one live TLS Secret.' in values
+    assert 'Validate one certificate pair against selected TLS Secrets before controlled rotation.' in values
+    assert (
+        'Validate replacement certificate material, key matching, and target coverage before rotating one live TLS Secret.'
+        not in values
+    )
+    assert (
+        'Validate one certificate and private-key pair against explicitly selected TLS Secrets before any controlled bulk rotation.'
+        not in values
+    )
