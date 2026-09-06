@@ -9,7 +9,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro(provider.icon, 'Integration Binding', 'route') %}
                         <h1 class="{{ page_hero.title_classes() }}">Bind {{ provider.label }} Source</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Associate an operational scope with an existing reusable connection and define the selector that keeps shared data isolated.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Bind reusable connections to scopes with isolated selectors.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('boxes', cluster.name if cluster else 'Scope unavailable') }}
                             {{ page_hero.meta_label('server-cog', source_options|length ~ ' Existing Sources') }}
