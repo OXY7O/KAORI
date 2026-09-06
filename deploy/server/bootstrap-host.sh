@@ -19,14 +19,14 @@ state_dir='/var/lib/kaori/deploy-state'
 backup_dir='/var/lib/kaori/backups'
 
 fail() {
-  printf 'KAORI VPS host preparation failed: %s\n' "$*" >&2
+  printf 'KAORI server host preparation failed: %s\n' "$*" >&2
   exit 1
 }
 
 usage() {
   cat <<'USAGE'
 Usage:
-  sudo bash deploy/vps/bootstrap-host.sh --ssh-public-key-file PATH [options]
+  sudo bash deploy/server/bootstrap-host.sh --ssh-public-key-file PATH [options]
 
 Required:
   --ssh-public-key-file PATH   RSA public key retained by the operator off-host.
@@ -36,7 +36,7 @@ Options:
   --deploy-root PATH           KAORI release root (default: /opt/kaori).
   --app-env-template PATH      Portable app env template.
   --secrets-env-template PATH  Portable secret env template.
-  --deploy-env-template PATH   VPS deployment-adapter env template.
+  --deploy-env-template PATH   Server deployment-adapter env template.
   --ssh-port PORT              SSH port reported for GitHub Environment configuration.
   -h, --help                   Show this help.
 USAGE
@@ -86,7 +86,6 @@ codename="${VERSION_CODENAME:-${UBUNTU_CODENAME:-}}"
 mapfile -t public_key_lines < <(sed -e 's/\r$//' -e '/^[[:space:]]*$/d' "$ssh_public_key_file")
 (( ${#public_key_lines[@]} == 1 )) || fail 'SSH public key file must contain exactly one non-empty line'
 public_key="${public_key_lines[0]}"
-# Accepted public-key prefix: ssh-rsa 
 [[ "$public_key" =~ ^ssh-rsa[[:space:]]+[A-Za-z0-9+/]+={0,3}([[:space:]].*)?$ ]] || fail 'SSH public key must be one RSA OpenSSH line'
 
 install_docker_if_needed() {
@@ -173,7 +172,7 @@ verify_runtime_access
 
 cat <<EOF
 
-KAORI VPS HOST PREPARATION PASS
+KAORI SERVER HOST PREPARATION PASS
 
 Deploy user : $deploy_user
 Deploy root : $deploy_root
