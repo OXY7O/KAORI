@@ -73,6 +73,27 @@ def test_operational_dashboard_uses_one_canonical_hero_profile() -> None:
         assert 'page_hero.context_panel_classes()' not in source
 
 
+def test_blocked_hero_context_has_one_shared_renderer() -> None:
+    component = (ROOT / 'app' / 'templates' / 'components' / 'page_hero.html').read_text(encoding='utf-8')
+    kubernetes = (
+        ROOT / 'app' / 'templates' / 'components' / 'cluster' / '_hero_blocked_context.html'
+    ).read_text(encoding='utf-8')
+    object_storage = (
+        ROOT
+        / 'app'
+        / 'templates'
+        / 'storage'
+        / 'object_storage'
+        / 'inventory'
+        / 'components'
+        / '_hero_blocked_context.html'
+    ).read_text(encoding='utf-8')
+
+    assert 'macro blocked_context_body(' in component
+    assert 'page_hero.blocked_context_body(' in kubernetes
+    assert 'page_hero.blocked_context_body(' in object_storage
+
+
 def test_object_storage_analytics_normal_branch_has_three_stable_metadata_slots() -> None:
     source = (
         ROOT / 'app' / 'templates' / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero.html'
