@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 from functools import wraps
 from typing import Any, cast
@@ -7,6 +8,16 @@ from typing import Any, cast
 from flask import flash, redirect, render_template, request, url_for
 
 from app.kubernetes.cluster.onboarding import has_registered_clusters
+
+DESCRIPTION_WORD_PATTERN = re.compile(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*")
+MINIMUM_HERO_DESCRIPTION_WORDS = 11
+
+
+def _blocked_page_description(operation_label: str, page_description: str | None) -> str:
+    description = page_description or f'{operation_label} requires a registered Kubernetes cluster and canonical connection.'
+    if len(DESCRIPTION_WORD_PATTERN.findall(description)) >= MINIMUM_HERO_DESCRIPTION_WORDS:
+        return description
+    return f"{description.rstrip('.')} with governed context."
 
 
 def cluster_required[ViewT: Callable[..., Any]](
@@ -33,10 +44,7 @@ def cluster_required[ViewT: Callable[..., Any]](
                         'kubernetes/operations/cluster_required.html',
                         requested_operation=operation_label,
                         requested_page_title=page_title or operation_label,
-                        requested_page_description=(
-                            page_description
-                            or f'{operation_label} requires a registered Kubernetes cluster and canonical connection.'
-                        ),
+                        requested_page_description=_blocked_page_description(operation_label, page_description),
                     ),
                     409,
                 )
