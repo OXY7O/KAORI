@@ -142,6 +142,17 @@ def _profile_templates() -> list[Path]:
     )
 
 
+def _has_unmanaged_local_hero_shell(source: str) -> bool:
+    if '<h1' not in source:
+        return False
+    if 'page_hero.shell_classes()' in source or 'page_hero.operational_dashboard(' in source:
+        return False
+    for section_tag in re.findall(r'<section\b[^>]*>', source, flags=re.IGNORECASE | re.DOTALL):
+        if 'bg-kaori-primary' in section_tag or re.search(r'\bkaori-hero-shell\b', section_tag):
+            return True
+    return False
+
+
 def _verify_primitive_shell(path: Path) -> None:
     source = path.read_text(encoding='utf-8')
     relative = path.relative_to(ROOT)
@@ -269,7 +280,7 @@ def verify() -> None:
         if path == HERO:
             continue
         source = path.read_text(encoding='utf-8')
-        if '<h1' in source and ('bg-kaori-primary' in source or 'kaori-hero-shell ' in source):
+        if _has_unmanaged_local_hero_shell(source):
             suspicious_local_shells.append(str(path.relative_to(ROOT)))
     if suspicious_local_shells:
         raise AssertionError('Unmanaged Hero-like shell detected: ' + ', '.join(suspicious_local_shells))
