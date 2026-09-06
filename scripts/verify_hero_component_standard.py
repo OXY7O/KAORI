@@ -14,9 +14,7 @@ ANALYTICS_STANDARD = ROOT / 'docs' / 'design' / 'components' / 'ANALYTICS_HERO.m
 DASHBOARD_STANDARD = ROOT / 'docs' / 'design' / 'patterns' / 'OPERATIONAL_DASHBOARD.md'
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 INTEGRATION_TAXONOMY = ROOT / 'app' / 'definitions' / 'catalogs' / 'integrations' / 'taxonomy.yaml'
-KUBERNETES_ANALYTICS_BLOCKED_HERO = (
-    TEMPLATES / 'kubernetes' / 'analytics' / 'materialization' / 'blocked.html'
-)
+KUBERNETES_ANALYTICS_BLOCKED_HERO = TEMPLATES / 'kubernetes' / 'analytics' / 'materialization' / 'blocked.html'
 KUBERNETES_ANALYTICS_MATERIALIZATION_PRESENTATION = (
     ROOT / 'app' / 'kubernetes' / 'analytics' / 'materialization' / 'presentation.py'
 )
@@ -31,9 +29,7 @@ DESCRIPTION_PARAGRAPH_PATTERN = re.compile(
     r'<p\b(?=[^>]*page_hero\.description_classes\(\))[^>]*>(?P<body>.*?)</p>',
     flags=re.IGNORECASE | re.DOTALL,
 )
-JINJA_DESCRIPTION_VARIABLE_PATTERN = re.compile(
-    r'^\s*{{\s*(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*}}\s*$'
-)
+JINJA_DESCRIPTION_VARIABLE_PATTERN = re.compile(r'^\s*{{\s*(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*}}\s*$')
 OPERATIONAL_DASHBOARD_DESCRIPTION_PATTERN = re.compile(
     r"page_hero\.operational_dashboard\(\s*'[^']*',\s*'[^']*',\s*'[^']*',"
     r"\s*'(?P<description>[^']*)'",
@@ -182,9 +178,7 @@ def _normalize_description_text(value: str) -> str:
 
 def _local_jinja_literal_values(source: str, variable: str) -> list[str]:
     assignment_pattern = re.compile(
-        r'{%\s*set\s+'
-        + re.escape(variable)
-        + r'\s*=\s*(?P<quote>[\'\"])(?P<value>.*?)(?P=quote)\s*%}',
+        r'{%\s*set\s+' + re.escape(variable) + r'\s*=\s*(?P<quote>[\'\"])(?P<value>.*?)(?P=quote)\s*%}',
         flags=re.DOTALL,
     )
     return [
