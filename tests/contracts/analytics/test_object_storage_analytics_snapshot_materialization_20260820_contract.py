@@ -137,8 +137,11 @@ def test_ui_explains_snapshot_authority_and_three_stage_readiness() -> None:
     assert 'Loading Committed Analytics Snapshot' in controls
     assert blocker.count('Object Storage → Metrics → Analytics Snapshot') == 2
     assert blocker.count('dependency_grid_classes = "lg:grid-cols-3"') == 2
-    assert "3: 'Analytics Snapshot'" in blocked_hero
-    assert 'readiness_step_count = 3' in blocked_hero
+    assert "'Analytics Readiness'" in blocked_hero
+    assert "'Active Scope'" in blocked_hero
+    assert "'Missing Evidence'" in blocked_hero
+    assert 'Analytics Snapshot' in blocked_hero
+    assert "'Current Step'" not in blocked_hero
     assert 'This page uses one committed worker snapshot' in boundary
     assert 'worker collection query failed' in boundary
     assert 'evaluated when the worker commits a snapshot' in readiness
