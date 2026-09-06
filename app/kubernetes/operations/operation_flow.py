@@ -14,10 +14,12 @@ MINIMUM_HERO_DESCRIPTION_WORDS = 11
 
 
 def _blocked_page_description(operation_label: str, page_description: str | None) -> str:
-    description = page_description or f'{operation_label} requires a registered Kubernetes cluster and canonical connection.'
+    description = (
+        page_description or f'{operation_label} requires a registered Kubernetes cluster and canonical connection.'
+    )
     if len(DESCRIPTION_WORD_PATTERN.findall(description)) >= MINIMUM_HERO_DESCRIPTION_WORDS:
         return description
-    return f"{description.rstrip('.')} with governed context."
+    return f'{description.rstrip(".")} with governed context.'
 
 
 def cluster_required[ViewT: Callable[..., Any]](
