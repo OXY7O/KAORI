@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import runpy
 import subprocess
 import sys
 from pathlib import Path
@@ -71,6 +72,32 @@ def test_object_storage_analytics_normal_branch_has_three_stable_metadata_slots(
     assert "page_hero.meta_label('layers-3', evidence_label)" in source
     assert re.search(r"evidence_label\s*=\s*['\"]Committed Snapshot Boundary['\"]", source)
     assert '{% if inventory_observed_at %}' not in source
+
+
+def test_unmanaged_hero_shell_guard_ignores_canonical_consumers_and_catches_local_shells() -> None:
+    namespace = runpy.run_path(str(ROOT / 'scripts' / 'verify_hero_component_standard.py'))
+    has_unmanaged_shell = namespace['_has_unmanaged_local_hero_shell']
+
+    canonical_primitive = '''
+    <section class="{{ page_hero.shell_classes() }}">
+        <h1 class="{{ page_hero.title_classes() }}">Reports</h1>
+        <a class="bg-kaori-primary">Open Storage</a>
+    </section>
+    '''
+    canonical_profile = '''
+    {{ page_hero.operational_dashboard(title='Dashboard') }}
+    <h1>Fallback heading</h1>
+    <button class="bg-kaori-primary">Manage</button>
+    '''
+    unmanaged_local_shell = '''
+    <section class="kaori-hero-shell bg-kaori-primary rounded-2xl">
+        <h1>Local Hero</h1>
+    </section>
+    '''
+
+    assert not has_unmanaged_shell(canonical_primitive)
+    assert not has_unmanaged_shell(canonical_profile)
+    assert has_unmanaged_shell(unmanaged_local_shell)
 
 
 def test_removed_hero_macros_are_absent_from_implementation() -> None:
