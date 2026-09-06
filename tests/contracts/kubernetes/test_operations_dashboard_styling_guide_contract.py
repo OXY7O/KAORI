@@ -248,7 +248,7 @@ def test_dashboard_pattern_is_locked_by_documentation_and_quality_gate() -> None
     audit = read('docs/design/audits/KUBERNETES_OPERATIONS_DASHBOARD_ALIGNMENT_AUDIT_2026_08.md')
     quality_gate = read('scripts/quality_gate.sh')
 
-    assert '# KAORI Operational Dashboard Pattern v1.4' in standard
+    assert '# KAORI Operational Dashboard Pattern v1.5' in standard
     assert '**Status:** Locked reference pattern' in standard
     assert 'No visual redesign is required' in audit
     assert 'python scripts/verify_operational_dashboard_standard.py' in quality_gate

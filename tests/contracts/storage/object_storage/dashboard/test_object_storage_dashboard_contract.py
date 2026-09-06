@@ -63,6 +63,7 @@ def test_dashboard_route_and_service_are_snapshot_only() -> None:
 def test_dashboard_matches_kubernetes_operational_layout_concept() -> None:
     content = read('app/templates/storage/object_storage/dashboard/partials/_content.html')
     hero = read('app/templates/storage/object_storage/dashboard/partials/_hero.html')
+    page_hero = read('app/templates/components/page_hero.html')
     signal_overview = read('app/templates/storage/object_storage/dashboard/partials/_signal_overview.html')
     kubernetes_content = read('app/templates/kubernetes/dashboard/partials/_content.html')
 
@@ -82,7 +83,8 @@ def test_dashboard_matches_kubernetes_operational_layout_concept() -> None:
     )
     assert 'hx-trigger="load"' in signal_overview
     assert 'All Systems' in signal_overview
-    assert 'No live provider query on page load' in hero
+    assert 'page_hero.operational_dashboard(' in hero
+    assert 'No live provider query on page load' in page_hero
     assert 'class="mt-5 space-y-5"' in content
 
 

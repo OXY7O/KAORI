@@ -24,9 +24,14 @@ def test_shared_cluster_blocked_hero_preserves_dashboard_semantics() -> None:
     assert "page_hero.context_info('triangle-alert', blocked_info)" in shared
 
 
-def test_dashboard_operations_and_governance_share_the_blocked_hero_component() -> None:
+def test_dashboard_owns_blocked_state_through_canonical_profile_while_other_workspaces_share_context() -> None:
+    dashboard = _read('app/templates/kubernetes/dashboard/partials/_hero.html')
+    assert 'page_hero.operational_dashboard(' in dashboard
+    assert "dashboard_state = 'blocked' if cluster_onboarding.is_blocked else 'normal'" in dashboard
+    assert "'Cluster Setup Required'" in dashboard
+    assert 'components/cluster/_hero_blocked_context.html' not in dashboard
+
     expected = {
-        'app/templates/kubernetes/dashboard/partials/_hero.html': 'Dashboard Readiness',
         'app/templates/kubernetes/operations/cluster_required.html': 'Operations Readiness',
         'app/templates/kubernetes/governance/overview/index.html': 'Governance Readiness',
         'app/templates/kubernetes/governance/tls_certificates/partials/_hero.html': 'Governance Readiness',
@@ -67,19 +72,22 @@ def test_tls_governance_does_not_present_zero_inventory_as_blocked_evidence() ->
     assert 'Cluster Setup Required' in blocked_branch
 
 
-def test_dashboard_keeps_its_existing_blocked_state_label() -> None:
+def test_dashboard_keeps_explicit_blocked_profile_state() -> None:
     source = _read('app/templates/kubernetes/dashboard/partials/_hero.html')
-    assert 'cluster_blocked_state_label = "Dashboard State"' in source
+    assert "dashboard_state = 'blocked' if cluster_onboarding.is_blocked else 'normal'" in source
+    assert "'Cluster Setup Required'" in source
+    assert "'Add a Kubernetes cluster to activate operational signals.'" in source
 
 
-def test_dashboard_blocked_hero_does_not_double_wrap_the_shared_context_panel() -> None:
+def test_dashboard_blocked_hero_is_fully_owned_by_canonical_profile() -> None:
     source = _read('app/templates/kubernetes/dashboard/partials/_hero.html')
-    blocked_branch = source.split('{% if cluster_onboarding.is_blocked %}', 1)[1].split('{% else %}', 1)[0]
-    normal_branch = source.split('{% else %}', 1)[1].split('{% endif %}', 1)[0]
+    component = _read('app/templates/components/page_hero.html')
 
-    assert 'page_hero.context_panel_classes()' not in blocked_branch
-    assert 'components/cluster/_hero_blocked_context.html' in blocked_branch
-    assert 'page_hero.context_panel_classes()' in normal_branch
+    assert 'page_hero.operational_dashboard(' in source
+    assert 'page_hero.context_panel_classes()' not in source
+    assert 'components/cluster/_hero_blocked_context.html' not in source
+    assert "{% if state == 'blocked' %}" in component
+    assert "context_header_status('Dashboard Readiness', blocked_title, 'Blocked', 'warning')" in component
 
 
 def test_inventory_blocked_hero_metadata_does_not_present_zero_counts_as_evidence() -> None:
