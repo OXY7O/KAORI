@@ -308,8 +308,14 @@ The verifier must:
 - verify paired Operational Dashboard pages call the single shared profile renderer and do not locally assemble the shell;
 - verify shared blocked-context wrappers do not rebuild context-panel geometry locally;
 - verify Object Storage Analytics Normal metadata does not conditionally fall from three to two items;
+- enforce the description target and hard boundary for every Hero description that can be resolved deterministically from source;
+- audit shared profile-renderer descriptions at their call sites instead of bypassing copy checks because composition is centralized;
 - reject unmanaged Hero-like local surfaces that bypass the component;
-- report compatibility-shell and profile-consumer counts separately.
+- report compatibility-shell, profile-consumer, and description-audit counts separately.
+
+The canonical verifier enforces the 7–12 word target, with 16 words as the absolute hard maximum. A description outside 7–12 words is a contract violation rather than an advisory warning; a family that genuinely needs an exception must document and register that exception explicitly instead of silently bypassing verification.
+
+Integration domain descriptions are audited from `app/definitions/catalogs/integrations/taxonomy.yaml` because `app/templates/integrations/domain.html` renders those descriptions dynamically. Other source-controlled dynamic Hero copy must gain an equally explicit audit path when introduced.
 
 A family migration to a profile renderer must add family-level parity contracts before removing its compatibility composition.
 
@@ -338,12 +344,13 @@ python -m pytest -q \
 
 - profile and state are explicit for a profile-managed family;
 - same Profile + same State has one composition;
-- one `h1` and one concise description;
+- one `h1` and one concise 7–12 word description;
 - Normal operational profile has exactly three metadata items;
 - Landing/Blocked/Degraded exceptions are explicit;
 - context panel has no more than two metrics;
 - one primary action preferred and its semantic role matches the profile;
 - no page-local Hero geometry or typography fork;
+- dynamic Hero description sources have a deterministic verifier path;
 - Hero remains stable during HTMX/background activity;
 - technical identifiers preserve source casing;
 - documentation, verifier, and family contracts are synchronized.
