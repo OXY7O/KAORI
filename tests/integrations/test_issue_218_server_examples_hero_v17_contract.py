@@ -72,14 +72,7 @@ def test_hero_v17_operational_metadata_state_contract_is_executable() -> None:
     assert 'Blocked may use reduced readiness metadata' not in standard
 
     storage_hero = (
-        ROOT
-        / 'app'
-        / 'templates'
-        / 'kubernetes'
-        / 'analytics'
-        / 'storage'
-        / 'partials'
-        / '_hero.html'
+        ROOT / 'app' / 'templates' / 'kubernetes' / 'analytics' / 'storage' / 'partials' / '_hero.html'
     ).read_text(encoding='utf-8')
     assert 'page_hero.analytics_metadata(' in storage_hero
 
