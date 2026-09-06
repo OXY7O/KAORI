@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import runpy
 import subprocess
 import sys
 from pathlib import Path
@@ -19,6 +20,17 @@ def test_hero_component_standard_is_enforced() -> None:
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert 'KAORI Hero component standard passed' in result.stdout
+
+
+def test_unmanaged_hero_detector_scopes_brand_surface_to_shell_container() -> None:
+    namespace = runpy.run_path(str(ROOT / 'scripts' / 'verify_hero_component_standard.py'))
+    detector = namespace['_has_unmanaged_hero_shell']
+
+    normal_page = '<main><h1>Account</h1><a class="bg-kaori-primary">Save</a></main>'
+    unmanaged_hero = '<section class="bg-kaori-primary rounded-2xl"><h1>Local Hero</h1></section>'
+
+    assert detector(normal_page) is False
+    assert detector(unmanaged_hero) is True
 
 
 def test_hero_documentation_has_one_global_contract_and_one_domain_extension() -> None:
