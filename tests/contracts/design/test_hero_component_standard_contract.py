@@ -75,9 +75,9 @@ def test_operational_dashboard_uses_one_canonical_hero_profile() -> None:
 
 def test_blocked_hero_context_has_one_shared_renderer() -> None:
     component = (ROOT / 'app' / 'templates' / 'components' / 'page_hero.html').read_text(encoding='utf-8')
-    kubernetes = (
-        ROOT / 'app' / 'templates' / 'components' / 'cluster' / '_hero_blocked_context.html'
-    ).read_text(encoding='utf-8')
+    kubernetes = (ROOT / 'app' / 'templates' / 'components' / 'cluster' / '_hero_blocked_context.html').read_text(
+        encoding='utf-8'
+    )
     object_storage = (
         ROOT
         / 'app'
