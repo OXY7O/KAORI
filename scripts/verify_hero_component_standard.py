@@ -13,9 +13,7 @@ DARK_STANDARD = ROOT / 'docs' / 'design' / 'components' / 'DARK_MODE.md'
 ANALYTICS_STANDARD = ROOT / 'docs' / 'design' / 'components' / 'ANALYTICS_HERO.md'
 DASHBOARD_STANDARD = ROOT / 'docs' / 'design' / 'patterns' / 'OPERATIONAL_DASHBOARD.md'
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
-INTEGRATION_TAXONOMY = (
-    ROOT / 'app' / 'definitions' / 'catalogs' / 'integrations' / 'taxonomy.yaml'
-)
+INTEGRATION_TAXONOMY = ROOT / 'app' / 'definitions' / 'catalogs' / 'integrations' / 'taxonomy.yaml'
 
 DESCRIPTION_TARGET_MIN = 11
 DESCRIPTION_TARGET_MAX = 19
@@ -41,9 +39,7 @@ KUBERNETES_ANALYTICS_HEROES = (
     TEMPLATES / 'kubernetes' / 'analytics' / 'alerts' / 'partials' / '_hero.html',
     TEMPLATES / 'kubernetes' / 'analytics' / 'forecast' / 'partials' / '_hero.html',
 )
-OBJECT_STORAGE_ANALYTICS_HERO = (
-    TEMPLATES / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero.html'
-)
+OBJECT_STORAGE_ANALYTICS_HERO = TEMPLATES / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero.html'
 
 REMOVED_MACROS = (
     'context_posture_header',
@@ -118,10 +114,7 @@ def _description_words(text: str) -> list[str]:
 def _validate_description_budget(text: str, *, owner: str) -> None:
     word_count = len(_description_words(text))
     if word_count > DESCRIPTION_HARD_MAX:
-        raise AssertionError(
-            f'{owner}: Hero description has {word_count} words; '
-            f'hard maximum {DESCRIPTION_HARD_MAX} words'
-        )
+        raise AssertionError(f'{owner}: Hero description has {word_count} words; hard maximum {DESCRIPTION_HARD_MAX} words')
     if not DESCRIPTION_TARGET_MIN <= word_count <= DESCRIPTION_TARGET_MAX:
         raise AssertionError(
             f'{owner}: Hero description has {word_count} words; expected '
@@ -148,9 +141,7 @@ def _has_unmanaged_hero_shell(source: str) -> bool:
         tag = opening.group('tag')
         remainder = source[opening.end() :]
         closing = re.search(rf'</{tag}\s*>', remainder, flags=re.IGNORECASE)
-        if closing and re.search(
-            r'<h1\b', remainder[: closing.start()], flags=re.IGNORECASE
-        ):
+        if closing and re.search(r'<h1\b', remainder[: closing.start()], flags=re.IGNORECASE):
             return True
     return False
 
@@ -159,8 +150,7 @@ def _primitive_shell_templates() -> list[Path]:
     return sorted(
         path
         for path in TEMPLATES.rglob('*.html')
-        if path != HERO
-        and 'page_hero.shell_classes()' in path.read_text(encoding='utf-8')
+        if path != HERO and 'page_hero.shell_classes()' in path.read_text(encoding='utf-8')
     )
 
 
@@ -168,8 +158,7 @@ def _profile_templates() -> list[Path]:
     return sorted(
         path
         for path in TEMPLATES.rglob('*.html')
-        if path != HERO
-        and 'page_hero.operational_dashboard(' in path.read_text(encoding='utf-8')
+        if path != HERO and 'page_hero.operational_dashboard(' in path.read_text(encoding='utf-8')
     )
 
 
@@ -197,9 +186,7 @@ def _dashboard_descriptions(paths: list[Path]) -> dict[str, str]:
         match = OPERATIONAL_DASHBOARD_DESCRIPTION_PATTERN.search(source)
         if not match:
             relative = path.relative_to(ROOT)
-            raise AssertionError(
-                f'{relative}: dashboard description must be a static literal'
-            )
+            raise AssertionError(f'{relative}: dashboard description must be a static literal')
         descriptions[str(path.relative_to(ROOT))] = match.group('description')
     return descriptions
 
@@ -220,9 +207,7 @@ def _integration_domain_descriptions() -> dict[str, str]:
         domains,
     )
     result = {
-        f"Integration domain {_clean_yaml_scalar(match.group('label'))}": (
-            _clean_yaml_scalar(match.group('description'))
-        )
+        f'Integration domain {_clean_yaml_scalar(match.group("label"))}': _clean_yaml_scalar(match.group('description'))
         for match in entries
     }
     if not result:
@@ -257,40 +242,26 @@ def _cluster_required_descriptions() -> dict[str, str]:
                 node.args[0]
                 if node.args
                 else next(
-                    (
-                        keyword.value
-                        for keyword in node.keywords
-                        if keyword.arg == 'operation_label'
-                    ),
+                    (keyword.value for keyword in node.keywords if keyword.arg == 'operation_label'),
                     None,
                 )
             )
             operation = _static_string(operation_node, owner=owner)
             description_node = next(
-                (
-                    keyword.value
-                    for keyword in node.keywords
-                    if keyword.arg == 'page_description'
-                ),
+                (keyword.value for keyword in node.keywords if keyword.arg == 'page_description'),
                 None,
             )
             if description_node is None or (
-                isinstance(description_node, ast.Constant)
-                and description_node.value is None
+                isinstance(description_node, ast.Constant) and description_node.value is None
             ):
-                description = (
-                    f'{operation} requires a registered Kubernetes cluster and '
-                    'canonical connection.'
-                )
+                description = f'{operation} requires a registered Kubernetes cluster and canonical connection.'
             else:
                 description = _static_string(description_node, owner=owner)
             descriptions[f'cluster_required {owner}'] = description
     return descriptions
 
 
-def _verify_description_budgets(
-    primitive_shells: list[Path], profile_templates: list[Path]
-) -> int:
+def _verify_description_budgets(primitive_shells: list[Path], profile_templates: list[Path]) -> int:
     descriptions = _literal_hero_descriptions(primitive_shells)
     descriptions.update(_dashboard_descriptions(profile_templates))
     descriptions.update(_integration_domain_descriptions())
@@ -302,9 +273,7 @@ def _verify_description_budgets(
         except AssertionError as exc:
             failures.append(str(exc))
     if failures:
-        raise AssertionError(
-            'Hero description budget violations:\n- ' + '\n- '.join(failures)
-        )
+        raise AssertionError('Hero description budget violations:\n- ' + '\n- '.join(failures))
     return len(descriptions)
 
 
@@ -334,35 +303,17 @@ def _verify_primitive_shell(path: Path) -> None:
 def _verify_blocked_context_ownership() -> None:
     wrappers = (
         TEMPLATES / 'components' / 'cluster' / '_hero_blocked_context.html',
-        TEMPLATES
-        / 'storage'
-        / 'object_storage'
-        / 'inventory'
-        / 'components'
-        / '_hero_blocked_context.html',
-        TEMPLATES
-        / 'kubernetes'
-        / 'analytics'
-        / 'components'
-        / '_blocked_posture.html',
-        TEMPLATES
-        / 'storage'
-        / 'object_storage'
-        / 'analytics'
-        / 'partials'
-        / '_hero_blocked_posture.html',
+        TEMPLATES / 'storage' / 'object_storage' / 'inventory' / 'components' / '_hero_blocked_context.html',
+        TEMPLATES / 'kubernetes' / 'analytics' / 'components' / '_blocked_posture.html',
+        TEMPLATES / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero_blocked_posture.html',
     )
     for path in wrappers:
         source = _read(path)
         relative = path.relative_to(ROOT)
         if 'page_hero.blocked_context_body(' not in source:
-            raise AssertionError(
-                f'{relative}: blocked Hero must use blocked_context_body()'
-            )
+            raise AssertionError(f'{relative}: blocked Hero must use blocked_context_body()')
         if 'page_hero.context_panel_classes()' in source:
-            raise AssertionError(
-                f'{relative}: blocked wrapper must not own context geometry'
-            )
+            raise AssertionError(f'{relative}: blocked wrapper must not own context geometry')
 
 
 def _verify_analytics_metadata_ownership() -> None:
@@ -370,23 +321,15 @@ def _verify_analytics_metadata_ownership() -> None:
         source = _read(path)
         relative = path.relative_to(ROOT)
         if 'page_hero.analytics_metadata(' not in source:
-            raise AssertionError(
-                f'{relative}: Analytics Hero must use analytics_metadata()'
-            )
+            raise AssertionError(f'{relative}: Analytics Hero must use analytics_metadata()')
         if 'page_hero.metadata_row_classes()' in source:
-            raise AssertionError(
-                f'{relative}: Analytics Hero must not own metadata geometry'
-            )
+            raise AssertionError(f'{relative}: Analytics Hero must not own metadata geometry')
     object_storage = _read(OBJECT_STORAGE_ANALYTICS_HERO)
     expected = r"evidence_label\s*=\s*['\"]Committed Snapshot Boundary['\"]"
     if not re.search(expected, object_storage):
-        raise AssertionError(
-            'Object Storage Analytics evidence label must be Committed Snapshot Boundary'
-        )
+        raise AssertionError('Object Storage Analytics evidence label must be Committed Snapshot Boundary')
     if '{% if inventory_observed_at %}' in object_storage:
-        raise AssertionError(
-            'Object Storage Analytics metadata must not depend on observation time'
-        )
+        raise AssertionError('Object Storage Analytics metadata must not depend on observation time')
 
 
 def _verify_operational_metadata_state_contract() -> None:
@@ -406,29 +349,20 @@ def _verify_operational_metadata_state_contract() -> None:
         source = _read(path)
         relative = path.relative_to(ROOT)
         if 'page_hero.analytics_metadata(' not in source:
-            raise AssertionError(
-                f'{relative}: Analytics metadata must use persistent renderer'
-            )
+            raise AssertionError(f'{relative}: Analytics metadata must use persistent renderer')
         blocker_start = source.find('{% if dependency_blocker %}')
         if blocker_start < 0:
             continue
         blocker_end = source.find('{% endif %}', blocker_start)
         metadata_call = source.find('page_hero.analytics_metadata(')
         if blocker_end >= 0 and 0 <= metadata_call < blocker_end:
-            raise AssertionError(
-                f'{relative}: blocked readiness must be additive to metadata'
-            )
+            raise AssertionError(f'{relative}: blocked readiness must be additive to metadata')
 
 
 def _verify_dashboard_profile() -> None:
     dashboards = (
         TEMPLATES / 'kubernetes' / 'dashboard' / 'partials' / '_hero.html',
-        TEMPLATES
-        / 'storage'
-        / 'object_storage'
-        / 'dashboard'
-        / 'partials'
-        / '_hero.html',
+        TEMPLATES / 'storage' / 'object_storage' / 'dashboard' / 'partials' / '_hero.html',
     )
     for path in dashboards:
         source = _read(path)
@@ -444,9 +378,7 @@ def _verify_dashboard_profile() -> None:
             'page_hero.context_panel_classes()',
         ):
             if local in source:
-                raise AssertionError(
-                    f'{relative}: dashboard profile must not assemble {local}'
-                )
+                raise AssertionError(f'{relative}: dashboard profile must not assemble {local}')
 
 
 def verify() -> None:
@@ -479,15 +411,10 @@ def verify() -> None:
     macros = _macro_names(hero)
     missing_macros = sorted(set(REQUIRED_MACROS) - macros)
     if missing_macros:
-        raise AssertionError(
-            'page_hero implementation: missing macros: ' + ', '.join(missing_macros)
-        )
+        raise AssertionError('page_hero implementation: missing macros: ' + ', '.join(missing_macros))
     present_removed = sorted(set(REMOVED_MACROS) & macros)
     if present_removed:
-        raise AssertionError(
-            'page_hero implementation: removed macros exist: '
-            + ', '.join(present_removed)
-        )
+        raise AssertionError('page_hero implementation: removed macros exist: ' + ', '.join(present_removed))
 
     _require_tokens(
         standard,
@@ -544,21 +471,14 @@ def verify() -> None:
 
     profile_templates = _profile_templates()
     if len(profile_templates) != 2:
-        raise AssertionError(
-            'Operational Dashboard profile must have exactly two consumers; '
-            f'found {len(profile_templates)}'
-        )
+        raise AssertionError(f'Operational Dashboard profile must have exactly two consumers; found {len(profile_templates)}')
 
     _verify_dashboard_profile()
     _verify_blocked_context_ownership()
     _verify_analytics_metadata_ownership()
     _verify_operational_metadata_state_contract()
 
-    active_templates = '\n'.join(
-        path.read_text(encoding='utf-8')
-        for path in TEMPLATES.rglob('*.html')
-        if path != HERO
-    )
+    active_templates = '\n'.join(path.read_text(encoding='utf-8') for path in TEMPLATES.rglob('*.html') if path != HERO)
     for macro in REMOVED_MACROS:
         if f'page_hero.{macro}(' in active_templates:
             raise AssertionError(f'Active templates reference removed macro {macro}()')
