@@ -32,5 +32,7 @@ def test_integration_domain_hero_descriptions_are_registered_with_global_budget_
     namespace = _hero_verifier_namespace()
     descriptions = namespace['_integration_domain_hero_descriptions']()
 
-    assert descriptions['Orchestration'] == 'Cluster providers, control-plane access, discovery, and runtime connectivity.'
+    assert (
+        descriptions['Orchestration'] == 'Cluster providers, control-plane access, discovery, and runtime connectivity.'
+    )
     assert set(descriptions) == {'Orchestration', 'Observability', 'Storage'}
