@@ -31,6 +31,7 @@ REQUIRED_MACROS = (
     'context_status_badge',
     'context_card_body',
     'context_card',
+    'blocked_context_body',
     'operational_dashboard',
     'context_panel_eyebrow_classes',
     'context_panel_title_classes',
@@ -81,6 +82,7 @@ IMPLEMENTATION_TOKENS = (
     'sm:text-4xl',
     'max-w-[44rem] text-base font-normal leading-7',
     'grid grid-cols-2 auto-rows-fr gap-2',
+    'macro blocked_context_body(',
     'macro operational_dashboard(',
     'macro context_icon_box(icon)',
     'macro context_action_icon_box(icon, href, aria_label, title=None)',
@@ -103,6 +105,10 @@ DOCUMENTATION_TOKENS = (
     'Status Badge Box',
     'Do not invent a fourth header-accessory geometry.',
     'exactly two compact metrics',
+    'Blocked readiness grammar',
+    'Operational workspace blocked context',
+    'Missing Evidence',
+    'blocked_context_body(...)',
     'components/ANALYTICS_HERO.md',
     '## Theme and surface contract',
     'components/DARK_MODE.md',
@@ -206,6 +212,22 @@ def _verify_operational_dashboard_profile() -> None:
                 raise AssertionError(f'{name}: dashboard profile must not assemble {local_primitive} locally')
 
 
+def _verify_blocked_context_ownership() -> None:
+    wrappers = (
+        TEMPLATES / 'components' / 'cluster' / '_hero_blocked_context.html',
+        TEMPLATES / 'storage' / 'object_storage' / 'inventory' / 'components' / '_hero_blocked_context.html',
+        TEMPLATES / 'kubernetes' / 'analytics' / 'components' / '_blocked_posture.html',
+        TEMPLATES / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero_blocked_posture.html',
+    )
+    for path in wrappers:
+        source = _read(path)
+        relative = path.relative_to(ROOT)
+        if 'page_hero.blocked_context_body(' not in source:
+            raise AssertionError(f'{relative}: blocked Hero context must use blocked_context_body()')
+        if 'page_hero.context_panel_classes()' in source:
+            raise AssertionError(f'{relative}: blocked Hero wrapper must not assemble context panel geometry locally')
+
+
 def _verify_object_storage_analytics_metadata() -> None:
     source = _read(TEMPLATES / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero.html')
     _require_tokens(
@@ -255,6 +277,8 @@ def verify() -> None:
             '# Kubernetes Analytics Hero Extension',
             'exactly two posture metrics',
             'one full-width `Manage Clusters` action',
+            'Analytics Readiness',
+            'Missing Evidence',
         ),
         'Analytics Hero extension',
     )
@@ -263,8 +287,10 @@ def verify() -> None:
         (
             'KAORI Operational Dashboard Pattern',
             'Operational Dashboard Hero Profile',
+            'Dashboard Readiness',
             'Active Scope',
             'Data Authority',
+            'Object Storage Setup Required',
         ),
         'Operational Dashboard pattern',
     )
@@ -276,6 +302,7 @@ def verify() -> None:
         _verify_primitive_shell(path)
 
     _verify_operational_dashboard_profile()
+    _verify_blocked_context_ownership()
     _verify_object_storage_analytics_metadata()
 
     active_templates = '\n'.join(path.read_text(encoding='utf-8') for path in TEMPLATES.rglob('*.html') if path != HERO)
@@ -309,16 +336,20 @@ def verify() -> None:
     lazy_context_templates = sum(
         1 for path in TEMPLATES.rglob('*.html') if 'page_hero.context_card_body(' in path.read_text(encoding='utf-8')
     )
+    blocked_context_templates = sum(
+        1 for path in TEMPLATES.rglob('*.html') if 'page_hero.blocked_context_body(' in path.read_text(encoding='utf-8')
+    )
 
     print(
         'KAORI Hero component standard passed: '
         f'{len(primitive_shells)} compatibility Hero shells, '
         f'{len(profile_templates)} canonical profile consumers, '
-        f'{context_card_templates} context-card consumers, and '
-        f'{lazy_context_templates} lazy context bodies match v1.6; '
-        'dashboard parity, Object Storage Analytics metadata, implementation, documentation, '
-        'dark-mode ownership, removed APIs, unmanaged-shell detection, and quality-gate '
-        'ownership are synchronized.'
+        f'{context_card_templates} context-card consumers, '
+        f'{lazy_context_templates} lazy context bodies, and '
+        f'{blocked_context_templates} shared blocked contexts match v1.6; '
+        'dashboard parity, blocked readiness ownership, Object Storage Analytics metadata, '
+        'implementation, documentation, dark-mode ownership, removed APIs, unmanaged-shell detection, '
+        'and quality-gate ownership are synchronized.'
     )
 
 
