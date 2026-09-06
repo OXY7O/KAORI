@@ -17,13 +17,12 @@
             {% call page_hero.intro('database-zap', page.eyebrow, page.icon) %}
                 <h1 class="{{ page_hero.title_classes() }}">{{ page.title }}</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">{{ page.description }}</p>
-                <div class="{{ page_hero.metadata_row_classes() }}">
-                    {{ page_hero.meta_label('database', system_label) }}
-                    {{ page_hero.meta_label(meta_icon, meta_label) }}
-                    {% if not dependency_blocker %}
-                        {{ page_hero.meta_label('layers-3', evidence_label) }}
-                    {% endif %}
-                </div>
+                {{ page_hero.analytics_metadata('database',
+                                system_label,
+                                meta_icon,
+                                meta_label,
+                                'layers-3',
+                                evidence_label) }}
             {% endcall %}
         </div>
         <aside class="{{ page_hero.aside_classes() }}"

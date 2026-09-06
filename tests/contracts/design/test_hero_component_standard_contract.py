@@ -63,6 +63,7 @@ def test_hero_documentation_has_one_global_contract_and_one_domain_extension() -
     assert 'components/DARK_MODE.md' in global_standard
     assert 'Kubernetes Analytics Hero Extension' in analytics_extension
     assert 'Blocked Analytics metadata remains exactly three items' in analytics_extension
+    assert 'page_hero.analytics_metadata(...)' in analytics_extension
     assert not (components / 'ANALYTICS_HERO_STANDARD.md').exists()
     assert not (components / 'ANALYTICS_HERO_INVENTORY_REFERENCE.md').exists()
 
@@ -107,6 +108,10 @@ def test_blocked_hero_context_has_one_shared_renderer() -> None:
 
 
 def test_kubernetes_analytics_heroes_use_three_stable_metadata_slots_in_all_states() -> None:
+    component = (ROOT / 'app' / 'templates' / 'components' / 'page_hero.html').read_text(encoding='utf-8')
+    assert 'macro analytics_metadata(' in component
+    assert 'data-kaori-analytics-metadata' in component
+
     base = ROOT / 'app' / 'templates' / 'kubernetes' / 'analytics'
     for relative in KUBERNETES_ANALYTICS_HEROES:
         source = (base / relative).read_text(encoding='utf-8')
@@ -114,21 +119,27 @@ def test_kubernetes_analytics_heroes_use_three_stable_metadata_slots_in_all_stat
         assert 'page_hero.metadata_row_classes()' not in source, relative
 
 
-def test_object_storage_analytics_normal_branch_has_three_stable_metadata_slots() -> None:
+def test_object_storage_analytics_uses_three_stable_metadata_slots_in_all_states() -> None:
     source = (
         ROOT / 'app' / 'templates' / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero.html'
     ).read_text(encoding='utf-8')
 
-    assert "page_hero.meta_label('database', system_label)" in source
-    assert 'page_hero.meta_label(meta_icon, meta_label)' in source
-    assert "page_hero.meta_label('layers-3', evidence_label)" in source
+    assert 'page_hero.analytics_metadata(' in source
+    assert 'page_hero.metadata_row_classes()' not in source
     assert re.search(r"evidence_label\s*=\s*['\"]Committed Snapshot Boundary['\"]", source)
     assert '{% if inventory_observed_at %}' not in source
 
 
 def test_object_storage_inventory_setup_copy_is_concise() -> None:
     source = (
-        ROOT / 'app' / 'templates' / 'storage' / 'object_storage' / 'inventory' / 'partials' / '_system_required.html'
+        ROOT
+        / 'app'
+        / 'templates'
+        / 'storage'
+        / 'object_storage'
+        / 'inventory'
+        / 'components'
+        / '_onboarding_banner.html'
     ).read_text(encoding='utf-8')
 
     assert 'Register a Storage integration before KAORI collects object-storage snapshots.' in source
@@ -139,6 +150,7 @@ def test_kubernetes_analytics_cluster_remediation_uses_integration_action() -> N
     sources = '\n'.join(path.read_text(encoding='utf-8') for path in (ROOT / 'app').rglob('*.py'))
 
     assert 'Open Cluster Integration' in sources
+    assert "url_for('integrations.kubernetes')" in sources
     assert 'Add Cluster' not in sources
 
 

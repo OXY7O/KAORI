@@ -12,6 +12,18 @@ ANALYTICS_STANDARD = ROOT / 'docs' / 'design' / 'components' / 'ANALYTICS_HERO.m
 DASHBOARD_STANDARD = ROOT / 'docs' / 'design' / 'patterns' / 'OPERATIONAL_DASHBOARD.md'
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 
+KUBERNETES_ANALYTICS_HEROES = (
+    TEMPLATES / 'kubernetes' / 'analytics' / 'overview' / 'partials' / '_hero.html',
+    TEMPLATES / 'kubernetes' / 'analytics' / 'utilization' / 'partials' / '_hero.html',
+    TEMPLATES / 'kubernetes' / 'analytics' / 'capacity' / 'partials' / '_hero.html',
+    TEMPLATES / 'kubernetes' / 'analytics' / 'storage' / 'partials' / '_hero.html',
+    TEMPLATES / 'kubernetes' / 'analytics' / 'workload' / 'partials' / '_hero.html',
+    TEMPLATES / 'kubernetes' / 'analytics' / 'top_consumers' / 'partials' / '_hero.html',
+    TEMPLATES / 'kubernetes' / 'analytics' / 'alerts' / 'partials' / '_hero.html',
+    TEMPLATES / 'kubernetes' / 'analytics' / 'forecast' / 'partials' / '_hero.html',
+)
+OBJECT_STORAGE_ANALYTICS_HERO = TEMPLATES / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero.html'
+
 REMOVED_MACROS = (
     'context_posture_header',
     'context_posture_note',
@@ -54,6 +66,7 @@ REQUIRED_MACROS = (
     'title_classes',
     'description_classes',
     'metadata_row_classes',
+    'analytics_metadata',
     'intro',
     'meta_label',
 )
@@ -78,12 +91,14 @@ IMPLEMENTATION_TOKENS = (
     'metadata[:3]',
     'data-kaori-hero-profile="operational-dashboard"',
     'data-kaori-hero-state="{{ state }}"',
+    'data-kaori-analytics-metadata',
     'text-3xl font-bold leading-10',
     'sm:text-4xl',
     'max-w-[44rem] text-base font-normal leading-7',
     'grid grid-cols-2 auto-rows-fr gap-2',
     'macro blocked_context_body(',
     'macro operational_dashboard(',
+    'macro analytics_metadata(',
     'macro context_icon_box(icon)',
     'macro context_action_icon_box(icon, href, aria_label, title=None)',
     "macro context_header_status(eyebrow_label, title, status_label, status_tone='info')",
@@ -228,21 +243,20 @@ def _verify_blocked_context_ownership() -> None:
             raise AssertionError(f'{relative}: blocked Hero wrapper must not assemble context panel geometry locally')
 
 
-def _verify_object_storage_analytics_metadata() -> None:
-    source = _read(TEMPLATES / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero.html')
-    _require_tokens(
-        source,
-        (
-            "page_hero.meta_label('database', system_label)",
-            'page_hero.meta_label(meta_icon, meta_label)',
-            "page_hero.meta_label('layers-3', evidence_label)",
-        ),
-        'Object Storage Analytics Hero',
-    )
-    if not re.search(r"evidence_label\s*=\s*['\"]Committed Snapshot Boundary['\"]", source):
+def _verify_analytics_metadata_ownership() -> None:
+    for path in (*KUBERNETES_ANALYTICS_HEROES, OBJECT_STORAGE_ANALYTICS_HERO):
+        source = _read(path)
+        relative = path.relative_to(ROOT)
+        if 'page_hero.analytics_metadata(' not in source:
+            raise AssertionError(f'{relative}: Analytics Hero metadata must use analytics_metadata()')
+        if 'page_hero.metadata_row_classes()' in source:
+            raise AssertionError(f'{relative}: Analytics Hero must not assemble metadata-row geometry locally')
+
+    object_storage = _read(OBJECT_STORAGE_ANALYTICS_HERO)
+    if not re.search(r"evidence_label\s*=\s*['\"]Committed Snapshot Boundary['\"]", object_storage):
         raise AssertionError('Object Storage Analytics Hero: evidence label must be Committed Snapshot Boundary')
-    if '{% if inventory_observed_at %}' in source:
-        raise AssertionError('Object Storage Analytics: Normal metadata must not depend on inventory_observed_at')
+    if '{% if inventory_observed_at %}' in object_storage:
+        raise AssertionError('Object Storage Analytics: metadata must not depend on inventory_observed_at')
 
 
 def verify() -> None:
@@ -279,6 +293,8 @@ def verify() -> None:
             'one full-width `Manage Clusters` action',
             'Analytics Readiness',
             'Missing Evidence',
+            'Blocked Analytics metadata remains exactly three items',
+            'page_hero.analytics_metadata(...)',
         ),
         'Analytics Hero extension',
     )
@@ -303,7 +319,7 @@ def verify() -> None:
 
     _verify_operational_dashboard_profile()
     _verify_blocked_context_ownership()
-    _verify_object_storage_analytics_metadata()
+    _verify_analytics_metadata_ownership()
 
     active_templates = '\n'.join(path.read_text(encoding='utf-8') for path in TEMPLATES.rglob('*.html') if path != HERO)
     for macro in REMOVED_MACROS:
@@ -339,15 +355,19 @@ def verify() -> None:
     blocked_context_templates = sum(
         1 for path in TEMPLATES.rglob('*.html') if 'page_hero.blocked_context_body(' in path.read_text(encoding='utf-8')
     )
+    analytics_metadata_templates = sum(
+        1 for path in TEMPLATES.rglob('*.html') if 'page_hero.analytics_metadata(' in path.read_text(encoding='utf-8')
+    )
 
     print(
         'KAORI Hero component standard passed: '
         f'{len(primitive_shells)} compatibility Hero shells, '
         f'{len(profile_templates)} canonical profile consumers, '
         f'{context_card_templates} context-card consumers, '
-        f'{lazy_context_templates} lazy context bodies, and '
-        f'{blocked_context_templates} shared blocked contexts match v1.6; '
-        'dashboard parity, blocked readiness ownership, Object Storage Analytics metadata, '
+        f'{lazy_context_templates} lazy context bodies, '
+        f'{blocked_context_templates} shared blocked contexts, and '
+        f'{analytics_metadata_templates} shared Analytics metadata consumers match v1.6; '
+        'dashboard parity, blocked readiness ownership, Analytics metadata ownership, '
         'implementation, documentation, dark-mode ownership, removed APIs, unmanaged-shell detection, '
         'and quality-gate ownership are synchronized.'
     )
