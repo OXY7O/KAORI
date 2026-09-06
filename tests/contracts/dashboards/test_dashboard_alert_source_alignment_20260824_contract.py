@@ -23,6 +23,7 @@ def test_object_storage_dashboard_uses_kaori_alert_cases_not_raw_source_rows() -
     assert "url_for('alert_intelligence.index'" in alerts
     actions = read('app/templates/storage/object_storage/dashboard/partials/_recommended_actions.html')
     assert "url_for('intelligence.recommendation_details'" in actions
+    assert 'get_dashboard_recommendation_findings' in service
     assert 'Active Alertmanager and Metrics Source Object Storage alert signals.' not in alerts
     assert 'Alert evidence is unavailable in the committed analytics snapshot.' not in alerts
     assert 'Select an Object Storage system to view KAORI alert cases.' in alerts
