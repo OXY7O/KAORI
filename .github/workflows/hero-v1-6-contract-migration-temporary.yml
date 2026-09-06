@@ -1,0 +1,37 @@
+name: Hero v1.6 Contract Migration Temporary
+
+on:
+  push:
+    branches:
+      - kaori/refactor/198-hero-v1-6-contract-migration
+
+permissions:
+  contents: read
+
+jobs:
+  targeted:
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    timeout-minutes: 20
+    steps:
+      - name: Check Out Work Branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Resolve CI Toolchain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
+          image="kaori-ci-toolchain:$key"
+          docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
+          printf 'CI_TOOLCHAIN_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
+      - name: Run Migrated Dashboard Contracts
+        run: >-
+          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp
+          --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE"
+          pytest -q --tb=short
+          tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py
+          tests/contracts/kubernetes/test_cluster_setup_blocked_hero_contract.py
+          tests/contracts/kubernetes/test_operations_dashboard_styling_guide_contract.py
+          tests/contracts/storage/object_storage/dashboard/test_object_storage_dashboard_contract.py
