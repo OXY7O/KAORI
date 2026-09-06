@@ -45,8 +45,8 @@ def verify() -> None:
     deprecated_production = read('.env.production.example')
     persistent_sources = {relative: read(relative) for relative in PERSISTENT_TEMPLATES}
     production_compose = read('compose.production.yml')
-    vps_deploy = read('deploy/vps/deploy.sh')
-    release_state = read('deploy/vps/release-state.sh')
+    server_deploy = read('deploy/server/deploy.sh')
+    release_state = read('deploy/server/release-state.sh')
     quality_gate = read('scripts/quality_gate.sh')
 
     version_example = env_value(env_example, 'APP_VERSION')
@@ -104,8 +104,8 @@ def verify() -> None:
         'export APP_BUILD_DATE="$image_created"',
         'mv -- "$candidate_release_env" "$active_release_env"',
     ):
-        if marker not in vps_deploy:
-            raise AssertionError(f'VPS deployment is missing governed release identity behavior: {marker}')
+        if marker not in server_deploy:
+            raise AssertionError(f'Server deployment is missing governed release identity behavior: {marker}')
 
     if '## [Unreleased]' not in changelog:
         raise AssertionError('CHANGELOG.md is missing required release structure: ## [Unreleased]')

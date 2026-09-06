@@ -1,9 +1,9 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-VPS_ROOT = ROOT / 'deploy' / 'vps'
-BOOTSTRAP = VPS_ROOT / 'bootstrap-host.sh'
-README = VPS_ROOT / 'README.md'
+SERVER_ROOT = ROOT / 'deploy' / 'server'
+BOOTSTRAP = SERVER_ROOT / 'bootstrap-host.sh'
+README = SERVER_ROOT / 'README.md'
 RUNNER_README = ROOT / 'ops' / 'github-runner' / 'README.md'
 
 
@@ -11,17 +11,17 @@ def _read(path: Path) -> str:
     return path.read_text(encoding='utf-8')
 
 
-def test_vps_host_bootstrap_lives_in_deploy_surface() -> None:
-    assert BOOTSTRAP.is_file(), 'deploy/vps/bootstrap-host.sh must own VPS host preparation'
+def test_server_host_bootstrap_lives_in_deploy_surface() -> None:
+    assert BOOTSTRAP.is_file(), 'deploy/server/bootstrap-host.sh must own server host preparation'
     assert not (ROOT / 'ops' / 'github-runner' / 'bootstrap-vps.sh').exists()
 
 
-def test_vps_host_bootstrap_accepts_only_operator_generated_rsa_public_key() -> None:
+def test_server_host_bootstrap_accepts_only_operator_generated_rsa_public_key() -> None:
     source = _read(BOOTSTRAP)
 
     for marker in (
         '--ssh-public-key-file',
-        'ssh-rsa ',
+        'ssh-rsa[[:space:]]+',
         'authorized_keys',
         'chmod 700',
         'chmod 600',
@@ -34,7 +34,7 @@ def test_vps_host_bootstrap_accepts_only_operator_generated_rsa_public_key() -> 
     assert 'StrictHostKeyChecking=no' not in source
 
 
-def test_vps_host_bootstrap_prepares_split_environment_without_overwriting_existing_files() -> None:
+def test_server_host_bootstrap_prepares_split_environment_without_overwriting_existing_files() -> None:
     source = _read(BOOTSTRAP)
 
     for marker in (
@@ -57,7 +57,7 @@ def test_vps_host_bootstrap_prepares_split_environment_without_overwriting_exist
     assert '/etc/kaori/.env.production' not in source
 
 
-def test_vps_host_bootstrap_installs_and_verifies_docker_compose() -> None:
+def test_server_host_bootstrap_installs_and_verifies_docker_compose() -> None:
     source = _read(BOOTSTRAP)
 
     for marker in (
@@ -72,7 +72,7 @@ def test_vps_host_bootstrap_installs_and_verifies_docker_compose() -> None:
         assert marker in source
 
 
-def test_vps_runbook_documents_laptop_key_generation_and_bootstrap_sequence() -> None:
+def test_server_runbook_documents_laptop_key_generation_and_bootstrap_sequence() -> None:
     source = _read(README)
 
     assert 'ssh-keygen -t rsa -b 4096' in source
@@ -82,7 +82,7 @@ def test_vps_runbook_documents_laptop_key_generation_and_bootstrap_sequence() ->
     assert 'GitHub Environment' in source
 
 
-def test_vps_host_bootstrap_preserves_runner_identity_when_colocated() -> None:
+def test_server_host_bootstrap_preserves_runner_identity_when_colocated() -> None:
     source = _read(BOOTSTRAP)
 
     assert "!= 'github-runner'" in source
@@ -90,7 +90,7 @@ def test_vps_host_bootstrap_preserves_runner_identity_when_colocated() -> None:
     assert 'preserving GitHub runner operations' in source
 
 
-def test_vps_runbooks_document_shared_host_without_collapsing_trust_boundary() -> None:
+def test_server_runbooks_document_shared_host_without_collapsing_trust_boundary() -> None:
     deployment = _read(README)
     runner = _read(RUNNER_README)
 

@@ -90,11 +90,7 @@
                 {% call intro('layout-dashboard', eyebrow_label, leading_icon) %}
                     <h1 class="{{ title_classes() }}">{{ title }}</h1>
                     <p class="mt-2 {{ description_classes() }}">{{ description }}</p>
-                    <div class="{{ metadata_row_classes() }}">
-                        {% for item in metadata[:3] %}
-                            {{ meta_label(item[0], item[1]) }}
-                        {% endfor %}
-                    </div>
+                    {{ persistent_metadata(metadata) }}
                 {% endcall %}
             </div>
             <aside class="{{ aside_classes() }}" aria-label="{{ title }} context">
@@ -234,12 +230,22 @@
 {% macro metadata_row_classes() -%}
     mt-4 flex flex-wrap items-center gap-2
 {%- endmacro %}
-{% macro analytics_metadata(primary_icon, primary_label, secondary_icon, secondary_label, tertiary_icon, tertiary_label) -%}
-    <div class="{{ metadata_row_classes() }}" data-kaori-analytics-metadata>
-        {{ meta_label(primary_icon, primary_label) }}
-        {{ meta_label(secondary_icon, secondary_label) }}
-        {{ meta_label(tertiary_icon, tertiary_label) }}
+{% macro persistent_metadata(metadata) -%}
+    <div class="{{ metadata_row_classes() }}"
+         data-kaori-hero-metadata
+         data-kaori-hero-metadata-policy="persistent">
+        {% for item in metadata[:3] %}
+            {{ meta_label(item[0], item[1]) }}
+        {% endfor %}
     </div>
+{%- endmacro %}
+{% macro analytics_metadata(primary_icon, primary_label, secondary_icon, secondary_label, tertiary_icon, tertiary_label) -%}
+    {% set analytics_items = [
+            (primary_icon, primary_label),
+            (secondary_icon, secondary_label),
+            (tertiary_icon, tertiary_label)
+        ] %}
+    <div data-kaori-analytics-metadata>{{ persistent_metadata(analytics_items) }}</div>
 {%- endmacro %}
 {% macro primary_action_classes() -%}
     inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg border border-white/80 bg-white px-4 text-sm font-semibold text-kaori-primary-dark shadow-sm transition-colors hover:border-white hover:bg-white/90 hover:text-kaori-primary-dark hover:shadow-md active:bg-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-kaori-primary

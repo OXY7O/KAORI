@@ -43,7 +43,7 @@ def test_report_workspace_hero_descriptions_keep_consistent_operational_depth() 
         'overview': 'report coverage across managed infrastructure',
         'generate': 'connected data and approved formats',
         'generated': 'report execution, artifact readiness, storage availability, and retained lifecycle state',
-        'generated_detail': 'report scope, artifact evidence, execution state, and delivery readiness',
+        'generated_detail': 'report scope, artifact evidence, execution state, retained history, and delivery readiness',
         'templates': 'protected system templates and reusable custom report structures',
         'schedules': 'timezone-aware schedules and retained run evidence',
         'storage': 'storage readiness, integrity, and lifecycle ownership',

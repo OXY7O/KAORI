@@ -4,12 +4,12 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 BASE_COMPOSE="${KAORI_BASE_COMPOSE:-$ROOT_DIR/compose.production.yml}"
-VPS_COMPOSE="${KAORI_VPS_COMPOSE:-$SCRIPT_DIR/compose.vps.yml}"
+SERVER_COMPOSE="${KAORI_SERVER_COMPOSE:-$SCRIPT_DIR/compose.server.yml}"
 KAORI_DEPLOY_ENV_FILE="${KAORI_DEPLOY_ENV_FILE:-/etc/kaori/deploy.env}"
 KAORI_BACKUP_DIR="${KAORI_BACKUP_DIR:-/var/lib/kaori/backups}"
 
 fail() {
-  printf 'KAORI VPS restore failed: %s\n' "$*" >&2
+  printf 'KAORI server restore failed: %s\n' "$*" >&2
   exit 1
 }
 
@@ -27,7 +27,7 @@ KAORI_SECRETS_ENV_FILE="${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}"
 KAORI_RELEASE_ENV_FILE="${KAORI_RELEASE_ENV_FILE:-${KAORI_ACTIVE_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}}"
 export KAORI_APP_ENV_FILE KAORI_SECRETS_ENV_FILE KAORI_RELEASE_ENV_FILE
 
-# shellcheck source=deploy/vps/release-state.sh
+# shellcheck source=deploy/server/release-state.sh
 source "$SCRIPT_DIR/release-state.sh"
 load_current_release_identity || fail 'current release identity is unavailable; restore requires recorded deployment state'
 
@@ -44,7 +44,7 @@ esac
   sha256sum --check "$(basename -- "$backup_file.sha256")"
 ) || fail 'backup checksum validation failed'
 
-compose=(docker compose --env-file "$KAORI_DEPLOY_ENV_FILE" -f "$BASE_COMPOSE" -f "$VPS_COMPOSE")
+compose=(docker compose --env-file "$KAORI_DEPLOY_ENV_FILE" -f "$BASE_COMPOSE" -f "$SERVER_COMPOSE")
 application_services=(
   web worker maintenance-worker runtime-worker validation-worker analytics-worker
   reports-worker forecasting-worker resolver-execution-worker resolver-maintenance-worker beat nginx certbot

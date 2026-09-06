@@ -1,4 +1,4 @@
-# KAORI Hero Component Standard v1.6
+# KAORI Hero Component Standard v1.7
 
 This document is the authoritative implementation and semantic contract for authenticated KAORI page heroes.
 
@@ -15,7 +15,7 @@ scripts/verify_hero_component_standard.py
 tests/contracts/design/test_hero_component_standard_contract.py
 ```
 
-The v1.6 change does **not** redesign the Hero. It preserves the accepted v1.5 Violet surface, geometry, typography, dark-mode ownership, accessibility, HTMX stability, context metric limit, and right-header accessory registry. v1.6 adds reusable **Hero Profile** ownership and explicit **Hero State** semantics so pages with the same operational role cannot drift while still passing visual token checks.
+The v1.7 change does **not** redesign the Hero. It preserves the accepted Violet surface, geometry, typography, dark-mode ownership, accessibility, HTMX stability, context metric limit, and right-header accessory registry. v1.7 tightens description density to the approved 11–19 word envelope and makes operational metadata persistent across normal, blocked, and degraded states.
 
 ## Purpose
 
@@ -69,7 +69,9 @@ High-value families must use a high-level profile renderer from `components/page
 page_hero.operational_dashboard(...)
 ```
 
-It owns the complete Dashboard Hero composition: shell, layout, identity, title, description, metadata row, context panel, state presentation, two context metrics, and action/footer slot.
+It owns the complete Dashboard Hero composition: shell, layout, identity, title, description, persistent metadata row, context panel, state presentation, two context metrics, and action/footer slot.
+
+Operational metadata is rendered through the shared persistent renderer. Where a profile defines metadata, the same metadata roles remain present in **normal, blocked, and degraded** states. A blocked/degraded readiness panel is additive context and must never remove the left-side metadata row.
 
 Shared blocked Hero-right context composition is owned by:
 
@@ -83,13 +85,13 @@ Low-level macros such as `shell_classes()`, `layout_classes()`, `intro(...)`, an
 
 ## Canonical composition
 
-A normal operational Hero contains:
+An operational Hero contains:
 
 - one eyebrow;
 - one leading icon;
 - one authoritative `h1`;
 - one concise description;
-- **exactly three metadata** items for Normal operational profiles;
+- **exactly three metadata** items for profiles that define the three-slot operational metadata contract;
 - one optional right-side context panel;
 - zero to two compact context metrics;
 - one primary action when the profile is interactive.
@@ -97,8 +99,8 @@ A normal operational Hero contains:
 Explicit exceptions:
 
 - Landing may use two orientation/access metadata items;
-- Blocked may use reduced readiness metadata when that better communicates the setup boundary;
-- Degraded keeps the usable operational structure and expresses degradation in status/context instead of pretending the page is blocked.
+- Blocked preserves the profile metadata row and adds readiness/remediation context;
+- Degraded preserves the usable operational structure and metadata row while expressing degradation in status/context.
 
 Metadata communicates identity, scope, evidence boundary, or stable operating context. Health/severity belongs in semantic status components.
 
@@ -121,11 +123,11 @@ The right-side panel uses two semantic metric roles in this order:
 
 The Dashboard Hero action role is **operational source/readiness management**. Domain labels and URLs may differ, but the action must remain in that semantic role. Generic navigation that does not manage readiness/source configuration must not replace it.
 
-The dashboard renderer exposes `data-kaori-hero-profile="operational-dashboard"` and `data-kaori-hero-state="..."` for contract and rendering verification.
+The dashboard renderer exposes `data-kaori-hero-profile="operational-dashboard"` and `data-kaori-hero-state="..."` for contract and rendering verification. Its metadata surface exposes `data-kaori-hero-metadata` and `data-kaori-hero-metadata-policy="persistent"` for state-level regression verification.
 
 ## Blocked readiness grammar
 
-Blocked state remains profile-specific while repeated geometry stays shared. The Hero remains visible, the right context tells the operator why the workspace cannot proceed, and detailed remediation stays immediately below the Hero.
+Blocked state remains profile-specific while repeated geometry stays shared. The Hero remains visible, the left-side operational metadata remains visible, the right context tells the operator why the workspace cannot proceed, and detailed remediation stays immediately below the Hero.
 
 ### Operational Dashboard blocked context
 
@@ -157,6 +159,8 @@ Analytics uses:
 5. `Missing Evidence`;
 6. one concise next-requirement information strip.
 
+Blocked Analytics still renders the profile's three metadata labels through `page_hero.analytics_metadata(...)`. The Kubernetes Storage Analysis regression case is authoritative: readiness may change, but metadata remains visible beside it.
+
 The Hero does not prioritize generic `Current Step` / `Progress` values. Detailed dependency progress is owned by the shared `Analytics Setup Path` surface below the Hero, which shows Complete / Current Blocker / Pending states and the authoritative next action.
 
 ## Theme and surface contract
@@ -173,7 +177,7 @@ Internal surfaces remain component-owned:
 
 ## Technical geometry
 
-The accepted v1.5 geometry remains unchanged.
+The accepted geometry remains unchanged.
 
 | Element | Canonical implementation | Effective geometry |
 |---|---|---:|
@@ -220,13 +224,15 @@ Do not invent a fourth header-accessory geometry.
 
 ## Content density
 
-Copy budget remains:
+Copy budget is canonical and executable:
 
-- description target: 7–12 words; hard maximum 16 words;
+- description target: 11–19 words; hard maximum 19 words;
 - right-panel title: 2–4 words;
 - status label: 1–3 words;
 - metric label: 1–3 words;
 - metric helper: optional and concise.
+
+The minimum reference is `Operational visibility for cluster health, capacity, alerts, inventory, recommendations, and reporting.` The maximum reference is `Automate Analytics PDF, XLSX, or CSV artifacts and Inventory XLSX/CSV exports with timezone-aware schedules and retained run evidence.`
 
 Character count may be audited as an additional safety rail, but word budget and semantic clarity are authoritative. Long evidence explanations belong below the Hero.
 
@@ -234,13 +240,13 @@ Character count may be audited as an additional safety rail, but word budget and
 
 The Hero is a stable page anchor. Filtering, pagination, polling, runtime refresh, inventory synchronization, validation, and background jobs must not replace or collapse it.
 
-A lazy right-side context partial may update only its owned context region while preserving shell dimensions.
+A lazy right-side context partial may update only its owned context region while preserving shell dimensions. State changes must not remove a profile-defined persistent metadata row.
 
 ## Empty, Blocked, and Degraded behavior
 
 The Hero remains visible when no records exist or a dependency is blocked/degraded.
 
-Blocked state communicates setup/readiness and does not pretend normal operational evidence is available. Degraded state preserves the usable workspace and expresses dependency degradation through status/context. Full remediation workflows remain below the Hero.
+Blocked state communicates setup/readiness and does not pretend normal operational evidence is available. Degraded state preserves the usable workspace and expresses dependency degradation through status/context. For operational profiles, persistent metadata remains present in normal, blocked, and degraded states. Full remediation workflows remain below the Hero.
 
 ## Accessibility
 
@@ -256,6 +262,11 @@ Blocked state communicates setup/readiness and does not pretend normal operation
 ### Profile renderers
 
 - `operational_dashboard(...)`
+
+### Persistent metadata renderers
+
+- `persistent_metadata(...)`
+- `analytics_metadata(...)`
 
 ### Shared blocked context renderer
 
@@ -307,13 +318,13 @@ The verifier must:
 - verify every compatibility shell still composes canonical primitives;
 - verify paired Operational Dashboard pages call the single shared profile renderer and do not locally assemble the shell;
 - verify shared blocked-context wrappers do not rebuild context-panel geometry locally;
-- verify Object Storage Analytics Normal metadata does not conditionally fall from three to two items;
+- verify Analytics metadata uses the persistent shared renderer and remains outside blocker branches;
 - enforce the description target and hard boundary for every Hero description that can be resolved deterministically from source;
 - audit shared profile-renderer descriptions at their call sites instead of bypassing copy checks because composition is centralized;
 - reject unmanaged Hero-like local surfaces that bypass the component;
 - report compatibility-shell, profile-consumer, and description-audit counts separately.
 
-The canonical verifier enforces the 7–12 word target, with 16 words as the absolute hard maximum. A description outside 7–12 words is a contract violation rather than an advisory warning; a family that genuinely needs an exception must document and register that exception explicitly instead of silently bypassing verification.
+The canonical verifier enforces the 11–19 word target, with 19 words as the absolute hard maximum. A description outside 11–19 words is a contract violation rather than an advisory warning; deterministic Hero copy must be corrected rather than silently bypassed.
 
 Integration domain descriptions are audited from `app/definitions/catalogs/integrations/taxonomy.yaml` because `app/templates/integrations/domain.html` renders those descriptions dynamically. Other source-controlled dynamic Hero copy must gain an equally explicit audit path when introduced.
 
@@ -344,9 +355,8 @@ python -m pytest -q \
 
 - profile and state are explicit for a profile-managed family;
 - same Profile + same State has one composition;
-- one `h1` and one concise 7–12 word description;
-- Normal operational profile has exactly three metadata items;
-- Landing/Blocked/Degraded exceptions are explicit;
+- one `h1` and one concise 11–19 word description;
+- operational profile metadata is persistent in normal, blocked, and degraded states;
 - context panel has no more than two metrics;
 - one primary action preferred and its semantic role matches the profile;
 - no page-local Hero geometry or typography fork;

@@ -19,8 +19,6 @@ DEPLOY_TEMPLATE = 'deploy/env/deploy.env.example'
 DEPRECATED_PRODUCTION_TEMPLATE = '.env.production.example'
 PERSISTENT_PRODUCTION_TEMPLATES = (APP_TEMPLATE, SECRETS_TEMPLATE, DEPLOY_TEMPLATE)
 RELEASE_KEYS = {'KAORI_IMAGE', 'APP_VERSION', 'APP_BUILD_SHA', 'APP_BUILD_DATE'}
-# Archive storage may intentionally inherit the canonical REPORT_* storage
-# profile. These are supported override knobs, not mandatory persistent values.
 INHERITED_OPTIONAL_KEYS = {
     'ARCHIVE_STORAGE_BACKEND',
     'ARCHIVE_LOCAL_STORAGE_DIR',
@@ -30,10 +28,6 @@ INHERITED_OPTIONAL_KEYS = {
     'ARCHIVE_S3_PREFIX',
     'ARCHIVE_S3_FORCE_PATH_STYLE',
 }
-# These Compose interpolation values are compatibility/transient inputs rather
-# than persistent configuration authorities. KAORI_RELEASE_ENV_FILE points at
-# candidate-release.env during admission and is promoted to the active path only
-# after verification succeeds.
 COMPOSE_COMPAT_KEYS = {'KAORI_ENV_FILE', 'KAORI_BIND_ADDRESS', 'KAORI_PORT', 'KAORI_RELEASE_ENV_FILE'}
 
 COMMON_EXTRA_KEYS = {
@@ -203,7 +197,7 @@ def verify() -> None:
         if key in persistent_union:
             raise AssertionError(f'Persistent production environment must not define release-managed {key}')
 
-    production_compose_keys = compose_env_keys('compose.production.yml', 'deploy/vps/compose.vps.yml')
+    production_compose_keys = compose_env_keys('compose.production.yml', 'deploy/server/compose.server.yml')
     undocumented_compose = sorted(production_compose_keys - persistent_union - RELEASE_KEYS - COMPOSE_COMPAT_KEYS)
     if undocumented_compose:
         raise AssertionError('Compose references undocumented production keys: ' + ', '.join(undocumented_compose))

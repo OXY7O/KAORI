@@ -1,8 +1,21 @@
-# KAORI Integration Examples
+# KAORI Examples
 
-This directory is the **standalone integration-example boundary** for KAORI. It does not contain production configuration and is never an authority for the real Staging or Production environments.
+This directory contains disposable local examples. It does not contain production configuration and is never an authority for the real Staging or Production environments.
 
-Each component owns an independent Docker Compose stack. Start only what you need, or use the aggregate stack when you want the full KAORI integration demo.
+## KAORI laptop runtime
+
+[`kaori/`](kaori/README.md) runs an explicitly admitted KAORI RC image on a laptop without the VS Code Dev Container. It uses disposable local PostgreSQL, Redis, and KAORI state and rejects a mutable `:staging` image.
+
+```bash
+cd example/kaori
+cp .env.example .env
+# Set the exact admitted RC identity in .env.
+./run.sh start
+```
+
+## Integration provider examples
+
+Each provider owns an independent Docker Compose stack. Start only what you need, or use the aggregate stack for the full integration demo.
 
 | Component | Standalone command | Default endpoint |
 | --- | --- | --- |
@@ -10,9 +23,8 @@ Each component owns an independent Docker Compose stack. Start only what you nee
 | Alertmanager | `docker compose -f example/alertmanager/compose.yml up -d` | `http://localhost:9093` |
 | MinIO | `docker compose -f example/minio/compose.yml up -d` | API `http://localhost:9000`, Console `http://localhost:9001` |
 | Thanos Query | `docker compose -f example/thanos/compose.yml up -d` | `http://localhost:10902` |
-| Runner | `docker compose -f example/runner/compose.yml up -d` | disposable self-hosted runner |
 
-## Quick Start — full integration
+### Quick Start — full integration
 
 ```bash
 cp example/.env.example example/.env
@@ -22,9 +34,9 @@ bash example/bin/stack.sh status all
 
 The aggregate topology starts Prometheus, Alertmanager, MinIO, a MinIO bucket initializer, Thanos Sidecar, and Thanos Query. Prometheus sends representative demo alerts to Alertmanager and exposes an external label for Thanos. MinIO exposes public demo metrics and provides the S3-compatible `thanos` bucket used by the Sidecar.
 
-## Connect KAORI
+### Connect KAORI
 
-Use these values only for the local/disposable example environment:
+Use these values only for the local/disposable provider environment:
 
 ```text
 Prometheus    http://localhost:9090
@@ -37,17 +49,14 @@ Secret key   kaori-demo-secret
 
 For KAORI configuration, map these endpoints to the corresponding integration/provider settings. Do not copy real Staging/Production secrets into `example/.env`.
 
-## Standalone behavior
-
-The standalone compose files intentionally avoid dependencies on the other example components:
+### Standalone behavior
 
 - **Prometheus** self-scrapes and loads representative KAORI demo rules.
 - **Alertmanager** runs with a null receiver and KAORI-style grouping/inhibition semantics.
 - **MinIO** runs as an isolated S3-compatible demo server and initializes a `thanos` bucket.
 - **Thanos** runs Query by itself to validate the Query API; use the aggregate stack for real fan-out through a Prometheus Sidecar.
-- **Runner** is opt-in and disposable. It requires an operator-supplied registration token at runtime and mounts the Docker socket, which is root-equivalent access. Never use this compose as the governed production runner topology.
 
-## Readiness
+### Readiness
 
 ```bash
 bash example/bin/stack.sh status prometheus
@@ -58,14 +67,14 @@ bash example/bin/stack.sh status thanos
 
 The helper prints concise PASS/FAIL evidence and the endpoint that failed. Raw Docker Compose logs remain available with `docker compose ... logs`.
 
-## Stop / reset
+### Stop / reset
 
 ```bash
 bash example/bin/stack.sh stop all
 bash example/bin/stack.sh reset all
 ```
 
-`reset` removes example volumes. Never point the example compose files at real KAORI state volumes.
+`reset` removes example volumes. Never point the example Compose files at real KAORI state volumes.
 
 ## MinIO compatibility note
 
@@ -75,5 +84,5 @@ The MinIO community project changed distribution in 2026 and no longer treats hi
 
 - No `kaori.cloud`, host IP, SSH private key, registry credential, Telegram token, or real integration credential belongs here.
 - `example/` is excluded from production runtime artifacts.
-- Production deployment remains governed by `deploy/` and GitHub Actions.
-- Production runner lifecycle remains governed separately; the runner example is disposable only.
+- Production deployment remains governed by `deploy/server/` and GitHub Actions.
+- CI runner lifecycle is infrastructure governance and is intentionally not represented as an integration example.

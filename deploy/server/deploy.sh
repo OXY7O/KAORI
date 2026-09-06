@@ -4,7 +4,7 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 BASE_COMPOSE="${KAORI_BASE_COMPOSE:-$ROOT_DIR/compose.production.yml}"
-VPS_COMPOSE="${KAORI_VPS_COMPOSE:-$SCRIPT_DIR/compose.vps.yml}"
+SERVER_COMPOSE="${KAORI_SERVER_COMPOSE:-$SCRIPT_DIR/compose.server.yml}"
 KAORI_STATE_DIR="${KAORI_STATE_DIR:-/var/lib/kaori/deploy-state}"
 KAORI_BACKUP_DIR="${KAORI_BACKUP_DIR:-/var/lib/kaori/backups}"
 KAORI_DEPLOY_ENV_FILE="${KAORI_DEPLOY_ENV_FILE:-/etc/kaori/deploy.env}"
@@ -14,7 +14,7 @@ active_release_env="${KAORI_ACTIVE_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state
 candidate_release_env="$KAORI_STATE_DIR/candidate-release.env"
 
 fail() {
-  printf '❌ KAORI VPS deployment failed · %s\n' "$*" >&2
+  printf '❌ KAORI server deployment failed · %s\n' "$*" >&2
   exit 1
 }
 
@@ -62,7 +62,7 @@ for path in "$KAORI_APP_ENV_FILE" "$KAORI_DEPLOY_ENV_FILE"; do
 done
 
 [[ -f "$BASE_COMPOSE" ]] || fail "base Compose file is missing: $BASE_COMPOSE"
-[[ -f "$VPS_COMPOSE" ]] || fail "VPS Compose overlay is missing: $VPS_COMPOSE"
+[[ -f "$SERVER_COMPOSE" ]] || fail "server Compose overlay is missing: $SERVER_COMPOSE"
 
 docker info >/dev/null 2>&1 || fail 'Docker daemon is not reachable by the deploy user'
 compose_version="$(docker compose version --short | sed -E 's/^v//; s/[^0-9.].*$//')"
@@ -131,8 +131,9 @@ export APP_VERSION="$app_version"
 export APP_BUILD_SHA="$source_sha"
 export APP_BUILD_DATE="$image_created"
 export KAORI_BACKUP_DIR
+export KAORI_SERVER_COMPOSE="$SERVER_COMPOSE"
 
-compose=(docker compose --env-file "$KAORI_DEPLOY_ENV_FILE" -f "$BASE_COMPOSE" -f "$VPS_COMPOSE")
+compose=(docker compose --env-file "$KAORI_DEPLOY_ENV_FILE" -f "$BASE_COMPOSE" -f "$SERVER_COMPOSE")
 "${compose[@]}" config --quiet || fail 'Compose configuration validation failed'
 status '✅' 'Compose render PASS'
 

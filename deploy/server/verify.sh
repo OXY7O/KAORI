@@ -4,7 +4,7 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 BASE_COMPOSE="${KAORI_BASE_COMPOSE:-$ROOT_DIR/compose.production.yml}"
-VPS_COMPOSE="${KAORI_VPS_COMPOSE:-$SCRIPT_DIR/compose.vps.yml}"
+SERVER_COMPOSE="${KAORI_SERVER_COMPOSE:-$SCRIPT_DIR/compose.server.yml}"
 KAORI_DEPLOY_ENV_FILE="${KAORI_DEPLOY_ENV_FILE:-/etc/kaori/deploy.env}"
 KAORI_APP_ENV_FILE="${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}"
 KAORI_SECRETS_ENV_FILE="${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}"
@@ -13,7 +13,7 @@ KAORI_EXPECTED_IMAGE="${KAORI_EXPECTED_IMAGE:-}"
 restart_check=false
 
 fail() {
-  printf '❌ KAORI VPS verification failed · %s\n' "$*" >&2
+  printf '❌ KAORI server verification failed · %s\n' "$*" >&2
   exit 1
 }
 
@@ -38,10 +38,10 @@ for path in "$KAORI_APP_ENV_FILE" "$KAORI_SECRETS_ENV_FILE" "$KAORI_RELEASE_ENV_
   [[ -r "$path" ]] || fail "runtime environment is not readable: $path"
 done
 
-# shellcheck source=deploy/vps/release-state.sh
+# shellcheck source=deploy/server/release-state.sh
 source "$SCRIPT_DIR/release-state.sh"
 load_current_release_identity || fail 'current release identity is unavailable'
-compose=(docker compose --env-file "$KAORI_DEPLOY_ENV_FILE" -f "$BASE_COMPOSE" -f "$VPS_COMPOSE")
+compose=(docker compose --env-file "$KAORI_DEPLOY_ENV_FILE" -f "$BASE_COMPOSE" -f "$SERVER_COMPOSE")
 "${compose[@]}" config --quiet || fail 'Compose configuration is invalid'
 
 application_services=(
@@ -109,4 +109,4 @@ if [[ "$restart_check" == 'true' ]]; then
   [[ "$restart_after" == "$restart_before" ]] || fail 'web container restarted during verification window'
 fi
 
-printf '\n✅ KAORI internal VPS verification PASS\n'
+printf '\n✅ KAORI internal server verification PASS\n'

@@ -16,7 +16,10 @@ def test_kubernetes_analytics_copy_refinement_is_concise_and_domain_specific() -
     workload = read('app/kubernetes/analytics/workload/routes.py')
     forecast = read('app/kubernetes/analytics/forecast/routes.py')
 
-    assert 'Review utilization, workload posture, forecasts, consumers, and alert signals.' in overview
+    assert (
+        'Review utilization, workload posture, capacity forecasts, leading consumers, recommendations, and alert signals.'
+        in overview
+    )
     assert 'shared capacity, allocation, and headroom results' in capacity
     assert 'committed operational snapshots' in storage
     assert 'committed quota, runtime, and resource snapshots' in workload

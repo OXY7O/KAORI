@@ -35,10 +35,11 @@ def test_kubernetes_analytics_cluster_remediation_uses_integration_action() -> N
     end = source.index('\n\ndef metrics_source_setup_blocker', start)
     blocker = source[start:end]
 
-    assert "'action_label': 'Open Cluster Integration'" in blocker
+    assert "'action_label': 'Open Cluster Integrations'" in blocker
     assert "'action_url': url_for('integrations.kubernetes')" in blocker
     assert "'permission': 'clusters.manage'" in blocker
     assert "'action_label': 'Add Cluster'" not in blocker
+    assert "'action_label': 'Open Cluster Integration'" not in blocker
     assert "url_for('cluster.add_cluster')" not in blocker
 
 

@@ -16,31 +16,39 @@ def test_hero_description_budget_enforces_target_and_hard_boundary() -> None:
     namespace = _hero_verifier_namespace()
     validate = namespace['_validate_description_budget']
 
-    validate('Review cluster posture, readiness, evidence, and operational context.', owner='compliant')
+    validate(
+        'Review cluster posture, readiness, evidence, capacity, alerts, recommendations, and operational context.',
+        owner='compliant',
+    )
 
-    with pytest.raises(AssertionError, match='7-12 words'):
+    with pytest.raises(AssertionError, match='11-19 words'):
         validate('Too short.', owner='short')
 
-    with pytest.raises(AssertionError, match='hard maximum 16 words'):
+    with pytest.raises(AssertionError, match='hard maximum 19 words'):
         validate(
-            'Review this deliberately oversized Hero description because it contains far too many words for the canonical KAORI surface today.',
+            'Review this deliberately oversized Hero description because it contains far too many words for the canonical KAORI operational surface and exceeds the approved presentation density today.',
             owner='oversized',
         )
 
 
 def test_integration_domain_hero_descriptions_are_registered_with_global_budget_audit() -> None:
     namespace = _hero_verifier_namespace()
-    descriptions = namespace['_integration_domain_hero_descriptions']()
+    descriptions = namespace['_integration_domain_descriptions']()
 
     assert (
-        descriptions['Orchestration'] == 'Cluster providers, control-plane access, discovery, and runtime connectivity.'
+        descriptions['Integration domain Orchestration']
+        == 'Cluster providers, control-plane access, discovery, runtime connectivity, and governed orchestration integration workflows.'
     )
-    assert set(descriptions) == {'Orchestration', 'Observability', 'Storage'}
+    assert set(descriptions) == {
+        'Integration domain Orchestration',
+        'Integration domain Observability',
+        'Integration domain Storage',
+    }
 
 
 def test_cluster_required_blocked_hero_descriptions_are_registered_with_global_budget_audit() -> None:
     namespace = _hero_verifier_namespace()
-    descriptions = namespace['_cluster_required_hero_descriptions']()
+    descriptions = namespace['_cluster_required_descriptions']()
     values = set(descriptions.values())
 
     assert 'Validate replacement certificate pairing and coverage before rotating one live TLS Secret.' in values

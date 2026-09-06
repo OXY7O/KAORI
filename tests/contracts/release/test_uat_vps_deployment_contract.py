@@ -1,16 +1,16 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-VPS_ROOT = ROOT / 'deploy' / 'vps'
+SERVER_ROOT = ROOT / 'deploy' / 'server'
 BASE_COMPOSE = ROOT / 'compose.production.yml'
-VPS_COMPOSE = VPS_ROOT / 'compose.vps.yml'
-DEPLOY = VPS_ROOT / 'deploy.sh'
-VERIFY = VPS_ROOT / 'verify.sh'
-BACKUP = VPS_ROOT / 'backup.sh'
-RESTORE = VPS_ROOT / 'restore.sh'
-ROLLBACK = VPS_ROOT / 'rollback.sh'
-RELEASE_STATE = VPS_ROOT / 'release-state.sh'
-README = VPS_ROOT / 'README.md'
+SERVER_COMPOSE = SERVER_ROOT / 'compose.server.yml'
+DEPLOY = SERVER_ROOT / 'deploy.sh'
+VERIFY = SERVER_ROOT / 'verify.sh'
+BACKUP = SERVER_ROOT / 'backup.sh'
+RESTORE = SERVER_ROOT / 'restore.sh'
+ROLLBACK = SERVER_ROOT / 'rollback.sh'
+RELEASE_STATE = SERVER_ROOT / 'release-state.sh'
+README = SERVER_ROOT / 'README.md'
 WORKFLOW = ROOT / '.github' / 'workflows' / 'deploy-staging-host.yml'
 DOCKERFILE = ROOT / 'Dockerfile'
 
@@ -26,13 +26,14 @@ def _service_block(source: str, service: str, next_service: str | None = None) -
     return source[start : source.index(f'  {next_service}:', start)]
 
 
-def test_vps_deployment_has_a_dedicated_deploy_boundary() -> None:
-    required = (README, VPS_COMPOSE, DEPLOY, VERIFY, BACKUP, RESTORE, ROLLBACK)
+def test_server_deployment_has_a_dedicated_deploy_boundary() -> None:
+    required = (README, SERVER_COMPOSE, DEPLOY, VERIFY, BACKUP, RESTORE, ROLLBACK)
 
     for path in required:
-        assert path.is_file(), f'missing VPS deployment surface: {path.relative_to(ROOT)}'
+        assert path.is_file(), f'missing server deployment surface: {path.relative_to(ROOT)}'
 
-    assert not (ROOT / 'ops' / 'github-runner' / 'vps-deploy').exists()
+    assert not (ROOT / 'deploy' / 'vps').exists()
+    assert not (ROOT / 'ops' / 'github-runner' / 'server-deploy').exists()
 
 
 def test_production_compose_supports_server_side_environment_file() -> None:
@@ -96,8 +97,8 @@ def test_rollback_restores_coherent_previous_release_identity() -> None:
     assert '"$previous_version"' in rollback
 
 
-def test_vps_dependencies_are_private_persistent_and_immutable() -> None:
-    source = _read(VPS_COMPOSE)
+def test_server_dependencies_are_private_persistent_and_immutable() -> None:
+    source = _read(SERVER_COMPOSE)
     postgres = _service_block(source, 'postgres', 'redis')
     redis = _service_block(source, 'redis', 'validate')
     web = _service_block(source, 'web', 'worker')
@@ -244,5 +245,6 @@ def test_production_image_keeps_deployment_tooling_outside_runtime() -> None:
     dockerfile = _read(DOCKERFILE)
     production = dockerfile.split('FROM base AS production', maxsplit=1)[1]
 
+    assert 'deploy/server' not in production
     assert 'deploy/vps' not in production
     assert 'COPY deploy' not in production
