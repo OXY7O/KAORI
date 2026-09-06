@@ -9,7 +9,7 @@ previous_version_file="$KAORI_STATE_DIR/previous-version"
 previous_backup_file="$KAORI_STATE_DIR/previous-backup"
 
 fail() {
-  printf 'KAORI VPS rollback failed: %s\n' "$*" >&2
+  printf 'KAORI server rollback failed: %s\n' "$*" >&2
   exit 1
 }
 
