@@ -285,7 +285,7 @@ def main() -> int:
     assert 'Object Storage → Metrics → Analytics Snapshot' in dependency_blocker
     assert 'Alert Evidence' not in dependency_blocker
     assert 'dependency_grid_classes = "lg:grid-cols-3"' in dependency_blocker
-    assert 'Analytics Readiness' in shared_dependency_blocker
+    assert 'Analytics Setup Path' in shared_dependency_blocker
     assert 'Current Blocker' in shared_dependency_blocker
     assert 'dependency_route_summary' in shared_dependency_blocker
     assert 'dependency_step_count' in shared_dependency_blocker
@@ -297,11 +297,14 @@ def main() -> int:
     else_index = template.index('{% else %}', blocker_index)
     assert blocker_index < else_index < controls_index
     assert 'metrics_source.detail' not in hero
-    assert "'Current Step'" in hero_blocked
-    assert "'Progress'" in hero_blocked
+    assert 'page_hero.blocked_context_body(' in hero_blocked
+    assert "'Active Scope'" in hero_blocked
+    assert "'Missing Evidence'" in hero_blocked
+    assert "'Current Step'" not in hero_blocked
+    assert "'Progress'" not in hero_blocked
     assert "'Analytics Readiness'" in hero_blocked
-    assert 'readiness_step_count = 3' in hero_blocked
-    assert "step_labels = {1: 'Object Storage', 2: 'Metrics', 3: 'Analytics Snapshot'}" in hero_blocked
+    for evidence_label in ('System Context', 'Inventory Snapshot', 'Operational Metrics', 'Analytics Snapshot'):
+        assert evidence_label in hero_blocked
     assert "'Analytics Overview'" in pages
     for copy in (
         'Review usable capacity, consumption trends, bucket pressure, quota posture, and growth across the selected system.',
