@@ -16,7 +16,7 @@ def test_playwright_toolchain_is_pinned_and_browser_is_baked_into_ci_image() -> 
     requirements = (ROOT / 'requirements' / 'dev.txt').read_text()
     dockerfile = (ROOT / '.github' / 'ci' / 'Dockerfile').read_text()
 
-    assert 'playwright==1.63.0' in requirements
+    assert 'playwright==1.62.0' in requirements
     assert 'pytest-playwright==0.9.0' in requirements
     assert 'python -m playwright install --with-deps chromium' in dockerfile
 
