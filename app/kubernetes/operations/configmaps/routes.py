@@ -232,7 +232,7 @@ def _unexpected_failure(
 @cluster_required(
     'ConfigMap Management',
     page_title='ConfigMap Management',
-    page_description='Create, update, and remove live ConfigMaps through validated, target-aware workflows with explicit preview and audit boundaries.',
+    page_description='Manage live ConfigMaps through validated, auditable, target-aware workflows.',
 )
 def configmap_management_index():
     return render_template('kubernetes/operations/configmaps/index.html', **get_context())
@@ -262,7 +262,7 @@ def configmap_namespace_options():
 @cluster_required(
     'ConfigMap Management',
     page_title='Create Kubernetes ConfigMap',
-    page_description='Define one ConfigMap, validate it against the live Kubernetes API, then create exactly the validated object.',
+    page_description='Validate and create one ConfigMap against the live Kubernetes API.',
 )
 def create_configmap_page():
     if request.method == 'GET':
@@ -410,7 +410,7 @@ def configmap_delete_target():
 @cluster_required(
     'ConfigMap Management',
     page_title='Update ConfigMap',
-    page_description='Load current values, preview the effective diff, and apply one validated live update against the exact selected ConfigMap.',
+    page_description='Preview and validate one live ConfigMap update before applying.',
 )
 def update_configmap_page():
     if request.method == 'POST':
@@ -508,7 +508,7 @@ def update_configmap_page():
 @cluster_required(
     'ConfigMap Management',
     page_title='Delete ConfigMap',
-    page_description='Review impact, validate the exact live target and resource version, then explicitly confirm destructive ConfigMap removal.',
+    page_description='Validate the live target before explicitly confirming ConfigMap removal.',
 )
 def delete_configmap_page():
     if request.method == 'POST':
