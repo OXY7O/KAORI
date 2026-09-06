@@ -160,11 +160,11 @@ def test_operation_hero_copy_keeps_explicit_live_validation_boundaries() -> None
     reveal_routes = read('app/kubernetes/operations/secrets/reveal_routes.py')
     tls_routes = read('app/kubernetes/operations/secrets/tls_routes.py')
 
-    assert 'validated, target-aware workflows with explicit preview and audit boundaries' in configmap_routes
-    assert 'against the exact selected ConfigMap' in configmap_routes
-    assert 'exact live target and resource version' in configmap_routes
-    assert 'without overwriting an existing Secret or persisting submitted values' in secret_routes
-    assert 'without reading, rendering, or persisting current Secret values' in secret_routes
-    assert 'exact Secret target and resource version' in secret_routes
-    assert 'policy, identity, and audit controls enforced' in reveal_routes
-    assert 'before any controlled bulk rotation' in tls_routes
+    assert 'Manage live ConfigMaps through validated, auditable, target-aware workflows.' in configmap_routes
+    assert 'Preview and validate one live ConfigMap update before applying.' in configmap_routes
+    assert 'Validate the live target before explicitly confirming ConfigMap removal.' in configmap_routes
+    assert 'Create one validated Secret without overwriting or persisting values.' in secret_routes
+    assert 'Replace selected Secret keys without reading or persisting current values.' in secret_routes
+    assert 'Validate the exact Secret target before explicitly confirming removal.' in secret_routes
+    assert 'Reveal one approved Secret key through protected, audited, policy-controlled access.' in reveal_routes
+    assert 'Validate one certificate pair against selected TLS Secrets before controlled rotation.' in tls_routes
