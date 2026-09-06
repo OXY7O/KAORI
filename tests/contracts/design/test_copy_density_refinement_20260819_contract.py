@@ -9,12 +9,12 @@ def read(path: str) -> str:
     return (ROOT / path).read_text(encoding='utf-8')
 
 
-def test_kubernetes_analytics_hero_copy_is_expanded_for_operational_context() -> None:
+def test_kubernetes_analytics_hero_copy_follows_canonical_concise_operational_context() -> None:
     expected = {
-        'app/templates/kubernetes/analytics/capacity/partials/_hero.html': 'Review worker headroom, allocation pressure, scheduling constraints, and emerging capacity risks across active workloads.',
-        'app/templates/kubernetes/analytics/workload/partials/_hero.html': 'Review quotas, requests, limits, QoS classes, utilization patterns, and right-sizing evidence across workloads.',
-        'app/templates/kubernetes/analytics/forecast/partials/_hero.html': 'Review projected demand, threshold timing, growth trends, and potential future capacity risks across the cluster.',
-        'app/templates/kubernetes/analytics/top_consumers/partials/_hero.html': 'Review the highest CPU, memory, pod, and PVC consumers to identify concentration and resource pressure.',
+        'app/templates/kubernetes/analytics/capacity/partials/_hero.html': 'Review worker headroom, scheduling pressure, and emerging capacity risks.',
+        'app/templates/kubernetes/analytics/workload/partials/_hero.html': 'Review workload governance, utilization, QoS, and right-sizing evidence.',
+        'app/templates/kubernetes/analytics/forecast/partials/_hero.html': 'Review projected demand, growth trends, thresholds, and capacity risk.',
+        'app/templates/kubernetes/analytics/top_consumers/partials/_hero.html': 'Identify leading resource consumers, concentration, and operational pressure.',
         'app/templates/kubernetes/analytics/alerts/partials/_hero.html': 'Review active alerts, anomalies, routing context, ownership, readiness, and supporting operational evidence.',
     }
 
@@ -82,6 +82,10 @@ def test_superseded_copy_is_removed() -> None:
     combined = '\n'.join(read(path) for path in paths)
 
     superseded = [
+        'Review worker headroom, allocation pressure, scheduling constraints, and emerging capacity risks across active workloads.',
+        'Review quotas, requests, limits, QoS classes, utilization patterns, and right-sizing evidence across workloads.',
+        'Review projected demand, threshold timing, growth trends, and potential future capacity risks across the cluster.',
+        'Review the highest CPU, memory, pod, and PVC consumers to identify concentration and resource pressure.',
         'Review worker headroom, allocation pressure, and scheduling risk.',
         'Review quotas, requests, limits, QoS, and right-sizing evidence.',
         'Review projected demand, threshold timing, and future capacity risk.',
