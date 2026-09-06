@@ -103,13 +103,13 @@
                                         blocked_title,
                                         [
                                         ('scan-search', 'Active Scope', active_scope, 'Current dashboard scope', 'text-sm font-semibold leading-5') ,
-                                        ('lock-keyhole', 'Data Authority', data_authority, 'Operational evidence boundary', 'text-sm font-semibold leading-5')
-                                        ],
-                                        blocked_info,
-                                        'Blocked',
-                                        'warning',
-                                        'lock-keyhole',
-                                        'info') }}
+                    ('lock-keyhole', 'Data Authority', data_authority, 'Operational evidence boundary', 'text-sm font-semibold leading-5')
+                    ],
+                    blocked_info,
+                    'Blocked',
+                    'warning',
+                    'lock-keyhole',
+                    'info') }}
                 {% else %}
                     <div class="{{ context_panel_classes() }}">
                         {{ context_header('Dashboard Context', 'Operational Signal Scope', 'scan-search') }}
