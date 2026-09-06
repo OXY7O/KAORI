@@ -1,6 +1,6 @@
 {% extends "layouts/app.html" %}
 {% set page_title = "Activity Audit" %}
-{% block title %}Activity Audit% endblock title %}
+{% block title %}Activity Audit{% endblock title %}
 {% block dashboard_content %}
     {# Activity Audit and persistent Notification Center records share the same archive-first policy in Data Lifecycle. #}
     {% import "components/page_hero.html" as page_hero %}
@@ -11,7 +11,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('history', 'Access', 'shield-check') %}
                         <h1 class="{{ page_hero.title_classes() }}">Activity Audit</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Review system-wide administrative, authentication, and operational evidence centrally recorded by KAORI.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review system-wide administrative, authentication, and operational evidence centrally recorded by KAORI for audit.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('list-checks', summary.events_24h ~ ' Events · 24H') }}
                             {{ page_hero.meta_label('users-round', summary.actors_24h ~ ' Actors · 24H') }}
@@ -23,7 +23,7 @@
                     {{ page_hero.context_card('Administrative evidence posture',
                                         'Administrative Evidence',
                                         'Evidence Availability',
-                                            summary.posture_label,
+                                        summary.posture_label,
                                         summary.posture_tone,
                                         [
                                         ('activity', 'Events · 24H', summary.events_24h, 'Recorded evidence') ,
@@ -54,7 +54,7 @@
         {% include "access/activity_audit/partials/_activity_table_card.html" %}
         {{ resource_detail_modal.host('Activity',
                 url_for('access.activity_audit.detail', notification_id=0) ,
-      footer_text='Activity evidence uses the immutable actor and category snapshot captured when KAOII committed the record.',
+        footer_text='Activity evidence uses the immutable actor and category snapshot captured when KAORI committed the record.',
         context_label='Access',
         dialog_max_width='max-w-6xl',
         content_driven=true
