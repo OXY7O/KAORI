@@ -7,56 +7,51 @@ def read(path: str) -> str:
     return (ROOT / path).read_text(encoding='utf-8')
 
 
-def test_object_storage_dashboard_uses_kaori_alert_cases_not_raw_source_rows() -> None:
-    service = read('app/storage/object_storage/dashboard/service.py')
-    shared = read('app/intelligence/alert_intelligence/dashboard_cases.py')
-    alerts = read('app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html')
+def test_dashboard_alert_summary_uses_source_boundary_without_overclaiming() -> None:
+    kubernetes = read('app/templates/dashboards/kubernetes/partials/_alerts_summary.html')
+    object_storage = read('app/templates/dashboards/object_storage/partials/_alerts_summary.html')
 
-    assert 'active_recommendation_alert_cases' in service
-    assert "domain='object_storage'" in service
-    assert "AlertCase.source_type == 'recommendation'" in shared
-    assert "AlertCase.source_state.in_(('firing', 'unknown'))" in shared
-    assert "AlertCase.workflow_state != 'closed'" in shared
-    assert "'source_label': 'Alert Intelligence'" in service
-    assert "'source_detail': 'Active AlertCase records'" in service
-    assert 'Active KAORI AlertCase posture and recent cases.' in alerts
-    assert "url_for('alert_intelligence.index'" in alerts
-    actions = read('app/templates/storage/object_storage/dashboard/partials/_recommended_actions.html')
-    assert "url_for('intelligence.recommendation_details'" in actions
-    assert 'get_dashboard_recommendation_findings' in service
-    assert 'Active Alertmanager and Metrics Source Object Storage alert signals.' not in alerts
-    assert 'Alert evidence is unavailable in the committed analytics snapshot.' not in alerts
-    assert 'Select an Object Storage system to view KAORI alert cases.' in alerts
+    assert 'Alert Intelligence' in kubernetes
+    assert 'Alert Intelligence' in object_storage
+    assert 'Prometheus + Alertmanager' in kubernetes
+    assert 'Prometheus + Alertmanager' in object_storage
+    assert 'Kubernetes Alerts' in kubernetes
+    assert 'Object Storage Alerts' in object_storage
 
 
-def test_dashboard_response_guidance_explains_alert_provenance() -> None:
-    kubernetes = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
-    object_storage = read('app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html')
+def test_dashboard_alert_summary_does_not_use_inventory_as_alert_authority() -> None:
+    kubernetes = read('app/templates/dashboards/kubernetes/partials/_alerts_summary.html')
+    object_storage = read('app/templates/dashboards/object_storage/partials/_alerts_summary.html')
 
-    for content in (kubernetes, object_storage):
-        assert 'Alert Data Source' in content
-        assert 'KAORI Alert Intelligence · Active AlertCase records' in content
-        assert 'Recommendation-origin durable alert cases' not in content
-        assert 'Raw source alerts remain in Analytics' not in content
+    for source in (kubernetes, object_storage):
+        assert 'Inventory Snapshot' not in source
+        assert 'Inventory Sync' not in source
+        assert 'inventory snapshot' not in source.lower()
+        assert 'inventory sync' not in source.lower()
 
 
-def test_topology_details_matches_notification_deck_width() -> None:
-    visualization = read('app/templates/components/visualization_workspace.html')
-    notification_deck = read('app/templates/components/navigation/_notification_center.html')
+def test_dashboard_alert_source_alignment_is_explicit_in_presentation_services() -> None:
+    kubernetes = read('app/dashboards/kubernetes/presentation.py')
+    object_storage = read('app/dashboards/object_storage/presentation.py')
 
-    assert "'right-0 border-l max-w-lg'" in visualization
-    assert 'max-w-lg flex-col' in notification_deck
+    assert 'Prometheus + Alertmanager' in kubernetes
+    assert 'Prometheus + Alertmanager' in object_storage
+    assert 'alert_source' in kubernetes
+    assert 'alert_source' in object_storage
 
 
 def test_inventory_authority_copy_is_compact_and_object_storage_hero_has_more_context() -> None:
-    kubernetes_templates = '\n'.join(
+    kubernetes_templates = ''.join(
         read(path)
         for path in (
-            'app/templates/kubernetes/inventory/overview/partials/_cluster_detail_content.html',
-            'app/templates/kubernetes/inventory/workloads/partials/_workload_detail_content.html',
-            'app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html',
-            'app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html',
-            'app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html',
+            'app/templates/kubernetes/inventory/overview/partials/_inventory_snapshot.html',
+            'app/templates/kubernetes/inventory/nodes/partials/_table.html',
+            'app/templates/kubernetes/inventory/namespaces/partials/_table.html',
+            'app/templates/kubernetes/inventory/workloads/partials/_table.html',
+            'app/templates/kubernetes/inventory/pods/partials/_table.html',
+            'app/templates/kubernetes/inventory/services/partials/_table.html',
+            'app/templates/kubernetes/inventory/ingresses/partials/_table.html',
+            'app/templates/kubernetes/inventory/storage/partials/_table.html',
         )
     )
     object_storage_detail = read(
@@ -75,5 +70,8 @@ def test_inventory_authority_copy_is_compact_and_object_storage_hero_has_more_co
         in object_storage_detail
     )
     assert 'Latest committed Inventory Sync snapshot; no live provider query.' in object_storage_presentation
-    assert 'Review committed inventory coverage and readiness across Object Storage systems.' in hero
+    assert (
+        'Review committed inventory coverage, readiness, and system scope across registered Object Storage environments.'
+        in hero
+    )
     assert 'Review committed fleet posture across managed systems and inventory assets.' not in hero
