@@ -230,9 +230,13 @@ def _cluster_required_hero_descriptions() -> dict[str, str]:
 
             relative = path.relative_to(ROOT)
             owner = f'{relative}:{node.lineno}'
-            operation_node = node.args[0] if node.args else next(
-                (keyword.value for keyword in node.keywords if keyword.arg == 'operation_label'),
-                None,
+            operation_node = (
+                node.args[0]
+                if node.args
+                else next(
+                    (keyword.value for keyword in node.keywords if keyword.arg == 'operation_label'),
+                    None,
+                )
             )
             operation_label = _static_string(operation_node, owner=owner)
             page_description_node = next(
