@@ -30,17 +30,17 @@
     {% set dependency_grid_classes = dependency_grid_classes|default('lg:grid-cols-3') %}
     {% if dependency_missing_label is not defined %}
         {% if dependency_blocker.kind == 'cluster_required' %}
-            {% set dependency_missing_label = 'cluster context' %}
+            {% set dependency_missing_label = "cluster context" %}
         {% elif dependency_blocker.kind == 'system_required' %}
-            {% set dependency_missing_label = 'system context' %}
+            {% set dependency_missing_label = "system context" %}
         {% elif dependency_blocker.kind == 'inventory_required' %}
-            {% set dependency_missing_label = 'committed inventory snapshot' %}
+            {% set dependency_missing_label = "committed inventory snapshot" %}
         {% elif dependency_blocker.kind.startswith('metrics_source') %}
-            {% set dependency_missing_label = 'validated operational metrics' %}
+            {% set dependency_missing_label = "validated operational metrics" %}
         {% elif dependency_blocker.kind.startswith('alert_source') %}
-            {% set dependency_missing_label = 'alert evidence' %}
+            {% set dependency_missing_label = "alert evidence" %}
         {% else %}
-            {% set dependency_missing_label = 'committed analytics snapshot' %}
+            {% set dependency_missing_label = "committed analytics snapshot" %}
         {% endif %}
     {% endif %}
     {% set dependency_action_url = dependency_blocker.action_url|default(none) %}
@@ -128,7 +128,9 @@
                     </a>
                 {% elif dependency_permission and not dependency_action_allowed %}
                     <span class="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-outline-default bg-surface-hover px-4 text-sm font-semibold text-content-secondary">
-                        <i data-lucide="shield" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        <i data-lucide="shield"
+                           class="h-4 w-4 text-kaori-primary"
+                           aria-hidden="true"></i>
                         Admin Required
                     </span>
                 {% endif %}
