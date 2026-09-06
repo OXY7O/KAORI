@@ -183,7 +183,7 @@ def _validate_description_budget(text: str, *, owner: str) -> None:
 
 def _clean_yaml_scalar(value: str) -> str:
     value = value.strip()
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in {'\'', '"'}:
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
         return value[1:-1]
     return value
 
