@@ -195,10 +195,11 @@ def _verify_object_storage_analytics_metadata() -> None:
             "page_hero.meta_label('database', system_label)",
             'page_hero.meta_label(meta_icon, meta_label)',
             "page_hero.meta_label('layers-3', evidence_label)",
-            "evidence_label = 'Committed Snapshot Boundary'",
         ),
         'Object Storage Analytics Hero',
     )
+    if not re.search(r"evidence_label\s*=\s*['\"]Committed Snapshot Boundary['\"]", source):
+        raise AssertionError('Object Storage Analytics Hero: evidence label must be Committed Snapshot Boundary')
     if '{% if inventory_observed_at %}' in source:
         raise AssertionError('Object Storage Analytics: Normal metadata must not depend on inventory_observed_at')
 
