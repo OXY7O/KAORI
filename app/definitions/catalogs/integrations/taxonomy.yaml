@@ -3,13 +3,13 @@ kind: integration_taxonomy
 domains:
 - key: orchestration
   label: Orchestration
-  description: Cluster providers, control-plane access, discovery, and runtime connectivity.
+  description: Cluster providers, control-plane access, discovery, runtime connectivity, and governed orchestration integration workflows.
   icon: boxes
   workspace_endpoint: integrations.orchestration
   order: 10
 - key: observability
   label: Observability
-  description: Metrics, alerting, runtime validation, and operational telemetry providers.
+  description: Metrics, alerting, runtime validation, telemetry providers, and governed observability integration workflows.
   icon: activity
   workspace_endpoint: integrations.observability
   order: 20
