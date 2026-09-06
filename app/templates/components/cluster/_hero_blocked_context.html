@@ -3,11 +3,15 @@
 {% set blocked_title = cluster_blocked_title|default('Cluster Setup Required') %}
 {% set blocked_info = cluster_blocked_info|default('Add a Kubernetes cluster to activate this workspace in KAORI.') %}
 {% set blocked_state_label = cluster_blocked_state_label|default('Workspace State') %}
-<div class="{{ page_hero.context_panel_classes() }}">
-    {{ page_hero.context_header(blocked_scope, blocked_title, 'lock-keyhole') }}
-    <div class="{{ page_hero.context_panel_metrics_classes() }}">
-        {{ page_hero.context_metric('boxes', 'Connected Clusters', '0', 'No Kubernetes connection available') }}
-        {{ page_hero.context_metric('circle-dot-dashed', blocked_state_label, 'Blocked', 'Cluster access is required', 'text-sm font-semibold leading-5') }}
-    </div>
-    {{ page_hero.context_info('triangle-alert', blocked_info) }}
-</div>
+{{ page_hero.blocked_context_body(blocked_scope,
+blocked_title,
+[
+('boxes', 'Connected Clusters', '0', 'No Kubernetes connection available') ,
+('circle-dot-dashed', blocked_state_label, 'Blocked', 'Cluster access is required', 'text-sm font-semibold leading-5')
+],
+blocked_info,
+none,
+'warning',
+'lock-keyhole',
+'triangle-alert'
+) }}

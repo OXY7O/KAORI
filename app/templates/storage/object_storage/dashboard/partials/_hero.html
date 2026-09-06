@@ -1,5 +1,6 @@
 {% import "components/page_hero.html" as page_hero %}
 {% set dashboard_scope = dashboard.selected_system.name if dashboard.selected_system else 'All Systems' %}
+{% set dashboard_state = 'blocked' if not dashboard.systems else 'normal' %}
 {{ page_hero.operational_dashboard('Object Storage Operations',
 'database-zap',
 'Object Storage Operations Dashboard',
@@ -14,5 +15,7 @@ dashboard_scope,
 url_for('integrations.storage'),
 'plug-zap',
 'Committed Snapshots',
-'normal'
+dashboard_state,
+'Object Storage Setup Required',
+'Register an Object Storage system to activate operational signals.'
 ) }}

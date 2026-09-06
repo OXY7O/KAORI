@@ -71,6 +71,14 @@ page_hero.operational_dashboard(...)
 
 It owns the complete Dashboard Hero composition: shell, layout, identity, title, description, metadata row, context panel, state presentation, two context metrics, and action/footer slot.
 
+Shared blocked Hero-right context composition is owned by:
+
+```jinja
+page_hero.blocked_context_body(...)
+```
+
+This renderer owns the context panel shell, approved header accessory, exactly two compact readiness metrics, and one concise information strip. Domain wrappers provide semantic values only.
+
 Low-level macros such as `shell_classes()`, `layout_classes()`, `intro(...)`, and `context_metric(...)` remain compatibility primitives for existing families while their profile migrations are performed. New same-context family implementations must not fork a fresh page-local full Hero shell when an approved profile renderer exists.
 
 ## Canonical composition
@@ -114,6 +122,42 @@ The right-side panel uses two semantic metric roles in this order:
 The Dashboard Hero action role is **operational source/readiness management**. Domain labels and URLs may differ, but the action must remain in that semantic role. Generic navigation that does not manage readiness/source configuration must not replace it.
 
 The dashboard renderer exposes `data-kaori-hero-profile="operational-dashboard"` and `data-kaori-hero-state="..."` for contract and rendering verification.
+
+## Blocked readiness grammar
+
+Blocked state remains profile-specific while repeated geometry stays shared. The Hero remains visible, the right context tells the operator why the workspace cannot proceed, and detailed remediation stays immediately below the Hero.
+
+### Operational Dashboard blocked context
+
+The paired Kubernetes/Object Storage dashboards use:
+
+1. `Dashboard Readiness`;
+2. domain-specific setup title;
+3. semantic `Blocked` status;
+4. `Active Scope`;
+5. `Data Authority`;
+6. one concise setup information strip.
+
+`Data Authority` remains truthful while blocked; it describes the evidence boundary, not successful evidence availability.
+
+### Operational workspace blocked context
+
+Inventory, Kubernetes Operations, Kubernetes Governance, and equivalent Object Storage operational workspaces follow the Kubernetes Operations/Governance reference pattern. The context uses the domain readiness label/title, one resource-availability metric such as `Connected Clusters` or `Registered Systems`, a `Workspace State` value of `Blocked`, and one concise information strip. The shared renderer owns the geometry; domain wrappers own nouns and setup wording.
+
+The section blocker below the Hero uses `components/states/_blocked_state.html` with setup status, concise description, ordered steps when useful, and one permission-aware primary action. Pages with the same semantics must not rebuild a local blocker card.
+
+### Analytics blocked context
+
+Analytics uses:
+
+1. `Analytics Readiness`;
+2. concise blocker title;
+3. semantic `Blocked` status;
+4. `Active Scope`;
+5. `Missing Evidence`;
+6. one concise next-requirement information strip.
+
+The Hero does not prioritize generic `Current Step` / `Progress` values. Detailed dependency progress is owned by the shared `Analytics Setup Path` surface below the Hero, which shows Complete / Current Blocker / Pending states and the authoritative next action.
 
 ## Theme and surface contract
 
@@ -172,7 +216,7 @@ Exactly three top-right header accessory variants are approved:
 
 Do not invent a fourth header-accessory geometry.
 
-`context_card(...)` and `context_card_body(...)` continue to enforce **exactly two compact metrics** in their status-oriented baseline via `metrics[:2]`.
+`context_card(...)`, `context_card_body(...)`, and `blocked_context_body(...)` enforce **exactly two compact metrics** through `metrics[:2]`.
 
 ## Content density
 
@@ -213,6 +257,10 @@ Blocked state communicates setup/readiness and does not pretend normal operation
 
 - `operational_dashboard(...)`
 
+### Shared blocked context renderer
+
+- `blocked_context_body(...)`
+
 ### Compatibility shell and identity primitives
 
 - `shell_classes()`
@@ -241,7 +289,7 @@ Blocked state communicates setup/readiness and does not pretend normal operation
 - `context_action_classes()`
 - `context_single_action_classes()`
 
-Compatibility primitives are not permission to create a new same-context family fork. Profile renderers take precedence wherever defined.
+Compatibility primitives are not permission to create a new same-context family fork. Profile renderers and shared blocked context ownership take precedence wherever defined.
 
 ## Domain extensions
 
@@ -258,6 +306,7 @@ The verifier must:
 - verify required/removed macro ownership;
 - verify every compatibility shell still composes canonical primitives;
 - verify paired Operational Dashboard pages call the single shared profile renderer and do not locally assemble the shell;
+- verify shared blocked-context wrappers do not rebuild context-panel geometry locally;
 - verify Object Storage Analytics Normal metadata does not conditionally fall from three to two items;
 - reject unmanaged Hero-like local surfaces that bypass the component;
 - report compatibility-shell and profile-consumer counts separately.
