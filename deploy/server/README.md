@@ -14,6 +14,17 @@ The deployment workflow supplies an immutable RC image digest and exact admitted
 - `verify.sh` — internal runtime verification.
 - `release-state.sh` — immutable release identity loading.
 
+## Host bootstrap
+
+Generate the deployment key on the operator laptop; the server bootstrap accepts only the public half and never creates or stores the private key:
+
+```bash
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/kaori-deploy -C kaori-deploy
+sudo ./deploy/server/bootstrap-host.sh --ssh-public-key-file ~/.ssh/kaori-deploy.pub
+```
+
+Keep the private key outside the repository and provide it only through the protected GitHub Environment used for UAT deployment. The bootstrap prepares Docker Engine, Docker Compose, the `kaori-deploy` identity, `/opt/kaori`, `/etc/kaori`, and `/var/lib/kaori` without overwriting an existing environment file.
+
 ## Server-owned configuration
 
 Real runtime configuration remains on the server under `/etc/kaori/` and is never copied into repository examples. The governed split is `/etc/kaori/app.env`, `/etc/kaori/secrets.env`, and `/etc/kaori/deploy.env`; secrets retain restrictive file permissions. GitHub Secrets provide only the encrypted deployment credentials and pinned SSH trust material needed by the delivery workflow.
