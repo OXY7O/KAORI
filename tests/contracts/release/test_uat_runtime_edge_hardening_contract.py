@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-VPS_COMPOSE = ROOT / 'deploy' / 'vps' / 'compose.vps.yml'
+SERVER_COMPOSE = ROOT / 'deploy' / 'server' / 'compose.server.yml'
 PRODUCTION_COMPOSE = ROOT / 'compose.production.yml'
 GUNICORN_CONFIG = ROOT / 'gunicorn.conf.py'
 
@@ -20,7 +20,7 @@ def _service_block(text: str, service: str, next_service: str | None = None) -> 
 
 
 def test_nginx_edge_uses_only_minimum_runtime_capabilities() -> None:
-    nginx = _service_block(_read(VPS_COMPOSE), 'nginx', 'certbot')
+    nginx = _service_block(_read(SERVER_COMPOSE), 'nginx', 'certbot')
 
     assert 'read_only: true' in nginx
     assert 'no-new-privileges:true' in nginx
