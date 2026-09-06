@@ -22,12 +22,12 @@ def test_dynamic_jinja_hero_descriptions_are_discovered_and_budgeted() -> None:
 
 
 def test_generic_blocked_analytics_hero_preserves_operational_metadata() -> None:
-    blocked = (
-        ROOT / 'app' / 'templates' / 'kubernetes' / 'analytics' / 'materialization' / 'blocked.html'
-    ).read_text(encoding='utf-8')
-    presentation = (
-        ROOT / 'app' / 'kubernetes' / 'analytics' / 'materialization' / 'presentation.py'
-    ).read_text(encoding='utf-8')
+    blocked = (ROOT / 'app' / 'templates' / 'kubernetes' / 'analytics' / 'materialization' / 'blocked.html').read_text(
+        encoding='utf-8'
+    )
+    presentation = (ROOT / 'app' / 'kubernetes' / 'analytics' / 'materialization' / 'presentation.py').read_text(
+        encoding='utf-8'
+    )
 
     assert 'page_hero.analytics_metadata(' in blocked
     assert 'materialization_metadata' in presentation
