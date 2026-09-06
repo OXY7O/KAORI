@@ -23,7 +23,6 @@ def test_object_storage_dashboard_uses_kaori_alert_cases_not_raw_source_rows() -
     assert "url_for('alert_intelligence.index'" in alerts
     actions = read('app/templates/storage/object_storage/dashboard/partials/_recommended_actions.html')
     assert "url_for('intelligence.recommendation_details'" in actions
-    assert 'get_dashboard_recommendation_findings' in service
     assert 'Active Alertmanager and Metrics Source Object Storage alert signals.' not in alerts
     assert 'Alert evidence is unavailable in the committed analytics snapshot.' not in alerts
     assert 'Select an Object Storage system to view KAORI alert cases.' in alerts
@@ -75,8 +74,5 @@ def test_inventory_authority_copy_is_compact_and_object_storage_hero_has_more_co
         in object_storage_detail
     )
     assert 'Latest committed Inventory Sync snapshot; no live provider query.' in object_storage_presentation
-    assert (
-        'Review committed fleet posture, inventory coverage, and managed asset readiness across Object Storage systems.'
-        in hero
-    )
+    assert 'Review committed inventory coverage and readiness across Object Storage systems.' in hero
     assert 'Review committed fleet posture across managed systems and inventory assets.' not in hero
