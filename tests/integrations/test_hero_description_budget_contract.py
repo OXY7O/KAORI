@@ -53,3 +53,8 @@ def test_cluster_required_blocked_hero_descriptions_are_registered_with_global_b
         'Validate one certificate and private-key pair against explicitly selected TLS Secrets before any controlled bulk rotation.'
         not in values
     )
+
+
+def test_global_hero_verifier_covers_blocked_route_description_budget() -> None:
+    namespace = _hero_verifier_namespace()
+    namespace['verify']()
