@@ -150,6 +150,8 @@ def test_operational_dashboard_standard_is_family_owned() -> None:
     assert '# KAORI Operational Dashboard Pattern v1.5' in standard
     assert 'Kubernetes Operations Dashboard and Object Storage Operations Dashboard' in standard
     assert 'Dashboard family consistency' in standard
-    assert 'Future Server/VM, HCI, network, backup, and other operational dashboards begin from this pattern' in standard
+    assert (
+        'Future Server/VM, HCI, network, backup, and other operational dashboards begin from this pattern' in standard
+    )
     assert 'same four workspace tabs' in audit
     assert 'future operational dashboards' in audit
