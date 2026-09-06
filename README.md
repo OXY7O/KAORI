@@ -17,7 +17,9 @@ KAORI turns committed infrastructure evidence into Inventory, Analytics, Reports
 
 > **Evidence first.** Operational pages use committed snapshots, live provider access stays explicit, and release promotion is bound to reviewed source plus immutable artifacts.
 
-## Platform Capabilities
+## Architecture
+
+### Platform Capabilities
 
 ```text
                          ┌──────────────────────┐
@@ -85,13 +87,14 @@ KAORI uses a governed immutable promotion path:
 
 ```text
 Issue → Work Branch → Developer Check → kaori/staging → Full Admission
-      → immutable RC → staging deployment → human UAT → production promotion
+      → immutable RC → staging deployment → explicit UAT acceptance → production promotion
 ```
 
 A stable release reuses the exact accepted OCI digest; the application image is not rebuilt during stable promotion. Release identity binds source SHA, Git tag, GitHub Release, accepted RC, OCI digest, runtime metadata, signature, and validation evidence.
 
 - [`CHANGELOG.md`](CHANGELOG.md) — product change history and current work.
 - [`docs/deployment/RELEASE_GOVERNANCE.md`](docs/deployment/RELEASE_GOVERNANCE.md) — immutable release authority and promotion rules.
+- [`docs/releases/KAORI_2_3_0.md`](docs/releases/KAORI_2_3_0.md) — current application-version release notes retained for the existing `APP_VERSION` baseline.
 - [`docs/releases/README.md`](docs/releases/README.md) — canonical release lifecycle and artifact boundaries.
 - [`deploy/server/README.md`](deploy/server/README.md) — governed server deployment adapter.
 
