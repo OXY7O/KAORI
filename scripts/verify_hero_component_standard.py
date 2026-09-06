@@ -126,6 +126,25 @@ def _macro_names(source: str) -> set[str]:
     return set(re.findall(r'{%\s*macro\s+([A-Za-z0-9_]+)', source))
 
 
+def _has_unmanaged_hero_shell(source: str) -> bool:
+    for opening in re.finditer(r'<(?P<tag>section|header)\b(?P<attrs>[^>]*)>', source, flags=re.IGNORECASE | re.DOTALL):
+        attrs = opening.group('attrs')
+        has_hero_surface = re.search(
+            r'class\s*=\s*["\'][^"\']*(?:bg-kaori-primary|kaori-hero-shell)[^"\']*["\']',
+            attrs,
+            flags=re.DOTALL,
+        )
+        if not has_hero_surface:
+            continue
+
+        tag = opening.group('tag')
+        remainder = source[opening.end() :]
+        closing = re.search(rf'</{tag}\s*>', remainder, flags=re.IGNORECASE)
+        if closing and re.search(r'<h1\b', remainder[: closing.start()], flags=re.IGNORECASE):
+            return True
+    return False
+
+
 def _primitive_shell_templates() -> list[Path]:
     return sorted(
         path
@@ -269,7 +288,7 @@ def verify() -> None:
         if path == HERO:
             continue
         source = path.read_text(encoding='utf-8')
-        if '<h1' in source and ('bg-kaori-primary' in source or 'kaori-hero-shell ' in source):
+        if _has_unmanaged_hero_shell(source):
             suspicious_local_shells.append(str(path.relative_to(ROOT)))
     if suspicious_local_shells:
         raise AssertionError('Unmanaged Hero-like shell detected: ' + ', '.join(suspicious_local_shells))
