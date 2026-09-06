@@ -35,6 +35,19 @@ The profile action role is **operational source/readiness management**. Domain l
 
 Blocked Dashboard state retains the same profile geometry, changes the right-side context to readiness semantics, and does not fabricate normal operational evidence.
 
+### Dashboard Readiness blocked contract
+
+A blocked Operational Dashboard uses the same canonical right-side grammar in every domain:
+
+1. context eyebrow `Dashboard Readiness`;
+2. domain setup title, for example `Cluster Setup Required` or `Object Storage Setup Required`;
+3. semantic `Blocked` status badge;
+4. **Active Scope** as the first context metric;
+5. **Data Authority** as the second context metric;
+6. one concise information strip that states the next setup requirement.
+
+The blocked Dashboard body immediately below the Hero uses the shared section blocked-state grammar: setup title/status, concise explanation, ordered setup steps when useful, and one permission-aware primary action. Kubernetes and Object Storage must not maintain separate local blocker geometry.
+
 ## Canonical composition
 
 ```text

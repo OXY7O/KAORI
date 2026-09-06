@@ -352,8 +352,9 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     assert 'Object Storage → Metrics → Analytics Snapshot' in blocker
     assert 'Alert Evidence' not in blocker
     assert blocker.count('dependency_grid_classes = "lg:grid-cols-3"') == 2
-    assert 'Analytics Readiness' in shared_blocker
+    assert 'Analytics Setup Path' in shared_blocker
     assert 'Current Blocker' in shared_blocker
+    assert 'Missing dependency:' in shared_blocker
     assert 'dependency_route_summary' in shared_blocker
     assert 'dependency_step_count' in shared_blocker
     assert 'dependency_blocker.diagnostic_detail' in dependency_notice
@@ -362,12 +363,11 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     controls_index = index.index('partials/_controls.html')
     assert blocker_index < else_index < controls_index
     assert 'metrics_source.detail' not in hero
-    assert "'Current Step'" in hero_blocked
-    assert "'Progress'" in hero_blocked
     assert "'Analytics Readiness'" in hero_blocked
-    assert 'readiness_step_count = 3' in hero_blocked
-    assert "3: 'Analytics Snapshot'" in hero_blocked
-    assert has_jinja_assignment(hero_blocked, 'blocker_status', 'Capability Incomplete')
+    assert "'Active Scope'" in hero_blocked
+    assert "'Missing Evidence'" in hero_blocked
+    assert "'Current Step'" not in hero_blocked
+    assert "'Progress'" not in hero_blocked
 
 
 def test_object_storage_bucket_records_use_shared_kaori_table_contract() -> None:
@@ -412,12 +412,10 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
     assert "'Capacity Use'" in hero_posture
     assert "'Error Ratio'" in hero_posture
     assert "'Analytics Readiness'" in hero_blocked
-    assert "'Current Step'" in hero_blocked
-    assert "'Progress'" in hero_blocked
-    assert "'Analytics Readiness'" in hero_blocked
-    assert 'readiness_step_count = 3' in hero_blocked
-    assert "3: 'Analytics Snapshot'" in hero_blocked
-    assert has_jinja_assignment(hero_blocked, 'blocker_status', 'Capability Incomplete')
+    assert "'Active Scope'" in hero_blocked
+    assert "'Missing Evidence'" in hero_blocked
+    assert "'Current Step'" not in hero_blocked
+    assert "'Progress'" not in hero_blocked
 
     assert 'components/content_tabs.html' in workspace
     assert 'data-analytics-tabset' in workspace
