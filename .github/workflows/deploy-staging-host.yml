@@ -297,14 +297,14 @@ jobs:
           } | run_remote_script
 
           scp "${scp_opts[@]}" compose.production.yml "$target:$remote_release/compose.production.yml"
-          scp "${scp_opts[@]}" -r deploy/vps "$target:$remote_release/deploy/"
+          scp "${scp_opts[@]}" -r deploy/server "$target:$remote_release/deploy/"
           scp "${scp_opts[@]}" -r deploy/nginx "$target:$remote_release/deploy/"
 
           {
             printf 'set -Eeuo pipefail\n'
             printf 'remote_release=%q\n' "$remote_release"
             cat <<'REMOTE_PERMISSIONS'
-          chmod 700 -- "$remote_release"/deploy/vps/*.sh
+          chmod 700 -- "$remote_release"/deploy/server/*.sh
           chmod 755 -- "$remote_release"/deploy/nginx/*.sh
           REMOTE_PERMISSIONS
           } | run_remote_script
@@ -312,7 +312,7 @@ jobs:
           # Registry auth remains remote and ephemeral; deploy.sh uses docker login --password-stdin.
           {
             printf 'set -Eeuo pipefail\n'
-            printf 'deploy_script=%q\n' "$remote_release/deploy/vps/deploy.sh"
+            printf 'deploy_script=%q\n' "$remote_release/deploy/server/deploy.sh"
             printf 'requested_image=%q\n' "$REQUESTED_IMAGE"
             printf 'requested_sha=%q\n' "$REQUESTED_SHA"
             printf 'requested_version=%q\n' "$REQUESTED_VERSION"
