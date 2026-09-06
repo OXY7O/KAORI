@@ -77,13 +77,14 @@ def test_hero_v17_operational_metadata_state_contract_is_executable() -> None:
     assert 'page_hero.analytics_metadata(' in storage_hero
 
 
-def test_cluster_readiness_uses_orchestration_integration_vocabulary() -> None:
+def test_cluster_readiness_uses_cluster_integrations_vocabulary() -> None:
     source = (ROOT / 'app' / 'common' / 'dependencies.py').read_text(encoding='utf-8')
     start = source.index('def cluster_required_blocker()')
     end = source.index('\n\ndef metrics_source_setup_blocker', start)
     blocker = source[start:end]
 
-    assert "'action_label': 'Open Orchestration Integration'" in blocker
+    assert "'action_label': 'Open Cluster Integrations'" in blocker
     assert "'action_url': url_for('integrations.kubernetes')" in blocker
     assert "'permission': 'clusters.manage'" in blocker
     assert "'action_label': 'Open Cluster Integration'" not in blocker
+    assert "'action_label': 'Open Orchestration Integration'" not in blocker
