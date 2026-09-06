@@ -227,7 +227,7 @@ def _static_string(node: ast.AST | None, *, owner: str) -> str:
 def _effective_cluster_required_description(description: str) -> str:
     if len(_description_words(description)) >= DESCRIPTION_TARGET_MIN:
         return description
-    return f"{description.rstrip('.')} {CLUSTER_REQUIRED_CONTEXT_SUFFIX}"
+    return f'{description.rstrip(".")} {CLUSTER_REQUIRED_CONTEXT_SUFFIX}'
 
 
 def _cluster_required_descriptions() -> dict[str, str]:
