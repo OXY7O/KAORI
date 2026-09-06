@@ -15,9 +15,9 @@ DASHBOARD_STANDARD = ROOT / 'docs' / 'design' / 'patterns' / 'OPERATIONAL_DASHBO
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 INTEGRATION_TAXONOMY = ROOT / 'app' / 'definitions' / 'catalogs' / 'integrations' / 'taxonomy.yaml'
 
-DESCRIPTION_TARGET_MIN = 7
-DESCRIPTION_TARGET_MAX = 12
-DESCRIPTION_HARD_MAX = 16
+DESCRIPTION_TARGET_MIN = 11
+DESCRIPTION_TARGET_MAX = 19
+DESCRIPTION_HARD_MAX = 19
 DESCRIPTION_WORD_PATTERN = re.compile(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*")
 DESCRIPTION_PARAGRAPH_PATTERN = re.compile(
     r'<p\b(?=[^>]*page_hero\.description_classes\(\))[^>]*>(?P<body>.*?)</p>',
@@ -82,6 +82,7 @@ REQUIRED_MACROS = (
     'title_classes',
     'description_classes',
     'metadata_row_classes',
+    'persistent_metadata',
     'analytics_metadata',
     'intro',
     'meta_label',
@@ -107,6 +108,8 @@ IMPLEMENTATION_TOKENS = (
     'metadata[:3]',
     'data-kaori-hero-profile="operational-dashboard"',
     'data-kaori-hero-state="{{ state }}"',
+    'data-kaori-hero-metadata',
+    'data-kaori-hero-metadata-policy="persistent"',
     'data-kaori-analytics-metadata',
     'text-3xl font-bold leading-10',
     'sm:text-4xl',
@@ -114,6 +117,7 @@ IMPLEMENTATION_TOKENS = (
     'grid grid-cols-2 auto-rows-fr gap-2',
     'macro blocked_context_body(',
     'macro operational_dashboard(',
+    'macro persistent_metadata(',
     'macro analytics_metadata(',
     'macro context_icon_box(icon)',
     'macro context_action_icon_box(icon, href, aria_label, title=None)',
@@ -121,11 +125,12 @@ IMPLEMENTATION_TOKENS = (
 )
 
 DOCUMENTATION_TOKENS = (
-    '# KAORI Hero Component Standard v1.6',
+    '# KAORI Hero Component Standard v1.7',
     'Hero Profile',
     'Hero State',
     'same Profile + same State',
     'exactly three metadata',
+    'normal, blocked, and degraded',
     'app/templates/components/page_hero.html',
     'scripts/verify_hero_component_standard.py',
     'tests/contracts/design/test_hero_component_standard_contract.py',
@@ -143,7 +148,7 @@ DOCUMENTATION_TOKENS = (
     'components/ANALYTICS_HERO.md',
     '## Theme and surface contract',
     'components/DARK_MODE.md',
-    'The canonical verifier enforces the 7–12 word target',
+    'The canonical verifier enforces the 11–19 word target',
     'Integration domain descriptions are audited from',
     '## Change procedure',
 )
@@ -420,6 +425,44 @@ def _verify_analytics_metadata_ownership() -> None:
         raise AssertionError('Object Storage Analytics: metadata must not depend on inventory_observed_at')
 
 
+def _verify_operational_metadata_state_contract() -> None:
+    hero = _read(HERO)
+    _require_tokens(
+        hero,
+        (
+            'macro persistent_metadata(',
+            'data-kaori-hero-metadata',
+            'data-kaori-hero-metadata-policy="persistent"',
+            'persistent_metadata(metadata)',
+            'persistent_metadata(analytics_items)',
+        ),
+        'Hero persistent metadata renderer',
+    )
+
+    for path in (*KUBERNETES_ANALYTICS_HEROES, OBJECT_STORAGE_ANALYTICS_HERO):
+        source = _read(path)
+        relative = path.relative_to(ROOT)
+        if 'page_hero.analytics_metadata(' not in source:
+            raise AssertionError(f'{relative}: operational Analytics metadata is not rendered through the persistent renderer')
+        if 'dependency_blocker' in source:
+            blocker_start = source.find('{% if dependency_blocker %}')
+            if blocker_start >= 0:
+                blocker_end = source.find('{% endif %}', blocker_start)
+                metadata_call = source.find('page_hero.analytics_metadata(')
+                if blocker_end >= 0 and metadata_call >= 0 and metadata_call < blocker_end:
+                    raise AssertionError(
+                        f'{relative}: blocked readiness must be additive; metadata must render outside the blocker branch'
+                    )
+
+    dashboards = (
+        TEMPLATES / 'kubernetes' / 'dashboard' / 'partials' / '_hero.html',
+        TEMPLATES / 'storage' / 'object_storage' / 'dashboard' / 'partials' / '_hero.html',
+    )
+    for path in dashboards:
+        if 'page_hero.operational_dashboard(' not in _read(path):
+            raise AssertionError(f'{path.relative_to(ROOT)}: dashboard must retain shared operational Hero ownership')
+
+
 def verify() -> None:
     hero = _read(HERO)
     standard = _read(STANDARD)
@@ -481,6 +524,7 @@ def verify() -> None:
     _verify_operational_dashboard_profile()
     _verify_blocked_context_ownership()
     _verify_analytics_metadata_ownership()
+    _verify_operational_metadata_state_contract()
 
     active_templates = '\n'.join(path.read_text(encoding='utf-8') for path in TEMPLATES.rglob('*.html') if path != HERO)
     for macro in REMOVED_MACROS:
@@ -530,8 +574,8 @@ def verify() -> None:
         f'{context_card_templates} context-card consumers, '
         f'{lazy_context_templates} lazy context bodies, '
         f'{blocked_context_templates} shared blocked contexts, and '
-        f'{analytics_metadata_templates} shared Analytics metadata consumers match v1.6; '
-        'dashboard parity, blocked readiness ownership, Analytics metadata ownership, description budgets, '
+        f'{analytics_metadata_templates} shared Analytics metadata consumers match v1.7; '
+        'dashboard parity, blocked/degraded metadata persistence, readiness ownership, description budgets, '
         'implementation, documentation, dark-mode ownership, removed APIs, unmanaged-shell detection, '
         'and quality-gate ownership are synchronized.'
     )
