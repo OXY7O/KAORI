@@ -241,10 +241,10 @@
 {%- endmacro %}
 {% macro analytics_metadata(primary_icon, primary_label, secondary_icon, secondary_label, tertiary_icon, tertiary_label) -%}
     {% set analytics_items = [
-        (primary_icon, primary_label),
-        (secondary_icon, secondary_label),
-        (tertiary_icon, tertiary_label)
-    ] %}
+            (primary_icon, primary_label),
+            (secondary_icon, secondary_label),
+            (tertiary_icon, tertiary_label)
+        ] %}
     <div data-kaori-analytics-metadata>{{ persistent_metadata(analytics_items) }}</div>
 {%- endmacro %}
 {% macro primary_action_classes() -%}
