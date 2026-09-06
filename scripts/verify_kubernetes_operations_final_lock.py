@@ -93,7 +93,7 @@ def main() -> int:
         'page_title: str | None = None',
         'page_description: str | None = None',
         'requested_page_title=page_title or operation_label',
-        'requested_page_description=(',
+        'requested_page_description=_blocked_page_description(operation_label, page_description)',
         'has_registered_clusters()',
         "request.headers.get('HX-Request') == 'true'",
         "render_template('components/cluster/_onboarding_banner.html')",
