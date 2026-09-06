@@ -14,6 +14,13 @@ ANALYTICS_STANDARD = ROOT / 'docs' / 'design' / 'components' / 'ANALYTICS_HERO.m
 DASHBOARD_STANDARD = ROOT / 'docs' / 'design' / 'patterns' / 'OPERATIONAL_DASHBOARD.md'
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 INTEGRATION_TAXONOMY = ROOT / 'app' / 'definitions' / 'catalogs' / 'integrations' / 'taxonomy.yaml'
+KUBERNETES_ANALYTICS_BLOCKED_HERO = (
+    TEMPLATES / 'kubernetes' / 'analytics' / 'materialization' / 'blocked.html'
+)
+KUBERNETES_ANALYTICS_MATERIALIZATION_PRESENTATION = (
+    ROOT / 'app' / 'kubernetes' / 'analytics' / 'materialization' / 'presentation.py'
+)
+KUBERNETES_ANALYTICS_ROUTES = ROOT / 'app' / 'kubernetes' / 'analytics'
 
 DESCRIPTION_TARGET_MIN = 11
 DESCRIPTION_TARGET_MAX = 19
@@ -23,6 +30,9 @@ DESCRIPTION_WORD_PATTERN = re.compile(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*")
 DESCRIPTION_PARAGRAPH_PATTERN = re.compile(
     r'<p\b(?=[^>]*page_hero\.description_classes\(\))[^>]*>(?P<body>.*?)</p>',
     flags=re.IGNORECASE | re.DOTALL,
+)
+JINJA_DESCRIPTION_VARIABLE_PATTERN = re.compile(
+    r'^\s*{{\s*(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*}}\s*$'
 )
 OPERATIONAL_DASHBOARD_DESCRIPTION_PATTERN = re.compile(
     r"page_hero\.operational_dashboard\(\s*'[^']*',\s*'[^']*',\s*'[^']*',"
@@ -165,20 +175,61 @@ def _profile_templates() -> list[Path]:
     )
 
 
+def _normalize_description_text(value: str) -> str:
+    text = re.sub(r'<[^>]+>', ' ', value)
+    return html.unescape(' '.join(text.split()))
+
+
+def _local_jinja_literal_values(source: str, variable: str) -> list[str]:
+    assignment_pattern = re.compile(
+        r'{%\s*set\s+'
+        + re.escape(variable)
+        + r'\s*=\s*(?P<quote>[\'\"])(?P<value>.*?)(?P=quote)\s*%}',
+        flags=re.DOTALL,
+    )
+    return [
+        _normalize_description_text(match.group('value'))
+        for match in assignment_pattern.finditer(source)
+        if _normalize_description_text(match.group('value'))
+    ]
+
+
 def _literal_hero_descriptions(paths: list[Path]) -> dict[str, str]:
+    """Discover literal and locally-resolvable Jinja Hero descriptions.
+
+    A Hero description rendered from a Jinja variable is audited across every
+    static assignment in that template. Unresolved dynamic variables fail
+    closed, except materialization_description whose route-owned `_PAGE`
+    contracts are audited separately by `_materialization_route_descriptions`.
+    """
     descriptions: dict[str, str] = {}
     for path in paths:
         source = _read(path)
-        match = DESCRIPTION_PARAGRAPH_PATTERN.search(source)
-        if not match:
-            continue
-        body = match.group('body')
-        if '{{' in body or '{%' in body:
-            continue
-        text = re.sub(r'<[^>]+>', ' ', body)
-        text = html.unescape(' '.join(text.split()))
-        if text:
-            descriptions[str(path.relative_to(ROOT))] = text
+        relative = str(path.relative_to(ROOT))
+        for index, match in enumerate(DESCRIPTION_PARAGRAPH_PATTERN.finditer(source), start=1):
+            body = match.group('body')
+            variable_match = JINJA_DESCRIPTION_VARIABLE_PATTERN.fullmatch(body)
+            if variable_match:
+                variable = variable_match.group('name')
+                values = _local_jinja_literal_values(source, variable)
+                if values:
+                    for variant, value in enumerate(values, start=1):
+                        descriptions[f'{relative}#{variable}:{variant}'] = value
+                    continue
+                if variable == 'materialization_description':
+                    continue
+                raise AssertionError(
+                    f'{relative}: Hero description variable {variable!r} has no static local '
+                    'assignments or registered verifier resolver'
+                )
+            if '{{' in body or '{%' in body:
+                raise AssertionError(
+                    f'{relative}: Hero description must be a literal or a statically resolvable Jinja variable'
+                )
+            text = _normalize_description_text(body)
+            if text:
+                owner = relative if index == 1 else f'{relative}#{index}'
+                descriptions[owner] = text
     return descriptions
 
 
@@ -222,6 +273,28 @@ def _static_string(node: ast.AST | None, *, owner: str) -> str:
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         return node.value
     raise AssertionError(f'{owner}: Hero copy must be a static string literal')
+
+
+def _materialization_route_descriptions() -> dict[str, str]:
+    descriptions: dict[str, str] = {}
+    for path in sorted(KUBERNETES_ANALYTICS_ROUTES.rglob('routes.py')):
+        tree = ast.parse(_read(path), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+                continue
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            if not any(isinstance(target, ast.Name) and target.id == '_PAGE' for target in targets):
+                continue
+            value = node.value
+            if not isinstance(value, ast.Dict):
+                raise AssertionError(f'{path.relative_to(ROOT)}:{node.lineno}: _PAGE must remain a static dictionary')
+            for key, item in zip(value.keys, value.values, strict=True):
+                if isinstance(key, ast.Constant) and key.value == 'description':
+                    owner = f'materialization {path.relative_to(ROOT)}:{node.lineno}'
+                    descriptions[owner] = _static_string(item, owner=owner)
+    if not descriptions:
+        raise AssertionError('Kubernetes Analytics materialization: no route-owned Hero descriptions discovered')
+    return descriptions
 
 
 def _effective_cluster_required_description(description: str) -> str:
@@ -274,6 +347,7 @@ def _verify_description_budgets(primitive_shells: list[Path], profile_templates:
     descriptions = _literal_hero_descriptions(primitive_shells)
     descriptions.update(_dashboard_descriptions(profile_templates))
     descriptions.update(_integration_domain_descriptions())
+    descriptions.update(_materialization_route_descriptions())
     descriptions.update(_cluster_required_descriptions())
     failures: list[str] = []
     for owner, description in descriptions.items():
@@ -366,6 +440,23 @@ def _verify_operational_metadata_state_contract() -> None:
         metadata_call = source.find('page_hero.analytics_metadata(')
         if blocker_end >= 0 and 0 <= metadata_call < blocker_end:
             raise AssertionError(f'{relative}: blocked readiness must be additive to metadata')
+
+    blocked = _read(KUBERNETES_ANALYTICS_BLOCKED_HERO)
+    _require_tokens(
+        blocked,
+        ('page_hero.analytics_metadata(', 'materialization_metadata'),
+        'Generic Kubernetes Analytics blocked Hero',
+    )
+    presentation = _read(KUBERNETES_ANALYTICS_MATERIALIZATION_PRESENTATION)
+    _require_tokens(
+        presentation,
+        (
+            "'materialization_metadata': {",
+            "'No Cluster Selected'",
+            "'Blocked Readiness'",
+        ),
+        'Generic Kubernetes Analytics blocked metadata context',
+    )
 
 
 def _verify_dashboard_profile() -> None:
@@ -512,8 +603,8 @@ def verify() -> None:
         f'{len(primitive_shells)} compatibility shells, '
         f'{len(profile_templates)} profile consumers, '
         f'{audited} audited descriptions; v1.7 persistent metadata, '
-        '11-19 word density, blocked/degraded state ownership, dark-mode ownership, '
-        'and unmanaged-shell detection are synchronized.'
+        '11-19 word density, blocked/degraded state ownership, dynamic Jinja resolution, '
+        'dark-mode ownership, and unmanaged-shell detection are synchronized.'
     )
 
 
