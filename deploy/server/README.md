@@ -14,6 +14,12 @@ The deployment workflow supplies an immutable RC image digest and exact admitted
 - `verify.sh` — internal runtime verification.
 - `release-state.sh` — immutable release identity loading.
 
-The repository workflow in `.github/workflows/deploy-staging-host.yml` is the staging deployment authority. Do not deploy a mutable branch tag directly to the server.
+## Server-owned configuration
+
+Real runtime configuration remains on the server under `/etc/kaori/` and is never copied into repository examples. The governed split is `/etc/kaori/app.env`, `/etc/kaori/secrets.env`, and `/etc/kaori/deploy.env`; secrets retain restrictive file permissions. GitHub Secrets provide only the encrypted deployment credentials and pinned SSH trust material needed by the delivery workflow.
+
+The application runtime and release state remain under `/opt/kaori` and `/var/lib/kaori`. A temporary UAT installation may share the same physical VPS as a self-hosted `github-runner`, but identities remain separate: runner operations stay under `/opt/actions-runner`, deployment uses `kaori-deploy`, and SSH remains the deployment boundary. See `ops/github-runner/README.md` for the corresponding runner-side trust contract.
+
+The repository workflow in `.github/workflows/deploy-staging-host.yml` is the staging deployment authority. Do not deploy a mutable branch tag directly to the server. Every deployment uses an immutable digest, creates a pre-migration backup when state exists, verifies migrations and runtime health, and retains rollback evidence before public readiness is accepted.
 
 Persistent Docker volume names retain their established identities so renaming this repository boundary does not orphan existing staging data.
