@@ -4,7 +4,7 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 BASE_COMPOSE="${KAORI_BASE_COMPOSE:-$ROOT_DIR/compose.production.yml}"
-VPS_COMPOSE="${KAORI_VPS_COMPOSE:-$ROOT_DIR/deploy/vps/compose.vps.yml}"
+SERVER_COMPOSE="${KAORI_SERVER_COMPOSE:-$ROOT_DIR/deploy/server/compose.server.yml}"
 KAORI_DEPLOY_ENV_FILE="${KAORI_DEPLOY_ENV_FILE:-/etc/kaori/deploy.env}"
 domain=''
 expected_ip=''
@@ -70,10 +70,10 @@ KAORI_APP_ENV_FILE="${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}"
 KAORI_SECRETS_ENV_FILE="${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}"
 KAORI_RELEASE_ENV_FILE="${KAORI_RELEASE_ENV_FILE:-${KAORI_ACTIVE_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}}"
 export KAORI_APP_ENV_FILE KAORI_SECRETS_ENV_FILE KAORI_RELEASE_ENV_FILE
-# shellcheck source=deploy/vps/release-state.sh
-source "$ROOT_DIR/deploy/vps/release-state.sh"
+# shellcheck source=deploy/server/release-state.sh
+source "$ROOT_DIR/deploy/server/release-state.sh"
 load_current_release_identity || fail 'release identity is unavailable for Compose verification'
-compose=(docker compose --env-file "$KAORI_DEPLOY_ENV_FILE" -f "$BASE_COMPOSE" -f "$VPS_COMPOSE")
+compose=(docker compose --env-file "$KAORI_DEPLOY_ENV_FILE" -f "$BASE_COMPOSE" -f "$SERVER_COMPOSE")
 
 verify_dns() {
   local -a resolved_ips=()
@@ -82,7 +82,7 @@ verify_dns() {
   ((${#resolved_ips[@]} > 0)) || fail "$domain has no IPv4 DNS resolution"
   resolved_joined="${resolved_ips[*]}"
   if [[ -n "$expected_ip" ]]; then
-    printf '%s\n' "${resolved_ips[@]}" | grep -Fxq "$expected_ip" || fail "$domain does not resolve to expected VPS IPv4 $expected_ip (resolved: $resolved_joined)"
+    printf '%s\n' "${resolved_ips[@]}" | grep -Fxq "$expected_ip" || fail "$domain does not resolve to expected server IPv4 $expected_ip (resolved: $resolved_joined)"
   fi
   status '🌐' "DNS PASS · $domain → $resolved_joined"
 }
