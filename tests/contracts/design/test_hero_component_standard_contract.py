@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -68,6 +69,7 @@ def test_object_storage_analytics_normal_branch_has_three_stable_metadata_slots(
     assert "page_hero.meta_label('database', system_label)" in source
     assert 'page_hero.meta_label(meta_icon, meta_label)' in source
     assert "page_hero.meta_label('layers-3', evidence_label)" in source
+    assert re.search(r"evidence_label\s*=\s*['\"]Committed Snapshot Boundary['\"]", source)
     assert '{% if inventory_observed_at %}' not in source
 
 
