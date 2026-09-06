@@ -3,6 +3,17 @@
 {% set actionable = payload.actionable_recommendations|default({}) %}
 {% set active_alerts = payload.health_summary.active_alerts.value|default(0) %}
 {% set selected_cluster_name = payload.selected_cluster.name if payload.selected_cluster else 'No Cluster Selected' %}
+{% if dependency_blocker %}
+    {% set hero_secondary_icon = "lock-keyhole" %}
+    {% set hero_secondary_label = 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge %}
+    {% set hero_tertiary_icon = "triangle-alert" %}
+    {% set hero_tertiary_label = "Blocked Readiness" %}
+{% else %}
+    {% set hero_secondary_icon = "clock-3" %}
+    {% set hero_secondary_label = payload.selected_time_range|upper ~ ' Window' %}
+    {% set hero_tertiary_icon = "bell" %}
+    {% set hero_tertiary_label = active_alerts ~ ' Active Alerts' %}
+{% endif %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
@@ -11,15 +22,12 @@
                 <p class="mt-2 {{ page_hero.description_classes() }}">
                     Review consolidated resource utilization, workload posture, storage, forecasts, top consumers, and alert signals.
                 </p>
-                <div class="{{ page_hero.metadata_row_classes() }}">
-                    {{ page_hero.meta_label('server', selected_cluster_name) }}
-                    {% if dependency_blocker %}
-                        {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
-                    {% else %}
-                        {{ page_hero.meta_label('clock-3', payload.selected_time_range|upper ~ ' Window') }}
-                        {{ page_hero.meta_label('bell', active_alerts ~ ' Active Alerts') }}
-                    {% endif %}
-                </div>
+                {{ page_hero.analytics_metadata('server',
+                                selected_cluster_name,
+                                hero_secondary_icon,
+                                hero_secondary_label,
+                                hero_tertiary_icon,
+                                hero_tertiary_label) }}
             {% endcall %}
         </div>
         <aside class="{{ page_hero.aside_classes() }}"

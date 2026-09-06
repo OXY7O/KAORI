@@ -8,6 +8,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 
+KUBERNETES_ANALYTICS_HEROES = (
+    'overview/partials/_hero.html',
+    'utilization/partials/_hero.html',
+    'capacity/partials/_hero.html',
+    'storage/partials/_hero.html',
+    'workload/partials/_hero.html',
+    'top_consumers/partials/_hero.html',
+    'alerts/partials/_hero.html',
+    'forecast/partials/_hero.html',
+)
+
 
 def test_hero_component_standard_is_enforced() -> None:
     result = subprocess.run(
@@ -51,6 +62,8 @@ def test_hero_documentation_has_one_global_contract_and_one_domain_extension() -
     assert 'kaori-hero-shell' in global_standard
     assert 'components/DARK_MODE.md' in global_standard
     assert 'Kubernetes Analytics Hero Extension' in analytics_extension
+    assert 'Blocked Analytics metadata remains exactly three items' in analytics_extension
+    assert 'page_hero.analytics_metadata(...)' in analytics_extension
     assert not (components / 'ANALYTICS_HERO_STANDARD.md').exists()
     assert not (components / 'ANALYTICS_HERO_INVENTORY_REFERENCE.md').exists()
 
@@ -94,16 +107,56 @@ def test_blocked_hero_context_has_one_shared_renderer() -> None:
     assert 'page_hero.blocked_context_body(' in object_storage
 
 
-def test_object_storage_analytics_normal_branch_has_three_stable_metadata_slots() -> None:
+def test_kubernetes_analytics_heroes_use_three_stable_metadata_slots_in_all_states() -> None:
+    component = (ROOT / 'app' / 'templates' / 'components' / 'page_hero.html').read_text(encoding='utf-8')
+    assert 'macro analytics_metadata(' in component
+    assert 'data-kaori-analytics-metadata' in component
+
+    base = ROOT / 'app' / 'templates' / 'kubernetes' / 'analytics'
+    for relative in KUBERNETES_ANALYTICS_HEROES:
+        source = (base / relative).read_text(encoding='utf-8')
+        assert 'page_hero.analytics_metadata(' in source, relative
+        assert 'page_hero.metadata_row_classes()' not in source, relative
+
+
+def test_object_storage_analytics_uses_three_stable_metadata_slots_in_all_states() -> None:
     source = (
         ROOT / 'app' / 'templates' / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero.html'
     ).read_text(encoding='utf-8')
 
-    assert "page_hero.meta_label('database', system_label)" in source
-    assert 'page_hero.meta_label(meta_icon, meta_label)' in source
-    assert "page_hero.meta_label('layers-3', evidence_label)" in source
+    assert 'page_hero.analytics_metadata(' in source
+    assert 'page_hero.metadata_row_classes()' not in source
     assert re.search(r"evidence_label\s*=\s*['\"]Committed Snapshot Boundary['\"]", source)
     assert '{% if inventory_observed_at %}' not in source
+
+
+def test_object_storage_inventory_setup_copy_is_concise() -> None:
+    source = (
+        ROOT
+        / 'app'
+        / 'templates'
+        / 'storage'
+        / 'object_storage'
+        / 'inventory'
+        / 'components'
+        / '_onboarding_banner.html'
+    ).read_text(encoding='utf-8')
+
+    assert 'Register a Storage integration before KAORI collects object-storage snapshots.' in source
+    assert 'before KAORI can collect and present committed object-storage systems' not in source
+
+
+def test_kubernetes_analytics_cluster_remediation_uses_integration_action() -> None:
+    source = (ROOT / 'app' / 'common' / 'dependencies.py').read_text(encoding='utf-8')
+    start = source.index('def cluster_required_blocker()')
+    end = source.index('\n\ndef metrics_source_setup_blocker', start)
+    blocker = source[start:end]
+
+    assert "'action_label': 'Open Cluster Integration'" in blocker
+    assert "'action_url': url_for('integrations.kubernetes')" in blocker
+    assert "'permission': 'clusters.manage'" in blocker
+    assert "'action_label': 'Add Cluster'" not in blocker
+    assert "url_for('cluster.add_cluster')" not in blocker
 
 
 def test_removed_hero_macros_are_absent_from_implementation() -> None:

@@ -1,19 +1,27 @@
 {% import "components/page_hero.html" as page_hero %}
+{% if dependency_blocker %}
+    {% set hero_secondary_icon = "lock-keyhole" %}
+    {% set hero_secondary_label = 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge %}
+    {% set hero_tertiary_icon = "triangle-alert" %}
+    {% set hero_tertiary_label = "Blocked Readiness" %}
+{% else %}
+    {% set hero_secondary_icon = "filter" %}
+    {% set hero_secondary_label = ('Namespace ' ~ selected_namespace) if selected_namespace else 'All Namespaces' %}
+    {% set hero_tertiary_icon = "calendar-range" %}
+    {% set hero_tertiary_label = selected_history_window ~ ' History' %}
+{% endif %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('sparkles', 'Kubernetes Analytics', 'line-chart') %}
                 <h1 class="{{ page_hero.title_classes() }}">Resource Forecast</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">Review projected demand, threshold timing, growth trends, and potential future capacity risks across the cluster.</p>
-                <div class="{{ page_hero.metadata_row_classes() }}">
-                    {{ page_hero.meta_label('server', selected_cluster_name) }}
-                    {% if dependency_blocker %}
-                        {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
-                    {% else %}
-                        {{ page_hero.meta_label('filter', ('Namespace ' ~ selected_namespace) if selected_namespace else 'All Namespaces') }}
-                        {{ page_hero.meta_label('calendar-range', selected_history_window ~ ' History') }}
-                    {% endif %}
-                </div>
+                {{ page_hero.analytics_metadata('server',
+                                selected_cluster_name,
+                                hero_secondary_icon,
+                                hero_secondary_label,
+                                hero_tertiary_icon,
+                                hero_tertiary_label) }}
             {% endcall %}
         </div>
         {% if dependency_blocker %}
