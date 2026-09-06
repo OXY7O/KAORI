@@ -9,6 +9,12 @@
                     {% call page_hero.intro('database-zap', 'Kubernetes Analytics', materialization_icon) %}
                         <h1 class="{{ page_hero.title_classes() }}">{{ materialization_title }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">{{ materialization_description }}</p>
+                        {{ page_hero.analytics_metadata(materialization_metadata.primary_icon,
+                                                        materialization_metadata.primary_label,
+                                                        materialization_metadata.secondary_icon,
+                                                        materialization_metadata.secondary_label,
+                                                        materialization_metadata.tertiary_icon,
+                                                        materialization_metadata.tertiary_label) }}
                     {% endcall %}
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}"
