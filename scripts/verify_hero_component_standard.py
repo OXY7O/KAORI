@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import html
 import re
 from pathlib import Path
@@ -203,6 +204,58 @@ def _integration_domain_hero_descriptions() -> dict[str, str]:
     return descriptions
 
 
+def _static_string(node: ast.AST | None, *, owner: str) -> str:
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    raise AssertionError(f'{owner}: blocked Hero description source must be a statically auditable string literal')
+
+
+def _cluster_required_hero_descriptions() -> dict[str, str]:
+    descriptions: dict[str, str] = {}
+    for path in sorted((ROOT / 'app').rglob('*.py')):
+        source = _read(path)
+        tree = ast.parse(source, filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            function = node.func
+            is_cluster_required = (
+                isinstance(function, ast.Name)
+                and function.id == 'cluster_required'
+                or isinstance(function, ast.Attribute)
+                and function.attr == 'cluster_required'
+            )
+            if not is_cluster_required:
+                continue
+
+            relative = path.relative_to(ROOT)
+            owner = f'{relative}:{node.lineno}'
+            operation_node = (
+                node.args[0]
+                if node.args
+                else next(
+                    (keyword.value for keyword in node.keywords if keyword.arg == 'operation_label'),
+                    None,
+                )
+            )
+            operation_label = _static_string(operation_node, owner=owner)
+            page_description_node = next(
+                (keyword.value for keyword in node.keywords if keyword.arg == 'page_description'),
+                None,
+            )
+            if page_description_node is None or (
+                isinstance(page_description_node, ast.Constant) and page_description_node.value is None
+            ):
+                description = f'{operation_label} requires a registered Kubernetes cluster and canonical connection.'
+            else:
+                description = _static_string(page_description_node, owner=owner)
+            descriptions[f'cluster_required {owner}'] = description
+
+    if not descriptions:
+        raise AssertionError('Kubernetes operations: no cluster_required blocked Hero descriptions were discovered')
+    return descriptions
+
+
 def _literal_hero_descriptions(paths: list[Path]) -> dict[str, str]:
     descriptions: dict[str, str] = {}
     for path in paths:
@@ -242,6 +295,7 @@ def _verify_description_budgets(primitive_shells: list[Path], profile_templates:
             for label, description in _integration_domain_hero_descriptions().items()
         }
     )
+    descriptions.update(_cluster_required_hero_descriptions())
 
     failures: list[str] = []
     for owner, description in descriptions.items():
