@@ -14,6 +14,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_NO_CACHE_DIR=1 \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
     HOME=/tmp
 
 WORKDIR /workspace
@@ -60,6 +61,10 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     PIP_NO_CACHE_DIR=0 python -m pip install "pip==${PIP_VERSION}" \
     && PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/kaori-requirements/dev.txt \
     && PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/requirements-security.txt
+
+RUN python -m playwright install --with-deps chromium \
+    && chmod -R a+rX /ms-playwright \
+    && rm -rf /var/lib/apt/lists/*
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN set -eux; \
