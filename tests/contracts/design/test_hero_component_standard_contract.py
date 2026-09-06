@@ -147,11 +147,16 @@ def test_object_storage_inventory_setup_copy_is_concise() -> None:
 
 
 def test_kubernetes_analytics_cluster_remediation_uses_integration_action() -> None:
-    sources = '\n'.join(path.read_text(encoding='utf-8') for path in (ROOT / 'app').rglob('*.py'))
+    source = (ROOT / 'app' / 'common' / 'dependencies.py').read_text(encoding='utf-8')
+    start = source.index('def cluster_required_blocker()')
+    end = source.index('\n\ndef metrics_source_setup_blocker', start)
+    blocker = source[start:end]
 
-    assert 'Open Cluster Integration' in sources
-    assert "url_for('integrations.kubernetes')" in sources
-    assert 'Add Cluster' not in sources
+    assert "'action_label': 'Open Cluster Integration'" in blocker
+    assert "'action_url': url_for('integrations.kubernetes')" in blocker
+    assert "'permission': 'clusters.manage'" in blocker
+    assert "'action_label': 'Add Cluster'" not in blocker
+    assert "url_for('cluster.add_cluster')" not in blocker
 
 
 def test_removed_hero_macros_are_absent_from_implementation() -> None:

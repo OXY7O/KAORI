@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import runpy
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -29,16 +30,18 @@ def test_kubernetes_analytics_heroes_use_shared_three_slot_metadata_renderer() -
 
 
 def test_kubernetes_analytics_cluster_remediation_uses_integration_action() -> None:
-    app_root = ROOT / 'app'
-    python_sources = tuple(app_root.rglob('*.py'))
-    new_matches = [
-        str(path.relative_to(ROOT))
-        for path in python_sources
-        if 'Open Cluster Integration' in path.read_text(encoding='utf-8')
-    ]
-    old_matches = [
-        str(path.relative_to(ROOT)) for path in python_sources if 'Add Cluster' in path.read_text(encoding='utf-8')
-    ]
+    source = (ROOT / 'app' / 'common' / 'dependencies.py').read_text(encoding='utf-8')
+    start = source.index('def cluster_required_blocker()')
+    end = source.index('\n\ndef metrics_source_setup_blocker', start)
+    blocker = source[start:end]
 
-    assert new_matches, 'Open Cluster Integration is not configured in application Python sources'
-    assert not old_matches, f'Retired Add Cluster remediation remains in: {old_matches}'
+    assert "'action_label': 'Open Cluster Integration'" in blocker
+    assert "'action_url': url_for('integrations.kubernetes')" in blocker
+    assert "'permission': 'clusters.manage'" in blocker
+    assert "'action_label': 'Add Cluster'" not in blocker
+    assert "url_for('cluster.add_cluster')" not in blocker
+
+
+def test_global_hero_verifier_accepts_shared_analytics_metadata_contract() -> None:
+    namespace = runpy.run_path(str(ROOT / 'scripts' / 'verify_hero_component_standard.py'))
+    namespace['verify']()
