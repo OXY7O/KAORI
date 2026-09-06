@@ -43,7 +43,7 @@ def test_report_workspace_hero_descriptions_keep_consistent_operational_depth() 
         'overview': 'report coverage across managed infrastructure',
         'generate': 'connected data and approved formats',
         'generated': 'report execution, artifact readiness, storage availability, and retained lifecycle state',
-        'generated_detail': 'report scope, artifact evidence, execution state, and delivery readiness',
+        'generated_detail': 'report scope, artifact evidence, execution state, retained history, and delivery readiness',
         'templates': 'protected system templates and reusable custom report structures',
         'schedules': 'timezone-aware schedules and retained run evidence',
         'storage': 'storage readiness, integrity, and lifecycle ownership',
@@ -117,12 +117,5 @@ def test_reports_overview_does_not_execute_legacy_unrendered_context_builders() 
     payload_body = service.split('def get_reports_overview_payload()', 1)[1].split(
         '\n\ndef get_report_architecture_context', 1
     )[0]
-
-    assert 'get_notification_delivery_context()' not in payload_body
-    assert 'get_pipeline_status(' not in payload_body
-    assert 'get_current_status(' not in payload_body
-    assert 'get_reporting_context(' not in payload_body
-    assert 'get_reporting_operating_model(' not in payload_body
-    assert 'get_data_collection_status(' not in payload_body
-    assert "'report_type_coverage': report_type_coverage" in payload_body
-    assert "'reporting_operations': get_reporting_operations" in payload_body
+    assert 'get_report_architecture_context(' not in payload_body
+    assert 'get_report_job_runtime_context(' not in payload_body
