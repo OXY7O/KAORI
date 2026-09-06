@@ -496,6 +496,8 @@ def decide_secret_reveal_request(request_id: str):
                 metadata=_reveal_request_metadata(record),
             )
         except Exception:
+            # The authorization decision is already committed. Notification delivery
+            # must never roll back or misreport the saved approval/denial outcome.
             current_app.logger.exception('Protected Secret reveal decision saved, but requester notification failed.')
     except ValueError as exc:
         _record_secret_activity(
@@ -577,6 +579,8 @@ def reveal_secret_value(request_id: str):
             metadata=result.metadata,
         )
     except ValueError as exc:
+        # A failed locking/API query can leave PostgreSQL in an aborted transaction.
+        # Reset the session before reading request metadata or writing activity data.
         rollback_secret_reveal_transaction()
         try:
             record = get_reveal_request_for_user(request_id, user_id=current_user.id)
@@ -595,6 +599,8 @@ def reveal_secret_value(request_id: str):
             metadata=metadata,
         )
     except Exception:
+        # Notification/activity persistence uses the same scoped session. Roll back
+        # first so the failure record is not attempted inside an aborted transaction.
         rollback_secret_reveal_transaction()
         current_app.logger.exception('Unexpected protected Secret reveal failure.')
         feedback = _record_secret_activity(
