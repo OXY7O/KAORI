@@ -9,7 +9,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('fingerprint', 'Identity Administration', 'badge-plus') %}
                         <h1 class="{{ page_hero.title_classes() }}">{{ 'Edit' if provider else 'Add' }} Identity Provider</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Configure provider adapters, admission policy, and lifecycle controls.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Configure provider adapters, admission policy, lifecycle controls, and authentication governance for secure identity operations.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('blocks', selected_label, 'provider-type-meta') }}
                             {{ page_hero.meta_label('key-round', 'Secrets Externalized') }}
