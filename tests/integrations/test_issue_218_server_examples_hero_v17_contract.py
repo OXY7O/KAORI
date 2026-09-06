@@ -24,6 +24,14 @@ def test_server_deployment_boundary_is_repository_canonical() -> None:
     assert 'deploy/vps' not in workflow
     assert 'compose.server.yml' in (ROOT / 'deploy' / 'server' / 'deploy.sh').read_text(encoding='utf-8')
 
+    ingress = (ROOT / 'deploy' / 'nginx' / 'verify-ingress.sh').read_text(encoding='utf-8')
+    assert 'deploy/vps' not in ingress
+    assert 'deploy/server/release-state.sh' in ingress
+    assert 'compose.server.yml' in ingress
+    assert 'KAORI_SERVER_COMPOSE' in ingress
+    assert 'KAORI_VPS_COMPOSE' not in ingress
+    assert 'VPS_COMPOSE' not in ingress
+
 
 def test_example_boundary_contains_kaori_laptop_runtime_not_runner() -> None:
     example_root = ROOT / 'example'
