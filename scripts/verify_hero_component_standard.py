@@ -114,7 +114,9 @@ def _description_words(text: str) -> list[str]:
 def _validate_description_budget(text: str, *, owner: str) -> None:
     word_count = len(_description_words(text))
     if word_count > DESCRIPTION_HARD_MAX:
-        raise AssertionError(f'{owner}: Hero description has {word_count} words; hard maximum {DESCRIPTION_HARD_MAX} words')
+        raise AssertionError(
+            f'{owner}: Hero description has {word_count} words; hard maximum {DESCRIPTION_HARD_MAX} words'
+        )
     if not DESCRIPTION_TARGET_MIN <= word_count <= DESCRIPTION_TARGET_MAX:
         raise AssertionError(
             f'{owner}: Hero description has {word_count} words; expected '
@@ -471,7 +473,9 @@ def verify() -> None:
 
     profile_templates = _profile_templates()
     if len(profile_templates) != 2:
-        raise AssertionError(f'Operational Dashboard profile must have exactly two consumers; found {len(profile_templates)}')
+        raise AssertionError(
+            f'Operational Dashboard profile must have exactly two consumers; found {len(profile_templates)}'
+        )
 
     _verify_dashboard_profile()
     _verify_blocked_context_ownership()
