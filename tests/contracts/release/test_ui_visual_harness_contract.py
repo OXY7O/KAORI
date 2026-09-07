@@ -56,3 +56,21 @@ def test_visual_baseline_capture_is_governed_and_reviewable() -> None:
     assert 'actions/upload-artifact@' in workflow_text
     assert 'tests/ui/baselines' in workflow_text
     assert 'tests/ui/artifacts' in workflow_text
+
+
+def test_representative_browser_interaction_families_have_executable_authority() -> None:
+    interactions = ROOT / 'tests' / 'ui' / 'test_representative_interactions.py'
+
+    assert interactions.is_file()
+    source = interactions.read_text()
+    assert 'KAORI_UI_USERNAME' in source
+    assert 'KAORI_UI_PASSWORD' in source
+    assert 'page.goto' in source
+    assert 'page.get_by_role' in source
+    assert 'expect(' in source
+    assert 'navigation' in source.lower()
+    assert 'htmx' in source.lower()
+    assert 'modal' in source.lower() or 'drawer' in source.lower()
+    assert 'pagination' in source.lower() or 'filter' in source.lower()
+    assert 'form' in source.lower()
+    assert 'dark' in source.lower() and 'light' in source.lower()
