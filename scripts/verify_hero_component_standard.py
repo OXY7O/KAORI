@@ -21,9 +21,11 @@ KUBERNETES_ANALYTICS_MATERIALIZATION_PRESENTATION = (
 KUBERNETES_ANALYTICS_ROUTES = ROOT / 'app' / 'kubernetes' / 'analytics'
 PROVIDER_EDIT_HERO = TEMPLATES / 'integrations' / 'components' / '_provider_edit_hero.html'
 PROVIDER_REGISTRATION_HERO = TEMPLATES / 'integrations' / 'components' / '_provider_registration_hero.html'
+PROVIDER_FRONTPAGE_HERO = TEMPLATES / 'integrations' / 'components' / '_provider_frontpage.html'
 PROVIDER_DYNAMIC_DESCRIPTION_OWNERS = {
     (PROVIDER_EDIT_HERO, 'description'),
     (PROVIDER_REGISTRATION_HERO, 'description'),
+    (PROVIDER_FRONTPAGE_HERO, 'description'),
 }
 
 DESCRIPTION_TARGET_MIN = 11
@@ -46,6 +48,10 @@ PROVIDER_HERO_CALL_PATTERN = re.compile(
     r'(?:[^,\n]+,\s*){4}'
     r'(?P<quote>[\'\"])(?P<description>.*?)(?P=quote)\s*,',
     flags=re.DOTALL,
+)
+PROVIDER_FRONTPAGE_IMPORT_PATTERN = re.compile(
+    r'{%\s*import\s+[\'\"]integrations/components/_provider_frontpage\.html[\'\"]\s+as\s+'
+    r'(?P<alias>[A-Za-z_][A-Za-z0-9_]*)\s*%}'
 )
 
 KUBERNETES_ANALYTICS_HEROES = (
@@ -314,8 +320,9 @@ def _dashboard_descriptions(paths: list[Path]) -> dict[str, str]:
 
 def _provider_component_descriptions() -> dict[str, str]:
     descriptions: dict[str, str] = {}
+    frontpage_count = 0
     for path in sorted(TEMPLATES.rglob('*.html')):
-        if path in {PROVIDER_EDIT_HERO, PROVIDER_REGISTRATION_HERO}:
+        if path in {PROVIDER_EDIT_HERO, PROVIDER_REGISTRATION_HERO, PROVIDER_FRONTPAGE_HERO}:
             continue
         source = _read(path)
         for match in PROVIDER_HERO_CALL_PATTERN.finditer(source):
@@ -325,8 +332,26 @@ def _provider_component_descriptions() -> dict[str, str]:
             line = source.count('\n', 0, match.start()) + 1
             owner = f'provider {match.group("kind")} {path.relative_to(ROOT)}:{line}'
             descriptions[owner] = description
-    if not descriptions:
+
+        for import_match in PROVIDER_FRONTPAGE_IMPORT_PATTERN.finditer(source):
+            alias = import_match.group('alias')
+            call_pattern = re.compile(
+                re.escape(alias)
+                + r'\.hero\(\s*(?:[^,\n]+,\s*){3}(?P<quote>[\'\"])(?P<description>.*?)(?P=quote)\s*,',
+                flags=re.DOTALL,
+            )
+            for match in call_pattern.finditer(source):
+                description = _normalize_description_text(match.group('description'))
+                if not description:
+                    continue
+                line = source.count('\n', 0, match.start()) + 1
+                descriptions[f'provider frontpage {path.relative_to(ROOT)}:{line}'] = description
+                frontpage_count += 1
+
+    if not any(owner.startswith('provider edit ') or owner.startswith('provider registration ') for owner in descriptions):
         raise AssertionError('Integration provider Hero: no static edit/registration descriptions discovered')
+    if frontpage_count == 0:
+        raise AssertionError('Integration provider frontpage Hero: no static descriptions discovered')
     return descriptions
 
 
