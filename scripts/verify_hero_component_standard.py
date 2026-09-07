@@ -18,6 +18,14 @@ INTEGRATION_DOMAIN_HERO = TEMPLATES / 'integrations' / 'domain.html'
 INTEGRATION_OVERVIEW = TEMPLATES / 'integrations' / 'overview.html'
 INTEGRATION_OVERVIEW_HERO = TEMPLATES / 'integrations' / 'partials' / '_hero.html'
 REPORTS_UNAVAILABLE_HERO = TEMPLATES / 'reports' / '_unavailable.html'
+REPORTS_PAGE_SUBTITLE_HEROES = {
+    TEMPLATES / 'reports' / 'generate' / 'index.html',
+    TEMPLATES / 'reports' / 'overview' / 'index.html',
+    TEMPLATES / 'reports' / 'report_templates' / 'index.html',
+    TEMPLATES / 'reports' / 'schedules' / 'index.html',
+    TEMPLATES / 'reports' / 'storage' / 'index.html',
+}
+REPORTS_PAGE_SUBTITLE_DOMAINS = {'generate', 'overview', 'report_templates', 'schedules', 'storage'}
 KUBERNETES_ANALYTICS_BLOCKED_HERO = TEMPLATES / 'kubernetes' / 'analytics' / 'materialization' / 'blocked.html'
 KUBERNETES_ANALYTICS_MATERIALIZATION_PRESENTATION = (
     ROOT / 'app' / 'kubernetes' / 'analytics' / 'materialization' / 'presentation.py'
@@ -71,6 +79,8 @@ KUBERNETES_ANALYTICS_HEROES = (
     TEMPLATES / 'kubernetes' / 'analytics' / 'forecast' / 'partials' / '_hero.html',
 )
 OBJECT_STORAGE_ANALYTICS_HERO = TEMPLATES / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero.html'
+OBJECT_STORAGE_ANALYTICS_PAGES = ROOT / 'app' / 'storage' / 'object_storage' / 'analytics' / 'pages.py'
+OBJECT_STORAGE_ANALYTICS_PAGE_KEYS = {'overview', 'capacity', 'performance', 'forecast', 'top_consumers', 'alerts'}
 
 REMOVED_MACROS = (
     'context_posture_header',
@@ -275,6 +285,10 @@ def _has_registered_dynamic_expression_resolver(path: Path, body: str) -> bool:
         and normalized == '{{ domain.description }}'
         or path == REPORTS_UNAVAILABLE_HERO
         and normalized == '{{ payload.description }}'
+        or path in REPORTS_PAGE_SUBTITLE_HEROES
+        and normalized == '{{ payload.page_subtitle }}'
+        or path == OBJECT_STORAGE_ANALYTICS_HERO
+        and normalized == '{{ page.description }}'
     )
 
 
@@ -448,6 +462,91 @@ def _reports_unavailable_descriptions() -> dict[str, str]:
     return descriptions
 
 
+def _subscript_string_key(node: ast.AST) -> str | None:
+    if not isinstance(node, ast.Subscript):
+        return None
+    slice_node = node.slice
+    if isinstance(slice_node, ast.Constant) and isinstance(slice_node.value, str):
+        return slice_node.value
+    return None
+
+
+def _reports_page_subtitle_descriptions() -> dict[str, str]:
+    descriptions: dict[str, str] = {}
+    discovered_domains: set[str] = set()
+    reports_root = ROOT / 'app' / 'reports'
+    for domain in sorted(REPORTS_PAGE_SUBTITLE_DOMAINS):
+        domain_root = reports_root / domain
+        for path in sorted(domain_root.rglob('*.py')):
+            tree = ast.parse(_read(path), filename=str(path))
+            for node in ast.walk(tree):
+                candidates: list[tuple[int, ast.AST]] = []
+                if isinstance(node, ast.Dict):
+                    candidates.extend(
+                        (node.lineno, value)
+                        for key, value in zip(node.keys, node.values, strict=True)
+                        if isinstance(key, ast.Constant) and key.value == 'page_subtitle'
+                    )
+                elif isinstance(node, ast.Call):
+                    if (
+                        isinstance(node.func, ast.Attribute)
+                        and node.func.attr == 'setdefault'
+                        and len(node.args) >= 2
+                        and isinstance(node.args[0], ast.Constant)
+                        and node.args[0].value == 'page_subtitle'
+                    ):
+                        candidates.append((node.lineno, node.args[1]))
+                    candidates.extend(
+                        (node.lineno, keyword.value) for keyword in node.keywords if keyword.arg == 'page_subtitle'
+                    )
+                elif isinstance(node, ast.Assign):
+                    if any(_subscript_string_key(target) == 'page_subtitle' for target in node.targets):
+                        candidates.append((node.lineno, node.value))
+                elif isinstance(node, ast.AnnAssign):
+                    if _subscript_string_key(node.target) == 'page_subtitle' and node.value is not None:
+                        candidates.append((node.lineno, node.value))
+
+                for lineno, value in candidates:
+                    owner = f'reports {domain} Hero {path.relative_to(ROOT)}:{lineno}'
+                    descriptions[owner] = _static_string(value, owner=owner)
+                    discovered_domains.add(domain)
+
+    missing = sorted(REPORTS_PAGE_SUBTITLE_DOMAINS - discovered_domains)
+    if missing:
+        raise AssertionError('Reports Hero page_subtitle authority missing for: ' + ', '.join(missing))
+    return descriptions
+
+
+def _object_storage_analytics_descriptions() -> dict[str, str]:
+    tree = ast.parse(_read(OBJECT_STORAGE_ANALYTICS_PAGES), filename=str(OBJECT_STORAGE_ANALYTICS_PAGES))
+    descriptions: dict[str, str] = {}
+    discovered_keys: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+            continue
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        if not any(isinstance(target, ast.Name) and target.id == 'PAGES' for target in targets):
+            continue
+        if not isinstance(node.value, ast.Dict):
+            raise AssertionError('Object Storage Analytics PAGES must remain a static dictionary')
+        for key_node, page_node in zip(node.value.keys, node.value.values, strict=True):
+            if not isinstance(key_node, ast.Constant) or not isinstance(key_node.value, str):
+                raise AssertionError('Object Storage Analytics page keys must remain static strings')
+            page_key = key_node.value
+            if page_key not in OBJECT_STORAGE_ANALYTICS_PAGE_KEYS:
+                continue
+            if not isinstance(page_node, ast.Call) or len(page_node.args) < 2:
+                raise AssertionError(f'Object Storage Analytics {page_key}: PageDefinition must own static description')
+            owner = f'Object Storage Analytics {page_key}'
+            descriptions[owner] = _static_string(page_node.args[1], owner=owner)
+            discovered_keys.add(page_key)
+
+    missing = sorted(OBJECT_STORAGE_ANALYTICS_PAGE_KEYS - discovered_keys)
+    if missing:
+        raise AssertionError('Object Storage Analytics Hero description authority missing for: ' + ', '.join(missing))
+    return descriptions
+
+
 def _materialization_route_descriptions() -> dict[str, str]:
     descriptions: dict[str, str] = {}
     for path in sorted(KUBERNETES_ANALYTICS_ROUTES.rglob('routes.py')):
@@ -523,6 +622,8 @@ def _verify_description_budgets(primitive_shells: list[Path], profile_templates:
     descriptions.update(_integration_overview_descriptions())
     descriptions.update(_integration_domain_descriptions())
     descriptions.update(_reports_unavailable_descriptions())
+    descriptions.update(_reports_page_subtitle_descriptions())
+    descriptions.update(_object_storage_analytics_descriptions())
     descriptions.update(_materialization_route_descriptions())
     descriptions.update(_cluster_required_descriptions())
     failures: list[str] = []
