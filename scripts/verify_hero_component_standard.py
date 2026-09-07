@@ -207,11 +207,7 @@ def _inline_jinja_literal_values(body: str) -> list[str]:
                 return [*body_values, *else_values]
         return []
 
-    return [
-        normalized
-        for value in collect(node)
-        if (normalized := _normalize_description_text(value))
-    ]
+    return [normalized for value in collect(node) if (normalized := _normalize_description_text(value))]
 
 
 def _conditional_jinja_literal_values(body: str) -> list[str]:
