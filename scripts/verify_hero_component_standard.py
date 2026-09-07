@@ -19,6 +19,12 @@ KUBERNETES_ANALYTICS_MATERIALIZATION_PRESENTATION = (
     ROOT / 'app' / 'kubernetes' / 'analytics' / 'materialization' / 'presentation.py'
 )
 KUBERNETES_ANALYTICS_ROUTES = ROOT / 'app' / 'kubernetes' / 'analytics'
+PROVIDER_EDIT_HERO = TEMPLATES / 'integrations' / 'components' / '_provider_edit_hero.html'
+PROVIDER_REGISTRATION_HERO = TEMPLATES / 'integrations' / 'components' / '_provider_registration_hero.html'
+PROVIDER_DYNAMIC_DESCRIPTION_OWNERS = {
+    (PROVIDER_EDIT_HERO, 'description'),
+    (PROVIDER_REGISTRATION_HERO, 'description'),
+}
 
 DESCRIPTION_TARGET_MIN = 11
 DESCRIPTION_TARGET_MAX = 19
@@ -33,6 +39,12 @@ JINJA_DESCRIPTION_VARIABLE_PATTERN = re.compile(r'^\s*{{\s*(?P<name>[A-Za-z_][A-
 OPERATIONAL_DASHBOARD_DESCRIPTION_PATTERN = re.compile(
     r"page_hero\.operational_dashboard\(\s*'[^']*',\s*'[^']*',\s*'[^']*',"
     r"\s*'(?P<description>[^']*)'",
+    flags=re.DOTALL,
+)
+PROVIDER_HERO_CALL_PATTERN = re.compile(
+    r'provider_(?P<kind>edit|registration)_hero\.render\(\s*'
+    r'(?:[^,\n]+,\s*){4}'
+    r'(?P<quote>[\'\"])(?P<description>.*?)(?P=quote)\s*,',
     flags=re.DOTALL,
 )
 
@@ -234,14 +246,20 @@ def _conditional_jinja_literal_values(body: str) -> list[str]:
     return values
 
 
+def _has_registered_description_resolver(path: Path, variable: str) -> bool:
+    return (path, variable) in PROVIDER_DYNAMIC_DESCRIPTION_OWNERS or (
+        path == KUBERNETES_ANALYTICS_BLOCKED_HERO and variable == 'materialization_description'
+    )
+
+
 def _literal_hero_descriptions(paths: list[Path]) -> dict[str, str]:
     """Discover literal and deterministically-resolvable Jinja Hero descriptions.
 
     A Hero description rendered from a Jinja variable is audited across every
     static assignment in that template. Static inline ternaries and simple
-    if/elif/else descriptions are audited branch-by-branch. Unresolved dynamic
-    expressions fail closed, except materialization_description whose route-owned
-    `_PAGE` contracts are audited separately.
+    if/elif/else descriptions are audited branch-by-branch. Variables delegated
+    to an explicit source resolver are audited by that resolver; all other
+    unresolved dynamic expressions fail closed.
     """
     descriptions: dict[str, str] = {}
     for path in paths:
@@ -257,7 +275,7 @@ def _literal_hero_descriptions(paths: list[Path]) -> dict[str, str]:
                     for variant, value in enumerate(values, start=1):
                         descriptions[f'{relative}#{variable}:{variant}'] = value
                     continue
-                if variable == 'materialization_description':
+                if _has_registered_description_resolver(path, variable):
                     continue
                 raise AssertionError(
                     f'{relative}: Hero description variable {variable!r} has no static local '
@@ -290,6 +308,24 @@ def _dashboard_descriptions(paths: list[Path]) -> dict[str, str]:
             relative = path.relative_to(ROOT)
             raise AssertionError(f'{relative}: dashboard description must be a static literal')
         descriptions[str(path.relative_to(ROOT))] = match.group('description')
+    return descriptions
+
+
+def _provider_component_descriptions() -> dict[str, str]:
+    descriptions: dict[str, str] = {}
+    for path in sorted(TEMPLATES.rglob('*.html')):
+        if path in {PROVIDER_EDIT_HERO, PROVIDER_REGISTRATION_HERO}:
+            continue
+        source = _read(path)
+        for match in PROVIDER_HERO_CALL_PATTERN.finditer(source):
+            description = _normalize_description_text(match.group('description'))
+            if not description:
+                continue
+            line = source.count('\n', 0, match.start()) + 1
+            owner = f'provider {match.group("kind")} {path.relative_to(ROOT)}:{line}'
+            descriptions[owner] = description
+    if not descriptions:
+        raise AssertionError('Integration provider Hero: no static edit/registration descriptions discovered')
     return descriptions
 
 
@@ -394,6 +430,7 @@ def _cluster_required_descriptions() -> dict[str, str]:
 def _verify_description_budgets(primitive_shells: list[Path], profile_templates: list[Path]) -> int:
     descriptions = _literal_hero_descriptions(primitive_shells)
     descriptions.update(_dashboard_descriptions(profile_templates))
+    descriptions.update(_provider_component_descriptions())
     descriptions.update(_integration_domain_descriptions())
     descriptions.update(_materialization_route_descriptions())
     descriptions.update(_cluster_required_descriptions())
