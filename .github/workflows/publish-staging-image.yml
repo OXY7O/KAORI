@@ -24,7 +24,7 @@ jobs:
     if: >-
       ${{ (github.event_name == 'push' && github.ref == 'refs/heads/kaori/rc-request') ||
           (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/kaori/staging') }}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, platform-ci]
     timeout-minutes: 120
     outputs:
       accepted_sha: ${{ steps.staging.outputs.accepted_sha }}
