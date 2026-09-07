@@ -15,6 +15,8 @@ DASHBOARD_STANDARD = ROOT / 'docs' / 'design' / 'patterns' / 'OPERATIONAL_DASHBO
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 INTEGRATION_TAXONOMY = ROOT / 'app' / 'definitions' / 'catalogs' / 'integrations' / 'taxonomy.yaml'
 INTEGRATION_DOMAIN_HERO = TEMPLATES / 'integrations' / 'domain.html'
+INTEGRATION_OVERVIEW = TEMPLATES / 'integrations' / 'overview.html'
+INTEGRATION_OVERVIEW_HERO = TEMPLATES / 'integrations' / 'partials' / '_hero.html'
 KUBERNETES_ANALYTICS_BLOCKED_HERO = TEMPLATES / 'kubernetes' / 'analytics' / 'materialization' / 'blocked.html'
 KUBERNETES_ANALYTICS_MATERIALIZATION_PRESENTATION = (
     ROOT / 'app' / 'kubernetes' / 'analytics' / 'materialization' / 'presentation.py'
@@ -27,6 +29,7 @@ PROVIDER_DYNAMIC_DESCRIPTION_OWNERS = {
     (PROVIDER_EDIT_HERO, 'description'),
     (PROVIDER_REGISTRATION_HERO, 'description'),
     (PROVIDER_FRONTPAGE_HERO, 'description'),
+    (INTEGRATION_OVERVIEW_HERO, 'description'),
 }
 
 DESCRIPTION_TARGET_MIN = 11
@@ -364,6 +367,13 @@ def _provider_component_descriptions() -> dict[str, str]:
     return descriptions
 
 
+def _integration_overview_descriptions() -> dict[str, str]:
+    values = _local_jinja_literal_values(_read(INTEGRATION_OVERVIEW), 'description')
+    if not values:
+        raise AssertionError('Integration overview Hero: no static description source discovered')
+    return {f'Integration overview:{index}': value for index, value in enumerate(values, start=1)}
+
+
 def _clean_yaml_scalar(value: str) -> str:
     value = value.strip()
     if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
@@ -466,6 +476,7 @@ def _verify_description_budgets(primitive_shells: list[Path], profile_templates:
     descriptions = _literal_hero_descriptions(primitive_shells)
     descriptions.update(_dashboard_descriptions(profile_templates))
     descriptions.update(_provider_component_descriptions())
+    descriptions.update(_integration_overview_descriptions())
     descriptions.update(_integration_domain_descriptions())
     descriptions.update(_materialization_route_descriptions())
     descriptions.update(_cluster_required_descriptions())
