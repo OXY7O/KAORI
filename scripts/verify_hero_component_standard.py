@@ -18,6 +18,7 @@ INTEGRATION_DOMAIN_HERO = TEMPLATES / 'integrations' / 'domain.html'
 INTEGRATION_OVERVIEW = TEMPLATES / 'integrations' / 'overview.html'
 INTEGRATION_OVERVIEW_HERO = TEMPLATES / 'integrations' / 'partials' / '_hero.html'
 REPORTS_UNAVAILABLE_HERO = TEMPLATES / 'reports' / '_unavailable.html'
+REPORTS_WEB = ROOT / 'app' / 'reports' / 'web.py'
 REPORTS_PAGE_SUBTITLE_HEROES = {
     TEMPLATES / 'reports' / 'generate' / 'index.html',
     TEMPLATES / 'reports' / 'overview' / 'index.html',
@@ -46,6 +47,8 @@ DESCRIPTION_TARGET_MIN = 11
 DESCRIPTION_TARGET_MAX = 19
 DESCRIPTION_HARD_MAX = 19
 CLUSTER_REQUIRED_CONTEXT_SUFFIX = 'with governed context.'
+PROVIDER_EDIT_SHORT_DESCRIPTION_SUFFIX = 'Maintain governed validation and consumer-binding context.'
+REPORTS_UNAVAILABLE_SHORT_DESCRIPTION_SUFFIX = 'Maintain governed recovery and retained evidence context.'
 DESCRIPTION_WORD_PATTERN = re.compile(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*")
 DESCRIPTION_PARAGRAPH_PATTERN = re.compile(
     r'<p\b(?=[^>]*page_hero\.description_classes\(\))[^>]*>(?P<body>.*?)</p>',
@@ -150,6 +153,12 @@ def _macro_names(source: str) -> set[str]:
 
 def _description_words(text: str) -> list[str]:
     return DESCRIPTION_WORD_PATTERN.findall(text)
+
+
+def _effective_short_description(description: str, suffix: str) -> str:
+    if len(_description_words(description)) >= DESCRIPTION_TARGET_MIN:
+        return description
+    return f'{description} {suffix}'
 
 
 def _validate_description_budget(text: str, *, owner: str) -> None:
@@ -359,6 +368,11 @@ def _dashboard_descriptions(paths: list[Path]) -> dict[str, str]:
 
 
 def _provider_component_descriptions() -> dict[str, str]:
+    _require_tokens(
+        _read(PROVIDER_EDIT_HERO),
+        (PROVIDER_EDIT_SHORT_DESCRIPTION_SUFFIX, 'description.split()|length < 11'),
+        'Integration provider edit Hero description normalization',
+    )
     descriptions: dict[str, str] = {}
     frontpage_count = 0
     for path in sorted(TEMPLATES.rglob('*.html')):
@@ -369,6 +383,8 @@ def _provider_component_descriptions() -> dict[str, str]:
             description = _normalize_description_text(match.group('description'))
             if not description:
                 continue
+            if match.group('kind') == 'edit':
+                description = _effective_short_description(description, PROVIDER_EDIT_SHORT_DESCRIPTION_SUFFIX)
             line = source.count('\n', 0, match.start()) + 1
             owner = f'provider {match.group("kind")} {path.relative_to(ROOT)}:{line}'
             descriptions[owner] = description
@@ -434,6 +450,11 @@ def _static_string(node: ast.AST | None, *, owner: str) -> str:
 
 
 def _reports_unavailable_descriptions() -> dict[str, str]:
+    _require_tokens(
+        _read(REPORTS_WEB),
+        (REPORTS_UNAVAILABLE_SHORT_DESCRIPTION_SUFFIX, '_normalize_reports_unavailable_description'),
+        'Reports unavailable Hero description normalization',
+    )
     descriptions: dict[str, str] = {}
     for path in sorted((ROOT / 'app' / 'reports').rglob('*.py')):
         tree = ast.parse(_read(path), filename=str(path))
@@ -456,7 +477,11 @@ def _reports_unavailable_descriptions() -> dict[str, str]:
             )
             if description_node is None:
                 raise AssertionError(f'{owner}: description is required')
-            descriptions[owner] = _static_string(description_node, owner=owner)
+            description = _static_string(description_node, owner=owner)
+            descriptions[owner] = _effective_short_description(
+                description,
+                REPORTS_UNAVAILABLE_SHORT_DESCRIPTION_SUFFIX,
+            )
     if not descriptions:
         raise AssertionError('Reports unavailable Hero: no static descriptions discovered')
     return descriptions
