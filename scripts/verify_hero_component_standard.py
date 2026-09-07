@@ -336,8 +336,7 @@ def _provider_component_descriptions() -> dict[str, str]:
         for import_match in PROVIDER_FRONTPAGE_IMPORT_PATTERN.finditer(source):
             alias = import_match.group('alias')
             call_pattern = re.compile(
-                re.escape(alias)
-                + r'\.hero\(\s*(?:[^,\n]+,\s*){3}(?P<quote>[\'\"])(?P<description>.*?)(?P=quote)\s*,',
+                re.escape(alias) + r'\.hero\(\s*(?:[^,\n]+,\s*){3}(?P<quote>[\'\"])(?P<description>.*?)(?P=quote)\s*,',
                 flags=re.DOTALL,
             )
             for match in call_pattern.finditer(source):
@@ -348,7 +347,9 @@ def _provider_component_descriptions() -> dict[str, str]:
                 descriptions[f'provider frontpage {path.relative_to(ROOT)}:{line}'] = description
                 frontpage_count += 1
 
-    if not any(owner.startswith('provider edit ') or owner.startswith('provider registration ') for owner in descriptions):
+    if not any(
+        owner.startswith('provider edit ') or owner.startswith('provider registration ') for owner in descriptions
+    ):
         raise AssertionError('Integration provider Hero: no static edit/registration descriptions discovered')
     if frontpage_count == 0:
         raise AssertionError('Integration provider frontpage Hero: no static descriptions discovered')
