@@ -123,6 +123,7 @@ jobs:
                 [[ -d tests/vault ]] && selected_tests[tests/vault]=1
                 selected_tests[tests/access]=1
                 ;;
+              tests/ui/*) selected_tests[tests/ui]=1 ;;
               app/*)
                 contracts=true
                 ;;
@@ -267,3 +268,12 @@ jobs:
           printf '📦 %s\n' "$ROUTE_SUMMARY"
           printf '⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
           printf '➡️ Work-branch validation stays targeted in both Draft and Ready states; comprehensive validation begins only after merge to kaori/staging.\n'
+
+      - name: Upload Browser Diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: browser-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/test-output/ui-browser
+          if-no-files-found: ignore
+          retention-days: 7
