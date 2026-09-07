@@ -188,13 +188,39 @@ def _local_jinja_literal_values(source: str, variable: str) -> list[str]:
     ]
 
 
+def _conditional_jinja_literal_values(body: str) -> list[str]:
+    controls = re.findall(r'{%\s*(?P<tag>if|elif|else|endif)\b[^%]*%}', body)
+    if not controls or controls[-1] != 'endif':
+        return []
+    unsupported_control = re.search(r'{%\s*(?!if\b|elif\b|else\b|endif\b)[^%]*%}', body)
+    if unsupported_control:
+        return []
+
+    segments = re.split(
+        r'{%\s*(?:if|elif)\b[^%]*%}|{%\s*else\s*%}|{%\s*endif\s*%}',
+        body,
+    )
+    values: list[str] = []
+    for segment in segments:
+        if not segment.strip():
+            continue
+        resolved = re.sub(r'{{\s*[^}]+\s*}}', 'value', segment)
+        if '{{' in resolved or '{%' in resolved:
+            return []
+        text = _normalize_description_text(resolved)
+        if text:
+            values.append(text)
+    return values
+
+
 def _literal_hero_descriptions(paths: list[Path]) -> dict[str, str]:
-    """Discover literal and locally-resolvable Jinja Hero descriptions.
+    """Discover literal and deterministically-resolvable Jinja Hero descriptions.
 
     A Hero description rendered from a Jinja variable is audited across every
-    static assignment in that template. Unresolved dynamic variables fail
-    closed, except materialization_description whose route-owned `_PAGE`
-    contracts are audited separately by `_materialization_route_descriptions`.
+    static assignment in that template. Simple if/elif/else descriptions are
+    audited branch-by-branch with dynamic output represented as one value token.
+    Unresolved dynamic expressions fail closed, except materialization_description
+    whose route-owned `_PAGE` contracts are audited separately.
     """
     descriptions: dict[str, str] = {}
     for path in paths:
@@ -217,8 +243,13 @@ def _literal_hero_descriptions(paths: list[Path]) -> dict[str, str]:
                     'assignments or registered verifier resolver'
                 )
             if '{{' in body or '{%' in body:
+                values = _conditional_jinja_literal_values(body)
+                if values:
+                    for variant, value in enumerate(values, start=1):
+                        descriptions[f'{relative}#conditional:{variant}'] = value
+                    continue
                 raise AssertionError(
-                    f'{relative}: Hero description must be a literal or a statically resolvable Jinja variable'
+                    f'{relative}: Hero description must be a literal or a statically resolvable Jinja expression'
                 )
             text = _normalize_description_text(body)
             if text:
