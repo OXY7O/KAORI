@@ -16,7 +16,7 @@ def test_login_visual_baseline(
 ) -> None:
     page = configured_page
     viewport_name, _ = kaori_viewport
-    response = page.goto(f'{kaori_base_url}/login', wait_until='networkidle')
+    response = page.goto(f'{kaori_base_url}/auth/login', wait_until='networkidle')
 
     assert response is not None
     assert response.ok
