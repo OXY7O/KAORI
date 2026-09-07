@@ -15,7 +15,7 @@ _PAGE = {
     'dataset_key': 'analytics.forecast',
     'title': 'Resource Forecast',
     'description': (
-        'The forecasting worker prepares committed history for the cluster, namespace, and window. '
+        'The forecasting worker prepares committed history for selected cluster, namespace, and window. '
         'Horizon, model, and resource tabs remain presentation-only.'
     ),
     'icon': 'chart-spline',
