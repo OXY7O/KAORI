@@ -189,11 +189,10 @@ def _local_jinja_literal_values(source: str, variable: str) -> list[str]:
 
 
 def _conditional_jinja_literal_values(body: str) -> list[str]:
-    controls = re.findall(r'{%\s*(?P<tag>if|elif|else|endif)\b[^%]*%}', body)
+    controls = re.findall(r'{%\s*(?P<tag>[A-Za-z_][A-Za-z0-9_]*)\b[^%]*%}', body)
     if not controls or controls[-1] != 'endif':
         return []
-    unsupported_control = re.search(r'{%\s*(?!if\b|elif\b|else\b|endif\b)[^%]*%}', body)
-    if unsupported_control:
+    if any(control not in {'if', 'elif', 'else', 'endif'} for control in controls):
         return []
 
     segments = re.split(
