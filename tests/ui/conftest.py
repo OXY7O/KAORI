@@ -32,9 +32,34 @@ EMPTY_NAVIGATION_NOTIFICATIONS = {
     'active_count': 0,
     'attention_count': 0,
     'unread_count': 0,
+    'inbox_unread_count': 0,
     'total_count': 0,
     'display_limit': 8,
     'job_display_limit': 6,
+}
+
+EMPTY_NOTIFICATION_CENTER = {
+    **EMPTY_NAVIGATION_NOTIFICATIONS,
+    'notification_pagination': {
+        'page': 1,
+        'per_page': 5,
+        'total': 0,
+        'pages': 1,
+        'start_item': 0,
+        'end_item': 0,
+        'allowed_per_page': (5, 10, 25, 50),
+        'has_prev': False,
+        'prev_num': None,
+        'has_next': False,
+        'next_num': None,
+    },
+    'notification_filters': {
+        'search': '',
+        'category': 'all',
+        'status': 'all',
+        'read_state': 'all',
+    },
+    'notification_category_options': [],
 }
 
 HIDDEN_CLUSTER_ONBOARDING = {
@@ -145,6 +170,14 @@ def kaori_authenticated_base_url() -> Iterator[str]:
         patch(
             'app.bootstrap.presentation.build_cluster_onboarding_context',
             return_value=HIDDEN_CLUSTER_ONBOARDING,
+        ),
+        patch(
+            'app.platform_operations.notifications.routes.get_navigation_notification_context',
+            return_value=EMPTY_NAVIGATION_NOTIFICATIONS,
+        ),
+        patch(
+            'app.platform_operations.notifications.routes.get_notification_center_page_context',
+            return_value=EMPTY_NOTIFICATION_CENTER,
         ),
     ):
         server = make_server('127.0.0.1', 0, app, threaded=True)

@@ -10,6 +10,7 @@ from playwright.sync_api import Page, expect
 EVIDENCE_ROOT = Path('tmp/ci-artifacts/test-output/ui-browser')
 TEST_USERNAME = 'browser-admin'
 TEST_PASSWORD = 'browser-password'
+NOTIFICATION_CENTER_PATH = '/notifications/?view=notifications'
 
 
 @contextmanager
@@ -44,6 +45,16 @@ def _login(page: Page, kaori_authenticated_base_url: str) -> None:
     page.wait_for_load_state('networkidle')
     expect(page.locator('body')).to_be_visible()
     assert '/auth/login' not in page.url
+
+
+def _open_notification_center(page: Page, kaori_authenticated_base_url: str) -> None:
+    response = page.goto(
+        f'{kaori_authenticated_base_url}{NOTIFICATION_CENTER_PATH}',
+        wait_until='networkidle',
+    )
+    assert response is not None
+    assert response.ok
+    expect(page.locator('#activity-notification-page')).to_be_visible()
 
 
 def test_authenticated_navigation_and_light_dark_theme(
@@ -82,26 +93,32 @@ def test_representative_htmx_modal_or_drawer_interaction(
     kaori_viewport: tuple[str, tuple[int, int]],
     kaori_authenticated_base_url: str,
 ) -> None:
-    """Exercise a safe shared-shell HTMX interaction and modal/drawer presentation."""
+    """Exercise Notification Center HTMX refresh and the shared Notification Deck."""
     page = configured_page
     viewport_name, _ = kaori_viewport
 
     with _browser_evidence(page, 'authenticated-htmx-overlay', viewport_name):
         _login(page, kaori_authenticated_base_url)
+        _open_notification_center(page, kaori_authenticated_base_url)
 
-        htmx = page.locator('[hx-get]').filter(visible=True).first
-        assert htmx.count() > 0
-        expect(htmx).to_be_visible()
-        htmx.click()
-        page.wait_for_timeout(250)
-        expect(page.locator('body')).to_be_visible()
+        htmx_surface = page.locator('#activity-notification-page[hx-get]')
+        expect(htmx_surface).to_be_visible()
+        with page.expect_response(
+            lambda response: '/notifications/' in response.url
+            and response.request.method == 'GET'
+            and response.request.headers.get('hx-request') == 'true'
+        ):
+            page.locator('body').evaluate(
+                "el => el.dispatchEvent(new CustomEvent('kaori:notifications-changed', { bubbles: true }))"
+            )
+        expect(page.locator('#activity-notification-page')).to_be_visible()
 
-        modal_trigger = page.get_by_role('button', name=re.compile(r'notification|activity|details|view', re.I)).first
+        modal_trigger = page.get_by_role('button', name='Open notification deck')
         expect(modal_trigger).to_be_visible()
         modal_trigger.click()
-        dialog = page.get_by_role('dialog').first
-        drawer = page.locator('[data-drawer], [role="complementary"]').first
-        assert dialog.count() or drawer.count()
+        dialog = page.get_by_role('dialog', name='Notification deck')
+        expect(dialog).to_be_visible()
+        expect(page.locator('#notification-deck')).to_be_visible()
 
 
 def test_representative_filter_pagination_and_form_controls(
@@ -109,26 +126,33 @@ def test_representative_filter_pagination_and_form_controls(
     kaori_viewport: tuple[str, tuple[int, int]],
     kaori_authenticated_base_url: str,
 ) -> None:
-    """Validate representative filter, pagination, and form controls without mutating data."""
+    """Validate the Notification Center filter, pagination, and GET-only form controls."""
     page = configured_page
     viewport_name, _ = kaori_viewport
 
     with _browser_evidence(page, 'authenticated-filter-form', viewport_name):
         _login(page, kaori_authenticated_base_url)
+        _open_notification_center(page, kaori_authenticated_base_url)
 
-        form = page.locator('form').first
-        expect(form).to_be_visible()
+        search_control = page.locator('#notification-center-search')
+        filter_form = page.locator('form:has(#notification-center-search)')
+        category_filter = page.locator('#notification-center-category')
+        rows_control = page.locator('#notification-center-per-page')
+        pagination = page.get_by_role('navigation', name='Notification Center pagination')
 
-        filter_control = page.locator('input[type="search"], input[name*="filter"], select[name*="filter"]').first
-        pagination = page.get_by_role('link', name=re.compile(r'next|previous|page', re.I)).first
-        assert filter_control.count() or pagination.count()
+        expect(filter_form).to_be_visible()
+        expect(search_control).to_be_visible()
+        expect(category_filter).to_be_visible()
+        expect(rows_control).to_be_visible()
+        expect(pagination).to_be_visible()
+        assert filter_form.get_attribute('hx-get')
 
-        if filter_control.count():
-            expect(filter_control).to_be_visible()
-            if filter_control.evaluate("el => el.tagName.toLowerCase() === 'input'"):
-                filter_control.fill('')
-
-        if pagination.count():
-            expect(pagination).to_be_visible()
-
-        expect(page.locator('body')).to_be_visible()
+        with page.expect_response(
+            lambda response: '/notifications/' in response.url
+            and 'search=browser' in response.url
+            and response.request.method == 'GET'
+            and response.request.headers.get('hx-request') == 'true'
+        ):
+            search_control.fill('browser')
+        expect(page.locator('#notification-center-search')).to_be_visible()
+        expect(page.get_by_role('navigation', name='Notification Center pagination')).to_be_visible()
