@@ -104,9 +104,11 @@ def test_representative_htmx_modal_or_drawer_interaction(
         htmx_surface = page.locator('#activity-notification-page[hx-get]')
         expect(htmx_surface).to_be_visible()
         with page.expect_response(
-            lambda response: '/notifications/' in response.url
-            and response.request.method == 'GET'
-            and response.request.headers.get('hx-request') == 'true'
+            lambda response: (
+                '/notifications/' in response.url
+                and response.request.method == 'GET'
+                and response.request.headers.get('hx-request') == 'true'
+            )
         ):
             page.locator('body').evaluate(
                 "el => el.dispatchEvent(new CustomEvent('kaori:notifications-changed', { bubbles: true }))"
@@ -148,10 +150,12 @@ def test_representative_filter_pagination_and_form_controls(
         assert filter_form.get_attribute('hx-get')
 
         with page.expect_response(
-            lambda response: '/notifications/' in response.url
-            and 'search=browser' in response.url
-            and response.request.method == 'GET'
-            and response.request.headers.get('hx-request') == 'true'
+            lambda response: (
+                '/notifications/' in response.url
+                and 'search=browser' in response.url
+                and response.request.method == 'GET'
+                and response.request.headers.get('hx-request') == 'true'
+            )
         ):
             search_control.fill('browser')
         expect(page.locator('#notification-center-search')).to_be_visible()
