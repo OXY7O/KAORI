@@ -39,7 +39,7 @@ def test_notification_workflow_is_trusted_branch_only_and_repository_scoped() ->
     assert 'pull_request_target:' not in source
     assert 'workflow_dispatch:' not in source
     assert 'environment:' not in source
-    assert 'runs-on: ubuntu-latest' in source
+    assert 'runs-on: [self-hosted, linux, x64, platform-ci]' in source
     assert 'contents: read' in source
     assert 'actions: read' in source
     assert "github.repository == 'OXY7O/KAORI'" in source
