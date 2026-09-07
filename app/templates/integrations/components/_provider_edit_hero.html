@@ -6,7 +6,10 @@
             <div class="{{ page_hero.content_classes() }}">
                 {% call page_hero.intro(eyebrow_icon, eyebrow_label, leading_icon) %}
                     <h1 class="{{ page_hero.title_classes() }}">{{ title }}</h1>
-                    <p class="mt-2 {{ page_hero.description_classes() }}">{{ description }}{% if description.split()|length < 11 %} Maintain governed validation and consumer-binding context.{% endif %}</p>
+                    <p class="mt-2 {{ page_hero.description_classes() }}">
+                        {{ description }}
+                        {% if description.split()|length < 11 %}Maintain governed validation and consumer-binding context.{% endif %}
+                    </p>
                     <div class="{{ page_hero.metadata_row_classes() }}">
                         {{ page_hero.meta_label(api_icon, api_label) }}
                         {{ page_hero.meta_label('shield-check', 'Revalidate After Change') }}
