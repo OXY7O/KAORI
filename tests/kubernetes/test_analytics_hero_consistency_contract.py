@@ -29,6 +29,19 @@ def test_kubernetes_analytics_heroes_use_shared_three_slot_metadata_renderer() -
     assert not drifted, f'Analytics Hero metadata still bypasses the shared renderer: {drifted}'
 
 
+def test_generic_blocked_renderer_preserves_metadata_for_representative_analytics_routes() -> None:
+    blocked = (ROOT / 'app' / 'templates' / 'kubernetes' / 'analytics' / 'materialization' / 'blocked.html').read_text(
+        encoding='utf-8'
+    )
+    assert 'page_hero.analytics_metadata(' in blocked
+    assert 'materialization_metadata' in blocked
+
+    for relative in ('capacity/routes.py', 'utilization/routes.py'):
+        source = (ROOT / 'app' / 'kubernetes' / 'analytics' / relative).read_text(encoding='utf-8')
+        assert 'blocked_page_context' in source, relative
+        assert 'kubernetes/analytics/materialization/blocked.html' in source, relative
+
+
 def test_kubernetes_analytics_cluster_remediation_uses_integration_action() -> None:
     source = (ROOT / 'app' / 'common' / 'dependencies.py').read_text(encoding='utf-8')
     start = source.index('def cluster_required_blocker()')

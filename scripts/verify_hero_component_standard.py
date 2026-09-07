@@ -14,20 +14,61 @@ ANALYTICS_STANDARD = ROOT / 'docs' / 'design' / 'components' / 'ANALYTICS_HERO.m
 DASHBOARD_STANDARD = ROOT / 'docs' / 'design' / 'patterns' / 'OPERATIONAL_DASHBOARD.md'
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 INTEGRATION_TAXONOMY = ROOT / 'app' / 'definitions' / 'catalogs' / 'integrations' / 'taxonomy.yaml'
+INTEGRATION_DOMAIN_HERO = TEMPLATES / 'integrations' / 'domain.html'
+INTEGRATION_OVERVIEW = TEMPLATES / 'integrations' / 'overview.html'
+INTEGRATION_OVERVIEW_HERO = TEMPLATES / 'integrations' / 'partials' / '_hero.html'
+REPORTS_UNAVAILABLE_HERO = TEMPLATES / 'reports' / '_unavailable.html'
+REPORTS_WEB = ROOT / 'app' / 'reports' / 'web.py'
+REPORTS_PAGE_SUBTITLE_HEROES = {
+    TEMPLATES / 'reports' / 'generate' / 'index.html',
+    TEMPLATES / 'reports' / 'overview' / 'index.html',
+    TEMPLATES / 'reports' / 'report_templates' / 'index.html',
+    TEMPLATES / 'reports' / 'schedules' / 'index.html',
+    TEMPLATES / 'reports' / 'storage' / 'index.html',
+}
+REPORTS_PAGE_SUBTITLE_DOMAINS = {'generate', 'overview', 'report_templates', 'schedules', 'storage'}
+KUBERNETES_ANALYTICS_BLOCKED_HERO = TEMPLATES / 'kubernetes' / 'analytics' / 'materialization' / 'blocked.html'
+KUBERNETES_ANALYTICS_MATERIALIZATION_PRESENTATION = (
+    ROOT / 'app' / 'kubernetes' / 'analytics' / 'materialization' / 'presentation.py'
+)
+KUBERNETES_ANALYTICS_ROUTES = ROOT / 'app' / 'kubernetes' / 'analytics'
+PROVIDER_EDIT_HERO = TEMPLATES / 'integrations' / 'components' / '_provider_edit_hero.html'
+PROVIDER_REGISTRATION_HERO = TEMPLATES / 'integrations' / 'components' / '_provider_registration_hero.html'
+PROVIDER_FRONTPAGE_HERO = TEMPLATES / 'integrations' / 'components' / '_provider_frontpage.html'
+PROVIDER_DYNAMIC_DESCRIPTION_OWNERS = {
+    (PROVIDER_EDIT_HERO, 'description'),
+    (PROVIDER_REGISTRATION_HERO, 'description'),
+    (PROVIDER_FRONTPAGE_HERO, 'description'),
+    (INTEGRATION_OVERVIEW_HERO, 'description'),
+    (TEMPLATES / 'kubernetes' / 'operations' / 'cluster_required.html', 'requested_page_description'),
+}
 
 DESCRIPTION_TARGET_MIN = 11
 DESCRIPTION_TARGET_MAX = 19
 DESCRIPTION_HARD_MAX = 19
 CLUSTER_REQUIRED_CONTEXT_SUFFIX = 'with governed context.'
+PROVIDER_EDIT_SHORT_DESCRIPTION_SUFFIX = 'Maintain governed validation and consumer-binding context.'
+REPORTS_UNAVAILABLE_SHORT_DESCRIPTION_SUFFIX = 'Maintain governed recovery and retained evidence context.'
 DESCRIPTION_WORD_PATTERN = re.compile(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*")
 DESCRIPTION_PARAGRAPH_PATTERN = re.compile(
     r'<p\b(?=[^>]*page_hero\.description_classes\(\))[^>]*>(?P<body>.*?)</p>',
     flags=re.IGNORECASE | re.DOTALL,
 )
+JINJA_DESCRIPTION_VARIABLE_PATTERN = re.compile(r'^\s*{{\s*(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*}}\s*$')
 OPERATIONAL_DASHBOARD_DESCRIPTION_PATTERN = re.compile(
     r"page_hero\.operational_dashboard\(\s*'[^']*',\s*'[^']*',\s*'[^']*',"
     r"\s*'(?P<description>[^']*)'",
     flags=re.DOTALL,
+)
+PROVIDER_HERO_CALL_PATTERN = re.compile(
+    r'provider_(?P<kind>edit|registration)_hero\.render\(\s*'
+    r'(?:[^,\n]+,\s*){4}'
+    r'(?P<quote>[\'\"])(?P<description>.*?)(?P=quote)\s*,',
+    flags=re.DOTALL,
+)
+PROVIDER_FRONTPAGE_IMPORT_PATTERN = re.compile(
+    r'{%\s*import\s+[\'\"]integrations/components/_provider_frontpage\.html[\'\"]\s+as\s+'
+    r'(?P<alias>[A-Za-z_][A-Za-z0-9_]*)\s*%}'
 )
 
 KUBERNETES_ANALYTICS_HEROES = (
@@ -41,6 +82,8 @@ KUBERNETES_ANALYTICS_HEROES = (
     TEMPLATES / 'kubernetes' / 'analytics' / 'forecast' / 'partials' / '_hero.html',
 )
 OBJECT_STORAGE_ANALYTICS_HERO = TEMPLATES / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero.html'
+OBJECT_STORAGE_ANALYTICS_PAGES = ROOT / 'app' / 'storage' / 'object_storage' / 'analytics' / 'pages.py'
+OBJECT_STORAGE_ANALYTICS_PAGE_KEYS = {'overview', 'capacity', 'performance', 'forecast', 'top_consumers', 'alerts'}
 
 REMOVED_MACROS = (
     'context_posture_header',
@@ -112,6 +155,12 @@ def _description_words(text: str) -> list[str]:
     return DESCRIPTION_WORD_PATTERN.findall(text)
 
 
+def _effective_short_description(description: str, suffix: str) -> str:
+    if len(_description_words(description)) >= DESCRIPTION_TARGET_MIN:
+        return description
+    return f'{description} {suffix}'
+
+
 def _validate_description_budget(text: str, *, owner: str) -> None:
     word_count = len(_description_words(text))
     if word_count > DESCRIPTION_HARD_MAX:
@@ -165,20 +214,144 @@ def _profile_templates() -> list[Path]:
     )
 
 
+def _normalize_description_text(value: str) -> str:
+    text = re.sub(r'<[^>]+>', ' ', value)
+    return html.unescape(' '.join(text.split()))
+
+
+def _local_jinja_literal_values(source: str, variable: str) -> list[str]:
+    assignment_pattern = re.compile(
+        r'{%\s*set\s+' + re.escape(variable) + r'\s*=\s*(?P<quote>[\'\"])(?P<value>.*?)(?P=quote)\s*%}',
+        flags=re.DOTALL,
+    )
+    return [
+        _normalize_description_text(match.group('value'))
+        for match in assignment_pattern.finditer(source)
+        if _normalize_description_text(match.group('value'))
+    ]
+
+
+def _inline_jinja_literal_values(body: str) -> list[str]:
+    expression_match = re.fullmatch(r'\s*{{\s*(?P<expression>.*?)\s*}}\s*', body, flags=re.DOTALL)
+    if not expression_match:
+        return []
+    try:
+        node = ast.parse(expression_match.group('expression'), mode='eval').body
+    except SyntaxError:
+        return []
+
+    def collect(current: ast.AST) -> list[str]:
+        if isinstance(current, ast.Constant) and isinstance(current.value, str):
+            return [current.value]
+        if isinstance(current, ast.IfExp):
+            body_values = collect(current.body)
+            else_values = collect(current.orelse)
+            if body_values and else_values:
+                return [*body_values, *else_values]
+        return []
+
+    return [normalized for value in collect(node) if (normalized := _normalize_description_text(value))]
+
+
+def _conditional_jinja_literal_values(body: str) -> list[str]:
+    control_pattern = re.compile(r'{%\s*(?P<tag>if|elif|else|endif)\b.*?%}', flags=re.DOTALL)
+    controls = list(control_pattern.finditer(body))
+    if not controls or controls[0].group('tag') != 'if' or controls[-1].group('tag') != 'endif':
+        return []
+    if re.sub(control_pattern, '', body).count('{%'):
+        return []
+
+    values: list[str] = []
+    for index, control in enumerate(controls[:-1]):
+        tag = control.group('tag')
+        if tag not in {'if', 'elif', 'else'}:
+            return []
+        segment_start = control.end()
+        segment_end = controls[index + 1].start()
+        segment = body[segment_start:segment_end]
+        resolved = re.sub(r'{{\s*[^}]+\s*}}', 'value', segment)
+        if '{{' in resolved or '{%' in resolved:
+            return []
+        text = _normalize_description_text(resolved)
+        if text:
+            values.append(text)
+    return values
+
+
+def _has_registered_description_resolver(path: Path, variable: str) -> bool:
+    materialization_description = (
+        path.parent == KUBERNETES_ANALYTICS_BLOCKED_HERO.parent
+        and path.name in {'blocked.html', 'pending.html'}
+        and variable == 'materialization_description'
+    )
+    return (path, variable) in PROVIDER_DYNAMIC_DESCRIPTION_OWNERS or materialization_description
+
+
+def _has_registered_dynamic_expression_resolver(path: Path, body: str) -> bool:
+    normalized = ' '.join(body.split())
+    return (
+        path == INTEGRATION_DOMAIN_HERO
+        and normalized == '{{ domain.description }}'
+        or path == REPORTS_UNAVAILABLE_HERO
+        and normalized == '{{ payload.description }}'
+        or path in REPORTS_PAGE_SUBTITLE_HEROES
+        and normalized == '{{ payload.page_subtitle }}'
+        or path == OBJECT_STORAGE_ANALYTICS_HERO
+        and normalized == '{{ page.description }}'
+    )
+
+
 def _literal_hero_descriptions(paths: list[Path]) -> dict[str, str]:
+    """Discover literal and deterministically-resolvable Jinja Hero descriptions.
+
+    A Hero description rendered from a Jinja variable is audited across every
+    static assignment in that template. Static inline ternaries and simple
+    if/elif/else descriptions are audited branch-by-branch. Variables delegated
+    to an explicit source resolver are audited by that resolver; all other
+    unresolved dynamic expressions fail closed.
+    """
     descriptions: dict[str, str] = {}
+    unresolved: list[str] = []
     for path in paths:
         source = _read(path)
-        match = DESCRIPTION_PARAGRAPH_PATTERN.search(source)
-        if not match:
-            continue
-        body = match.group('body')
-        if '{{' in body or '{%' in body:
-            continue
-        text = re.sub(r'<[^>]+>', ' ', body)
-        text = html.unescape(' '.join(text.split()))
-        if text:
-            descriptions[str(path.relative_to(ROOT))] = text
+        relative = str(path.relative_to(ROOT))
+        for index, match in enumerate(DESCRIPTION_PARAGRAPH_PATTERN.finditer(source), start=1):
+            body = match.group('body')
+            variable_match = JINJA_DESCRIPTION_VARIABLE_PATTERN.fullmatch(body)
+            if variable_match:
+                variable = variable_match.group('name')
+                values = _local_jinja_literal_values(source, variable)
+                if values:
+                    for variant, value in enumerate(values, start=1):
+                        descriptions[f'{relative}#{variable}:{variant}'] = value
+                    continue
+                if _has_registered_description_resolver(path, variable):
+                    continue
+                unresolved.append(
+                    f'{relative}: Hero description variable {variable!r} has no static local '
+                    'assignments or registered verifier resolver'
+                )
+                continue
+            if '{{' in body or '{%' in body:
+                values = _inline_jinja_literal_values(body)
+                if not values:
+                    values = _conditional_jinja_literal_values(body)
+                if values:
+                    for variant, value in enumerate(values, start=1):
+                        descriptions[f'{relative}#dynamic:{variant}'] = value
+                    continue
+                if _has_registered_dynamic_expression_resolver(path, body):
+                    continue
+                unresolved.append(
+                    f'{relative}: Hero description must be a literal or a statically resolvable Jinja expression'
+                )
+                continue
+            text = _normalize_description_text(body)
+            if text:
+                owner = relative if index == 1 else f'{relative}#{index}'
+                descriptions[owner] = text
+    if unresolved:
+        raise AssertionError('Unresolved Hero description authorities:\n- ' + '\n- '.join(unresolved))
     return descriptions
 
 
@@ -192,6 +365,58 @@ def _dashboard_descriptions(paths: list[Path]) -> dict[str, str]:
             raise AssertionError(f'{relative}: dashboard description must be a static literal')
         descriptions[str(path.relative_to(ROOT))] = match.group('description')
     return descriptions
+
+
+def _provider_component_descriptions() -> dict[str, str]:
+    _require_tokens(
+        _read(PROVIDER_EDIT_HERO),
+        (PROVIDER_EDIT_SHORT_DESCRIPTION_SUFFIX, 'description.split()|length < 11'),
+        'Integration provider edit Hero description normalization',
+    )
+    descriptions: dict[str, str] = {}
+    frontpage_count = 0
+    for path in sorted(TEMPLATES.rglob('*.html')):
+        if path in {PROVIDER_EDIT_HERO, PROVIDER_REGISTRATION_HERO, PROVIDER_FRONTPAGE_HERO}:
+            continue
+        source = _read(path)
+        for match in PROVIDER_HERO_CALL_PATTERN.finditer(source):
+            description = _normalize_description_text(match.group('description'))
+            if not description:
+                continue
+            if match.group('kind') == 'edit':
+                description = _effective_short_description(description, PROVIDER_EDIT_SHORT_DESCRIPTION_SUFFIX)
+            line = source.count('\n', 0, match.start()) + 1
+            owner = f'provider {match.group("kind")} {path.relative_to(ROOT)}:{line}'
+            descriptions[owner] = description
+
+        for import_match in PROVIDER_FRONTPAGE_IMPORT_PATTERN.finditer(source):
+            alias = import_match.group('alias')
+            call_pattern = re.compile(
+                re.escape(alias) + r'\.hero\(\s*(?:[^,\n]+,\s*){3}(?P<quote>[\'\"])(?P<description>.*?)(?P=quote)\s*,',
+                flags=re.DOTALL,
+            )
+            for match in call_pattern.finditer(source):
+                description = _normalize_description_text(match.group('description'))
+                if not description:
+                    continue
+                line = source.count('\n', 0, match.start()) + 1
+                descriptions[f'provider frontpage {path.relative_to(ROOT)}:{line}'] = description
+                frontpage_count += 1
+
+    if not any(
+        owner.startswith('provider edit ') or owner.startswith('provider registration ') for owner in descriptions
+    ):
+        raise AssertionError('Integration provider Hero: no static edit/registration descriptions discovered')
+    if frontpage_count == 0:
+        raise AssertionError('Integration provider frontpage Hero: no static descriptions discovered')
+    return descriptions
+
+
+def _integration_overview_descriptions() -> dict[str, str]:
+    values = _local_jinja_literal_values(_read(INTEGRATION_OVERVIEW), 'description')
+    if not values:
+        raise AssertionError('Integration overview Hero: no static description source discovered')
+    return {f'Integration overview:{index}': value for index, value in enumerate(values, start=1)}
 
 
 def _clean_yaml_scalar(value: str) -> str:
@@ -222,6 +447,151 @@ def _static_string(node: ast.AST | None, *, owner: str) -> str:
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         return node.value
     raise AssertionError(f'{owner}: Hero copy must be a static string literal')
+
+
+def _reports_unavailable_descriptions() -> dict[str, str]:
+    _require_tokens(
+        _read(REPORTS_WEB),
+        (REPORTS_UNAVAILABLE_SHORT_DESCRIPTION_SUFFIX, '_normalize_reports_unavailable_description'),
+        'Reports unavailable Hero description normalization',
+    )
+    descriptions: dict[str, str] = {}
+    for path in sorted((ROOT / 'app' / 'reports').rglob('*.py')):
+        tree = ast.parse(_read(path), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            function = node.func
+            matched = (
+                isinstance(function, ast.Name)
+                and function.id == 'render_reports_unavailable'
+                or isinstance(function, ast.Attribute)
+                and function.attr == 'render_reports_unavailable'
+            )
+            if not matched:
+                continue
+            owner = f'reports unavailable {path.relative_to(ROOT)}:{node.lineno}'
+            description_node = next(
+                (keyword.value for keyword in node.keywords if keyword.arg == 'description'),
+                None,
+            )
+            if description_node is None:
+                raise AssertionError(f'{owner}: description is required')
+            description = _static_string(description_node, owner=owner)
+            descriptions[owner] = _effective_short_description(
+                description,
+                REPORTS_UNAVAILABLE_SHORT_DESCRIPTION_SUFFIX,
+            )
+    if not descriptions:
+        raise AssertionError('Reports unavailable Hero: no static descriptions discovered')
+    return descriptions
+
+
+def _subscript_string_key(node: ast.AST) -> str | None:
+    if not isinstance(node, ast.Subscript):
+        return None
+    slice_node = node.slice
+    if isinstance(slice_node, ast.Constant) and isinstance(slice_node.value, str):
+        return slice_node.value
+    return None
+
+
+def _reports_page_subtitle_descriptions() -> dict[str, str]:
+    descriptions: dict[str, str] = {}
+    discovered_domains: set[str] = set()
+    reports_root = ROOT / 'app' / 'reports'
+    for domain in sorted(REPORTS_PAGE_SUBTITLE_DOMAINS):
+        domain_root = reports_root / domain
+        for path in sorted(domain_root.rglob('*.py')):
+            tree = ast.parse(_read(path), filename=str(path))
+            for node in ast.walk(tree):
+                candidates: list[tuple[int, ast.AST]] = []
+                if isinstance(node, ast.Dict):
+                    candidates.extend(
+                        (node.lineno, value)
+                        for key, value in zip(node.keys, node.values, strict=True)
+                        if isinstance(key, ast.Constant) and key.value == 'page_subtitle'
+                    )
+                elif isinstance(node, ast.Call):
+                    if (
+                        isinstance(node.func, ast.Attribute)
+                        and node.func.attr == 'setdefault'
+                        and len(node.args) >= 2
+                        and isinstance(node.args[0], ast.Constant)
+                        and node.args[0].value == 'page_subtitle'
+                    ):
+                        candidates.append((node.lineno, node.args[1]))
+                    candidates.extend(
+                        (node.lineno, keyword.value) for keyword in node.keywords if keyword.arg == 'page_subtitle'
+                    )
+                elif isinstance(node, ast.Assign):
+                    if any(_subscript_string_key(target) == 'page_subtitle' for target in node.targets):
+                        candidates.append((node.lineno, node.value))
+                elif isinstance(node, ast.AnnAssign):
+                    if _subscript_string_key(node.target) == 'page_subtitle' and node.value is not None:
+                        candidates.append((node.lineno, node.value))
+
+                for lineno, value in candidates:
+                    owner = f'reports {domain} Hero {path.relative_to(ROOT)}:{lineno}'
+                    descriptions[owner] = _static_string(value, owner=owner)
+                    discovered_domains.add(domain)
+
+    missing = sorted(REPORTS_PAGE_SUBTITLE_DOMAINS - discovered_domains)
+    if missing:
+        raise AssertionError('Reports Hero page_subtitle authority missing for: ' + ', '.join(missing))
+    return descriptions
+
+
+def _object_storage_analytics_descriptions() -> dict[str, str]:
+    tree = ast.parse(_read(OBJECT_STORAGE_ANALYTICS_PAGES), filename=str(OBJECT_STORAGE_ANALYTICS_PAGES))
+    descriptions: dict[str, str] = {}
+    discovered_keys: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+            continue
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        if not any(isinstance(target, ast.Name) and target.id == 'PAGES' for target in targets):
+            continue
+        if not isinstance(node.value, ast.Dict):
+            raise AssertionError('Object Storage Analytics PAGES must remain a static dictionary')
+        for key_node, page_node in zip(node.value.keys, node.value.values, strict=True):
+            if not isinstance(key_node, ast.Constant) or not isinstance(key_node.value, str):
+                raise AssertionError('Object Storage Analytics page keys must remain static strings')
+            page_key = key_node.value
+            if page_key not in OBJECT_STORAGE_ANALYTICS_PAGE_KEYS:
+                continue
+            if not isinstance(page_node, ast.Call) or len(page_node.args) < 2:
+                raise AssertionError(f'Object Storage Analytics {page_key}: PageDefinition must own static description')
+            owner = f'Object Storage Analytics {page_key}'
+            descriptions[owner] = _static_string(page_node.args[1], owner=owner)
+            discovered_keys.add(page_key)
+
+    missing = sorted(OBJECT_STORAGE_ANALYTICS_PAGE_KEYS - discovered_keys)
+    if missing:
+        raise AssertionError('Object Storage Analytics Hero description authority missing for: ' + ', '.join(missing))
+    return descriptions
+
+
+def _materialization_route_descriptions() -> dict[str, str]:
+    descriptions: dict[str, str] = {}
+    for path in sorted(KUBERNETES_ANALYTICS_ROUTES.rglob('routes.py')):
+        tree = ast.parse(_read(path), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+                continue
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            if not any(isinstance(target, ast.Name) and target.id == '_PAGE' for target in targets):
+                continue
+            value = node.value
+            if not isinstance(value, ast.Dict):
+                raise AssertionError(f'{path.relative_to(ROOT)}:{node.lineno}: _PAGE must remain a static dictionary')
+            for key, item in zip(value.keys, value.values, strict=True):
+                if isinstance(key, ast.Constant) and key.value == 'description':
+                    owner = f'materialization {path.relative_to(ROOT)}:{node.lineno}'
+                    descriptions[owner] = _static_string(item, owner=owner)
+    if not descriptions:
+        raise AssertionError('Kubernetes Analytics materialization: no route-owned Hero descriptions discovered')
+    return descriptions
 
 
 def _effective_cluster_required_description(description: str) -> str:
@@ -273,7 +643,13 @@ def _cluster_required_descriptions() -> dict[str, str]:
 def _verify_description_budgets(primitive_shells: list[Path], profile_templates: list[Path]) -> int:
     descriptions = _literal_hero_descriptions(primitive_shells)
     descriptions.update(_dashboard_descriptions(profile_templates))
+    descriptions.update(_provider_component_descriptions())
+    descriptions.update(_integration_overview_descriptions())
     descriptions.update(_integration_domain_descriptions())
+    descriptions.update(_reports_unavailable_descriptions())
+    descriptions.update(_reports_page_subtitle_descriptions())
+    descriptions.update(_object_storage_analytics_descriptions())
+    descriptions.update(_materialization_route_descriptions())
     descriptions.update(_cluster_required_descriptions())
     failures: list[str] = []
     for owner, description in descriptions.items():
@@ -366,6 +742,23 @@ def _verify_operational_metadata_state_contract() -> None:
         metadata_call = source.find('page_hero.analytics_metadata(')
         if blocker_end >= 0 and 0 <= metadata_call < blocker_end:
             raise AssertionError(f'{relative}: blocked readiness must be additive to metadata')
+
+    blocked = _read(KUBERNETES_ANALYTICS_BLOCKED_HERO)
+    _require_tokens(
+        blocked,
+        ('page_hero.analytics_metadata(', 'materialization_metadata'),
+        'Generic Kubernetes Analytics blocked Hero',
+    )
+    presentation = _read(KUBERNETES_ANALYTICS_MATERIALIZATION_PRESENTATION)
+    _require_tokens(
+        presentation,
+        (
+            "'materialization_metadata': {",
+            "'No Cluster Selected'",
+            "'Blocked Readiness'",
+        ),
+        'Generic Kubernetes Analytics blocked metadata context',
+    )
 
 
 def _verify_dashboard_profile() -> None:
@@ -512,8 +905,8 @@ def verify() -> None:
         f'{len(primitive_shells)} compatibility shells, '
         f'{len(profile_templates)} profile consumers, '
         f'{audited} audited descriptions; v1.7 persistent metadata, '
-        '11-19 word density, blocked/degraded state ownership, dark-mode ownership, '
-        'and unmanaged-shell detection are synchronized.'
+        '11-19 word density, blocked/degraded state ownership, dynamic Jinja resolution, '
+        'dark-mode ownership, and unmanaged-shell detection are synchronized.'
     )
 
 

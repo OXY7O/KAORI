@@ -181,11 +181,23 @@ def blocked_page_context(
     page_id: str,
 ) -> dict[str, Any]:
     """Build a full-page dependency state without invoking an integration client."""
+    blocker = materialized.dependency_blocker or {}
+    cluster_label = str(materialized.cluster.name) if materialized.cluster else 'No Cluster Selected'
+    blocker_stage = blocker.get('stage', '?')
+    blocker_badge = str(blocker.get('badge') or 'Dependency Required')
     return {
         'materialization_title': title,
         'materialization_description': description,
         'materialization_icon': icon,
         'materialization_page_id': page_id,
         'materialization_cluster': materialized.cluster,
+        'materialization_metadata': {
+            'primary_icon': 'server',
+            'primary_label': cluster_label,
+            'secondary_icon': 'lock-keyhole',
+            'secondary_label': f'Step {blocker_stage} · {blocker_badge}',
+            'tertiary_icon': 'triangle-alert',
+            'tertiary_label': 'Blocked Readiness',
+        },
         'dependency_blocker': materialized.dependency_blocker,
     }
