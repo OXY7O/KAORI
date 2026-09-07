@@ -258,9 +258,12 @@ def _conditional_jinja_literal_values(body: str) -> list[str]:
 
 
 def _has_registered_description_resolver(path: Path, variable: str) -> bool:
-    return (path, variable) in PROVIDER_DYNAMIC_DESCRIPTION_OWNERS or (
-        path == KUBERNETES_ANALYTICS_BLOCKED_HERO and variable == 'materialization_description'
+    materialization_description = (
+        path.parent == KUBERNETES_ANALYTICS_BLOCKED_HERO.parent
+        and path.name in {'blocked.html', 'pending.html'}
+        and variable == 'materialization_description'
     )
+    return (path, variable) in PROVIDER_DYNAMIC_DESCRIPTION_OWNERS or materialization_description
 
 
 def _has_registered_dynamic_expression_resolver(path: Path, body: str) -> bool:
