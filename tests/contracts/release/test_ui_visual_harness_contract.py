@@ -42,3 +42,17 @@ def test_ui_harness_has_browser_smoke_and_visual_regression_authority() -> None:
     assert '.to_be_visible()' in smoke_text
     assert 'page.screenshot' in visual_text
     assert 'KAORI_UPDATE_VISUAL_BASELINES' in visual_text
+
+
+def test_visual_baseline_capture_is_governed_and_reviewable() -> None:
+    workflow = ROOT / '.github' / 'workflows' / 'ui-visual-baseline-capture.yml'
+
+    assert workflow.is_file()
+    workflow_text = workflow.read_text()
+    assert 'workflow_dispatch:' in workflow_text
+    assert 'KAORI_UI_BASE_URL' in workflow_text
+    assert 'KAORI_UPDATE_VISUAL_BASELINES: "1"' in workflow_text
+    assert 'pytest -q tests/ui/test_visual_regression.py' in workflow_text
+    assert 'actions/upload-artifact@' in workflow_text
+    assert 'tests/ui/baselines' in workflow_text
+    assert 'tests/ui/artifacts' in workflow_text
