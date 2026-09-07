@@ -223,20 +223,21 @@ def _inline_jinja_literal_values(body: str) -> list[str]:
 
 
 def _conditional_jinja_literal_values(body: str) -> list[str]:
-    controls = re.findall(r'{%\s*(?P<tag>[A-Za-z_][A-Za-z0-9_]*)\b[^%]*%}', body)
-    if not controls or controls[-1] != 'endif':
+    control_pattern = re.compile(r'{%\s*(?P<tag>if|elif|else|endif)\b.*?%}', flags=re.DOTALL)
+    controls = list(control_pattern.finditer(body))
+    if not controls or controls[0].group('tag') != 'if' or controls[-1].group('tag') != 'endif':
         return []
-    if any(control not in {'if', 'elif', 'else', 'endif'} for control in controls):
+    if re.sub(control_pattern, '', body).count('{%'):
         return []
 
-    segments = re.split(
-        r'{%\s*(?:if|elif)\b[^%]*%}|{%\s*else\s*%}|{%\s*endif\s*%}',
-        body,
-    )
     values: list[str] = []
-    for segment in segments:
-        if not segment.strip():
-            continue
+    for index, control in enumerate(controls[:-1]):
+        tag = control.group('tag')
+        if tag not in {'if', 'elif', 'else'}:
+            return []
+        segment_start = control.end()
+        segment_end = controls[index + 1].start()
+        segment = body[segment_start:segment_end]
         resolved = re.sub(r'{{\s*[^}]+\s*}}', 'value', segment)
         if '{{' in resolved or '{%' in resolved:
             return []
