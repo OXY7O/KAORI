@@ -1,21 +1,33 @@
-import os
-import re
+from __future__ import annotations
 
-import pytest
+import re
+from contextlib import contextmanager
+from pathlib import Path
+from typing import Iterator
+
 from playwright.sync_api import Page, expect
 
-
-def _credentials() -> tuple[str, str]:
-    username = os.environ.get('KAORI_UI_USERNAME', '').strip()
-    password = os.environ.get('KAORI_UI_PASSWORD', '').strip()
-    if not username or not password:
-        pytest.skip('KAORI_UI_USERNAME and KAORI_UI_PASSWORD are required for authenticated browser validation')
-    return username, password
+EVIDENCE_ROOT = Path('tmp/ci-artifacts/test-output/ui-browser')
+TEST_USERNAME = 'browser-admin'
+TEST_PASSWORD = 'browser-password'
 
 
-def _login(page: Page, kaori_base_url: str) -> None:
-    username, password = _credentials()
-    response = page.goto(f'{kaori_base_url}/login', wait_until='networkidle')
+@contextmanager
+def _browser_evidence(page: Page, scenario: str, viewport_name: str) -> Iterator[None]:
+    EVIDENCE_ROOT.mkdir(parents=True, exist_ok=True)
+    trace_path = EVIDENCE_ROOT / f'{scenario}-{viewport_name}-trace.zip'
+    screenshot_path = EVIDENCE_ROOT / f'{scenario}-{viewport_name}.png'
+
+    page.context.tracing.start(screenshots=True, snapshots=True, sources=True)
+    try:
+        yield
+    finally:
+        page.screenshot(path=str(screenshot_path), full_page=True, animations='disabled')
+        page.context.tracing.stop(path=str(trace_path))
+
+
+def _login(page: Page, kaori_authenticated_base_url: str) -> None:
+    response = page.goto(f'{kaori_authenticated_base_url}/auth/login', wait_until='networkidle')
     assert response is not None
     assert response.ok
 
@@ -23,80 +35,106 @@ def _login(page: Page, kaori_base_url: str) -> None:
     password_field = page.locator('input[name="password"], input[type="password"]').first
     expect(username_field).to_be_visible()
     expect(password_field).to_be_visible()
-    username_field.fill(username)
-    password_field.fill(password)
+    username_field.fill(TEST_USERNAME)
+    password_field.fill(TEST_PASSWORD)
 
     submit = page.get_by_role('button', name=re.compile(r'log in|login|sign in', re.I)).first
     expect(submit).to_be_visible()
     submit.click()
     page.wait_for_load_state('networkidle')
     expect(page.locator('body')).to_be_visible()
+    assert '/auth/login' not in page.url
 
 
-def test_authenticated_navigation_and_light_dark_theme(configured_page: Page, kaori_base_url: str) -> None:
-    """Representative navigation plus light/dark interaction evidence."""
+def test_authenticated_navigation_and_light_dark_theme(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Exercise authenticated shell navigation and the shared light/dark control."""
     page = configured_page
-    _login(page, kaori_base_url)
+    viewport_name, _ = kaori_viewport
 
-    navigation = page.locator('nav, aside').first
-    expect(navigation).to_be_visible()
+    with _browser_evidence(page, 'authenticated-navigation-theme', viewport_name):
+        _login(page, kaori_authenticated_base_url)
 
-    destination = navigation.get_by_role('link', name=re.compile(r'overview|dashboard|kubernetes', re.I)).first
-    expect(destination).to_be_visible()
-    destination.click()
-    page.wait_for_load_state('networkidle')
-    expect(page.locator('body')).to_be_visible()
+        navigation = page.locator('nav, aside').first
+        expect(navigation).to_be_visible()
 
-    theme_toggle = page.get_by_role('button', name=re.compile(r'theme|dark|light|appearance', re.I)).first
-    if theme_toggle.count() == 0:
-        pytest.skip('No accessible light/dark theme toggle is exposed on this authenticated surface')
+        destination = navigation.get_by_role('link', name=re.compile(r'welcome', re.I)).first
+        expect(destination).to_be_visible()
+        destination.click()
+        page.wait_for_load_state('networkidle')
+        expect(page.locator('body')).to_be_visible()
 
-    expect(theme_toggle).to_be_visible()
-    theme_toggle.click()
-    expect(page.locator('html')).to_be_visible()
+        theme_toggle = page.get_by_role(
+            'button', name=re.compile(r'theme|dark|light|appearance', re.I)
+        ).first
+        expect(theme_toggle).to_be_visible()
+        before_class = page.locator('html').get_attribute('class') or ''
+        before_theme = page.locator('html').get_attribute('data-theme') or ''
+        theme_toggle.click()
+        after_class = page.locator('html').get_attribute('class') or ''
+        after_theme = page.locator('html').get_attribute('data-theme') or ''
+        assert (before_class, before_theme) != (after_class, after_theme)
 
 
-def test_representative_htmx_modal_or_drawer_interaction(configured_page: Page, kaori_base_url: str) -> None:
-    """Exercise one safe HTMX GET control and one modal/drawer interaction when present."""
+def test_representative_htmx_modal_or_drawer_interaction(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Exercise a safe shared-shell HTMX interaction and modal/drawer presentation."""
     page = configured_page
-    _login(page, kaori_base_url)
+    viewport_name, _ = kaori_viewport
 
-    htmx = page.locator('[hx-get]').filter(visible=True).first
-    if htmx.count() == 0:
-        pytest.skip('No visible HTMX GET interaction is available on the landing surface')
+    with _browser_evidence(page, 'authenticated-htmx-overlay', viewport_name):
+        _login(page, kaori_authenticated_base_url)
 
-    expect(htmx).to_be_visible()
-    htmx.click()
-    page.wait_for_timeout(250)
-    expect(page.locator('body')).to_be_visible()
+        htmx = page.locator('[hx-get]').filter(visible=True).first
+        assert htmx.count() > 0
+        expect(htmx).to_be_visible()
+        htmx.click()
+        page.wait_for_timeout(250)
+        expect(page.locator('body')).to_be_visible()
 
-    modal_trigger = page.get_by_role('button', name=re.compile(r'notification|activity|details|view', re.I)).first
-    if modal_trigger.count() == 0:
-        pytest.skip('No representative modal or drawer trigger is available on this surface')
+        modal_trigger = page.get_by_role(
+            'button', name=re.compile(r'notification|activity|details|view', re.I)
+        ).first
+        expect(modal_trigger).to_be_visible()
+        modal_trigger.click()
+        dialog = page.get_by_role('dialog').first
+        drawer = page.locator('[data-drawer], [role="complementary"]').first
+        assert dialog.count() or drawer.count()
 
-    expect(modal_trigger).to_be_visible()
-    modal_trigger.click()
-    dialog = page.get_by_role('dialog').first
-    drawer = page.locator('[data-drawer], [role="complementary"]').first
-    assert dialog.count() or drawer.count()
 
-
-def test_representative_filter_pagination_and_form_controls(configured_page: Page, kaori_base_url: str) -> None:
+def test_representative_filter_pagination_and_form_controls(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
     """Validate representative filter, pagination, and form controls without mutating data."""
     page = configured_page
-    _login(page, kaori_base_url)
+    viewport_name, _ = kaori_viewport
 
-    form = page.locator('form').first
-    expect(form).to_be_visible()
+    with _browser_evidence(page, 'authenticated-filter-form', viewport_name):
+        _login(page, kaori_authenticated_base_url)
 
-    filter_control = page.locator('input[type="search"], input[name*="filter"], select[name*="filter"]').first
-    if filter_control.count():
-        expect(filter_control).to_be_visible()
-        if filter_control.evaluate("el => el.tagName.toLowerCase() === 'input'"):
-            filter_control.fill('')
+        form = page.locator('form').first
+        expect(form).to_be_visible()
 
-    pagination = page.get_by_role('link', name=re.compile(r'next|previous|page', re.I)).first
-    if pagination.count():
-        expect(pagination).to_be_visible()
+        filter_control = page.locator(
+            'input[type="search"], input[name*="filter"], select[name*="filter"]'
+        ).first
+        pagination = page.get_by_role('link', name=re.compile(r'next|previous|page', re.I)).first
+        assert filter_control.count() or pagination.count()
 
-    expect(page.locator('body')).to_be_visible()
+        if filter_control.count():
+            expect(filter_control).to_be_visible()
+            if filter_control.evaluate("el => el.tagName.toLowerCase() === 'input'"):
+                filter_control.fill('')
+
+        if pagination.count():
+            expect(pagination).to_be_visible()
+
+        expect(page.locator('body')).to_be_visible()
