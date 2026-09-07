@@ -1,6 +1,3 @@
-from pathlib import Path
-
-
 WORKFLOWS = {
     ".github/workflows/developer-check.yml": ["route"],
     ".github/workflows/publish-staging-image.yml": ["wait-for-quality"],
@@ -23,7 +20,8 @@ def _job_block(workflow_text: str, job_name: str) -> str:
 
 def test_hosted_replacement_jobs_use_platform_ci_runner() -> None:
     for workflow_path, job_names in WORKFLOWS.items():
-        workflow_text = Path(workflow_path).read_text()
+        with open(workflow_path, encoding="utf-8") as workflow_file:
+            workflow_text = workflow_file.read()
         for job_name in job_names:
             block = _job_block(workflow_text, job_name)
             assert EXPECTED_RUNNER in block, (
