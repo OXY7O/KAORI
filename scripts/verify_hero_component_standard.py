@@ -17,6 +17,7 @@ INTEGRATION_TAXONOMY = ROOT / 'app' / 'definitions' / 'catalogs' / 'integrations
 INTEGRATION_DOMAIN_HERO = TEMPLATES / 'integrations' / 'domain.html'
 INTEGRATION_OVERVIEW = TEMPLATES / 'integrations' / 'overview.html'
 INTEGRATION_OVERVIEW_HERO = TEMPLATES / 'integrations' / 'partials' / '_hero.html'
+REPORTS_UNAVAILABLE_HERO = TEMPLATES / 'reports' / '_unavailable.html'
 KUBERNETES_ANALYTICS_BLOCKED_HERO = TEMPLATES / 'kubernetes' / 'analytics' / 'materialization' / 'blocked.html'
 KUBERNETES_ANALYTICS_MATERIALIZATION_PRESENTATION = (
     ROOT / 'app' / 'kubernetes' / 'analytics' / 'materialization' / 'presentation.py'
@@ -269,7 +270,12 @@ def _has_registered_description_resolver(path: Path, variable: str) -> bool:
 
 def _has_registered_dynamic_expression_resolver(path: Path, body: str) -> bool:
     normalized = ' '.join(body.split())
-    return path == INTEGRATION_DOMAIN_HERO and normalized == '{{ domain.description }}'
+    return (
+        path == INTEGRATION_DOMAIN_HERO
+        and normalized == '{{ domain.description }}'
+        or path == REPORTS_UNAVAILABLE_HERO
+        and normalized == '{{ payload.description }}'
+    )
 
 
 def _literal_hero_descriptions(paths: list[Path]) -> dict[str, str]:
@@ -282,6 +288,7 @@ def _literal_hero_descriptions(paths: list[Path]) -> dict[str, str]:
     unresolved dynamic expressions fail closed.
     """
     descriptions: dict[str, str] = {}
+    unresolved: list[str] = []
     for path in paths:
         source = _read(path)
         relative = str(path.relative_to(ROOT))
@@ -297,10 +304,11 @@ def _literal_hero_descriptions(paths: list[Path]) -> dict[str, str]:
                     continue
                 if _has_registered_description_resolver(path, variable):
                     continue
-                raise AssertionError(
+                unresolved.append(
                     f'{relative}: Hero description variable {variable!r} has no static local '
                     'assignments or registered verifier resolver'
                 )
+                continue
             if '{{' in body or '{%' in body:
                 values = _inline_jinja_literal_values(body)
                 if not values:
@@ -311,13 +319,16 @@ def _literal_hero_descriptions(paths: list[Path]) -> dict[str, str]:
                     continue
                 if _has_registered_dynamic_expression_resolver(path, body):
                     continue
-                raise AssertionError(
+                unresolved.append(
                     f'{relative}: Hero description must be a literal or a statically resolvable Jinja expression'
                 )
+                continue
             text = _normalize_description_text(body)
             if text:
                 owner = relative if index == 1 else f'{relative}#{index}'
                 descriptions[owner] = text
+    if unresolved:
+        raise AssertionError('Unresolved Hero description authorities:\n- ' + '\n- '.join(unresolved))
     return descriptions
 
 
@@ -408,6 +419,35 @@ def _static_string(node: ast.AST | None, *, owner: str) -> str:
     raise AssertionError(f'{owner}: Hero copy must be a static string literal')
 
 
+def _reports_unavailable_descriptions() -> dict[str, str]:
+    descriptions: dict[str, str] = {}
+    for path in sorted((ROOT / 'app' / 'reports').rglob('*.py')):
+        tree = ast.parse(_read(path), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            function = node.func
+            matched = (
+                isinstance(function, ast.Name)
+                and function.id == 'render_reports_unavailable'
+                or isinstance(function, ast.Attribute)
+                and function.attr == 'render_reports_unavailable'
+            )
+            if not matched:
+                continue
+            owner = f'reports unavailable {path.relative_to(ROOT)}:{node.lineno}'
+            description_node = next(
+                (keyword.value for keyword in node.keywords if keyword.arg == 'description'),
+                None,
+            )
+            if description_node is None:
+                raise AssertionError(f'{owner}: description is required')
+            descriptions[owner] = _static_string(description_node, owner=owner)
+    if not descriptions:
+        raise AssertionError('Reports unavailable Hero: no static descriptions discovered')
+    return descriptions
+
+
 def _materialization_route_descriptions() -> dict[str, str]:
     descriptions: dict[str, str] = {}
     for path in sorted(KUBERNETES_ANALYTICS_ROUTES.rglob('routes.py')):
@@ -482,6 +522,7 @@ def _verify_description_budgets(primitive_shells: list[Path], profile_templates:
     descriptions.update(_provider_component_descriptions())
     descriptions.update(_integration_overview_descriptions())
     descriptions.update(_integration_domain_descriptions())
+    descriptions.update(_reports_unavailable_descriptions())
     descriptions.update(_materialization_route_descriptions())
     descriptions.update(_cluster_required_descriptions())
     failures: list[str] = []
