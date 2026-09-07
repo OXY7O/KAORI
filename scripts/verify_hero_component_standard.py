@@ -14,6 +14,7 @@ ANALYTICS_STANDARD = ROOT / 'docs' / 'design' / 'components' / 'ANALYTICS_HERO.m
 DASHBOARD_STANDARD = ROOT / 'docs' / 'design' / 'patterns' / 'OPERATIONAL_DASHBOARD.md'
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 INTEGRATION_TAXONOMY = ROOT / 'app' / 'definitions' / 'catalogs' / 'integrations' / 'taxonomy.yaml'
+INTEGRATION_DOMAIN_HERO = TEMPLATES / 'integrations' / 'domain.html'
 KUBERNETES_ANALYTICS_BLOCKED_HERO = TEMPLATES / 'kubernetes' / 'analytics' / 'materialization' / 'blocked.html'
 KUBERNETES_ANALYTICS_MATERIALIZATION_PRESENTATION = (
     ROOT / 'app' / 'kubernetes' / 'analytics' / 'materialization' / 'presentation.py'
@@ -259,6 +260,11 @@ def _has_registered_description_resolver(path: Path, variable: str) -> bool:
     )
 
 
+def _has_registered_dynamic_expression_resolver(path: Path, body: str) -> bool:
+    normalized = ' '.join(body.split())
+    return path == INTEGRATION_DOMAIN_HERO and normalized == '{{ domain.description }}'
+
+
 def _literal_hero_descriptions(paths: list[Path]) -> dict[str, str]:
     """Discover literal and deterministically-resolvable Jinja Hero descriptions.
 
@@ -295,6 +301,8 @@ def _literal_hero_descriptions(paths: list[Path]) -> dict[str, str]:
                 if values:
                     for variant, value in enumerate(values, start=1):
                         descriptions[f'{relative}#dynamic:{variant}'] = value
+                    continue
+                if _has_registered_dynamic_expression_resolver(path, body):
                     continue
                 raise AssertionError(
                     f'{relative}: Hero description must be a literal or a statically resolvable Jinja expression'
