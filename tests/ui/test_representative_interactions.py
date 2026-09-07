@@ -67,9 +67,7 @@ def test_authenticated_navigation_and_light_dark_theme(
         page.wait_for_load_state('networkidle')
         expect(page.locator('body')).to_be_visible()
 
-        theme_toggle = page.get_by_role(
-            'button', name=re.compile(r'theme|dark|light|appearance', re.I)
-        ).first
+        theme_toggle = page.get_by_role('button', name=re.compile(r'theme|dark|light|appearance', re.I)).first
         expect(theme_toggle).to_be_visible()
         before_class = page.locator('html').get_attribute('class') or ''
         before_theme = page.locator('html').get_attribute('data-theme') or ''
@@ -98,9 +96,7 @@ def test_representative_htmx_modal_or_drawer_interaction(
         page.wait_for_timeout(250)
         expect(page.locator('body')).to_be_visible()
 
-        modal_trigger = page.get_by_role(
-            'button', name=re.compile(r'notification|activity|details|view', re.I)
-        ).first
+        modal_trigger = page.get_by_role('button', name=re.compile(r'notification|activity|details|view', re.I)).first
         expect(modal_trigger).to_be_visible()
         modal_trigger.click()
         dialog = page.get_by_role('dialog').first
@@ -123,9 +119,7 @@ def test_representative_filter_pagination_and_form_controls(
         form = page.locator('form').first
         expect(form).to_be_visible()
 
-        filter_control = page.locator(
-            'input[type="search"], input[name*="filter"], select[name*="filter"]'
-        ).first
+        filter_control = page.locator('input[type="search"], input[name*="filter"], select[name*="filter"]').first
         pagination = page.get_by_role('link', name=re.compile(r'next|previous|page', re.I)).first
         assert filter_control.count() or pagination.count()
 
