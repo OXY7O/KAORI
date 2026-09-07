@@ -30,6 +30,7 @@ PROVIDER_DYNAMIC_DESCRIPTION_OWNERS = {
     (PROVIDER_REGISTRATION_HERO, 'description'),
     (PROVIDER_FRONTPAGE_HERO, 'description'),
     (INTEGRATION_OVERVIEW_HERO, 'description'),
+    (TEMPLATES / 'kubernetes' / 'operations' / 'cluster_required.html', 'requested_page_description'),
 }
 
 DESCRIPTION_TARGET_MIN = 11
