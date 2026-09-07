@@ -40,11 +40,11 @@ def test_authentication_readiness_state_is_responsive_and_traceable(
         expect(page.get_by_text(STATE_MARKERS[state], exact=True)).to_be_visible()
 
         layout = page.evaluate(
-            '''() => ({
+            """() => ({
                 scrollWidth: document.documentElement.scrollWidth,
                 clientWidth: document.documentElement.clientWidth,
                 bodyScrollWidth: document.body.scrollWidth,
-            })'''
+            })"""
         )
         assert isinstance(layout, dict)
         assert layout['scrollWidth'] <= layout['clientWidth'] + 1
