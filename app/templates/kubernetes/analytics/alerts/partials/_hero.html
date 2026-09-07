@@ -14,21 +14,29 @@
 {% else %}
     {% set posture_status = "Healthy" %}{% set posture_tone = "normal" %}
 {% endif %}
+{% if dependency_blocker %}
+    {% set hero_secondary_icon = "lock-keyhole" %}
+    {% set hero_secondary_label = 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge %}
+    {% set hero_tertiary_icon = "triangle-alert" %}
+    {% set hero_tertiary_label = "Blocked Readiness" %}
+{% else %}
+    {% set hero_secondary_icon = "bell-ring" %}
+    {% set hero_secondary_label = active_alerts ~ ' Active' %}
+    {% set hero_tertiary_icon = "radar" %}
+    {% set hero_tertiary_label = anomaly_count ~ ' Anomalies' %}
+{% endif %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('triangle-alert', 'Kubernetes Analytics', 'radar') %}
                 <h1 class="{{ page_hero.title_classes() }}">Alerts &amp; Anomalies</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">Review active alerts, anomalies, routing context, ownership, readiness, and supporting operational evidence.</p>
-                <div class="{{ page_hero.metadata_row_classes() }}">
-                    {{ page_hero.meta_label('server', selected_cluster_name) }}
-                    {% if dependency_blocker %}
-                        {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
-                    {% else %}
-                        {{ page_hero.meta_label('bell-ring', active_alerts ~ ' Active') }}
-                        {{ page_hero.meta_label('radar', anomaly_count ~ ' Anomalies') }}
-                    {% endif %}
-                </div>
+                {{ page_hero.analytics_metadata('server',
+                                selected_cluster_name,
+                                hero_secondary_icon,
+                                hero_secondary_label,
+                                hero_tertiary_icon,
+                                hero_tertiary_label) }}
             {% endcall %}
         </div>
         {% if dependency_blocker %}

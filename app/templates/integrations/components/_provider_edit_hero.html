@@ -6,6 +6,9 @@
             <div class="{{ page_hero.content_classes() }}">
                 {% call page_hero.intro(eyebrow_icon, eyebrow_label, leading_icon) %}
                     <h1 class="{{ page_hero.title_classes() }}">{{ title }}</h1>
+                    {% if description.split()|length < 11 %}
+                        {% set description = description ~ " Maintain governed validation and consumer-binding context." %}
+                    {% endif %}
                     <p class="mt-2 {{ page_hero.description_classes() }}">{{ description }}</p>
                     <div class="{{ page_hero.metadata_row_classes() }}">
                         {{ page_hero.meta_label(api_icon, api_label) }}

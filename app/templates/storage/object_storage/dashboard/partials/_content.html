@@ -5,12 +5,7 @@
 <div class="space-y-5">
     {% include "storage/object_storage/dashboard/partials/_hero.html" %}
     {% if not dashboard.systems %}
-        {% set blocked_state_icon = "database-zap" %}
-        {% set blocked_state_label = "System Required" %}
-        {% set blocked_state_title = "Register Object Storage First" %}
-        {% set blocked_state_description = "Register and synchronize an Object Storage system before using the operations dashboard." %}
-        {% set blocked_state_tone = "warning" %}
-        {% include 'components/states/_blocked_state.html' %}
+        {% include "storage/object_storage/inventory/components/_onboarding_banner.html" %}
     {% else %}
         <div x-data="{ activeTab: '{{ dashboard.active_tab }}', allowedTabs: ['overview', 'capacity', 'signals', 'reporting'], setTab(tab) { if (!this.allowedTabs.includes(tab)) return; this.activeTab = tab; const url = new URL(window.location.href); url.searchParams.set('tab', tab); window.history.replaceState({}, '', url); }, moveTab(currentTab, direction, prefix) { const currentIndex = this.allowedTabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.allowedTabs.length - 1; else nextIndex = (currentIndex + direction + this.allowedTabs.length) % this.allowedTabs.length; const nextTab = this.allowedTabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); } }"
              x-on:popstate.window="activeTab = allowedTabs.includes(new URL(window.location.href).searchParams.get('tab')) ? new URL(window.location.href).searchParams.get('tab') : 'overview'">

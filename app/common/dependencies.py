@@ -44,8 +44,8 @@ def cluster_required_blocker() -> DependencyBlocker:
         'description': 'Add or select a Kubernetes cluster before loading worker-prepared analytics data.',
         'diagnostic_detail': None,
         'icon': 'server-cog',
-        'action_label': 'Add Cluster',
-        'action_url': url_for('cluster.add_cluster'),
+        'action_label': 'Open Cluster Integrations',
+        'action_url': url_for('integrations.kubernetes'),
         'permission': 'clusters.manage',
     }
 

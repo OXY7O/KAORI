@@ -1,33 +1,21 @@
 {% import "components/page_hero.html" as page_hero %}
-<section class="{{ page_hero.shell_classes() }}">
-    <div class="{{ page_hero.layout_classes() }}">
-        <div class="{{ page_hero.content_classes() }}">
-            {% call page_hero.intro('layout-dashboard', 'Object Storage Operations', 'database-zap') %}
-                <h1 class="{{ page_hero.title_classes() }}">Object Storage Operations Dashboard</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">
-                    Unified operational visibility for inventory, capacity, bucket demand, forecasts, alerts, and reporting readiness.
-                </p>
-                <div class="{{ page_hero.metadata_row_classes() }}">
-                    {{ page_hero.meta_label('database', 'Inventory Snapshots') }}
-                    {{ page_hero.meta_label('database-zap', 'Worker Analytics') }}
-                    {{ page_hero.meta_label('bell-ring', 'Worker Alerts') }}
-                </div>
-            {% endcall %}
-        </div>
-        <aside class="{{ page_hero.aside_classes() }}"
-               aria-label="Object Storage dashboard context">
-            <div class="{{ page_hero.context_panel_classes() }}">
-                {{ page_hero.context_header('Dashboard Context', 'Operational Signal Scope', 'scan-search') }}
-                <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                    {{ page_hero.context_metric('scan-search', 'Active Scope', dashboard.selected_system.name if dashboard.selected_system else 'All Systems', 'Applied across dashboard signals', 'text-sm font-semibold leading-5') }}
-                    {{ page_hero.context_metric('database-zap', 'Data Authority', 'Committed Snapshots', 'No live provider query on page load', 'text-sm font-semibold leading-5') }}
-                </div>
-                <a href="{{ url_for('object_storage_inventory.overview') }}"
-                   class="{{ page_hero.context_single_action_classes() }}">
-                    <i data-lucide="database" class="h-4 w-4" aria-hidden="true"></i>
-                    <span>Object Storage Inventory</span>
-                </a>
-            </div>
-        </aside>
-    </div>
-</section>
+{% set dashboard_scope = dashboard.selected_system.name if dashboard.selected_system else 'All Systems' %}
+{% set dashboard_state = 'blocked' if not dashboard.systems else 'normal' %}
+{{ page_hero.operational_dashboard('Object Storage Operations',
+'database-zap',
+'Object Storage Operations Dashboard',
+'Operational visibility for inventory, capacity, bucket demand, forecasts, alerts, and reporting.',
+[
+('database', 'Inventory Snapshots') ,
+('database-zap', 'Worker Analytics'),
+('bell-ring', 'Worker Alerts')
+],
+dashboard_scope,
+'Object Storage Integrations',
+url_for('integrations.storage'),
+'plug-zap',
+'Committed Snapshots',
+dashboard_state,
+'Object Storage Setup Required',
+'Register an Object Storage system to activate operational signals.'
+) }}

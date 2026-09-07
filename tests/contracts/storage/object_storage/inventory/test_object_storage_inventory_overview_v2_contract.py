@@ -20,7 +20,7 @@ def test_object_storage_overview_is_high_level_fleet_composition() -> None:
     assert 'resource_detail_modal.inventory_host(' not in index
     assert 'Object Storage Overview' in hero
     assert (
-        'Review committed fleet posture, inventory coverage, and managed asset readiness across Object Storage systems.'
+        'Review committed inventory coverage, readiness, and system scope across registered Object Storage environments.'
         in hero
     )
     assert 'Systems Registered' in hero

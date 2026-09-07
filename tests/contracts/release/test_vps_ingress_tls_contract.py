@@ -7,13 +7,13 @@ NGINX_TEMPLATE = ROOT / 'deploy/nginx/kaori.conf.template'
 NGINX_ENTRYPOINT = ROOT / 'deploy/nginx/nginx-entrypoint.sh'
 CERTBOT_ENTRYPOINT = ROOT / 'deploy/nginx/certbot-entrypoint.sh'
 VERIFY = ROOT / 'deploy/nginx/verify-ingress.sh'
-VPS_COMPOSE = ROOT / 'deploy/vps/compose.vps.yml'
+SERVER_COMPOSE = ROOT / 'deploy/server/compose.server.yml'
 LEGACY_ENV_EXAMPLE = ROOT / '.env.production.example'
 APP_ENV_EXAMPLE = ROOT / 'deploy/env/app.env.example'
 SECRETS_ENV_EXAMPLE = ROOT / 'deploy/env/secrets.env.example'
 DEPLOY_ENV_EXAMPLE = ROOT / 'deploy/env/deploy.env.example'
-DEPLOY_SCRIPT = ROOT / 'deploy/vps/deploy.sh'
-RELEASE_STATE = ROOT / 'deploy/vps/release-state.sh'
+DEPLOY_SCRIPT = ROOT / 'deploy/server/deploy.sh'
+RELEASE_STATE = ROOT / 'deploy/server/release-state.sh'
 UAT_WORKFLOW = ROOT / '.github/workflows/deploy-staging-host.yml'
 
 
@@ -30,8 +30,8 @@ def _service_block(text: str, service: str, next_service: str | None = None) -> 
     return text[start:end]
 
 
-def test_vps_overlay_makes_web_internal_only_and_replaces_runtime_env_files():
-    text = _read(VPS_COMPOSE)
+def test_server_overlay_makes_web_internal_only_and_replaces_runtime_env_files():
+    text = _read(SERVER_COMPOSE)
     web = _service_block(text, 'web', 'worker')
 
     assert 'ports: !reset []' in web
@@ -43,8 +43,8 @@ def test_vps_overlay_makes_web_internal_only_and_replaces_runtime_env_files():
     assert '${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}' in web
 
 
-def test_vps_overlay_adds_immutable_nginx_and_certbot_without_docker_socket():
-    text = _read(VPS_COMPOSE)
+def test_server_overlay_adds_immutable_nginx_and_certbot_without_docker_socket():
+    text = _read(SERVER_COMPOSE)
 
     assert 'KAORI_NGINX_IMAGE' in text
     assert 'KAORI_CERTBOT_IMAGE' in text
@@ -204,5 +204,5 @@ def test_uat_delivery_copies_ingress_assets_to_release_directory():
     text = _read(UAT_WORKFLOW)
 
     assert 'scp "${scp_opts[@]}" -r deploy/nginx "$target:$remote_release/deploy/"' in text
-    assert 'chmod 700 -- "$remote_release"/deploy/vps/*.sh' in text
+    assert 'chmod 700 -- "$remote_release"/deploy/server/*.sh' in text
     assert 'chmod 755 -- "$remote_release"/deploy/nginx/*.sh' in text

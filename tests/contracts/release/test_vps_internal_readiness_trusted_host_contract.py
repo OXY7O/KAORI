@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-VERIFY_SCRIPT = ROOT / 'deploy' / 'vps' / 'verify.sh'
+VERIFY_SCRIPT = ROOT / 'deploy' / 'server' / 'verify.sh'
 INGRESS_VERIFY_SCRIPT = ROOT / 'deploy' / 'nginx' / 'verify-ingress.sh'
 APP_ENV_TEMPLATE = ROOT / 'deploy' / 'env' / 'app.env.example'
 PRODUCTION_COMPOSE = ROOT / 'compose.production.yml'

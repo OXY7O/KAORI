@@ -63,6 +63,7 @@ def test_dashboard_route_and_service_are_snapshot_only() -> None:
 def test_dashboard_matches_kubernetes_operational_layout_concept() -> None:
     content = read('app/templates/storage/object_storage/dashboard/partials/_content.html')
     hero = read('app/templates/storage/object_storage/dashboard/partials/_hero.html')
+    page_hero = read('app/templates/components/page_hero.html')
     signal_overview = read('app/templates/storage/object_storage/dashboard/partials/_signal_overview.html')
     kubernetes_content = read('app/templates/kubernetes/dashboard/partials/_content.html')
 
@@ -82,7 +83,8 @@ def test_dashboard_matches_kubernetes_operational_layout_concept() -> None:
     )
     assert 'hx-trigger="load"' in signal_overview
     assert 'All Systems' in signal_overview
-    assert 'No live provider query on page load' in hero
+    assert 'page_hero.operational_dashboard(' in hero
+    assert 'No live provider query on page load' in page_hero
     assert 'class="mt-5 space-y-5"' in content
 
 
@@ -182,7 +184,7 @@ def test_object_storage_analytics_verifier_tracks_current_snapshot_contract() ->
     assert "assert 'Operational Metrics Contract' in readiness" in verifier
     assert "assert 'Readiness By Evidence Domain' in readiness" in verifier
     assert "assert 'Object Storage → Metrics → Analytics Snapshot' in dependency_blocker" in verifier
-    assert "assert 'readiness_step_count = 3' in hero_blocked" in verifier
+    assert "assert 'page_hero.blocked_context_body(' in hero_blocked" in verifier
     assert (
         "for label in ('Forecast Outlook', 'Usage Trend', 'Bucket Forecasts', 'Worker & Method', 'Evidence')"
         in verifier

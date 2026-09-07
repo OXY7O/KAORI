@@ -6,17 +6,17 @@
                 {% set eyebrow_label = "Authentication Evidence" %}
                 {% set eyebrow_icon = "activity" %}
                 {% set leading_icon = "scroll-text" %}
-                {% set summary = "Review recent authentication events for this account." %}
+                {% set summary = "Review recent authentication events, sign-in outcomes, and account access evidence for this identity." %}
             {% elif active_tab == 'credentials' %}
                 {% set eyebrow_label = "Credential Security" %}
                 {% set eyebrow_icon = "key-round" %}
                 {% set leading_icon = "shield-check" %}
-                {% set summary = "Manage credentials, session impact, and audit controls." %}
+                {% set summary = "Manage account credentials, session impact, recovery ownership, and audit controls for this identity." %}
             {% else %}
                 {% set eyebrow_label = "Identity & Access" %}
                 {% set eyebrow_icon = "id-card" %}
                 {% set leading_icon = "user-round-cog" %}
-                {% set summary = "Review account identity, access posture, and recent sign-in state." %}
+                {% set summary = "Review account identity, access posture, authentication source, role assignment, and recent sign-in state." %}
             {% endif %}
             {% call page_hero.intro(eyebrow_icon, eyebrow_label, leading_icon) %}
                 <h1 class="{{ page_hero.title_classes() }}">Account & Authentication</h1>

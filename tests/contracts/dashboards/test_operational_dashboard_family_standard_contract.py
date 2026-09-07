@@ -147,9 +147,11 @@ def test_operational_dashboard_standard_is_family_owned() -> None:
     standard = read('docs/design/patterns/OPERATIONAL_DASHBOARD.md')
     audit = read('docs/design/audits/OPERATIONAL_DASHBOARD_FAMILY_ALIGNMENT_AUDIT_2026_08_24.md')
 
-    assert '# KAORI Operational Dashboard Pattern v1.4' in standard
+    assert '# KAORI Operational Dashboard Pattern v1.5' in standard
     assert 'Kubernetes Operations Dashboard and Object Storage Operations Dashboard' in standard
     assert 'Dashboard family consistency' in standard
-    assert 'future KAORI operational dashboards' in standard
+    assert (
+        'Future Server/VM, HCI, network, backup, and other operational dashboards begin from this pattern' in standard
+    )
     assert 'same four workspace tabs' in audit
     assert 'future operational dashboards' in audit

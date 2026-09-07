@@ -70,14 +70,9 @@ def test_protected_reveal_standard_docs_match_the_reviewed_tab_style() -> None:
 def test_tls_rotate_copy_and_fingerprint_space_are_balanced() -> None:
     page = read('app/templates/kubernetes/operations/secrets/tls_rotate.html')
     routes = read('app/kubernetes/operations/secrets/tls_routes.py')
-    assert (
-        'Validate replacement certificate material, key matching, and target coverage before rotating one live TLS Secret.'
-        in page
-    )
-    assert (
-        'Validate replacement certificate material, key matching, and target coverage before rotating one live TLS Secret.'
-        in routes
-    )
+    expected_hero_copy = 'Validate replacement certificate pairing and coverage before rotating one live TLS Secret.'
+    assert expected_hero_copy in page
+    assert expected_hero_copy in routes
     assert (
         'Validate parsing, key matching, host coverage, and the replacement before Update TLS Secret is enabled.'
         in page

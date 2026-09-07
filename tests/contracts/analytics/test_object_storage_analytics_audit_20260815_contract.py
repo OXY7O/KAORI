@@ -32,13 +32,16 @@ def test_object_storage_blocker_reuses_kubernetes_analytics_dependency_surface()
     assert 'Object Storage → Metrics → Analytics Snapshot' in object_blocker
     assert 'Alert Evidence' not in object_blocker
     assert object_blocker.count('dependency_grid_classes = "lg:grid-cols-3"') == 2
-    assert 'Analytics Readiness' in shared_blocker
+    assert 'Analytics Setup Path' in shared_blocker
     assert 'Current Blocker' in shared_blocker
+    assert 'Missing dependency:' in shared_blocker
     assert 'dependency_route_summary' in shared_blocker
     assert 'dependency_step_count' in shared_blocker
     assert "'Analytics Readiness'" in blocked_hero
-    assert 'readiness_step_count = 3' in blocked_hero
-    assert "3: 'Analytics Snapshot'" in blocked_hero
+    assert "'Active Scope'" in blocked_hero
+    assert "'Missing Evidence'" in blocked_hero
+    assert "'Current Step'" not in blocked_hero
+    assert "'Progress'" not in blocked_hero
 
 
 def test_object_storage_analytics_requires_committed_inventory_before_metrics_analysis() -> None:

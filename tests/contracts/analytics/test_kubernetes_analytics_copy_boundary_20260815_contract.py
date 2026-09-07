@@ -17,7 +17,7 @@ def test_kubernetes_analytics_copy_refinement_is_concise_and_domain_specific() -
     forecast = read('app/kubernetes/analytics/forecast/routes.py')
 
     assert (
-        'Review consolidated resource utilization, workload posture, storage, forecasts, top consumers, and alert signals.'
+        'Review utilization, workload posture, capacity forecasts, leading consumers, recommendations, and alert signals.'
         in overview
     )
     assert 'shared capacity, allocation, and headroom results' in capacity

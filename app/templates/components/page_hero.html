@@ -61,6 +61,69 @@
                 action_icon) }}
     </aside>
 {%- endmacro %}
+{% macro blocked_context_body(eyebrow_label, title, metrics, info_text, status_label=None, status_tone='warning', header_icon='lock-keyhole', info_icon='info') -%}
+    <div class="{{ context_panel_classes() }}" data-kaori-blocked-state>
+        {% if status_label %}
+            {{ context_header_status(eyebrow_label, title, status_label, status_tone) }}
+        {% else %}
+            {{ context_header(eyebrow_label, title, header_icon) }}
+        {% endif %}
+        <div class="{{ context_panel_metrics_classes() }}">
+            {% for metric in metrics[:2] %}
+                {% set metric_icon = metric[0] %}
+                {% set metric_label = metric[1] %}
+                {% set metric_value = metric[2] %}
+                {% set metric_description = metric[3] if metric|length > 3 else none %}
+                {% set metric_value_classes = metric[4] if metric|length > 4 else none %}
+                {{ context_metric(metric_icon, metric_label, metric_value, metric_description, metric_value_classes) }}
+            {% endfor %}
+        </div>
+        {{ context_info(info_icon, info_text) }}
+    </div>
+{%- endmacro %}
+{% macro operational_dashboard(eyebrow_label, leading_icon, title, description, metadata, active_scope, action_label, action_href, action_icon='settings-2', data_authority='Committed Snapshots', state='normal', blocked_title='Setup Required', blocked_info='Complete setup to activate operational signals.') -%}
+    <section class="{{ shell_classes() }}"
+             data-kaori-hero-profile="operational-dashboard"
+             data-kaori-hero-state="{{ state }}">
+        <div class="{{ layout_classes() }}">
+            <div class="{{ content_classes() }}">
+                {% call intro('layout-dashboard', eyebrow_label, leading_icon) %}
+                    <h1 class="{{ title_classes() }}">{{ title }}</h1>
+                    <p class="mt-2 {{ description_classes() }}">{{ description }}</p>
+                    {{ persistent_metadata(metadata) }}
+                {% endcall %}
+            </div>
+            <aside class="{{ aside_classes() }}" aria-label="{{ title }} context">
+                {% if state == 'blocked' %}
+                    {{ blocked_context_body('Dashboard Readiness',
+                                        blocked_title,
+                                        [
+                                        ('scan-search', 'Active Scope', active_scope, 'Current dashboard scope', 'text-sm font-semibold leading-5') ,
+                    ('lock-keyhole', 'Data Authority', data_authority, 'Operational evidence boundary', 'text-sm font-semibold leading-5')
+                    ],
+                    blocked_info,
+                    'Blocked',
+                    'warning',
+                    'lock-keyhole',
+                    'info') }}
+                {% else %}
+                    <div class="{{ context_panel_classes() }}">
+                        {{ context_header('Dashboard Context', 'Operational Signal Scope', 'scan-search') }}
+                        <div class="{{ context_panel_metrics_classes() }}">
+                            {{ context_metric('scan-search', 'Active Scope', active_scope, 'Applied across dashboard signals', 'text-sm font-semibold leading-5') }}
+                            {{ context_metric('database-zap', 'Data Authority', data_authority, 'No live provider query on page load', 'text-sm font-semibold leading-5') }}
+                        </div>
+                        <a href="{{ action_href }}"
+                           class="{{ context_single_action_classes() }}">
+                            <i data-lucide="{{ action_icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                            <span>{{ action_label }}</span>
+                        </a>
+                    </div>
+                {% endif %}
+            </aside>
+        </div>
+    </section>
+{%- endmacro %}
 {% macro context_panel_eyebrow_classes() -%}
     text-xs font-semibold uppercase tracking-wider text-brand-foreground-muted
 {%- endmacro %}
@@ -166,6 +229,23 @@
 {%- endmacro %}
 {% macro metadata_row_classes() -%}
     mt-4 flex flex-wrap items-center gap-2
+{%- endmacro %}
+{% macro persistent_metadata(metadata) -%}
+    <div class="{{ metadata_row_classes() }}"
+         data-kaori-hero-metadata
+         data-kaori-hero-metadata-policy="persistent">
+        {% for item in metadata[:3] %}
+            {{ meta_label(item[0], item[1]) }}
+        {% endfor %}
+    </div>
+{%- endmacro %}
+{% macro analytics_metadata(primary_icon, primary_label, secondary_icon, secondary_label, tertiary_icon, tertiary_label) -%}
+    {% set analytics_items = [
+            (primary_icon, primary_label),
+            (secondary_icon, secondary_label),
+            (tertiary_icon, tertiary_label)
+        ] %}
+    <div data-kaori-analytics-metadata>{{ persistent_metadata(analytics_items) }}</div>
 {%- endmacro %}
 {% macro primary_action_classes() -%}
     inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg border border-white/80 bg-white px-4 text-sm font-semibold text-kaori-primary-dark shadow-sm transition-colors hover:border-white hover:bg-white/90 hover:text-kaori-primary-dark hover:shadow-md active:bg-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-kaori-primary

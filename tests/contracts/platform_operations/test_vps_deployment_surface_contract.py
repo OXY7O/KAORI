@@ -1,14 +1,14 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-VPS_ROOT = ROOT / 'deploy' / 'vps'
-COMPOSE_OVERLAY = VPS_ROOT / 'compose.vps.yml'
-DEPLOY = VPS_ROOT / 'deploy.sh'
-VERIFY = VPS_ROOT / 'verify.sh'
-BACKUP = VPS_ROOT / 'backup.sh'
-RESTORE = VPS_ROOT / 'restore.sh'
-ROLLBACK = VPS_ROOT / 'rollback.sh'
-README = VPS_ROOT / 'README.md'
+SERVER_ROOT = ROOT / 'deploy' / 'server'
+COMPOSE_OVERLAY = SERVER_ROOT / 'compose.server.yml'
+DEPLOY = SERVER_ROOT / 'deploy.sh'
+VERIFY = SERVER_ROOT / 'verify.sh'
+BACKUP = SERVER_ROOT / 'backup.sh'
+RESTORE = SERVER_ROOT / 'restore.sh'
+ROLLBACK = SERVER_ROOT / 'rollback.sh'
+README = SERVER_ROOT / 'README.md'
 BASE_COMPOSE = ROOT / 'compose.production.yml'
 WORKFLOW = ROOT / '.github' / 'workflows' / 'deploy-staging-host.yml'
 
@@ -24,11 +24,11 @@ def _service_block(source: str, service: str, next_service: str | None = None) -
     return source[start : source.index(f'  {next_service}:', start)]
 
 
-def test_vps_deployment_has_a_dedicated_surface() -> None:
+def test_server_deployment_has_a_dedicated_surface() -> None:
     for path in (COMPOSE_OVERLAY, DEPLOY, VERIFY, BACKUP, RESTORE, ROLLBACK, README):
-        assert path.is_file(), f'missing VPS deployment file: {path}'
+        assert path.is_file(), f'missing server deployment file: {path}'
 
-    assert not (ROOT / 'ops' / 'github-runner' / 'vps-deploy').exists()
+    assert not (ROOT / 'ops' / 'github-runner' / 'server-deploy').exists()
 
 
 def test_production_compose_accepts_server_side_environment_file() -> None:
@@ -39,7 +39,7 @@ def test_production_compose_accepts_server_side_environment_file() -> None:
     assert '127.0.0.1' in source
 
 
-def test_vps_overlay_keeps_state_private_persistent_and_edge_explicit() -> None:
+def test_server_overlay_keeps_state_private_persistent_and_edge_explicit() -> None:
     source = _read(COMPOSE_OVERLAY)
     postgres = _service_block(source, 'postgres', 'redis')
     redis = _service_block(source, 'redis', 'validate')
@@ -78,7 +78,7 @@ def test_deploy_is_digest_pinned_fail_closed_and_ephemeral_for_registry_auth() -
     assert '--password-stdin' in source
     assert 'trap' in source
     assert 'compose.production.yml' in source
-    assert 'compose.vps.yml' in source
+    assert 'compose.server.yml' in source
     assert 'backup.sh' in source
     assert 'verify.sh' in source
     assert 'current-image' in source
@@ -125,7 +125,7 @@ def test_verify_checks_internal_readiness_and_full_runtime_shape() -> None:
     assert 'web unexpectedly publishes a host port' in source
 
 
-def test_manual_vps_workflow_uses_encrypted_ssh_and_pinned_host_key() -> None:
+def test_manual_server_workflow_uses_encrypted_ssh_and_pinned_host_key() -> None:
     source = _read(WORKFLOW)
 
     assert 'workflow_dispatch:' in source
@@ -156,13 +156,13 @@ def test_remote_ssh_commands_are_streamed_without_client_side_command_expansion(
     assert 'printf -v remote_mkdir' not in source
     assert 'printf -v remote_chmod' not in source
     assert 'printf -v remote_command' not in source
-    assert 'chmod 700 -- "$remote_release"/deploy/vps/*.sh' in source
+    assert 'chmod 700 -- "$remote_release"/deploy/server/*.sh' in source
 
 
 def test_operator_contract_keeps_real_environment_server_side() -> None:
     source = _read(README)
 
-    assert 'deploy/vps/' in source
+    assert 'deploy/server/' in source
     assert '/etc/kaori/' in source
     assert 'immutable digest' in source.lower()
     assert 'pre-migration' in source.lower()

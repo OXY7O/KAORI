@@ -2,21 +2,29 @@
 {% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
 {% set posture_label = capacity_posture.label|default('Unknown') %}
 {% set posture_tone = capacity_posture.tone|default('unknown') %}
+{% if dependency_blocker %}
+    {% set hero_secondary_icon = "lock-keyhole" %}
+    {% set hero_secondary_label = 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge %}
+    {% set hero_tertiary_icon = "triangle-alert" %}
+    {% set hero_tertiary_label = "Blocked Readiness" %}
+{% else %}
+    {% set hero_secondary_icon = "cpu" %}
+    {% set hero_secondary_label = 'CPU Headroom ' ~ cpu_headroom_display %}
+    {% set hero_tertiary_icon = "list-checks" %}
+    {% set hero_tertiary_label = recommendation_count|default(0) ~ ' Actionable' %}
+{% endif %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('bar-chart-3', 'Kubernetes Analytics', 'server-cog') %}
                 <h1 class="{{ page_hero.title_classes() }}">Capacity Analysis</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review worker headroom, allocation pressure, scheduling constraints, and emerging capacity risks across active workloads.</p>
-                <div class="{{ page_hero.metadata_row_classes() }}">
-                    {{ page_hero.meta_label('server', selected_cluster_name) }}
-                    {% if dependency_blocker %}
-                        {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
-                    {% else %}
-                        {{ page_hero.meta_label('cpu', 'CPU Headroom ' ~ cpu_headroom_display) }}
-                        {{ page_hero.meta_label('list-checks', recommendation_count|default(0) ~ ' Actionable') }}
-                    {% endif %}
-                </div>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review worker headroom, scheduling pressure, committed capacity, and emerging scaling risks.</p>
+                {{ page_hero.analytics_metadata('server',
+                                selected_cluster_name,
+                                hero_secondary_icon,
+                                hero_secondary_label,
+                                hero_tertiary_icon,
+                                hero_tertiary_label) }}
             {% endcall %}
         </div>
         {% if dependency_blocker %}

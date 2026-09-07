@@ -45,11 +45,14 @@ def test_analytics_hero_helper_is_removed():
     assert not Path('app/templates/analytics/components/_hero_context.html').exists()
 
 
-def test_blocked_posture_uses_same_recovery_action_contract() -> None:
+def test_blocked_posture_uses_shared_readiness_summary_contract() -> None:
     template = Path('app/templates/kubernetes/analytics/components/_blocked_posture.html').read_text()
-    assert 'page_hero.context_card_body(' in template
-    assert "'Manage Clusters'" in template
-    assert "url_for('integrations.kubernetes')" in template
+    assert 'page_hero.blocked_context_body(' in template
+    assert "'Analytics Readiness'" in template
+    assert "'Active Scope'" in template
+    assert "'Missing Evidence'" in template
+    assert "'Current Step'" not in template
+    assert "'Progress'" not in template
 
 
 def test_storage_and_capacity_hero_helpers_are_concise_and_semantic() -> None:

@@ -76,7 +76,7 @@ def test_inventory_authority_copy_is_compact_and_object_storage_hero_has_more_co
     )
     assert 'Latest committed Inventory Sync snapshot; no live provider query.' in object_storage_presentation
     assert (
-        'Review committed fleet posture, inventory coverage, and managed asset readiness across Object Storage systems.'
+        'Review committed inventory coverage, readiness, and system scope across registered Object Storage environments.'
         in hero
     )
     assert 'Review committed fleet posture across managed systems and inventory assets.' not in hero

@@ -15,7 +15,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('file-cog', 'ConfigMap Management', 'file-pen-line') %}
                         <h1 class="{{ page_hero.title_classes() }}">Update ConfigMap</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Load current values, preview the effective diff, and apply one validated live update against the exact selected ConfigMap.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Preview and validate one live ConfigMap update before applying it to governed Kubernetes state.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('radio-tower', 'Live Kubernetes Target') }}
                             {{ page_hero.meta_label('git-compare-arrows', 'Effective Diff Preview') }}

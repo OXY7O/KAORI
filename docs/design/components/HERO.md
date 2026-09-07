@@ -1,6 +1,6 @@
-# KAORI Hero Component Standard v1.5
+# KAORI Hero Component Standard v1.7
 
-This document is the authoritative implementation contract for authenticated KAORI page heroes.
+This document is the authoritative implementation and semantic contract for authenticated KAORI page heroes.
 
 Canonical implementation:
 
@@ -15,16 +15,16 @@ scripts/verify_hero_component_standard.py
 tests/contracts/design/test_hero_component_standard_contract.py
 ```
 
-Page templates provide content and semantic values. They do not own hero geometry, typography, theme surface, context-panel structure, or action styling.
+The v1.7 change does **not** redesign the Hero. It preserves the accepted Violet surface, geometry, typography, dark-mode ownership, accessibility, HTMX stability, context metric limit, and right-header accessory registry. v1.7 tightens description density to the approved 11–19 word envelope and makes operational metadata persistent across normal, blocked, and degraded states.
 
 ## Purpose
 
-A hero gives the page stable identity and immediate operational context. It answers:
+A Hero answers, in order:
 
 1. Where am I?
 2. What page or object is this?
 3. What is the page used for?
-4. What scope or posture applies?
+4. What scope, evidence boundary, readiness, or posture applies?
 5. What is the primary next action?
 
 Required hierarchy:
@@ -33,30 +33,135 @@ Required hierarchy:
 Identity → Purpose → Context → Action
 ```
 
-Tables, charts, evidence lists, workflow instructions, long diagnostics, pagination, and filters belong below the hero.
+Tables, charts, evidence lists, workflow instructions, diagnostics, pagination, and filters remain below the Hero.
+
+## Hero Profile and Hero State
+
+A **Hero Profile** describes the page role. A **Hero State** describes the current operational condition. They are independent concepts.
+
+Approved profile vocabulary begins with:
+
+- `landing` — entry/access orientation;
+- `operational-dashboard` — snapshot-backed operational dashboards;
+- `operational-workspace` — normal operational workspaces;
+- `analytics` — analytical evidence and posture workspaces;
+- `inventory-operations` — inventory, governance, and operational resource workspaces;
+- `transactional-admin` — create/edit/configuration and administration workflows.
+
+Approved state vocabulary:
+
+- `normal` — the workspace is operational and expected evidence is available for its current scope;
+- `blocked` — a required setup or readiness dependency prevents the primary operational workflow;
+- `degraded` — the workspace remains usable while one dependency or capability is degraded;
+- Landing is an explicit profile exception and does not need an operational state presentation.
+
+The governing rule is:
+
+> **same Profile + same State = same structural Hero grammar.**
+
+A domain may change nouns, values, icons, and destination URLs. It must not change the profile's shell hierarchy, metadata roles, context metric roles, state presentation, or action role.
+
+## Canonical reusable renderer ownership
+
+High-value families must use a high-level profile renderer from `components/page_hero.html` instead of rebuilding the shell from low-level primitives. The first locked profile renderer is:
+
+```jinja
+page_hero.operational_dashboard(...)
+```
+
+It owns the complete Dashboard Hero composition: shell, layout, identity, title, description, persistent metadata row, context panel, state presentation, two context metrics, and action/footer slot.
+
+Operational metadata is rendered through the shared persistent renderer. Where a profile defines metadata, the same metadata roles remain present in **normal, blocked, and degraded** states. A blocked/degraded readiness panel is additive context and must never remove the left-side metadata row.
+
+Shared blocked Hero-right context composition is owned by:
+
+```jinja
+page_hero.blocked_context_body(...)
+```
+
+This renderer owns the context panel shell, approved header accessory, exactly two compact readiness metrics, and one concise information strip. Domain wrappers provide semantic values only.
+
+Low-level macros such as `shell_classes()`, `layout_classes()`, `intro(...)`, and `context_metric(...)` remain compatibility primitives for existing families while their profile migrations are performed. New same-context family implementations must not fork a fresh page-local full Hero shell when an approved profile renderer exists.
 
 ## Canonical composition
 
-A normal hero contains:
+An operational Hero contains:
 
 - one eyebrow;
 - one leading icon;
 - one authoritative `h1`;
 - one concise description;
-- two or three metadata labels;
+- **exactly three metadata** items for profiles that define the three-slot operational metadata contract;
 - one optional right-side context panel;
-- one primary action in the context panel when the panel is interactive.
+- zero to two compact context metrics;
+- one primary action when the profile is interactive.
 
-The right-side context panel contains one posture eyebrow, one panel title, zero to two compact metrics, and at most one primary full-width bottom action. Its **top-right header accessory** uses exactly one of three approved variants:
+Explicit exceptions:
 
-1. **Action Icon Box** — an interactive icon-only control for one immediate hero-context action. Use `context_action_icon_box(...)` or `context_header_action(...)`. It requires an accessible name and visible focus state.
-2. **Context Icon Box** — a non-interactive domain, identity, or scope marker. Use `context_icon_box(...)` or the standard `context_header(...)`. It shares the same 40 px square geometry as the Action Icon Box but is not focusable.
-3. **Status Badge Box** — a compact semantic operational/readiness state. Use `context_status_badge(...)` or `context_header_status(...)`. It is not an action.
+- Landing may use two orientation/access metadata items;
+- Blocked preserves the profile metadata row and adds readiness/remediation context;
+- Degraded preserves the usable operational structure and metadata row while expressing degradation in status/context.
 
-Do not invent a fourth header-accessory geometry. A page must not make an icon box look like a status badge, make a status badge clickable, or use page-local size/radius/padding variations.
+Metadata communicates identity, scope, evidence boundary, or stable operating context. Health/severity belongs in semantic status components.
 
-`context_card(...)` and `context_card_body(...)` are the canonical status-oriented panel helper and enforce the two-metric limit by rendering `metrics[:2]`. Manual panels may use the Action or Context icon variants when status is not the header's semantic purpose.
-The status-oriented `context_card(...)` baseline therefore continues to present **exactly two compact metrics**; manual panels may legitimately use fewer when their semantic role does not require metrics.
+## Operational Dashboard Hero Profile
+
+Kubernetes Operations Dashboard and Object Storage Operations Dashboard are the paired reference implementation.
+
+The profile uses exactly three metadata roles:
+
+1. Inventory evidence;
+2. analytics/metrics evidence;
+3. alert evidence.
+
+The right-side panel uses two semantic metric roles in this order:
+
+1. `Active Scope`;
+2. `Data Authority`.
+
+`Data Authority` describes the request-time evidence boundary, not whether a particular observation exists. For the current paired dashboards the authority is `Committed Snapshots`.
+
+The Dashboard Hero action role is **operational source/readiness management**. Domain labels and URLs may differ, but the action must remain in that semantic role. Generic navigation that does not manage readiness/source configuration must not replace it.
+
+The dashboard renderer exposes `data-kaori-hero-profile="operational-dashboard"` and `data-kaori-hero-state="..."` for contract and rendering verification. Its metadata surface exposes `data-kaori-hero-metadata` and `data-kaori-hero-metadata-policy="persistent"` for state-level regression verification.
+
+## Blocked readiness grammar
+
+Blocked state remains profile-specific while repeated geometry stays shared. The Hero remains visible, the left-side operational metadata remains visible, the right context tells the operator why the workspace cannot proceed, and detailed remediation stays immediately below the Hero.
+
+### Operational Dashboard blocked context
+
+The paired Kubernetes/Object Storage dashboards use:
+
+1. `Dashboard Readiness`;
+2. domain-specific setup title;
+3. semantic `Blocked` status;
+4. `Active Scope`;
+5. `Data Authority`;
+6. one concise setup information strip.
+
+`Data Authority` remains truthful while blocked; it describes the evidence boundary, not successful evidence availability.
+
+### Operational workspace blocked context
+
+Inventory, Kubernetes Operations, Kubernetes Governance, and equivalent Object Storage operational workspaces follow the Kubernetes Operations/Governance reference pattern. The context uses the domain readiness label/title, one resource-availability metric such as `Connected Clusters` or `Registered Systems`, a `Workspace State` value of `Blocked`, and one concise information strip. The shared renderer owns the geometry; domain wrappers own nouns and setup wording.
+
+The section blocker below the Hero uses `components/states/_blocked_state.html` with setup status, concise description, ordered steps when useful, and one permission-aware primary action. Pages with the same semantics must not rebuild a local blocker card.
+
+### Analytics blocked context
+
+Analytics uses:
+
+1. `Analytics Readiness`;
+2. concise blocker title;
+3. semantic `Blocked` status;
+4. `Active Scope`;
+5. `Missing Evidence`;
+6. one concise next-requirement information strip.
+
+Blocked Analytics still renders the profile's three metadata labels through `page_hero.analytics_metadata(...)`. The Kubernetes Storage Analysis regression case is authoritative: readiness may change, but metadata remains visible beside it.
+
+The Hero does not prioritize generic `Current Step` / `Progress` values. Detailed dependency progress is owned by the shared `Analytics Setup Path` surface below the Hero, which shows Complete / Current Blocker / Pending states and the authoritative next action.
 
 ## Theme and surface contract
 
@@ -64,17 +169,15 @@ The Hero surface is owned by `.kaori-hero-shell` and `--kaori-hero-background`. 
 
 Light mode uses the canonical Bright Violet identity surface. Dark mode uses the controlled tonal gradient defined in `components/DARK_MODE.md`; it is the only approved authenticated-page gradient.
 
-Internal surfaces are also component-owned:
+Internal surfaces remain component-owned:
 
 - `.kaori-hero-panel` — right context panel;
-- `.kaori-hero-tile` — metric cards, leading/context icons, and supporting information;
+- `.kaori-hero-tile` — metric cards, leading/context icons, supporting information;
 - `.kaori-hero-chip` — eyebrow and metadata labels.
-
-These classes prevent generic brand-surface tokens from making the dark Hero too luminous. Page templates must not recreate their background, border, opacity, blur, or glow values.
 
 ## Technical geometry
 
-The following values mirror the active Tailwind implementation and are locked by the hero verifier.
+The accepted geometry remains unchanged.
 
 | Element | Canonical implementation | Effective geometry |
 |---|---|---:|
@@ -84,202 +187,92 @@ The following values mirror the active Tailwind implementation and are locked by
 | Internal grid | `min-h-[13rem] lg:min-h-[14.5rem]` | 208 px / 232 px minimum |
 | Grid gap | `gap-5` | 20 px |
 | Desktop layout | `xl:grid-cols-12` | content 7 / context 5 |
-| Context panel | `.kaori-hero-panel min-h-[13rem] rounded-xl p-4` | 208 px minimum, 12 px radius, 16 px padding |
-| Context row rhythm | `gap-3` | 12 px between header, metric row, and footer slot |
-| Metric grid | `grid-cols-2 auto-rows-fr gap-2` | two equal-height columns, 8 px horizontal gap |
-| Footer slot | `mt-auto min-h-10` | bottom-aligned 40 px minimum for info, one action, or two actions |
+| Context panel | `.kaori-hero-panel min-h-[13rem] rounded-xl p-4` | 208 px minimum |
+| Metric grid | `grid-cols-2 auto-rows-fr gap-2` | two equal-height columns |
+| Footer slot | `mt-auto min-h-10` | bottom-aligned 40 px minimum |
 | Context action | `h-10` | 40 px |
 
-The right panel uses one canonical three-row rhythm: header, metric row, and footer slot. The footer may contain one information strip, one full-width action, or two half-width actions; all three variants must land on the same bottom baseline and retain the same 12 px row rhythm. Do not add page-local `mt-*`, `pt-*`, or height compensation around these shared rows. Minimum height protects alignment while allowing natural wrapping. If a hero grows repeatedly beyond the baseline, reduce the copy or move content below the hero. Do not create a page-local height variant.
+The right panel retains the same 12 px row rhythm. Do not add page-local height, padding, margin, radius, or breakpoint compensation.
 
 ## Technical typography
 
 | Element | Tailwind owner | Effective typography |
 |---|---|---|
 | Eyebrow | `intro()` / `eyebrow()` | 12 px, semibold, uppercase |
-| Title | `title_classes()` | 30 px compact / 36 px from `sm`, bold, 40 px line height |
+| Title | `title_classes()` | 30 px compact / 36 px from `sm`, bold |
 | Description | `description_classes()` | 16 px, regular, 28 px line height, max width 44 rem |
 | Metadata label | `meta_label()` | 12 px semibold, 32 px minimum height |
 | Context eyebrow | `context_panel_eyebrow_classes()` | 12 px semibold, uppercase |
 | Context title | `context_panel_title_classes()` | 16 px semibold, 24 px line height |
 | Status badge | `context_status_badge()` | 12 px semibold, 28 px minimum height |
-| Metric label | `context_metric_label_classes()` | 12 px semibold, 20 px line height |
 | Metric value | `context_metric_value_classes()` | 18 px semibold, 24 px line height |
-| Metric helper | `context_metric_helper_classes()` | 12 px medium, 20 px line height |
 | Context action | `context_action_classes()` | 14 px semibold, 40 px height |
 
-The implementation uses standard Tailwind sizes. Page templates must not add arbitrary hero typography such as `text-[13px]`, `text-[15px]`, or local title/description overrides.
+Page templates must not add arbitrary Hero typography overrides.
 
-## Intro and metadata
+## Context panel accessory registry
 
-Use:
+Exactly three top-right header accessory variants are approved:
 
-```jinja
-{% call page_hero.intro('icon', 'Domain Eyebrow', 'leading-icon') %}
-    <h1 class="{{ page_hero.title_classes() }}">Page Title</h1>
-    <p class="mt-2 {{ page_hero.description_classes() }}">Concise purpose.</p>
-    <div class="{{ page_hero.metadata_row_classes() }}">
-        {{ page_hero.meta_label('server', selected_cluster_name) }}
-        {{ page_hero.meta_label('boxes', '12 Resources') }}
-    </div>
-{% endcall %}
-```
+1. **Action Icon Box** — interactive icon-only immediate context action;
+2. **Context Icon Box** — non-interactive domain/identity/scope marker;
+3. **Status Badge Box** — non-interactive semantic readiness/health/lifecycle state.
 
-Metadata rules:
+Do not invent a fourth header-accessory geometry.
 
-- use two or three labels in a normal branch;
-- use Title Case for human-readable labels;
-- preserve exact casing for Kubernetes names, profile keys, URLs, versions, hashes, and provider identifiers;
-- metadata communicates identity or scope, not health or severity;
-- operational state uses `context_status_badge(...)` or another semantic component.
-
-## Context panel
-
-### Header accessory registry
-
-The three approved right-side header accessories are part of the global Hero contract, not page-specific decoration. Their purpose determines the variant:
-
-| Variant | Meaning | Canonical helper | Interactive | Geometry |
-|---|---|---|---|---|
-| Action Icon Box | Immediate context action | `context_action_icon_box(...)` / `context_header_action(...)` | Yes | 40 × 40 px rounded square |
-| Context Icon Box | Domain, identity, or scope cue | `context_icon_box(...)` / `context_header(...)` | No | 40 × 40 px rounded square |
-| Status Badge Box | Readiness, health, lifecycle, or decision state | `context_status_badge(...)` / `context_header_status(...)` | No | Compact rectangular semantic badge |
-
-The Action and Context icon boxes intentionally share visual geometry; accessibility and interaction semantics distinguish them. The Status Badge uses semantic color and text, and status must never rely on color alone.
-
-Preferred status-oriented implementation:
-
-```jinja
-{{ page_hero.context_card(
-    'Capacity Posture',
-    'Capacity Posture',
-    'Ready-Worker Headroom',
-    posture_label,
-    posture_tone,
-    [
-        ('cpu', 'CPU Headroom', cpu_value, 'Ready-worker capacity'),
-        ('memory-stick', 'Memory Headroom', memory_value, 'Ready-worker capacity')
-    ],
-    'Manage Clusters',
-    url_for('integrations.kubernetes'),
-    'server-cog'
-) }}
-```
-
-Use `context_card_body(...)` only when a lazy-loaded partial already owns the `<aside>` wrapper.
-
-Manual context panels are allowed only when the page needs a different semantic arrangement. They must still compose:
-
-- `aside_classes()`;
-- `context_panel_classes()`;
-- shared context typography;
-- shared metric-card classes;
-- shared context actions.
-
-Do not copy the utility strings into page templates.
-
-## Context status
-
-`context_status_badge(label, tone)` supports:
-
-- `normal`;
-- `warning`;
-- `critical`;
-- `unknown`;
-- `info` as the fallback.
-
-The badge uses an opaque light surface because it sits on a Violet hero. Status wording accompanies color and must remain readable without truncation.
-
-## Actions
-
-The canonical context action is:
-
-```jinja
-class="{{ page_hero.context_single_action_classes() }}"
-```
-
-The bottom region is a canonical footer slot. `context_info(...)`, `context_single_action_classes()`, and `context_actions_classes(...)` all bottom-align through the shared 40 px footer contract. Do not add local spacing around them.
-
-For two coordinated actions in a manual panel, use:
-
-```jinja
-<div class="{{ page_hero.context_actions_classes() }}">
-```
-
-and apply `context_action_classes()` to both controls.
-
-Rules:
-
-- one action is preferred;
-- two actions are the maximum for a manual panel;
-- destructive workflows normally move below the hero;
-- disabled actions retain their dimensions;
-- icon-only actions require an accessible name.
+`context_card(...)`, `context_card_body(...)`, and `blocked_context_body(...)` enforce **exactly two compact metrics** through `metrics[:2]`.
 
 ## Content density
 
-Recommended copy budget:
+Copy budget is canonical and executable:
 
-- description target: 7–12 words; hard maximum 16 words;
+- description target: 11–19 words; hard maximum 19 words;
 - right-panel title: 2–4 words;
 - status label: 1–3 words;
 - metric label: 1–3 words;
-- metric helper: optional, normally no more than 4 words.
+- metric helper: optional and concise.
 
-The component does not compensate for verbose copy. Long explanations and evidence boundaries belong below the hero.
+The minimum reference is `Operational visibility for cluster health, capacity, alerts, inventory, recommendations, and reporting.` The maximum reference is `Automate Analytics PDF, XLSX, or CSV artifacts and Inventory XLSX/CSV exports with timezone-aware schedules and retained run evidence.`
+
+Character count may be audited as an additional safety rail, but word budget and semantic clarity are authoritative. Long evidence explanations belong below the Hero.
 
 ## Dynamic and HTMX behavior
 
-The hero is a stable page anchor. Filtering, pagination, polling, runtime refresh, inventory synchronization, validation, and background jobs must not replace or collapse it.
+The Hero is a stable page anchor. Filtering, pagination, polling, runtime refresh, inventory synchronization, validation, and background jobs must not replace or collapse it.
 
-Do not:
+A lazy right-side context partial may update only its owned context region while preserving shell dimensions. State changes must not remove a profile-defined persistent metadata row.
 
-- target the hero with routine HTMX swaps;
-- replace it with a spinner or skeleton;
-- dim the entire hero during a local request;
-- move actions while a request is running;
-- place volatile progress streams inside the hero.
+## Empty, Blocked, and Degraded behavior
 
-Loading belongs to the affected card or initiating control.
+The Hero remains visible when no records exist or a dependency is blocked/degraded.
 
-A lazy right-side context partial may update only its owned context region while preserving the hero shell and its dimensions.
-
-## Empty and blocked states
-
-The hero remains visible when no records exist or a dependency is blocked.
-
-Use factual metadata such as:
-
-- `0 Connections`;
-- `No Cluster Selected`;
-- `Step 2 · Configuration Required`.
-
-The full explanation and remediation workflow belong below the hero. Blocked context panels must still use the shared panel geometry.
-
-## Responsive behavior
-
-On narrow screens:
-
-1. eyebrow;
-2. leading icon and title block;
-3. description;
-4. metadata;
-5. context panel.
-
-At `xl`, the layout becomes the canonical 7/5 split. Mobile wrapping may increase height naturally. Page-local breakpoint geometry is prohibited.
+Blocked state communicates setup/readiness and does not pretend normal operational evidence is available. Degraded state preserves the usable workspace and expresses dependency degradation through status/context. For operational profiles, persistent metadata remains present in normal, blocked, and degraded states. Full remediation workflows remain below the Hero.
 
 ## Accessibility
 
 - exactly one `h1` per page;
 - visible keyboard focus;
-- status is communicated by text and icon, not color alone;
-- context `<aside>` has a meaningful `aria-label`;
+- status communicated by text/icon, never color alone;
+- context `<aside>` has a meaningful accessible label;
 - decorative icons use `aria-hidden="true"`;
 - dynamic values remain readable and are not silently truncated.
 
 ## Public macro contract
 
-### Shell and identity
+### Profile renderers
+
+- `operational_dashboard(...)`
+
+### Persistent metadata renderers
+
+- `persistent_metadata(...)`
+- `analytics_metadata(...)`
+
+### Shared blocked context renderer
+
+- `blocked_context_body(...)`
+
+### Compatibility shell and identity primitives
 
 - `shell_classes()`
 - `layout_classes()`
@@ -291,46 +284,63 @@ At `xl`, the layout becomes the canonical 7/5 split. Mobile wrapping may increas
 - `metadata_row_classes()`
 - `meta_label(...)`
 
-### Context panel
+### Context panel primitives
 
 - `context_panel_classes()`
 - `context_card(...)`
 - `context_card_body(...)`
 - `context_status_badge(...)`
 - `context_header(...)`
-- `context_panel_eyebrow_classes()`
-- `context_panel_title_classes()`
+- `context_header_action(...)`
+- `context_header_status(...)`
 - `context_panel_metrics_classes()`
 - `context_metric(...)`
-- `context_metric_card_classes()`
-- `context_metric_label_classes()`
-- `context_metric_value_classes()`
-- `context_metric_helper_classes()`
-- `context_icon_classes()`
 - `context_info(...)`
 - `context_actions_classes(...)`
 - `context_action_classes()`
 - `context_single_action_classes()`
 
-Macros removed from the active contract must not be referenced by templates, tests, or documentation. The quality gate rejects reintroduction of the removed legacy posture-note and free-floating action APIs.
+Compatibility primitives are not permission to create a new same-context family fork. Profile renderers and shared blocked context ownership take precedence wherever defined.
 
 ## Domain extensions
 
 Domain documents may constrain content but cannot override shared geometry or typography.
 
 - Kubernetes Analytics: `components/ANALYTICS_HERO.md`
-- Inventory copy-density audit: `audits/KUBERNETES_INVENTORY_HERO_COPY_AUDIT_2026_07.md`
+- Operational Dashboard: `patterns/OPERATIONAL_DASHBOARD.md`
+
+## Enforcement and migration guardrail
+
+The verifier must:
+
+- verify canonical implementation and documentation tokens;
+- verify required/removed macro ownership;
+- verify every compatibility shell still composes canonical primitives;
+- verify paired Operational Dashboard pages call the single shared profile renderer and do not locally assemble the shell;
+- verify shared blocked-context wrappers do not rebuild context-panel geometry locally;
+- verify Analytics metadata uses the persistent shared renderer and remains outside blocker branches;
+- enforce the description target and hard boundary for every Hero description that can be resolved deterministically from source;
+- audit shared profile-renderer descriptions at their call sites instead of bypassing copy checks because composition is centralized;
+- reject unmanaged Hero-like local surfaces that bypass the component;
+- report compatibility-shell, profile-consumer, and description-audit counts separately.
+
+The canonical verifier enforces the 11–19 word target, with 19 words as the absolute hard maximum. A description outside 11–19 words is a contract violation rather than an advisory warning; deterministic Hero copy must be corrected rather than silently bypassed.
+
+Integration domain descriptions are audited from `app/definitions/catalogs/integrations/taxonomy.yaml` because `app/templates/integrations/domain.html` renders those descriptions dynamically. Other source-controlled dynamic Hero copy must gain an equally explicit audit path when introduced.
+
+A family migration to a profile renderer must add family-level parity contracts before removing its compatibility composition.
 
 ## Change procedure
 
-A hero-standard change must update all of the following in the same commit:
+A Hero-standard change must update, in the same work item:
 
 1. `app/templates/components/page_hero.html`;
 2. this document;
-3. affected domain extension documents;
+3. affected domain/pattern documents;
 4. `scripts/verify_hero_component_standard.py`;
-5. `docs/design/components/DARK_MODE.md` when theme behavior changes;
-6. hero and dark-mode contract tests.
+5. `docs/design/components/DARK_MODE.md` only when theme behavior changes;
+6. Hero/dark-mode/family contract tests;
+7. the current Hero alignment audit when the decision materially changes ownership.
 
 Run:
 
@@ -343,16 +353,14 @@ python -m pytest -q \
 
 ## Review checklist
 
-Every final page recheck must explicitly classify the hero right-side header accessory as **Action Icon Box**, **Context Icon Box**, **Status Badge Box**, or **Not Applicable**. Visual similarity is not sufficient; semantics and accessibility must match the selected type.
-
-- shared component imported;
-- canonical shell/layout/content primitives used;
-- one `h1` and one concise description;
-- two or three metadata labels;
-- no page-local title or description typography;
-- context panel uses shared geometry;
-- no more than two context metrics;
-- one primary action preferred;
-- hero remains stable during HTMX and background activity;
+- profile and state are explicit for a profile-managed family;
+- same Profile + same State has one composition;
+- one `h1` and one concise 11–19 word description;
+- operational profile metadata is persistent in normal, blocked, and degraded states;
+- context panel has no more than two metrics;
+- one primary action preferred and its semantic role matches the profile;
+- no page-local Hero geometry or typography fork;
+- dynamic Hero description sources have a deterministic verifier path;
+- Hero remains stable during HTMX/background activity;
 - technical identifiers preserve source casing;
-- documentation and verifier updated with implementation changes.
+- documentation, verifier, and family contracts are synchronized.
