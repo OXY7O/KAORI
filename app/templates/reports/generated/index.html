@@ -51,7 +51,7 @@
             </div>
         </section>
         {% if payload.storage_notice %}
-            <section class="rounded-2xl border border-status-warning-border bg-status-warning-soft px-5 py-4 shadow-sm"
+            <section class="rounded-2xl border {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft px-5 py-4 shadow-sm"
                      data-generated-storage-degraded="true">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
@@ -277,8 +277,8 @@
                                            :disabled="selectableCount === 0"
                                            aria-label="Select all archiveable reports"
                                            class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-accent/40">
-                                    </th>
-                                {% endif %}
+                                </th>
+                            {% endif %}
                                 <th class="{{ table_ui.header_cell_classes() }}">Report</th>
                                 <th class="{{ table_ui.header_cell_classes() }}">Scope</th>
                                 <th class="{{ table_ui.header_cell_classes() }}">Artifact</th>
