@@ -1,3 +1,4 @@
+{% import "components/table_label.html" as table_label %}
 {% macro shell_classes() -%}
     kaori-hero-shell relative min-h-[15.5rem] overflow-hidden rounded-2xl border border-brand-outline p-5 text-brand-foreground shadow-sm lg:min-h-[17.5rem] lg:p-6
 {%- endmacro %}
@@ -15,8 +16,8 @@
 {%- endmacro %}
 {% macro context_status_badge(label, tone='info') -%}
     {% set status_icon = 'circle-check' if tone == 'normal' else ('triangle-alert' if tone == 'warning' else ('circle-x' if tone == 'critical' else ('circle-help' if tone == 'unknown' else 'circle-dot'))) %}
-    {% set tone_classes = 'border-status-normal-border kaori-hero-status-normal' if tone == 'normal' else ('border-status-warning-border kaori-hero-status-warning' if tone == 'warning' else ('border-status-critical-border kaori-hero-status-critical' if tone == 'critical' else ('border-status-unknown-border kaori-hero-status-unknown' if tone == 'unknown' else 'border-status-info-border kaori-hero-status-info'))) %}
-    <span class="kaori-hero-status-badge inline-flex min-h-7 max-w-full shrink-0 items-center gap-1.5 rounded-md border bg-white/95 px-2.5 py-1 text-xs font-semibold leading-5 shadow-sm {{ tone_classes }}"
+    {% set tone_classes = 'kaori-hero-status-normal' if tone == 'normal' else ('kaori-hero-status-warning' if tone == 'warning' else ('kaori-hero-status-critical' if tone == 'critical' else ('kaori-hero-status-unknown' if tone == 'unknown' else 'kaori-hero-status-info'))) %}
+    <span class="kaori-hero-status-badge inline-flex min-h-7 max-w-full shrink-0 items-center gap-1.5 rounded-md border bg-white/95 px-2.5 py-1 text-xs font-semibold leading-5 shadow-sm {{ table_label.tone_border_classes(tone) }} {{ tone_classes }}"
           title="{{ label }}">
         <i data-lucide="{{ status_icon }}"
            class="h-3.5 w-3.5 shrink-0"
