@@ -60,7 +60,7 @@
                 </details>
             {% endif %}
             {% if check.error_detail %}
-                <div class="rounded-lg border border-status-critical-border bg-status-critical-soft p-3">
+                <div class="rounded-lg border {{ table_label.tone_border_classes('critical') }} bg-status-critical-soft p-3">
                     <p class="text-xs font-semibold text-status-critical-text">Provider Error</p>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">{{ check.error_detail }}</p>
                 </div>
