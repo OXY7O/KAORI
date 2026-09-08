@@ -5,9 +5,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-TEMPLATE_PATH = (
-    ROOT / 'app' / 'templates' / 'access' / 'roles' / 'partials' / '_role_detail.html'
-)
+TEMPLATE_PATH = ROOT / 'app' / 'templates' / 'access' / 'roles' / 'partials' / '_role_detail.html'
 BASELINE_PATH = ROOT / 'docs' / 'architecture' / 'ui-style-debt-baseline.json'
 SEMANTIC_BORDER = re.compile(
     r'\bborder-status-'
