@@ -62,9 +62,6 @@
     "app/templates/components/states/_blocked_state.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/components/table_label.html": {
-      "semantic_border_utilities": 5
-    },
     "app/templates/components/view_more_content.html": {
       "copied_standard_surface_shells": 1
     },
