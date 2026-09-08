@@ -1,3 +1,4 @@
+{% import 'components/table_label.html' as table_label %}
 {% macro tip(message, icon='info', pinned=false, class_name='') -%}
     {% if pinned %}<div class="mt-auto pt-3">{% endif %}
         <div class="flex shrink-0 items-start gap-2.5 rounded-lg border border-outline-default bg-kaori-soft px-3 py-2.5 text-xs leading-5 text-content-secondary {{ class_name }}">
@@ -11,7 +12,7 @@
 {%- endmacro %}
 {% macro info_box(title, message, icon='info', tone='brand', equal_height=false, class_name='') -%}
     {% if tone == 'warning' %}
-        {% set panel_class = "border-status-warning-border bg-status-warning-soft" %}
+        {% set panel_class = (table_label.tone_border_classes('warning')|trim) ~ " bg-status-warning-soft" %}
         {% set icon_class = "bg-status-warning-soft text-status-warning-text" %}
         {% set title_class = "text-status-warning-text" %}
         {% set message_class = "text-status-warning-text" %}
