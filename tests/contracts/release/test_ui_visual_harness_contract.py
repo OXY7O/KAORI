@@ -63,8 +63,10 @@ def test_representative_browser_interaction_families_have_executable_authority()
 
     assert interactions.is_file()
     source = interactions.read_text()
-    assert 'KAORI_UI_USERNAME' in source
-    assert 'KAORI_UI_PASSWORD' in source
+    assert '/auth/login' in source
+    assert 'KAORI_UI_USERNAME' not in source
+    assert 'KAORI_UI_PASSWORD' not in source
+    assert 'pytest.skip(' not in source
     assert 'page.goto' in source
     assert 'page.get_by_role' in source
     assert 'expect(' in source
