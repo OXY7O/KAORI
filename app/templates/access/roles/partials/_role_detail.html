@@ -44,7 +44,7 @@
                 {{ detail_ui.detail_row('Assignment Availability', 'Available' if role.is_active else 'Blocked') }}
                 {{ detail_ui.stacked_detail_row('Authorization Effect', detail.assignment_effect) }}
                 {% if detail.delete_blocked and not detail.mutation_protected %}
-                    <div class="mt-2 rounded-lg border border-status-warning-border bg-status-warning-soft p-3 text-xs leading-5 text-status-warning-text">
+                    <div class="mt-2 rounded-lg border {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft p-3 text-xs leading-5 text-status-warning-text">
                         Remove {{ detail.assigned_users }} user assignment{{ '' if detail.assigned_users == 1 else 's' }} and {{ detail.provider_mappings }} provider default mapping{{ '' if detail.provider_mappings == 1 else 's' }} before deleting this role.
                     </div>
                 {% endif %}
@@ -120,7 +120,7 @@
                                     data-destructive-target="{{ role.display_name }}"
                                     data-destructive-scope="{{ detail.permission_count }} Permissions · No Active References"
                                     data-destructive-submit-button-id="delete-role-submit-{{ role.id }}"
-                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-status-critical-border bg-status-critical-soft px-4 text-sm font-semibold text-status-critical-text transition-colors hover:bg-status-critical hover:text-white">
+                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border {{ table_label.tone_border_classes('critical') }} bg-status-critical-soft px-4 text-sm font-semibold text-status-critical-text transition-colors hover:bg-status-critical hover:text-white">
                                 <i data-lucide="trash-2" class="h-4 w-4"></i>Delete Role
                             </button>
                             <form method="post"

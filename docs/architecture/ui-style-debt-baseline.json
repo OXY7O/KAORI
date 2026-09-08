@@ -4,9 +4,6 @@
     "app/templates/access/roles/form.html": {
       "semantic_border_utilities": 3
     },
-    "app/templates/access/roles/partials/_role_detail.html": {
-      "semantic_border_utilities": 2
-    },
     "app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_delete_confirmation_modal.html": {
       "semantic_border_utilities": 2
     },
