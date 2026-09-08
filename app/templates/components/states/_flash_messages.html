@@ -1,22 +1,23 @@
+{% import 'components/table_label.html' as table_label %}
 {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
         <div id="global-flash-messages" class="mb-5 space-y-2" aria-live="polite">
             {% for category, message in messages %}
                 {% set normalized_category = category|lower %}
                 {% if normalized_category in ['success'] %}
-                    {% set tone_class = "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200" %}
+                    {% set resolved_tone = "normal" %}
                     {% set icon_name = "check-circle-2" %}
                 {% elif normalized_category in ['warning'] %}
-                    {% set tone_class = "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200" %}
+                    {% set resolved_tone = "warning" %}
                     {% set icon_name = "alert-triangle" %}
                 {% elif normalized_category in ['danger', 'error'] %}
-                    {% set tone_class = "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200" %}
+                    {% set resolved_tone = "critical" %}
                     {% set icon_name = "x-circle" %}
                 {% else %}
-                    {% set tone_class = "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200" %}
+                    {% set resolved_tone = "info" %}
                     {% set icon_name = "info" %}
                 {% endif %}
-                <div class="flex items-center gap-2.5 rounded-2xl border px-4 py-3 text-sm font-semibold {{ tone_class }}">
+                <div class="flex items-center gap-2.5 rounded-2xl border px-4 py-3 text-sm font-semibold {{ table_label.tone_border_classes(resolved_tone) }} {{ table_label.tone_surface_classes(resolved_tone) }}">
                     <i data-lucide="{{ icon_name }}" class="h-4 w-4 flex-shrink-0"></i>
                     <span>{{ message }}</span>
                 </div>
