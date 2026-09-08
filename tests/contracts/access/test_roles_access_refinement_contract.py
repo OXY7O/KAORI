@@ -124,6 +124,15 @@ def test_role_form_uses_sticky_impact_rail_visible_guardrails_and_dependency_evi
     assert 'active sessions do not cache' not in form
 
 
+def test_role_form_uses_shared_semantic_border_authority() -> None:
+    form = read('app/templates/access/roles/form.html')
+
+    assert "table_label.tone_border_classes('warning')" in form
+    assert "table_label.tone_border_classes('critical')" in form
+    assert 'border-status-warning-border' not in form
+    assert 'border-status-critical-border' not in form
+
+
 def test_obsolete_role_access_tab_script_is_removed() -> None:
     assert not (ROOT / 'app/static/js/role_access_tabs.js').exists()
 
