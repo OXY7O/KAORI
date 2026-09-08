@@ -62,9 +62,6 @@
     "app/templates/components/operational_workflow_catalog.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/components/page_hero.html": {
-      "semantic_border_utilities": 5
-    },
     "app/templates/components/states/_blocked_state.html": {
       "copied_standard_surface_shells": 1
     },
