@@ -28,6 +28,17 @@ EXPECTED_DELEGATIONS = {
     'runtime_error_behavior': 228,
 }
 
+EXPECTED_RESIDUAL_DEBT = {
+    'style_drift_candidates': {
+        'baseline': 'docs/architecture/ui-style-debt-baseline.json',
+        'verifier': 'scripts/verify_ui_style.py',
+    },
+    'inline_template_debt': {
+        'baseline': 'docs/architecture/ui-inline-debt-baseline.json',
+        'verifier': 'scripts/verify_ui_reuse.py',
+    },
+}
+
 
 def _assert_paths_exist(paths: list[str], *, context: str) -> None:
     assert paths, f'{context}: evidence paths must not be empty'
@@ -50,6 +61,18 @@ def test_global_ui_standard_audit_matrix_is_fail_closed() -> None:
     for category, authority in payload['categories'].items():
         _assert_paths_exist(authority['standards'], context=f'category {category} standards')
         _assert_paths_exist(authority['evidence'], context=f'category {category} evidence')
+
+    residual_debt = payload['residual_debt']
+    assert set(residual_debt) == set(EXPECTED_RESIDUAL_DEBT)
+    for key, expected in EXPECTED_RESIDUAL_DEBT.items():
+        entry = residual_debt[key]
+        assert entry['baseline'] == expected['baseline']
+        assert entry['verifier'] == expected['verifier']
+        _assert_paths_exist([entry['baseline'], entry['verifier']], context=f'residual debt {key}')
+        assert entry['disposition'] == 'bounded_existing_debt'
+        assert entry['tracking_issue'] == 223
+        assert entry['no_silent_acceptance'] is True
+        assert entry['policy'] == 'must_not_increase; decreases require baseline update in the same change'
 
     registry = runpy.run_path(str(ROOT / 'scripts' / 'release_surface_registry.py'))
     surfaces = {surface.key: surface for surface in registry['SURFACES']}
