@@ -1,9 +1,6 @@
 {
   "description": "Per-template ceiling for style-drift review candidates. Counts are not all defects; they must not increase and should fall during page-by-page standardization.",
   "files": {
-    "app/templates/access/permissions/index.html": {
-      "semantic_border_utilities": 1
-    },
     "app/templates/access/roles/form.html": {
       "semantic_border_utilities": 3
     },
