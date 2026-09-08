@@ -1,9 +1,6 @@
 {
   "description": "Per-template ceiling for style-drift review candidates. Counts are not all defects; they must not increase and should fall during page-by-page standardization.",
   "files": {
-    "app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_delete_confirmation_modal.html": {
-      "semantic_border_utilities": 2
-    },
     "app/templates/kubernetes/analytics/components/_status_notice.html": {
       "semantic_border_utilities": 3
     },
@@ -168,9 +165,6 @@
     },
     "app/templates/integrations/observability/metrics_source/instance_form.html": {
       "copied_standard_surface_shells": 1
-    },
-    "app/templates/integrations/observability/metrics_source/partials/_delete_confirmation_modal.html": {
-      "semantic_border_utilities": 2
     },
     "app/templates/integrations/observability/metrics_source/partials/_detail_scope.html": {
       "copied_standard_surface_shells": 1
