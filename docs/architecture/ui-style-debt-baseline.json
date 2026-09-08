@@ -22,9 +22,6 @@
     "app/templates/access/authentication/partials/_brand_panel.html": {
       "custom_hero_titles": 1
     },
-    "app/templates/access/authentication/partials/_login_alerts.html": {
-      "semantic_border_utilities": 2
-    },
     "app/templates/access/authentication/setup_required.html": {
       "custom_hero_titles": 1,
       "semantic_border_utilities": 1
