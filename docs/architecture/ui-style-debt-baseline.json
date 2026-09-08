@@ -51,9 +51,6 @@
     "app/templates/components/detail_tip.html": {
       "semantic_border_utilities": 1
     },
-    "app/templates/components/live_lookup_notice.html": {
-      "semantic_border_utilities": 1
-    },
     "app/templates/components/navigation/navbar.html": {
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 0
@@ -64,9 +61,6 @@
     },
     "app/templates/components/operational_metric_card.html": {
       "copied_standard_surface_shells": 1
-    },
-    "app/templates/components/operational_toast.html": {
-      "semantic_border_utilities": 2
     },
     "app/templates/components/operational_workflow_catalog.html": {
       "copied_standard_surface_shells": 1
