@@ -1,14 +1,15 @@
+{% import 'components/table_label.html' as table_label %}
 {% macro render(title, description, tone='neutral', aria_label=None) -%}
     {% if tone == 'warning' %}
-        {% set container_classes = "border-status-warning-border bg-status-warning-soft hover:border-status-warning" %}
+        {% set container_classes = (table_label.tone_border_classes('warning')|trim) ~ " bg-status-warning-soft hover:border-status-warning" %}
         {% set title_classes = "text-status-warning-text" %}
         {% set description_classes = "text-status-warning-text" %}
     {% elif tone == 'critical' %}
-        {% set container_classes = "border-status-critical-border bg-status-critical-soft hover:border-status-critical" %}
+        {% set container_classes = (table_label.tone_border_classes('critical')|trim) ~ " bg-status-critical-soft hover:border-status-critical" %}
         {% set title_classes = "text-status-critical-text" %}
         {% set description_classes = "text-status-critical-text" %}
     {% elif tone == 'info' %}
-        {% set container_classes = "border-status-info-border bg-status-info-soft hover:border-status-info" %}
+        {% set container_classes = (table_label.tone_border_classes('info')|trim) ~ " bg-status-info-soft hover:border-status-info" %}
         {% set title_classes = "text-status-info-text" %}
         {% set description_classes = "text-content-secondary" %}
     {% else %}
