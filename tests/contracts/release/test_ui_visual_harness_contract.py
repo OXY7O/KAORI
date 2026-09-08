@@ -58,13 +58,24 @@ def test_visual_baseline_capture_is_governed_and_reviewable() -> None:
     assert 'tests/ui/artifacts' in workflow_text
 
 
-def test_representative_browser_interaction_families_have_executable_authority() -> None:
+def test_representative_browser_interactions_use_deterministic_authenticated_authority() -> None:
+    conftest = (ROOT / 'tests' / 'ui' / 'conftest.py').read_text()
     interactions = ROOT / 'tests' / 'ui' / 'test_representative_interactions.py'
 
     assert interactions.is_file()
     source = interactions.read_text()
-    assert 'KAORI_UI_USERNAME' in source
-    assert 'KAORI_UI_PASSWORD' in source
+
+    assert 'kaori_authenticated_base_url' in conftest
+    assert 'AuthResult' in conftest
+    assert 'login_manager' in conftest
+    assert 'User(' in conftest
+
+    assert 'kaori_authenticated_base_url' in source
+    assert '/auth/login' in source
+    assert 'KAORI_UI_USERNAME' not in source
+    assert 'KAORI_UI_PASSWORD' not in source
+    assert 'pytest.skip' not in source
+
     assert 'page.goto' in source
     assert 'page.get_by_role' in source
     assert 'expect(' in source
@@ -74,3 +85,6 @@ def test_representative_browser_interaction_families_have_executable_authority()
     assert 'pagination' in source.lower() or 'filter' in source.lower()
     assert 'form' in source.lower()
     assert 'dark' in source.lower() and 'light' in source.lower()
+    assert 'tracing.start' in source
+    assert 'tracing.stop' in source
+    assert 'page.screenshot' in source

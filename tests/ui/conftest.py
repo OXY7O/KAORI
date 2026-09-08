@@ -11,6 +11,9 @@ from werkzeug.serving import make_server
 
 from app import create_app
 from app.access.authentication.readiness import AuthenticationDatabaseReadiness
+from app.access.authentication.results import AuthResult
+from app.extensions import login_manager
+from app.models import User
 
 CANONICAL_VIEWPORTS = {
     'large-desktop': (1440, 900),
@@ -19,6 +22,54 @@ CANONICAL_VIEWPORTS = {
     'tablet': (768, 1024),
     'mobile': (390, 844),
     'small-mobile': (360, 800),
+}
+
+EMPTY_NAVIGATION_NOTIFICATIONS = {
+    'items': [],
+    'history_items': [],
+    'attention_items': [],
+    'active_jobs': [],
+    'active_count': 0,
+    'attention_count': 0,
+    'unread_count': 0,
+    'inbox_unread_count': 0,
+    'total_count': 0,
+    'display_limit': 8,
+    'job_display_limit': 6,
+}
+
+EMPTY_NOTIFICATION_CENTER = {
+    **EMPTY_NAVIGATION_NOTIFICATIONS,
+    'notification_pagination': {
+        'page': 1,
+        'per_page': 5,
+        'total': 0,
+        'pages': 1,
+        'start_item': 0,
+        'end_item': 0,
+        'allowed_per_page': (5, 10, 25, 50),
+        'has_prev': False,
+        'prev_num': None,
+        'has_next': False,
+        'next_num': None,
+    },
+    'notification_filters': {
+        'search': '',
+        'category': 'all',
+        'status': 'all',
+        'read_state': 'all',
+    },
+    'notification_category_options': [],
+}
+
+HIDDEN_CLUSTER_ONBOARDING = {
+    'show_banner': False,
+    'is_kubernetes_scope': False,
+    'is_blocked': False,
+    'has_clusters': False,
+    'cluster_count': 0,
+    'can_manage_clusters': True,
+    'database_ready': True,
 }
 
 
@@ -72,6 +123,68 @@ def kaori_unready_base_url(request: pytest.FixtureRequest) -> Iterator[tuple[str
         thread.start()
         try:
             yield state, f'http://127.0.0.1:{server.server_port}'
+        finally:
+            server.shutdown()
+            thread.join(timeout=5)
+
+
+@pytest.fixture(scope='module')
+def kaori_authenticated_base_url() -> Iterator[str]:
+    readiness = AuthenticationDatabaseReadiness(ready=True, database_reachable=True)
+    user = User(
+        id=1,
+        username='browser-admin',
+        email='browser-admin@example.invalid',
+        display_name='Browser Admin',
+        timezone='UTC',
+        timezone_mode='manual',
+        locale='en-US',
+        date_format='day_month_year',
+        time_format='24h',
+        password_hash='',
+        auth_session_version=1,
+        auth_source='database',
+        account_is_active=True,
+        is_super_admin=True,
+        last_auth_source='database',
+        deleted_at=None,
+    )
+    app = create_app('testing')
+    auth_result = AuthResult(True, 'success', source='database', user=user)
+
+    with (
+        patch(
+            'app.access.authentication.routes.check_authentication_database_readiness',
+            return_value=readiness,
+        ),
+        patch('app.access.authentication.routes.enabled_sso_providers', return_value=[]),
+        patch('app.access.authentication.routes.authenticate', return_value=auth_result),
+        patch('app.access.authentication.routes.record_successful_authentication', return_value=None),
+        patch('app.access.authentication.routes._record_result', return_value=None),
+        patch.object(login_manager, '_user_callback', lambda _user_id: user),
+        patch(
+            'app.bootstrap.presentation.get_navigation_notification_context',
+            return_value=EMPTY_NAVIGATION_NOTIFICATIONS,
+        ),
+        patch('app.bootstrap.presentation.pop_operational_feedback', return_value=None),
+        patch(
+            'app.bootstrap.presentation.build_cluster_onboarding_context',
+            return_value=HIDDEN_CLUSTER_ONBOARDING,
+        ),
+        patch(
+            'app.platform_operations.notifications.routes.get_navigation_notification_context',
+            return_value=EMPTY_NAVIGATION_NOTIFICATIONS,
+        ),
+        patch(
+            'app.platform_operations.notifications.routes.get_notification_center_page_context',
+            return_value=EMPTY_NOTIFICATION_CENTER,
+        ),
+    ):
+        server = make_server('127.0.0.1', 0, app, threaded=True)
+        thread = Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            yield f'http://127.0.0.1:{server.server_port}'
         finally:
             server.shutdown()
             thread.join(timeout=5)
