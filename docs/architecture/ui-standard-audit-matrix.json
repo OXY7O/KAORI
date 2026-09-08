@@ -1,0 +1,410 @@
+{
+  "categories": {
+    "cards_surfaces": {
+      "evidence": [
+        "scripts/verify_ui_style.py",
+        "scripts/verify_ui_reuse.py"
+      ],
+      "standards": [
+        "docs/design/components/CARD.md"
+      ]
+    },
+    "forms": {
+      "evidence": [
+        "scripts/verify_ui_reuse.py",
+        "scripts/verify_filter_layout_standard.py"
+      ],
+      "standards": [
+        "docs/design/components/FORM.md"
+      ]
+    },
+    "hero": {
+      "evidence": [
+        "scripts/verify_hero_component_standard.py"
+      ],
+      "standards": [
+        "docs/design/components/HERO.md"
+      ]
+    },
+    "layout_spacing": {
+      "evidence": [
+        "scripts/verify_ui_style.py",
+        "scripts/verify_ui_reuse.py"
+      ],
+      "standards": [
+        "docs/design/components/SPACING.md"
+      ]
+    },
+    "light_dark": {
+      "evidence": [
+        "scripts/verify_dark_mode_standard.py"
+      ],
+      "standards": [
+        "docs/design/components/DARK_MODE.md"
+      ]
+    },
+    "loading_empty_error": {
+      "evidence": [
+        "scripts/verify_ui_style.py",
+        "scripts/verify_operational_feedback_coverage.py"
+      ],
+      "standards": [
+        "docs/design/components/TABLE_AND_LABEL.md",
+        "docs/design/components/EMPTY_ERROR_STATE.md"
+      ]
+    },
+    "modal_drawer": {
+      "evidence": [
+        "scripts/verify_ui_reuse.py"
+      ],
+      "standards": [
+        "docs/design/components/MODAL_DRAWER.md"
+      ]
+    },
+    "shared_component_ownership": {
+      "evidence": [
+        "scripts/verify_ui_reuse.py",
+        "scripts/verify_ui_style.py"
+      ],
+      "standards": [
+        "docs/design/components/CARD.md",
+        "docs/design/components/TABLE_AND_LABEL.md",
+        "docs/design/components/FORM.md",
+        "docs/design/components/MODAL_DRAWER.md"
+      ]
+    },
+    "tables_status_labels": {
+      "evidence": [
+        "scripts/verify_ui_style.py"
+      ],
+      "standards": [
+        "docs/design/components/TABLE_AND_LABEL.md"
+      ]
+    },
+    "typography": {
+      "evidence": [
+        "scripts/verify_ui_style.py",
+        "scripts/verify_title_case_standard.py"
+      ],
+      "standards": [
+        "docs/design/components/TYPOGRAPHY.md"
+      ]
+    }
+  },
+  "delegated_workstreams": {
+    "accessibility_ux": 227,
+    "functional_capability": 225,
+    "navigation_interaction": 226,
+    "responsive_device_compatibility": 224,
+    "runtime_error_behavior": 228
+  },
+  "phase": "inventory",
+  "source_registry": "scripts/release_surface_registry.py",
+  "surfaces": {
+    "access": {
+      "audit_state": "inventory_ready",
+      "classification": "ui",
+      "delegated_concerns": {
+        "accessibility_ux": 227,
+        "functional_capability": 225,
+        "navigation_interaction": 226,
+        "responsive_device_compatibility": 224,
+        "runtime_error_behavior": 228
+      },
+      "surface_evidence": {
+        "contracts": [
+          "tests/contracts/access"
+        ],
+        "verifiers": [
+          "scripts/verify_access_final_lock.py",
+          "scripts/verify_identity_provider_architecture.py"
+        ]
+      }
+    },
+    "analytics": {
+      "audit_state": "inventory_ready",
+      "classification": "ui",
+      "delegated_concerns": {
+        "accessibility_ux": 227,
+        "functional_capability": 225,
+        "navigation_interaction": 226,
+        "responsive_device_compatibility": 224,
+        "runtime_error_behavior": 228
+      },
+      "surface_evidence": {
+        "contracts": [
+          "tests/contracts/analytics"
+        ],
+        "verifiers": [
+          "scripts/verify_analytics_final_lock.py",
+          "scripts/verify_object_storage_analytics.py"
+        ]
+      }
+    },
+    "authentication": {
+      "audit_state": "inventory_ready",
+      "classification": "ui",
+      "delegated_concerns": {
+        "accessibility_ux": 227,
+        "functional_capability": 225,
+        "navigation_interaction": 226,
+        "responsive_device_compatibility": 224,
+        "runtime_error_behavior": 228
+      },
+      "surface_evidence": {
+        "contracts": [
+          "tests/contracts/access/authentication"
+        ],
+        "verifiers": [
+          "scripts/verify_authentication_surface_final_lock.py"
+        ]
+      }
+    },
+    "dashboard": {
+      "audit_state": "inventory_ready",
+      "classification": "ui",
+      "delegated_concerns": {
+        "accessibility_ux": 227,
+        "functional_capability": 225,
+        "navigation_interaction": 226,
+        "responsive_device_compatibility": 224,
+        "runtime_error_behavior": 228
+      },
+      "surface_evidence": {
+        "contracts": [
+          "tests/contracts/kubernetes/test_operations_dashboard_styling_guide_contract.py",
+          "tests/contracts/storage/object_storage/dashboard"
+        ],
+        "verifiers": [
+          "scripts/verify_operational_dashboard_standard.py"
+        ]
+      }
+    },
+    "governance": {
+      "audit_state": "inventory_ready",
+      "classification": "ui",
+      "delegated_concerns": {
+        "accessibility_ux": 227,
+        "functional_capability": 225,
+        "navigation_interaction": 226,
+        "responsive_device_compatibility": 224,
+        "runtime_error_behavior": 228
+      },
+      "surface_evidence": {
+        "contracts": [
+          "tests/contracts/kubernetes/governance"
+        ],
+        "verifiers": [
+          "scripts/verify_governance_final_lock.py"
+        ]
+      }
+    },
+    "health": {
+      "classification": "system_non_ui",
+      "delegated_concerns": {},
+      "reason": "Runtime health exposes non-navigation liveness/readiness endpoints and has no rendered UI surface."
+    },
+    "integrations": {
+      "audit_state": "inventory_ready",
+      "classification": "ui",
+      "delegated_concerns": {
+        "accessibility_ux": 227,
+        "functional_capability": 225,
+        "navigation_interaction": 226,
+        "responsive_device_compatibility": 224,
+        "runtime_error_behavior": 228
+      },
+      "surface_evidence": {
+        "contracts": [
+          "tests/contracts/integrations"
+        ],
+        "verifiers": [
+          "scripts/verify_integration_provider_foundation.py",
+          "scripts/verify_integration_domain_navigation.py",
+          "scripts/verify_minio_object_storage_provider.py",
+          "scripts/verify_integrations_final_lock.py",
+          "scripts/verify_notification_channels.py"
+        ]
+      }
+    },
+    "intelligence": {
+      "audit_state": "inventory_ready",
+      "classification": "ui",
+      "delegated_concerns": {
+        "accessibility_ux": 227,
+        "functional_capability": 225,
+        "navigation_interaction": 226,
+        "responsive_device_compatibility": 224,
+        "runtime_error_behavior": 228
+      },
+      "surface_evidence": {
+        "contracts": [
+          "tests/contracts/intelligence"
+        ],
+        "verifiers": [
+          "scripts/verify_intelligence_baseline_lock.py",
+          "scripts/verify_automation_control.py"
+        ]
+      }
+    },
+    "inventory": {
+      "audit_state": "inventory_ready",
+      "classification": "ui",
+      "delegated_concerns": {
+        "accessibility_ux": 227,
+        "functional_capability": 225,
+        "navigation_interaction": 226,
+        "responsive_device_compatibility": 224,
+        "runtime_error_behavior": 228
+      },
+      "surface_evidence": {
+        "contracts": [
+          "tests/contracts/kubernetes/test_inventory_final_release_contract.py"
+        ],
+        "verifiers": [
+          "scripts/verify_inventory_final_lock.py"
+        ]
+      }
+    },
+    "kubernetes_operations": {
+      "audit_state": "inventory_ready",
+      "classification": "ui",
+      "delegated_concerns": {
+        "accessibility_ux": 227,
+        "functional_capability": 225,
+        "navigation_interaction": 226,
+        "responsive_device_compatibility": 224,
+        "runtime_error_behavior": 228
+      },
+      "surface_evidence": {
+        "contracts": [
+          "tests/contracts/kubernetes/operations"
+        ],
+        "verifiers": [
+          "scripts/verify_kubernetes_operations_final_lock.py"
+        ]
+      }
+    },
+    "notifications": {
+      "audit_state": "inventory_ready",
+      "classification": "ui",
+      "delegated_concerns": {
+        "accessibility_ux": 227,
+        "functional_capability": 225,
+        "navigation_interaction": 226,
+        "responsive_device_compatibility": 224,
+        "runtime_error_behavior": 228
+      },
+      "surface_evidence": {
+        "contracts": [
+          "tests/contracts/platform_operations/notifications"
+        ],
+        "verifiers": [
+          "scripts/verify_notification_center_final_lock.py",
+          "scripts/verify_notification_activity_center.py"
+        ]
+      }
+    },
+    "object_storage_inventory": {
+      "audit_state": "inventory_ready",
+      "classification": "ui",
+      "delegated_concerns": {
+        "accessibility_ux": 227,
+        "functional_capability": 225,
+        "navigation_interaction": 226,
+        "responsive_device_compatibility": 224,
+        "runtime_error_behavior": 228
+      },
+      "surface_evidence": {
+        "contracts": [
+          "tests/contracts/storage/object_storage/inventory"
+        ],
+        "verifiers": [
+          "scripts/verify_object_storage_inventory_final_lock.py"
+        ]
+      }
+    },
+    "platform_operations": {
+      "audit_state": "inventory_ready",
+      "classification": "ui",
+      "delegated_concerns": {
+        "accessibility_ux": 227,
+        "functional_capability": 225,
+        "navigation_interaction": 226,
+        "responsive_device_compatibility": 224,
+        "runtime_error_behavior": 228
+      },
+      "surface_evidence": {
+        "contracts": [
+          "tests/contracts/platform_operations",
+          "tests/contracts/platform_operations/jobs"
+        ],
+        "verifiers": [
+          "scripts/verify_platform_operations_final_lock.py",
+          "scripts/verify_job_progress_final_lock.py"
+        ]
+      }
+    },
+    "reports": {
+      "audit_state": "inventory_ready",
+      "classification": "ui",
+      "delegated_concerns": {
+        "accessibility_ux": 227,
+        "functional_capability": 225,
+        "navigation_interaction": 226,
+        "responsive_device_compatibility": 224,
+        "runtime_error_behavior": 228
+      },
+      "surface_evidence": {
+        "contracts": [
+          "tests/contracts/reports"
+        ],
+        "verifiers": [
+          "scripts/verify_report_generation_contract.py",
+          "scripts/verify_report_job_standard.py",
+          "scripts/verify_report_storage_resilience.py",
+          "scripts/verify_report_runtime_imports.py"
+        ]
+      }
+    },
+    "settings": {
+      "audit_state": "inventory_ready",
+      "classification": "ui",
+      "delegated_concerns": {
+        "accessibility_ux": 227,
+        "functional_capability": 225,
+        "navigation_interaction": 226,
+        "responsive_device_compatibility": 224,
+        "runtime_error_behavior": 228
+      },
+      "surface_evidence": {
+        "contracts": [
+          "tests/contracts/settings"
+        ],
+        "verifiers": [
+          "scripts/verify_settings_final_lock.py"
+        ]
+      }
+    },
+    "welcome": {
+      "audit_state": "inventory_ready",
+      "classification": "ui",
+      "delegated_concerns": {
+        "accessibility_ux": 227,
+        "functional_capability": 225,
+        "navigation_interaction": 226,
+        "responsive_device_compatibility": 224,
+        "runtime_error_behavior": 228
+      },
+      "surface_evidence": {
+        "contracts": [
+          "tests/contracts/welcome"
+        ],
+        "verifiers": [
+          "scripts/verify_welcome_final_lock.py"
+        ]
+      }
+    }
+  },
+  "version": 1
+}
