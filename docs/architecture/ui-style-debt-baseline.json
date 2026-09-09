@@ -4,9 +4,6 @@
     "app/templates/kubernetes/analytics/overview/partials/_health_summary.html": {
       "copied_standard_surface_shells": 2
     },
-    "app/templates/kubernetes/analytics/overview/partials/_load_tracker.html": {
-      "copied_standard_surface_shells": 1
-    },
     "app/templates/kubernetes/analytics/partials/_load_tracker.html": {
       "copied_standard_surface_shells": 1
     },
