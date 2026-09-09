@@ -4,20 +4,9 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-TARGET_PATH = (
-    ROOT
-    / 'app'
-    / 'templates'
-    / 'kubernetes'
-    / 'operations'
-    / 'secrets'
-    / '_reveal_request_form.html'
-)
+TARGET_PATH = ROOT / 'app' / 'templates' / 'kubernetes' / 'operations' / 'secrets' / '_reveal_request_form.html'
 BASELINE_PATH = ROOT / 'docs' / 'architecture' / 'ui-style-debt-baseline.json'
-COPIED_SHELL = (
-    'overflow-hidden rounded-xl border border-outline-default '
-    'bg-surface-card shadow-sm'
-)
+COPIED_SHELL = 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm'
 SHARED_SHELL = 'class="{{ table_ui.block_classes() }}"'
 
 
@@ -29,7 +18,7 @@ def test_secret_reveal_request_uses_shared_shell_authority() -> None:
     assert COPIED_SHELL not in source
 
     assert 'id="reveal-request-form"' in source
-    assert "request_secret_reveal" in source
+    assert 'request_secret_reveal' in source
     assert 'name="csrf_token"' in source
     assert 'name="cluster_id"' in source
     assert 'name="namespace"' in source
