@@ -6,7 +6,7 @@
 {% set complete_title = analytics_load_complete_title|default('Analytics page fully loaded') %}
 {% set complete_description = analytics_load_complete_description|default('All tracked analytics sections have finished loading.') %}
 <div id="{{ tracker_id }}"
-     class="hidden overflow-hidden rounded-xl border border-outline-default bg-surface-card px-5 py-4 shadow-sm"
+     class="hidden {{ analysis_surface.snapshot_shell_classes() }} px-5 py-4"
      data-analytics-load-tracker="true"
      data-analytics-page-id="{{ page_id }}"
      data-analytics-title="{{ title }}"
