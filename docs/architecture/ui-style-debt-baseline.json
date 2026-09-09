@@ -23,9 +23,6 @@
       "custom_hero_titles": 1,
       "font_extrabold_utilities": 7
     },
-    "app/templates/components/operational_metric_card.html": {
-      "copied_standard_surface_shells": 1
-    },
     "app/templates/components/operational_workflow_catalog.html": {
       "copied_standard_surface_shells": 1
     },
