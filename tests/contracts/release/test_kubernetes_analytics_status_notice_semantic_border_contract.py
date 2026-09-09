@@ -17,7 +17,7 @@ SEMANTIC_BORDER = re.compile(
 def test_status_notice_uses_shared_border_authority_with_legacy_warning_fallback() -> None:
     source = TARGET_PATH.read_text(encoding='utf-8')
 
-    assert "{% import 'components/operational_callout.html' as operational_callout %}" in source
+    assert '{% import "components/operational_callout.html" as operational_callout %}' in source
     assert "set border_tone = tone if tone in ['critical', 'info'] else 'warning'" in source
     assert 'operational_callout.semantic_border_classes(border_tone)' in source
     assert SEMANTIC_BORDER.findall(source) == []
