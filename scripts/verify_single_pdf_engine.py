@@ -72,7 +72,7 @@ def main() -> int:
         ('requirements/base.in', requirements_input),
         ('requirements/base.txt', requirements_lock),
     ):
-        if 'weasyprint==69.0' not in content:
+        if 'weasyprint==70.0' not in content:
             errors.append(f'{path} does not declare the canonical WeasyPrint runtime.')
 
     registry_path = export_root / 'artifacts.py'
@@ -104,7 +104,7 @@ def main() -> int:
             isinstance(node, ast.ImportFrom)
             and node.module == 'app.reports.export.artifacts'
             and any(alias.name == 'get_report_artifact_format' for alias in node.names)
-            for node in ast.walk(service_tree)
+            for node in ast.walk(registry_tree)
         )
         if not imports_artifact_registry:
             errors.append('Report export service does not resolve renderers through the artifact registry.')
