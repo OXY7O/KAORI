@@ -76,9 +76,6 @@
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 1
     },
-    "app/templates/kubernetes/operations/secrets/_reveal_request_form.html": {
-      "copied_standard_surface_shells": 1
-    },
     "app/templates/kubernetes/operations/secrets/_reveal_value.html": {
       "semantic_border_utilities": 1
     },
