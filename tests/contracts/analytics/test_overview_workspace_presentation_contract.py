@@ -51,7 +51,7 @@ def test_metrics_source_status_uses_one_canonical_card_contract() -> None:
 def test_operational_health_summary_has_separate_vertical_rhythm() -> None:
     source = read('partials/_health_summary.html')
 
-    assert source.count('<section class="overflow-hidden rounded-xl') == 2
+    assert source.count('<section class="{{ overview_surface.snapshot_shell_classes() }}"') == 2
     assert 'class="space-y-6"' in source
     assert 'Operational Health Summary' in source
     assert '6 Health Signals' in source
