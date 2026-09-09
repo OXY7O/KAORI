@@ -14,7 +14,7 @@ email-validator==2.2.0
 gunicorn==26.0.0
 kubernetes==36.0.2
 Pillow==12.3.0
-weasyprint==69.0
+weasyprint==70.0
 psycopg2-binary==2.9.12
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2

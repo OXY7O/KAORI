@@ -60,10 +60,10 @@ def test_weasyprint_runtime_is_declared_and_containerized() -> None:
     audit_script = _read('scripts/verify_single_pdf_engine.py')
     dockerfile = _read('Dockerfile')
 
-    assert 'weasyprint==69.0' in requirements_input
-    assert 'weasyprint==69.0' in requirements_lock
-    assert 'weasyprint==69.0' in audit_script
-    assert 'weasyprint==68.0' not in audit_script
+    assert 'weasyprint==70.0' in requirements_input
+    assert 'weasyprint==70.0' in requirements_lock
+    assert 'weasyprint==70.0' in audit_script
+    assert 'weasyprint==69.0' not in audit_script
     for package in (
         'libpango-1.0-0',
         'libpangoft2-1.0-0',
@@ -80,7 +80,7 @@ def test_security_patched_runtime_pins_stay_aligned() -> None:
     for pin in (
         'cryptography==50.0.0',
         'pillow==12.3.0',
-        'weasyprint==69.0',
+        'weasyprint==70.0',
     ):
         assert pin in requirements_input
         assert pin in requirements_lock
