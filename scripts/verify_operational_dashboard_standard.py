@@ -335,8 +335,8 @@ def verify() -> None:
         (
             "macro render(label, value, description, icon, source_label='Operational', scope_label='Active Scope')",
             'components/table_label.html',
-            'bg-surface-card',
-            'border-outline-default',
+            'components/table_primitives.html',
+            'table_ui.block_classes()',
         ),
         'operational metric card',
     )
