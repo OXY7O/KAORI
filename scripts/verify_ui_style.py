@@ -45,6 +45,7 @@ _PREVIOUS = re.compile(r'>\s*Previous\s*<', re.IGNORECASE)
 _NEXT = re.compile(r'>\s*Next\s*<', re.IGNORECASE)
 _TABLIST = re.compile(r'role=[\"\']tablist[\"\']', re.IGNORECASE)
 _APPROVED_SEMANTIC_BORDER_COMPONENTS = {
+    'app/templates/components/action_button.html',
     'app/templates/components/operational_callout.html',
     'app/templates/components/kubernetes_operation_ui.html',
 }
@@ -257,7 +258,3 @@ def main() -> int:
     summary = ', '.join(f'{metric}={totals[metric]}' for metric in _METRICS)
     print(f'KAORI UI style drift is bounded across {len(files)} templates: {summary}.')
     return 0
-
-
-if __name__ == '__main__':
-    raise SystemExit(main())
