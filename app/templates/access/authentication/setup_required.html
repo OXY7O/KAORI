@@ -1,4 +1,5 @@
 {% extends "layouts/auth.html" %}
+{% import "components/operational_callout.html" as operational_callout %}
 {% import "components/terminal_command.html" as terminal_command %}
 {% block title %}Database Setup Required · KAORI{% endblock title %}
 {% block content %}
@@ -108,7 +109,7 @@
                         </div>
                         {{ terminal_command.render(bootstrap_command, label='KAORI Dev Container', copy_label='Copy Command') }}
                     </section>
-                    <div class="mt-5 flex gap-3 border-l-2 border-status-warning-border bg-status-warning-soft/60 px-4 py-3.5"
+                    <div class="mt-5 flex gap-3 border-l-2 {{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft/60 px-4 py-3.5"
                          data-kaori-setup-security-boundary>
                         <i data-lucide="key-round"
                            class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"
