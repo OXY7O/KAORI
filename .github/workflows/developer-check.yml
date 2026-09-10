@@ -124,6 +124,67 @@ jobs:
                 selected_tests[tests/access]=1
                 ;;
               tests/ui/*) selected_tests[tests/ui]=1 ;;
+              tests/contracts/access/*)
+                contracts=true
+                selected_tests[tests/contracts/access]=1
+                ;;
+              tests/contracts/analytics/*)
+                contracts=true
+                selected_tests[tests/contracts/analytics]=1
+                ;;
+              tests/contracts/architecture/*)
+                contracts=true
+                selected_tests[tests/contracts/architecture]=1
+                ;;
+              tests/contracts/dashboards/*)
+                contracts=true
+                selected_tests[tests/contracts/dashboards]=1
+                ;;
+              tests/contracts/definitions/*)
+                contracts=true
+                selected_tests[tests/contracts/definitions]=1
+                ;;
+              tests/contracts/design/*)
+                contracts=true
+                selected_tests[tests/contracts/design]=1
+                ;;
+              tests/contracts/integrations/*)
+                contracts=true
+                selected_tests[tests/contracts/integrations]=1
+                ;;
+              tests/contracts/intelligence/*)
+                contracts=true
+                selected_tests[tests/contracts/intelligence]=1
+                ;;
+              tests/contracts/kubernetes/*)
+                contracts=true
+                selected_tests[tests/contracts/kubernetes]=1
+                ;;
+              tests/contracts/platform_operations/*)
+                contracts=true
+                selected_tests[tests/contracts/platform_operations]=1
+                ;;
+              tests/contracts/release/*)
+                contracts=true
+                selected_tests[tests/contracts/release]=1
+                ;;
+              tests/contracts/reports/*)
+                contracts=true
+                reports=true
+                selected_tests[tests/contracts/reports]=1
+                ;;
+              tests/contracts/settings/*)
+                contracts=true
+                selected_tests[tests/contracts/settings]=1
+                ;;
+              tests/contracts/storage/*)
+                contracts=true
+                selected_tests[tests/contracts/storage]=1
+                ;;
+              tests/contracts/welcome/*)
+                contracts=true
+                selected_tests[tests/contracts/welcome]=1
+                ;;
               app/*)
                 contracts=true
                 ;;
