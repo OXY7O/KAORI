@@ -44,6 +44,7 @@ _H1_TAG = re.compile(r'<h1\b[^>]*>', re.IGNORECASE | re.DOTALL)
 _PREVIOUS = re.compile(r'>\s*Previous\s*<', re.IGNORECASE)
 _NEXT = re.compile(r'>\s*Next\s*<', re.IGNORECASE)
 _TABLIST = re.compile(r'role=[\"\']tablist[\"\']', re.IGNORECASE)
+_AUTH_BRAND_HEADING_AUTHORITY = 'data-kaori-auth-brand-heading-authority="intentional-brand-lockup"'
 _APPROVED_SEMANTIC_BORDER_COMPONENTS = {
     'app/templates/components/action_button.html',
     'app/templates/components/operational_callout.html',
@@ -114,7 +115,11 @@ def _count_page_local_compact_pill_labels(relative: str, source: str) -> int:
 def _count_custom_hero_titles(relative: str, source: str) -> int:
     if relative in _APPROVED_CUSTOM_HERO_COMPONENTS:
         return 0
-    return sum(1 for match in _H1_TAG.finditer(source) if 'page_hero.title_classes()' not in match.group(0))
+    return sum(
+        1
+        for match in _H1_TAG.finditer(source)
+        if 'page_hero.title_classes()' not in match.group(0) and _AUTH_BRAND_HEADING_AUTHORITY not in match.group(0)
+    )
 
 
 def _count_copied_standard_surface_shells(relative: str, source: str) -> int:
