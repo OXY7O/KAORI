@@ -258,3 +258,7 @@ def main() -> int:
     summary = ', '.join(f'{metric}={totals[metric]}' for metric in _METRICS)
     print(f'KAORI UI style drift is bounded across {len(files)} templates: {summary}.')
     return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
