@@ -118,8 +118,7 @@ def _count_custom_hero_titles(relative: str, source: str) -> int:
     return sum(
         1
         for match in _H1_TAG.finditer(source)
-        if 'page_hero.title_classes()' not in match.group(0)
-        and _AUTH_BRAND_HEADING_AUTHORITY not in match.group(0)
+        if 'page_hero.title_classes()' not in match.group(0) and _AUTH_BRAND_HEADING_AUTHORITY not in match.group(0)
     )
 
 
