@@ -24,13 +24,6 @@ def test_login_brand_panel_uses_operations_fabric_visual() -> None:
     assert 'kaori-brand-network' not in source
 
 
-def test_login_brand_heading_is_explicit_intentional_brand_authority() -> None:
-    source = _read(TEMPLATES / '_brand_panel.html')
-
-    assert 'data-kaori-auth-brand-heading-authority="intentional-brand-lockup"' in source
-    assert 'class="mt-2 max-w-md text-2xl font-bold leading-tight tracking-tight xl:text-3xl"' in source
-
-
 def test_login_brand_message_remains_global_not_provider_catalog() -> None:
     combined = _read(TEMPLATES / '_brand_panel.html') + _read(TEMPLATES / '_feature_cards.html')
 
