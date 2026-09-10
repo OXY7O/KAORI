@@ -45,6 +45,7 @@ _PREVIOUS = re.compile(r'>\s*Previous\s*<', re.IGNORECASE)
 _NEXT = re.compile(r'>\s*Next\s*<', re.IGNORECASE)
 _TABLIST = re.compile(r'role=[\"\']tablist[\"\']', re.IGNORECASE)
 _APPROVED_SEMANTIC_BORDER_COMPONENTS = {
+    'app/templates/components/action_button.html',
     'app/templates/components/operational_callout.html',
     'app/templates/components/kubernetes_operation_ui.html',
 }
