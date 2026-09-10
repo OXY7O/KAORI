@@ -68,7 +68,7 @@ jobs:
             [[ -n "$path" ]] || continue
 
             case "$path" in
-              .github/*|requirements/*|Dockerfile*|docker-compose*|scripts/ci_admission.py|scripts/ci_admission_policy.py|scripts/quality_gate.sh|scripts/verify_analytics_pdf_publication.py|scripts/verify_pre_release_type_safety.py|scripts/verify_code_health.py|scripts/verify_code_health_baseline_integrity.py|docs/architecture/code-health-debt-baseline.json|tests/contracts/release/*|docs/engineering/KAORI_DELIVERY_WORKFLOW.md)
+              .github/*|requirements/*|Dockerfile*|docker-compose*|scripts/ci_admission.py|scripts/ci_admission_policy.py|scripts/quality_gate.sh|scripts/verify_analytics_pdf_publication.py|scripts/verify_pre_release_type_safety.py|scripts/verify_code_health.py|scripts/verify_code_health_baseline_integrity.py|docs/architecture/code-health-debt-baseline.json|docs/engineering/KAORI_DELIVERY_WORKFLOW.md)
                 wide=true
                 python=true
                 templates=true
@@ -105,17 +105,14 @@ jobs:
                 selected_tests[tests/storage]=1
                 [[ -d tests/object_storage ]] && selected_tests[tests/object_storage]=1
                 ;;
-              app/platform_operations/*|tests/platform_operations/*|tests/contracts/platform_operations/*)
+              app/platform_operations/*|tests/platform_operations/*)
                 contracts=true
                 selected_tests[tests/platform_operations]=1
-                selected_tests[tests/contracts/platform_operations]=1
                 ;;
-              app/reports/*|tests/reports/*|tests/contracts/reports/*|tests/contracts/analytics/*|scripts/verify_analytics_pdf_publication.py)
+              app/reports/*|tests/reports/*|scripts/verify_analytics_pdf_publication.py)
                 reports=true
                 contracts=true
                 selected_tests[tests/reports]=1
-                selected_tests[tests/contracts/reports]=1
-                selected_tests[tests/contracts/analytics]=1
                 ;;
               app/settings/*|tests/settings/*) selected_tests[tests/settings]=1 ;;
               app/intelligence/*|tests/intelligence/*) [[ -d tests/intelligence ]] && selected_tests[tests/intelligence]=1 ;;
@@ -124,6 +121,73 @@ jobs:
                 selected_tests[tests/access]=1
                 ;;
               tests/ui/*) selected_tests[tests/ui]=1 ;;
+              tests/contracts/access/*)
+                contracts=true
+                selected_tests[tests/contracts/access]=1
+                ;;
+              tests/contracts/analytics/*)
+                contracts=true
+                reports=true
+                selected_tests[tests/contracts/analytics]=1
+                ;;
+              tests/contracts/architecture/*)
+                contracts=true
+                selected_tests[tests/contracts/architecture]=1
+                ;;
+              tests/contracts/dashboards/*)
+                contracts=true
+                selected_tests[tests/contracts/dashboards]=1
+                ;;
+              tests/contracts/definitions/*)
+                contracts=true
+                selected_tests[tests/contracts/definitions]=1
+                ;;
+              tests/contracts/design/*)
+                contracts=true
+                selected_tests[tests/contracts/design]=1
+                ;;
+              tests/contracts/integrations/*)
+                contracts=true
+                selected_tests[tests/contracts/integrations]=1
+                ;;
+              tests/contracts/intelligence/*)
+                contracts=true
+                selected_tests[tests/contracts/intelligence]=1
+                ;;
+              tests/contracts/kubernetes/*)
+                contracts=true
+                selected_tests[tests/contracts/kubernetes]=1
+                ;;
+              tests/contracts/platform_operations/*)
+                contracts=true
+                selected_tests[tests/contracts/platform_operations]=1
+                ;;
+              tests/contracts/release/*)
+                wide=true
+                python=true
+                templates=true
+                frontend=true
+                migrations=true
+                contracts=true
+                selected_tests[tests/contracts/release]=1
+                ;;
+              tests/contracts/reports/*)
+                contracts=true
+                reports=true
+                selected_tests[tests/contracts/reports]=1
+                ;;
+              tests/contracts/settings/*)
+                contracts=true
+                selected_tests[tests/contracts/settings]=1
+                ;;
+              tests/contracts/storage/*)
+                contracts=true
+                selected_tests[tests/contracts/storage]=1
+                ;;
+              tests/contracts/welcome/*)
+                contracts=true
+                selected_tests[tests/contracts/welcome]=1
+                ;;
               app/*)
                 contracts=true
                 ;;
