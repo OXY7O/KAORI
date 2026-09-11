@@ -3,6 +3,7 @@
 {% import "integrations/components/_provider_job_status.html" as provider_job_status %}
 {% import "integrations/components/_validation_poller.html" as validation_poller %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/table_primitives.html" as surface_ui %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set runtime_observed = runtime_state.has_observation|default(runtime_state.observed_at is not none) %}
@@ -20,7 +21,7 @@
     {% set runtime_next_action = "No immediate remediation is required. Continue scheduled Runtime Refresh." %}
 {% endif %}
 <article id="kubernetes-runtime-workspace"
-         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm font-sans"
+         class="{{ surface_ui.block_classes() }} font-sans"
          data-kaori-runtime-workspace-v8>
     {{ validation_poller.render(validation_job and validation_job.is_active,
         url_for('integrations.kubernetes_runtime_refresh_status', cluster_id=cluster.id, task_id=validation_job.task_id) if validation_job and validation_job.is_active else '',
