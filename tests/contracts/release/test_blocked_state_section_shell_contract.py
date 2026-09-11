@@ -20,10 +20,10 @@ def test_blocked_state_default_section_uses_shared_surface_shell_authority() -> 
     assert "{% if state_variant == 'posture' %}" in source
     assert "{% elif state_variant == 'table' %}" in source
     assert 'data-kaori-blocked-state' in source
-    assert "blocked_state_permission_granted|default(none)" in source
-    assert "blocked_state_show_admin_required|default(false)" in source
-    assert "blocked_state_steps" in source
-    assert "Admin Required" in source
+    assert 'blocked_state_permission_granted|default(none)' in source
+    assert 'blocked_state_show_admin_required|default(false)' in source
+    assert 'blocked_state_steps' in source
+    assert 'Admin Required' in source
 
 
 def test_blocked_state_copied_shell_debt_is_burned_down() -> None:
