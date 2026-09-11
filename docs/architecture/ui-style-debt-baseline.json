@@ -60,9 +60,6 @@
     "app/templates/settings/general/partials/_tabs.html": {
       "page_local_workspace_tablists": 1
     },
-    "app/templates/access/identity_providers/directory_provisioning.html": {
-      "copied_standard_surface_shells": 2
-    },
     "app/templates/access/users/form.html": {
       "copied_standard_surface_shells": 5,
       "semantic_border_utilities": 7
