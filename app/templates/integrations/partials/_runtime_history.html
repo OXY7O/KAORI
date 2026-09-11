@@ -1,5 +1,6 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table.html" as table_ui %}
+{% import "components/table_primitives.html" as surface_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "integrations/components/_record_actions.html" as record_actions %}
@@ -19,7 +20,7 @@
 {% set runtime_history_clear_url = url_for(runtime_history_detail_endpoint_name, **runtime_history_clear_args) %}
 <section id="{{ runtime_history_id }}"
          {% if runtime_history_oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}
-         class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+         class="relative {{ surface_ui.block_classes() }}"
          data-kaori-runtime-history-standard-v2>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
