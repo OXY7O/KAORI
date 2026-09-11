@@ -35,9 +35,6 @@
     "app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/integrations/partials/_runtime_history.html": {
-      "copied_standard_surface_shells": 1
-    },
     "app/templates/kubernetes/inventory/components/_summary.html": {
       "semantic_border_utilities": 5
     },
