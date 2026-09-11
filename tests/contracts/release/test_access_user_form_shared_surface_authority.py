@@ -23,7 +23,7 @@ def test_user_form_uses_shared_surface_shell_authority() -> None:
     assert 'Identity Profile' in source
     assert 'Identity Source & Credential Ownership' in source
     assert 'Credential Management' in source
-    assert 'Access Role' in source
+    assert 'Assigned Role' in source
     assert 'Lifecycle' in source
     assert 'Back to Users' in source
     assert 'form.hidden_tag()' in source
