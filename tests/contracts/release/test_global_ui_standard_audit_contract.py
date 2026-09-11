@@ -104,3 +104,35 @@ def test_global_ui_standard_audit_matrix_is_fail_closed() -> None:
             f'{key}: matrix dropped release contract authority '
             f'{sorted(set(surface.contract_paths) - set(surface_evidence["contracts"]))}'
         )
+
+
+def test_table_label_is_the_canonical_semantic_border_authority() -> None:
+    verifier = runpy.run_path(str(ROOT / 'scripts' / 'verify_ui_style.py'))
+    table_label_path = 'app/templates/components/table_label.html'
+    approved = verifier['_APPROVED_SEMANTIC_BORDER_COMPONENTS']
+    assert table_label_path in approved, (
+        'table_label.tone_border_classes() is the shared semantic-border authority and must not be '
+        'reported as page-local UI debt.'
+    )
+
+    table_label_source = (ROOT / table_label_path).read_text(encoding='utf-8')
+    assert '{% macro tone_border_classes(tone)' in table_label_source
+    for token in (
+        'border-status-normal-border',
+        'border-status-warning-border',
+        'border-status-critical-border',
+        'border-status-unknown-border',
+        'border-status-info-border',
+    ):
+        assert token in table_label_source
+
+    baseline = json.loads((ROOT / 'docs' / 'architecture' / 'ui-style-debt-baseline.json').read_text(encoding='utf-8'))
+    assert 'semantic_border_utilities' not in baseline['files'].get(table_label_path, {})
+
+    page_local_metrics = verifier['_metrics'](
+        'app/templates/example_page.html',
+        '<div class="border-status-warning-border"></div>',
+    )
+    assert page_local_metrics['semantic_border_utilities'] == 1, (
+        'canonical ownership must not weaken semantic-border drift detection for page-local templates'
+    )
