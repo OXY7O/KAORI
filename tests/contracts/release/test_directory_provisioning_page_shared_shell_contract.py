@@ -19,7 +19,7 @@ def test_directory_provisioning_page_uses_shared_surface_shell_authority() -> No
 
     assert 'Directory Identity Search' in source
     assert 'Directory Search Results' in source
-    assert "identity_providers.provision_identity" in source
+    assert 'identity_providers.provision_identity' in source
     assert 'Search Directory' in source
     assert 'No Enabled Directory Provider' in source
     assert 'No Matching Directory Identity' in source
