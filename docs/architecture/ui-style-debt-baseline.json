@@ -12,12 +12,6 @@
     "app/templates/integrations/bindings/partials/_workspace.html": {
       "semantic_border_utilities": 4
     },
-    "app/templates/integrations/components/_asset_owner_delete_modal.html": {
-      "semantic_border_utilities": 1
-    },
-    "app/templates/integrations/components/_observability_binding_modal.html": {
-      "semantic_border_utilities": 1
-    },
     "app/templates/integrations/components/_workspace.html": {
       "semantic_border_utilities": 5
     },
