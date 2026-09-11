@@ -14,7 +14,7 @@ def test_management_landings_use_flat_operational_workflow_catalog() -> None:
     assert 'border-t border-outline-subtle' in component
     assert 'first:border-t-0' in component
     assert 'hover:bg-surface-hover' in component
-    assert 'rounded-xl border border-outline-default' in catalog
+    assert '{{ table_ui.block_classes() }}' in catalog
     assert 'Validation Boundary' not in component
     assert 'Authority Boundary' not in component
 
