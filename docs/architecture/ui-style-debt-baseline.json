@@ -29,7 +29,6 @@
       "semantic_border_utilities": 5
     },
     "app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry_detail_content.html": {
-      "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 3
     },
     "app/templates/kubernetes/inventory/components/_summary.html": {
