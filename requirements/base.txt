@@ -73,7 +73,7 @@ tzlocal==5.4.4
 urllib3==2.7.0
 vine==5.1.0
 wcwidth==0.8.2
-weasyprint==69.0
+weasyprint==70.0
 websocket-client==1.9.0
 Werkzeug==3.1.8
 wrapt==2.2.2

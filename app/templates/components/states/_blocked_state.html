@@ -1,5 +1,6 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/table_primitives.html" as table_ui %}
 {% set state_icon = blocked_state_icon|default('triangle-alert') %}
 {% set state_label = blocked_state_label|default('Setup Required') %}
 {% set state_title = blocked_state_title|default('Configuration Required') %}
@@ -62,8 +63,7 @@
         {% endif %}
     </div>
 {% else %}
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
-             data-kaori-blocked-state>
+    <section class="{{ table_ui.block_classes() }}" data-kaori-blocked-state>
         <div class="flex flex-col gap-5 px-5 py-5 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex min-w-0 items-start gap-4">
                 <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"

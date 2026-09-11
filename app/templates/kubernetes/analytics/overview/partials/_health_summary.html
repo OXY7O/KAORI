@@ -36,7 +36,7 @@
           hx-push-url="true"
           hx-indicator="#analytics-overview-refresh-indicator"
           hx-sync="#analytics-overview-filter:replace">
-        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+        <section class="{{ overview_surface.snapshot_shell_classes() }}"
                  data-analytics-controls-readiness>
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="flex min-w-0 items-start gap-3">
@@ -119,7 +119,7 @@
             </div>
         </section>
     </form>
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <section class="{{ overview_surface.snapshot_shell_classes() }}">
         <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ overview_surface.metric_icon_classes() }}">

@@ -53,7 +53,7 @@ RUN apt-get update \
         sudo \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements/dev.txt /tmp/requirements/dev.txt
+COPY requirements/base.txt requirements/dev.txt /tmp/requirements/
 RUN --mount=type=cache,target=/root/.cache/pip \
     PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/requirements/dev.txt
 

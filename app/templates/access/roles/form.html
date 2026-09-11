@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/operational_callout.html" as operational_callout %}
 {% set read_only = view_only|default(false) %}
 {% set is_system_role = protected_default|default(false) %}
 {% set page_mode = 'view' if read_only else ('clone' if clone_source else ('edit' if role else 'create')) %}
@@ -104,7 +105,7 @@
             </div>
         </section>
         {% if is_system_role %}
-            <section class="rounded-xl border border-status-warning-border bg-status-warning-soft p-4 text-status-warning-text">
+            <section class="rounded-xl border {{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft p-4 text-status-warning-text">
                 <div class="flex items-start gap-3">
                     <i data-lucide="lock-keyhole" class="mt-0.5 h-5 w-5 shrink-0"></i>
                     <div>
@@ -144,7 +145,7 @@
         <form method="post" class="space-y-6">
             {{ form.hidden_tag() }}
             {% if form.errors %}
-                <section class="rounded-xl border border-status-critical-border bg-status-critical-soft p-4 text-status-critical-text">
+                <section class="rounded-xl border {{ operational_callout.semantic_border_classes('critical') }} bg-status-critical-soft p-4 text-status-critical-text">
                     <div class="flex items-start gap-3">
                         <i data-lucide="circle-alert" class="mt-0.5 h-5 w-5 shrink-0"></i>
                         <div>
@@ -430,7 +431,7 @@
                                 </article>
                             </div>
                             {% if page_mode == 'edit' and role and role.is_active and (assigned_user_count or identity_provider_count) %}
-                                <div class="space-y-3 rounded-xl border border-status-warning-border bg-status-warning-soft p-3.5 text-xs leading-5 text-status-warning-text">
+                                <div class="space-y-3 rounded-xl border {{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft p-3.5 text-xs leading-5 text-status-warning-text">
                                     <div class="flex items-start gap-2.5">
                                         <i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 shrink-0"></i>
                                         <p>Deactivating this role will fail closed for {{ assigned_user_count }} assigned user{{ '' if assigned_user_count == 1 else 's' }} and {{ identity_provider_count }} Identity Provider default mapping{{ '' if identity_provider_count == 1 else 's' }}.</p>
