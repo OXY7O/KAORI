@@ -78,7 +78,7 @@
                         <label class="block min-w-0">
                             <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ search_form.query.label.text }}</span>
                             <div class="flex flex-col gap-3 sm:flex-row">
-                                {{ search_form.query(class_='h-11 min-w-0 flex-1 rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus-visible:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled',
+                                {{ search_form.query(class_='h-11 min-w-0 flex-1 rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled',
                                                                 placeholder='username, email, or display name',
                                                                 disabled=not has_directory_providers) }}
                                 <button type="submit"
