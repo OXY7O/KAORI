@@ -16,10 +16,10 @@ def test_auth_setup_warning_border_uses_shared_semantic_authority() -> None:
     assert 'border-status-warning-border' not in source
 
 
-def test_auth_setup_warning_border_debt_is_burned_down_only() -> None:
+def test_auth_setup_warning_border_debt_remains_burned_down_after_heading_cleanup() -> None:
     payload = json.loads(BASELINE_PATH.read_text(encoding='utf-8'))
     relative = TARGET_PATH.relative_to(ROOT).as_posix()
-    metrics = payload['files'][relative]
+    metrics = payload['files'].get(relative, {})
 
     assert metrics.get('semantic_border_utilities', 0) == 0
-    assert metrics.get('custom_hero_titles') == 1
+    assert metrics.get('custom_hero_titles', 0) == 0
