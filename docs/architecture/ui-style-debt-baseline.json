@@ -61,7 +61,6 @@
       "page_local_workspace_tablists": 1
     },
     "app/templates/access/users/form.html": {
-      "copied_standard_surface_shells": 5,
       "semantic_border_utilities": 7
     },
     "app/templates/access/users/partials/_content.html": {
