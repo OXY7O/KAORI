@@ -1,4 +1,5 @@
 {% import "components/navigation/_global_search.html" as global_search %}
+{% import "components/table_primitives.html" as surface_ui %}
 {% set breadcrumb_items = navigation_breadcrumb|default([], true) %}
 {% set current_user_role = current_user.role_name|default('Viewer', true)|replace('_', ' ')|title %}
 <header class="sticky top-0 z-30 kaori-app-shell border-b border-outline-subtle bg-surface-shell backdrop-blur-xl transition-colors duration-300"
@@ -29,7 +30,7 @@
                     <i data-lucide="chevrons-right" class="h-4.5 w-4.5"></i>
                 </span>
             </button>
-            <nav class="inline-flex h-10 min-w-0 max-w-[min(42rem,calc(100vw-8rem))] items-center gap-1.5 overflow-hidden rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold shadow-sm transition"
+            <nav class="{{ surface_ui.block_classes() }} inline-flex h-10 min-w-0 max-w-[min(42rem,calc(100vw-8rem))] items-center gap-1.5 px-3 py-2 text-xs font-semibold transition"
                  aria-label="Breadcrumb">
                 <span class="flex-shrink-0 uppercase tracking-wider text-content-muted">KAORI</span>
                 {% for item in breadcrumb_items %}
