@@ -13,9 +13,6 @@
       "custom_hero_titles": 1,
       "font_extrabold_utilities": 7
     },
-    "app/templates/components/states/_blocked_state.html": {
-      "copied_standard_surface_shells": 1
-    },
     "app/templates/components/table_label.html": {
       "semantic_border_utilities": 5
     },
