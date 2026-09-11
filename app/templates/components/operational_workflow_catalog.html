@@ -1,5 +1,6 @@
+{% import "components/table_primitives.html" as table_ui %}
 {% macro render(title, description, eyebrow='Operational Workflow Catalog', aria_label=None) -%}
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+    <section class="{{ table_ui.block_classes() }}"
              aria-label="{{ aria_label or title }}">
         <header class="px-5 py-5 sm:px-6">
             <p class="text-xs font-semibold text-kaori-primary dark:text-kaori-accent">{{ eyebrow }}</p>
