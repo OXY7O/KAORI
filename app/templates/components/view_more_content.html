@@ -2,6 +2,7 @@
   Shared expandable content shell for secondary guidance and reference content.
   Primary ordered workflows continue to use components/info_flow.html.
 #}
+{% import "components/table_primitives.html" as table_ui %}
 {% macro render(
     title,
     description,
@@ -13,7 +14,7 @@
     extra_classes='',
     compact_action=false
     ) -%}
-    <details class="group overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ extra_classes }}"
+    <details class="group {{ table_ui.block_classes() }} {{ extra_classes }}"
              aria-label="{{ aria_label or title }}"
              {% if open_by_default %}open{% endif %}>
         <summary class="list-none cursor-pointer select-none border-b border-outline-subtle bg-surface-hover px-4 py-3.5 transition hover:bg-surface-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
