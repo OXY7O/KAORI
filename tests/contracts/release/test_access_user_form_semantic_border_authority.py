@@ -22,26 +22,19 @@ def test_user_form_uses_shared_semantic_border_authority() -> None:
 
     assert "border-b {{ semantic_ui.tone_border_classes('critical') }} bg-status-critical-soft" in source
     assert (
-        "rounded-lg border {{ semantic_ui.tone_border_classes('critical') }} "
-        'bg-surface-card text-status-critical-text'
+        "rounded-lg border {{ semantic_ui.tone_border_classes('critical') }} bg-surface-card text-status-critical-text"
     ) in source
-    assert (
-        "rounded-md border {{ semantic_ui.tone_border_classes('warning') }} "
-        'bg-status-warning-soft'
-    ) in source
+    assert ("rounded-md border {{ semantic_ui.tone_border_classes('warning') }} bg-status-warning-soft") in source
     assert (
         "semantic_ui.tone_border_classes('normal') if identity_context.provider_enabled "
         "else semantic_ui.tone_border_classes('warning')"
     ) in source
-    assert (
-        "rounded-xl border {{ semantic_ui.tone_border_classes('warning') }} "
-        'bg-status-warning-soft'
-    ) in source
+    assert ("rounded-xl border {{ semantic_ui.tone_border_classes('warning') }} bg-status-warning-soft") in source
 
     # Preserve the actual behavior and semantic state contracts while moving only
     # semantic border ownership to the shared helper.
     assert 'Validation Error' in source
-    assert "reset_password_allowed" in source
+    assert 'reset_password_allowed' in source
     assert "user.auth_source == 'database'" in source
     assert "'Provider ready' if identity_context.provider_enabled else 'Provider disabled'" in source
     assert 'Editing Your Own Profile' in source
