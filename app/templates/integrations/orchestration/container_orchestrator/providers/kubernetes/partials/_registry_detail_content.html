@@ -1,10 +1,11 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/details/_detail_content.html" as detail %}
 {% import "components/detail_tip.html" as inventory_tip %}
+{% import "components/table_primitives.html" as surface_ui %}
 {% set readiness_tone = 'normal' if row.readiness == 'ready' else ('critical' if row.readiness == 'blocked' else 'warning') %}
 {% set readiness_label = row.readiness|replace('_', ' ')|title %}
 <div class="bg-surface-hover px-4 py-4">
-    <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <div class="{{ surface_ui.block_classes() }}">
         <header class="flex flex-col gap-4 border-b border-outline-subtle bg-surface-elevated px-5 py-4 xl:flex-row xl:items-center xl:justify-between">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
