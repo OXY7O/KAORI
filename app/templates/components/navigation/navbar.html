@@ -2,17 +2,29 @@
 {% import "components/table_primitives.html" as surface_ui %}
 {% set breadcrumb_items = navigation_breadcrumb|default([], true) %}
 {% set current_user_role = current_user.role_name|default('Viewer', true)|replace('_', ' ')|title %}
+{% set mobile_page = namespace(label='Welcome') %}
+{% for item in breadcrumb_items %}
+    {% if item.label != 'KAORI' %}{% set mobile_page.label = item.label %}{% endif %}
+{% endfor %}
 <header class="sticky top-0 z-30 kaori-app-shell border-b border-outline-subtle bg-surface-shell backdrop-blur-xl transition-colors duration-300"
         x-data="kaoriNavbar"
         @kaori:notifications-changed.window="if ($event.detail?.tab && ['activity', 'inbox', 'notifications'].includes($event.detail?.tab)) { notificationDeckTab = $event.detail.tab } queueNotificationDeckRefresh()"
         @keydown.window="handleGlobalSearchShortcut($event)"
         @keydown.escape.window="closeMenus()">
-    <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <!-- Left: sidebar control and current page context -->
+    <div class="flex h-14 items-center justify-between gap-2 px-3 sm:h-16 sm:px-4 lg:gap-4 lg:px-8">
+        <!-- Left: adaptive navigation control and current page context -->
         <div class="flex min-w-0 items-center gap-2">
+            <button type="button"
+                    data-mobile-menu-trigger
+                    @click="$dispatch('kaori:mobile-nav-open')"
+                    class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus lg:hidden"
+                    aria-label="Open navigation"
+                    aria-controls="app-sidebar">
+                <i data-lucide="menu" class="h-5 w-5" aria-hidden="true"></i>
+            </button>
             <button @click="toggleSidebar()"
                     type="button"
-                    class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                    class="hidden h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus lg:inline-flex"
                     :title="sidebarExpanded ? 'Collapse navigation' : 'Expand navigation'"
                     :aria-label="sidebarExpanded ? 'Collapse navigation' : 'Expand navigation'"
                     :aria-expanded="sidebarExpanded.toString()"
@@ -30,7 +42,11 @@
                     <i data-lucide="chevrons-right" class="h-4.5 w-4.5"></i>
                 </span>
             </button>
-            <nav class="{{ surface_ui.block_classes() }} inline-flex h-10 min-w-0 max-w-[min(42rem,calc(100vw-8rem))] items-center gap-1.5 px-3 py-2 text-xs font-semibold transition"
+            <div data-mobile-current-page class="min-w-0 lg:hidden">
+                <p class="truncate text-xs font-semibold uppercase tracking-wider text-content-muted">KAORI</p>
+                <p class="truncate text-sm font-semibold text-content-primary">{{ mobile_page.label }}</p>
+            </div>
+            <nav class="{{ surface_ui.block_classes() }} hidden h-10 min-w-0 max-w-[min(42rem,calc(100vw-8rem))] items-center gap-1.5 px-3 py-2 text-xs font-semibold transition lg:inline-flex"
                  aria-label="Breadcrumb">
                 <span class="flex-shrink-0 uppercase tracking-wider text-content-muted">KAORI</span>
                 {% for item in breadcrumb_items %}
@@ -47,10 +63,10 @@
         <!-- Center: Global Search -->
         <div class="hidden min-w-0 flex-1 justify-center xl:flex">{{ global_search.desktop_trigger() }}</div>
         <!-- Right: actions -->
-        <div class="flex flex-shrink-0 items-center gap-2 sm:gap-3">
+        <div class="flex flex-shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-3">
             {{ global_search.mobile_trigger() }}
             <!-- Quick actions -->
-            <div class="relative">
+            <div class="relative hidden sm:block">
                 <button @click="toggleQuickActions()"
                         type="button"
                         class="hidden h-10 items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary md:inline-flex"
@@ -143,10 +159,10 @@
             </div>
             {% set activity_center = load_navigation_notification_context() %}
             {% include "components/navigation/_notification_center.html" %}
-            <!-- Theme -->
+            <!-- Theme: compact phones retain access through the user menu; direct toggle appears from sm upward. -->
             <button id="theme-toggle"
                     type="button"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary"
+                    class="hidden h-10 w-10 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary sm:inline-flex"
                     title="Toggle theme">
                 <i id="theme-icon" data-lucide="moon" class="h-5 w-5"></i>
             </button>
@@ -167,7 +183,7 @@
                      x-show="userOpen"
                      @click.outside="userOpen = false"
                      x-transition.origin.top.right
-                     class="absolute right-0 mt-3 w-64 overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-xl shadow-black/10">
+                     class="absolute right-0 mt-3 w-[min(16rem,calc(100vw-1rem))] overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-xl shadow-black/10">
                     <div class="border-b border-outline-subtle px-4 py-3 ">
                         <div class="flex items-start gap-3">
                             <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-kaori-primary text-white">
@@ -180,6 +196,13 @@
                         </div>
                     </div>
                     <div class="p-2">
+                        <button id="mobile-theme-toggle"
+                                type="button"
+                                class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs text-content-secondary transition hover:bg-surface-hover sm:hidden"
+                                aria-label="Toggle theme">
+                            <i data-lucide="moon" class="h-4 w-4"></i>
+                            <span class="flex-1">Toggle Theme</span>
+                        </button>
                         <a href="{{ url_for('notifications.center') }}"
                            class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs text-content-secondary transition hover:bg-surface-hover">
                             <i data-lucide="bell" class="h-4 w-4"></i>
