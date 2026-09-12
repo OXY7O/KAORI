@@ -33,31 +33,7 @@
     or current_user.has_permission('kubernetes_secrets.manage_reveal')
 ) %}
 {% set can_platform_operations = can_operations_center or can_integrations %}
-<div x-data="{
-         mobileNavOpen: false,
-         mobileNavReturnEl: null,
-         openMobileNavigation() {
-             if (window.innerWidth >= 1024) return
-             this.mobileNavReturnEl = document.activeElement
-             document.documentElement.classList.remove('sidebar-collapsed')
-             this.mobileNavOpen = true
-             this.$nextTick(() => this.$refs.mobileNavigationClose?.focus())
-         },
-         closeMobileNavigation(restoreFocus = true) {
-             if (!this.mobileNavOpen) return
-             this.mobileNavOpen = false
-             if (restoreFocus) this.$nextTick(() => this.mobileNavReturnEl?.focus?.())
-         },
-         syncNavigationMode() {
-             if (window.innerWidth < 1024) {
-                 document.documentElement.classList.remove('sidebar-collapsed')
-                 return
-             }
-             this.mobileNavOpen = false
-             const expanded = (localStorage.getItem('kaori.sidebarExpanded') || 'true') !== 'false'
-             document.documentElement.classList.toggle('sidebar-collapsed', !expanded)
-         }
-     }"
+<div x-data="{ mobileNavOpen: false, mobileNavReturnEl: null, openMobileNavigation() { if (window.innerWidth >= 1024) return; this.mobileNavReturnEl = document.activeElement; document.documentElement.classList.remove('sidebar-collapsed'); this.mobileNavOpen = true; this.$nextTick(() => this.$refs.mobileNavigationClose?.focus()); }, closeMobileNavigation(restoreFocus = true) { if (!this.mobileNavOpen) return; this.mobileNavOpen = false; if (restoreFocus) this.$nextTick(() => this.mobileNavReturnEl?.focus?.()); }, syncNavigationMode() { if (window.innerWidth < 1024) { document.documentElement.classList.remove('sidebar-collapsed'); return; } this.mobileNavOpen = false; const expanded = (localStorage.getItem('kaori.sidebarExpanded') || 'true') !== 'false'; document.documentElement.classList.toggle('sidebar-collapsed', !expanded); } }"
      x-init="syncNavigationMode()"
      @kaori:mobile-nav-open.window="openMobileNavigation()"
      @keydown.escape.window="closeMobileNavigation()"
