@@ -98,6 +98,30 @@ def test_authenticated_navigation_and_light_dark_theme(
         assert (before_class, before_theme) != (after_class, after_theme)
 
 
+def test_notification_deck_escape_restores_trigger_focus(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Closing the Notification Deck with Escape returns focus to its trigger."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+
+    with _browser_evidence(page, 'notification-deck-focus-return', viewport_name):
+        _login(page, kaori_authenticated_base_url)
+
+        trigger = page.get_by_role('button', name='Open notification deck')
+        expect(trigger).to_be_visible()
+        trigger.focus()
+        trigger.click()
+
+        dialog = page.get_by_role('dialog', name='Notification deck')
+        expect(dialog).to_be_visible()
+        page.keyboard.press('Escape')
+        expect(dialog).to_be_hidden()
+        expect(trigger).to_be_focused()
+
+
 def test_representative_htmx_modal_or_drawer_interaction(
     configured_page: Page,
     kaori_viewport: tuple[str, tuple[int, int]],
