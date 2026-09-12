@@ -65,9 +65,7 @@ def test_base_stage_refreshes_pcre2_before_runtime_package_install() -> None:
     base_stage = dockerfile.split('FROM base AS development', maxsplit=1)[0]
 
     repository_refresh = 'apt-get update'
-    pcre2_refresh = (
-        'apt-get install -y --no-install-recommends --only-upgrade libpcre2-8-0'
-    )
+    pcre2_refresh = 'apt-get install -y --no-install-recommends --only-upgrade libpcre2-8-0'
     runtime_install = 'apt-get install -y --no-install-recommends \\\n        ca-certificates'
 
     assert pcre2_refresh in base_stage
