@@ -48,19 +48,21 @@
                 <p class="truncate text-xs font-semibold uppercase tracking-wider text-content-muted">KAORI</p>
                 <p class="truncate text-sm font-semibold text-content-primary">{{ mobile_page.label }}</p>
             </div>
-            <nav class="{{ surface_ui.block_classes() }} hidden h-10 min-w-0 max-w-[min(42rem,calc(100vw-8rem))] items-center gap-1.5 px-3 py-2 text-xs font-semibold transition lg:inline-flex"
-                 aria-label="Breadcrumb">
-                <span class="flex-shrink-0 uppercase tracking-wider text-content-muted">KAORI</span>
-                {% for item in breadcrumb_items %}
-                    {% if item.label != 'KAORI' %}
-                        <i data-lucide="chevron-right"
-                           class="h-3.5 w-3.5 flex-shrink-0 text-content-disabled"
-                           aria-hidden="true"></i>
-                        <span class="truncate {{ 'text-kaori-primary' if loop.last else 'text-content-secondary' }}"
-                              {% if loop.last %}aria-current="page"{% endif %}>{{ item.label }}</span>
-                    {% endif %}
-                {% endfor %}
-            </nav>
+            <div class="hidden min-w-0 lg:block">
+                <nav class="{{ surface_ui.block_classes() }} inline-flex h-10 min-w-0 max-w-[min(42rem,calc(100vw-8rem))] items-center gap-1.5 px-3 py-2 text-xs font-semibold transition"
+                     aria-label="Breadcrumb">
+                    <span class="flex-shrink-0 uppercase tracking-wider text-content-muted">KAORI</span>
+                    {% for item in breadcrumb_items %}
+                        {% if item.label != 'KAORI' %}
+                            <i data-lucide="chevron-right"
+                               class="h-3.5 w-3.5 flex-shrink-0 text-content-disabled"
+                               aria-hidden="true"></i>
+                            <span class="truncate {{ 'text-kaori-primary' if loop.last else 'text-content-secondary' }}"
+                                  {% if loop.last %}aria-current="page"{% endif %}>{{ item.label }}</span>
+                        {% endif %}
+                    {% endfor %}
+                </nav>
+            </div>
         </div>
         <!-- Center: Global Search -->
         <div class="hidden min-w-0 flex-1 justify-center xl:flex">{{ global_search.desktop_trigger() }}</div>
