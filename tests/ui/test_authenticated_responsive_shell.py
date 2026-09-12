@@ -8,7 +8,7 @@ from playwright.sync_api import Page, expect
 EVIDENCE_ROOT = Path('tmp/ci-artifacts/test-output/ui-browser')
 TEST_USERNAME = 'browser-admin'
 TEST_PASSWORD = 'browser-password'
-MOBILE_VIEWPORTS = {'mobile', 'small-mobile'}
+ADAPTIVE_VIEWPORTS = {'tablet', 'mobile', 'small-mobile'}
 
 
 def _login(page: Page, base_url: str) -> None:
@@ -63,7 +63,7 @@ def test_authenticated_shell_adapts_across_canonical_viewports(
         'button', name=re.compile(r'collapse navigation|expand navigation', re.I)
     )
 
-    if viewport_name in MOBILE_VIEWPORTS:
+    if viewport_name in ADAPTIVE_VIEWPORTS:
         expect(mobile_trigger).to_be_visible()
         expect(desktop_toggle).to_be_hidden()
         expect(page.locator('[data-mobile-page-intro]')).to_be_visible()
@@ -110,7 +110,7 @@ def test_mobile_navigation_closes_after_destination_selection(
 ) -> None:
     page = configured_page
     viewport_name, _ = kaori_viewport
-    if viewport_name not in MOBILE_VIEWPORTS:
+    if viewport_name not in ADAPTIVE_VIEWPORTS:
         return
 
     _login(page, kaori_authenticated_base_url)
