@@ -58,3 +58,18 @@ def test_base_stage_removes_python_requirement_manifest_after_install() -> None:
     base_stage = dockerfile.split('FROM base AS development', maxsplit=1)[0]
 
     assert 'rm -f /tmp/requirements/base.txt' in base_stage
+
+
+def test_base_stage_refreshes_pcre2_before_runtime_package_install() -> None:
+    dockerfile = DOCKERFILE.read_text(encoding='utf-8')
+    base_stage = dockerfile.split('FROM base AS development', maxsplit=1)[0]
+
+    repository_refresh = 'apt-get update'
+    pcre2_refresh = (
+        'apt-get install -y --no-install-recommends --only-upgrade libpcre2-8-0'
+    )
+    runtime_install = 'apt-get install -y --no-install-recommends \\\n        ca-certificates'
+
+    assert pcre2_refresh in base_stage
+    assert base_stage.index(repository_refresh) < base_stage.index(pcre2_refresh)
+    assert base_stage.index(pcre2_refresh) < base_stage.index(runtime_install)
