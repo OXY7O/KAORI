@@ -1,5 +1,6 @@
-from pathlib import Path
+from __future__ import annotations
 
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 APP_LAYOUT = ROOT / "app/templates/layouts/app.html"
