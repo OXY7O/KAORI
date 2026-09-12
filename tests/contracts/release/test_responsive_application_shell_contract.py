@@ -20,7 +20,7 @@ def test_sidebar_owns_independent_mobile_navigation_state() -> None:
     assert 'data-mobile-navigation-backdrop' in sidebar
 
 
-def test_sidebar_is_off_canvas_on_mobile_and_persistent_on_desktop() -> None:
+def test_sidebar_is_off_canvas_on_mobile_and_preserves_desktop_collapse_authority() -> None:
     sidebar = _read('app/templates/components/navigation/sidebar.html')
 
     assert 'data-mobile-navigation' in sidebar
@@ -30,6 +30,7 @@ def test_sidebar_is_off_canvas_on_mobile_and_persistent_on_desktop() -> None:
     assert 'lg:translate-x-0' in sidebar
     assert "'visible translate-x-0'" in sidebar
     assert "'invisible -translate-x-[calc(100%+1rem)]'" in sidebar
+    assert '[.sidebar-collapsed_&]:w-[78px]' in sidebar
     assert 'data-mobile-navigation-close' in sidebar
     assert '@click="closeMobileNavigation()"' in sidebar
     assert "$event.target.closest('a[href]')" in sidebar
@@ -48,26 +49,25 @@ def test_navbar_exposes_mobile_menu_without_reusing_desktop_collapse_control() -
     assert 'aria-label="Open quick actions"' in navbar
     assert 'id="theme-toggle"' in navbar
     assert 'aria-label="Open user menu"' in navbar
+    assert 'class="{{ surface_ui.block_classes() }} inline-flex h-10 min-w-0' in navbar
 
 
-def test_shared_hero_recomposes_without_fixed_mobile_height() -> None:
+def test_shared_hero_keeps_canonical_authority_for_every_viewport() -> None:
     hero = _read('app/templates/components/page_hero.html')
 
-    assert 'min-h-0' in hero
-    assert 'lg:min-h-[15.5rem]' in hero
-    assert 'lg:min-h-[13rem]' in hero
-    assert 'grid-cols-1 auto-rows-fr gap-2 sm:grid-cols-2' in hero
-    assert 'text-2xl' in hero
-    assert 'sm:text-3xl' in hero
-    assert 'lg:text-4xl' in hero
-    assert 'lg:grid-cols-[56px_minmax(0,1fr)]' in hero
+    assert 'min-h-[15.5rem]' in hero
+    assert 'lg:min-h-[17.5rem]' in hero
+    assert 'flex h-full min-h-[13rem] flex-col gap-3' in hero
+    assert 'grid grid-cols-2 auto-rows-fr gap-2' in hero
+    assert 'text-3xl font-bold leading-10' in hero
+    assert 'max-w-[44rem] text-base font-normal leading-7' in hero
 
 
-def test_welcome_uses_simplified_mobile_intro_and_desktop_hero() -> None:
+def test_welcome_uses_the_shared_page_hero_without_custom_mobile_title() -> None:
     welcome = _read('app/templates/welcome/index.html')
 
-    assert 'data-mobile-page-intro' in welcome
-    assert 'lg:hidden' in welcome
-    assert 'hidden lg:block' in welcome
-    assert 'min-[420px]:grid-cols-2' in welcome
-    assert 'Role-Aware Workspace' in welcome
+    assert 'page_hero.shell_classes()' in welcome
+    assert 'page_hero.title_classes()' in welcome
+    assert 'page_hero.description_classes()' in welcome
+    assert 'data-mobile-page-intro' not in welcome
+    assert '<h1 class="text-2xl' not in welcome
