@@ -4,7 +4,9 @@
 {% set current_user_role = current_user.role_name|default('Viewer', true)|replace('_', ' ')|title %}
 {% set mobile_page = namespace(label='Welcome') %}
 {% for item in breadcrumb_items %}
-    {% if item.label != 'KAORI' %}{% set mobile_page.label = item.label %}{% endif %}
+    {% if item.label != 'KAORI' %}
+        {% set mobile_page.label = item.label %}
+    {% endif %}
 {% endfor %}
 <header class="sticky top-0 z-30 kaori-app-shell border-b border-outline-subtle bg-surface-shell backdrop-blur-xl transition-colors duration-300"
         x-data="kaoriNavbar"
