@@ -33,103 +33,124 @@
     or current_user.has_permission('kubernetes_secrets.manage_reveal')
 ) %}
 {% set can_platform_operations = can_operations_center or can_integrations %}
-<aside id="app-sidebar"
-       class="kaori-sidebar relative flex h-full min-h-0 w-[250px] shrink-0 flex-col overflow-hidden rounded-2xl border border-brand-outline bg-surface-sidebar text-white shadow-2xl shadow-black/25 transition-[width] duration-200 [.sidebar-collapsed_&]:w-[78px]">
-    <div class="pointer-events-none absolute -left-24 -top-32 h-72 w-72 rounded-full bg-kaori-primary/20 blur-3xl"
+<div class="contents"
+     x-data="{ mobileNavOpen: false, restoreDesktopSidebarState() { const collapsed = localStorage.getItem('kaori.sidebarExpanded') === 'false'; document.documentElement.classList.toggle('sidebar-collapsed', collapsed); }, closeMobileNavigation() { this.mobileNavOpen = false; this.restoreDesktopSidebarState(); } }"
+     @kaori:mobile-nav-open.window="mobileNavOpen = true; document.documentElement.classList.remove('sidebar-collapsed')"
+     @keydown.escape.window="if (mobileNavOpen) closeMobileNavigation()">
+    <div x-cloak
+         x-show="mobileNavOpen"
+         data-mobile-navigation-backdrop
+         @click="closeMobileNavigation()"
+         class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
          aria-hidden="true"></div>
-    <div class="pointer-events-none absolute -bottom-36 -right-28 h-72 w-72 rounded-full bg-kaori-accent/10 blur-3xl"
-         aria-hidden="true"></div>
-    <div class="relative z-10 p-3 pb-2">
-        <div class="sidebar-brand-card flex items-center gap-3 rounded-xl border border-brand-outline bg-white/5 p-2.5 shadow-sm backdrop-blur-xl [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:gap-0 [.sidebar-collapsed_&]:p-2">
-            <div class="sidebar-brand-icon flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5 shadow-lg shadow-kaori-primary/20">
-                <img src="{{ url_for('static', filename='images/kaori-logo.svg') }}"
-                     alt=""
-                     aria-hidden="true"
-                     class="h-11 w-11 object-contain">
-            </div>
-            <div class="sidebar-expanded-only min-w-0 flex-1">
-                <h1 class="truncate text-sm font-extrabold leading-5 tracking-tight text-white">KAORI</h1>
-                <p class="truncate text-xs font-medium text-brand-foreground-muted">Infrastructure Operations</p>
+    <aside id="app-sidebar"
+           data-mobile-navigation
+           :class="mobileNavOpen ? 'translate-x-0' : '-translate-x-[calc(100%+1rem)]'"
+           class="kaori-sidebar fixed inset-y-2 left-2 z-50 flex h-[calc(100%-1rem)] min-h-0 w-[min(20rem,calc(100vw-1rem))] shrink-0 flex-col overflow-hidden rounded-2xl border border-brand-outline bg-surface-sidebar text-white shadow-2xl shadow-black/25 transition-[transform,width] duration-200 lg:relative lg:inset-auto lg:z-auto lg:h-full lg:w-[250px] lg:translate-x-0 [.sidebar-collapsed_&]:lg:w-[78px]">
+        <div class="pointer-events-none absolute -left-24 -top-32 h-72 w-72 rounded-full bg-kaori-primary/20 blur-3xl"
+             aria-hidden="true"></div>
+        <div class="pointer-events-none absolute -bottom-36 -right-28 h-72 w-72 rounded-full bg-kaori-accent/10 blur-3xl"
+             aria-hidden="true"></div>
+        <div class="relative z-10 p-3 pb-2">
+            <div class="sidebar-brand-card flex items-center gap-3 rounded-xl border border-brand-outline bg-white/5 p-2.5 shadow-sm backdrop-blur-xl [.sidebar-collapsed_&]:lg:justify-center [.sidebar-collapsed_&]:lg:gap-0 [.sidebar-collapsed_&]:lg:p-2">
+                <div class="sidebar-brand-icon flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5 shadow-lg shadow-kaori-primary/20">
+                    <img src="{{ url_for('static', filename='images/kaori-logo.svg') }}"
+                         alt=""
+                         aria-hidden="true"
+                         class="h-11 w-11 object-contain">
+                </div>
+                <div class="sidebar-expanded-only min-w-0 flex-1">
+                    <h1 class="truncate text-sm font-extrabold leading-5 tracking-tight text-white">KAORI</h1>
+                    <p class="truncate text-xs font-medium text-brand-foreground-muted">Infrastructure Operations</p>
+                </div>
+                <button type="button"
+                        data-mobile-navigation-close
+                        @click="closeMobileNavigation()"
+                        class="ml-auto inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 lg:hidden"
+                        aria-label="Close navigation">
+                    <i data-lucide="x" class="h-5 w-5" aria-hidden="true"></i>
+                </button>
             </div>
         </div>
-    </div>
-    <nav class="relative z-10 flex-1 space-y-4 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-gutter:stable]">
-        {% if current_user.is_authenticated %}
+        <nav class="relative z-10 flex-1 space-y-4 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-gutter:stable]"
+             @click="if ($event.target.closest('a[href]')) closeMobileNavigation()">
+            {% if current_user.is_authenticated %}
+                <div class="sidebar-nav-section">
+                    <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Main</div>
+                    <div class="space-y-1">
+                        <a href="{{ url_for('welcome.index') }}"
+                           title="Welcome"
+                           aria-label="Welcome"
+                           class="{{ 'sidebar-parent-active' if request.endpoint == 'welcome.index' else 'sidebar-item-idle' }} sidebar-parent-link group flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition [.sidebar-collapsed_&]:lg:justify-center [.sidebar-collapsed_&]:lg:px-2">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if request.endpoint == 'welcome.index' else 'sidebar-item-idle-icon' }} transition">
+                                <i data-lucide="sparkles" class="h-4 w-4"></i>
+                            </span>
+                            <span class="sidebar-expanded-only truncate whitespace-nowrap">Welcome</span>
+                        </a>
+                        {% if can_dashboard %}
+                            {% include "components/navigation/dashboards_menu.html" %}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+            {% if can_kubernetes_inventory or can_operations or can_governance %}
+                <div class="sidebar-nav-section">
+                    <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Kubernetes</div>
+                    <div class="space-y-1">
+                        {% if can_kubernetes_inventory %}
+                            {% include "components/navigation/inventory_menu.html" %}
+                        {% endif %}
+                        {% if can_operations %}
+                            {% include "components/navigation/kubernetes_operations_menu.html" %}
+                        {% endif %}
+                        {% if can_governance %}
+                            {% include "components/navigation/governance_menu.html" %}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+            {% if can_object_storage_inventory %}
+                <div class="sidebar-nav-section">
+                    <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Storage</div>
+                    <div class="space-y-1">{% include "components/navigation/object_storage_menu.html" %}</div>
+                </div>
+            {% endif %}
+            {% if can_kubernetes_analytics or can_object_storage_analytics or can_intelligence or can_reports %}
+                <div class="sidebar-nav-section">
+                    <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Insights &amp; Reporting</div>
+                    <div class="space-y-1">
+                        {% if can_kubernetes_analytics or can_object_storage_analytics %}
+                            {% include "components/navigation/analytics_menu.html" %}
+                        {% endif %}
+                        {% if can_intelligence %}
+                            {% include "components/navigation/intelligence_menu.html" %}
+                        {% endif %}
+                        {% if can_reports %}
+                            {% include "components/navigation/reports_menu.html" %}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+            {% if can_platform_operations %}
+                <div class="sidebar-nav-section">
+                    <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Platform Operations</div>
+                    <div class="space-y-1">
+                        {% if can_operations_center %}
+                            {% include "components/navigation/platform_operations_menu.html" %}
+                        {% endif %}
+                        {% if can_integrations %}
+                            {% include "components/navigation/integrations_menu.html" %}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
             <div class="sidebar-nav-section">
-                <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Main</div>
+                <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Administration</div>
                 <div class="space-y-1">
-                    <a href="{{ url_for('welcome.index') }}"
-                       title="Welcome"
-                       aria-label="Welcome"
-                       class="{{ 'sidebar-parent-active' if request.endpoint == 'welcome.index' else 'sidebar-item-idle' }} sidebar-parent-link group flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if request.endpoint == 'welcome.index' else 'sidebar-item-idle-icon' }} transition">
-                            <i data-lucide="sparkles" class="h-4 w-4"></i>
-                        </span>
-                        <span class="sidebar-expanded-only truncate whitespace-nowrap">Welcome</span>
-                    </a>
-                    {% if can_dashboard %}
-                        {% include "components/navigation/dashboards_menu.html" %}
-                    {% endif %}
+                    {% include "components/navigation/access_management_menu.html" %}
+                    {% include "components/navigation/settings_menu.html" %}
                 </div>
             </div>
-        {% endif %}
-        {% if can_kubernetes_inventory or can_operations or can_governance %}
-            <div class="sidebar-nav-section">
-                <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Kubernetes</div>
-                <div class="space-y-1">
-                    {% if can_kubernetes_inventory %}
-                        {% include "components/navigation/inventory_menu.html" %}
-                    {% endif %}
-                    {% if can_operations %}
-                        {% include "components/navigation/kubernetes_operations_menu.html" %}
-                    {% endif %}
-                    {% if can_governance %}
-                        {% include "components/navigation/governance_menu.html" %}
-                    {% endif %}
-                </div>
-            </div>
-        {% endif %}
-        {% if can_object_storage_inventory %}
-            <div class="sidebar-nav-section">
-                <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Storage</div>
-                <div class="space-y-1">{% include "components/navigation/object_storage_menu.html" %}</div>
-            </div>
-        {% endif %}
-        {% if can_kubernetes_analytics or can_object_storage_analytics or can_intelligence or can_reports %}
-            <div class="sidebar-nav-section">
-                <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Insights &amp; Reporting</div>
-                <div class="space-y-1">
-                    {% if can_kubernetes_analytics or can_object_storage_analytics %}
-                        {% include "components/navigation/analytics_menu.html" %}
-                    {% endif %}
-                    {% if can_intelligence %}
-                        {% include "components/navigation/intelligence_menu.html" %}
-                    {% endif %}
-                    {% if can_reports %}
-                        {% include "components/navigation/reports_menu.html" %}
-                    {% endif %}
-                </div>
-            </div>
-        {% endif %}
-        {% if can_platform_operations %}
-            <div class="sidebar-nav-section">
-                <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Platform Operations</div>
-                <div class="space-y-1">
-                    {% if can_operations_center %}
-                        {% include "components/navigation/platform_operations_menu.html" %}
-                    {% endif %}
-                    {% if can_integrations %}
-                        {% include "components/navigation/integrations_menu.html" %}
-                    {% endif %}
-                </div>
-            </div>
-        {% endif %}
-        <div class="sidebar-nav-section">
-            <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Administration</div>
-            <div class="space-y-1">
-                {% include "components/navigation/access_management_menu.html" %}
-                {% include "components/navigation/settings_menu.html" %}
-            </div>
-        </div>
-    </nav>
-</aside>
+        </nav>
+    </aside>
+</div>
