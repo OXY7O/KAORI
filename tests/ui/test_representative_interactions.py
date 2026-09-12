@@ -11,6 +11,7 @@ EVIDENCE_ROOT = Path('tmp/ci-artifacts/test-output/ui-browser')
 TEST_USERNAME = 'browser-admin'
 TEST_PASSWORD = 'browser-password'
 NOTIFICATION_CENTER_PATH = '/notifications/?view=notifications'
+ADAPTIVE_VIEWPORTS = {'tablet', 'mobile', 'small-mobile'}
 
 
 @contextmanager
@@ -57,6 +58,17 @@ def _open_notification_center(page: Page, kaori_authenticated_base_url: str) -> 
     expect(page.locator('#activity-notification-page')).to_be_visible()
 
 
+def _open_primary_navigation(page: Page, viewport_name: str):
+    navigation = page.locator('[data-mobile-navigation]')
+    if viewport_name in ADAPTIVE_VIEWPORTS:
+        trigger = page.locator('[data-mobile-menu-trigger]')
+        expect(trigger).to_be_visible()
+        trigger.click()
+        expect(page.locator('[data-mobile-navigation-close]')).to_be_visible()
+    expect(navigation).to_be_visible()
+    return navigation
+
+
 def test_authenticated_navigation_and_light_dark_theme(
     configured_page: Page,
     kaori_viewport: tuple[str, tuple[int, int]],
@@ -69,16 +81,16 @@ def test_authenticated_navigation_and_light_dark_theme(
     with _browser_evidence(page, 'authenticated-navigation-theme', viewport_name):
         _login(page, kaori_authenticated_base_url)
 
-        navigation = page.locator('nav, aside').first
-        expect(navigation).to_be_visible()
-
+        navigation = _open_primary_navigation(page, viewport_name)
         destination = navigation.get_by_role('link', name=re.compile(r'welcome', re.I)).first
         expect(destination).to_be_visible()
         destination.click()
         page.wait_for_load_state('networkidle')
         expect(page.locator('body')).to_be_visible()
 
-        theme_toggle = page.get_by_role('button', name=re.compile(r'theme|dark|light|appearance', re.I)).first
+        theme_toggle = page.get_by_role(
+            'button', name=re.compile(r'theme|dark|light|appearance', re.I)
+        ).first
         expect(theme_toggle).to_be_visible()
         before_class = page.locator('html').get_attribute('class') or ''
         before_theme = page.locator('html').get_attribute('data-theme') or ''
@@ -146,9 +158,7 @@ def test_representative_filter_pagination_and_form_controls(
         expect(search_control).to_be_visible()
         expect(category_filter).to_be_visible()
         expect(rows_control).to_be_visible()
-        expect(pagination).to_be_attached()
-        if viewport_name not in {'mobile', 'small-mobile'}:
-            expect(pagination).to_be_visible()
+        expect(pagination).to_be_visible()
         assert filter_form.get_attribute('hx-get')
 
         with page.expect_response(
@@ -161,5 +171,4 @@ def test_representative_filter_pagination_and_form_controls(
         ):
             search_control.press_sequentially('browser')
         expect(page.locator('#notification-center-search')).to_be_visible()
-        # #224 owns compact-phone composition/visibility; #222 verifies the control remains present.
-        expect(page.get_by_role('navigation', name='Notification Center pagination')).to_be_attached()
+        expect(page.get_by_role('navigation', name='Notification Center pagination')).to_be_visible()
