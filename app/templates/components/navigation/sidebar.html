@@ -34,8 +34,8 @@
 ) %}
 {% set can_platform_operations = can_operations_center or can_integrations %}
 <div class="contents"
-     x-data="{ mobileNavOpen: false, restoreDesktopSidebarState() { const collapsed = localStorage.getItem('kaori.sidebarExpanded') === 'false'; document.documentElement.classList.toggle('sidebar-collapsed', collapsed); }, closeMobileNavigation() { this.mobileNavOpen = false; this.restoreDesktopSidebarState(); } }"
-     @kaori:mobile-nav-open.window="mobileNavOpen = true; document.documentElement.classList.remove('sidebar-collapsed')"
+     x-data="{ mobileNavOpen: false, mobileNavTrigger: null, openMobileNavigation(event) { this.mobileNavTrigger = event.detail?.trigger || null; this.mobileNavOpen = true; document.documentElement.classList.remove('sidebar-collapsed'); this.$nextTick(() => this.$refs.mobileNavClose?.focus()); }, restoreDesktopSidebarState() { const expanded = localStorage.getItem('kaori.sidebarExpanded') !== 'false'; sidebarExpanded = expanded; document.documentElement.classList.toggle('sidebar-collapsed', !expanded); }, closeMobileNavigation() { this.mobileNavOpen = false; this.restoreDesktopSidebarState(); this.$nextTick(() => this.mobileNavTrigger?.focus()); } }"
+     @kaori:mobile-nav-open.window="sidebarExpanded = false; openMobileNavigation($event)"
      @keydown.escape.window="if (mobileNavOpen) closeMobileNavigation()">
     <div x-cloak
          x-show="mobileNavOpen"
@@ -45,8 +45,8 @@
          aria-hidden="true"></div>
     <aside id="app-sidebar"
            data-mobile-navigation
-           :class="mobileNavOpen ? 'translate-x-0' : '-translate-x-[calc(100%+1rem)]'"
-           class="kaori-sidebar fixed inset-y-2 left-2 z-50 flex h-[calc(100%-1rem)] min-h-0 w-[min(20rem,calc(100vw-1rem))] shrink-0 flex-col overflow-hidden rounded-2xl border border-brand-outline bg-surface-sidebar text-white shadow-2xl shadow-black/25 transition-[transform,width] duration-200 lg:relative lg:inset-auto lg:z-auto lg:h-full lg:w-[250px] lg:translate-x-0 [.sidebar-collapsed_&]:lg:w-[78px]">
+           :class="mobileNavOpen ? 'visible translate-x-0' : 'invisible -translate-x-[calc(100%+1rem)]'"
+           class="kaori-sidebar fixed inset-y-2 left-2 z-50 flex h-[calc(100%-1rem)] min-h-0 w-[min(20rem,calc(100vw-1rem))] shrink-0 flex-col overflow-hidden rounded-2xl border border-brand-outline bg-surface-sidebar text-white shadow-2xl shadow-black/25 transition-[transform,width] duration-200 lg:relative lg:inset-auto lg:z-auto lg:h-full lg:w-[250px] lg:visible lg:translate-x-0 [.sidebar-collapsed_&]:lg:w-[78px]">
         <div class="pointer-events-none absolute -left-24 -top-32 h-72 w-72 rounded-full bg-kaori-primary/20 blur-3xl"
              aria-hidden="true"></div>
         <div class="pointer-events-none absolute -bottom-36 -right-28 h-72 w-72 rounded-full bg-kaori-accent/10 blur-3xl"
@@ -64,6 +64,7 @@
                     <p class="truncate text-xs font-medium text-brand-foreground-muted">Infrastructure Operations</p>
                 </div>
                 <button type="button"
+                        x-ref="mobileNavClose"
                         data-mobile-navigation-close
                         @click="closeMobileNavigation()"
                         class="ml-auto inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 lg:hidden"
