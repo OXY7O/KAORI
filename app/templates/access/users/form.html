@@ -4,6 +4,7 @@
     {% import "components/page_hero.html" as page_hero %}
     {% import "components/related_page_card.html" as related_page_card %}
     {% import "components/table_primitives.html" as surface_ui %}
+    {% import "components/table_label.html" as semantic_ui %}
     <div class="space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
@@ -66,9 +67,9 @@
                         </div>
                     </header>
                     {% if form.errors %}
-                        <div class="border-b border-status-critical-border bg-status-critical-soft px-5 py-4">
+                        <div class="border-b {{ semantic_ui.tone_border_classes('critical') }} bg-status-critical-soft px-5 py-4">
                             <div class="flex items-start gap-3">
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-status-critical-border bg-surface-card text-status-critical-text">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border {{ semantic_ui.tone_border_classes('critical') }} bg-surface-card text-status-critical-text">
                                     <i data-lucide="triangle-alert" class="h-4 w-4"></i>
                                 </div>
                                 <div>
@@ -232,7 +233,7 @@
                                                 Reset Password
                                             </a>
                                         {% elif user.auth_source == 'database' %}
-                                            <span class="inline-flex h-9 shrink-0 items-center gap-2 rounded-md border border-status-warning-border bg-status-warning-soft px-3 text-xs font-semibold text-status-warning-text"
+                                            <span class="inline-flex h-9 shrink-0 items-center gap-2 rounded-md border {{ semantic_ui.tone_border_classes('warning') }} bg-status-warning-soft px-3 text-xs font-semibold text-status-warning-text"
                                                   title="{{ reset_password_reason or 'Password reset is restricted for this account.' }}">
                                                 <i data-lucide="lock" class="h-3.5 w-3.5"></i>
                                                 Reset restricted
@@ -483,7 +484,7 @@
                                     <div class="min-w-0">
                                         <div class="flex flex-wrap items-center gap-2">
                                             <h3 class="text-sm font-semibold text-kaori-strong">{{ identity_context.provider_name }}</h3>
-                                            <span class="inline-flex rounded-md border {{ 'border-status-normal-border bg-status-normal-soft text-status-normal-text' if identity_context.provider_enabled else 'border-status-warning-border bg-status-warning-soft text-status-warning-text' }} px-2 py-0.5 text-xs font-semibold">{{ 'Provider ready' if identity_context.provider_enabled else 'Provider disabled' }}</span>
+                                            <span class="inline-flex rounded-md border {{ semantic_ui.tone_border_classes('normal') if identity_context.provider_enabled else semantic_ui.tone_border_classes('warning') }} {{ 'bg-status-normal-soft text-status-normal-text' if identity_context.provider_enabled else 'bg-status-warning-soft text-status-warning-text' }} px-2 py-0.5 text-xs font-semibold">{{ 'Provider ready' if identity_context.provider_enabled else 'Provider disabled' }}</span>
                                         </div>
                                         <p class="mt-1.5 text-xs leading-5 text-kaori-primary">{{ identity_context.credential_detail }}</p>
                                     </div>
@@ -603,9 +604,9 @@
                         ) }}
                     {% endif %}
                     {% if is_self_edit %}
-                        <section class="rounded-xl border border-status-warning-border bg-status-warning-soft p-4 shadow-sm">
+                        <section class="rounded-xl border {{ semantic_ui.tone_border_classes('warning') }} bg-status-warning-soft p-4 shadow-sm">
                             <div class="flex items-start gap-3">
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-status-warning-border bg-surface-card text-status-warning-text">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border {{ semantic_ui.tone_border_classes('warning') }} bg-surface-card text-status-warning-text">
                                     <i data-lucide="user-round-cog" class="h-4 w-4"></i>
                                 </div>
                                 <div>
