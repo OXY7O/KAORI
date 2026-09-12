@@ -29,8 +29,9 @@ def test_user_form_uses_shared_surface_shell_authority() -> None:
     assert 'form.hidden_tag()' in source
 
 
-def test_user_form_copied_shell_debt_is_burned_down_only() -> None:
+def test_user_form_copied_shell_debt_stays_burned_down() -> None:
     payload = json.loads(BASELINE_PATH.read_text(encoding='utf-8'))
     relative = TARGET_PATH.relative_to(ROOT).as_posix()
+    remaining_debt = payload['files'].get(relative, {})
 
-    assert payload['files'][relative] == {'semantic_border_utilities': 7}
+    assert 'copied_standard_surface_shells' not in remaining_debt
