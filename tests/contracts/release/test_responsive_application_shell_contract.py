@@ -37,7 +37,7 @@ def test_mobile_navigation_has_backdrop_and_explicit_close_paths() -> None:
     assert 'fixed inset-0' in source
     assert '@click="closeMobileNavigation()"' in source
     assert 'aria-label="Close navigation"' in source
-    assert "@click=\"if ($event.target.closest('a')) closeMobileNavigation(false)\"" in source
+    assert '@click="if ($event.target.closest(\'a\')) closeMobileNavigation(false)"' in source
 
 
 def test_mobile_app_bar_exposes_navigation_trigger_and_desktop_toggle_is_separate() -> None:
