@@ -159,11 +159,12 @@
             </div>
             {% set activity_center = load_navigation_notification_context() %}
             {% include "components/navigation/_notification_center.html" %}
-            <!-- Theme: compact phones retain access through the user menu; direct toggle appears from sm upward. -->
+            <!-- Theme remains a direct compact action at every supported viewport. -->
             <button id="theme-toggle"
                     type="button"
-                    class="hidden h-10 w-10 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary sm:inline-flex"
-                    title="Toggle theme">
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary"
+                    title="Toggle theme"
+                    aria-label="Toggle theme">
                 <i id="theme-icon" data-lucide="moon" class="h-5 w-5"></i>
             </button>
             <!-- User menu -->
@@ -196,13 +197,6 @@
                         </div>
                     </div>
                     <div class="p-2">
-                        <button id="mobile-theme-toggle"
-                                type="button"
-                                class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs text-content-secondary transition hover:bg-surface-hover sm:hidden"
-                                aria-label="Toggle theme">
-                            <i data-lucide="moon" class="h-4 w-4"></i>
-                            <span class="flex-1">Toggle Theme</span>
-                        </button>
                         <a href="{{ url_for('notifications.center') }}"
                            class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs text-content-secondary transition hover:bg-surface-hover">
                             <i data-lucide="bell" class="h-4 w-4"></i>
