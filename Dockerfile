@@ -38,51 +38,73 @@ RUN chmod 0755 /usr/local/bin/kaori-entrypoint
 
 ENTRYPOINT ["kaori-entrypoint"]
 
-FROM node:24.14.0-bookworm-slim AS frontend-build
+
+FROM base AS development
+
+# Development utilities intentionally follow Bookworm repository patch levels.
+# hadolint ignore=DL3008
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        bash \
+        curl \
+        git \
+        openssh-client \
+        postgresql-client \
+        redis-tools \
+        sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements/base.txt requirements/dev.txt /tmp/requirements/
+RUN --mount=type=cache,target=/root/.cache/pip \
+    PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/requirements/dev.txt
+
+RUN useradd --create-home --uid 1000 --shell /bin/bash vscode \
+    && echo "vscode ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/vscode \
+    && chmod 0440 /etc/sudoers.d/vscode \
+    && mkdir -p /workspace/kaori \
+    && chown -R vscode:vscode /workspace
+
+WORKDIR /workspace/kaori
+# Named devcontainer user is required by remoteUser/updateRemoteUserUID.
+# hadolint ignore=DL3066
+USER vscode
+
+CMD ["sleep", "infinity"]
+
+
+FROM node:22-alpine AS frontend-build
 
 WORKDIR /build
 
 COPY package.json package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
+RUN --mount=type=cache,target=/root/.npm npm ci
 
+COPY scripts/vendor_frontend_assets.mjs \
+    scripts/verify_frontend_assets.mjs \
+    scripts/verify_css_build.mjs \
+    ./scripts/
 COPY frontend ./frontend
 COPY app/templates ./app/templates
 COPY app/static/js ./app/static/js
-COPY scripts/verify_css_build.mjs scripts/vendor_frontend_assets.mjs ./scripts/
+COPY app/static/vendor/cytoscape ./app/static/vendor/cytoscape
 
-RUN npm run build-frontend \
+RUN mkdir -p app/static/css app/static/vendor app/static/fonts \
+    && npm run build-frontend \
     && npm run verify-frontend
 
-FROM base AS development
-
-COPY requirements/dev.txt /tmp/requirements/dev.txt
-
-RUN --mount=type=cache,target=/root/.cache/pip \
-    PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/requirements/dev.txt \
-    && rm -f /tmp/requirements/dev.txt
-
-COPY . /app
-
-CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]
 
 FROM base AS production
 
-ARG VCS_REF=""
-ARG BUILD_DATE=""
-ARG VERSION="dev"
+ARG OCI_SOURCE=""
+ARG OCI_REVISION=""
+ARG OCI_VERSION=""
 
-LABEL org.opencontainers.image.source="https://github.com/OXY7O/KAORI" \
-      org.opencontainers.image.revision="${VCS_REF}" \
-      org.opencontainers.image.created="${BUILD_DATE}" \
-      org.opencontainers.image.version="${VERSION}" \
-      org.opencontainers.image.title="KAORI" \
-      org.opencontainers.image.description="Knowledge, Automation, Operations, Resilience & Intelligence"
+LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
+      org.opencontainers.image.revision="${OCI_REVISION}" \
+      org.opencontainers.image.version="${OCI_VERSION}"
 
-COPY --from=frontend-build --chown=kaori:kaori /build/app/static/css/output.css /app/app/static/css/output.css
-COPY --from=frontend-build --chown=kaori:kaori /build/app/static/vendor /app/app/static/vendor
-
-RUN groupadd --system --gid 10001 kaori \
-    && useradd --system --uid 10001 --gid kaori --home-dir /app --shell /usr/sbin/nologin kaori
+RUN groupadd --system kaori \
+    && useradd --system --gid kaori --create-home --home-dir /app kaori
 
 COPY --chown=kaori:kaori app /app/app
 COPY --chown=kaori:kaori migrations /app/migrations
@@ -91,16 +113,34 @@ COPY --chown=kaori:kaori \
     scripts/wait_for_db.py \
     scripts/validate_production_env.py \
     /app/scripts/
-COPY --chown=kaori:kaori alembic.ini /app/alembic.ini
+COPY --from=frontend-build --chown=kaori:kaori \
+    /build/app/static/css/output.css \
+    /app/app/static/css/output.css
+COPY --from=frontend-build --chown=kaori:kaori \
+    /build/app/static/vendor \
+    /app/app/static/vendor
+COPY --from=frontend-build --chown=kaori:kaori \
+    /build/app/static/fonts \
+    /app/app/static/fonts
 
-RUN rm -f /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.12 \
-    && python -m pip --version >/dev/null 2>&1 && exit 1 || true \
-    && find /usr/local/lib/python3.12/site-packages -type d -name '__pycache__' -prune -exec rm -rf {} + \
-    && find /usr/local/lib/python3.12/site-packages -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete \
-    && chown -R kaori:kaori /app
+RUN mkdir -p \
+        /app/instance \
+        /app/instance/report-render-staging \
+        /app/instance/report-download-cache \
+        /app/instance/archive-download-cache \
+        /app/instance/archive-staging \
+        /app/instance/celery-beat \
+    && chown -R kaori:kaori /app/instance
 
+RUN python -m pip uninstall --yes pip \
+    && rm -rf /usr/local/lib/python3.12/ensurepip /root/.cache/pip \
+    && ! python -c 'import pip' >/dev/null 2>&1 \
+    && ! python -c 'import ensurepip' >/dev/null 2>&1
+
+# Named runtime user preserves passwd/group ownership and operator-readable identity.
+# hadolint ignore=DL3066
 USER kaori
 
-EXPOSE 8000
+EXPOSE 5000
 
 CMD ["gunicorn", "--config", "gunicorn.conf.py", "run:app"]
