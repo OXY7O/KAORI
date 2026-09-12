@@ -7,7 +7,7 @@ from playwright.sync_api import Page, expect
 
 EVIDENCE_ROOT = Path('tmp/ci-artifacts/test-output/ui-browser')
 TEST_USERNAME = 'browser-admin'
-TEST_PASSWORD = 'browser-password'
+TEST_AUTH_INPUT = 'ui-test-input'
 ADAPTIVE_VIEWPORTS = {'tablet', 'mobile', 'small-mobile'}
 
 
@@ -21,7 +21,7 @@ def _login(page: Page, base_url: str) -> None:
     expect(username).to_be_visible()
     expect(password).to_be_visible()
     username.fill(TEST_USERNAME)
-    password.fill(TEST_PASSWORD)
+    password.fill(TEST_AUTH_INPUT)
 
     submit = page.get_by_role('button', name=re.compile(r'log in|login|sign in', re.I)).first
     expect(submit).to_be_visible()
@@ -59,9 +59,7 @@ def test_authenticated_shell_adapts_across_canonical_viewports(
 
     sidebar = page.locator('[data-mobile-navigation]')
     mobile_trigger = page.locator('[data-mobile-menu-trigger]')
-    desktop_toggle = page.get_by_role(
-        'button', name=re.compile(r'collapse navigation|expand navigation', re.I)
-    )
+    desktop_toggle = page.get_by_role('button', name=re.compile(r'collapse navigation|expand navigation', re.I))
 
     if viewport_name in ADAPTIVE_VIEWPORTS:
         expect(mobile_trigger).to_be_visible()
