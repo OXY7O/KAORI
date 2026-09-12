@@ -88,9 +88,7 @@ def test_authenticated_navigation_and_light_dark_theme(
         page.wait_for_load_state('networkidle')
         expect(page.locator('body')).to_be_visible()
 
-        theme_toggle = page.get_by_role(
-            'button', name=re.compile(r'theme|dark|light|appearance', re.I)
-        ).first
+        theme_toggle = page.get_by_role('button', name=re.compile(r'theme|dark|light|appearance', re.I)).first
         expect(theme_toggle).to_be_visible()
         before_class = page.locator('html').get_attribute('class') or ''
         before_theme = page.locator('html').get_attribute('data-theme') or ''
