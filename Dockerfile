@@ -14,6 +14,7 @@ WORKDIR /app
 # Debian package patch levels intentionally follow Bookworm repositories.
 # hadolint ignore=DL3008
 RUN apt-get update \
+    && apt-get install -y --no-install-recommends --only-upgrade libpcre2-8-0 \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         libpq5 \
