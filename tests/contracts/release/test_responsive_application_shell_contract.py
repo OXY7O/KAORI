@@ -11,9 +11,12 @@ def test_sidebar_owns_independent_mobile_navigation_state() -> None:
     sidebar = _read('app/templates/components/navigation/sidebar.html')
 
     assert 'mobileNavOpen: false' in sidebar
-    assert '@kaori:mobile-nav-open.window="mobileNavOpen = true;' in sidebar
+    assert 'mobileNavTrigger: null' in sidebar
+    assert '@kaori:mobile-nav-open.window="sidebarExpanded = false; openMobileNavigation($event)"' in sidebar
     assert '@keydown.escape.window="if (mobileNavOpen) closeMobileNavigation()"' in sidebar
     assert 'restoreDesktopSidebarState()' in sidebar
+    assert 'this.$refs.mobileNavClose?.focus()' in sidebar
+    assert 'this.mobileNavTrigger?.focus()' in sidebar
     assert 'data-mobile-navigation-backdrop' in sidebar
 
 
@@ -23,8 +26,10 @@ def test_sidebar_is_off_canvas_on_mobile_and_persistent_on_desktop() -> None:
     assert 'data-mobile-navigation' in sidebar
     assert 'fixed inset-y-2 left-2' in sidebar
     assert 'lg:relative' in sidebar
+    assert 'lg:visible' in sidebar
     assert 'lg:translate-x-0' in sidebar
-    assert ':class="mobileNavOpen ?' in sidebar
+    assert "'visible translate-x-0'" in sidebar
+    assert "'invisible -translate-x-[calc(100%+1rem)]'" in sidebar
     assert 'data-mobile-navigation-close' in sidebar
     assert '@click="closeMobileNavigation()"' in sidebar
     assert "$event.target.closest('a[href]')" in sidebar
