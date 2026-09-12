@@ -39,12 +39,15 @@ def test_navbar_exposes_mobile_menu_without_reusing_desktop_collapse_control() -
     navbar = _read('app/templates/components/navigation/navbar.html')
 
     assert 'data-mobile-menu-trigger' in navbar
-    assert "$dispatch('kaori:mobile-nav-open')" in navbar
+    assert "$dispatch('kaori:mobile-nav-open', { trigger: $el })" in navbar
     assert 'lg:hidden' in navbar
     assert 'hidden h-10 w-10' in navbar
     assert 'lg:inline-flex' in navbar
     assert 'aria-controls="app-sidebar"' in navbar
     assert 'data-mobile-current-page' in navbar
+    assert 'aria-label="Open quick actions"' in navbar
+    assert 'id="theme-toggle"' in navbar
+    assert 'aria-label="Open user menu"' in navbar
 
 
 def test_shared_hero_recomposes_without_fixed_mobile_height() -> None:
