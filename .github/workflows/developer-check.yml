@@ -307,6 +307,12 @@ jobs:
             run_toolchain 'Analytics PDF Publication' python scripts/verify_analytics_pdf_publication.py
           fi
 
+          if [[ "$CHECK_FRONTEND" == "true" ]]; then
+            run_toolchain 'Frontend Dependencies' bash -lc 'npm ci --no-audit --no-fund'
+            run_toolchain 'Frontend Test Assets' bash -lc 'npm run build-css'
+            run_toolchain 'Frontend Format' bash -lc 'npm run check-format'
+          fi
+
           if [[ "$CHECK_CONTRACTS" == "true" ]]; then
             paths="$TEST_PATHS"
             if [[ -z "$paths" ]]; then
@@ -321,10 +327,6 @@ jobs:
             # TEST_PATHS is assembled only from the static whitelist above.
             # shellcheck disable=SC2086
             run_toolchain 'Focused Tests' bash -lc "pytest -q --tb=short $TEST_PATHS"
-          fi
-
-          if [[ "$CHECK_FRONTEND" == "true" ]]; then
-            run_toolchain 'Frontend Format' bash -lc 'npm ci --no-audit --no-fund && npm run check-format'
           fi
 
           elapsed=$(( $(date +%s) - started ))
