@@ -60,12 +60,13 @@ def test_authenticated_shell_adapts_across_canonical_viewports(
     sidebar = page.locator('[data-mobile-navigation]')
     mobile_trigger = page.locator('[data-mobile-menu-trigger]')
     desktop_toggle = page.get_by_role('button', name=re.compile(r'collapse navigation|expand navigation', re.I))
+    welcome_hero = page.locator('section.kaori-hero-shell').first
+    expect(welcome_hero).to_be_visible()
+    expect(page.get_by_role('heading', name='Welcome to KAORI')).to_be_visible()
 
     if viewport_name in ADAPTIVE_VIEWPORTS:
         expect(mobile_trigger).to_be_visible()
         expect(desktop_toggle).to_be_hidden()
-        expect(page.locator('[data-mobile-page-intro]')).to_be_visible()
-        expect(page.locator('.kaori-hero-shell')).to_be_hidden()
 
         resting_box = sidebar.bounding_box()
         assert resting_box is not None
@@ -93,7 +94,6 @@ def test_authenticated_shell_adapts_across_canonical_viewports(
     else:
         expect(desktop_toggle).to_be_visible()
         expect(mobile_trigger).to_be_hidden()
-        expect(page.locator('.kaori-hero-shell')).to_be_visible()
         desktop_box = sidebar.bounding_box()
         assert desktop_box is not None
         assert desktop_box['x'] >= 0
