@@ -29,7 +29,7 @@ document.addEventListener('alpine:init', () => {
             this.loadGlobalSearchRecent()
             const quickActionTriggers = document.querySelectorAll('button[aria-label="Open quick actions"]')
             const quickActionsMenu = quickActionTriggers[0]?.parentElement?.querySelector('[x-show="quickOpen"]')
-            if (quickActionsMenu instanceof HTMLElement) {
+            if (quickActionsMenu) {
                 quickActionsMenu.id = 'quick-actions-menu'
                 quickActionTriggers.forEach((trigger) => trigger.setAttribute('aria-controls', quickActionsMenu.id))
             }
@@ -57,9 +57,16 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        currentFocusTarget() {
+            const target = document.activeElement
+            return target && typeof target.focus === 'function' ? target : null
+        },
+
         restoreFocus(target) {
             this.$nextTick?.(() => {
-                if (target instanceof HTMLElement && target.offsetParent !== null && document.contains(target)) {
+                if (!target || typeof target.focus !== 'function') return
+                const isConnected = typeof document.contains !== 'function' || document.contains(target)
+                if (target.offsetParent !== null && isConnected) {
                     target.focus()
                 }
             })
@@ -77,7 +84,7 @@ document.addEventListener('alpine:init', () => {
             this.aboutOpen = false
             this.globalSearchAbortController?.abort()
             if (aboutWasOpen) {
-                this.restoreFocus(document.querySelector('button[aria-label="Open user menu"]'))
+                this.restoreFocus(document.querySelector?.('button[aria-label="Open user menu"]') || null)
             } else if (quickActionsReturnTarget) {
                 this.restoreFocus(quickActionsReturnTarget)
             } else if (globalSearchReturnTarget) {
@@ -90,8 +97,7 @@ document.addEventListener('alpine:init', () => {
         toggleQuickActions() {
             const opening = !this.quickOpen
             if (opening) {
-                this.quickActionsReturnTarget =
-                    document.activeElement instanceof HTMLElement ? document.activeElement : null
+                this.quickActionsReturnTarget = this.currentFocusTarget()
             }
             this.quickOpen = opening
             this.searchOpen = false
@@ -113,8 +119,7 @@ document.addEventListener('alpine:init', () => {
         toggleUserMenu() {
             const opening = !this.userOpen
             if (opening) {
-                this.userMenuReturnTarget =
-                    document.activeElement instanceof HTMLElement ? document.activeElement : null
+                this.userMenuReturnTarget = this.currentFocusTarget()
             }
             this.userOpen = opening
             this.searchOpen = false
@@ -146,8 +151,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         openGlobalSearch() {
-            this.globalSearchReturnTarget =
-                document.activeElement instanceof HTMLElement ? document.activeElement : null
+            this.globalSearchReturnTarget = this.currentFocusTarget()
             this.searchOpen = true
             this.quickOpen = false
             this.notificationDeckOpen = false
@@ -155,7 +159,7 @@ document.addEventListener('alpine:init', () => {
             this.aboutOpen = false
             this.runGlobalSearch()
             this.$nextTick?.(() => {
-                document.querySelector('[data-global-search-input]')?.focus()
+                document.querySelector?.('[data-global-search-input]')?.focus()
             })
         },
 
@@ -250,7 +254,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         trapDialogFocus(event, dialog) {
-            if (!(dialog instanceof HTMLElement)) return
+            if (!dialog || typeof dialog.querySelectorAll !== 'function') return
             const focusable = Array.from(
                 dialog.querySelectorAll(
                     'button:not([disabled]), input:not([disabled]), a[href], select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -276,7 +280,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         trapGlobalSearchFocus(event) {
-            this.trapDialogFocus(event, document.querySelector('#global-search [role="dialog"]'))
+            this.trapDialogFocus(event, document.querySelector?.('#global-search [role="dialog"]'))
         },
 
         openSelectedGlobalSearchResult() {
