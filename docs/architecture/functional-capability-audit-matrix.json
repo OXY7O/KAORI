@@ -1,0 +1,293 @@
+{
+  "version": 1,
+  "phase": "inventory",
+  "source_registry": "scripts/release_surface_registry.py",
+  "execution_authorities": [
+    "scripts/quality_gate.sh",
+    "scripts/verify_feature_test_coverage.py",
+    "scripts/verify_test_domain_architecture.py",
+    "tests/contracts",
+    "tests/e2e"
+  ],
+  "behavior_dimensions": [
+    "normal_flow",
+    "authorization",
+    "validation_dependency",
+    "persistence",
+    "async_job",
+    "export_publication",
+    "failure_recovery"
+  ],
+  "surfaces": {
+    "welcome": {
+      "title": "Welcome",
+      "classification": "active_ui",
+      "entrypoints": ["welcome.index"],
+      "release_evidence": {
+        "verifiers": ["scripts/verify_welcome_final_lock.py"],
+        "contracts": ["tests/contracts/welcome"]
+      },
+      "capabilities": {
+        "workspace_entry": {
+          "state": "active",
+          "behaviors": {
+            "normal_flow": {"state": "covered", "evidence": ["tests/welcome"]},
+            "authorization": {"state": "bounded_gap", "reason": "Capability-specific allowed/denied workspace-entry evidence must be confirmed during #225 audit review.", "tracking_issue": 225}
+          }
+        }
+      }
+    },
+    "dashboard": {
+      "title": "Operational Dashboards",
+      "classification": "active_ui",
+      "entrypoints": ["kubernetes_dashboard.index", "object_storage_dashboard.index"],
+      "release_evidence": {
+        "verifiers": ["scripts/verify_operational_dashboard_standard.py"],
+        "contracts": ["tests/contracts/kubernetes/test_operations_dashboard_styling_guide_contract.py", "tests/contracts/storage/object_storage/dashboard"]
+      },
+      "capabilities": {
+        "kubernetes_dashboard": {
+          "state": "active",
+          "behaviors": {
+            "normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/dashboard"]},
+            "authorization": {"state": "bounded_gap", "reason": "Dashboard-specific authorization evidence requires audit confirmation.", "tracking_issue": 225},
+            "validation_dependency": {"state": "bounded_gap", "reason": "Selected-cluster/dependency behavior requires capability-level evidence review.", "tracking_issue": 225}
+          }
+        },
+        "object_storage_dashboard": {
+          "state": "active",
+          "behaviors": {
+            "normal_flow": {"state": "covered", "evidence": ["tests/contracts/storage/object_storage/dashboard"]},
+            "authorization": {"state": "bounded_gap", "reason": "Object Storage dashboard authorization evidence requires audit confirmation.", "tracking_issue": 225},
+            "validation_dependency": {"state": "bounded_gap", "reason": "Provider/snapshot dependency behavior requires capability-level evidence review.", "tracking_issue": 225}
+          }
+        }
+      }
+    },
+    "inventory": {
+      "title": "Kubernetes Inventory",
+      "classification": "active_ui",
+      "entrypoints": ["inventory.overview", "inventory.topology", "inventory.nodes", "inventory.namespaces", "inventory.workloads", "inventory.pods", "inventory.services", "inventory.ingresses", "inventory.storage", "inventory.configuration"],
+      "release_evidence": {
+        "verifiers": ["scripts/verify_inventory_final_lock.py"],
+        "contracts": ["tests/contracts/kubernetes/test_inventory_final_release_contract.py"]
+      },
+      "capabilities": {
+        "overview": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/inventory"]}, "authorization": {"state": "bounded_gap", "reason": "Inventory overview authorization evidence requires audit confirmation.", "tracking_issue": 225}}},
+        "nodes": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/inventory"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Committed-snapshot and selection behavior requires node-level evidence review.", "tracking_issue": 225}}},
+        "namespaces": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/inventory"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Committed-snapshot and selection behavior requires namespace-level evidence review.", "tracking_issue": 225}}},
+        "workloads": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/inventory"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Workload dependency/empty-state behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "pods": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/inventory"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Pod dependency/empty-state behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "services": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/inventory"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Service dependency/empty-state behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "ingresses": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/inventory"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Ingress dependency/empty-state behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "storage": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/inventory"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Storage dependency/empty-state behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "configuration": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/inventory"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Configuration inventory dependency behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "topology": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/inventory"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Topology selection and sparse-data behavior requires audit confirmation.", "tracking_issue": 225}}}
+      }
+    },
+    "object_storage_inventory": {
+      "title": "Object Storage Inventory",
+      "classification": "active_ui",
+      "entrypoints": ["object_storage_inventory.overview", "object_storage_inventory.systems", "object_storage_inventory.buckets"],
+      "release_evidence": {
+        "verifiers": ["scripts/verify_object_storage_inventory_final_lock.py"],
+        "contracts": ["tests/contracts/storage/object_storage/inventory"]
+      },
+      "capabilities": {
+        "overview": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/storage/object_storage/inventory"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Committed observation/dependency behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "systems": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/storage/object_storage/inventory"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Provider-neutral system inventory dependency behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "buckets": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/storage/object_storage/inventory"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Bucket inventory snapshot/usage behavior requires audit confirmation.", "tracking_issue": 225}}}
+      }
+    },
+    "kubernetes_operations": {
+      "title": "Kubernetes Operations",
+      "classification": "active_ui",
+      "entrypoints": ["kubernetes_operations.configmap_management", "kubernetes_operations.secret_management"],
+      "release_evidence": {
+        "verifiers": ["scripts/verify_kubernetes_operations_final_lock.py"],
+        "contracts": ["tests/contracts/kubernetes/operations"]
+      },
+      "capabilities": {
+        "configmap_management": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/operations"]}, "authorization": {"state": "bounded_gap", "reason": "Allowed/denied ConfigMap mutation evidence requires audit confirmation.", "tracking_issue": 225}, "validation_dependency": {"state": "bounded_gap", "reason": "Cluster selection and input-validation evidence requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Mutation outcome/persistence evidence requires audit confirmation.", "tracking_issue": 225}, "failure_recovery": {"state": "bounded_gap", "reason": "Runtime mutation failure/recovery ownership must be coordinated with #228.", "tracking_issue": 225}}},
+        "secret_management": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/operations"]}, "authorization": {"state": "bounded_gap", "reason": "Allowed/denied Secret operation evidence requires audit confirmation.", "tracking_issue": 225}, "validation_dependency": {"state": "bounded_gap", "reason": "Cluster selection, reveal request, and validation evidence requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Secret mutation outcome/persistence evidence requires audit confirmation.", "tracking_issue": 225}, "failure_recovery": {"state": "bounded_gap", "reason": "Runtime Secret-operation failure/recovery ownership must be coordinated with #228.", "tracking_issue": 225}}}
+      }
+    },
+    "governance": {
+      "title": "Kubernetes Governance",
+      "classification": "active_ui",
+      "entrypoints": ["governance.tls_certificates"],
+      "release_evidence": {
+        "verifiers": ["scripts/verify_governance_final_lock.py"],
+        "contracts": ["tests/contracts/kubernetes/governance"]
+      },
+      "capabilities": {
+        "tls_certificates": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/governance"]}, "authorization": {"state": "bounded_gap", "reason": "Governance access evidence requires audit confirmation.", "tracking_issue": 225}, "validation_dependency": {"state": "bounded_gap", "reason": "Cluster/sync/dependency behavior requires audit confirmation.", "tracking_issue": 225}, "failure_recovery": {"state": "bounded_gap", "reason": "Sync/degraded behavior must be coordinated with #228.", "tracking_issue": 225}}}
+      }
+    },
+    "analytics": {
+      "title": "Analytics",
+      "classification": "active_ui",
+      "entrypoints": ["analytics.overview", "analytics.utilization", "analytics.capacity", "analytics.storage", "analytics.workload", "analytics.forecast", "analytics.top_consumers", "analytics.alerts", "analytics.object_storage_overview", "analytics.object_storage_capacity", "analytics.object_storage_performance", "analytics.object_storage_forecast", "analytics.object_storage_top_consumers", "analytics.object_storage_alerts"],
+      "release_evidence": {
+        "verifiers": ["scripts/verify_analytics_final_lock.py", "scripts/verify_object_storage_analytics.py"],
+        "contracts": ["tests/contracts/analytics"]
+      },
+      "capabilities": {
+        "kubernetes_overview": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/analytics"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Committed snapshot and selected-cluster behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "utilization": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/analytics"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Range/snapshot dependency behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "capacity": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/analytics"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Worker-only capacity and snapshot dependency behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "storage": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/analytics"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Storage analytics snapshot/dependency behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "workload": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/analytics"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Workload analytics dependency behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "forecast": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/analytics"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Forecast evidence-window and insufficient-history behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "top_consumers": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/analytics"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Ranking/source-data behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "alerts": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/kubernetes/analytics"]}, "failure_recovery": {"state": "bounded_gap", "reason": "Alert/anomaly dependency and degraded evidence behavior must be coordinated with #228.", "tracking_issue": 225}}},
+        "object_storage_overview": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/storage/object_storage/analytics"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Object Storage analytics provider/snapshot dependency behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "object_storage_capacity": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/storage/object_storage/analytics"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Capacity evidence-window/provider behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "object_storage_performance": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/storage/object_storage/analytics"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Performance metrics-source behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "object_storage_forecast": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/storage/object_storage/analytics"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Forecast baseline/history behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "object_storage_top_consumers": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/storage/object_storage/analytics"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Ranking/provider evidence behavior requires audit confirmation.", "tracking_issue": 225}}},
+        "object_storage_alerts": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/storage/object_storage/analytics"]}, "failure_recovery": {"state": "bounded_gap", "reason": "Provider alert/degraded evidence behavior must be coordinated with #228.", "tracking_issue": 225}}}
+      }
+    },
+    "intelligence": {
+      "title": "Intelligence",
+      "classification": "active_ui",
+      "entrypoints": ["intelligence.index", "intelligence.recommendations", "alert_intelligence.index", "intelligence.catalog", "automation_control.index"],
+      "release_evidence": {
+        "verifiers": ["scripts/verify_intelligence_baseline_lock.py", "scripts/verify_automation_control.py"],
+        "contracts": ["tests/contracts/intelligence"]
+      },
+      "capabilities": {
+        "recommendations": {"state": "active", "behaviors": {"normal_flow": {"state": "bounded_gap", "reason": "Recommendation user-flow evidence has not yet been confirmed against a narrow executable authority.", "tracking_issue": 225}, "authorization": {"state": "bounded_gap", "reason": "Recommendation permission behavior requires audit confirmation.", "tracking_issue": 225}, "failure_recovery": {"state": "bounded_gap", "reason": "Missing/degraded recommendation evidence must be coordinated with #228.", "tracking_issue": 225}}},
+        "alert_intelligence": {"state": "active", "behaviors": {"normal_flow": {"state": "bounded_gap", "reason": "Alert Intelligence operator-flow evidence requires capability-level review.", "tracking_issue": 225}, "authorization": {"state": "bounded_gap", "reason": "Alert Intelligence permission behavior requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Decision/promotion persistence evidence requires audit confirmation.", "tracking_issue": 225}, "failure_recovery": {"state": "bounded_gap", "reason": "Alert dependency/degraded behavior must be coordinated with #228.", "tracking_issue": 225}}},
+        "rule_catalog": {"state": "active", "behaviors": {"normal_flow": {"state": "bounded_gap", "reason": "Rule Catalog user-flow evidence requires capability-level review.", "tracking_issue": 225}, "authorization": {"state": "bounded_gap", "reason": "Rule Catalog permission behavior requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Rule exception/configuration persistence evidence requires audit confirmation.", "tracking_issue": 225}}},
+        "automation_control": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["scripts/verify_automation_control.py", "tests/contracts/intelligence"]}, "authorization": {"state": "bounded_gap", "reason": "Automation Control admission/permission behavior requires audit confirmation.", "tracking_issue": 225}, "validation_dependency": {"state": "bounded_gap", "reason": "Execution-admission dependency behavior requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Governed decision/audit persistence evidence requires audit confirmation.", "tracking_issue": 225}, "failure_recovery": {"state": "bounded_gap", "reason": "Execution/verification failure states must be coordinated with #228.", "tracking_issue": 225}}}
+      }
+    },
+    "reports": {
+      "title": "Reports",
+      "classification": "active_ui",
+      "entrypoints": ["reports.overview", "reports.generate_report", "reports.generated_reports", "reports.report_templates", "reports.storage", "reports.schedules"],
+      "release_evidence": {
+        "verifiers": ["scripts/verify_report_generation_contract.py", "scripts/verify_report_job_standard.py", "scripts/verify_report_storage_resilience.py", "scripts/verify_report_runtime_imports.py"],
+        "contracts": ["tests/contracts/reports"]
+      },
+      "capabilities": {
+        "overview": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/reports"]}, "authorization": {"state": "bounded_gap", "reason": "Reports overview permission evidence requires audit confirmation.", "tracking_issue": 225}}},
+        "generate": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/reports"]}, "authorization": {"state": "bounded_gap", "reason": "Report generation permission evidence requires audit confirmation.", "tracking_issue": 225}, "validation_dependency": {"state": "bounded_gap", "reason": "Generation input/provider/snapshot validation requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Generated report metadata/storage persistence requires audit confirmation.", "tracking_issue": 225}, "async_job": {"state": "covered", "evidence": ["scripts/verify_report_job_standard.py", "tests/contracts/reports"]}, "export_publication": {"state": "covered", "evidence": ["scripts/verify_report_generation_contract.py", "tests/contracts/reports"]}, "failure_recovery": {"state": "bounded_gap", "reason": "Generation/storage failure and retry behavior must be coordinated with #228.", "tracking_issue": 225}}},
+        "generated": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/reports"]}, "authorization": {"state": "bounded_gap", "reason": "Generated-report access evidence requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Publication/list persistence evidence requires audit confirmation.", "tracking_issue": 225}}},
+        "templates": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/reports"]}, "authorization": {"state": "bounded_gap", "reason": "Template management permission evidence requires audit confirmation.", "tracking_issue": 225}, "validation_dependency": {"state": "bounded_gap", "reason": "Template validation evidence requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Template persistence evidence requires audit confirmation.", "tracking_issue": 225}}},
+        "schedules": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/reports"]}, "authorization": {"state": "bounded_gap", "reason": "Schedule management permission evidence requires audit confirmation.", "tracking_issue": 225}, "validation_dependency": {"state": "bounded_gap", "reason": "Schedule configuration validation requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Schedule persistence evidence requires audit confirmation.", "tracking_issue": 225}, "async_job": {"state": "bounded_gap", "reason": "Recurring dispatch/outcome evidence requires audit confirmation.", "tracking_issue": 225}, "failure_recovery": {"state": "bounded_gap", "reason": "Schedule dispatch/retry failure behavior must be coordinated with #228.", "tracking_issue": 225}}},
+        "storage": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/reports"]}, "validation_dependency": {"state": "covered", "evidence": ["scripts/verify_report_storage_resilience.py", "tests/contracts/reports"]}, "failure_recovery": {"state": "bounded_gap", "reason": "Operator-facing degraded storage behavior must be coordinated with #228.", "tracking_issue": 225}}},
+        "pdf_publication": {"state": "active", "behaviors": {"export_publication": {"state": "covered", "evidence": ["scripts/verify_report_generation_contract.py", "tests/contracts/reports"]}}},
+        "xlsx_publication": {"state": "active", "behaviors": {"export_publication": {"state": "covered", "evidence": ["tests/contracts/reports"]}}},
+        "csv_publication": {"state": "active", "behaviors": {"export_publication": {"state": "covered", "evidence": ["tests/contracts/reports"]}}}
+      }
+    },
+    "integrations": {
+      "title": "Integrations",
+      "classification": "active_ui",
+      "entrypoints": ["integrations.overview", "integrations.orchestration", "integrations.observability", "integrations.storage", "notification_channels.index"],
+      "release_evidence": {
+        "verifiers": ["scripts/verify_integration_provider_foundation.py", "scripts/verify_integration_domain_navigation.py", "scripts/verify_minio_object_storage_provider.py", "scripts/verify_integrations_final_lock.py", "scripts/verify_notification_channels.py"],
+        "contracts": ["tests/contracts/integrations"]
+      },
+      "capabilities": {
+        "overview": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/integrations"]}, "authorization": {"state": "bounded_gap", "reason": "Integrations overview permission evidence requires audit confirmation.", "tracking_issue": 225}}},
+        "kubernetes_provider": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/integrations"]}, "authorization": {"state": "bounded_gap", "reason": "Kubernetes provider mutation permission evidence requires audit confirmation.", "tracking_issue": 225}, "validation_dependency": {"state": "bounded_gap", "reason": "Registration/validation/runtime dependency evidence requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Provider registration persistence evidence requires audit confirmation.", "tracking_issue": 225}, "failure_recovery": {"state": "bounded_gap", "reason": "Provider runtime/degraded states must be coordinated with #228.", "tracking_issue": 225}}},
+        "prometheus_provider": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/integrations"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Prometheus validation/profile/runtime behavior requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Prometheus binding persistence evidence requires audit confirmation.", "tracking_issue": 225}, "failure_recovery": {"state": "bounded_gap", "reason": "Prometheus unavailable/degraded states must be coordinated with #228.", "tracking_issue": 225}}},
+        "alertmanager_provider": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/integrations"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Alertmanager validation/profile/runtime behavior requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Alertmanager binding persistence evidence requires audit confirmation.", "tracking_issue": 225}, "failure_recovery": {"state": "bounded_gap", "reason": "Alertmanager unavailable/degraded states must be coordinated with #228.", "tracking_issue": 225}}},
+        "object_storage_provider": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/integrations"]}, "validation_dependency": {"state": "covered", "evidence": ["scripts/verify_minio_object_storage_provider.py", "tests/contracts/integrations"]}, "persistence": {"state": "bounded_gap", "reason": "Object Storage provider binding persistence evidence requires audit confirmation.", "tracking_issue": 225}, "failure_recovery": {"state": "bounded_gap", "reason": "Object Storage provider unavailable/degraded states must be coordinated with #228.", "tracking_issue": 225}}},
+        "notification_channels": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["scripts/verify_notification_channels.py", "tests/integrations"]}, "authorization": {"state": "bounded_gap", "reason": "Notification Channel configuration permission evidence requires audit confirmation.", "tracking_issue": 225}, "validation_dependency": {"state": "bounded_gap", "reason": "Channel validation/delivery dependency behavior requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Channel configuration persistence evidence requires audit confirmation.", "tracking_issue": 225}, "failure_recovery": {"state": "bounded_gap", "reason": "Outbound delivery failure/retry behavior must be coordinated with #228.", "tracking_issue": 225}}}
+      }
+    },
+    "platform_operations": {
+      "title": "Platform Operations",
+      "classification": "active_ui",
+      "entrypoints": ["platform_operations.overview.index", "jobs.executions", "platform_operations.data_lifecycle.index", "platform_operations.kubernetes.index"],
+      "release_evidence": {
+        "verifiers": ["scripts/verify_platform_operations_final_lock.py", "scripts/verify_job_progress_final_lock.py"],
+        "contracts": ["tests/contracts/platform_operations", "tests/contracts/platform_operations/jobs"]
+      },
+      "capabilities": {
+        "overview": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/platform_operations"]}, "authorization": {"state": "bounded_gap", "reason": "Platform Operations overview permission evidence requires audit confirmation.", "tracking_issue": 225}}},
+        "job_executions": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/platform_operations"]}, "authorization": {"state": "bounded_gap", "reason": "Job execution permission evidence requires audit confirmation.", "tracking_issue": 225}, "async_job": {"state": "covered", "evidence": ["scripts/verify_job_progress_final_lock.py", "tests/contracts/platform_operations/jobs"]}, "persistence": {"state": "bounded_gap", "reason": "Job outcome/history persistence evidence requires audit confirmation.", "tracking_issue": 225}, "failure_recovery": {"state": "bounded_gap", "reason": "Retry/timeout/partial-evidence behavior must be coordinated with #228.", "tracking_issue": 225}}},
+        "data_lifecycle": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/platform_operations"]}, "authorization": {"state": "bounded_gap", "reason": "Data lifecycle permission evidence requires audit confirmation.", "tracking_issue": 225}, "validation_dependency": {"state": "bounded_gap", "reason": "Lifecycle policy/dependency validation requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Lifecycle policy persistence evidence requires audit confirmation.", "tracking_issue": 225}}},
+        "kubernetes_operations_center": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/platform_operations"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Kubernetes operational center dependency behavior requires audit confirmation.", "tracking_issue": 225}, "failure_recovery": {"state": "bounded_gap", "reason": "Operational center degraded behavior must be coordinated with #228.", "tracking_issue": 225}}}
+      }
+    },
+    "access": {
+      "title": "Access",
+      "classification": "active_ui",
+      "entrypoints": ["access.overview.index", "users.index", "identity_providers.index", "access.roles.index", "access.permissions.index", "access.activity_audit.index"],
+      "release_evidence": {
+        "verifiers": ["scripts/verify_access_final_lock.py", "scripts/verify_identity_provider_architecture.py"],
+        "contracts": ["tests/contracts/access"]
+      },
+      "capabilities": {
+        "overview": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/access"]}, "authorization": {"state": "bounded_gap", "reason": "Access overview permission evidence requires audit confirmation.", "tracking_issue": 225}}},
+        "users": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/access"]}, "authorization": {"state": "bounded_gap", "reason": "User management allowed/denied evidence requires audit confirmation.", "tracking_issue": 225}, "validation_dependency": {"state": "bounded_gap", "reason": "User validation/provisioning dependency evidence requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "User mutation persistence evidence requires audit confirmation.", "tracking_issue": 225}}},
+        "identity_providers": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/access", "scripts/verify_identity_provider_architecture.py"]}, "authorization": {"state": "bounded_gap", "reason": "Identity provider administration permission evidence requires audit confirmation.", "tracking_issue": 225}, "validation_dependency": {"state": "bounded_gap", "reason": "LDAP/OAuth provider validation and provisioning behavior requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Identity provider configuration persistence evidence requires audit confirmation.", "tracking_issue": 225}, "failure_recovery": {"state": "bounded_gap", "reason": "External identity-provider unavailable/degraded behavior must be coordinated with #228.", "tracking_issue": 225}}},
+        "roles": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/access"]}, "authorization": {"state": "bounded_gap", "reason": "Role administration permission evidence requires audit confirmation.", "tracking_issue": 225}, "validation_dependency": {"state": "bounded_gap", "reason": "Role validation/protection behavior requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Role mutation persistence evidence requires audit confirmation.", "tracking_issue": 225}}},
+        "permissions": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/access"]}, "authorization": {"state": "bounded_gap", "reason": "Permission administration evidence requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Role-permission assignment persistence evidence requires audit confirmation.", "tracking_issue": 225}}},
+        "activity_audit": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/access"]}, "authorization": {"state": "bounded_gap", "reason": "Activity Audit access evidence requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Audit-event retention/persistence evidence requires audit confirmation.", "tracking_issue": 225}}}
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "classification": "active_ui",
+      "entrypoints": ["settings.general", "settings.account"],
+      "release_evidence": {
+        "verifiers": ["scripts/verify_settings_final_lock.py"],
+        "contracts": ["tests/contracts/settings"]
+      },
+      "capabilities": {
+        "general": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/settings"]}, "authorization": {"state": "bounded_gap", "reason": "General settings permission evidence requires audit confirmation.", "tracking_issue": 225}, "validation_dependency": {"state": "bounded_gap", "reason": "General setting validation evidence requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "General setting persistence evidence requires audit confirmation.", "tracking_issue": 225}}},
+        "account": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/settings"]}, "authorization": {"state": "bounded_gap", "reason": "Account setting ownership/permission evidence requires audit confirmation.", "tracking_issue": 225}, "validation_dependency": {"state": "bounded_gap", "reason": "Account setting validation evidence requires audit confirmation.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Account setting persistence evidence requires audit confirmation.", "tracking_issue": 225}}}
+      }
+    },
+    "authentication": {
+      "title": "Authentication",
+      "classification": "active_ui",
+      "entrypoints": [],
+      "release_evidence": {
+        "verifiers": ["scripts/verify_authentication_surface_final_lock.py"],
+        "contracts": ["tests/contracts/access/authentication"]
+      },
+      "capabilities": {
+        "login": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/access/authentication/test_login_characterization.py"]}, "authorization": {"state": "covered", "evidence": ["tests/security/access/authentication/test_authentication_security.py"]}, "validation_dependency": {"state": "bounded_gap", "reason": "Credential/form/database-readiness validation evidence requires audit-level mapping confirmation.", "tracking_issue": 225}, "failure_recovery": {"state": "bounded_gap", "reason": "Authentication dependency failure behavior is coordinated with #228 and requires final mapping review.", "tracking_issue": 225}}},
+        "logout": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/access/authentication"]}, "authorization": {"state": "bounded_gap", "reason": "Logout/session boundary evidence requires audit confirmation.", "tracking_issue": 225}}},
+        "session": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/unit/access/authentication/test_auth_session_policy.py"]}, "authorization": {"state": "bounded_gap", "reason": "Session enforcement across protected surfaces requires audit confirmation.", "tracking_issue": 225}}},
+        "readiness": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/ui/test_runtime_state_responsiveness.py"]}, "failure_recovery": {"state": "covered", "evidence": ["tests/ui/test_runtime_state_responsiveness.py"]}}
+      }
+    },
+    "notifications": {
+      "title": "Notification Center",
+      "classification": "active_ui",
+      "entrypoints": [],
+      "release_evidence": {
+        "verifiers": ["scripts/verify_notification_center_final_lock.py", "scripts/verify_notification_activity_center.py"],
+        "contracts": ["tests/contracts/platform_operations/notifications"]
+      },
+      "capabilities": {
+        "notification_center": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/ui/test_representative_interactions.py", "tests/contracts/platform_operations/notifications"]}, "authorization": {"state": "bounded_gap", "reason": "Notification Center permission evidence requires audit confirmation.", "tracking_issue": 225}, "failure_recovery": {"state": "bounded_gap", "reason": "Notification refresh/dependency failure behavior must be coordinated with #228.", "tracking_issue": 225}}},
+        "inbox": {"state": "active", "behaviors": {"normal_flow": {"state": "bounded_gap", "reason": "Inbox-specific functional evidence requires capability-level review.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Inbox read/unread persistence evidence requires audit confirmation.", "tracking_issue": 225}}},
+        "activity": {"state": "active", "behaviors": {"normal_flow": {"state": "bounded_gap", "reason": "Activity-specific notification evidence requires capability-level review.", "tracking_issue": 225}, "persistence": {"state": "bounded_gap", "reason": "Activity/history persistence evidence requires audit confirmation.", "tracking_issue": 225}}},
+        "read_state_refresh": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/ui/test_representative_interactions.py"]}, "persistence": {"state": "bounded_gap", "reason": "Read-state persistence across refresh/request boundaries requires audit confirmation.", "tracking_issue": 225}, "failure_recovery": {"state": "bounded_gap", "reason": "HTMX refresh failure/retry behavior must be coordinated with #228.", "tracking_issue": 225}}}
+      }
+    },
+    "health": {
+      "title": "Runtime Health",
+      "classification": "system_non_ui",
+      "entrypoints": [],
+      "release_evidence": {
+        "verifiers": [],
+        "contracts": ["tests/integration/release/test_release_endpoint_registry.py"]
+      },
+      "capabilities": {
+        "liveness": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/integration/release/test_release_endpoint_registry.py"]}, "failure_recovery": {"state": "bounded_gap", "reason": "Negative liveness/runtime failure semantics require audit confirmation and #228 coordination.", "tracking_issue": 225}}},
+        "readiness": {"state": "active", "behaviors": {"normal_flow": {"state": "covered", "evidence": ["tests/integration/release/test_release_endpoint_registry.py"]}, "failure_recovery": {"state": "bounded_gap", "reason": "Negative readiness/dependency failure semantics require audit confirmation and #228 coordination.", "tracking_issue": 225}}}
+      }
+    }
+  }
+}
