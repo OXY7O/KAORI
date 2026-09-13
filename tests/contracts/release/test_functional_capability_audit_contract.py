@@ -37,6 +37,14 @@ RESOLVED_PRIMARY_FLOW_EVIDENCE = {
         'activity',
     ): 'tests/contracts/platform_operations/notifications/test_activity_notification_center_contract.py',
 }
+AUTHENTICATION_SECONDARY_EVIDENCE = {
+    ('login', 'authorization'): 'tests/security/access/authentication/test_authentication_security.py',
+    ('login', 'validation_dependency'): 'tests/access/authentication/test_login_characterization.py',
+    ('login', 'failure_recovery'): 'tests/ui/test_runtime_state_responsiveness.py',
+    ('logout', 'authorization'): 'tests/security/access/authentication/test_authentication_security.py',
+    ('session', 'validation_dependency'): 'tests/unit/access/authentication/test_auth_session_policy.py',
+    ('readiness', 'failure_recovery'): 'tests/ui/test_runtime_state_responsiveness.py',
+}
 
 
 def _assert_paths_exist(paths: list[str], *, context: str) -> None:
@@ -116,3 +124,17 @@ def test_resolved_primary_flow_findings_bind_narrow_executable_evidence() -> Non
         assert behavior['state'] == 'covered', f'{surface_key}.{capability_key}.normal_flow must be covered'
         assert behavior['evidence'] == [evidence_path]
         _assert_paths_exist(behavior['evidence'], context=f'{surface_key}.{capability_key}.normal_flow')
+
+
+def test_authentication_secondary_behaviors_bind_narrow_executable_evidence() -> None:
+    payload = json.loads(MATRIX_PATH.read_text(encoding='utf-8'))
+    capabilities = payload['surfaces']['authentication']['capabilities']
+
+    for (capability_key, behavior_key), evidence_path in AUTHENTICATION_SECONDARY_EVIDENCE.items():
+        behavior = capabilities[capability_key]['behaviors'][behavior_key]
+        assert behavior['state'] == 'covered', f'authentication.{capability_key}.{behavior_key} must be covered'
+        assert behavior['evidence'] == [evidence_path]
+        _assert_paths_exist(
+            behavior['evidence'],
+            context=f'authentication.{capability_key}.{behavior_key}',
+        )
