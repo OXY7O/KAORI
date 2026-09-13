@@ -132,9 +132,7 @@ def test_authentication_secondary_behaviors_bind_narrow_executable_evidence() ->
 
     for (capability_key, behavior_key), evidence_path in AUTHENTICATION_SECONDARY_EVIDENCE.items():
         behavior = capabilities[capability_key]['behaviors'][behavior_key]
-        assert behavior['state'] == 'covered', (
-            f'authentication.{capability_key}.{behavior_key} must be covered'
-        )
+        assert behavior['state'] == 'covered', f'authentication.{capability_key}.{behavior_key} must be covered'
         assert behavior['evidence'] == [evidence_path]
         _assert_paths_exist(
             behavior['evidence'],
