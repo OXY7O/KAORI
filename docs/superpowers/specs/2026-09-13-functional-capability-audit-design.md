@@ -1,7 +1,7 @@
 # KAORI Functional Capability Audit Design
 
 **Issue:** #225  
-**Status:** Design authority — awaiting implementation-plan approval  
+**Status:** Design authority — awaiting user review  
 **Base authority:** `kaori/staging@6847255790cb184f3b3beaeeaee80e2173d43f9c`  
 **Governing milestone:** UI & Functional Quality (#3)  
 **Scope:** Product-wide functional capability accountability, evidence mapping, and defect disposition
@@ -140,20 +140,28 @@ Not every capability requires every dimension. Each capability declares only the
 
 `surfaces` must match the release registry surface keys exactly.
 
-Each UI surface contains:
+Each active UI surface uses this shape:
 
 ```text
 classification: active_ui
 entrypoints: [...]
+release_evidence:
+  verifiers: [...]
+  contract_paths: [...]
 capabilities:
   <capability-key>:
     state: active
-    expected_behaviors: [...]
-    evidence: {...}
-    disposition: {...}
+    behaviors:
+      <behavior-dimension>:
+        state: covered | bounded_gap | not_applicable
+        evidence: [...]              # required only for covered
+        reason: ...                  # required for bounded_gap/not_applicable
+        tracking_issue: 225          # required for bounded_gap
 ```
 
 `health` is represented as `system_non_ui` and maps its liveness/readiness behavior to the existing release endpoint/integration authority.
+
+`release_evidence` preserves the owning surface's static verifier and contract authority from `scripts/release_surface_registry.py`. Capability-level behavior evidence is additional accountability and does not replace that release evidence.
 
 ### Canonical capability groups
 
@@ -178,9 +186,9 @@ The initial matrix must represent the following product areas, organized under t
 
 Search and shared shell interaction behavior remain coordinated with #226. Accessibility semantics remain #227. The matrix may reference their tests when they prove functional reachability, but #225 does not reopen those workstreams.
 
-## Evidence Model
+## Behavior Evidence States
 
-Every expected behavior has one of two valid outcomes.
+Every declared behavior has exactly one of three valid states.
 
 ### Covered
 
@@ -195,16 +203,16 @@ A `covered` behavior references one or more existing executable evidence paths. 
 - E2E tests for representative end-to-end release flows;
 - existing `verify_*` authorities when the behavior is a static architectural or publication contract.
 
-A path reference is not enough by itself if it is unrelated to the declared behavior. Matrix review and the implementation contract keep the mapping explicit and narrow.
+A path reference is not enough by itself if it is unrelated to the declared behavior. Matrix review keeps each mapping explicit and narrow; the release contract validates structure and path existence, not semantic truth by string matching.
 
-### Explicit gap/disposition
+### Bounded gap
 
-If an expected behavior does not yet have adequate evidence, it must not be marked covered. It is recorded as a bounded gap with:
+If an expected behavior does not yet have adequate evidence, it must not be marked covered. It is recorded as:
 
 ```text
 state: bounded_gap
 reason: <non-empty explanation>
-tracking_issue: <issue number>
+tracking_issue: <positive issue number>
 ```
 
 During the first inventory increment, `tracking_issue: 225` is allowed for an audit finding that still needs decomposition. Before #225 closes, critical/high product defects must have a dedicated linked issue or be resolved in a bounded child increment. Lower-risk non-defects may remain explicitly dispositioned only when the reason is durable and truthful.
@@ -221,16 +229,17 @@ During the first inventory increment, `tracking_issue: 225` is allowed for an au
 2. Matrix surface keys exactly equal `ReleaseSurface.key` values from `scripts/release_surface_registry.py`.
 3. UI surfaces are `active_ui`; `health` is explicitly `system_non_ui`.
 4. Every active UI surface has at least one capability.
-5. Every capability has a non-empty `expected_behaviors` list.
-6. Every expected behavior uses the canonical behavior-dimension vocabulary.
-7. Every expected behavior has exactly one explicit state: `covered`, `bounded_gap`, or `not_applicable`.
-8. `covered` entries reference at least one existing evidence path.
-9. `bounded_gap` entries include a reason and positive tracking issue number.
-10. `not_applicable` entries include a reason.
+5. Every capability has `state: active` and at least one behavior entry.
+6. Every behavior key uses the canonical behavior-dimension vocabulary.
+7. Every behavior has exactly one explicit state: `covered`, `bounded_gap`, or `not_applicable`.
+8. `covered` entries reference at least one existing evidence path and do not carry a gap disposition.
+9. `bounded_gap` entries include a non-empty reason and positive tracking issue number.
+10. `not_applicable` entries include a non-empty reason and do not pretend to have executable evidence.
 11. No evidence path may point to `tests/debug` or another non-release/debug-only authority.
-12. Release-registry contract paths and static verifiers remain represented at the owning surface level so #225 cannot accidentally drop existing release authority.
-13. Registry navigation endpoints for a surface must be represented by that surface's declared entrypoints or intentionally covered through a named capability mapping; changes in release entrypoints cannot silently bypass the audit.
-14. The matrix records `phase: inventory` until closure criteria are explicitly met in a later governed change.
+12. Each surface's `release_evidence.verifiers` and `release_evidence.contract_paths` include all registry-owned verifier/contract paths for that surface.
+13. Registry navigation endpoints for a surface are represented by that surface's `entrypoints`; additional non-navigation action/runtime entrypoints may also be listed when required for capability clarity.
+14. All referenced execution/evidence paths exist in the repository.
+15. The matrix records `phase: inventory` until closure criteria are explicitly met in a later governed change.
 
 The first TDD RED must be caused by the missing matrix/authority itself, not by changing production behavior.
 
@@ -287,7 +296,7 @@ This prevents #225 from conflating two questions:
 - Work branch: `kaori/issue-225-functional-capability-audit` from exact admitted `kaori/staging` authority.
 - Draft PR targets `kaori/staging`.
 - Design/spec commit precedes implementation planning and code/test changes.
-- Implementation begins only after explicit review of this spec and the resulting implementation plan.
+- Implementation begins only after explicit user review of this spec and completion of the implementation plan.
 - Draft work uses path-aware Developer Check.
 - Ready candidate requires exact-head Developer Check PASS, review/thread lock, and no base drift.
 - Merge uses expected-head protection to `kaori/staging`.
@@ -299,8 +308,8 @@ This prevents #225 from conflating two questions:
 #225 may close only when all of the following are true:
 
 1. Every active release surface is represented by the fail-closed functional capability matrix.
-2. Every active capability has explicit expected behavior dimensions.
-3. Every expected behavior is backed by relevant executable evidence or an explicit durable disposition.
+2. Every active capability has explicit behavior dimensions.
+3. Every declared behavior is backed by relevant executable evidence or an explicit durable disposition.
 4. Critical/high functional defects discovered by the audit are resolved and admitted on `kaori/staging`.
 5. Remaining lower-risk findings, if any, have explicit linked ownership and do not misrepresent active product behavior.
 6. Repaired behavior has focused regression coverage where practical.
