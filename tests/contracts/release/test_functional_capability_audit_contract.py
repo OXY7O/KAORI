@@ -84,11 +84,20 @@ NOTIFICATION_SECONDARY_EVIDENCE = {
     ): 'tests/contracts/platform_operations/notifications/test_activity_notification_center_contract.py',
 }
 KUBERNETES_OPERATIONS_SECONDARY_EVIDENCE = {
-    ('configmap_management', 'authorization'): 'tests/kubernetes/operations/test_route_authorization_characterization.py',
-    ('configmap_management', 'validation_dependency'): 'tests/kubernetes/operations/test_configmap_validation_contract.py',
+    (
+        'configmap_management',
+        'authorization',
+    ): 'tests/kubernetes/operations/test_route_authorization_characterization.py',
+    (
+        'configmap_management',
+        'validation_dependency',
+    ): 'tests/kubernetes/operations/test_configmap_validation_contract.py',
     ('configmap_management', 'persistence'): 'tests/kubernetes/operations/test_configmap_mutation_workflow.py',
     ('configmap_management', 'failure_recovery'): 'tests/kubernetes/operations/test_configmap_mutation_workflow.py',
-    ('secret_management', 'authorization'): 'tests/kubernetes/operations/test_route_authorization_characterization.py',
+    (
+        'secret_management',
+        'authorization',
+    ): 'tests/kubernetes/operations/test_route_authorization_characterization.py',
     ('secret_management', 'validation_dependency'): 'tests/kubernetes/operations/test_secret_mutation_workflow.py',
     ('secret_management', 'persistence'): 'tests/kubernetes/operations/test_secret_mutation_workflow.py',
     ('secret_management', 'failure_recovery'): 'tests/kubernetes/operations/test_secret_mutation_workflow.py',
