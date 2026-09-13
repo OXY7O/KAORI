@@ -142,6 +142,30 @@ def test_global_search_dialog_restores_trigger_focus_after_escape(
         expect(trigger).to_be_focused()
 
 
+def test_global_search_keeps_keyboard_focus_inside_dialog(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Backward keyboard traversal cannot escape Global Search to the backdrop."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+
+    with _browser_evidence(page, 'global-search-focus-trap', viewport_name):
+        _login(page, kaori_authenticated_base_url)
+
+        trigger = _visible_button(page, 'Open global search')
+        trigger.press('Enter')
+
+        dialog = page.get_by_role('dialog', name='Search KAORI')
+        search_input = page.get_by_role('combobox', name='Search KAORI resources and pages')
+        expect(dialog).to_be_visible()
+        expect(search_input).to_be_focused()
+
+        page.keyboard.press('Shift+Tab')
+        assert dialog.evaluate('(element) => element.contains(document.activeElement)') is True
+
+
 def test_about_dialog_focus_is_contained_and_returns_to_user_menu_trigger(
     configured_page: Page,
     kaori_viewport: tuple[str, tuple[int, int]],
@@ -172,3 +196,41 @@ def test_about_dialog_focus_is_contained_and_returns_to_user_menu_trigger(
         page.keyboard.press('Escape')
         expect(dialog).to_be_hidden()
         expect(user_trigger).to_be_focused()
+
+
+def test_login_validation_errors_are_programmatically_associated(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Invalid login fields expose error state and reference their visible messages."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+
+    with _browser_evidence(page, 'login-validation-accessibility', viewport_name):
+        response = page.goto(f'{kaori_authenticated_base_url}/auth/login', wait_until='networkidle')
+        assert response is not None
+        assert response.ok
+
+        username = page.get_by_label('Username', exact=True)
+        password = page.get_by_label('Password', exact=True)
+        submit = page.get_by_role('button', name='Sign In')
+        expect(username).to_be_visible()
+        expect(password).to_be_visible()
+
+        username.fill('')
+        password.fill('')
+        submit.click()
+        page.wait_for_load_state('networkidle')
+
+        expect(username).to_have_attribute('aria-invalid', 'true')
+        expect(username).to_have_attribute('aria-describedby', 'username-error')
+        expect(password).to_have_attribute('aria-invalid', 'true')
+        expect(password).to_have_attribute('aria-describedby', 'password-error')
+
+        username_error = page.locator('#username-error')
+        password_error = page.locator('#password-error')
+        expect(username_error).to_be_visible()
+        expect(password_error).to_be_visible()
+        expect(username_error).to_have_attribute('role', 'alert')
+        expect(password_error).to_have_attribute('role', 'alert')
