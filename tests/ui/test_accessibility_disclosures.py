@@ -241,3 +241,42 @@ def test_login_validation_errors_are_programmatically_associated(
         expect(password_error).to_be_visible()
         expect(username_error).to_have_attribute('role', 'alert')
         expect(password_error).to_have_attribute('role', 'alert')
+
+
+def test_global_search_dynamic_feedback_is_programmatically_announced(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Loading, error, and empty search states expose live-region semantics."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+
+    with _browser_evidence(page, 'global-search-status-feedback', viewport_name):
+        _login(page, kaori_authenticated_base_url)
+
+        root = page.locator('#global-search')
+        search_url = root.get_attribute('data-search-url')
+        assert search_url
+        page.route(f'**{search_url}*', lambda route: route.abort())
+
+        trigger = _visible_button(page, 'Open global search')
+        trigger.press('Enter')
+        dialog = page.get_by_role('dialog', name='Search KAORI')
+        expect(dialog).to_be_visible()
+
+        error = dialog.locator('[x-show="searchError"]')
+        expect(error).to_be_visible()
+        expect(error).to_have_attribute('role', 'alert')
+        expect(error).to_have_attribute('aria-live', 'assertive')
+        expect(error).to_have_attribute('aria-atomic', 'true')
+
+        loading = dialog.locator('[aria-label="Searching"]')
+        expect(loading).to_have_attribute('role', 'status')
+        expect(loading).to_have_attribute('aria-live', 'polite')
+        expect(loading).to_have_attribute('aria-atomic', 'true')
+
+        empty = dialog.get_by_text('No matching results', exact=True).locator('xpath=..')
+        expect(empty).to_have_attribute('role', 'status')
+        expect(empty).to_have_attribute('aria-live', 'polite')
+        expect(empty).to_have_attribute('aria-atomic', 'true')
