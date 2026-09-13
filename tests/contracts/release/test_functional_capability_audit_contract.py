@@ -1,0 +1,95 @@
+from __future__ import annotations
+
+import json
+import runpy
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+MATRIX_PATH = ROOT / 'docs' / 'architecture' / 'functional-capability-audit-matrix.json'
+
+CANONICAL_BEHAVIOR_DIMENSIONS = {
+    'normal_flow',
+    'authorization',
+    'validation_dependency',
+    'persistence',
+    'async_job',
+    'export_publication',
+    'failure_recovery',
+}
+VALID_BEHAVIOR_STATES = {'covered', 'bounded_gap', 'not_applicable'}
+REQUIRED_EXECUTION_AUTHORITIES = {
+    'scripts/quality_gate.sh',
+    'scripts/verify_feature_test_coverage.py',
+    'scripts/verify_test_domain_architecture.py',
+    'tests/contracts',
+    'tests/e2e',
+}
+
+
+def _assert_paths_exist(paths: list[str], *, context: str) -> None:
+    assert paths, f'{context}: evidence paths must not be empty'
+    missing = [path for path in paths if not (ROOT / path).exists()]
+    assert not missing, f'{context}: missing evidence paths: {missing}'
+
+
+def test_functional_capability_audit_matrix_is_fail_closed() -> None:
+    assert MATRIX_PATH.exists(), (
+        'Functional capability audit matrix is missing; #225 requires every active release surface '
+        'and capability behavior to have executable evidence or explicit disposition.'
+    )
+
+    payload = json.loads(MATRIX_PATH.read_text(encoding='utf-8'))
+    assert payload['version'] == 1
+    assert payload['phase'] == 'inventory'
+    assert payload['source_registry'] == 'scripts/release_surface_registry.py'
+    assert set(payload['execution_authorities']) == REQUIRED_EXECUTION_AUTHORITIES
+    _assert_paths_exist(payload['execution_authorities'], context='execution authorities')
+    assert set(payload['behavior_dimensions']) == CANONICAL_BEHAVIOR_DIMENSIONS
+
+    registry = runpy.run_path(str(ROOT / 'scripts' / 'release_surface_registry.py'))
+    surfaces = {surface.key: surface for surface in registry['SURFACES']}
+    matrix = payload['surfaces']
+    assert set(matrix) == set(surfaces), (
+        f'functional audit coverage must exactly match release authority; '
+        f'missing={sorted(set(surfaces) - set(matrix))}, extra={sorted(set(matrix) - set(surfaces))}'
+    )
+
+    for key, surface in surfaces.items():
+        entry = matrix[key]
+        expected_classification = 'system_non_ui' if key == 'health' else 'active_ui'
+        assert entry['classification'] == expected_classification
+        assert entry['title'] == surface.title
+        assert entry['entrypoints'] == list(surface.navigation_endpoints)
+
+        release_evidence = entry['release_evidence']
+        assert set(surface.verifiers).issubset(release_evidence['verifiers'])
+        assert set(surface.contract_paths).issubset(release_evidence['contracts'])
+        if release_evidence['verifiers']:
+            _assert_paths_exist(release_evidence['verifiers'], context=f'{key} release verifiers')
+        _assert_paths_exist(release_evidence['contracts'], context=f'{key} release contracts')
+
+        capabilities = entry['capabilities']
+        assert capabilities, f'{key}: at least one capability is required'
+        for capability_key, capability in capabilities.items():
+            assert capability['state'] == 'active', f'{key}.{capability_key}: capability must be active'
+            behaviors = capability['behaviors']
+            assert behaviors, f'{key}.{capability_key}: at least one behavior is required'
+            assert set(behaviors).issubset(CANONICAL_BEHAVIOR_DIMENSIONS)
+
+            for behavior_key, behavior in behaviors.items():
+                assert behavior['state'] in VALID_BEHAVIOR_STATES
+                state = behavior['state']
+                if state == 'covered':
+                    evidence = behavior['evidence']
+                    _assert_paths_exist(evidence, context=f'{key}.{capability_key}.{behavior_key}')
+                    assert not any(path.startswith('tests/debug') for path in evidence)
+                    assert 'reason' not in behavior
+                    assert 'tracking_issue' not in behavior
+                elif state == 'bounded_gap':
+                    assert behavior['reason'].strip()
+                    assert isinstance(behavior['tracking_issue'], int) and behavior['tracking_issue'] > 0
+                    assert not behavior.get('evidence')
+                else:
+                    assert behavior['reason'].strip()
+                    assert not behavior.get('evidence')
+                    assert 'tracking_issue' not in behavior
