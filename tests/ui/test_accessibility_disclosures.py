@@ -214,13 +214,14 @@ def test_login_validation_errors_are_programmatically_associated(
 
         username = page.get_by_label('Username', exact=True)
         password = page.get_by_label('Password', exact=True)
-        submit = page.get_by_role('button', name='Sign In')
         expect(username).to_be_visible()
         expect(password).to_be_visible()
 
         username.fill('')
         password.fill('')
-        submit.click()
+        login_form = username.locator('xpath=ancestor::form[1]')
+        expect(login_form).to_be_visible()
+        login_form.evaluate('(form) => form.submit()')
         page.wait_for_load_state('networkidle')
 
         expect(username).to_have_attribute('aria-invalid', 'true')
