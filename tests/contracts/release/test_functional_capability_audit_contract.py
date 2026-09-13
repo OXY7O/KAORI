@@ -28,8 +28,14 @@ RESOLVED_PRIMARY_FLOW_EVIDENCE = {
     ('intelligence', 'recommendations'): 'tests/contracts/intelligence/test_recommendations_audit_20260815_contract.py',
     ('intelligence', 'alert_intelligence'): 'tests/contracts/intelligence/test_alert_operations_lifecycle_contract.py',
     ('intelligence', 'rule_catalog'): 'tests/contracts/intelligence/test_rule_catalog_review_20260815_contract.py',
-    ('notifications', 'inbox'): 'tests/contracts/platform_operations/notifications/test_activity_notification_center_contract.py',
-    ('notifications', 'activity'): 'tests/contracts/platform_operations/notifications/test_activity_notification_center_contract.py',
+    (
+        'notifications',
+        'inbox',
+    ): 'tests/contracts/platform_operations/notifications/test_activity_notification_center_contract.py',
+    (
+        'notifications',
+        'activity',
+    ): 'tests/contracts/platform_operations/notifications/test_activity_notification_center_contract.py',
 }
 
 
