@@ -46,15 +46,42 @@ AUTHENTICATION_SECONDARY_EVIDENCE = {
     ('readiness', 'failure_recovery'): 'tests/ui/test_runtime_state_responsiveness.py',
 }
 NOTIFICATION_SECONDARY_EVIDENCE = {
-    ('notification_center', 'authorization'): 'tests/contracts/platform_operations/notifications/test_notification_center_final_lock_contract.py',
-    ('notification_center', 'validation_dependency'): 'tests/contracts/platform_operations/notifications/test_notification_center_final_lock_contract.py',
-    ('notification_center', 'persistence'): 'tests/contracts/platform_operations/notifications/test_notification_center_final_lock_contract.py',
-    ('notification_center', 'failure_recovery'): 'tests/contracts/platform_operations/notifications/test_activity_notification_center_contract.py',
-    ('inbox', 'authorization'): 'tests/contracts/platform_operations/notifications/test_notification_center_final_lock_contract.py',
-    ('inbox', 'persistence'): 'tests/contracts/platform_operations/notifications/test_notification_center_final_lock_contract.py',
-    ('activity', 'authorization'): 'tests/contracts/platform_operations/notifications/test_notification_center_final_lock_contract.py',
-    ('read_state_refresh', 'persistence'): 'tests/contracts/platform_operations/notifications/test_activity_notification_center_contract.py',
-    ('read_state_refresh', 'failure_recovery'): 'tests/contracts/platform_operations/notifications/test_activity_notification_center_contract.py',
+    (
+        'notification_center',
+        'authorization',
+    ): 'tests/contracts/platform_operations/notifications/test_notification_center_final_lock_contract.py',
+    (
+        'notification_center',
+        'validation_dependency',
+    ): 'tests/contracts/platform_operations/notifications/test_notification_center_final_lock_contract.py',
+    (
+        'notification_center',
+        'persistence',
+    ): 'tests/contracts/platform_operations/notifications/test_notification_center_final_lock_contract.py',
+    (
+        'notification_center',
+        'failure_recovery',
+    ): 'tests/contracts/platform_operations/notifications/test_activity_notification_center_contract.py',
+    (
+        'inbox',
+        'authorization',
+    ): 'tests/contracts/platform_operations/notifications/test_notification_center_final_lock_contract.py',
+    (
+        'inbox',
+        'persistence',
+    ): 'tests/contracts/platform_operations/notifications/test_notification_center_final_lock_contract.py',
+    (
+        'activity',
+        'authorization',
+    ): 'tests/contracts/platform_operations/notifications/test_notification_center_final_lock_contract.py',
+    (
+        'read_state_refresh',
+        'persistence',
+    ): 'tests/contracts/platform_operations/notifications/test_activity_notification_center_contract.py',
+    (
+        'read_state_refresh',
+        'failure_recovery',
+    ): 'tests/contracts/platform_operations/notifications/test_activity_notification_center_contract.py',
 }
 
 
