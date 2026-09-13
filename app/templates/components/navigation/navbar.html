@@ -12,7 +12,7 @@
         x-data="kaoriNavbar"
         @kaori:notifications-changed.window="if ($event.detail?.tab && ['activity', 'inbox', 'notifications'].includes($event.detail?.tab)) { notificationDeckTab = $event.detail.tab } queueNotificationDeckRefresh()"
         @keydown.window="handleGlobalSearchShortcut($event)"
-        @keydown.escape.window="closeMenus()">
+        @keydown.escape.window="const userMenuWasOpen = userOpen; closeMenus(); if (userMenuWasOpen) { $nextTick(() => $refs.userMenuTrigger?.focus()) }">
     <div class="flex h-14 items-center justify-between gap-2 px-3 sm:h-16 sm:px-4 lg:gap-4 lg:px-8">
         <!-- Left: adaptive navigation control and current page context -->
         <div class="flex min-w-0 items-center gap-2">
@@ -174,9 +174,12 @@
             <!-- User menu -->
             <div class="relative">
                 <button @click="toggleUserMenu()"
+                        x-ref="userMenuTrigger"
                         type="button"
                         class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-surface-card p-1.5 pr-2 text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary"
-                        aria-label="Open user menu">
+                        aria-label="Open user menu"
+                        aria-controls="user-menu"
+                        :aria-expanded="userOpen.toString()">
                     <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-primary text-white">
                         <i data-lucide="user" class="h-4 w-4"></i>
                     </span>
@@ -184,7 +187,8 @@
                     <i data-lucide="chevron-down"
                        class="hidden h-4 w-4 text-content-muted lg:block"></i>
                 </button>
-                <div x-cloak
+                <div id="user-menu"
+                     x-cloak
                      x-show="userOpen"
                      @click.outside="userOpen = false"
                      x-transition.origin.top.right
