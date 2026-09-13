@@ -83,6 +83,16 @@ NOTIFICATION_SECONDARY_EVIDENCE = {
         'failure_recovery',
     ): 'tests/contracts/platform_operations/notifications/test_activity_notification_center_contract.py',
 }
+KUBERNETES_OPERATIONS_SECONDARY_EVIDENCE = {
+    ('configmap_management', 'authorization'): 'tests/kubernetes/operations/test_route_authorization_characterization.py',
+    ('configmap_management', 'validation_dependency'): 'tests/kubernetes/operations/test_configmap_validation_contract.py',
+    ('configmap_management', 'persistence'): 'tests/kubernetes/operations/test_configmap_mutation_workflow.py',
+    ('configmap_management', 'failure_recovery'): 'tests/kubernetes/operations/test_configmap_mutation_workflow.py',
+    ('secret_management', 'authorization'): 'tests/kubernetes/operations/test_route_authorization_characterization.py',
+    ('secret_management', 'validation_dependency'): 'tests/kubernetes/operations/test_secret_mutation_workflow.py',
+    ('secret_management', 'persistence'): 'tests/kubernetes/operations/test_secret_mutation_workflow.py',
+    ('secret_management', 'failure_recovery'): 'tests/kubernetes/operations/test_secret_mutation_workflow.py',
+}
 
 
 def _assert_paths_exist(paths: list[str], *, context: str) -> None:
@@ -189,4 +199,18 @@ def test_notification_secondary_behaviors_bind_narrow_executable_evidence() -> N
         _assert_paths_exist(
             behavior['evidence'],
             context=f'notifications.{capability_key}.{behavior_key}',
+        )
+
+
+def test_kubernetes_operations_secondary_behaviors_bind_narrow_executable_evidence() -> None:
+    payload = json.loads(MATRIX_PATH.read_text(encoding='utf-8'))
+    capabilities = payload['surfaces']['kubernetes_operations']['capabilities']
+
+    for (capability_key, behavior_key), evidence_path in KUBERNETES_OPERATIONS_SECONDARY_EVIDENCE.items():
+        behavior = capabilities[capability_key]['behaviors'][behavior_key]
+        assert behavior['state'] == 'covered', f'kubernetes_operations.{capability_key}.{behavior_key} must be covered'
+        assert behavior['evidence'] == [evidence_path]
+        _assert_paths_exist(
+            behavior['evidence'],
+            context=f'kubernetes_operations.{capability_key}.{behavior_key}',
         )
