@@ -21,6 +21,7 @@ document.addEventListener('alpine:init', () => {
         notificationDeckLastChecked: null,
         notificationDeckConnectionIssue: false,
         userOpen: false,
+        userMenuReturnTarget: null,
         aboutOpen: false,
         aboutKeydownHandler: null,
 
@@ -67,6 +68,7 @@ document.addEventListener('alpine:init', () => {
         closeMenus() {
             const quickActionsReturnTarget = this.quickOpen ? this.quickActionsReturnTarget : null
             const globalSearchReturnTarget = this.searchOpen ? this.globalSearchReturnTarget : null
+            const userMenuReturnTarget = this.userOpen ? this.userMenuReturnTarget : null
             const aboutWasOpen = this.aboutOpen
             this.quickOpen = false
             this.searchOpen = false
@@ -80,6 +82,8 @@ document.addEventListener('alpine:init', () => {
                 this.restoreFocus(quickActionsReturnTarget)
             } else if (globalSearchReturnTarget) {
                 this.restoreFocus(globalSearchReturnTarget)
+            } else if (userMenuReturnTarget) {
+                this.restoreFocus(userMenuReturnTarget)
             }
         },
 
@@ -107,7 +111,12 @@ document.addEventListener('alpine:init', () => {
         },
 
         toggleUserMenu() {
-            this.userOpen = !this.userOpen
+            const opening = !this.userOpen
+            if (opening) {
+                this.userMenuReturnTarget =
+                    document.activeElement instanceof HTMLElement ? document.activeElement : null
+            }
+            this.userOpen = opening
             this.searchOpen = false
             this.quickOpen = false
             this.notificationDeckOpen = false

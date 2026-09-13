@@ -12,7 +12,7 @@
         x-data="kaoriNavbar"
         @kaori:notifications-changed.window="if ($event.detail?.tab && ['activity', 'inbox', 'notifications'].includes($event.detail?.tab)) { notificationDeckTab = $event.detail.tab } queueNotificationDeckRefresh()"
         @keydown.window="handleGlobalSearchShortcut($event)"
-        @keydown.escape.window="const userMenuWasOpen = userOpen; closeMenus(); if (userMenuWasOpen) { $nextTick(() => $refs.userMenuTrigger?.focus()) }">
+        @keydown.escape.window="closeMenus()">
     <div class="flex h-14 items-center justify-between gap-2 px-3 sm:h-16 sm:px-4 lg:gap-4 lg:px-8">
         <!-- Left: adaptive navigation control and current page context -->
         <div class="flex min-w-0 items-center gap-2">
