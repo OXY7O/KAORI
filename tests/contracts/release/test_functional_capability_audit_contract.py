@@ -45,6 +45,44 @@ AUTHENTICATION_SECONDARY_EVIDENCE = {
     ('session', 'validation_dependency'): 'tests/unit/access/authentication/test_auth_session_policy.py',
     ('readiness', 'failure_recovery'): 'tests/ui/test_runtime_state_responsiveness.py',
 }
+NOTIFICATION_SECONDARY_EVIDENCE = {
+    (
+        'notification_center',
+        'authorization',
+    ): 'tests/contracts/platform_operations/notifications/test_notification_center_final_lock_contract.py',
+    (
+        'notification_center',
+        'validation_dependency',
+    ): 'tests/contracts/platform_operations/notifications/test_notification_center_final_lock_contract.py',
+    (
+        'notification_center',
+        'persistence',
+    ): 'tests/contracts/platform_operations/notifications/test_notification_center_final_lock_contract.py',
+    (
+        'notification_center',
+        'failure_recovery',
+    ): 'tests/contracts/platform_operations/notifications/test_activity_notification_center_contract.py',
+    (
+        'inbox',
+        'authorization',
+    ): 'tests/contracts/platform_operations/notifications/test_notification_center_final_lock_contract.py',
+    (
+        'inbox',
+        'persistence',
+    ): 'tests/contracts/platform_operations/notifications/test_notification_center_final_lock_contract.py',
+    (
+        'activity',
+        'authorization',
+    ): 'tests/contracts/platform_operations/notifications/test_notification_center_final_lock_contract.py',
+    (
+        'read_state_refresh',
+        'persistence',
+    ): 'tests/contracts/platform_operations/notifications/test_activity_notification_center_contract.py',
+    (
+        'read_state_refresh',
+        'failure_recovery',
+    ): 'tests/contracts/platform_operations/notifications/test_activity_notification_center_contract.py',
+}
 
 
 def _assert_paths_exist(paths: list[str], *, context: str) -> None:
@@ -137,4 +175,18 @@ def test_authentication_secondary_behaviors_bind_narrow_executable_evidence() ->
         _assert_paths_exist(
             behavior['evidence'],
             context=f'authentication.{capability_key}.{behavior_key}',
+        )
+
+
+def test_notification_secondary_behaviors_bind_narrow_executable_evidence() -> None:
+    payload = json.loads(MATRIX_PATH.read_text(encoding='utf-8'))
+    capabilities = payload['surfaces']['notifications']['capabilities']
+
+    for (capability_key, behavior_key), evidence_path in NOTIFICATION_SECONDARY_EVIDENCE.items():
+        behavior = capabilities[capability_key]['behaviors'][behavior_key]
+        assert behavior['state'] == 'covered', f'notifications.{capability_key}.{behavior_key} must be covered'
+        assert behavior['evidence'] == [evidence_path]
+        _assert_paths_exist(
+            behavior['evidence'],
+            context=f'notifications.{capability_key}.{behavior_key}',
         )
