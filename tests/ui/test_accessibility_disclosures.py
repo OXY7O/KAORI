@@ -221,7 +221,7 @@ def test_login_validation_errors_are_programmatically_associated(
         password.fill('')
         login_form = username.locator('xpath=ancestor::form[1]')
         expect(login_form).to_be_visible()
-        login_form.evaluate('(form) => form.submit()')
+        login_form.evaluate('(form) => HTMLFormElement.prototype.submit.call(form)')
         page.wait_for_load_state('networkidle')
 
         expect(username).to_have_attribute('aria-invalid', 'true')
