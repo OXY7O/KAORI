@@ -7,6 +7,8 @@ from pathlib import Path
 
 from playwright.sync_api import Locator, Page, expect
 
+from app.extensions import limiter
+
 EVIDENCE_ROOT = Path('tmp/ci-artifacts/test-output/ui-browser')
 TEST_USERNAME = 'browser-admin'
 TEST_PASSWORD = 'browser-password'
@@ -208,6 +210,10 @@ def test_login_validation_errors_are_programmatically_associated(
     viewport_name, _ = kaori_viewport
 
     with _browser_evidence(page, 'login-validation-accessibility', viewport_name):
+        reset_limiter = getattr(limiter, 'reset', None)
+        assert callable(reset_limiter)
+        reset_limiter()
+
         response = page.goto(f'{kaori_authenticated_base_url}/auth/login', wait_until='networkidle')
         assert response is not None
         assert response.ok
