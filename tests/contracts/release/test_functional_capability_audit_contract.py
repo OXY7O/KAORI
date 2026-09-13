@@ -24,6 +24,19 @@ REQUIRED_EXECUTION_AUTHORITIES = {
     'tests/contracts',
     'tests/e2e',
 }
+RESOLVED_PRIMARY_FLOW_EVIDENCE = {
+    ('intelligence', 'recommendations'): 'tests/contracts/intelligence/test_recommendations_audit_20260815_contract.py',
+    ('intelligence', 'alert_intelligence'): 'tests/contracts/intelligence/test_alert_operations_lifecycle_contract.py',
+    ('intelligence', 'rule_catalog'): 'tests/contracts/intelligence/test_rule_catalog_review_20260815_contract.py',
+    (
+        'notifications',
+        'inbox',
+    ): 'tests/contracts/platform_operations/notifications/test_activity_notification_center_contract.py',
+    (
+        'notifications',
+        'activity',
+    ): 'tests/contracts/platform_operations/notifications/test_activity_notification_center_contract.py',
+}
 
 
 def _assert_paths_exist(paths: list[str], *, context: str) -> None:
@@ -93,3 +106,13 @@ def test_functional_capability_audit_matrix_is_fail_closed() -> None:
                     assert behavior['reason'].strip()
                     assert not behavior.get('evidence')
                     assert 'tracking_issue' not in behavior
+
+
+def test_resolved_primary_flow_findings_bind_narrow_executable_evidence() -> None:
+    payload = json.loads(MATRIX_PATH.read_text(encoding='utf-8'))
+
+    for (surface_key, capability_key), evidence_path in RESOLVED_PRIMARY_FLOW_EVIDENCE.items():
+        behavior = payload['surfaces'][surface_key]['capabilities'][capability_key]['behaviors']['normal_flow']
+        assert behavior['state'] == 'covered', f'{surface_key}.{capability_key}.normal_flow must be covered'
+        assert behavior['evidence'] == [evidence_path]
+        _assert_paths_exist(behavior['evidence'], context=f'{surface_key}.{capability_key}.normal_flow')
