@@ -9,9 +9,8 @@ from werkzeug.datastructures import MultiDict
 
 from app import create_app
 from app.bootstrap import presentation as bootstrap_presentation
-from app.extensions import db
+from app.extensions import db, login_manager
 from app.extensions import login as login_extension
-from app.extensions import login_manager
 from app.models.report import Report
 from app.reports.generate import routes as generate_routes
 from app.reports.generate import service as generate_service
