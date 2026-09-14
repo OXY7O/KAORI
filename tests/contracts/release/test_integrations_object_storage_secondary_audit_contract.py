@@ -17,9 +17,7 @@ def test_object_storage_validation_behavior_binds_available_minio_evidence() -> 
     assert len(object_storage_types) == 1
     assert object_storage_types[0]['domain_key'] == 'storage'
 
-    available_providers = [
-        item for item in object_storage_types[0]['providers'] if item['lifecycle'] == 'available'
-    ]
+    available_providers = [item for item in object_storage_types[0]['providers'] if item['lifecycle'] == 'available']
     assert available_providers == [
         {
             'key': 'minio',
