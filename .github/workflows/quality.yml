@@ -328,13 +328,13 @@ jobs:
           docker compose --file .github/ci/compose.yml run --rm ci
           bash scripts/quality_gate.sh --tests
       - name: Upload Test Diagnostics
-        if: ${{ always() }}
+        if: ${{ failure() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: tests-${{ github.run_id }}-${{ github.run_attempt }}
           path: tmp/ci-artifacts/test-output
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 1
       - name: Cleanup Test Dependencies
         if: ${{ always() }}
         run: docker compose --file .github/ci/compose.yml down --volumes --remove-orphans
