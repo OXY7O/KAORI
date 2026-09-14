@@ -124,6 +124,24 @@ KUBERNETES_GOVERNANCE_SECONDARY_EVIDENCE = {
         'failure_recovery',
     ): 'tests/kubernetes/governance/test_tls_certificate_sync_results.py',
 }
+REPORTS_GENERATION_SECONDARY_EVIDENCE = {
+    (
+        'generate',
+        'validation_dependency',
+    ): 'tests/contracts/reports/test_generate_report_workspace_redesign_contract.py',
+    (
+        'generate',
+        'async_job',
+    ): 'tests/contracts/reports/test_report_job_standard_contract.py',
+    (
+        'generate',
+        'failure_recovery',
+    ): 'tests/contracts/reports/test_generated_report_flow_feedback_contract.py',
+    (
+        'generated',
+        'failure_recovery',
+    ): 'tests/contracts/reports/test_generated_report_flow_feedback_contract.py',
+}
 
 
 def _assert_paths_exist(paths: list[str], *, context: str) -> None:
@@ -258,4 +276,18 @@ def test_kubernetes_governance_secondary_behaviors_bind_narrow_executable_eviden
         _assert_paths_exist(
             behavior['evidence'],
             context=f'governance.{capability_key}.{behavior_key}',
+        )
+
+
+def test_reports_generation_secondary_behaviors_bind_narrow_executable_evidence() -> None:
+    payload = json.loads(MATRIX_PATH.read_text(encoding='utf-8'))
+    capabilities = payload['surfaces']['reports']['capabilities']
+
+    for (capability_key, behavior_key), evidence_path in REPORTS_GENERATION_SECONDARY_EVIDENCE.items():
+        behavior = capabilities[capability_key]['behaviors'][behavior_key]
+        assert behavior['state'] == 'covered', f'reports.{capability_key}.{behavior_key} must be covered'
+        assert behavior['evidence'] == [evidence_path]
+        _assert_paths_exist(
+            behavior['evidence'],
+            context=f'reports.{capability_key}.{behavior_key}',
         )
