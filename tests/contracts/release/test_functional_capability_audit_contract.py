@@ -102,6 +102,28 @@ KUBERNETES_OPERATIONS_SECONDARY_EVIDENCE = {
     ('secret_management', 'persistence'): 'tests/kubernetes/operations/test_secret_mutation_workflow.py',
     ('secret_management', 'failure_recovery'): 'tests/kubernetes/operations/test_secret_mutation_workflow.py',
 }
+KUBERNETES_GOVERNANCE_SECONDARY_EVIDENCE = {
+    (
+        'tls_certificates',
+        'authorization',
+    ): 'tests/kubernetes/governance/test_tls_governance_route_characterization.py',
+    (
+        'tls_certificates',
+        'validation_dependency',
+    ): 'tests/kubernetes/governance/test_tls_governance_route_characterization.py',
+    (
+        'tls_certificates',
+        'persistence',
+    ): 'tests/integration/kubernetes/governance/test_tls_certificate_read_model.py',
+    (
+        'tls_certificates',
+        'async_job',
+    ): 'tests/contracts/kubernetes/governance/test_tls_certificate_sync_worker_contract.py',
+    (
+        'tls_certificates',
+        'failure_recovery',
+    ): 'tests/kubernetes/governance/test_tls_certificate_sync_results.py',
+}
 
 
 def _assert_paths_exist(paths: list[str], *, context: str) -> None:
@@ -222,4 +244,18 @@ def test_kubernetes_operations_secondary_behaviors_bind_narrow_executable_eviden
         _assert_paths_exist(
             behavior['evidence'],
             context=f'kubernetes_operations.{capability_key}.{behavior_key}',
+        )
+
+
+def test_kubernetes_governance_secondary_behaviors_bind_narrow_executable_evidence() -> None:
+    payload = json.loads(MATRIX_PATH.read_text(encoding='utf-8'))
+    capabilities = payload['surfaces']['governance']['capabilities']
+
+    for (capability_key, behavior_key), evidence_path in KUBERNETES_GOVERNANCE_SECONDARY_EVIDENCE.items():
+        behavior = capabilities[capability_key]['behaviors'][behavior_key]
+        assert behavior['state'] == 'covered', f'governance.{capability_key}.{behavior_key} must be covered'
+        assert behavior['evidence'] == [evidence_path]
+        _assert_paths_exist(
+            behavior['evidence'],
+            context=f'governance.{capability_key}.{behavior_key}',
         )
