@@ -12,8 +12,8 @@ from app.bootstrap import presentation as bootstrap_presentation
 from app.extensions import db, login_manager
 from app.extensions import login as login_extension
 from app.models.report import Report
-from app.reports.generate import routes as generate_routes
-from app.reports.generate import service as generate_service
+import app.reports.generate.routes as generate_routes
+import app.reports.generate.service as generate_service
 
 
 class ReportsGenerateUser(UserMixin):
