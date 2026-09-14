@@ -7,13 +7,13 @@ from flask import Flask
 from flask_login import UserMixin
 from werkzeug.datastructures import MultiDict
 
+import app.reports.generate.routes as generate_routes
+import app.reports.generate.service as generate_service
 from app import create_app
 from app.bootstrap import presentation as bootstrap_presentation
 from app.extensions import db, login_manager
 from app.extensions import login as login_extension
 from app.models.report import Report
-import app.reports.generate.routes as generate_routes
-import app.reports.generate.service as generate_service
 
 
 class ReportsGenerateUser(UserMixin):
