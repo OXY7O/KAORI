@@ -13,9 +13,7 @@ RUNTIME_EVIDENCE_PATH = 'tests/integrations/runtime/test_recovery.py'
 
 def test_alertmanager_secondary_behaviors_bind_canonical_runtime_recovery_evidence() -> None:
     provider_matrix = yaml.safe_load(PROVIDER_MATRIX_PATH.read_text(encoding='utf-8'))
-    alert_sources = [
-        item for item in provider_matrix['integration_types'] if item['key'] == 'alert_source'
-    ]
+    alert_sources = [item for item in provider_matrix['integration_types'] if item['key'] == 'alert_source']
     assert len(alert_sources) == 1
     assert alert_sources[0]['domain_key'] == 'observability'
     assert alert_sources[0]['providers'] == [
