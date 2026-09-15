@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -32,6 +33,24 @@ class TimezoneFormStub:
         return self._valid
 
 
+class RegionalFormStub:
+    def __init__(
+        self,
+        *,
+        locale: str = 'id-ID',
+        date_format: str = 'day_month_numeric',
+        time_format: str = '24h',
+        valid: bool = True,
+    ) -> None:
+        self.locale = Field(locale)
+        self.date_format = Field(date_format)
+        self.time_format = Field(time_format)
+        self._valid = valid
+
+    def validate_on_submit(self) -> bool:
+        return self._valid
+
+
 class PasswordFormStub:
     def __init__(self, *, current_password: str, new_password: str, valid: bool = True) -> None:
         self.current_password = Field(current_password)
@@ -56,7 +75,7 @@ class UserStub:
         self.auth_session_version += 1
 
 
-def _feedback(**_kwargs):
+def _feedback(**_kwargs: Any) -> dict[str, bool]:
     return {'notification_deck_visible': False}
 
 
@@ -75,7 +94,7 @@ def _wire_account_action_dependencies(
     monkeypatch: pytest.MonkeyPatch,
     commits: list[str],
     session_preservations: list[int],
-    activities: list[dict[str, object]],
+    activities: list[dict[str, Any]],
 ) -> None:
     monkeypatch.setattr(
         account_actions,
@@ -84,16 +103,15 @@ def _wire_account_action_dependencies(
     )
     monkeypatch.setattr(account_actions, 'url_for', lambda *_args, **_kwargs: '/settings/account')
     monkeypatch.setattr(account_actions, 'create_transient_feedback', _feedback)
-    monkeypatch.setattr(
-        account_actions,
-        'preserve_current_session_after_password_change',
-        lambda user: session_preservations.append(user.id),
-    )
 
-    def record_activity(**kwargs):
+    def preserve_session(user: Any) -> None:
+        session_preservations.append(user.id)
+
+    def record_activity(**kwargs: Any) -> dict[str, bool]:
         activities.append(kwargs)
         return {'notification_deck_visible': False}
 
+    monkeypatch.setattr(account_actions, 'preserve_current_session_after_password_change', preserve_session)
     monkeypatch.setattr(account_actions, 'record_operational_activity', record_activity)
 
 
@@ -140,10 +158,30 @@ def test_browser_timezone_sync_commits_only_effective_automatic_change(monkeypat
     assert commits == ['commit']
 
 
+def test_regional_format_preference_commits_normalized_state(monkeypatch: pytest.MonkeyPatch) -> None:
+    commits: list[str] = []
+    _wire_general_action_dependencies(monkeypatch, commits)
+    user = SimpleNamespace(
+        id=17,
+        locale='en-US',
+        date_format='year_month_day',
+        time_format='12h',
+    )
+    form = RegionalFormStub()
+
+    result = general_actions.save_regional_format_preference(user=user, form=form, is_htmx=True)
+
+    assert result.saved is True
+    assert user.locale == 'id-ID'
+    assert user.date_format == 'day_month_numeric'
+    assert user.time_format == '24h'
+    assert commits == ['commit']
+
+
 def test_password_change_commits_then_preserves_current_session_and_audits(monkeypatch: pytest.MonkeyPatch) -> None:
     commits: list[str] = []
     session_preservations: list[int] = []
-    activities: list[dict[str, object]] = []
+    activities: list[dict[str, Any]] = []
     _wire_account_action_dependencies(monkeypatch, commits, session_preservations, activities)
     user = UserStub()
     form = PasswordFormStub(
@@ -186,7 +224,7 @@ def test_password_rejections_do_not_commit_or_preserve_session(
 ) -> None:
     commits: list[str] = []
     session_preservations: list[int] = []
-    activities: list[dict[str, object]] = []
+    activities: list[dict[str, Any]] = []
     _wire_account_action_dependencies(monkeypatch, commits, session_preservations, activities)
     user = UserStub()
     form = PasswordFormStub(current_password=current_password, new_password=new_password)
