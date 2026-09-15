@@ -20,6 +20,7 @@ class UserStub:
         account_is_active: bool = True,
         deleted_at: datetime | None = None,
         username: str = 'operator',
+        role_name: str = 'Viewer',
     ) -> None:
         self.id = user_id
         self.permissions = permissions or set()
@@ -31,6 +32,7 @@ class UserStub:
         self.email = f'{username}@example.invalid'
         self.role_record = None
         self.role_id = 1
+        self.role_name = role_name
         self.updated_at: datetime | None = None
         self.password_updates: list[str] = []
 
@@ -196,7 +198,6 @@ def test_updated_user_persistence_rolls_back_when_commit_fails(
     session = SessionStub(fail_commit=True)
     actor = UserStub(user_id=1, username='admin')
     target = UserStub(user_id=2, username='updated-user')
-    target.role_name = 'Viewer'
     audit_events: list[dict[str, Any]] = []
     monkeypatch.setattr(service, 'db', type('DBStub', (), {'session': session})())
     monkeypatch.setattr(service, 'record_admin_event', lambda **kwargs: audit_events.append(kwargs))
