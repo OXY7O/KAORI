@@ -195,7 +195,10 @@ def test_notification_channel_transport_change_resets_validation_but_preserves_u
     assert channel.credential_payload == original_credential
     assert channel.updated_by_user_id == 24
     assert channel.test_status == 'not_tested'
-    assert channel.test_message == 'Destination, credentials, or transport configuration changed. Validate the channel again.'
+    assert (
+        channel.test_message
+        == 'Destination, credentials, or transport configuration changed. Validate the channel again.'
+    )
     assert channel.last_tested_at is None
     assert channel.last_delivery_status == 'never'
     assert channel.last_delivery_message is None
