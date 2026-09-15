@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from typing import Any
 
 import pytest
 
@@ -86,11 +85,19 @@ class DeliveryStub:
     query = DeliveryQueryStub(None)
 
     def __init__(self) -> None:
-        self.attempt_count = 0
+        self.channel_id = 0
+        self.event_key = ''
+        self.event_type = ''
+        self.domain = ''
+        self.asset_type = ''
+        self.asset_key = ''
+        self.severity = ''
         self.status = 'queued'
+        self.payload_json: dict[str, object] = {}
+        self.provider_message_id: str | None = None
+        self.attempt_count = 0
         self.error_message: str | None = None
         self.sent_at: object | None = None
-        self.provider_message_id: str | None = None
 
 
 def _form_input(
@@ -174,7 +181,7 @@ def test_notification_channel_transport_change_resets_validation_but_preserves_u
     channel = _validated_channel()
     original_credential = channel.credential_payload
 
-    service.update_channel(
+    service.update_channel(  # type: ignore[arg-type]
         channel,
         _form_input(
             destination='new-ops@example.invalid',
