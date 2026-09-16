@@ -35,11 +35,6 @@
       "inline_scripts": 1,
       "inline_styles": 0
     },
-    "app/templates/reports/generate/index.html": {
-      "inline_event_handlers": 0,
-      "inline_scripts": 1,
-      "inline_styles": 0
-    },
     "app/templates/reports/report_templates/index.html": {
       "inline_scripts": 1
     },
