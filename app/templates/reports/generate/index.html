@@ -812,5 +812,6 @@
                 "initial_request_ready": {{ initial_request_ready|tojson }}
             }
         </script>
-        <script defer src="{{ url_for('static', filename='js/reports/generate.js') }}"></script>
+        <script defer
+                src="{{ url_for('static', filename='js/reports/generate.js') }}"></script>
     {% endblock dashboard_content %}
