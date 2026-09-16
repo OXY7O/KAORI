@@ -53,6 +53,7 @@ _APPROVED_SEMANTIC_BORDER_COMPONENTS = {
     'app/templates/components/table_label.html',
     'app/templates/integrations/components/_asset_owner_delete_modal.html',
     'app/templates/integrations/components/_observability_binding_modal.html',
+    'app/templates/integrations/components/_workspace.html',
 }
 _APPROVED_STANDARD_SURFACE_COMPONENTS = {
     'app/templates/components/table.html',
