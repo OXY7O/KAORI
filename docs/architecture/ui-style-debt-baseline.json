@@ -51,9 +51,6 @@
     "app/templates/reports/generate/index.html": {
       "semantic_border_utilities": 16
     },
-    "app/templates/reports/generated/detail.html": {
-      "semantic_border_utilities": 4
-    },
     "app/templates/settings/account/partials/_tabs.html": {
       "page_local_workspace_tablists": 1
     },
