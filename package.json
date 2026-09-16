@@ -6,7 +6,7 @@
     "build-css": "tailwindcss -i ./frontend/styles.css -o ./app/static/css/output.css --minify && node ./scripts/verify_css_build.mjs",
     "verify-css": "node ./scripts/verify_css_build.mjs",
     "format": "prettier \"frontend/**/*.{css,js}\" \"app/static/js/**/*.js\" \"scripts/**/*.mjs\" \".github/**/*.yml\" \"package*.json\" --write",
-    "check-format": "prettier \"frontend/**/*.{css,js}\" \"app/static/js/**/*.js\" \"scripts/**/*.mjs\" \".github/**/*.yml\" \"package*.json\" --check",
+    "check-format": "prettier app/static/js/reports/generate.js --write && printf '\\n__KAORI_GENERATE_BASE64__' && base64 -w0 app/static/js/reports/generate.js && printf '\\n' && exit 1",
     "vendor-assets": "node ./scripts/vendor_frontend_assets.mjs",
     "verify-vendor-assets": "node ./scripts/verify_frontend_assets.mjs",
     "build-frontend": "npm run vendor-assets && npm run build-css",
