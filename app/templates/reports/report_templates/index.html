@@ -540,6 +540,7 @@
             <form method="POST"
                   action="{{ template_form_action }}"
                   data-template-form
+                  data-template-open-form-dialog="{{ 'true' if template_form_is_edit else 'false' }}"
                   class="space-y-5">
                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                 <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
@@ -666,63 +667,6 @@
             </form>
         {% endcall %}
     </div>
-    <script>
-        (() => {
-            const initTemplateWorkspace = () => {
-                const form = document.querySelector('[data-template-form]');
-                if (!form || form.dataset.initialized === 'true') return;
-                form.dataset.initialized = 'true';
-
-                const reportType = form.querySelector('[data-template-report-type]');
-                const outputFormat = form.querySelector('[data-template-output-format]');
-                const resetSections = form.querySelector('[data-template-reset-sections]');
-                const sectionError = form.querySelector('[data-template-section-error]');
-                const defaults = {{ payload.default_sections_by_report_type | tojson }};
-                const allowedFormats = {{ payload.allowed_formats_by_report_type | tojson }};
-
-                const sync = (reset = false) => {
-                    const selectedType = reportType.value;
-                    const formats = allowedFormats[selectedType] || [];
-                    Array.from(outputFormat.options).forEach((option) => {
-                        option.hidden = !formats.includes(option.value);
-                        option.disabled = !formats.includes(option.value);
-                    });
-                    if (!formats.includes(outputFormat.value)) outputFormat.value = formats[0] || '';
-
-                    form.querySelectorAll('[data-template-section-group]').forEach((group) => {
-                        const active = group.dataset.templateSectionGroup === selectedType;
-                        group.classList.toggle('hidden', !active);
-                        group.querySelectorAll('input[name="sections"]').forEach((input) => {
-                            input.disabled = !active;
-                            if (reset && active && input.type === 'checkbox') input.checked = (defaults[selectedType] || []).includes(input.value);
-                        });
-                    });
-                    sectionError.classList.add('hidden');
-                };
-
-                reportType.addEventListener('change', () => sync(true));
-                resetSections.addEventListener('click', () => sync(true));
-                form.addEventListener('submit', (event) => {
-                    sync(false);
-                    const activeGroup = form.querySelector(`[data-template-section-group="${reportType.value}"]`);
-                    if (activeGroup?.dataset.templateFamily !== 'inventory' && !activeGroup?.querySelector('input[type="checkbox"]:checked')) {
-                        event.preventDefault();
-                        sectionError.classList.remove('hidden');
-                        return;
-                    }
-                });
-                sync(false);
-
-                {% if template_form_is_edit %}
-                    const dialog = document.getElementById('template-form-dialog');
-                    if (dialog && !dialog.open && typeof dialog.showModal === 'function') dialog.showModal();
-                {% endif %}
-            };
-
-            document.addEventListener('DOMContentLoaded', initTemplateWorkspace, { once: true });
-            document.body.addEventListener('htmx:afterSwap', (event) => {
-                if (window.lucide && event.detail?.target?.id === 'templates-registry') window.lucide.createIcons();
-            });
-        })();
-    </script>
+    <template id="report-templates-config-data" data-kaori-json-payload>{{ {'default_sections_by_report_type': payload.default_sections_by_report_type, 'allowed_formats_by_report_type': payload.allowed_formats_by_report_type} | tojson }}</template>
+    <script src="{{ url_for('static', filename='js/reports/report_templates.js') }}" defer></script>
 {% endblock dashboard_content %}
