@@ -149,10 +149,9 @@ def test_output_format_uses_compact_native_select_and_contract_filtering() -> No
     assert 'id="output-format-default"' in source
     assert 'id="output-format-purpose"' in source
     assert 'id="output-format-contract"' in source
-    format_mapping = (
-        'allowedFormats\n                            .map(function (format) { return format.toUpperCase(); })'
-    )
-    assert format_mapping in runtime
+    assert 'outputFormatContract.textContent = allowedFormats' in runtime
+    assert 'return format.toUpperCase()' in runtime
+    assert ".join(' · ')" in runtime
 
 
 def test_generate_report_uses_semantic_status_tokens_and_preserves_storage_guard() -> None:
@@ -305,7 +304,7 @@ def test_wizard_navigation_does_not_persist_until_final_step() -> None:
     assert 'if (currentWizardStep !== 5)' in runtime
     assert 'event.preventDefault()' in runtime
     assert 'highestVisitedWizardStep = Math.max' in runtime
-    assert 'Nothing has been saved yet.' in source
+    assert 'Nothing has been saved yet.' in runtime
 
 
 def test_every_wizard_section_explains_its_operational_contract() -> None:
