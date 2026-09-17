@@ -149,5 +149,5 @@
         extra='border-t border-outline-subtle lg:border-t-0'
         ) }}
     </div>
-    <template data-utilization-trend-data data-kaori-json-payload>{{ {'trend_hours': trend_hours, 'cpu': trends.cpu|default([]), 'memory': trends.memory|default([]), 'pods': trends.pods|default([])}|tojson }}</template>
+    <template data-utilization-trend-data data-kaori-json-payload>{{ {'trend_hours': trend_hours, 'cpu': trends.cpu|default([]) , 'memory': trends.memory|default([]), 'pods': trends.pods|default([])}|tojson }}</template>
 </div>
