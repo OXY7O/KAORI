@@ -92,7 +92,6 @@ def test_shared_productive_typography_uses_named_size_tokens_for_primary_surface
         'app/templates/components/side_drawer.html',
         'app/templates/components/resource_detail_modal.html',
         'app/templates/components/table_label.html',
-        'app/templates/kubernetes/inventory/components/_summary.html',
         'app/templates/intelligence/components/_workspace.html',
         'app/templates/intelligence/partials/_recommendation_detail_content.html',
         'app/templates/intelligence/partials/_catalog_detail_content.html',
