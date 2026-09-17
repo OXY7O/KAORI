@@ -119,6 +119,7 @@ def test_overview_uses_degraded_mode_instead_of_blocking_the_workspace() -> None
 def test_generate_remains_visible_but_is_guarded_before_report_creation() -> None:
     service = read('app/reports/generate/service.py')
     template = read('app/templates/reports/generate/index.html')
+    runtime = read('app/static/js/reports/generate.js')
 
     assert "'generation_allowed': bool(storage_context.get('ready', False))" in service
     assert 'storage_status = get_report_storage_backend_status()' in service
@@ -130,8 +131,8 @@ def test_generate_remains_visible_but_is_guarded_before_report_creation() -> Non
     assert gate_pos < report_create_pos
 
     assert 'payload.generation_allowed' in template
-    assert 'storageGenerationReady' in template
-    assert '!storageGenerationReady' in template
+    assert 'storageGenerationReady' in runtime
+    assert '!storageGenerationReady' in runtime
 
 
 def test_schedule_management_remains_visible_but_execution_is_guarded() -> None:
