@@ -15,7 +15,8 @@
         const source = panel?.querySelector('[data-utilization-trend-data]')
         if (!source) return null
         try {
-            return JSON.parse(source.textContent || '{}')
+            const payload = source.content?.textContent ?? source.textContent
+            return JSON.parse(payload || '{}')
         } catch (error) {
             console.error('Unable to parse utilization trend data.', error)
             return null
