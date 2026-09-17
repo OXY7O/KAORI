@@ -14,8 +14,8 @@ def test_report_templates_use_inert_json_and_static_runtime_authority() -> None:
 
     assert 'id="report-templates-config-data"' in template
     assert 'data-kaori-json-payload' in template
-    assert 'payload.default_sections_by_report_type | tojson' in template
-    assert 'payload.allowed_formats_by_report_type | tojson' in template
+    assert "'default_sections_by_report_type': payload.default_sections_by_report_type" in template
+    assert "'allowed_formats_by_report_type': payload.allowed_formats_by_report_type" in template
     assert "filename='js/reports/report_templates.js'" in template
     assert 'const defaults =' not in template
     assert 'const allowedFormats =' not in template
