@@ -347,7 +347,7 @@
             const selectedOptions = sectionOptionsByReportType[reportTypeSelect.value] || []
 
             selectedSectionList.className = 'mt-3 grid gap-2 sm:grid-cols-2'
-            selectedSectionList.innerHTML = ''
+            selectedSectionList.replaceChildren()
 
             selectedOptions.forEach(function (section) {
                 if (inventoryContractLocked) {
@@ -357,7 +357,11 @@
                     const marker = document.createElement('span')
                     marker.className =
                         'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary'
-                    marker.innerHTML = '<i data-lucide="file-spreadsheet" class="h-3.5 w-3.5" aria-hidden="true"></i>'
+                    const markerIcon = document.createElement('i')
+                    markerIcon.setAttribute('data-lucide', 'file-spreadsheet')
+                    markerIcon.className = 'h-3.5 w-3.5'
+                    markerIcon.setAttribute('aria-hidden', 'true')
+                    marker.appendChild(markerIcon)
                     const input = document.createElement('input')
                     input.type = 'hidden'
                     input.name = 'sections'
@@ -555,7 +559,7 @@
             const clusterId = clusterSelect.value
             const namespaces = namespaceOptionsByCluster[clusterId] || []
             const normalizedSelectedValue = selectedValue || ''
-            namespaceSelect.innerHTML = ''
+            namespaceSelect.replaceChildren()
             const allNamespacesOption = document.createElement('option')
             allNamespacesOption.value = ''
             allNamespacesOption.textContent = 'All Namespaces'
