@@ -7,9 +7,9 @@ QUALITY_WORKFLOW = ROOT / '.github' / 'workflows' / 'quality.yml'
 DEVELOPER_WORKFLOW = ROOT / '.github' / 'workflows' / 'developer-check.yml'
 
 
-def _step_block(workflow: str, step_name: str, next_step_name: str) -> str:
+def _step_block(workflow: str, step_name: str, next_step_name: str | None = None) -> str:
     start = workflow.index(f'- name: {step_name}')
-    end = workflow.index(f'- name: {next_step_name}', start)
+    end = workflow.index(f'- name: {next_step_name}', start) if next_step_name else len(workflow)
     return workflow[start:end]
 
 
@@ -38,11 +38,7 @@ def test_transient_diagnostics_are_failure_only_and_short_lived() -> None:
         assert 'if: ${{ always() }}' not in upload, f'{step_name} must not run on success'
         assert 'retention-days: 3' in upload, f'{step_name} must retain for 3 days'
 
-    browser_upload = _step_block(
-        developer,
-        'Upload Browser Diagnostics',
-        'Post Check Out Work Branch Source',
-    )
+    browser_upload = _step_block(developer, 'Upload Browser Diagnostics')
     assert 'if: ${{ failure() }}' in browser_upload
     assert 'if: ${{ always() }}' not in browser_upload
     assert 'retention-days: 3' in browser_upload
