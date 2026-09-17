@@ -14,6 +14,10 @@ _EVENT_HANDLER = re.compile(
     re.IGNORECASE,
 )
 _SCRIPT_TAG = re.compile(r'<script\b(?P<attrs>[^>]*)>', re.IGNORECASE | re.DOTALL)
+_INERT_JSON_SCRIPT_TYPE = re.compile(
+    r'''\btype\s*=\s*(?:"application/json"|'application/json'|application/json)(?=\s|$)''',
+    re.IGNORECASE,
+)
 _APPROVED_INLINE_STYLE_COMPONENTS = {
     'app/templates/components/progress_bar.html',
     'app/templates/reports/pdf/components/analytics_publication.html',
@@ -31,6 +35,7 @@ def _metrics(relative: str, source: str) -> dict[str, int]:
             1
             for match in _SCRIPT_TAG.finditer(source)
             if not re.search(r'\bsrc\s*=', match.group('attrs'), re.IGNORECASE)
+            and not _INERT_JSON_SCRIPT_TYPE.search(match.group('attrs'))
         ),
         'inline_event_handlers': len(_EVENT_HANDLER.findall(source)),
     }
