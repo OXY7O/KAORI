@@ -668,5 +668,6 @@
         {% endcall %}
     </div>
     <template id="report-templates-config-data" data-kaori-json-payload>{{ {'default_sections_by_report_type': payload.default_sections_by_report_type, 'allowed_formats_by_report_type': payload.allowed_formats_by_report_type} | tojson }}</template>
-    <script src="{{ url_for('static', filename='js/reports/report_templates.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/reports/report_templates.js') }}"
+            defer></script>
 {% endblock dashboard_content %}
