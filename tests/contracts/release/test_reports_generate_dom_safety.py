@@ -19,4 +19,6 @@ def test_reports_generate_runtime_constructs_inventory_icon_with_dom_nodes() -> 
 
     assert "const markerIcon = document.createElement('i')" in runtime
     assert "markerIcon.setAttribute('data-lucide', 'file-spreadsheet')" in runtime
+    assert "markerIcon.className = 'h-3.5 w-3.5'" in runtime
+    assert "markerIcon.setAttribute('aria-hidden', 'true')" in runtime
     assert 'marker.appendChild(markerIcon)' in runtime
