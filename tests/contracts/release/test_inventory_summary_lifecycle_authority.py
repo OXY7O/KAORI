@@ -1,5 +1,6 @@
-from pathlib import Path
+from __future__ import annotations
 
+from pathlib import Path
 
 LEGACY_SUMMARY = Path('app/templates/kubernetes/inventory/components/_summary.html')
 INTELLIGENCE_CONTRACT = Path(
