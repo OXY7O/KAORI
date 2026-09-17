@@ -121,10 +121,10 @@ def test_inventory_sections_are_contract_locked_and_compact() -> None:
     assert 'Workbook structure is locked by the report contract.' in source
     assert '<input type="hidden" name="sections" value="{{ section.value }}">' in source
     assert 'sm:grid-cols-2' in source
-    assert "input.type = 'hidden';" in runtime
+    assert "input.type = 'hidden'" in runtime
     assert 'marker.innerHTML = \'<i data-lucide="file-spreadsheet"' in runtime
     assert 'input.disabled = inventoryContractLocked' not in runtime
-    assert 'setElementVisibility(selectionActions, !inventoryContractLocked);' in runtime
+    assert 'setElementVisibility(selectionActions, !inventoryContractLocked)' in runtime
     assert "sectionStateLabel = inventoryContractLocked ? 'Locked' : 'Selected'" in runtime
     assert "selectedCount > 0 ? 'Content Ready' : 'Selection Required'" in runtime
 
@@ -138,8 +138,8 @@ def test_output_format_uses_compact_native_select_and_contract_filtering() -> No
     assert '{% if not format_allowed %}disabled hidden{% endif %}' in source
     assert 'data-output-format-card=' not in source
     assert 'data-output-format-grid=' not in source
-    assert 'option.disabled = !isAllowed;' in runtime
-    assert 'option.hidden = !isAllowed;' in runtime
+    assert 'option.disabled = !isAllowed' in runtime
+    assert 'option.hidden = !isAllowed' in runtime
     assert "option.value !== 'snapshot'" in runtime
     assert "option.value === 'snapshot'" in runtime
     assert 'Selected Artifact' in source
@@ -252,7 +252,7 @@ def test_scope_filters_are_symmetric_and_use_guidance_instead_of_inline_warning(
     assert 'data-scope-filter="period"' in source
     assert source.count('flex min-h-5 items-center justify-between gap-2') >= 2
     assert 'id="period-mode-label"' in source
-    assert "periodModeLabel.textContent = isInventoryReport ? 'Snapshot' : 'Time Range';" in runtime
+    assert "periodModeLabel.textContent = isInventoryReport ? 'Snapshot' : 'Time Range'" in runtime
     assert 'data-generate-scope-tip="true"' in source
     assert 'Scope Contract' in source
     assert (
@@ -262,8 +262,8 @@ def test_scope_filters_are_symmetric_and_use_guidance_instead_of_inline_warning(
     assert 'All Namespaces' in runtime
     assert 'Select a cluster before queueing.' not in source + runtime
     assert 'id="cluster-guard"' not in source
-    assert "const clusterGuard = document.getElementById('cluster-guard');" not in runtime
-    assert 'setElementVisibility(clusterGuard, shouldBlockCluster);' not in runtime
+    assert "const clusterGuard = document.getElementById('cluster-guard')" not in runtime
+    assert 'setElementVisibility(clusterGuard, shouldBlockCluster)' not in runtime
 
 
 def test_generate_report_uses_numbered_workflow_hierarchy_with_guided_stepper() -> None:
@@ -303,7 +303,7 @@ def test_wizard_navigation_does_not_persist_until_final_step() -> None:
     assert source.count('type="submit"') == 1
     assert "generateForm.addEventListener('submit'" in runtime
     assert 'if (currentWizardStep !== 5)' in runtime
-    assert 'event.preventDefault();' in runtime
+    assert 'event.preventDefault()' in runtime
     assert 'highestVisitedWizardStep = Math.max' in runtime
     assert 'Nothing has been saved yet.' in source
 
@@ -326,7 +326,7 @@ def test_every_wizard_section_explains_its_operational_contract() -> None:
     assert 'Queueing creates a governed report request first.' in source
     assert 'Only sections published for the selected report type can be submitted.' in source
     assert 'Ready artifacts follow the Generated Report Data Lifecycle retention policy.' in source
-    assert 'description.textContent = section.description;' in runtime
+    assert 'description.textContent = section.description' in runtime
 
 
 def test_generate_report_uses_shared_form_control_size_and_normal_value_weight() -> None:
