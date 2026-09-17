@@ -27,7 +27,9 @@ def test_topology_runtime_parses_dom_configuration_fail_closed() -> None:
     assert "document.getElementById('topology-config-data')" in runtime
     assert 'configNode.content?.textContent ?? configNode.textContent' in runtime
     assert 'JSON.parse' in runtime
-    assert 'window.KAORI_TOPOLOGY' not in runtime
+    assert 'const config = window.KAORI_TOPOLOGY' not in runtime
+    assert 'window.KAORI_TOPOLOGY =' not in runtime
+    assert 'window.KAORI_TOPOLOGY_LIBRARY_VERSION' in runtime
     assert 'KAORI topology configuration is unavailable.' in runtime
     assert 'KAORI topology configuration is invalid.' in runtime
 
