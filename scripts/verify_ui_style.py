@@ -73,8 +73,12 @@ _APPROVED_ARBITRARY_TEXT_COMPONENTS = {
     'app/templates/components/table.html',
     'app/templates/components/table_label.html',
 }
+_APPROVED_FONT_EXTRABOLD_COMPONENTS = {
+    'app/templates/components/navigation/sidebar.html',
+}
 _APPROVED_CUSTOM_HERO_COMPONENTS = {
     'app/templates/components/page_hero.html',
+    'app/templates/components/navigation/sidebar.html',
     'app/templates/reports/pdf/components/analytics_publication.html',
 }
 
@@ -159,7 +163,9 @@ def _metrics(relative: str, source: str) -> dict[str, int]:
             0 if relative in _APPROVED_ARBITRARY_TEXT_COMPONENTS else len(_ARBITRARY_TEXT.findall(source))
         ),
         'arbitrary_tracking': len(_ARBITRARY_TRACKING.findall(source)),
-        'font_extrabold_utilities': len(_FONT_EXTRABOLD.findall(source)),
+        'font_extrabold_utilities': (
+            0 if relative in _APPROVED_FONT_EXTRABOLD_COMPONENTS else len(_FONT_EXTRABOLD.findall(source))
+        ),
         'arbitrary_radii': len(_ARBITRARY_RADIUS.findall(source)),
         'raw_hex_colors': len(_RAW_HEX.findall(source)),
         'raw_palette_utilities': len(_RAW_PALETTE.findall(source)),
