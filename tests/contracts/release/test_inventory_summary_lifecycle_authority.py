@@ -3,9 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 LEGACY_SUMMARY = Path('app/templates/kubernetes/inventory/components/_summary.html')
-INTELLIGENCE_CONTRACT = Path(
-    'tests/contracts/intelligence/test_intelligence_workspace_standard_contract.py'
-)
+INTELLIGENCE_CONTRACT = Path('tests/contracts/intelligence/test_intelligence_workspace_standard_contract.py')
 
 
 def test_retired_inventory_summary_has_no_stale_contract_consumer() -> None:
