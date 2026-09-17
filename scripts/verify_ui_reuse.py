@@ -15,7 +15,7 @@ _EVENT_HANDLER = re.compile(
 )
 _SCRIPT_TAG = re.compile(r'<script\b(?P<attrs>[^>]*)>', re.IGNORECASE | re.DOTALL)
 _INERT_JSON_SCRIPT_TYPE = re.compile(
-    r'''\btype\s*=\s*(?:"application/json"|'application/json'|application/json)(?=\s|$)''',
+    r"""\btype\s*=\s*(?:"application/json"|'application/json'|application/json)(?=\s|$)""",
     re.IGNORECASE,
 )
 _APPROVED_INLINE_STYLE_COMPONENTS = {
