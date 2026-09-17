@@ -122,7 +122,11 @@ def test_inventory_sections_are_contract_locked_and_compact() -> None:
     assert '<input type="hidden" name="sections" value="{{ section.value }}">' in source
     assert 'sm:grid-cols-2' in source
     assert "input.type = 'hidden'" in runtime
-    assert 'marker.innerHTML = \'<i data-lucide="file-spreadsheet"' in runtime
+    assert "const markerIcon = document.createElement('i')" in runtime
+    assert "markerIcon.setAttribute('data-lucide', 'file-spreadsheet')" in runtime
+    assert "markerIcon.className = 'h-3.5 w-3.5'" in runtime
+    assert "markerIcon.setAttribute('aria-hidden', 'true')" in runtime
+    assert 'marker.appendChild(markerIcon)' in runtime
     assert 'input.disabled = inventoryContractLocked' not in runtime
     assert 'setElementVisibility(selectionActions, !inventoryContractLocked)' in runtime
     assert "sectionStateLabel = inventoryContractLocked ? 'Locked' : 'Selected'" in runtime
