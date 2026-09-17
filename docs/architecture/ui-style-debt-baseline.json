@@ -5,10 +5,6 @@
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 3
     },
-    "app/templates/components/navigation/sidebar.html": {
-      "custom_hero_titles": 1,
-      "font_extrabold_utilities": 7
-    },
     "app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry_detail_content.html": {
       "semantic_border_utilities": 3
     },
