@@ -5,6 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATE = ROOT / 'app/templates/reports/generate/index.html'
+RUNTIME = ROOT / 'app/static/js/reports/generate.js'
 SERVICE = ROOT / 'app/reports/generate/service.py'
 
 
@@ -114,31 +115,33 @@ def test_generate_report_removes_duplicate_guide_and_sidebar_content() -> None:
 
 def test_inventory_sections_are_contract_locked_and_compact() -> None:
     source = read(TEMPLATE)
+    runtime = read(RUNTIME)
 
     assert "payload.selected_report_type.family == 'inventory'" in source
     assert 'Workbook structure is locked by the report contract.' in source
     assert '<input type="hidden" name="sections" value="{{ section.value }}">' in source
-    assert "input.type = 'hidden';" in source
     assert 'sm:grid-cols-2' in source
-    assert 'marker.innerHTML = \'<i data-lucide="file-spreadsheet"' in source
-    assert 'input.disabled = inventoryContractLocked' not in source
-    assert 'setElementVisibility(selectionActions, !inventoryContractLocked);' in source
-    assert "sectionStateLabel = inventoryContractLocked ? 'Locked' : 'Selected'" in source
-    assert "selectedCount > 0 ? 'Content Ready' : 'Selection Required'" in source
+    assert "input.type = 'hidden';" in runtime
+    assert 'marker.innerHTML = \'<i data-lucide="file-spreadsheet"' in runtime
+    assert 'input.disabled = inventoryContractLocked' not in runtime
+    assert 'setElementVisibility(selectionActions, !inventoryContractLocked);' in runtime
+    assert "sectionStateLabel = inventoryContractLocked ? 'Locked' : 'Selected'" in runtime
+    assert "selectedCount > 0 ? 'Content Ready' : 'Selection Required'" in runtime
 
 
 def test_output_format_uses_compact_native_select_and_contract_filtering() -> None:
     source = read(TEMPLATE)
+    runtime = read(RUNTIME)
 
     assert 'id="output-format-select"' in source
     assert 'option.value in payload.selected_report_type.allowed_formats' in source
     assert '{% if not format_allowed %}disabled hidden{% endif %}' in source
     assert 'data-output-format-card=' not in source
     assert 'data-output-format-grid=' not in source
-    assert 'option.disabled = !isAllowed;' in source
-    assert 'option.hidden = !isAllowed;' in source
-    assert "option.value !== 'snapshot'" in source
-    assert "option.value === 'snapshot'" in source
+    assert 'option.disabled = !isAllowed;' in runtime
+    assert 'option.hidden = !isAllowed;' in runtime
+    assert "option.value !== 'snapshot'" in runtime
+    assert "option.value === 'snapshot'" in runtime
     assert 'Selected Artifact' in source
     assert 'Publication Contract' in source
     assert 'data-report-output-contract="true"' in source
@@ -149,11 +152,12 @@ def test_output_format_uses_compact_native_select_and_contract_filtering() -> No
     format_mapping = (
         'allowedFormats\n                            .map(function (format) { return format.toUpperCase(); })'
     )
-    assert format_mapping in source
+    assert format_mapping in runtime
 
 
 def test_generate_report_uses_semantic_status_tokens_and_preserves_storage_guard() -> None:
     source = read(TEMPLATE)
+    runtime = read(RUNTIME)
     service = read(SERVICE)
 
     assert 'border-status-critical-border bg-status-critical-soft' in source
@@ -161,7 +165,7 @@ def test_generate_report_uses_semantic_status_tokens_and_preserves_storage_guard
     assert 'border-rose-200' not in source
     assert 'border-amber-200' not in source
     assert 'payload.generation_allowed' in source
-    assert 'storageGenerationReady' in source
+    assert 'storageGenerationReady' in runtime
     assert 'Artifact Storage Needs Review' in source
     assert 'storage_status = get_report_storage_backend_status()' in service
     assert "if not bool(storage_status.get('write_available', False))" in service
@@ -169,6 +173,7 @@ def test_generate_report_uses_semantic_status_tokens_and_preserves_storage_guard
 
 def test_wizard_keeps_dynamic_contract_ids_for_runtime_sync() -> None:
     source = read(TEMPLATE)
+    runtime = read(RUNTIME)
 
     for element_id in (
         'report-type-select',
@@ -198,18 +203,19 @@ def test_wizard_keeps_dynamic_contract_ids_for_runtime_sync() -> None:
     ):
         assert f'id="{element_id}"' in source
 
-    assert 'syncReportTypeSummary' in source
-    assert 'syncOutputFormatMode' in source
-    assert 'syncPeriodMode' in source
-    assert 'syncClusterGuard' in source
-    assert 'renderSectionList' in source
-    assert 'showWizardStep' in source
-    assert 'validateWizardStep' in source
-    assert 'syncWizardNavigation' in source
+    assert 'syncReportTypeSummary' in runtime
+    assert 'syncOutputFormatMode' in runtime
+    assert 'syncPeriodMode' in runtime
+    assert 'syncClusterGuard' in runtime
+    assert 'renderSectionList' in runtime
+    assert 'showWizardStep' in runtime
+    assert 'validateWizardStep' in runtime
+    assert 'syncWizardNavigation' in runtime
 
 
 def test_generate_report_typography_and_summary_are_visually_hierarchical() -> None:
     source = read(TEMPLATE)
+    runtime = read(RUNTIME)
 
     for heading in (
         'Report Contract',
@@ -226,8 +232,8 @@ def test_generate_report_typography_and_summary_are_visually_hierarchical() -> N
     assert 'id="preview-cluster"' in source
     assert 'id="preview-output-format"' in source
     assert 'grid gap-5 lg:grid-cols-3' in source
-    assert 'Select a specific cluster to load namespace options.' not in source
-    assert 'Cluster selection loads namespace options.' not in source
+    assert 'Select a specific cluster to load namespace options.' not in source + runtime
+    assert 'Cluster selection loads namespace options.' not in source + runtime
     assert 'id="namespace-select-help"' not in source
     assert 'Selected Artifact' in source
     assert 'Publication Contract' in source
@@ -240,23 +246,24 @@ def test_generate_report_typography_and_summary_are_visually_hierarchical() -> N
 
 def test_scope_filters_are_symmetric_and_use_guidance_instead_of_inline_warning() -> None:
     source = read(TEMPLATE)
+    runtime = read(RUNTIME)
 
     assert 'data-scope-filter="namespace"' in source
     assert 'data-scope-filter="period"' in source
     assert source.count('flex min-h-5 items-center justify-between gap-2') >= 2
     assert 'id="period-mode-label"' in source
-    assert "periodModeLabel.textContent = isInventoryReport ? 'Snapshot' : 'Time Range';" in source
+    assert "periodModeLabel.textContent = isInventoryReport ? 'Snapshot' : 'Time Range';" in runtime
     assert 'data-generate-scope-tip="true"' in source
     assert 'Scope Contract' in source
     assert (
         'Kubernetes reports use one selected cluster; Object Storage reports use one registered Object Storage system.'
         in source
     )
-    assert 'All Namespaces' in source
-    assert 'Select a cluster before queueing.' not in source
+    assert 'All Namespaces' in runtime
+    assert 'Select a cluster before queueing.' not in source + runtime
     assert 'id="cluster-guard"' not in source
-    assert "const clusterGuard = document.getElementById('cluster-guard');" not in source
-    assert 'setElementVisibility(clusterGuard, shouldBlockCluster);' not in source
+    assert "const clusterGuard = document.getElementById('cluster-guard');" not in runtime
+    assert 'setElementVisibility(clusterGuard, shouldBlockCluster);' not in runtime
 
 
 def test_generate_report_uses_numbered_workflow_hierarchy_with_guided_stepper() -> None:
@@ -287,21 +294,23 @@ def test_generate_report_uses_numbered_workflow_hierarchy_with_guided_stepper() 
 
 def test_wizard_navigation_does_not_persist_until_final_step() -> None:
     source = read(TEMPLATE)
+    runtime = read(RUNTIME)
 
     assert 'id="generate-report-form"' in source
     assert 'method="POST"' in source
     assert 'id="wizard-next-button"' in source
     assert 'id="wizard-back-button"' in source
     assert source.count('type="submit"') == 1
-    assert "generateForm.addEventListener('submit'" in source
-    assert 'if (currentWizardStep !== 5)' in source
-    assert 'event.preventDefault();' in source
-    assert 'highestVisitedWizardStep = Math.max' in source
+    assert "generateForm.addEventListener('submit'" in runtime
+    assert 'if (currentWizardStep !== 5)' in runtime
+    assert 'event.preventDefault();' in runtime
+    assert 'highestVisitedWizardStep = Math.max' in runtime
     assert 'Nothing has been saved yet.' in source
 
 
 def test_every_wizard_section_explains_its_operational_contract() -> None:
     source = read(TEMPLATE)
+    runtime = read(RUNTIME)
 
     for guidance in (
         'What This Step Controls',
@@ -317,7 +326,7 @@ def test_every_wizard_section_explains_its_operational_contract() -> None:
     assert 'Queueing creates a governed report request first.' in source
     assert 'Only sections published for the selected report type can be submitted.' in source
     assert 'Ready artifacts follow the Generated Report Data Lifecycle retention policy.' in source
-    assert 'description.textContent = section.description;' in source
+    assert 'description.textContent = section.description;' in runtime
 
 
 def test_generate_report_uses_shared_form_control_size_and_normal_value_weight() -> None:
