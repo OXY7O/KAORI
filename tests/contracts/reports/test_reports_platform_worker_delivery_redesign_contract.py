@@ -33,6 +33,7 @@ def test_reports_pages_use_standard_heroes_and_compact_summary_strips() -> None:
     assert '{% for card in payload.summary_cards %}' in schedules
 
     generate = read(REPORT_TEMPLATES / 'generate' / 'index.html')
+    generate_runtime = read(ROOT / 'app' / 'static' / 'js' / 'reports' / 'generate.js')
     generate_service = read(ROOT / 'app' / 'reports' / 'generate' / 'service.py')
 
     assert 'page_hero.shell_classes()' in generate
@@ -50,13 +51,13 @@ def test_reports_pages_use_standard_heroes_and_compact_summary_strips() -> None:
     assert 'data-generate-step="summary"' in generate
     assert 'Review & Queue' in generate
     assert 'id="namespace-select"' in generate
-    assert 'namespaceOptionsByCluster' in generate
-    assert 'Cluster selection loads namespace options.' not in generate
-    assert 'Select a specific cluster to load namespace options.' not in generate
+    assert 'namespaceOptionsByCluster' in generate_runtime
+    assert 'Cluster selection loads namespace options.' not in generate + generate_runtime
+    assert 'Select a specific cluster to load namespace options.' not in generate + generate_runtime
     assert 'id="namespace-select-help"' not in generate
     assert 'id="namespace-input"' not in generate
     assert 'id="preview-report-name"' in generate
-    assert 'syncPreviewReportName' in generate
+    assert 'syncPreviewReportName' in generate_runtime
     assert 'Ready to Queue' in generate
     assert 'Create &amp; Queue Report' in generate
     assert 'Report Type Guide' not in generate
@@ -221,6 +222,7 @@ def test_generate_report_uses_the_canonical_family_format_and_scope_contract() -
     generate_service = read(ROOT / 'app' / 'reports' / 'generate' / 'service.py')
     generate_form_options = read(ROOT / 'app' / 'reports' / 'generate' / 'form_options.py')
     generate_template = read(REPORT_TEMPLATES / 'generate' / 'index.html')
+    generate_runtime = read(ROOT / 'app' / 'static' / 'js' / 'reports' / 'generate.js')
     analytics_collectors = read(ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'collectors.py')
     inventory_common = read(ROOT / 'app' / 'reports' / 'export' / 'inventory_common.py')
     artifact_registry = read(ROOT / 'app' / 'reports' / 'export' / 'artifacts.py')
@@ -271,7 +273,7 @@ def test_generate_report_uses_the_canonical_family_format_and_scope_contract() -
     assert "'value': 'snapshot'" in generate_form_options
     assert 'A selected Kubernetes cluster is required for this report artifact.' in generate_service
     assert 'A selected Object Storage system is required for this report artifact.' in generate_service
-    assert "reportType.family === 'inventory'" in generate_template
+    assert "reportType.family === 'inventory'" in generate_runtime
     assert 'allowed_formats' in generate_template
     assert 'Artifact Storage Needs Review' in generate_template
     assert 'Output Format' in generate_template
