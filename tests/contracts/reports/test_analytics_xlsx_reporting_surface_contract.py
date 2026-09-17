@@ -47,6 +47,7 @@ def test_reports_pages_publish_analytics_excel_as_analysis_artifact() -> None:
     pipeline = read('app/templates/reports/overview/partials/_coverage_pipeline_workspace.html')
     templates_service = read('app/reports/report_templates/service.py')
     generate_page = read('app/templates/reports/generate/index.html')
+    generate_runtime = read('app/static/js/reports/generate.js')
     generated_service = read('app/reports/generated/service.py')
     generated_page = read('app/templates/reports/generated/index.html')
     generated_detail = read('app/templates/reports/generated/detail.html')
@@ -63,9 +64,9 @@ def test_reports_pages_publish_analytics_excel_as_analysis_artifact() -> None:
     assert 'stored PDF, XLSX, or CSV artifact' in pipeline
     assert 'Analytics PDF/XLSX/CSV or Inventory Excel/CSV renderer' in templates_service
 
-    # Generate already reads allowed_formats from the catalog; this locks the user-facing format purpose.
+    # Generate template owns declarative format controls; the static runtime owns dynamic purpose copy.
     assert 'XLSX Workbook' in generate_page
-    assert 'Governed analytical workbook for drill-down, filtering, trends, and evidence review.' in generate_page
+    assert 'Governed analytical workbook for drill-down, filtering, trends, and evidence review.' in generate_runtime
 
     # Every Reports operating page must explain the newly supported Analytics workbook artifact.
     assert 'PDF publications, XLSX analytical workbooks, and CSV exports' in generated_service

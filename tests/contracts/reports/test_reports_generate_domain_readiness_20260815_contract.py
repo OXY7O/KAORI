@@ -31,6 +31,7 @@ def test_generate_publishes_object_storage_scope_contracts_only_after_generic_sc
 
 def test_generate_exposes_selected_output_contract_without_repeating_global_family_policy() -> None:
     page = read('app/templates/reports/generate/index.html')
+    runtime = read('app/static/js/reports/generate.js')
 
     assert 'data-report-output-contract="true"' in page
     assert 'Selected Artifact' in page
@@ -39,8 +40,8 @@ def test_generate_exposes_selected_output_contract_without_repeating_global_fami
     assert 'id="output-format-default"' in page
     assert 'id="output-format-purpose"' in page
     assert '>Allowed</span>' in page
-    assert 'Governed workbook preserving inventory structure and tabular review.' in page
-    assert 'Governed analytical publication for review, evidence, and operational communication.' in page
+    assert 'Governed workbook preserving inventory structure and tabular review.' in runtime
+    assert 'Governed analytical publication for review, evidence, and operational communication.' in runtime
     assert 'Format Policy' not in page
     assert 'PDF only' not in page
     assert 'XLSX only' not in page
