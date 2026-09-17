@@ -1,7 +1,17 @@
 const runtimeStatusPanel = document.getElementById('topology-runtime-status')
 const startupErrorPanel = document.getElementById('topology-error')
 const configNode = document.getElementById('topology-config-data')
-const configPayload = configNode?.content?.textContent ?? configNode?.textContent
+
+if (!configNode) {
+    if (runtimeStatusPanel) runtimeStatusPanel.classList.add('hidden')
+    if (startupErrorPanel) {
+        startupErrorPanel.textContent = 'KAORI topology configuration is unavailable.'
+        startupErrorPanel.classList.remove('hidden')
+    }
+    throw new Error('KAORI topology configuration is unavailable.')
+}
+
+const configPayload = configNode.content?.textContent ?? configNode.textContent
 
 if (!configPayload?.trim()) {
     if (runtimeStatusPanel) runtimeStatusPanel.classList.add('hidden')
