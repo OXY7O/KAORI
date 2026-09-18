@@ -14,6 +14,14 @@ _EVENT_HANDLER = re.compile(
     re.IGNORECASE,
 )
 _SCRIPT_TAG = re.compile(r'<script\b(?P<attrs>[^>]*)>', re.IGNORECASE | re.DOTALL)
+_SCRIPT_BLOCK = re.compile(
+    r'<script\\b(?P<attrs>[^>]*)>(?P<body>[\\s\\S]*?)</script>',
+    re.IGNORECASE,
+)
+_PREPAINT_BOOTSTRAP_MARKER = re.compile(
+    r"""\\bdata-kaori-prepaint-bootstrap\\s*=\\s*["'](?P<marker>[^"']+)["']""",
+    re.IGNORECASE,
+)
 _INERT_JSON_SCRIPT_TYPE = re.compile(
     r"""\btype\s*=\s*(?:"application/json"|'application/json'|application/json)(?=\s|$)""",
     re.IGNORECASE,
@@ -92,6 +100,7 @@ def _approved_prepaint_script_starts(relative: str, source: str) -> set[int]:
 
 
 def _metrics(relative: str, source: str) -> dict[str, int]:
+    approved_prepaint_starts = _approved_prepaint_script_starts(relative, source)
     return {
         'inline_styles': (
             0
@@ -103,10 +112,10 @@ def _metrics(relative: str, source: str) -> dict[str, int]:
             for match in _SCRIPT_TAG.finditer(source)
             if not re.search(r'\bsrc\s*=', match.group('attrs'), re.IGNORECASE)
             and not _INERT_JSON_SCRIPT_TYPE.search(match.group('attrs'))
+            and match.start() not in approved_prepaint_starts
         ),
         'inline_event_handlers': len(_EVENT_HANDLER.findall(source)),
     }
-
 
 def scan(root: Path) -> dict[str, dict[str, int]]:
     result: dict[str, dict[str, int]] = {}
