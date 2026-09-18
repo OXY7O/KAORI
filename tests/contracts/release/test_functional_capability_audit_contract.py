@@ -292,6 +292,7 @@ def test_reports_generation_secondary_behaviors_bind_narrow_executable_evidence(
             context=f'reports.{capability_key}.{behavior_key}',
         )
 
+
 SECONDARY_RECONCILIATION_SLICE = {
     ('settings', 'general'): {
         'normal_flow': ('covered', 'tests/settings/test_settings_action_characterization.py'),
@@ -371,4 +372,3 @@ def test_admitted_secondary_reconciliation_slice_is_explicit() -> None:
                 assert behavior['reason'].strip()
             else:
                 assert behavior['reason'].strip()
-
