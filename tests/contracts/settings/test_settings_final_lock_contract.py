@@ -51,7 +51,7 @@ def test_settings_query_tabs_delegate_to_shared_htmx_tab_authority() -> None:
     verifier = read('scripts/verify_settings_final_lock.py')
     baseline = json.loads(read('docs/architecture/ui-style-debt-baseline.json'))
 
-    assert "macro render_query_tabs(" in shared
+    assert 'macro render_query_tabs(' in shared
     assert 'data-kaori-tab-variant="query-backed-htmx"' in shared
     assert 'class="flex gap-2 overflow-x-auto"' in shared
     assert 'role="tablist"' in shared
@@ -62,7 +62,7 @@ def test_settings_query_tabs_delegate_to_shared_htmx_tab_authority() -> None:
     assert 'hx-sync="{{ hx_sync }}"' in shared
     assert 'hx-swap="outerHTML"' in shared
     assert 'hx-push-url="true"' in shared
-    assert 'aria-selected="{{ \'true\' if active_key == tab_key else \'false\' }}"' in shared
+    assert "aria-selected=\"{{ 'true' if active_key == tab_key else 'false' }}\"" in shared
 
     for path, source in ((general_path, general), (account_path, account)):
         assert '{% import "components/workspace_tabs.html" as workspace_tabs %}' in source, path
@@ -79,5 +79,5 @@ def test_settings_query_tabs_delegate_to_shared_htmx_tab_authority() -> None:
     assert "hx_sync='#account-authentication-page:replace'" in account
 
     assert "workspace_tabs = read('app/templates/components/workspace_tabs.html')" in verifier
-    assert "render_query_tabs" in verifier
-    assert "query-backed-htmx" in verifier
+    assert 'render_query_tabs' in verifier
+    assert 'query-backed-htmx' in verifier
