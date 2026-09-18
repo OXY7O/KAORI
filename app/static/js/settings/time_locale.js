@@ -29,8 +29,7 @@
         const previewClock = document.getElementById('general-current-time')
         const previewTimestamp = workspace.dataset.timezonePreviewTimestamp || ''
 
-        const selectedMode = () =>
-            workspace.querySelector('input[name="timezone_mode"]:checked')?.value
+        const selectedMode = () => workspace.querySelector('input[name="timezone_mode"]:checked')?.value
 
         const renderSelectedPreview = (timezone) => {
             renderPreview(previewClock, previewTimestamp, timezone)
@@ -53,9 +52,7 @@
                 manualSelect.setAttribute('aria-disabled', automatic ? 'true' : 'false')
             }
 
-            const timezone = automatic
-                ? browserInput?.value || detectedTimezone()
-                : manualSelect?.value || 'UTC'
+            const timezone = automatic ? browserInput?.value || detectedTimezone() : manualSelect?.value || 'UTC'
             renderSelectedPreview(timezone)
         }
 
