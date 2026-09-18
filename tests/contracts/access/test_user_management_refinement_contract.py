@@ -220,7 +220,9 @@ def test_reset_password_reuses_shared_security_surface_authority() -> None:
     assert 'data-operation-submit' in template
     assert 'data-loading-label="Resetting password..."' in template
     assert 'existing sessions are revoked through the credential session generation' in template
-    assert 'Role assignment, active state, Super Admin status, and external identity links remain unchanged.' in template
+    assert (
+        'Role assignment, active state, Super Admin status, and external identity links remain unchanged.' in template
+    )
     assert 'Use the recovery workflow owned by the authoritative identity source.' in template
     assert "Use Google's account-recovery process." in template
     assert 'Recover access through GitHub.' in template
