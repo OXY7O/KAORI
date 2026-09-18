@@ -8,9 +8,6 @@
     "app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry_detail_content.html": {
       "semantic_border_utilities": 3
     },
-    "app/templates/kubernetes/inventory/topology/partials/_workspace.html": {
-      "semantic_border_utilities": 3
-    },
     "app/templates/reports/generate/index.html": {
       "semantic_border_utilities": 11
     },
