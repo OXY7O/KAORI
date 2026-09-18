@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -252,3 +253,28 @@ def test_topology_cluster_icon_and_api_server_layout_are_readable() -> None:
     assert "valueElement.classList.add('min-w-0', 'flex-1', 'truncate', 'whitespace-nowrap')" in script
     assert "valueElement.title = String(displayValue || 'Not Reported')" in script
     assert 'max-w-[15rem]' in inspector
+
+def test_topology_runtime_status_strips_use_shared_semantic_border_authority() -> None:
+    workspace_path = 'app/templates/kubernetes/inventory/topology/partials/_workspace.html'
+    workspace = _read(workspace_path)
+    baseline = json.loads(_read('docs/architecture/ui-style-debt-baseline.json'))
+
+    assert 'components/table_label.html' in workspace
+    assert "table_label.tone_border_classes('warning')" in workspace
+    assert "table_label.tone_border_classes('critical')" in workspace
+    assert "table_label.tone_border_classes('pending')" in workspace
+
+    for direct_border in (
+        'border-status-warning-border',
+        'border-status-critical-border',
+        'border-status-pending-border',
+    ):
+        assert direct_border not in workspace
+
+    assert 'id="topology-limit-warning"' in workspace
+    assert 'id="topology-error"' in workspace
+    assert 'role="alert"' in workspace
+    assert 'id="topology-runtime-status"' in workspace
+    assert 'role="status"' in workspace
+    assert workspace_path not in baseline['files']
+
