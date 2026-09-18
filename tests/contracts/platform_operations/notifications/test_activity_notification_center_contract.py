@@ -194,11 +194,13 @@ def test_queued_jobs_do_not_look_like_a_never_ending_refresh() -> None:
 
 def test_activity_reconciliation_counts_stable_items_without_dynamic_pollers() -> None:
     layout = read('app/templates/layouts/app.html')
+    runtime = read('app/static/js/application_shell.js')
     page = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
 
-    assert "surface.querySelectorAll('[data-server-activity-item]').length" in layout
-    assert "document.getElementById('notification-deck-active-count')" in layout
-    assert "emptyState.classList.toggle('hidden', totalCount > 0)" in layout
+    assert "filename='js/application_shell.js'" in layout
+    assert "surface.querySelectorAll('[data-server-activity-item]').length" in runtime
+    assert "document.getElementById('notification-deck-active-count')" in runtime
+    assert "emptyState.classList.toggle('hidden', totalCount > 0)" in runtime
     assert 'data-activity-dynamic-source' not in layout
     assert 'data-server-activity-item' in page
 

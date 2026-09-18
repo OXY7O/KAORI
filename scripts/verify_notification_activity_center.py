@@ -28,6 +28,7 @@ required_files = (
     'app/templates/platform_operations/notifications/index.html',
     'app/templates/platform_operations/notifications/partials/_center_page_content.html',
     'app/templates/layouts/app.html',
+    'app/static/js/application_shell.js',
     'app/templates/components/navigation/navbar.html',
     'app/static/js/safe_html.js',
     'app/static/js/navbar.js',
@@ -48,6 +49,7 @@ progress_component = read('app/templates/components/progress_bar.html')
 routes = read('app/platform_operations/notifications/routes.py')
 presentation = read('app/common/job_execution_presentation.py')
 layout = read('app/templates/layouts/app.html')
+application_shell = read('app/static/js/application_shell.js')
 page_tabs = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
 readme = read('app/platform_operations/notifications/README.md')
 quick_sync = read('app/kubernetes/cluster/quick_sync.py')
@@ -286,13 +288,15 @@ for needle in (
     if needle not in notifications:
         raise SystemExit(f'Notifications panel is missing stable content target: {needle}')
 
+if "filename='js/application_shell.js'" not in layout:
+    raise SystemExit('Application layout must load the static application shell runtime.')
 for needle in (
     "surface.querySelectorAll('[data-server-activity-item]').length",
     "document.getElementById('notification-deck-active-count')",
     "emptyState.classList.toggle('hidden', totalCount > 0)",
 ):
-    if needle not in layout:
-        raise SystemExit(f'Activity surface reconciliation is missing: {needle}')
+    if needle not in application_shell:
+        raise SystemExit(f'Activity surface reconciliation is missing from application shell runtime: {needle}')
 
 for needle in (
     'components/framed_workspace_tabs.html',
