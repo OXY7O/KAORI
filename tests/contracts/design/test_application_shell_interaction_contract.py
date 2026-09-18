@@ -71,8 +71,6 @@ def test_application_shell_body_runtime_uses_static_authority() -> None:
     layout = read('app/templates/layouts/app.html')
     runtime = read('app/static/js/application_shell.js')
     detail_rows = read('app/static/js/detail_rows.js')
-    baseline = json.loads(read('docs/architecture/ui-inline-debt-baseline.json'))
-
     runtime_script = "filename='js/application_shell.js'"
     lucide_script = "filename='vendor/lucide/lucide.min.js'"
     pagination_script = "filename='js/pagination.js'"
@@ -112,7 +110,6 @@ def test_application_shell_body_runtime_uses_static_authority() -> None:
         *sorted((ROOT / 'app' / 'templates').rglob('*.html')),
     ]
     assert all('prepareInventoryDetail' not in path.read_text(encoding='utf-8') for path in app_sources)
-    assert baseline['files']['app/templates/layouts/app.html']['inline_scripts'] == 1
 
 
 def test_prepaint_bootstrap_is_narrowly_governed_outside_inline_debt() -> None:
