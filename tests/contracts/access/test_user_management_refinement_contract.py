@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -189,3 +190,39 @@ def test_access_main_right_rails_are_sticky_with_shared_desktop_offset() -> None
         'app/templates/access/permissions/index.html',
     ):
         assert 'xl:sticky xl:top-5' not in read(full_width_page), full_width_page
+
+def test_reset_password_reuses_shared_security_surface_authority() -> None:
+    template_path = 'app/templates/access/users/reset_password.html'
+    template = read(template_path)
+    baseline = json.loads(read('docs/architecture/ui-style-debt-baseline.json'))
+
+    assert 'components/operational_section_card.html' in template
+    assert template.count('operational_section_card.shell_classes()') == 2
+    assert 'components/operational_callout.html' in template
+    assert "operational_callout.semantic_surface_classes('critical')" in template
+    assert "operational_callout.semantic_border_classes('critical')" in template
+    assert "operational_callout.semantic_surface_classes('normal' if user.account_is_active else 'warning')" in template
+    assert "operational_callout.semantic_surface_classes('warning')" in template
+    assert "operational_callout.semantic_border_classes('warning')" in template
+    assert "operational_callout.semantic_surface_classes('normal')" in template
+
+    assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' not in template
+    for direct_border in (
+        'border-status-normal-border',
+        'border-status-warning-border',
+        'border-status-critical-border',
+    ):
+        assert direct_border not in template
+
+    assert 'form.hidden_tag()' in template
+    assert 'Minimum 12 characters' in template
+    assert 'data-operation-submit' in template
+    assert 'data-loading-label="Resetting password..."' in template
+    assert 'existing sessions are revoked through the credential session generation' in template
+    assert 'Role assignment, active state, Super Admin status, and external identity links remain unchanged.' in template
+    assert 'Use the recovery workflow owned by the authoritative identity source.' in template
+    assert "Use Google's account-recovery process." in template
+    assert 'Recover access through GitHub.' in template
+    assert 'xl:sticky xl:top-5' in template
+    assert template_path not in baseline['files']
+
