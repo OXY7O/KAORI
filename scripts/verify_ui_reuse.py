@@ -22,6 +22,73 @@ _APPROVED_INLINE_STYLE_COMPONENTS = {
     'app/templates/components/progress_bar.html',
     'app/templates/reports/pdf/components/analytics_publication.html',
 }
+_APPROVED_PREPAINT_BOOTSTRAPS = {
+    'app/templates/layouts/app.html': {
+        'marker': 'app-shell',
+        'body': """
+            ;(function () {
+                const theme = localStorage.getItem('theme')
+                const savedSidebarState = localStorage.getItem('kaori.sidebarExpanded')
+
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark')
+                }
+
+                if (savedSidebarState === 'false') {
+                    document.documentElement.classList.add('sidebar-collapsed')
+                }
+            })()
+        """,
+    },
+    'app/templates/layouts/auth.html': {
+        'marker': 'auth-theme',
+        'body': """
+            ;(function () {
+                const storedTheme = localStorage.getItem('theme')
+
+                if (storedTheme === 'dark') {
+                    document.documentElement.classList.add('dark')
+                }
+            })()
+        """,
+    },
+}
+
+
+def _normalize_script_body(source: str) -> str:
+    return re.sub(r'\\s+', ' ', source).strip()
+
+
+def _approved_prepaint_script_starts(relative: str, source: str) -> set[int]:
+    contract = _APPROVED_PREPAINT_BOOTSTRAPS.get(relative)
+    if contract is None:
+        return set()
+
+    head_end = source.lower().find('</head>')
+    stylesheet = source.find("filename='css/output.css'")
+    if head_end < 0 or stylesheet < 0:
+        return set()
+
+    expected_marker = str(contract['marker'])
+    expected_attrs = f'data-kaori-prepaint-bootstrap="{expected_marker}"'
+    expected_body = _normalize_script_body(str(contract['body']))
+    approved: list[int] = []
+
+    for match in _SCRIPT_BLOCK.finditer(source):
+        attrs = match.group('attrs').strip()
+        marker_match = _PREPAINT_BOOTSTRAP_MARKER.search(attrs)
+        marker = marker_match.group('marker') if marker_match else None
+        if marker != expected_marker:
+            continue
+        if attrs != expected_attrs:
+            continue
+        if match.start() >= head_end or match.start() >= stylesheet:
+            continue
+        if _normalize_script_body(match.group('body')) != expected_body:
+            continue
+        approved.append(match.start())
+
+    return set(approved) if len(approved) == 1 else set()
 
 
 def _metrics(relative: str, source: str) -> dict[str, int]:

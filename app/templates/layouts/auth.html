@@ -7,7 +7,7 @@
               type="image/svg+xml"
               href="{{ url_for('static', filename='favicon.svg') }}" />
         <title>{% block title %}KAORI{% endblock title %}</title>
-        <script>
+        <script data-kaori-prepaint-bootstrap="auth-theme">
             ;(function () {
                 const storedTheme = localStorage.getItem('theme')
 
