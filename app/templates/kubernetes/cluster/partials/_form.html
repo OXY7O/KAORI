@@ -3,6 +3,8 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/table.html" as table_ui %}
 {% import "components/action_button.html" as action_button %}
+{% import "components/kubernetes_operation_ui.html" as kubernetes_operation_ui %}
+{% import "components/operational_callout.html" as operational_callout %}
 {% import "integrations/components/_provider_registration_actions.html" as provider_registration_actions %}
 <form id="cluster-registration-form"
       method="POST"
@@ -15,7 +17,7 @@
                name="connection_test_proof"
                value="{{ registration_proof if registration_proof is defined and registration_proof else '' }}">
     {% endif %}
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <section class="{{ kubernetes_operation_ui.surface_shell_classes() }}">
         <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
                 <i data-lucide="{{ form_icon }}" class="h-5 w-5"></i>
@@ -26,9 +28,9 @@
             </div>
         </header>
         {% if form.errors %}
-            <div class="border-b border-status-critical-border bg-status-critical-soft px-5 py-4 sm:px-6">
+            <div class="border-b {{ operational_callout.semantic_border_classes('critical') }} bg-status-critical-soft px-5 py-4 sm:px-6">
                 <div class="flex items-start gap-3">
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-status-critical-border bg-surface-card text-status-critical-text">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border {{ operational_callout.semantic_border_classes('critical') }} bg-surface-card text-status-critical-text">
                         <i data-lucide="triangle-alert" class="h-4 w-4"></i>
                     </div>
                     <div>
@@ -100,7 +102,7 @@
                             {{ form.kube_verify_ssl(class="h-4 w-4 rounded border-outline-strong accent-kaori-primary focus:ring-kaori-primary") }}
                         {% endcall %}
                         {% call operational_toggle.render('Allow Legacy TLS Certificate', 'Use only for an approved internal endpoint that cannot meet the current TLS policy.', tone='warning') %}
-                            {{ form.kube_allow_weak_tls(class="h-4 w-4 rounded border-status-warning-border accent-status-warning focus:ring-status-warning") }}
+                            {{ form.kube_allow_weak_tls(class="h-4 w-4 rounded border-outline-strong accent-status-warning focus:ring-status-warning") }}
                         {% endcall %}
                     </div>
                 </div>

@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -63,3 +64,27 @@ def test_metrics_source_and_alertmanager_registration_forms_use_shared_action_co
     assert 'provider_registration_context.render(' in metrics_source
     assert 'provider_registration_context.render(' in alertmanager
     assert 'Related Operational Workspace' in shared_context
+
+
+def test_kubernetes_connection_form_reuses_shared_shell_and_semantic_ownership() -> None:
+    form_path = 'app/templates/kubernetes/cluster/partials/_form.html'
+    form = read(form_path)
+    baseline = json.loads(read('docs/architecture/ui-style-debt-baseline.json'))
+
+    assert 'components/kubernetes_operation_ui.html' in form
+    assert 'kubernetes_operation_ui.surface_shell_classes()' in form
+    assert 'components/operational_callout.html' in form
+    assert form.count("operational_callout.semantic_border_classes('critical')") == 2
+
+    assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' not in form
+    assert 'border-status-critical-border' not in form
+    assert 'border-status-warning-border' not in form
+    assert (
+        'kube_allow_weak_tls(class="h-4 w-4 rounded border-outline-strong accent-status-warning focus:ring-status-warning")'
+        in form
+    )
+
+    assert 'x-on:kubernetes-connection-tested.window="applyConnectionTest($event)"' in form
+    assert 'hx-target="#kubernetes-connection-test-result"' in form
+    assert 'provider_registration_actions.render(' in form
+    assert form_path not in baseline['files']
