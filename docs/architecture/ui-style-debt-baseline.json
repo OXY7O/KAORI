@@ -3,12 +3,6 @@
   "files": {
     "app/templates/reports/generate/index.html": {
       "semantic_border_utilities": 6
-    },
-    "app/templates/settings/account/partials/_tabs.html": {
-      "page_local_workspace_tablists": 1
-    },
-    "app/templates/settings/general/partials/_tabs.html": {
-      "page_local_workspace_tablists": 1
     }
   },
   "version": 3
