@@ -149,4 +149,3 @@ def test_metrics_source_workspaces_reuse_shared_section_shell_authority() -> Non
         assert 'integration_ui.section_shell_classes()' in source
         assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' not in source
         assert relative not in baseline['files']
-
