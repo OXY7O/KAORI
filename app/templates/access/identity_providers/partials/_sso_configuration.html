@@ -1,8 +1,10 @@
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/operational_section_card.html" as operational_section_card %}
 {% set browser_selected = selected_definition and selected_definition.configuration_profile == 'browser_client' %}
 <div class="space-y-5"
      data-configuration-panel="browser_client"
      {% if not browser_selected %}hidden{% endif %}>
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <section class="{{ operational_section_card.shell_classes() }}">
         <header class="flex items-start gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:px-6">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                 <i data-provider-icon
@@ -38,7 +40,7 @@
             </label>
         </div>
     </section>
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <section class="{{ operational_section_card.shell_classes() }}">
         <header class="flex items-start gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:px-6">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                 <i data-lucide="user-plus" class="h-5 w-5"></i>
@@ -62,7 +64,7 @@
                 <p class="text-xs font-medium text-status-critical">{{ error }}</p>
             {% endfor %}
             <div data-jit-off-note
-                 class="rounded-lg border border-status-info-border bg-status-info-soft p-4"
+                 class="rounded-lg border {{ operational_callout.semantic_surface_classes('info') }} p-4"
                  {% if form.jit_enabled.data %}hidden{% endif %}>
                 <div class="flex items-start gap-3">
                     <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-status-info"></i>
