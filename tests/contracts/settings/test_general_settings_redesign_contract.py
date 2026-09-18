@@ -41,7 +41,6 @@ def test_time_zone_workspace_has_clear_configuration_sequence() -> None:
     assert 'data-timezone-preference-boundary="inline"' in template
     assert 'general-current-time' in hero
     assert 'detect-browser-timezone' in template
-    assert 'pointer-events-none' in template
 
 
 def test_time_zone_workspace_runtime_uses_dedicated_static_authority() -> None:
@@ -61,6 +60,7 @@ def test_time_zone_workspace_runtime_uses_dedicated_static_authority() -> None:
     assert 'initTimeLocaleWorkspace' in runtime
     assert 'data-timezone-workspace' in runtime
     assert 'Intl.DateTimeFormat().resolvedOptions().timeZone' in runtime
+    assert "manualPanel?.classList.toggle('pointer-events-none', automatic)" in runtime
     assert 'manualSelect.tabIndex = automatic ? -1 : 0' in runtime
     assert "manualSelect.setAttribute('aria-disabled', automatic ? 'true' : 'false')" in runtime
     assert "document.body.addEventListener('htmx:afterSwap'" in runtime
