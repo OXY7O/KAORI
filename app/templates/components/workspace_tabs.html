@@ -112,3 +112,48 @@
         </div>
     </nav>
 {%- endmacro %}
+{#
+  Query-backed HTMX tabs.
+
+  Use this for server-owned workspaces where each tab is a normal navigation
+  fallback and HTMX progressively replaces one workspace boundary. The owning
+  page supplies tab definitions and active state only; this shared component
+  owns the tablist geometry, ARIA tab semantics, and HTMX navigation contract.
+
+  Tuple shape:
+      (key, label, icon, href)
+#}
+{% macro render_query_tabs(
+    tabs,
+    active_key,
+    aria_label='Workspace Sections',
+    hx_target='',
+    hx_indicator='',
+    hx_sync=''
+    ) -%}
+    <nav class="border-b border-outline-default bg-surface-subtle px-5 pt-4"
+         aria-label="{{ aria_label }}"
+         data-kaori-tab-variant="query-backed-htmx">
+        <div class="flex gap-2 overflow-x-auto" role="tablist">
+            {% for tab in tabs %}
+                {% set tab_key = tab[0] %}
+                {% set tab_label = tab[1] %}
+                {% set tab_icon = tab[2] %}
+                {% set tab_href = tab[3] %}
+                <a href="{{ tab_href }}"
+                   hx-get="{{ tab_href }}"
+                   hx-target="{{ hx_target }}"
+                   {% if hx_indicator %}hx-indicator="{{ hx_indicator }}"{% endif %}
+                   {% if hx_sync %}hx-sync="{{ hx_sync }}"{% endif %}
+                   hx-swap="outerHTML"
+                   hx-push-url="true"
+                   role="tab"
+                   aria-selected="{{ 'true' if active_key == tab_key else 'false' }}"
+                   class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition {{ 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' if active_key == tab_key else 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary' }}">
+                    <i data-lucide="{{ tab_icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                    <span>{{ tab_label }}</span>
+                </a>
+            {% endfor %}
+        </div>
+    </nav>
+{%- endmacro %}

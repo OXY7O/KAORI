@@ -19,6 +19,12 @@ def test_settings_navigation_keeps_current_ownership_boundary() -> None:
 def test_account_tabs_follow_general_settings_tab_contract() -> None:
     general_tabs = _read('app/templates/settings/general/partials/_tabs.html')
     account_tabs = _read('app/templates/settings/account/partials/_tabs.html')
+    shared_tabs = _read('app/templates/components/workspace_tabs.html')
+
+    for source in (general_tabs, account_tabs):
+        assert '{% import "components/workspace_tabs.html" as workspace_tabs %}' in source
+        assert 'workspace_tabs.render_query_tabs(' in source
+        assert 'role="tablist"' not in source
 
     for token in (
         'border-b border-outline-default bg-surface-subtle px-5 pt-4',
@@ -26,9 +32,9 @@ def test_account_tabs_follow_general_settings_tab_contract() -> None:
         'min-h-10 shrink-0',
         'border-b-surface-card',
         'hover:bg-kaori-soft hover:text-kaori-primary',
+        'data-kaori-tab-variant="query-backed-htmx"',
     ):
-        assert token in general_tabs
-        assert token in account_tabs
+        assert token in shared_tabs
 
 
 def test_recent_authentication_activity_uses_shared_table_and_status_primitives() -> None:

@@ -25,7 +25,7 @@ Status: **FINAL LOCKED**
 ## UI baseline
 
 - KAORI Violet Hero and semantic tokens.
-- General and Account use the same simple query-backed HTMX tab family.
+- General and Account use the same simple query-backed HTMX tab family, owned by `components/workspace_tabs.html::render_query_tabs`.
 - Time Zone and Regional Format keep their scope/data boundaries inline.
 - Account Profile and Authentication Activity remain full-width.
 - Credential Management uses natural-height action/context columns.
