@@ -195,7 +195,8 @@
             </div>
             <div class="flex items-center justify-end bg-surface-card px-5 py-4">
                 <button type="button"
-                        data-metrics-source-delete-button
+                        data-destructive-modal-open
+                        data-destructive-modal-id="metrics-source-delete-modal"
                         data-delete-url="{{ delete_instance_url }}"
                         data-delete-title="Delete {{ metrics_source_label }} Instance?"
                         data-delete-name="{{ instance.name }}"
