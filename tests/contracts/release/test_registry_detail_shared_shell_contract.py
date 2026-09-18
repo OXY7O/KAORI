@@ -40,8 +40,13 @@ def test_registry_detail_uses_shared_surface_shell_authority() -> None:
     assert 'class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4"' in source
 
 
-def test_registry_detail_copied_shell_debt_is_burned_down_only() -> None:
+def test_registry_detail_surface_and_action_style_debt_is_fully_retired() -> None:
+    source = TARGET_PATH.read_text(encoding='utf-8')
     payload = json.loads(BASELINE_PATH.read_text(encoding='utf-8'))
     relative = TARGET_PATH.relative_to(ROOT).as_posix()
 
-    assert payload['files'][relative] == {'semantic_border_utilities': 3}
+    assert "table_label.tone_border_classes('normal')" in source
+    assert "table_label.tone_border_classes('critical')" in source
+    assert 'border-status-normal-border' not in source
+    assert 'border-status-critical-border' not in source
+    assert relative not in payload['files']
