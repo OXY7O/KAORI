@@ -375,9 +375,7 @@ def test_generate_report_uses_shared_form_control_size_and_normal_value_weight()
 
 def test_generate_report_bounded_callouts_use_shared_semantic_authority() -> None:
     source = read(TEMPLATE)
-    baseline = json.loads(
-        read(ROOT / 'docs' / 'architecture' / 'ui-style-debt-baseline.json')
-    )
+    baseline = json.loads(read(ROOT / 'docs' / 'architecture' / 'ui-style-debt-baseline.json'))
     relative = TEMPLATE.relative_to(ROOT).as_posix()
 
     bounded = source.split('{% if not payload.generation_allowed %}', 1)[1].split(
