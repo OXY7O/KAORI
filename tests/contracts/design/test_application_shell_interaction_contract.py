@@ -99,6 +99,10 @@ def test_application_shell_body_runtime_uses_static_authority() -> None:
         assert token in runtime
 
     assert '[data-detail-toggle]' in detail_rows
+    assert '.innerHTML =' not in runtime
+    assert "window.kaoriSafeHtml.fragment(html.trim())" in runtime
+    assert "loadingIcon.dataset.lucide = 'loader-circle'" in runtime
+    assert "progressIndicator.className = 'notification-progress-indeterminate h-full rounded-full bg-kaori-primary'" in runtime
     app_sources = [
         *sorted((ROOT / 'app' / 'static' / 'js').rglob('*.js')),
         *sorted((ROOT / 'app' / 'templates').rglob('*.html')),
