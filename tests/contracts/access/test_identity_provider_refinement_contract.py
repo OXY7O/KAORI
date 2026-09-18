@@ -107,6 +107,7 @@ def test_identity_provider_secret_and_validation_evidence_remain_safe() -> None:
         assert forbidden not in detail
         assert forbidden not in service
 
+
 def test_identity_provider_form_family_reuses_shared_surface_and_semantic_authority() -> None:
     template_paths = (
         'app/templates/access/identity_providers/form.html',
@@ -120,14 +121,20 @@ def test_identity_provider_form_family_reuses_shared_surface_and_semantic_author
 
     for path, source in sources.items():
         assert 'components/operational_section_card.html' in source, path
-        assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' not in source, path
+        assert (
+            'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' not in source
+        ), path
         assert path not in baseline['files']
 
-    assert sum(source.count('operational_section_card.shell_classes()') for source in sources.values()) == 8
+    assert (
+        sum(source.count('operational_section_card.shell_classes()') for source in sources.values()) == 8
+    )
 
     form = sources['app/templates/access/identity_providers/form.html']
     assert 'components/operational_callout.html' in form
-    assert "operational_callout.semantic_surface_classes('normal' if test_passed else 'critical')" in form
+    assert (
+        "operational_callout.semantic_surface_classes('normal' if test_passed else 'critical')" in form
+    )
     assert 'border-status-normal-border' not in form
     assert 'border-status-critical-border' not in form
     assert 'aria-live="polite"' in form
@@ -141,6 +148,10 @@ def test_identity_provider_form_family_reuses_shared_surface_and_semantic_author
     assert 'data-jit-settings' in sso
 
     selector = sources['app/templates/access/identity_providers/partials/_provider_selector.html']
-    for hook in ('data-provider-option', 'data-adapter-key', 'data-configuration-profile', 'data-admission-policy'):
+    for hook in (
+        'data-provider-option',
+        'data-adapter-key',
+        'data-configuration-profile',
+        'data-admission-policy',
+    ):
         assert hook in selector
-
