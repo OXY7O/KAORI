@@ -9,11 +9,6 @@
       "inline_event_handlers": 0,
       "inline_scripts": 1,
       "inline_styles": 0
-    },
-    "app/templates/settings/general/partials/_time_locale.html": {
-      "inline_event_handlers": 0,
-      "inline_scripts": 1,
-      "inline_styles": 0
     }
   },
   "version": 1
