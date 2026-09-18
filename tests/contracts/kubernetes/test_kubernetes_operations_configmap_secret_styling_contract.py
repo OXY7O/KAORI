@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -168,3 +169,37 @@ def test_operation_hero_copy_keeps_explicit_live_validation_boundaries() -> None
     assert 'Validate the exact Secret target before explicitly confirming removal.' in secret_routes
     assert 'Reveal one approved Secret key through protected, audited, policy-controlled access.' in reveal_routes
     assert 'Validate one certificate pair against selected TLS Secrets before controlled rotation.' in tls_routes
+
+def test_secret_operation_surface_debt_uses_shared_style_authorities() -> None:
+    semantic_templates = (
+        'app/templates/kubernetes/operations/secrets/_delete_target.html',
+        'app/templates/kubernetes/operations/secrets/_replace_content_form.html',
+        'app/templates/kubernetes/operations/secrets/_reveal_pending_approvals.html',
+        'app/templates/kubernetes/operations/secrets/_reveal_value.html',
+        'app/templates/kubernetes/operations/secrets/_update_preview.html',
+        'app/templates/kubernetes/operations/secrets/create.html',
+        'app/templates/kubernetes/operations/secrets/tls_rotation.html',
+    )
+    shared_shell_templates = (
+        'app/templates/kubernetes/operations/secrets/_reveal_pending_approvals.html',
+        'app/templates/kubernetes/operations/secrets/create.html',
+        'app/templates/kubernetes/operations/secrets/tls_rotation.html',
+    )
+    baseline = json.loads(read('docs/architecture/ui-style-debt-baseline.json'))
+    callout = read('app/templates/components/operational_callout.html')
+
+    assert 'macro semantic_hover_border_classes' in callout
+
+    for relative in semantic_templates:
+        source = read(relative)
+        assert 'components/operational_callout.html' in source
+        assert 'border-status-' not in source
+        assert 'operational_callout.semantic_border_classes(' in source
+        assert relative not in baseline['files']
+
+    for relative in shared_shell_templates:
+        source = read(relative)
+        assert 'components/kubernetes_operation_ui.html' in source
+        assert 'secret_ui.surface_shell_classes' in source
+        assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' not in source
+
