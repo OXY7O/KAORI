@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -537,3 +538,27 @@ def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:
     assert 'Validation · {{ row.readiness_label }}' in history
     assert labels.count('whitespace-nowrap') >= 4
     assert 'Single-Line Compact Label Contract' in standard
+
+
+def test_kubernetes_registry_detail_actions_use_shared_semantic_border_authority() -> None:
+    template_path = (
+        'app/templates/integrations/orchestration/container_orchestrator/providers/'
+        'kubernetes/partials/_registry_detail_content.html'
+    )
+    template = read(template_path)
+    baseline = json.loads(read('docs/architecture/ui-style-debt-baseline.json'))
+
+    assert "table_label.tone_border_classes('normal')" in template
+    assert template.count("table_label.tone_border_classes('normal')") == 2
+    assert "table_label.tone_border_classes('critical')" in template
+    assert 'border-status-normal-border' not in template
+    assert 'border-status-critical-border' not in template
+
+    assert "current_user.has_permission('clusters.manage')" in template
+    assert 'data-delete-url=' in template
+    assert 'data-delete-name=' in template
+    assert '@click="openDelete($el.dataset.deleteUrl, $el.dataset.deleteName)"' in template
+    assert 'Metrics Source' in template
+    assert 'Alert Source' in template
+    assert 'Open Observability' in template
+    assert template_path not in baseline['files']
