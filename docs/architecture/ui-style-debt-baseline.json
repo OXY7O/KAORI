@@ -11,30 +11,6 @@
     "app/templates/kubernetes/inventory/topology/partials/_workspace.html": {
       "semantic_border_utilities": 3
     },
-    "app/templates/kubernetes/operations/secrets/_delete_target.html": {
-      "semantic_border_utilities": 3
-    },
-    "app/templates/kubernetes/operations/secrets/_replace_content_form.html": {
-      "semantic_border_utilities": 7
-    },
-    "app/templates/kubernetes/operations/secrets/_reveal_pending_approvals.html": {
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 1
-    },
-    "app/templates/kubernetes/operations/secrets/_reveal_value.html": {
-      "semantic_border_utilities": 1
-    },
-    "app/templates/kubernetes/operations/secrets/_update_preview.html": {
-      "semantic_border_utilities": 4
-    },
-    "app/templates/kubernetes/operations/secrets/create.html": {
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 2
-    },
-    "app/templates/kubernetes/operations/secrets/tls_rotation.html": {
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 1
-    },
     "app/templates/reports/generate/index.html": {
       "semantic_border_utilities": 11
     },
