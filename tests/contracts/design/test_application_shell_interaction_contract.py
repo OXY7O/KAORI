@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -63,6 +64,47 @@ def test_application_shell_standard_is_enforced() -> None:
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert 'KAORI application shell standard passed' in result.stdout
+
+
+def test_application_shell_body_runtime_uses_static_authority() -> None:
+    layout = read('app/templates/layouts/app.html')
+    runtime = read('app/static/js/application_shell.js')
+    detail_rows = read('app/static/js/detail_rows.js')
+    baseline = json.loads(read('docs/architecture/ui-inline-debt-baseline.json'))
+
+    runtime_script = "filename='js/application_shell.js'"
+    lucide_script = "filename='vendor/lucide/lucide.min.js'"
+    pagination_script = "filename='js/pagination.js'"
+
+    assert runtime_script in layout
+    assert layout.index(lucide_script) < layout.index(runtime_script) < layout.index(pagination_script)
+    assert 'window.renderKaoriIcons' not in layout
+    assert 'window.renderLocalOperationalActivities' not in layout
+    assert 'window.startOperationalActivity' not in layout
+    assert 'window.refreshOperationalTable' not in layout
+    assert 'window.prepareInventoryDetail' not in layout
+
+    for token in (
+        'window.renderKaoriIcons',
+        'window.renderLocalOperationalActivities',
+        'window.startOperationalActivity',
+        'window.finishOperationalActivity',
+        'window.refreshOperationalTable',
+        "document.body.addEventListener('htmx:afterSwap'",
+        "document.addEventListener('htmx:beforeRequest'",
+        "document.addEventListener('submit'",
+        "document.getElementById('theme-toggle')",
+        "localStorage.setItem('theme'",
+    ):
+        assert token in runtime
+
+    assert '[data-detail-toggle]' in detail_rows
+    app_sources = [
+        *sorted((ROOT / 'app' / 'static' / 'js').rglob('*.js')),
+        *sorted((ROOT / 'app' / 'templates').rglob('*.html')),
+    ]
+    assert all('prepareInventoryDetail' not in path.read_text(encoding='utf-8') for path in app_sources)
+    assert baseline['files']['app/templates/layouts/app.html']['inline_scripts'] == 1
 
 
 def test_navbar_controller_exclusively_opens_one_utility_surface() -> None:
