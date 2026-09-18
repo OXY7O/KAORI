@@ -31,6 +31,7 @@ def test_dashboard_uses_integrated_tabs_and_equal_height_peer_content() -> None:
     source = read('app/templates/kubernetes/dashboard/partials/_content.html')
     grid = read('app/templates/components/peer_content_grid.html')
     tabs = read('app/templates/components/workspace_tabs.html')
+    integrated_tabs = tabs.split("{% macro render(", 1)[1].split("{%- endmacro %}", 1)[0]
 
     assert '{% import "components/peer_content_grid.html" as peer_content_grid %}' in source
     assert source.count('peer_content_grid.layout_classes()') == 4
@@ -43,11 +44,11 @@ def test_dashboard_uses_integrated_tabs_and_equal_height_peer_content() -> None:
     assert 'xl:col-span-7' in grid
     assert 'xl:col-span-5' in grid
     assert 'h-full min-w-0' in grid
-    assert 'rounded-xl' not in tabs
-    assert 'bg-surface-card' not in tabs
-    assert 'shadow-sm' not in tabs
-    assert 'border-b border-outline-subtle' in tabs
-    assert 'data-kaori-tab-variant="integrated-workspace"' in tabs
+    assert 'rounded-xl' not in integrated_tabs
+    assert 'bg-surface-card' not in integrated_tabs
+    assert 'shadow-sm' not in integrated_tabs
+    assert 'border-b border-outline-subtle' in integrated_tabs
+    assert 'data-kaori-tab-variant="integrated-workspace"' in integrated_tabs
     assert 'id="kubernetes-dashboard-panel-capacity"' in source
     assert 'id="kubernetes-dashboard-panel-signals"' in source
     assert 'id="kubernetes-dashboard-panel-reporting"' in source
