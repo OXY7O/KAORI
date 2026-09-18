@@ -31,7 +31,7 @@ def test_dashboard_uses_integrated_tabs_and_equal_height_peer_content() -> None:
     source = read('app/templates/kubernetes/dashboard/partials/_content.html')
     grid = read('app/templates/components/peer_content_grid.html')
     tabs = read('app/templates/components/workspace_tabs.html')
-    integrated_tabs = tabs.split("{% macro render(", 1)[1].split("{%- endmacro %}", 1)[0]
+    integrated_tabs = tabs.split('{% macro render(', 1)[1].split('{%- endmacro %}', 1)[0]
 
     assert '{% import "components/peer_content_grid.html" as peer_content_grid %}' in source
     assert source.count('peer_content_grid.layout_classes()') == 4
