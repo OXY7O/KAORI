@@ -69,7 +69,10 @@ const buildLocalActivityNode = (activity) => {
 
     const icon = document.createElement('span')
     icon.className = 'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-primary text-white'
-    icon.innerHTML = '<i data-lucide="loader-circle" class="h-4 w-4 animate-spin"></i>'
+    const loadingIcon = document.createElement('i')
+    loadingIcon.dataset.lucide = 'loader-circle'
+    loadingIcon.className = 'h-4 w-4 animate-spin'
+    icon.append(loadingIcon)
 
     const copy = document.createElement('div')
     copy.className = 'min-w-0 flex-1'
@@ -92,7 +95,9 @@ const buildLocalActivityNode = (activity) => {
 
     const progress = document.createElement('div')
     progress.className = 'mt-3 h-1.5 overflow-hidden rounded-full bg-surface-card'
-    progress.innerHTML = '<div class="notification-progress-indeterminate h-full rounded-full bg-kaori-primary"></div>'
+    const progressIndicator = document.createElement('div')
+    progressIndicator.className = 'notification-progress-indeterminate h-full rounded-full bg-kaori-primary'
+    progress.append(progressIndicator)
 
     header.append(title, state)
     copy.append(header, message, progress)
@@ -188,9 +193,8 @@ window.refreshOperationalTable = async (url) => {
         }
 
         const html = await response.text()
-        const template = document.createElement('template')
-        template.innerHTML = html.trim()
-        const replacement = template.content.querySelector(targetSelector)
+        const safeFragment = window.kaoriSafeHtml.fragment(html.trim())
+        const replacement = safeFragment.querySelector(targetSelector)
         const liveTarget = document.querySelector(targetSelector)
 
         if (!replacement || !liveTarget) {
