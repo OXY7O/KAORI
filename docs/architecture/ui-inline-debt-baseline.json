@@ -5,11 +5,6 @@
       "inline_scripts": 1,
       "inline_styles": 0
     },
-    "app/templates/kubernetes/analytics/partials/_load_tracker.html": {
-      "inline_event_handlers": 0,
-      "inline_scripts": 1,
-      "inline_styles": 0
-    },
     "app/templates/layouts/app.html": {
       "inline_event_handlers": 0,
       "inline_scripts": 3,

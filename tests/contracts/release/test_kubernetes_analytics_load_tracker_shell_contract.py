@@ -5,6 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 TARGET_PATH = ROOT / 'app' / 'templates' / 'kubernetes' / 'analytics' / 'partials' / '_load_tracker.html'
+RUNTIME_PATH = ROOT / 'app' / 'static' / 'js' / 'analytics' / 'controls.js'
 BASELINE_PATH = ROOT / 'docs' / 'architecture' / 'ui-style-debt-baseline.json'
 COPIED_SHELL = 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm'
 
@@ -29,10 +30,23 @@ def test_generic_analytics_load_tracker_uses_shared_snapshot_shell_authority() -
     assert 'data-analytics-load-counter' in source
     assert 'data-analytics-load-progress' in source
     assert 'sm:flex-row sm:items-center sm:justify-between' in source
+    assert '<script' not in source
+
+
+def test_generic_analytics_load_tracker_runtime_uses_shared_static_authority() -> None:
+    source = RUNTIME_PATH.read_text(encoding='utf-8')
+
+    assert 'window.kaoriInitAnalyticsLoadTrackers = initAllAnalyticsTrackers' in source
+    assert 'window.kaoriAnalyticsLoadTrackerBound' in source
     assert "tracker.classList.remove('hidden')" in source
     assert "tracker.classList.add('hidden')" in source
     assert "tracker.dataset.analyticsLoadState = 'complete'" in source
     assert "tracker.dataset.analyticsLoadState = 'loading'" in source
+    assert "document.body.addEventListener('htmx:beforeRequest'" in source
+    assert "document.body.addEventListener('htmx:afterSettle'" in source
+    assert "'htmx:responseError'" in source
+    assert "'htmx:sendError'" in source
+    assert "'htmx:timeout'" in source
 
 
 def test_generic_analytics_load_tracker_copied_shell_debt_is_burned_down() -> None:
