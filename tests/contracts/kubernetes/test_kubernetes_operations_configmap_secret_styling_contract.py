@@ -170,6 +170,7 @@ def test_operation_hero_copy_keeps_explicit_live_validation_boundaries() -> None
     assert 'Reveal one approved Secret key through protected, audited, policy-controlled access.' in reveal_routes
     assert 'Validate one certificate pair against selected TLS Secrets before controlled rotation.' in tls_routes
 
+
 def test_secret_operation_surface_debt_uses_shared_style_authorities() -> None:
     semantic_templates = (
         'app/templates/kubernetes/operations/secrets/_delete_target.html',
@@ -201,5 +202,6 @@ def test_secret_operation_surface_debt_uses_shared_style_authorities() -> None:
         source = read(relative)
         assert 'components/kubernetes_operation_ui.html' in source
         assert 'secret_ui.surface_shell_classes' in source
-        assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' not in source
-
+        assert (
+            'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' not in source
+        )
