@@ -9,7 +9,11 @@
       hx-sync="#general-settings-page:replace"
       hx-swap="outerHTML"
       hx-push-url="true"
-      class="space-y-5">
+      class="space-y-5"
+      data-timezone-workspace
+      data-timezone-preview-timestamp="{{ preview_timestamp }}"
+      data-timezone-browser-input="{{ timezone_form.browser_timezone.id }}"
+      data-timezone-manual-select="{{ timezone_form.timezone.id }}">
     {{ timezone_form.hidden_tag() }}
     <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card">
         <header class="flex flex-col gap-4 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
@@ -195,58 +199,3 @@
         </footer>
     </section>
 </form>
-<script>
-(() => {
-    const modeInputs = document.querySelectorAll('input[name="timezone_mode"]')
-    const manualPanel = document.getElementById('manual-timezone-panel')
-    const manualSelect = document.getElementById('{{ timezone_form.timezone.id }}')
-    const browserInput = document.getElementById('{{ timezone_form.browser_timezone.id }}')
-    const browserLabel = document.getElementById('browser-timezone-label')
-    const detectButton = document.getElementById('detect-browser-timezone')
-    const previewClock = document.getElementById('general-current-time')
-    const previewTimestamp = '{{ preview_timestamp }}'
-
-    const detectedTimezone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
-
-    const renderPreview = (timezone) => {
-        if (!previewClock) return
-        try {
-            previewClock.textContent = new Intl.DateTimeFormat(undefined, {
-                timeZone: timezone,
-                dateStyle: 'medium',
-                timeStyle: 'medium',
-            }).format(new Date(previewTimestamp))
-        } catch (_) {
-            previewClock.textContent = 'Invalid timezone'
-        }
-    }
-
-    const detect = () => {
-        const timezone = detectedTimezone()
-        if (browserInput) browserInput.value = timezone
-        if (browserLabel) browserLabel.textContent = timezone
-        const selectedMode = document.querySelector('input[name="timezone_mode"]:checked')?.value
-        if (selectedMode === 'automatic') renderPreview(timezone)
-    }
-
-    const syncMode = () => {
-        const automatic = document.querySelector('input[name="timezone_mode"]:checked')?.value === 'automatic'
-        manualPanel?.classList.toggle('opacity-50', automatic)
-        manualPanel?.classList.toggle('pointer-events-none', automatic)
-        if (manualSelect) {
-            manualSelect.tabIndex = automatic ? -1 : 0
-            manualSelect.setAttribute('aria-disabled', automatic ? 'true' : 'false')
-        }
-        renderPreview(automatic ? (browserInput?.value || detectedTimezone()) : (manualSelect?.value || 'UTC'))
-    }
-
-    modeInputs.forEach((input) => input.addEventListener('change', syncMode))
-    manualSelect?.addEventListener('change', syncMode)
-    detectButton?.addEventListener('click', () => {
-        detect()
-        syncMode()
-    })
-    detect()
-    syncMode()
-})()
-</script>
