@@ -79,7 +79,10 @@ def test_kubernetes_connection_form_reuses_shared_shell_and_semantic_ownership()
     assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' not in form
     assert 'border-status-critical-border' not in form
     assert 'border-status-warning-border' not in form
-    assert 'kube_allow_weak_tls(class="h-4 w-4 rounded border-outline-strong accent-status-warning focus:ring-status-warning")' in form
+    assert (
+        'kube_allow_weak_tls(class="h-4 w-4 rounded border-outline-strong accent-status-warning focus:ring-status-warning")'
+        in form
+    )
 
     assert 'x-on:kubernetes-connection-tested.window="applyConnectionTest($event)"' in form
     assert 'hx-target="#kubernetes-connection-test-result"' in form
