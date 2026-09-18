@@ -1,8 +1,9 @@
+{% import "components/operational_section_card.html" as operational_section_card %}
 {% set ldap_selected = selected_definition and selected_definition.configuration_profile == 'ldap' %}
 <div class="space-y-5"
      data-configuration-panel="ldap"
      {% if not ldap_selected %}hidden{% endif %}>
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <section class="{{ operational_section_card.shell_classes() }}">
         <header class="flex items-start gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:px-6">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                 <i data-lucide="network" class="h-5 w-5"></i>
@@ -35,7 +36,7 @@
             </label>
         </div>
     </section>
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <section class="{{ operational_section_card.shell_classes() }}">
         <header class="flex items-start gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:px-6">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="scan-text" class="h-5 w-5"></i></span>
             <div>

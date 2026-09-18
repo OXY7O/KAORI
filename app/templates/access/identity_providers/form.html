@@ -2,6 +2,8 @@
 {% block title %}{{ 'Edit' if provider else 'Add' }} Identity Provider{% endblock title %}
 {% block dashboard_content %}
     {% import "components/page_hero.html" as page_hero %}
+    {% import "components/operational_section_card.html" as operational_section_card %}
+    {% import "components/operational_callout.html" as operational_callout %}
     {% set selected_label = selected_definition.label if selected_definition else 'Select Provider' %}
     <div class="space-y-6" data-provider-form-page>
         <section class="{{ page_hero.shell_classes() }}">
@@ -38,7 +40,7 @@
             {{ form.hidden_tag() }}
             <main class="min-w-0 space-y-5">
                 {% include "access/identity_providers/partials/_provider_selector.html" %}
-                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                <section class="{{ operational_section_card.shell_classes() }}">
                     <header class="flex items-start gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:px-6">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="id-card" class="h-5 w-5"></i></span>
                         <div>
@@ -78,7 +80,7 @@
                 {% include "access/identity_providers/partials/_sso_configuration.html" %}
                 {% if test_result %}
                     {% set test_passed = test_result.status == 'success' %}
-                    <section class="rounded-xl border {{ 'border-status-normal-border bg-status-normal-soft' if test_passed else 'border-status-critical-border bg-status-critical-soft' }} p-4 shadow-sm"
+                    <section class="rounded-xl border {{ operational_callout.semantic_surface_classes('normal' if test_passed else 'critical') }} p-4 shadow-sm"
                              aria-live="polite">
                         <div class="flex items-start gap-3">
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card {{ 'text-status-normal-text' if test_passed else 'text-status-critical-text' }}"><i data-lucide="{{ 'circle-check' if test_passed else 'circle-alert' }}"
