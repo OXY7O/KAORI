@@ -40,15 +40,6 @@
     "app/templates/access/users/reset_password.html": {
       "copied_standard_surface_shells": 2,
       "semantic_border_utilities": 7
-    },
-    "app/templates/integrations/observability/metrics_source/instance_form.html": {
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/integrations/observability/metrics_source/partials/_detail_scope.html": {
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/integrations/observability/metrics_source/partials/_runtime_panel.html": {
-      "copied_standard_surface_shells": 1
     }
   },
   "version": 3

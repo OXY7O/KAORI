@@ -44,7 +44,7 @@
     ('Diagnostics', (runtime_state.diagnostics|length) ~ ' checks')
 ] %}
 <article id="metrics-source-runtime-panel"
-         class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm font-sans"
+         class="relative {{ integration_ui.section_shell_classes() }} font-sans"
          data-kaori-metrics-source-runtime-v4
          data-kaori-provider-runtime-kubernetes-pattern>
     {{ validation_poller.render(runtime_refresh_job and runtime_refresh_job.is_active,
