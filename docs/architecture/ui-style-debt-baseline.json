@@ -2,7 +2,7 @@
   "description": "Per-template ceiling for style-drift review candidates. Counts are not all defects; they must not increase and should fall during page-by-page standardization.",
   "files": {
     "app/templates/reports/generate/index.html": {
-      "semantic_border_utilities": 11
+      "semantic_border_utilities": 6
     },
     "app/templates/settings/account/partials/_tabs.html": {
       "page_local_workspace_tablists": 1
