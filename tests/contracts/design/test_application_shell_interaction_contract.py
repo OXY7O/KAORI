@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import runpy
 import subprocess
 import sys
 from pathlib import Path
@@ -112,6 +113,40 @@ def test_application_shell_body_runtime_uses_static_authority() -> None:
     ]
     assert all('prepareInventoryDetail' not in path.read_text(encoding='utf-8') for path in app_sources)
     assert baseline['files']['app/templates/layouts/app.html']['inline_scripts'] == 1
+
+
+def test_prepaint_bootstrap_is_narrowly_governed_outside_inline_debt() -> None:
+    app_path = 'app/templates/layouts/app.html'
+    auth_path = 'app/templates/layouts/auth.html'
+    app = read(app_path)
+    auth = read(auth_path)
+    baseline = json.loads(read('docs/architecture/ui-inline-debt-baseline.json'))
+    verifier = runpy.run_path(str(ROOT / 'scripts' / 'verify_ui_reuse.py'))
+    metrics = verifier['_metrics']
+
+    app_marker = 'data-kaori-prepaint-bootstrap="app-shell"'
+    auth_marker = 'data-kaori-prepaint-bootstrap="auth-theme"'
+    stylesheet = "filename='css/output.css'"
+
+    assert app.count(app_marker) == 1
+    assert auth.count(auth_marker) == 1
+    assert app.index(app_marker) < app.index(stylesheet)
+    assert auth.index(auth_marker) < auth.index(stylesheet)
+    assert metrics(app_path, app)['inline_scripts'] == 0
+    assert metrics(auth_path, auth)['inline_scripts'] == 0
+
+    extra_runtime = app.replace('</head>', '<script>window.extraRuntime = true</script></head>', 1)
+    assert metrics(app_path, extra_runtime)['inline_scripts'] == 1
+
+    expanded_bootstrap = app.replace(
+        "document.documentElement.classList.add('dark')",
+        "document.documentElement.classList.add('dark'); window.extraRuntime = true",
+        1,
+    )
+    assert metrics(app_path, expanded_bootstrap)['inline_scripts'] == 1
+
+    assert app_path not in baseline['files']
+    assert auth_path not in baseline['files']
 
 
 def test_navbar_controller_exclusively_opens_one_utility_surface() -> None:
