@@ -205,7 +205,8 @@
     }
 
     function analyticsTrackerPage(tracker) {
-        return tracker ? analyticsTrackerById(tracker.dataset.analyticsPageId || '') : null
+        if (!tracker) return null
+        return analyticsTrackerById(tracker.dataset.analyticsPageId || '')
     }
 
     function trackedAnalyticsSections(tracker) {
@@ -219,25 +220,35 @@
     function analyticsTrackerForElement(element) {
         if (!element?.closest) return null
 
-        const tracked = element.closest('[data-analytics-lazy-section], [data-analytics-load-section]')
+        const trackedSelector = '[data-analytics-lazy-section], [data-analytics-load-section]'
+        const tracked = element.closest(trackedSelector)
+
         if (tracked) {
-            const trackerId = tracked.dataset.analyticsLazySection || tracked.dataset.analyticsLoadSection
+            const trackerId =
+                tracked.dataset.analyticsLazySection || tracked.dataset.analyticsLoadSection
             return analyticsTrackerById(trackerId)
         }
 
         const page = element.closest('[data-analytics-page-tracker]')
-        if (page && page.dataset.analyticsPageRequestTracking !== 'false') {
-            return analyticsTrackerById(page.dataset.analyticsPageTracker)
-        }
+        if (!page) return null
+        if (page.dataset.analyticsPageRequestTracking === 'false') return null
 
-        return null
+        return analyticsTrackerById(page.dataset.analyticsPageTracker)
     }
 
     function analyticsSectionFromEvent(event) {
         const element = event.detail?.elt || event.target
         if (!element?.closest) return null
 
-        return element.closest('[data-analytics-lazy-section], [data-analytics-load-section]')
+        const selector = '[data-analytics-lazy-section], [data-analytics-load-section]'
+        return element.closest(selector)
+    }
+
+    function analyticsProgressPercent(done, total, active) {
+        if (total > 0) {
+            return Math.max(4, Math.round((done / total) * 100))
+        }
+        return active ? 42 : 100
     }
 
     function setAnalyticsTrackerProgress(tracker, done, total, active) {
@@ -247,25 +258,33 @@
         const description = tracker.querySelector('[data-analytics-load-description]')
         const counter = tracker.querySelector('[data-analytics-load-counter]')
         const progress = tracker.querySelector('[data-analytics-load-progress]')
-        const percent = total > 0 ? Math.max(4, Math.round((done / total) * 100)) : active ? 42 : 100
+        const percent = analyticsProgressPercent(done, total, active)
 
         tracker.classList.remove('hidden')
 
         if (counter) {
-            counter.textContent = total > 0 ? `${done}/${total} sections` : active ? 'Loading' : 'Complete'
+            if (total > 0) {
+                counter.textContent = `${done}/${total} sections`
+            } else {
+                counter.textContent = active ? 'Loading' : 'Complete'
+            }
         }
+
         if (progress) {
             progress.style.width = `${percent}%`
         }
 
         if (!active && (total === 0 || done >= total)) {
             if (title) {
-                title.textContent = tracker.dataset.analyticsCompleteTitle || 'Analytics page fully loaded'
+                title.textContent =
+                    tracker.dataset.analyticsCompleteTitle || 'Analytics page fully loaded'
             }
             if (description) {
                 description.textContent =
-                    tracker.dataset.analyticsCompleteDescription || 'All tracked analytics sections have finished loading.'
+                    tracker.dataset.analyticsCompleteDescription ||
+                    'All tracked analytics sections have finished loading.'
             }
+
             tracker.dataset.analyticsLoadState = 'complete'
             window.setTimeout(() => {
                 if (tracker.dataset.analyticsLoadState === 'complete') {
@@ -280,8 +299,10 @@
         }
         if (description) {
             description.textContent =
-                tracker.dataset.analyticsDescription || 'Loading analytics sections in the background.'
+                tracker.dataset.analyticsDescription ||
+                'Loading analytics sections in the background.'
         }
+
         tracker.dataset.analyticsLoadState = 'loading'
     }
 
@@ -289,13 +310,16 @@
         if (!tracker) return
 
         const sections = trackedAnalyticsSections(tracker)
-        const active = Number.parseInt(tracker.dataset.analyticsActiveRequests || '0', 10) > 0
+        const activeRequests = tracker.dataset.analyticsActiveRequests || '0'
+        const active = Number.parseInt(activeRequests, 10) > 0
 
         if (!sections.length && !active) return
 
-        const done = sections.filter(
-            (section) => section.dataset.analyticsLoaded === 'true' || section.dataset.analyticsLoadFailed === 'true'
-        ).length
+        const done = sections.filter((section) => {
+            const loaded = section.dataset.analyticsLoaded === 'true'
+            const failed = section.dataset.analyticsLoadFailed === 'true'
+            return loaded || failed
+        }).length
 
         setAnalyticsTrackerProgress(tracker, done, sections.length, active)
     }
@@ -304,20 +328,37 @@
         if (!tracker) return
 
         const sections = trackedAnalyticsSections(tracker)
-        tracker.dataset.analyticsActiveRequests = tracker.dataset.analyticsActiveRequests || '0'
+        tracker.dataset.analyticsActiveRequests =
+            tracker.dataset.analyticsActiveRequests || '0'
 
         sections.forEach((section) => {
-            if (section.dataset.analyticsLoaded !== 'true' && section.dataset.analyticsLoadFailed !== 'true') {
+            const loaded = section.dataset.analyticsLoaded === 'true'
+            const failed = section.dataset.analyticsLoadFailed === 'true'
+
+            if (!loaded && !failed) {
                 section.dataset.analyticsLoaded = 'false'
                 section.dataset.analyticsLoadFailed = 'false'
             }
         })
 
-        if (sections.length) updateAnalyticsTracker(tracker)
+        if (sections.length) {
+            updateAnalyticsTracker(tracker)
+        }
     }
 
     function initAllAnalyticsTrackers() {
-        document.querySelectorAll('[data-analytics-load-tracker="true"]').forEach(initAnalyticsTracker)
+        const selector = '[data-analytics-load-tracker="true"]'
+        document.querySelectorAll(selector).forEach(initAnalyticsTracker)
+    }
+
+    function analyticsActiveRequestCount(tracker) {
+        const value = tracker.dataset.analyticsActiveRequests || '0'
+        return Number.parseInt(value, 10)
+    }
+
+    function decrementAnalyticsActiveRequests(tracker) {
+        const active = analyticsActiveRequestCount(tracker)
+        tracker.dataset.analyticsActiveRequests = String(Math.max(active - 1, 0))
     }
 
     window.kaoriInitAnalyticsLoadTrackers = initAllAnalyticsTrackers
@@ -326,43 +367,45 @@
         window.kaoriAnalyticsLoadTrackerBound = true
 
         document.body.addEventListener('htmx:beforeRequest', (event) => {
-            const tracker = analyticsTrackerForElement(event.detail?.elt || event.target)
+            const element = event.detail?.elt || event.target
+            const tracker = analyticsTrackerForElement(element)
             if (!tracker) return
 
-            const active = Number.parseInt(tracker.dataset.analyticsActiveRequests || '0', 10)
+            const active = analyticsActiveRequestCount(tracker)
             tracker.dataset.analyticsActiveRequests = String(active + 1)
             updateAnalyticsTracker(tracker)
         })
 
         document.body.addEventListener('htmx:afterSettle', (event) => {
             const section = analyticsSectionFromEvent(event)
-            const tracker = analyticsTrackerForElement(event.detail?.elt || event.target)
+            const element = event.detail?.elt || event.target
+            const tracker = analyticsTrackerForElement(element)
 
             if (section) {
                 section.dataset.analyticsLoaded = 'true'
             }
 
             if (tracker) {
-                const active = Number.parseInt(tracker.dataset.analyticsActiveRequests || '0', 10)
-                tracker.dataset.analyticsActiveRequests = String(Math.max(active - 1, 0))
+                decrementAnalyticsActiveRequests(tracker)
                 updateAnalyticsTracker(tracker)
             }
 
             initAllAnalyticsTrackers()
         })
 
-        ;['htmx:responseError', 'htmx:sendError', 'htmx:timeout'].forEach((eventName) => {
+        const failureEvents = ['htmx:responseError', 'htmx:sendError', 'htmx:timeout']
+        failureEvents.forEach((eventName) => {
             document.body.addEventListener(eventName, (event) => {
                 const section = analyticsSectionFromEvent(event)
-                const tracker = analyticsTrackerForElement(event.detail?.elt || event.target)
+                const element = event.detail?.elt || event.target
+                const tracker = analyticsTrackerForElement(element)
 
                 if (section) {
                     section.dataset.analyticsLoadFailed = 'true'
                 }
 
                 if (tracker) {
-                    const active = Number.parseInt(tracker.dataset.analyticsActiveRequests || '0', 10)
-                    tracker.dataset.analyticsActiveRequests = String(Math.max(active - 1, 0))
+                    decrementAnalyticsActiveRequests(tracker)
                     updateAnalyticsTracker(tracker)
                 }
             })
