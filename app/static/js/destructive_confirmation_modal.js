@@ -11,6 +11,37 @@
 
     const visibleModal = () => document.querySelector('[data-destructive-confirmation-modal]:not(.hidden)')
 
+    const applyDynamicPayload = (modal, button) => {
+        const form = modal.querySelector('[data-destructive-dynamic-form]')
+        const deleteUrl = button.dataset.deleteUrl || ''
+        if (form instanceof HTMLFormElement) {
+            form.setAttribute('action', deleteUrl)
+            if (deleteUrl) {
+                form.setAttribute('hx-post', deleteUrl)
+                if (window.htmx) window.htmx.process(form)
+            } else {
+                form.removeAttribute('hx-post')
+            }
+        }
+
+        const title = modal.querySelector('[data-destructive-modal-title]')
+        const targetName = modal.querySelector('[data-destructive-target-name]')
+        const detail = modal.querySelector('[data-destructive-detail]')
+        const actionLabel = modal.querySelector('[data-destructive-action-label]')
+
+        if (title && button.dataset.deleteTitle) title.textContent = button.dataset.deleteTitle
+        if (targetName && button.dataset.deleteName) targetName.textContent = button.dataset.deleteName
+        if (detail && button.dataset.deleteDetail) detail.textContent = button.dataset.deleteDetail
+        if (actionLabel && button.dataset.deleteActionLabel) actionLabel.textContent = button.dataset.deleteActionLabel
+    }
+
+    const resetDynamicForm = (modal) => {
+        const form = modal.querySelector('[data-destructive-dynamic-form]')
+        if (!(form instanceof HTMLFormElement)) return
+        form.setAttribute('action', '')
+        form.removeAttribute('hx-post')
+    }
+
     const openModal = (button) => {
         const modal = document.getElementById(button.dataset.destructiveModalId || '')
         if (!(modal instanceof HTMLElement)) return
@@ -36,6 +67,7 @@
                 scope.textContent ||
                 'Operational target'
         }
+        applyDynamicPayload(modal, button)
         modal.classList.remove('hidden')
         modal.classList.add('flex')
         modal.setAttribute('aria-hidden', 'false')
@@ -51,6 +83,7 @@
         modal.classList.remove('flex')
         modal.setAttribute('aria-hidden', 'true')
         document.documentElement.classList.remove('overflow-hidden')
+        resetDynamicForm(modal)
         opener?.focus()
         opener = null
     }
@@ -75,6 +108,15 @@
             closeModal(modal)
             submit?.click()
         }
+    })
+
+    document.addEventListener('htmx:afterRequest', (event) => {
+        const form =
+            event.target instanceof HTMLFormElement
+                ? event.target
+                : event.target?.closest?.('[data-destructive-dynamic-form]')
+        if (!(form instanceof HTMLFormElement) || !form.matches('[data-destructive-dynamic-form]')) return
+        closeModal(form.closest('[data-destructive-confirmation-modal]'))
     })
 
     document.addEventListener('keydown', (event) => {

@@ -111,7 +111,8 @@
                                     </button>
                                 </form>
                                 <button type="button"
-                                        data-metrics-source-delete-button
+                                        data-destructive-modal-open
+                                        data-destructive-modal-id="metrics-source-delete-modal"
                                         data-delete-url="{{ url_for('metrics.delete_instance_binding', instance_id=instance.id, binding_id=row.binding.id) }}"
                                         data-delete-title="Remove Consumer Binding?"
                                         data-delete-name="{{ row.scope_label }}"

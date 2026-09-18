@@ -82,5 +82,7 @@
             </div>
         </section>
         {% include "integrations/observability/metrics_source/partials/_delete_confirmation_modal.html" %}
+        <script src="{{ url_for('static', filename='js/destructive_confirmation_modal.js') }}"
+                defer></script>
     </div>
 {% endblock dashboard_content %}
