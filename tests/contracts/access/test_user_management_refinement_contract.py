@@ -191,6 +191,7 @@ def test_access_main_right_rails_are_sticky_with_shared_desktop_offset() -> None
     ):
         assert 'xl:sticky xl:top-5' not in read(full_width_page), full_width_page
 
+
 def test_reset_password_reuses_shared_security_surface_authority() -> None:
     template_path = 'app/templates/access/users/reset_password.html'
     template = read(template_path)
@@ -225,4 +226,3 @@ def test_reset_password_reuses_shared_security_surface_authority() -> None:
     assert 'Recover access through GitHub.' in template
     assert 'xl:sticky xl:top-5' in template
     assert template_path not in baseline['files']
-
