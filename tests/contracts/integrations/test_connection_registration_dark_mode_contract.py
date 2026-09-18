@@ -65,6 +65,7 @@ def test_metrics_source_and_alertmanager_registration_forms_use_shared_action_co
     assert 'provider_registration_context.render(' in alertmanager
     assert 'Related Operational Workspace' in shared_context
 
+
 def test_kubernetes_connection_form_reuses_shared_shell_and_semantic_ownership() -> None:
     form_path = 'app/templates/kubernetes/cluster/partials/_form.html'
     form = read(form_path)
@@ -84,4 +85,3 @@ def test_kubernetes_connection_form_reuses_shared_shell_and_semantic_ownership()
     assert 'hx-target="#kubernetes-connection-test-result"' in form
     assert 'provider_registration_actions.render(' in form
     assert form_path not in baseline['files']
-
