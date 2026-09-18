@@ -4,10 +4,12 @@ from html.parser import HTMLParser
 from types import SimpleNamespace
 
 import pytest
+from flask import Response
 
 from app import create_app
 from app.access.authentication import routes as auth_routes
 from app.bootstrap import presentation as bootstrap_presentation
+from app.bootstrap.security import _protect_inline_scripts
 
 
 class _SecurityHtmlParser(HTMLParser):
@@ -86,6 +88,31 @@ def test_inline_bootstrap_scripts_are_protected_by_response_nonce(app) -> None:
 
     assert inline_scripts
     assert all(attributes.get('nonce') == nonce for attributes in inline_scripts)
+
+
+def test_nonce_transformer_trusts_only_governed_inline_openings() -> None:
+    response = Response(
+        '<script>window.bare = true</script>'
+        '<script data-kaori-prepaint-bootstrap="app-shell">window.app = true</script>'
+        '<script data-kaori-prepaint-bootstrap="auth-theme">window.auth = true</script>'
+        '<script data-kaori-prepaint-bootstrap="unapproved">window.bad = true</script>'
+        '<script data-untrusted="true">window.other = true</script>'
+        '<script src="/static/js/app.js"></script>',
+        mimetype='text/html',
+    )
+
+    _protect_inline_scripts(response, 'fixed-nonce')
+
+    parser = _SecurityHtmlParser()
+    parser.feed(response.get_data(as_text=True))
+    scripts = parser.script_attributes
+
+    assert scripts[0].get('nonce') == 'fixed-nonce'
+    assert scripts[1].get('nonce') == 'fixed-nonce'
+    assert scripts[2].get('nonce') == 'fixed-nonce'
+    assert 'nonce' not in scripts[3]
+    assert 'nonce' not in scripts[4]
+    assert 'nonce' not in scripts[5]
 
 
 def test_csp_nonce_rotates_between_html_responses(app) -> None:
