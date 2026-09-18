@@ -134,6 +134,7 @@ def test_integrations_standard_is_implemented_not_draft() -> None:
     assert 'Technical matrices may use horizontal scrolling only' in standard
     assert 'Both documents are audit-only' not in app_readme
 
+
 def test_metrics_source_workspaces_reuse_shared_section_shell_authority() -> None:
     templates = (
         'app/templates/integrations/observability/metrics_source/instance_form.html',
