@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -163,8 +164,8 @@ def test_generate_report_uses_semantic_status_tokens_and_preserves_storage_guard
     runtime = read(RUNTIME)
     service = read(SERVICE)
 
-    assert 'border-status-critical-border bg-status-critical-soft' in source
-    assert 'border-status-warning-border bg-status-warning-soft' in source
+    assert "operational_callout.semantic_surface_classes('critical')" in source
+    assert "operational_callout.semantic_surface_classes('warning')" in source
     assert 'border-rose-200' not in source
     assert 'border-amber-200' not in source
     assert 'payload.generation_allowed' in source
@@ -370,3 +371,33 @@ def test_generate_report_uses_shared_form_control_size_and_normal_value_weight()
         assert token in shared
     assert '<option value="{{ option.value }}"' in source
     assert 'class="font-normal"' in source
+
+def test_generate_report_bounded_callouts_use_shared_semantic_authority() -> None:
+    source = read(TEMPLATE)
+    baseline = json.loads(
+        read(ROOT / 'docs' / 'architecture' / 'ui-style-debt-baseline.json')
+    )
+    relative = TEMPLATE.relative_to(ROOT).as_posix()
+
+    bounded = source.split('{% if not payload.generation_allowed %}', 1)[1].split(
+        '<section class="overflow-hidden rounded-2xl', 1
+    )[0]
+
+    assert "operational_callout.semantic_surface_classes('warning')" in bounded
+    assert bounded.count("operational_callout.semantic_border_classes('warning')") == 2
+    assert "operational_callout.semantic_surface_classes('critical')" in bounded
+    assert bounded.count("operational_callout.semantic_border_classes('critical')") == 1
+
+    assert 'border-status-critical-border' not in bounded
+    assert bounded.count('border-status-warning-border') == 0
+
+    assert 'role="status"' in bounded
+    assert 'aria-label="Artifact storage unavailable"' in bounded
+    assert 'Artifact Storage Needs Review' in bounded
+    assert 'Open Storage' in bounded
+    assert 'role="alert"' in bounded
+    assert 'aria-label="Unable to create report request"' in bounded
+    assert 'Unable to Create Report Request' in bounded
+
+    assert baseline['files'][relative] == {'semantic_border_utilities': 6}
+
