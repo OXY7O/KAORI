@@ -15,11 +15,11 @@ _EVENT_HANDLER = re.compile(
 )
 _SCRIPT_TAG = re.compile(r'<script\b(?P<attrs>[^>]*)>', re.IGNORECASE | re.DOTALL)
 _SCRIPT_BLOCK = re.compile(
-    r'<script\\b(?P<attrs>[^>]*)>(?P<body>[\\s\\S]*?)</script>',
+    r'<script\b(?P<attrs>[^>]*)>(?P<body>[\s\S]*?)</script>',
     re.IGNORECASE,
 )
 _PREPAINT_BOOTSTRAP_MARKER = re.compile(
-    r"""\\bdata-kaori-prepaint-bootstrap\\s*=\\s*["'](?P<marker>[^"']+)["']""",
+    r"""\bdata-kaori-prepaint-bootstrap\s*=\s*["'](?P<marker>[^"']+)["']""",
     re.IGNORECASE,
 )
 _INERT_JSON_SCRIPT_TYPE = re.compile(
