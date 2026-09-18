@@ -5,15 +5,13 @@
 ] %}
 {% if can_view_system_information %}
     {% set general_tabs = general_tabs + [
-        ('system-information', 'System Information', 'badge-info', url_for('settings.general', tab='system-information')),
-        ('compatibility-versions', 'Compatibility Versions', 'badge-check', url_for('settings.general', tab='compatibility-versions'))
-    ] %}
+            ('system-information', 'System Information', 'badge-info', url_for('settings.general', tab='system-information')),
+            ('compatibility-versions', 'Compatibility Versions', 'badge-check', url_for('settings.general', tab='compatibility-versions'))
+        ] %}
 {% endif %}
-{{ workspace_tabs.render_query_tabs(
-    general_tabs,
-    active_tab,
-    aria_label='General settings sections',
-    hx_target='#general-settings-page',
-    hx_indicator='#general-settings-loading',
-    hx_sync='#general-settings-page:replace'
-) }}
+{{ workspace_tabs.render_query_tabs(general_tabs,
+active_tab,
+aria_label='General settings sections',
+hx_target='#general-settings-page',
+hx_indicator='#general-settings-loading',
+hx_sync='#general-settings-page:replace') }}
