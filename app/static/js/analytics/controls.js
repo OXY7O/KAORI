@@ -224,8 +224,7 @@
         const tracked = element.closest(trackedSelector)
 
         if (tracked) {
-            const trackerId =
-                tracked.dataset.analyticsLazySection || tracked.dataset.analyticsLoadSection
+            const trackerId = tracked.dataset.analyticsLazySection || tracked.dataset.analyticsLoadSection
             return analyticsTrackerById(trackerId)
         }
 
@@ -276,8 +275,7 @@
 
         if (!active && (total === 0 || done >= total)) {
             if (title) {
-                title.textContent =
-                    tracker.dataset.analyticsCompleteTitle || 'Analytics page fully loaded'
+                title.textContent = tracker.dataset.analyticsCompleteTitle || 'Analytics page fully loaded'
             }
             if (description) {
                 description.textContent =
@@ -299,8 +297,7 @@
         }
         if (description) {
             description.textContent =
-                tracker.dataset.analyticsDescription ||
-                'Loading analytics sections in the background.'
+                tracker.dataset.analyticsDescription || 'Loading analytics sections in the background.'
         }
 
         tracker.dataset.analyticsLoadState = 'loading'
@@ -328,8 +325,7 @@
         if (!tracker) return
 
         const sections = trackedAnalyticsSections(tracker)
-        tracker.dataset.analyticsActiveRequests =
-            tracker.dataset.analyticsActiveRequests || '0'
+        tracker.dataset.analyticsActiveRequests = tracker.dataset.analyticsActiveRequests || '0'
 
         sections.forEach((section) => {
             const loaded = section.dataset.analyticsLoaded === 'true'
