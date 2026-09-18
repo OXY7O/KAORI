@@ -227,7 +227,7 @@ document.addEventListener('htmx:beforeRequest', (event) => {
 
     const activityId = window.startOperationalActivity(
         progressOwner.dataset.operationalProgressTitle,
-        progressOwner.dataset.operationalProgressMessage,
+        progressOwner.dataset.operationalProgressMessage
     )
     operationalActivityByRequest.set(request, activityId)
     request.__kaoriOperationalActivityId = activityId
