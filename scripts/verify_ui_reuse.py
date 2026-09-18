@@ -117,6 +117,7 @@ def _metrics(relative: str, source: str) -> dict[str, int]:
         'inline_event_handlers': len(_EVENT_HANDLER.findall(source)),
     }
 
+
 def scan(root: Path) -> dict[str, dict[str, int]]:
     result: dict[str, dict[str, int]] = {}
     for path in sorted((root / 'app' / 'templates').rglob('*.html')):
