@@ -13,6 +13,14 @@
     {%- else -%}border-status-info-border
     {%- endif -%}
 {%- endmacro %}
+{% macro semantic_hover_border_classes(tone='info') -%}
+    {%- if tone == 'normal' -%}hover:border-status-normal-border
+    {%- elif tone == 'warning' -%}hover:border-status-warning-border
+    {%- elif tone == 'critical' -%}hover:border-status-critical-border
+    {%- elif tone == 'unknown' -%}hover:border-status-unknown-border
+    {%- else -%}hover:border-status-info-border
+    {%- endif -%}
+{%- endmacro %}
 {% macro semantic_surface_classes(tone='info') -%}
     {{ semantic_border_classes(tone) }} {{ 'bg-status-normal-soft' if tone == 'normal' else ('bg-status-warning-soft' if tone == 'warning' else ('bg-status-critical-soft' if tone == 'critical' else ('bg-status-unknown-soft' if tone == 'unknown' else 'bg-status-info-soft'))) }}
 {%- endmacro %}
