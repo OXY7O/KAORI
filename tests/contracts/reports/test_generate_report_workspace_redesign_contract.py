@@ -372,6 +372,7 @@ def test_generate_report_uses_shared_form_control_size_and_normal_value_weight()
     assert '<option value="{{ option.value }}"' in source
     assert 'class="font-normal"' in source
 
+
 def test_generate_report_bounded_callouts_use_shared_semantic_authority() -> None:
     source = read(TEMPLATE)
     baseline = json.loads(
@@ -400,4 +401,3 @@ def test_generate_report_bounded_callouts_use_shared_semantic_authority() -> Non
     assert 'Unable to Create Report Request' in bounded
 
     assert baseline['files'][relative] == {'semantic_border_utilities': 6}
-
