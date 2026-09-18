@@ -82,7 +82,8 @@ const buildLocalActivityNode = (activity) => {
     title.textContent = activity.title
 
     const state = document.createElement('span')
-    state.className = 'inline-flex min-h-6 shrink-0 items-center rounded-md bg-surface-card px-2 py-1 text-xs font-semibold text-kaori-primary'
+    state.className =
+        'inline-flex min-h-6 shrink-0 items-center rounded-md bg-surface-card px-2 py-1 text-xs font-semibold text-kaori-primary'
     state.textContent = 'In progress'
 
     const message = document.createElement('p')
