@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -132,3 +133,19 @@ def test_integrations_standard_is_implemented_not_draft() -> None:
     assert 'Provider-local presentation wrappers are prohibited' in standard
     assert 'Technical matrices may use horizontal scrolling only' in standard
     assert 'Both documents are audit-only' not in app_readme
+
+def test_metrics_source_workspaces_reuse_shared_section_shell_authority() -> None:
+    templates = (
+        'app/templates/integrations/observability/metrics_source/instance_form.html',
+        'app/templates/integrations/observability/metrics_source/partials/_detail_scope.html',
+        'app/templates/integrations/observability/metrics_source/partials/_runtime_panel.html',
+    )
+    baseline = json.loads(read('docs/architecture/ui-style-debt-baseline.json'))
+
+    for relative in templates:
+        source = read(relative)
+        assert 'integrations/components/_workspace.html' in source
+        assert 'integration_ui.section_shell_classes()' in source
+        assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' not in source
+        assert relative not in baseline['files']
+
