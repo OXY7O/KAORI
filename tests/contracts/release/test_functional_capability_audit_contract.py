@@ -291,3 +291,84 @@ def test_reports_generation_secondary_behaviors_bind_narrow_executable_evidence(
             behavior['evidence'],
             context=f'reports.{capability_key}.{behavior_key}',
         )
+
+
+SECONDARY_RECONCILIATION_SLICE = {
+    ('settings', 'general'): {
+        'normal_flow': ('covered', 'tests/settings/test_settings_action_characterization.py'),
+        'authorization': ('bounded_gap', None),
+        'validation_dependency': ('covered', 'tests/settings/test_settings_action_characterization.py'),
+        'persistence': ('covered', 'tests/settings/test_settings_action_characterization.py'),
+        'async_job': ('not_applicable', None),
+        'export_publication': ('not_applicable', None),
+        'failure_recovery': ('covered', 'tests/settings/test_settings_action_characterization.py'),
+    },
+    ('settings', 'account'): {
+        'normal_flow': ('covered', 'tests/settings/test_settings_action_characterization.py'),
+        'authorization': ('bounded_gap', None),
+        'validation_dependency': ('covered', 'tests/settings/test_settings_action_characterization.py'),
+        'persistence': ('covered', 'tests/settings/test_settings_action_characterization.py'),
+        'async_job': ('not_applicable', None),
+        'export_publication': ('not_applicable', None),
+        'failure_recovery': ('covered', 'tests/settings/test_settings_action_characterization.py'),
+    },
+    ('integrations', 'notification_channels'): {
+        'normal_flow': (
+            'covered',
+            'tests/integrations/notification_channels/test_notification_channel_functional_characterization.py',
+        ),
+        'authorization': ('covered', 'scripts/verify_notification_channels.py'),
+        'validation_dependency': (
+            'covered',
+            'tests/contracts/integrations/test_notification_channels_audit_20260817_contract.py',
+        ),
+        'persistence': (
+            'covered',
+            'tests/integrations/notification_channels/test_notification_channel_functional_characterization.py',
+        ),
+        'async_job': ('not_applicable', None),
+        'export_publication': ('not_applicable', None),
+        'failure_recovery': (
+            'covered',
+            'tests/integrations/notification_channels/test_notification_channel_functional_characterization.py',
+        ),
+    },
+    ('access', 'users'): {
+        'normal_flow': ('covered', 'tests/access/users/test_user_management_functional_characterization.py'),
+        'authorization': ('covered', 'tests/access/users/test_user_management_functional_characterization.py'),
+        'validation_dependency': (
+            'covered',
+            'tests/access/users/test_user_management_functional_characterization.py',
+        ),
+        'persistence': ('covered', 'tests/access/users/test_user_management_functional_characterization.py'),
+        'async_job': ('not_applicable', None),
+        'export_publication': ('not_applicable', None),
+        'failure_recovery': (
+            'covered',
+            'tests/access/users/test_user_management_functional_characterization.py',
+        ),
+    },
+}
+
+
+def test_admitted_secondary_reconciliation_slice_is_explicit() -> None:
+    payload = json.loads(MATRIX_PATH.read_text(encoding='utf-8'))
+
+    for (surface_key, capability_key), expected in SECONDARY_RECONCILIATION_SLICE.items():
+        behaviors = payload['surfaces'][surface_key]['capabilities'][capability_key]['behaviors']
+        assert set(behaviors) == set(expected)
+
+        for behavior_key, (expected_state, evidence_path) in expected.items():
+            behavior = behaviors[behavior_key]
+            assert behavior['state'] == expected_state
+            if expected_state == 'covered':
+                assert behavior['evidence'] == [evidence_path]
+                _assert_paths_exist(
+                    behavior['evidence'],
+                    context=f'{surface_key}.{capability_key}.{behavior_key}',
+                )
+            elif expected_state == 'bounded_gap':
+                assert behavior['tracking_issue'] == 225
+                assert behavior['reason'].strip()
+            else:
+                assert behavior['reason'].strip()
