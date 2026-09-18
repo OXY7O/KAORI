@@ -74,13 +74,6 @@ paths = ['''^app/integrations/compatibility\.py$''']
 regexes = ['''key\s*=\s*['"]kubernetes-legacy-v1['"]''']
 
 [[rules.allowlists]]
-description = "Settings Account HTMX selectors are DOM identifiers, not credentials"
-condition = "AND"
-regexTarget = "match"
-paths = ['''^app/templates/settings/account/partials/_tabs[.]html''']
-regexes = ['''account-authentication-page['"],[[:space:]]*hx_indicator=['"]#account-settings-loading['"]''']
-
-[[rules.allowlists]]
 description = "Bootstrap password example is an explicit non-secret placeholder"
 condition = "AND"
 regexTarget = "secret"
