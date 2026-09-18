@@ -539,6 +539,7 @@ def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:
     assert labels.count('whitespace-nowrap') >= 4
     assert 'Single-Line Compact Label Contract' in standard
 
+
 def test_kubernetes_registry_detail_actions_use_shared_semantic_border_authority() -> None:
     template_path = (
         'app/templates/integrations/orchestration/container_orchestrator/providers/'
@@ -561,4 +562,3 @@ def test_kubernetes_registry_detail_actions_use_shared_semantic_border_authority
     assert 'Alert Source' in template
     assert 'Open Observability' in template
     assert template_path not in baseline['files']
-
