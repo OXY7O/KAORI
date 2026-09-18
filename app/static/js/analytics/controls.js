@@ -200,195 +200,180 @@
         }
     }
 
-    function byId(id) {
-            return document.getElementById(id);
+    function analyticsTrackerById(id) {
+        return document.getElementById(id)
+    }
+
+    function analyticsTrackerPage(tracker) {
+        return tracker ? analyticsTrackerById(tracker.dataset.analyticsPageId || '') : null
+    }
+
+    function trackedAnalyticsSections(tracker) {
+        const page = analyticsTrackerPage(tracker)
+        if (!page || !tracker) return []
+
+        const selector = `[data-analytics-lazy-section="${tracker.id}"]`
+        return Array.from(page.querySelectorAll(selector))
+    }
+
+    function analyticsTrackerForElement(element) {
+        if (!element?.closest) return null
+
+        const tracked = element.closest('[data-analytics-lazy-section], [data-analytics-load-section]')
+        if (tracked) {
+            const trackerId = tracked.dataset.analyticsLazySection || tracked.dataset.analyticsLoadSection
+            return analyticsTrackerById(trackerId)
         }
-    
-        function getPage(tracker) {
-            return tracker ? byId(tracker.dataset.analyticsPageId || '') : null;
+
+        const page = element.closest('[data-analytics-page-tracker]')
+        if (page && page.dataset.analyticsPageRequestTracking !== 'false') {
+            return analyticsTrackerById(page.dataset.analyticsPageTracker)
         }
-    
-        function getTrackedSections(tracker) {
-            var page = getPage(tracker);
-            if (!page || !tracker) {
-                return [];
-            }
-    
-            var selector = '[data-analytics-lazy-section="' + tracker.id + '"]';
-            return Array.prototype.slice.call(page.querySelectorAll(selector));
+
+        return null
+    }
+
+    function analyticsSectionFromEvent(event) {
+        const element = event.detail?.elt || event.target
+        if (!element?.closest) return null
+
+        return element.closest('[data-analytics-lazy-section], [data-analytics-load-section]')
+    }
+
+    function setAnalyticsTrackerProgress(tracker, done, total, active) {
+        if (!tracker) return
+
+        const title = tracker.querySelector('[data-analytics-load-title]')
+        const description = tracker.querySelector('[data-analytics-load-description]')
+        const counter = tracker.querySelector('[data-analytics-load-counter]')
+        const progress = tracker.querySelector('[data-analytics-load-progress]')
+        const percent = total > 0 ? Math.max(4, Math.round((done / total) * 100)) : active ? 42 : 100
+
+        tracker.classList.remove('hidden')
+
+        if (counter) {
+            counter.textContent = total > 0 ? `${done}/${total} sections` : active ? 'Loading' : 'Complete'
         }
-    
-        function getTrackerForElement(element) {
-            if (!element || !element.closest) {
-                return null;
-            }
-    
-            var tracked = element.closest('[data-analytics-lazy-section], [data-analytics-load-section]');
-            if (tracked) {
-                var trackerId = tracked.dataset.analyticsLazySection || tracked.dataset.analyticsLoadSection;
-                return byId(trackerId);
-            }
-    
-            var page = element.closest('[data-analytics-page-tracker]');
-            if (page && page.dataset.analyticsPageRequestTracking !== 'false') {
-                return byId(page.dataset.analyticsPageTracker);
-            }
-    
-            return null;
+        if (progress) {
+            progress.style.width = `${percent}%`
         }
-    
-        function getSectionFromEvent(event) {
-            var element = event.detail && event.detail.elt ? event.detail.elt : event.target;
-            if (!element || !element.closest) {
-                return null;
+
+        if (!active && (total === 0 || done >= total)) {
+            if (title) {
+                title.textContent = tracker.dataset.analyticsCompleteTitle || 'Analytics page fully loaded'
             }
-    
-            return element.closest('[data-analytics-lazy-section], [data-analytics-load-section]');
-        }
-    
-        function setProgress(tracker, done, total, active) {
-            if (!tracker) {
-                return;
+            if (description) {
+                description.textContent =
+                    tracker.dataset.analyticsCompleteDescription || 'All tracked analytics sections have finished loading.'
             }
-    
-            var title = tracker.querySelector('[data-analytics-load-title]');
-            var description = tracker.querySelector('[data-analytics-load-description]');
-            var counter = tracker.querySelector('[data-analytics-load-counter]');
-            var progress = tracker.querySelector('[data-analytics-load-progress]');
-            var percent = total > 0 ? Math.max(4, Math.round((done / total) * 100)) : (active ? 42 : 100);
-    
-            tracker.classList.remove('hidden');
-    
-            if (counter) {
-                counter.textContent = total > 0 ? done + '/' + total + ' sections' : (active ? 'Loading' : 'Complete');
-            }
-            if (progress) {
-                progress.style.width = percent + '%';
-            }
-    
-            if (!active && (total === 0 || done >= total)) {
-                if (title) {
-                    title.textContent = tracker.dataset.analyticsCompleteTitle || 'Analytics page fully loaded';
+            tracker.dataset.analyticsLoadState = 'complete'
+            window.setTimeout(() => {
+                if (tracker.dataset.analyticsLoadState === 'complete') {
+                    tracker.classList.add('hidden')
                 }
-                if (description) {
-                    description.textContent = tracker.dataset.analyticsCompleteDescription || 'All tracked analytics sections have finished loading.';
-                }
-                tracker.dataset.analyticsLoadState = 'complete';
-                window.setTimeout(function () {
-                    if (tracker.dataset.analyticsLoadState === 'complete') {
-                        tracker.classList.add('hidden');
-                    }
-                }, 2200);
-            } else {
-                if (title) {
-                    title.textContent = tracker.dataset.analyticsTitle || 'Loading analytics page';
-                }
-                if (description) {
-                    description.textContent = tracker.dataset.analyticsDescription || 'Loading analytics sections in the background.';
-                }
-                tracker.dataset.analyticsLoadState = 'loading';
-            }
+            }, 2200)
+            return
         }
-    
-        function updateTracker(tracker) {
-            if (!tracker) {
-                return;
-            }
-    
-            var sections = getTrackedSections(tracker);
-            var active = parseInt(tracker.dataset.analyticsActiveRequests || '0', 10) > 0;
-    
-            if (!sections.length && !active) {
-                return;
-            }
-    
-            var done = sections.filter(function (section) {
-                return section.dataset.analyticsLoaded === 'true' || section.dataset.analyticsLoadFailed === 'true';
-            }).length;
-    
-            setProgress(tracker, done, sections.length, active);
+
+        if (title) {
+            title.textContent = tracker.dataset.analyticsTitle || 'Loading analytics page'
         }
-    
-        function initTracker(tracker) {
-            if (!tracker) {
-                return;
-            }
-    
-            var sections = getTrackedSections(tracker);
-            tracker.dataset.analyticsActiveRequests = tracker.dataset.analyticsActiveRequests || '0';
-    
-            sections.forEach(function (section) {
-                if (section.dataset.analyticsLoaded !== 'true' && section.dataset.analyticsLoadFailed !== 'true') {
-                    section.dataset.analyticsLoaded = 'false';
-                    section.dataset.analyticsLoadFailed = 'false';
-                }
-            });
-    
-            if (sections.length) {
-                updateTracker(tracker);
-            }
+        if (description) {
+            description.textContent =
+                tracker.dataset.analyticsDescription || 'Loading analytics sections in the background.'
         }
-    
-        function initAllTrackers() {
-            Array.prototype.slice.call(document.querySelectorAll('[data-analytics-load-tracker="true"]')).forEach(initTracker);
-        }
-    
-        window.kaoriInitAnalyticsLoadTrackers = initAllTrackers;
-    
-        if (!window.kaoriAnalyticsLoadTrackerBound) {
-            window.kaoriAnalyticsLoadTrackerBound = true;
-    
-            document.body.addEventListener('htmx:beforeRequest', function (event) {
-                var tracker = getTrackerForElement(event.detail && event.detail.elt ? event.detail.elt : event.target);
-                if (!tracker) {
-                    return;
-                }
-    
-                var active = parseInt(tracker.dataset.analyticsActiveRequests || '0', 10);
-                tracker.dataset.analyticsActiveRequests = String(active + 1);
-                updateTracker(tracker);
-            });
-    
-            document.body.addEventListener('htmx:afterSettle', function (event) {
-                var section = getSectionFromEvent(event);
-                var tracker = getTrackerForElement(event.detail && event.detail.elt ? event.detail.elt : event.target);
-    
+        tracker.dataset.analyticsLoadState = 'loading'
+    }
+
+    function updateAnalyticsTracker(tracker) {
+        if (!tracker) return
+
+        const sections = trackedAnalyticsSections(tracker)
+        const active = Number.parseInt(tracker.dataset.analyticsActiveRequests || '0', 10) > 0
+
+        if (!sections.length && !active) return
+
+        const done = sections.filter(
+            (section) => section.dataset.analyticsLoaded === 'true' || section.dataset.analyticsLoadFailed === 'true'
+        ).length
+
+        setAnalyticsTrackerProgress(tracker, done, sections.length, active)
+    }
+
+    function initAnalyticsTracker(tracker) {
+        if (!tracker) return
+
+        const sections = trackedAnalyticsSections(tracker)
+        tracker.dataset.analyticsActiveRequests = tracker.dataset.analyticsActiveRequests || '0'
+
+        sections.forEach((section) => {
+            if (section.dataset.analyticsLoaded !== 'true' && section.dataset.analyticsLoadFailed !== 'true') {
+                section.dataset.analyticsLoaded = 'false'
+                section.dataset.analyticsLoadFailed = 'false'
+            }
+        })
+
+        if (sections.length) updateAnalyticsTracker(tracker)
+    }
+
+    function initAllAnalyticsTrackers() {
+        document.querySelectorAll('[data-analytics-load-tracker="true"]').forEach(initAnalyticsTracker)
+    }
+
+    window.kaoriInitAnalyticsLoadTrackers = initAllAnalyticsTrackers
+
+    if (!window.kaoriAnalyticsLoadTrackerBound) {
+        window.kaoriAnalyticsLoadTrackerBound = true
+
+        document.body.addEventListener('htmx:beforeRequest', (event) => {
+            const tracker = analyticsTrackerForElement(event.detail?.elt || event.target)
+            if (!tracker) return
+
+            const active = Number.parseInt(tracker.dataset.analyticsActiveRequests || '0', 10)
+            tracker.dataset.analyticsActiveRequests = String(active + 1)
+            updateAnalyticsTracker(tracker)
+        })
+
+        document.body.addEventListener('htmx:afterSettle', (event) => {
+            const section = analyticsSectionFromEvent(event)
+            const tracker = analyticsTrackerForElement(event.detail?.elt || event.target)
+
+            if (section) {
+                section.dataset.analyticsLoaded = 'true'
+            }
+
+            if (tracker) {
+                const active = Number.parseInt(tracker.dataset.analyticsActiveRequests || '0', 10)
+                tracker.dataset.analyticsActiveRequests = String(Math.max(active - 1, 0))
+                updateAnalyticsTracker(tracker)
+            }
+
+            initAllAnalyticsTrackers()
+        })
+
+        ;['htmx:responseError', 'htmx:sendError', 'htmx:timeout'].forEach((eventName) => {
+            document.body.addEventListener(eventName, (event) => {
+                const section = analyticsSectionFromEvent(event)
+                const tracker = analyticsTrackerForElement(event.detail?.elt || event.target)
+
                 if (section) {
-                    section.dataset.analyticsLoaded = 'true';
+                    section.dataset.analyticsLoadFailed = 'true'
                 }
-    
+
                 if (tracker) {
-                    var active = parseInt(tracker.dataset.analyticsActiveRequests || '0', 10);
-                    tracker.dataset.analyticsActiveRequests = String(Math.max(active - 1, 0));
-                    updateTracker(tracker);
+                    const active = Number.parseInt(tracker.dataset.analyticsActiveRequests || '0', 10)
+                    tracker.dataset.analyticsActiveRequests = String(Math.max(active - 1, 0))
+                    updateAnalyticsTracker(tracker)
                 }
-    
-                initAllTrackers();
-            });
-    
-            ['htmx:responseError', 'htmx:sendError', 'htmx:timeout'].forEach(function (eventName) {
-                document.body.addEventListener(eventName, function (event) {
-                    var section = getSectionFromEvent(event);
-                    var tracker = getTrackerForElement(event.detail && event.detail.elt ? event.detail.elt : event.target);
-    
-                    if (section) {
-                        section.dataset.analyticsLoadFailed = 'true';
-                    }
-    
-                    if (tracker) {
-                        var active = parseInt(tracker.dataset.analyticsActiveRequests || '0', 10);
-                        tracker.dataset.analyticsActiveRequests = String(Math.max(active - 1, 0));
-                        updateTracker(tracker);
-                    }
-                });
-            });
-        }
-    
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initAllTrackers);
-        } else {
-            initAllTrackers();
-        }
+            })
+        })
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAllAnalyticsTrackers)
+    } else {
+        initAllAnalyticsTrackers()
+    }
 
     document.addEventListener(
         'change',
