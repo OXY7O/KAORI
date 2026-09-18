@@ -254,6 +254,7 @@ def test_topology_cluster_icon_and_api_server_layout_are_readable() -> None:
     assert "valueElement.title = String(displayValue || 'Not Reported')" in script
     assert 'max-w-[15rem]' in inspector
 
+
 def test_topology_runtime_status_strips_use_shared_semantic_border_authority() -> None:
     workspace_path = 'app/templates/kubernetes/inventory/topology/partials/_workspace.html'
     workspace = _read(workspace_path)
@@ -277,4 +278,3 @@ def test_topology_runtime_status_strips_use_shared_semantic_border_authority() -
     assert 'id="topology-runtime-status"' in workspace
     assert 'role="status"' in workspace
     assert workspace_path not in baseline['files']
-
