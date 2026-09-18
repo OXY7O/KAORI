@@ -1,3 +1,4 @@
+{% import "components/operational_section_card.html" as operational_section_card %}
 <aside class="space-y-5 xl:sticky xl:top-5">
     {% for definition in provider_options %}
         <div id="guidance-{{ definition.provider_key }}"
@@ -7,7 +8,7 @@
         </div>
     {% endfor %}
     <section data-browser-callback
-             class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+             class="{{ operational_section_card.shell_classes() }}"
              {% if not selected_definition or selected_definition.flow.value != 'browser' %}hidden{% endif %}>
         <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="route" class="h-5 w-5"></i></span>
@@ -20,7 +21,7 @@
             <div class="block break-all rounded-lg border border-outline-default bg-surface-hover p-3 text-xs font-medium leading-5 text-content-primary"><span>{{ request.url_root.rstrip("/") }}/auth/sso/</span><span data-callback-key>{{ form.key.data or '&lt;provider-key&gt;' }}</span>/callback</div>
         </div>
     </section>
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+    <section class="{{ operational_section_card.shell_classes() }}"
              aria-label="Identity Provider Technical Runbook">
         <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="book-open-text" class="h-5 w-5"></i></span>
