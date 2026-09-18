@@ -54,13 +54,13 @@ def test_time_zone_workspace_runtime_uses_dedicated_static_authority() -> None:
     assert 'data-timezone-preview-timestamp="{{ preview_timestamp }}"' in template
     assert 'data-timezone-browser-input="{{ timezone_form.browser_timezone.id }}"' in template
     assert 'data-timezone-manual-select="{{ timezone_form.timezone.id }}"' in template
-    assert "js/settings/time_locale.js" in index
+    assert 'js/settings/time_locale.js' in index
     assert 'app/templates/settings/general/partials/_time_locale.html' not in inline_baseline
 
     assert 'initTimeLocaleWorkspace' in runtime
     assert 'data-timezone-workspace' in runtime
     assert 'Intl.DateTimeFormat().resolvedOptions().timeZone' in runtime
-    assert "manualSelect.tabIndex = automatic ? -1 : 0" in runtime
+    assert 'manualSelect.tabIndex = automatic ? -1 : 0' in runtime
     assert "manualSelect.setAttribute('aria-disabled', automatic ? 'true' : 'false')" in runtime
     assert "document.body.addEventListener('htmx:afterSwap'" in runtime
 
