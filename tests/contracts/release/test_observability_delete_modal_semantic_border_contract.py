@@ -27,6 +27,7 @@ METRICS_SOURCE_TEMPLATE = (
     / 'partials'
     / '_delete_confirmation_modal.html'
 )
+SHARED_RUNTIME_PATH = ROOT / 'app' / 'static' / 'js' / 'destructive_confirmation_modal.js'
 BASELINE_PATH = ROOT / 'docs' / 'architecture' / 'ui-style-debt-baseline.json'
 SEMANTIC_BORDER = re.compile(
     r'\bborder-status-'
@@ -36,18 +37,22 @@ SEMANTIC_BORDER = re.compile(
 TARGETS = {
     ALERTMANAGER_TEMPLATE: (
         'alertmanager-delete-modal',
-        'data-alertmanager-delete-close',
+        'data-destructive-confirmation-modal',
+        'data-destructive-modal-close',
         '#alertmanager-scope-workspace',
     ),
     METRICS_SOURCE_TEMPLATE: (
         'metrics-source-delete-modal',
-        'data-metrics-source-delete-close',
+        'data-destructive-confirmation-modal',
+        'data-destructive-modal-close',
         '#metrics-source-scope-workspace',
     ),
 }
 
 
 def test_observability_delete_modals_use_shared_critical_border_authority() -> None:
+    runtime = SHARED_RUNTIME_PATH.read_text(encoding='utf-8')
+
     for template_path, markers in TARGETS.items():
         source = template_path.read_text(encoding='utf-8')
 
@@ -57,13 +62,14 @@ def test_observability_delete_modals_use_shared_critical_border_authority() -> N
         assert 'role="dialog"' in source
         assert 'aria-modal="true"' in source
         assert 'hx-swap="outerHTML"' in source
-        assert "event.key === 'Escape'" in source
-        assert 'trigger?.focus();' in source
         assert 'data-operation-submit' in source
         assert 'data-loading-label="Deleting..."' in source
         assert 'data-lucide="trash-2"' in source
         for marker in markers:
             assert marker in source
+
+    assert "event.key === 'Escape'" in runtime
+    assert 'opener?.focus()' in runtime
 
 
 def test_observability_delete_modal_semantic_border_debt_is_burned_down() -> None:
