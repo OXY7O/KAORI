@@ -1,15 +1,4 @@
 {
-  "files": {
-    "app/templates/layouts/app.html": {
-      "inline_event_handlers": 0,
-      "inline_scripts": 1,
-      "inline_styles": 0
-    },
-    "app/templates/layouts/auth.html": {
-      "inline_event_handlers": 0,
-      "inline_scripts": 1,
-      "inline_styles": 0
-    }
-  },
+  "files": {},
   "version": 1
 }

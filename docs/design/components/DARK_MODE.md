@@ -148,6 +148,19 @@ Rules:
 
 This is a controlled deep-Violet exception, not permission to make supporting operational surfaces Bright Violet.
 
+## Pre-paint shell bootstrap
+
+Theme state must be resolved before the canonical stylesheet is applied so the first rendered frame does not flash the wrong light/dark theme. The authenticated shell also restores the persisted collapsed-sidebar root class before first paint.
+
+The only approved synchronous inline bootstrap blocks are:
+
+- `app/templates/layouts/app.html` with `data-kaori-prepaint-bootstrap="app-shell"`;
+- `app/templates/layouts/auth.html` with `data-kaori-prepaint-bootstrap="auth-theme"`.
+
+These are governed shell exceptions, not general inline-script exemptions. `scripts/verify_ui_reuse.py` excludes a block from ordinary inline-script debt only when the path, marker, placement before `css/output.css`, and normalized bootstrap body all match the locked contract. Any additional inline script, extra attribute, moved block, or expanded runtime body is counted as inline debt and fails the zero-debt baseline.
+
+The authenticated bootstrap may read only `theme` and `kaori.sidebarExpanded` from local storage and may only add the corresponding `dark` and `sidebar-collapsed` classes to the document root. The authentication layout bootstrap owns only the persisted theme class.
+
 ## Hero dark-mode treatment
 
 The canonical Hero is the only authenticated-page component permitted to use the token-owned dark tonal gradient.
