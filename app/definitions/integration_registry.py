@@ -229,6 +229,7 @@ def integration_compatibility_document() -> dict[str, Any]:
 
     return document
 
+
 @lru_cache(maxsize=8)
 def integration_provider_document(provider: str) -> dict[str, Any]:
     provider_key = str(provider or '').strip().lower()
