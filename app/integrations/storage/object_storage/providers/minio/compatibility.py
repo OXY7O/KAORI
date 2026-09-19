@@ -14,9 +14,11 @@ class MinioCompatibilityProfile:
     key: str
     product: str
     label: str
+    contract_profile: str
     minimum_release: str
     maximum_release: str
     support_level: str
+    upstream_lifecycle: str
     notes: str
 
     @property
@@ -42,13 +44,17 @@ class MinioCompatibilityResult:
     declared_release: str | None
     product: str
     supported_range: str
+    qualification_key: str | None = None
+    upstream_lifecycle: str = 'unknown'
 
 
 def _load_compatibility_contract() -> tuple[
+    str,
     dict[str, tuple[MinioCompatibilityProfile, ...]],
     dict[str, str],
 ]:
     document = integration_provider_document('object_storage')
+    contract_profile = require_str(document, 'capability_profile', 'object_storage')
     catalog: dict[str, tuple[MinioCompatibilityProfile, ...]] = {}
     labels: dict[str, str] = {}
     for product_index, raw_product in enumerate(require_list(document.get('products'), 'object_storage.products')):
@@ -83,6 +89,11 @@ def _load_compatibility_contract() -> tuple[
                         'label',
                         f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]',
                     ),
+                    contract_profile=require_str(
+                        profile,
+                        'contract_profile',
+                        f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]',
+                    ),
                     minimum_release=require_str(
                         profile,
                         'minimum_release',
@@ -98,6 +109,11 @@ def _load_compatibility_contract() -> tuple[
                         'support_level',
                         f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]',
                     ),
+                    upstream_lifecycle=require_str(
+                        profile,
+                        'upstream_lifecycle',
+                        f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]',
+                    ),
                     notes=require_str(
                         profile,
                         'notes',
@@ -106,10 +122,10 @@ def _load_compatibility_contract() -> tuple[
                 )
             )
         catalog[product_key] = tuple(profiles)
-    return catalog, labels
+    return contract_profile, catalog, labels
 
 
-PRODUCT_PROFILE_CATALOG, PRODUCT_LABELS = _load_compatibility_contract()
+CONTRACT_PROFILE, PRODUCT_PROFILE_CATALOG, PRODUCT_LABELS = _load_compatibility_contract()
 MINIO_COMPATIBILITY_PROFILES = PRODUCT_PROFILE_CATALOG.get('minio', ())
 COMPATIBILITY_PROFILE_KEYS = tuple(profile.key for profiles in PRODUCT_PROFILE_CATALOG.values() for profile in profiles)
 
@@ -120,7 +136,8 @@ SUPPORTED_RELEASE_MAX = _PRIMARY_MINIO_PROFILE.maximum_release if _PRIMARY_MINIO
 SUPPORTED_RELEASE_RANGE_LABEL = (
     _PRIMARY_MINIO_PROFILE.supported_range_label if _PRIMARY_MINIO_PROFILE else 'Qualification Required'
 )
-PROFILE_KEY = _PRIMARY_MINIO_PROFILE.key if _PRIMARY_MINIO_PROFILE else 'Qualification Required'
+PROFILE_KEY = CONTRACT_PROFILE
+QUALIFICATION_KEY = _PRIMARY_MINIO_PROFILE.key if _PRIMARY_MINIO_PROFILE else ''
 PROFILE_LABEL = _PRIMARY_MINIO_PROFILE.label if _PRIMARY_MINIO_PROFILE else 'Qualification Required'
 
 
@@ -128,35 +145,25 @@ def compatibility_policy_view(product: str | None, release: str | None = None) -
     product_key = _normalize_product(product)
     profiles = PRODUCT_PROFILE_CATALOG.get(product_key, ())
     profile = next((item for item in profiles if release and item.matches(release)), None)
-    if profile is None and profiles:
-        profile = profiles[0]
+    supported_range = '; '.join(item.supported_range_label for item in profiles) or 'Product-Specific Qualification Required'
     return {
         'product_key': product_key,
         'product_label': PRODUCT_LABELS.get(product_key, product_key.replace('_', ' ').title()),
-        'profile_key': profile.key if profile else 'Qualification Required',
-        'profile_label': profile.label if profile else 'Qualification Required',
-        'supported_range': profile.supported_range_label if profile else 'Product-Specific Qualification Required',
-        'support_level': profile.support_level if profile else 'unqualified',
+        'profile_key': CONTRACT_PROFILE if product_key in PRODUCT_PROFILE_CATALOG else 'Qualification Required',
+        'profile_label': CONTRACT_PROFILE if product_key in PRODUCT_PROFILE_CATALOG else 'Qualification Required',
+        'contract_profile': CONTRACT_PROFILE,
+        'qualification_key': profile.key if profile else 'Unverified Version',
+        'supported_range': supported_range,
+        'support_level': profile.support_level if profile else 'unverified',
+        'upstream_lifecycle': profile.upstream_lifecycle if profile else 'unverified',
     }
 
 
 def evaluate_minio_release(value: str | None, *, product: str | None = 'minio') -> MinioCompatibilityResult:
     release = str(value or '').strip() or None
     product_key = _normalize_product(product)
-    policy = compatibility_policy_view(product_key, release)
-    if release is None:
-        return MinioCompatibilityResult(
-            status='version_unknown',
-            readiness='blocked',
-            profile_key=None,
-            support_level='unknown',
-            message='Declare the object-storage provider release before KAORI can activate a compatibility profile.',
-            declared_release=None,
-            product=product_key,
-            supported_range=policy['supported_range'],
-        )
-
     profiles = PRODUCT_PROFILE_CATALOG.get(product_key)
+
     if profiles is None:
         return MinioCompatibilityResult(
             status='product_unsupported',
@@ -164,53 +171,74 @@ def evaluate_minio_release(value: str | None, *, product: str | None = 'minio') 
             profile_key=None,
             support_level='blocked',
             message=(
-                f'{policy["product_label"]} is not mapped to a KAORI object-storage compatibility profile. '
-                'Keep this product family isolated until a release range is qualified.'
+                f'{PRODUCT_LABELS.get(product_key, product_key.replace("_", " ").title())} is not registered '
+                'in the KAORI object-storage provider catalog.'
             ),
             declared_release=release,
             product=product_key,
-            supported_range=policy['supported_range'],
+            supported_range='Product-Specific Qualification Required',
         )
+
+    supported_range = '; '.join(item.supported_range_label for item in profiles) or 'Product-Specific Qualification Required'
+
     if not profiles:
         return MinioCompatibilityResult(
             status='product_unqualified',
-            readiness='blocked',
-            profile_key=None,
-            support_level='unqualified',
+            readiness='degraded',
+            profile_key=CONTRACT_PROFILE,
+            support_level='unverified',
             message=(
-                f'{policy["product_label"]} was detected, but KAORI has no qualified release range for this product family yet.'
+                f'{PRODUCT_LABELS.get(product_key, product_key.replace("_", " ").title())} can satisfy the general '
+                f'{CONTRACT_PROFILE} capability contract, but no product release range is qualified yet.'
             ),
             declared_release=release,
             product=product_key,
-            supported_range=policy['supported_range'],
+            supported_range=supported_range,
+        )
+
+    if release is None:
+        return MinioCompatibilityResult(
+            status='version_unknown',
+            readiness='degraded',
+            profile_key=CONTRACT_PROFILE,
+            support_level='unverified',
+            message=(
+                f'The S3 capability contract can be validated independently, but the {PRODUCT_LABELS[product_key]} '
+                'release is not declared. Keep version qualification unverified.'
+            ),
+            declared_release=None,
+            product=product_key,
+            supported_range=supported_range,
         )
 
     profile = next((item for item in profiles if item.matches(release)), None)
     if profile is None:
-        supported = '; '.join(item.supported_range_label for item in profiles)
         return MinioCompatibilityResult(
-            status='unsupported_version',
-            readiness='blocked',
-            profile_key=None,
-            support_level='blocked',
+            status='unverified_version',
+            readiness='degraded',
+            profile_key=CONTRACT_PROFILE,
+            support_level='unverified',
             message=(
-                f'{policy["product_label"]} {release} is outside the qualified KAORI release range. '
-                f'Supported range: {supported}.'
+                f'{PRODUCT_LABELS[product_key]} {release} is outside the currently qualified release range. '
+                f'Core S3 readiness may proceed through {CONTRACT_PROFILE}; treat product-version qualification '
+                'as unverified until evidence is promoted.'
             ),
             declared_release=release,
             product=product_key,
-            supported_range=supported,
+            supported_range=supported_range,
         )
 
     return MinioCompatibilityResult(
         status='compatible',
         readiness='ready',
-        profile_key=profile.key,
+        profile_key=profile.contract_profile,
         support_level=profile.support_level,
-        message=(f'{profile.label} is qualified by KAORI.'),
+        message=profile.notes,
         declared_release=release,
         product=product_key,
         supported_range=profile.supported_range_label,
+        qualification_key=profile.key,
+        upstream_lifecycle=profile.upstream_lifecycle,
     )
 
 
