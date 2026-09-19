@@ -5,6 +5,7 @@ from typing import Any
 
 from app.definitions.loader import DefinitionError, load_definition_document
 from app.definitions.validation import (
+    require_int,
     require_list,
     require_mapping,
     require_str,
@@ -108,14 +109,42 @@ def integration_compatibility_document() -> dict[str, Any]:
         'integrations/compatibility.yaml',
         expected_kind='integration_compatibility',
     )
+    lifecycle_policy = require_mapping(document.get('lifecycle_policy'), 'lifecycle_policy')
+    for key in (
+        'key',
+        'snapshot_date',
+        'renewal_cadence',
+        'lower_bound_rule',
+        'upper_bound_rule',
+        'pre_window_posture',
+        'future_posture',
+        'core_contract_versioning',
+    ):
+        require_str(lifecycle_policy, key, 'lifecycle_policy')
+    policy_version = require_int(lifecycle_policy, 'version', 'lifecycle_policy')
+    policy_year = require_int(lifecycle_policy, 'policy_year', 'lifecycle_policy')
+    lookback_years = require_int(lifecycle_policy, 'lookback_years', 'lifecycle_policy')
+    anchor_year = require_int(lifecycle_policy, 'anchor_year', 'lifecycle_policy')
+    if policy_version < 1:
+        raise DefinitionError('lifecycle_policy.version must be >= 1.')
+    if lookback_years < 1:
+        raise DefinitionError('lifecycle_policy.lookback_years must be >= 1.')
+    if anchor_year != policy_year - lookback_years:
+        raise DefinitionError(
+            'lifecycle_policy.anchor_year must equal policy_year - lookback_years.'
+        )
+
     policy = require_mapping(document.get('kubernetes_lifecycle_policy'), 'kubernetes_lifecycle_policy')
     for key in (
         'supported_version_constraint',
+        'extended_min_version',
         'current_min_version',
         'current_max_version_exclusive',
         'current_version_label',
         'upstream_supported_version_label',
         'supported_version_label',
+        'anchor_release_label',
+        'upper_release_label',
     ):
         require_str(policy, key, 'kubernetes_lifecycle_policy')
 
@@ -152,6 +181,8 @@ def integration_compatibility_document() -> dict[str, Any]:
             'label',
             'icon',
             'version_scheme',
+            'qualification_floor',
+            'qualification_ceiling_exclusive',
             'minimum_label',
             'recommended_label',
             'qualified_version_label',
