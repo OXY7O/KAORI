@@ -114,19 +114,71 @@ def integration_compatibility_document() -> dict[str, Any]:
         'current_min_version',
         'current_max_version_exclusive',
         'current_version_label',
+        'upstream_supported_version_label',
         'supported_version_label',
     ):
         require_str(policy, key, 'kubernetes_lifecycle_policy')
-    profiles = [
-        require_mapping(item, f'profiles[{index}]')
-        for index, item in enumerate(require_list(document.get('profiles'), 'profiles'))
+
+    contracts = [
+        require_mapping(item, f'contract_profiles[{index}]')
+        for index, item in enumerate(require_list(document.get('contract_profiles'), 'contract_profiles'))
     ]
-    unique_by(profiles, 'key', 'profiles')
-    for index, item in enumerate(profiles):
-        path = f'profiles[{index}]'
-        require_str(item, 'product', path)
+    unique_by(contracts, 'key', 'contract_profiles')
+    contract_keys = set()
+    for index, item in enumerate(contracts):
+        path = f'contract_profiles[{index}]'
+        key = require_str(item, 'key', path)
+        contract_keys.add(key)
+        require_str(item, 'adapter_key', path)
+        require_str(item, 'notes', path)
+        products = require_list(item.get('products'), f'{path}.products')
+        if not products:
+            raise DefinitionError(f'{path}.products must not be empty.')
+
+    products = [
+        require_mapping(item, f'products[{index}]')
+        for index, item in enumerate(require_list(document.get('products'), 'products'))
+    ]
+    unique_by(products, 'key', 'products')
+    product_keys = set()
+    for index, item in enumerate(products):
+        path = f'products[{index}]'
+        product_key = require_str(item, 'key', path)
+        product_keys.add(product_key)
+        contract_key = require_str(item, 'contract_profile', path)
+        if contract_key not in contract_keys:
+            raise DefinitionError(f'{path}.contract_profile references unknown contract {contract_key!r}.')
+        for field in (
+            'label',
+            'icon',
+            'version_scheme',
+            'minimum_label',
+            'recommended_label',
+            'qualified_version_label',
+            'upstream_lifecycle_label',
+            'support_label',
+            'support_tone',
+            'capability_summary',
+            'validation_basis',
+        ):
+            require_str(item, field, path)
+
+    qualifications = [
+        require_mapping(item, f'qualifications[{index}]')
+        for index, item in enumerate(require_list(document.get('qualifications'), 'qualifications'))
+    ]
+    unique_by(qualifications, 'key', 'qualifications')
+    for index, item in enumerate(qualifications):
+        path = f'qualifications[{index}]'
+        product_key = require_str(item, 'product', path)
+        if product_key not in product_keys:
+            raise DefinitionError(f'{path}.product references unknown product {product_key!r}.')
+        contract_key = require_str(item, 'contract_profile', path)
+        if contract_key not in contract_keys:
+            raise DefinitionError(f'{path}.contract_profile references unknown contract {contract_key!r}.')
         require_str(item, 'version_constraint', path)
         require_str(item, 'support_level', path)
+        require_str(item, 'upstream_lifecycle', path)
         require_str(item, 'notes', path)
     return document
 
