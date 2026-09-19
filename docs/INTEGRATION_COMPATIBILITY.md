@@ -123,11 +123,24 @@ historical  → Thanos Query
 
 without making either product the global metrics abstraction.
 
-## Compatibility profiles
+## Compatibility authority layers
 
-Compatibility data remains product/adapter-specific because endpoint behavior is product-specific. Current examples include Prometheus HTTP profiles and Thanos Query profiles. This is expected and is not a category-level coupling.
+KAORI compatibility is intentionally split into four independent authorities:
 
-A matching version profile alone does not make an integration Ready. Core adapter validation and required asset-binding evidence must also pass.
+1. **General contract profile** — a stable API/protocol/capability generation such as `kubernetes-core-v1`, `prometheus-http-core-v1`, `alertmanager-api-v2-contract-v1`, or `s3-object-storage-v1`.
+2. **Version qualification mapping** — concrete upstream versions that KAORI has explicitly mapped to a general contract with a support posture.
+3. **Upstream lifecycle** — current, maintained, legacy, or archived upstream status. This is evidence, not KAORI readiness.
+4. **Observed runtime evidence** — actual API probes, RBAC, query behavior, S3 operations, payload metadata, and binding-specific consumer evidence.
+
+A general contract is the runtime compatibility identity. Adding another upstream version should normally add or extend a qualification row, not introduce another runtime branch.
+
+A matching qualification never makes an integration Ready by itself. Live provider validation and required consumer binding evidence remain authoritative.
+
+### Future and unknown releases
+
+A syntactically valid future release that is outside the qualification matrix is not automatically declared compatible. When the stable general contract can still be proven through all mandatory live probes, KAORI reports the version as **Unverified / Degraded**. This permits evidence collection without pretending the release has been qualified.
+
+Missing mandatory capabilities, invalid provider identity, failed authentication/TLS, or failed consumer evidence remain blocking conditions.
 
 ## Alertmanager and Object Storage boundaries
 
@@ -145,19 +158,19 @@ KAORI                     → registration, binding, validation, routing, correl
 Deleting an asset owner removes its asset bindings; reusable source instances remain independent unless explicitly deleted through their own governed lifecycle.
 
 
-## KAORI 2.3.0 qualified compatibility baseline
+## Qualified compatibility baseline
 
-The System Information matrix is a **KAORI qualification policy**, not a mirror of each upstream project's lifecycle page. A version can be current upstream and still remain blocked until KAORI has a matching compatibility profile and successful live capability evidence.
+The System Information matrix is a **KAORI qualification policy**, not a mirror of upstream lifecycle pages. The matrix shows the stable contract, qualified version evidence, upstream lifecycle context, and the separate live-readiness authority.
 
-| Integration | Minimum qualified | Recommended baseline | KAORI profile policy |
-|---|---:|---:|---|
-| Kubernetes | v1.20 | v1.36.x | `kubernetes-api-v1`, with live API/RBAC discovery authoritative |
-| Prometheus | v2.40 | v3.13 LTS | major-2 legacy-supported and major-3 current HTTP profiles |
-| Alertmanager | v0.25 | v0.33.x | API v2 profiles through `<0.34` |
-| Thanos Query | v0.39 | v0.42.x | explicit 0.39, 0.40, 0.41, and 0.42 Query profiles |
-| MinIO | `RELEASE.2024-08-03T04-33-23Z` | same qualified release | exact object-storage provider release profile; do not infer compatibility for other releases |
+| Integration | General contract | Qualified versions | Current / recommended baseline | Readiness authority |
+|---|---|---|---|---|
+| Kubernetes | `kubernetes-core-v1` | v1.20–v1.37 | v1.37.x; upstream-supported minors v1.35–v1.37 | live API discovery and feature-level RBAC |
+| Prometheus | `prometheus-http-core-v1` | v2.40–v3.x | v3.13 LTS | provider-neutral Prometheus HTTP API probes plus asset binding evidence |
+| Alertmanager | `alertmanager-api-v2-contract-v1` | v0.25–v0.34.x | v0.34.1 | API v2 status/alerts/silences probes plus binding-scoped alert evidence |
+| Thanos Query | `prometheus-http-core-v1` | v0.39–v0.42.x | v0.42.4 | shared Prometheus HTTP API probes plus provider identity and asset binding evidence |
+| MinIO | `s3-object-storage-v1` | community range through `RELEASE.2025-10-15T17-29-55Z` | latest retained qualified community release | S3 reachability and bucket-discovery capability; release qualification is supporting evidence |
 
-MinIO uses a release identifier rather than Semantic Versioning, so System Information presents its version scheme explicitly. Provider compatibility never replaces Core Validation, binding validation, runtime health, selector evidence, or asset-specific consumer readiness.
+As of September 2026, Kubernetes upstream maintains v1.35, v1.36, and v1.37 release branches. Alertmanager v0.34.1 is within the API v2 qualified line. Thanos v0.42.4 remains on the qualified shared Prometheus HTTP contract. The community `minio/minio` repository is archived; KAORI therefore treats MinIO release identity as qualification evidence while the S3 capability contract remains the operational compatibility authority.
 
 ## Canonical navigation and route ownership
 
