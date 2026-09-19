@@ -1,24 +1,77 @@
 # Compatibility Framework
 
-Compatibility translates upstream product versions and observed provider behavior into stable KAORI contracts without coupling runtime logic to every release number.
+Compatibility translates upstream product releases and observed provider behavior into stable KAORI contracts without coupling runtime logic to every release number.
 
-## Four authority layers
+## Authority model
+
+KAORI uses five independent compatibility authorities:
 
 ```text
-Upstream product + detected version
-        ↓
-Version qualification mapping
+Annual KAORI lifecycle policy
         ↓
 General capability contract
         ↓
-Observed provider capabilities
+Version qualification mapping
         ↓
-Consumer binding readiness
+Upstream lifecycle context
+        ↓
+Observed provider + consumer evidence
 ```
 
-### General contract profile
+No single layer may silently replace another.
 
-A general profile names the API/protocol/capability generation KAORI implements.
+## Annual lifecycle policy
+
+Compatibility support is governed by an annual policy generation.
+
+The 2026 baseline is:
+
+- policy key: `kaori-compatibility-policy-v1`;
+- policy version: `v1`;
+- policy year: `2026`;
+- lookback: `5 years`;
+- anchor year: `2021`;
+- snapshot date: `2026-09-19`.
+
+The annual calculation is:
+
+```text
+anchor_year = policy_year - lookback_years
+lower_bound = latest stable release in anchor_year
+upper_bound = latest stable release available at the annual policy snapshot
+```
+
+The lower and upper release values remain explicit source-controlled qualification evidence. The formula is the governance rule used to refresh them.
+
+For policy v1 / 2026 the current anchors are:
+
+| Product | 2021 anchor release | 2026 upper qualification |
+|---|---|---|
+| Kubernetes | v1.23 | v1.37 |
+| Prometheus | v2.32 | v3.13.x |
+| Alertmanager | v0.23 | v0.34.x |
+| Thanos Query | v0.24 | v0.42.x |
+| MinIO Community | `RELEASE.2021-12-29T06-49-06Z` | `RELEASE.2025-10-15T17-29-55Z` |
+
+MinIO has no 2026 community release because the community repository is archived, so the upper bound remains the latest stable release available before the 2026 snapshot.
+
+### Annual rollover
+
+Each annual refresh creates a new lifecycle policy generation:
+
+```text
+2026 → kaori-compatibility-policy-v1 → anchor 2021
+2027 → kaori-compatibility-policy-v2 → anchor 2022
+2028 → kaori-compatibility-policy-v3 → anchor 2023
+```
+
+For example, the latest Kubernetes stable release in 2022 was v1.26. Therefore the 2027 policy refresh would use v1.26 as the Kubernetes lower-bound candidate and whatever stable Kubernetes release is current at the 2027 policy snapshot as the upper-bound candidate.
+
+The annual refresh must be evidence-driven. It must not advance a product upper bound to an unreleased, release-candidate, or unvalidated build.
+
+## General contract profile
+
+A general profile names the stable API/protocol/capability generation KAORI implements.
 
 Current examples:
 
@@ -27,9 +80,16 @@ Current examples:
 - `alertmanager-api-v2-contract-v1`;
 - `s3-object-storage-v1`.
 
-Multiple product versions can map to the same general profile. Prometheus and Thanos Query intentionally share the Prometheus HTTP core contract while preserving independent provider identities.
+General core contract versions are **not annual versions**. `core-vN` advances only for a breaking capability/API semantic change. If the annual lifecycle window shifts but the stable provider contract is unchanged, the same `core-vN` remains authoritative.
 
-### Version qualification
+This creates two independent version axes:
+
+```text
+compatibility-policy-vN  → annual support governance
+provider-core-vN         → stable API/capability contract generation
+```
+
+## Version qualification
 
 A qualification row records:
 
@@ -42,21 +102,40 @@ A qualification row records:
 
 Adding a newly verified provider release should normally change qualification data instead of creating route/service/reader branches.
 
-### Upstream lifecycle
+## Lifecycle states
 
-Upstream lifecycle is useful operator context but is not a runtime readiness decision. A version can be current upstream and still be unverified by KAORI, or legacy upstream while still carrying an explicit KAORI legacy-qualified posture.
+A version is classified in this order:
 
-### Observed capability and readiness
+| State | Meaning | Default readiness |
+|---|---|---|
+| Current | Inside the policy window and current upstream-qualified line | Ready after mandatory live evidence passes |
+| Extended | Inside the KAORI five-year window but no longer current upstream | Degraded / supported with upgrade guidance |
+| End of Life | Older than the annual policy lower bound | Blocked |
+| Future Unverified | Newer than the annual policy upper bound | Degraded when the stable core contract still passes; never auto-qualified |
+| Capability Mismatch | Mandatory contract capability is missing | Blocked |
 
-Compatibility expectation and runtime evidence are distinct. A qualified version can still be blocked when mandatory APIs, RBAC, TLS, credentials, or consumer signals fail.
+Upstream lifecycle is useful context but is not by itself the operational readiness decision. KAORI may provide Extended support after upstream EOL, within the explicit five-year annual policy window.
 
-An unqualified future version may be **Degraded / Unverified** when all mandatory general-contract probes pass. KAORI must not call that version fully compatible until qualification evidence is promoted.
+## Observed capability and readiness
+
+A qualified version can still be blocked when mandatory APIs, RBAC, TLS, credentials, metrics, labels, retention, or consumer signals fail.
+
+A future version may be **Degraded / Unverified** when all mandatory general-contract probes pass. KAORI must not call that version fully compatible until the next qualification evidence update.
 
 ## Provider examples
 
 ### Kubernetes
 
-Kubernetes uses the general `kubernetes-core-v1` contract. Version qualification provides lifecycle/support context; live API resource discovery and feature-level SelfSubjectAccessReview evidence decide actual feature readiness.
+Kubernetes uses `kubernetes-core-v1`.
+
+For policy v1 / 2026:
+
+- v1.23–v1.34: KAORI Extended;
+- v1.35–v1.37: Current;
+- <= v1.22: KAORI End of Life;
+- >= v1.38: Future Unverified until explicitly qualified.
+
+Live API resource discovery and feature-level SelfSubjectAccessReview evidence still decide actual feature readiness.
 
 ### Alertmanager
 
@@ -64,14 +143,16 @@ KAORI uses `alertmanager-api-v2-contract-v1`. Do not call this contract “Alert
 
 ### Prometheus and Thanos Query
 
-Both providers can map to `prometheus-http-core-v1`. Product identity remains independent, so Thanos can retain historical-query semantics and additional identity checks without forking the core query contract.
+Both providers map to `prometheus-http-core-v1`. Product identity remains independent, so Thanos retains historical-query semantics and additional identity checks without forking the core query contract.
 
 ### S3-compatible Object Storage / MinIO
 
-`s3-object-storage-v1` owns basic S3 reachability and bucket discovery. MinIO product/release qualification is supporting evidence. A newer MinIO release must not be blocked by its release string alone when the mandatory S3 contract succeeds; it remains Unverified / Degraded until qualification evidence is added.
+`s3-object-storage-v1` owns basic S3 reachability and bucket discovery.
+
+MinIO release identity is lifecycle/qualification evidence. A release older than the policy floor is End of Life. A newer unqualified release is not blocked by release string alone when mandatory S3 capability succeeds; it remains Future Unverified / Degraded until qualification evidence is promoted.
 
 ## Registry rule
 
 Provider compatibility logic belongs in source-controlled definitions and profile resolvers. Routes, pages, analytics, reports, and consumers must not scatter hard-coded version comparisons.
 
-Unknown future versions must never be silently treated as fully compatible, and qualification must never bypass mandatory live capability checks.
+Annual policy rollover should be primarily a definition/test/document update. A rollover must not require runtime branching unless the underlying core capability contract itself changes.
