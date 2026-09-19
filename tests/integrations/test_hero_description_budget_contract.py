@@ -32,7 +32,7 @@ def test_hero_description_budget_enforces_target_and_hard_boundary() -> None:
 
     with pytest.raises(AssertionError, match='approximately 10-11 words'):
         validate(
-            'Review cluster posture readiness evidence capacity alerts inventory forecasts reporting status.',
+            'Review node health, CPU, memory, alerts, configuration, risks, actions, reports, and scope.',
             owner='word-density',
         )
 

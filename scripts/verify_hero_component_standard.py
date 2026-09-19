@@ -848,6 +848,7 @@ def verify() -> None:
             '## Theme and surface contract',
             'components/DARK_MODE.md',
             'The canonical verifier enforces the 89–96 character target',
+            '10–11 words',
             'Integration domain descriptions are audited from',
             '## Change procedure',
         ),

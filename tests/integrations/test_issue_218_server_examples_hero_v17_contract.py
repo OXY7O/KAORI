@@ -7,11 +7,10 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 MINIMUM_HERO_DESCRIPTION = (
-    'Operational visibility for cluster health, capacity, alerts, inventory, recommendations, and reporting.'
+    'Review cluster health, capacity, alerts, inventory, recommendations, and report evidence.'
 )
 MAXIMUM_HERO_DESCRIPTION = (
-    'Automate Analytics PDF, XLSX, or CSV artifacts and Inventory XLSX/CSV exports with '
-    'timezone-aware schedules and retained run evidence.'
+    'Review report execution, artifact readiness, storage availability, and retained lifecycle state.'
 )
 
 
@@ -64,7 +63,7 @@ def test_hero_v17_accepts_approved_reference_density_and_rejects_shorter_copy() 
     validate(MINIMUM_HERO_DESCRIPTION, owner='minimum-reference')
     validate(MAXIMUM_HERO_DESCRIPTION, owner='maximum-reference')
 
-    with pytest.raises(AssertionError, match='11-19 words'):
+    with pytest.raises(AssertionError, match='89-96 characters'):
         validate('One two three four five six seven eight nine ten.', owner='too-short')
 
 

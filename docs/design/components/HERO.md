@@ -15,7 +15,7 @@ scripts/verify_hero_component_standard.py
 tests/contracts/design/test_hero_component_standard_contract.py
 ```
 
-The v1.7 change does **not** redesign the Hero. It preserves the accepted Violet surface, geometry, typography, dark-mode ownership, accessibility, HTMX stability, context metric limit, and right-header accessory registry. v1.7 tightens description density to the approved 11–19 word envelope and makes operational metadata persistent across normal, blocked, and degraded states.
+The v1.7 change does **not** redesign the Hero. It preserves the accepted Violet surface, geometry, typography, dark-mode ownership, accessibility, HTMX stability, context metric limit, and right-header accessory registry. v1.7 hardens description density to the approved 89–96 character target, approximately 10–11 words and makes operational metadata persistent across normal, blocked, and degraded states.
 
 ## Purpose
 
@@ -226,15 +226,16 @@ Do not invent a fourth header-accessory geometry.
 
 Copy budget is canonical and executable:
 
-- description target: 11–19 words; hard maximum 19 words;
+- description target: 89–96 characters, approximately 10–11 words;
+- description form: one short complete sentence with no manual line break;
 - right-panel title: 2–4 words;
 - status label: 1–3 words;
 - metric label: 1–3 words;
 - metric helper: optional and concise.
 
-The minimum reference is `Operational visibility for cluster health, capacity, alerts, inventory, recommendations, and reporting.` The maximum reference is `Automate Analytics PDF, XLSX, or CSV artifacts and Inventory XLSX/CSV exports with timezone-aware schedules and retained run evidence.`
+The lower-bound reference is `Review cluster health, capacity, alerts, inventory, recommendations, and report evidence.` The upper-bound reference is `Review report execution, artifact readiness, storage availability, and retained lifecycle state.`
 
-Character count may be audited as an additional safety rail, but word budget and semantic clarity are authoritative. Long evidence explanations belong below the Hero.
+Character count is the executable primary density boundary. The 10–11 word range protects scanability, while semantic clarity remains mandatory. Long evidence explanations belong below the Hero.
 
 ## Dynamic and HTMX behavior
 
@@ -324,7 +325,7 @@ The verifier must:
 - reject unmanaged Hero-like local surfaces that bypass the component;
 - report compatibility-shell, profile-consumer, and description-audit counts separately.
 
-The canonical verifier enforces the 11–19 word target, with 19 words as the absolute hard maximum. A description outside 11–19 words is a contract violation rather than an advisory warning; deterministic Hero copy must be corrected rather than silently bypassed.
+The canonical verifier enforces the 89–96 character target and approximately 10–11 words. A deterministic description outside either density boundary, containing a manual line break, or lacking a complete sentence terminator is a contract violation rather than an advisory warning.
 
 Integration domain descriptions are audited from `app/definitions/catalogs/integrations/taxonomy.yaml` because `app/templates/integrations/domain.html` renders those descriptions dynamically. Other source-controlled dynamic Hero copy must gain an equally explicit audit path when introduced.
 
@@ -355,7 +356,7 @@ python -m pytest -q \
 
 - profile and state are explicit for a profile-managed family;
 - same Profile + same State has one composition;
-- one `h1` and one concise 11–19 word description;
+- one `h1` and one concise 89–96 character / 10–11 word description;
 - operational profile metadata is persistent in normal, blocked, and degraded states;
 - context panel has no more than two metrics;
 - one primary action preferred and its semantic role matches the profile;
