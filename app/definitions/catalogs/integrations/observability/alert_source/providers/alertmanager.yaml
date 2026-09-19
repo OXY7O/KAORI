@@ -201,17 +201,17 @@ capabilities:
   - Inspect /api/v2/silences and confirm the matchers array is present.
   - Remove the temporary silence when complete and rerun Full Validation.
 profiles:
-- key: alertmanager-v0-25
-  version_constraint: '>=0.25,<0.27'
-  support_level: legacy
+- key: alertmanager-extended
+  version_constraint: '>=0.23,<0.34'
+  support_level: extended_supported
   required_capabilities:
   - status_v2
   - alerts_v2
   - silences_v2
   known_limitations:
-  - Legacy runtime line; validate observed payload metadata before enabling advanced analytics.
-- key: alertmanager-v0-33
-  version_constraint: '>=0.27,<0.35'
+  - Inside the KAORI policy-v1 five-year lifecycle window but outside the current Alertmanager v0.34 line.
+- key: alertmanager-current
+  version_constraint: '>=0.34,<0.35'
   support_level: current
   required_capabilities:
   - status_v2
