@@ -1,0 +1,16 @@
+{#
+  KAORI shared loading-bar contract.
+
+  Match the Activity Audit Table pattern:
+  - the bar belongs inside the block header,
+  - it sits below the title/action row,
+  - it uses a compact rounded track,
+  - and the visible segment pulses without floating over content.
+#}
+{% macro render(element_id, active=false, label='Loading') -%}
+    <div id="{{ element_id }}"
+         class="{{ 'block' if active else 'htmx-indicator' }} pointer-events-none mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft"
+         aria-label="{{ label }}">
+        <div class="kaori-loading-bar-segment h-full w-1/3 rounded-full bg-kaori-primary"></div>
+    </div>
+{%- endmacro %}

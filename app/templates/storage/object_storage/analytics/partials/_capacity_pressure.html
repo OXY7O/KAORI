@@ -1,0 +1,45 @@
+<section class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}">
+                    <i data-lucide="gauge" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Bucket Governance Boundary</p>
+                    <h2 class="mt-1 text-base font-semibold text-content-primary">Quota Pressure &amp; Usage Concentration</h2>
+                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
+                        Separate bucket governance pressure from physical capacity and spot storage concentration.
+                    </p>
+                </div>
+            </div>
+            {{ table_label.status_label(metrics.capacity_usage.quota_status, metrics.capacity_usage.quota_tone) }}
+        </div>
+    </header>
+    <div class="{{ analysis_surface.metric_grid_classes(4) }}">
+        <article class="{{ analysis_surface.metric_cell_classes() }}">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Quota Evidence Coverage</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.capacity_usage.quota_coverage_display }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">{{ metrics.capacity_usage.quota_observed_count }} of {{ metrics.bucket_analysis.bucket_count }} buckets have an observed quota state.</p>
+        </article>
+        <article class="{{ analysis_surface.metric_cell_classes() }}">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Configured Quotas</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.capacity_usage.quota_configured_count }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">{{ metrics.capacity_usage.quota_not_configured_count }} bucket(s) explicitly report no configured quota.</p>
+        </article>
+        <article class="{{ analysis_surface.metric_cell_classes() }}">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Quota Pressure</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.capacity_usage.quota_warning_count }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Buckets at or above 85% and below 95% of known quota.</p>
+        </article>
+        <article class="{{ analysis_surface.metric_cell_classes() }}">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Critical Quota</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.capacity_usage.quota_critical_count }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Buckets at or above 95% of known quota.</p>
+        </article>
+    </div>
+    <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+        {{ analysis_surface.interpretation_callout('Consumer Concentration', metrics.capacity_usage.concentration_label ~ ' usage distribution', 'The largest bucket accounts for ' ~ metrics.capacity_usage.top_usage_share_display ~ ' of observed system usage. Review ownership and growth before treating concentration as a capacity risk.', icon='chart-no-axes-column-increasing', role='insight', tone=metrics.capacity_usage.concentration_tone) }}
+        {{ analysis_surface.interpretation_callout('Quota Evidence', metrics.capacity_usage.quota_status, metrics.capacity_usage.quota_unknown_count ~ ' bucket(s) still have an unknown quota state; ' ~ metrics.capacity_usage.quota_not_configured_count ~ ' bucket(s) explicitly report Not Configured. Not Configured is an observed provider state, not a collection failure.', icon='shield-question', role='evidence', tone=metrics.capacity_usage.quota_tone) }}
+    </div>
+</section>

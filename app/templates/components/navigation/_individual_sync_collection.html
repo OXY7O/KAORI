@@ -1,0 +1,25 @@
+{% for sync in snapshots %}
+    {% if sync.is_active %}
+        {% include "components/navigation/_individual_sync_status.html" %}
+    {% else %}
+        {% with
+            task_id=sync.task_id,
+            dismiss_url=url_for('cluster.dismiss_individual_sync_status', task_id=sync.task_id),
+            status=sync.status,
+            title=sync.title,
+            message=sync.message,
+            detail=sync.detail,
+            view_url=url_for('integrations.kubernetes'),
+            action_label='View clusters',
+            action_icon='server',
+            total_count=none,
+            duration_seconds=sync.duration_seconds,
+            completed_label='Completed just now',
+            activity_audit_saved=true,
+            notification_deck_visible=true,
+            delivery='activity_center'
+            %}
+            {% include "components/operational_toast.html" %}
+        {% endwith %}
+    {% endif %}
+{% endfor %}

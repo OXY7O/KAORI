@@ -1,0 +1,21 @@
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/resource_posture_grid.html" as posture_grid %}
+{% set storage_class_value = inventory.storage_classes if inventory.collection.storage_class_state == 'Collected' else 'Not Reported' %}
+{% set pv_value = inventory.persistent_volumes if inventory.collection.persistent_volume_state == 'Collected' else 'Not Reported' %}
+{% set pvc_value = inventory.persistent_volume_claims if inventory.collection.persistent_volume_claim_state == 'Collected' else 'Not Reported' %}
+{% set metrics = [
+    ('layers-3', 'Provisioning Classes', storage_class_value, 'StorageClass objects in the active committed scope.', 'unknown' if inventory.collection.storage_class_state != 'Collected' else ('brand' if inventory.total_storage else 'info')),
+    ('hard-drive', 'Persistent Volumes', pv_value, 'PersistentVolume objects represented by committed cluster-scoped evidence.', 'unknown' if inventory.collection.persistent_volume_state != 'Collected' else ('brand' if inventory.total_storage else 'info')),
+    ('folder-check', 'Persistent Volume Claims', pvc_value, 'PersistentVolumeClaim objects represented by committed namespace-scoped evidence.', 'unknown' if inventory.collection.persistent_volume_claim_state != 'Collected' else ('brand' if inventory.total_storage else 'info')),
+    ('link-2', 'Bound Resources', inventory.bound_resource_count, 'PersistentVolumes and PersistentVolumeClaims reporting a Bound lifecycle state.', 'unknown' if not inventory.binding_evidence_reported else ('normal' if inventory.bound_resource_count > 0 else 'brand')),
+    ('clock-3', 'Pending Claims', inventory.pending_claims, 'Claims waiting for provisioning or volume binding.', 'unknown' if inventory.collection.persistent_volume_claim_state != 'Collected' else ('warning' if inventory.pending_claims > 0 else 'normal')),
+    ('triangle-alert', 'Active Signals', inventory.exception_count, 'Lifecycle exceptions, unreported object state, or missing storage-family collection evidence.', 'unknown' if inventory.total_storage == 0 and inventory.collection.exception_count else ('critical' if inventory.overall_posture == 'Critical' else ('warning' if inventory.exception_count > 0 else 'normal')))
+] %}
+{% call operational_section_card.render(
+    'Storage Lifecycle Posture',
+    'Provisioning classes, volume availability, claim binding, and collection evidence for the active Storage Inventory filters.',
+    'gauge',
+    body_classes='p-0'
+    ) %}
+    {{ posture_grid.render(metrics, columns=3) }}
+{% endcall %}

@@ -1,0 +1,191 @@
+{% import "components/table_label.html" as table_label %}
+{% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% macro render(row, provider_label, modal_id) -%}
+    {% set health_tone = row.effective_status %}
+    {% call record_detail_modal.render(
+        modal_id,
+        row.detail_id|default(modal_id),
+        provider_label ~ ' Runtime Observation',
+        row.observed_at_display,
+        'Immutable runtime, readiness, capability, lifecycle, and diagnostic evidence for the selected observation.',
+        icon='activity',
+        footer_text='Runtime observation evidence is immutable and reflects the selected persisted snapshot.',
+        size='standard'
+        ) %}
+        <div class="space-y-4"
+             data-kaori-runtime-observation-dialog
+             data-kaori-runtime-observation-dialog-v4>
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                     data-kaori-runtime-observation-decision>
+                <header class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-content-primary">Observation Decision</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Read the persisted runtime posture first; diagnostic detail remains below and is shown only once.</p>
+                    </div>
+                    {{ integration_status(health_tone, row.effective_status_label, display='indicator') }}
+                </header>
+                <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+                    <div class="bg-surface-card p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Runtime Posture</p>
+                        <div class="mt-2 flex flex-wrap items-center gap-2">
+                            {{ integration_status(health_tone, row.effective_status_label, display='indicator') }}
+                            {{ integration_status(row.readiness, row.readiness_label, display='indicator') }}
+                        </div>
+                    </div>
+                    <div class="bg-surface-card p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Health Score</p>
+                        <p class="mt-2 text-lg font-semibold tabular-nums text-content-primary">{{ row.health_score_display }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.diagnostic_count }} diagnostic check{{ '' if row.diagnostic_count == 1 else 's' }}</p>
+                    </div>
+                    <div class="bg-surface-card p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Validation Readiness</p>
+                        <div class="mt-2">{{ integration_status(row.readiness, row.readiness_label, display='indicator') }}</div>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Independent from current runtime health</p>
+                    </div>
+                    <div class="bg-surface-card p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Capability Snapshot</p>
+                        <p class="mt-2 text-sm font-semibold text-content-primary">{{ row.capability_count_display }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.compatibility_profile or 'Compatibility not detected' }}</p>
+                    </div>
+                </div>
+            </section>
+            <section class="rounded-xl border border-outline-subtle bg-surface-card p-4"
+                     data-kaori-runtime-observation-context>
+                <div class="flex items-start gap-3">
+                    {{ integration_ui.palette_icon('clock-3', 'brand', size='sm') }}
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-semibold text-content-primary">Observation Context</p>
+                        <dl class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            {% for label, value in [
+                                ('Observed At', row.observed_at_display),
+                                ('Trigger', row.trigger_type_label),
+                                ('Latency', row.latency_display),
+                                ('Compatibility', row.compatibility_profile or 'Not Detected')
+                                ] %}
+                                <div class="rounded-lg border border-outline-subtle bg-surface-hover px-3 py-2.5">
+                                    <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
+                                    <dd class="mt-1 text-xs font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">
+                                        {{ value }}
+                                    </dd>
+                                </div>
+                            {% endfor %}
+                        </dl>
+                    </div>
+                </div>
+            </section>
+            {% if row.standalone_message %}
+                <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                    <div class="flex items-start gap-3">
+                        {{ integration_ui.palette_icon('message-square-text', 'brand', size='sm') }}
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-content-primary">Observation Detail</p>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ row.standalone_message }}</p>
+                        </div>
+                    </div>
+                </section>
+            {% endif %}
+            {% if row.lifecycle_context %}
+                {% set lifecycle = row.lifecycle_context %}
+                <section data-kaori-runtime-observation-lifecycle-boundary
+                         class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                    <header class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <p class="text-sm font-semibold text-content-primary">Kubernetes Lifecycle Boundary</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Lifecycle policy and accepted compatibility remain separate from runtime health.</p>
+                        </div>
+                        {{ integration_status('degraded' if lifecycle.lifecycle_status == 'legacy' else ('ready' if lifecycle.lifecycle_status == 'current' else 'validation_required') , lifecycle.lifecycle_status_label, display='indicator') }}
+                    </header>
+                    <div class="grid gap-px bg-outline-subtle sm:grid-cols-3">
+                        {% for label, value in [
+                            ('Detected Version', lifecycle.detected_version),
+                            ('KAORI Current Band', lifecycle.current_version_band),
+                            ('Accepted Compatibility', lifecycle.supported_constraint)
+                            ] %}
+                            <div class="bg-surface-card p-4">
+                                <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
+                                <p class="mt-2 text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+            {% if row.capabilities or row.capability_changed %}
+                <section data-kaori-runtime-observation-capability-evidence
+                         class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                    <p class="text-sm font-semibold text-content-primary">Capability Evidence</p>
+                    {% if row.capabilities %}
+                        <div class="mt-3 flex flex-wrap gap-1.5">
+                            {% for capability in row.capabilities %}{{ table_label.metadata_label(capability.label) }}{% endfor %}
+                        </div>
+                    {% endif %}
+                    {% if row.capability_changed %}
+                        <div class="mt-4 grid gap-3 sm:grid-cols-2"
+                             data-kaori-runtime-observation-capability-drift>
+                            <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3">
+                                <p class="text-xs font-semibold text-content-primary">Added Capabilities</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.added_capabilities|join(", ") if row.added_capabilities else 'None' }}</p>
+                            </div>
+                            <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3">
+                                <p class="text-xs font-semibold text-content-primary">Removed Capabilities</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.removed_capabilities|join(", ") if row.removed_capabilities else 'None' }}</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </section>
+            {% endif %}
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                     data-kaori-runtime-observation-diagnostic-review>
+                <header class="border-b border-outline-subtle px-4 py-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-sm font-semibold text-content-primary">Diagnostic Review</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Full technical evidence and remediation are shown once for this immutable observation.</p>
+                        </div>
+                        {{ table_label.metadata_label(row.diagnostic_count ~ (' Check' if row.diagnostic_count == 1 else ' Checks') ) }}
+                    </div>
+                </header>
+                <div class="divide-y divide-outline-subtle">
+                    {% for diagnostic in row.diagnostics %}
+                        {% set diagnostic_tone = 'ready' if diagnostic.status == 'success' else ('degraded' if diagnostic.status == 'warning' else ('blocked' if diagnostic.status == 'failed' else 'validation_required')) %}
+                        <article class="px-4 py-4" data-kaori-runtime-diagnostic-record>
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">{{ diagnostic.label }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">
+                                        {{ diagnostic.category_label }}
+                                        {% if diagnostic.duration_ms is not none %}· {{ diagnostic.duration_display }}{% endif %}
+                                    </p>
+                                </div>
+                                <div class="shrink-0">{{ integration_status(diagnostic_tone, diagnostic.status_label, display='indicator') }}</div>
+                            </div>
+                            <div class="mt-3 rounded-lg border border-outline-subtle bg-surface-hover px-3.5 py-3"
+                                 data-kaori-runtime-diagnostic-evidence>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Technical Evidence</p>
+                                <p class="mt-2 max-h-44 overflow-y-auto text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ diagnostic.detail }}</p>
+                            </div>
+                            {% if diagnostic.recommendation %}
+                                <div class="mt-3 rounded-lg border border-brand-outline bg-kaori-soft px-3.5 py-3"
+                                     data-kaori-diagnostic-recommendation>
+                                    <div class="flex items-start gap-3">
+                                        {{ integration_ui.palette_icon('target', 'brand', size='sm') }}
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-semibold text-content-primary">Recommended Action</p>
+                                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ diagnostic.recommendation }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </article>
+                    {% else %}
+                        <div class="px-4 py-8 text-center">
+                            <p class="text-sm font-semibold text-content-primary">No Diagnostic Detail</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">This observation was recorded without diagnostic rows.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+    {% endcall %}
+{%- endmacro %}

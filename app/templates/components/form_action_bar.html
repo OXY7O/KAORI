@@ -1,0 +1,10 @@
+{% macro render(helper, aria_label='Form Actions', title=None, embedded=false) -%}
+    <footer class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 {{ 'border-t border-outline-subtle bg-surface-subtle' if embedded else 'rounded-xl border border-outline-default bg-surface-card shadow-sm' }}"
+            aria-label="{{ aria_label }}">
+        <div class="min-w-0 max-w-xl">
+            {% if title %}<p class="text-xs font-semibold leading-5 text-content-primary">{{ title }}</p>{% endif %}
+            <p class="{{ 'mt-0.5' if title else '' }} break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ helper }}</p>
+        </div>
+        <div class="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">{{ caller() }}</div>
+    </footer>
+{%- endmacro %}

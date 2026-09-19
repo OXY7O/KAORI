@@ -1,0 +1,12 @@
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+WORKFLOW = ROOT / '.github' / 'workflows' / 'deploy-staging-host.yml'
+
+
+def test_uat_edge_entrypoints_are_container_readable_without_relaxing_server_scripts() -> None:
+    source = WORKFLOW.read_text(encoding='utf-8')
+
+    assert 'chmod 700 -- "$remote_release"/deploy/server/*.sh' in source
+    assert 'chmod 755 -- "$remote_release"/deploy/nginx/*.sh' in source
+    assert 'chmod 700 -- "$remote_release"/deploy/nginx/*.sh' not in source

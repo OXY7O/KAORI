@@ -1,0 +1,49 @@
+<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+         x-data="{ open: false }"
+         aria-labelledby="reporting-operating-model-title">
+    <button type="button"
+            class="flex w-full items-start justify-between gap-4 px-5 py-4 text-left"
+            @click="open = !open"
+            :aria-expanded="open ? 'true' : 'false'">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="badge-check" class="h-5 w-5"></i>
+            </span>
+            <div class="min-w-0">
+                <h2 id="reporting-operating-model-title"
+                    class="text-base font-semibold leading-6 text-content-primary">Reporting Operating Model</h2>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">{{ payload.reporting_operating_model.description }}</p>
+            </div>
+        </div>
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-hover text-content-secondary transition"
+              :class="{ 'rotate-180': open }"
+              aria-hidden="true">
+            <i data-lucide="chevron-down" class="h-4 w-4"></i>
+        </span>
+    </button>
+    <div class="border-t border-outline-subtle"
+         x-show="open"
+         x-collapse
+         x-cloak>
+        <div class="divide-y divide-outline-subtle px-5 sm:px-6">
+            {% for card in payload.reporting_operating_model.cards %}
+                <article class="py-3.5">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="{{ card.icon }}" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <p class="text-sm font-semibold text-content-primary">{{ card.label }}</p>
+                                {{ table_label.status_label(card.value, card.tone, none, 'detail') }}
+                            </div>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ card.description }}</p>
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>

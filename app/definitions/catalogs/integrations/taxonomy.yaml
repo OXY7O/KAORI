@@ -1,0 +1,75 @@
+schema_version: 1
+kind: integration_taxonomy
+domains:
+- key: orchestration
+  label: Orchestration
+  description: Cluster providers, control-plane access, discovery, runtime connectivity, and governed orchestration integration workflows.
+  icon: boxes
+  workspace_endpoint: integrations.orchestration
+  order: 10
+- key: observability
+  label: Observability
+  description: Metrics, alerting, runtime validation, telemetry providers, and governed observability integration workflows.
+  icon: activity
+  workspace_endpoint: integrations.observability
+  order: 20
+- key: storage
+  label: Storage
+  description: Object, file, and block storage providers for capacity and governed data services.
+  icon: database
+  workspace_endpoint: integrations.storage
+  order: 30
+capabilities:
+- key: container_orchestrator
+  domain_key: orchestration
+  label: Container Orchestrator
+  description: Cluster API connectivity, inventory discovery, and control-plane operations.
+  order: 10
+  asset_types:
+  - kubernetes_cluster
+- key: metrics_source
+  domain_key: observability
+  label: Metrics Source
+  description: Metrics query, historical telemetry, and capability validation.
+  order: 10
+  asset_types: []
+- key: alert_source
+  domain_key: observability
+  label: Alert Source
+  description: Alert retrieval, routing context, silence capability, and alert API validation.
+  order: 20
+  asset_types: []
+- key: object_storage
+  domain_key: storage
+  label: Object Storage
+  description: S3 and object-storage provider connectivity, inventory, analytics, and governance.
+  order: 10
+  asset_types:
+  - object_storage_system
+- key: file_storage
+  domain_key: storage
+  label: File Storage
+  description: Shared filesystem provider connectivity, inventory, and operational telemetry.
+  order: 20
+  asset_types: []
+- key: block_storage
+  domain_key: storage
+  label: Block Storage
+  description: Block-device provider connectivity, inventory, and operational telemetry.
+  order: 30
+  asset_types: []
+consumer_assets:
+- asset_type: kubernetes_cluster
+  label: Kubernetes Cluster
+  plural_label: Kubernetes Clusters
+  icon: boxes
+  selector_label: cluster
+  selector_placeholder: k8s-production
+  model_key: cluster
+- asset_type: object_storage_system
+  label: Object Storage System
+  plural_label: Object Storage Systems
+  icon: database
+  selector_label: job
+  selector_placeholder: minio-production
+  model_key: object_storage_system

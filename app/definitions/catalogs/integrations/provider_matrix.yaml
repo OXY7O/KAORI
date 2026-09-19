@@ -1,0 +1,86 @@
+schema_version: 1
+kind: integration_provider_matrix
+integration_types:
+- key: container_orchestrator
+  domain_key: orchestration
+  providers:
+  - key: kubernetes
+    label: Kubernetes
+    adapter_key: kubernetes_api
+    lifecycle: available
+    protocol: kubernetes_api
+  - key: rancher
+    label: Rancher
+    adapter_key: kubernetes_api
+    lifecycle: planned
+    protocol: kubernetes_api
+  - key: sangfor_kubernetes_engine
+    label: Sangfor Kubernetes Engine
+    adapter_key: kubernetes_api
+    lifecycle: planned
+    protocol: kubernetes_api
+- key: metrics_source
+  domain_key: observability
+  providers:
+  - key: prometheus
+    label: Prometheus
+    adapter_key: prometheus_http
+    lifecycle: available
+    protocol: prometheus_http
+  - key: thanos
+    label: Thanos Query
+    adapter_key: prometheus_http
+    lifecycle: available
+    protocol: prometheus_http
+- key: alert_source
+  domain_key: observability
+  providers:
+  - key: alertmanager
+    label: Alertmanager
+    adapter_key: alertmanager_api_v2
+    lifecycle: available
+    protocol: alertmanager_api_v2
+- key: object_storage
+  domain_key: storage
+  providers:
+  - key: minio
+    label: MinIO
+    adapter_key: s3
+    lifecycle: available
+    protocol: s3
+  - key: garage
+    label: Garage
+    adapter_key: s3
+    lifecycle: planned
+    protocol: s3
+  - key: aws_s3
+    label: AWS S3
+    adapter_key: s3
+    lifecycle: planned
+    protocol: s3
+  - key: azure_blob
+    label: Azure Blob Storage
+    adapter_key: azure_blob
+    lifecycle: planned
+    protocol: azure_blob
+- key: file_storage
+  domain_key: storage
+  providers:
+  - key: netapp_ontap_nfs
+    label: NetApp ONTAP NFS
+    adapter_key: ontap_rest
+    lifecycle: planned
+    protocol: ontap_rest
+- key: block_storage
+  domain_key: storage
+  providers:
+  - key: netapp_ontap
+    label: NetApp ONTAP
+    adapter_key: ontap_rest
+    lifecycle: planned
+    protocol: ontap_rest
+  - key: hpe_alletra
+    label: HPE Alletra
+    adapter_key: hpe_storage_rest
+    lifecycle: planned
+    protocol: hpe_storage_rest

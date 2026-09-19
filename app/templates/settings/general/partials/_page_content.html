@@ -1,0 +1,36 @@
+{% import "components/loading_bar.html" as loading_bar %}
+<div id="general-settings-page" class="space-y-6">
+    {% include "settings/general/partials/_hero.html" %}
+    <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+        {% include "settings/general/partials/_tabs.html" %}
+        <div class="px-5 sm:px-6">{{ loading_bar.render('general-settings-loading', label='Updating General Settings') }}</div>
+        {% if active_tab == 'time-locale' %}
+            <div class="p-5 xl:p-6" data-timezone-workspace-layout="full-width">
+                {% include "settings/general/partials/_time_locale.html" %}
+            </div>
+        {% elif active_tab == 'regional-format' %}
+            <div class="p-5 xl:p-6" data-regional-format-workspace-layout="full-width">
+                {% include "settings/general/partials/_regional_format.html" %}
+            </div>
+        {% elif active_tab == 'system-information' %}
+            <div class="p-5 xl:p-6"
+                 data-system-information-workspace-layout="full-width">
+                {% include "settings/general/partials/_system_information.html" %}
+            </div>
+        {% elif active_tab == 'compatibility-versions' %}
+            <div class="p-5 xl:p-6"
+                 data-compatibility-versions-workspace-layout="full-width">
+                {% include "settings/general/partials/_compatibility_versions.html" %}
+            </div>
+        {% endif %}
+    </section>
+</div>
+{% if timezone_sync_oob %}
+    <div id="kaori-user-timezone-sync"
+         hx-swap-oob="outerHTML"
+         class="hidden"
+         data-mode="{{ current_timezone_mode }}"
+         data-timezone="{{ current_timezone }}"
+         data-url="{{ url_for('settings.sync_browser_timezone') }}"
+         data-csrf="{{ csrf_token() }}"></div>
+{% endif %}

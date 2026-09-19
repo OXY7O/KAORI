@@ -1,0 +1,123 @@
+{% import "components/table_label.html" as table_label %}
+{% macro preview_metric(label, value, icon, tone='info') -%}
+    {% set resolved_tone = table_label.semantic_tone(tone)|trim %}
+    <div class="rounded-lg border {{ table_label.tone_border_classes(resolved_tone) }} bg-surface-card px-3 py-2.5">
+        <div class="flex items-center gap-2">
+            <i data-lucide="{{ icon }}"
+               class="h-3.5 w-3.5 {{ table_label.tone_icon_classes(resolved_tone) }}"></i>
+            <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
+        </div>
+        <p class="mt-1 text-sm font-semibold text-content-primary">{{ value }}</p>
+    </div>
+{%- endmacro %}
+{% set preview = validation_preview|default(none) %}
+{% set preview_status = preview.status|default('pending') if preview else 'pending' %}
+<div id="configmap-validation-preview"
+     data-configmap-validation-preview
+     data-validation-status="{{ preview_status }}"
+     {% if validation_preview_oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}
+     class="rounded-xl border border-outline-default {% if preview_status == 'success' %}bg-status-normal-soft/50{% elif preview_status == 'error' %}bg-status-critical-soft/50{% else %}bg-surface-card{% endif %} p-4 sm:p-5">
+    {% if preview_status == 'success' %}
+        {% set metadata = preview.metadata|default({}) %}
+        <div class="flex items-start gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal-text">
+                <i data-lucide="shield-check" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <h3 data-validation-preview-title
+                            class="text-sm font-semibold text-content-primary">{{ preview.title }}</h3>
+                        <p data-validation-preview-message
+                           class="mt-1 text-xs leading-5 text-content-secondary">{{ preview.message }}</p>
+                    </div>
+                    {{ table_label.status_label('Validated', 'normal', 'shield-check') }}
+                </div>
+                {% if preview.operation == 'update' and metadata.diff %}
+                    <div class="mt-4 grid gap-2 sm:grid-cols-4">
+                        {{ preview_metric('Added', metadata.diff.added|length, 'plus', 'normal') }}
+                        {{ preview_metric('Changed', metadata.diff.changed|length, 'pencil-line', 'info') }}
+                        {{ preview_metric('Removed', metadata.diff.removed|length, 'minus', 'warning') }}
+                        {{ preview_metric('Unchanged', metadata.diff.unchanged|length, 'equal', 'unknown') }}
+                    </div>
+                    {% if metadata.diff.added or metadata.diff.changed or metadata.diff.removed %}
+                        <div class="mt-3 grid gap-3 lg:grid-cols-3">
+                            <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
+                                <p class="text-xs font-semibold text-content-muted">Added Keys</p>
+                                <p class="mt-1 break-words text-xs leading-5 text-content-secondary">{{ metadata.diff.added|join(", ") if metadata.diff.added else 'None' }}</p>
+                            </div>
+                            <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
+                                <p class="text-xs font-semibold text-content-muted">Changed Keys</p>
+                                <p class="mt-1 break-words text-xs leading-5 text-content-secondary">{{ metadata.diff.changed|join(", ") if metadata.diff.changed else 'None' }}</p>
+                            </div>
+                            <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
+                                <p class="text-xs font-semibold text-content-muted">Removed Keys</p>
+                                <p class="mt-1 break-words text-xs leading-5 text-content-secondary">{{ metadata.diff.removed|join(", ") if metadata.diff.removed else 'None' }}</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% elif preview.operation == 'create' %}
+                    <div class="mt-4 grid gap-2 sm:grid-cols-3">
+                        {{ preview_metric('Keys', metadata.key_count|default(0) , 'key-round', 'info') }}
+                        {{ preview_metric('Data Size', metadata.payload_size_bytes|default(0) ~ ' B', 'database', 'unknown') }}
+                        {{ preview_metric('Mutation', 'Immutable' if metadata.immutable else 'Mutable', 'lock-keyhole' if metadata.immutable else 'file-pen-line', 'info') }}
+                    </div>
+                {% elif preview.operation == 'delete' %}
+                    <div class="mt-4 grid gap-2 sm:grid-cols-3">
+                        {{ preview_metric('Live Keys', metadata.key_count|default(0) , 'key-round', 'info') }}
+                        {{ preview_metric('Known Impact', metadata.impact_count if metadata.impact_count is not none else 'Not Reported', 'network', 'warning' if metadata.impact_count else 'unknown') }}
+                        {{ preview_metric('Receipt', '10 Minutes', 'timer-reset', 'info') }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% elif preview_status == 'error' %}
+        <div class="flex items-start gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-status-critical-soft text-status-critical-text">
+                <i data-lucide="circle-x" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <h3 data-validation-preview-title
+                        class="text-sm font-semibold text-content-primary">{{ preview.title }}</h3>
+                    {{ table_label.status_label('Failed', 'critical', 'circle-x') }}
+                </div>
+                <p data-validation-preview-message
+                   class="mt-1 text-xs leading-5 text-content-secondary">{{ preview.message }}</p>
+            </div>
+        </div>
+    {% else %}
+        <div class="flex items-start gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <i data-lucide="scan-search" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <h3 data-validation-preview-title
+                        class="text-sm font-semibold text-content-primary">Validation Required</h3>
+                    {{ table_label.status_label('Pending', 'unknown', 'clock-3') }}
+                </div>
+                <p data-validation-preview-message
+                   class="mt-1 text-xs leading-5 text-content-muted">Validate the latest target and form values before applying this operation.</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% if not validation_preview_oob|default(false) %}
+    <template id="configmap-validation-pending-template">
+        <div class="flex items-start gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <i data-lucide="scan-search" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <h3 data-validation-preview-title
+                        class="text-sm font-semibold text-content-primary">Validation Required</h3>
+                    {{ table_label.status_label('Pending', 'unknown', 'clock-3') }}
+                </div>
+                <p data-validation-preview-message
+                   class="mt-1 text-xs leading-5 text-content-muted">Validate the latest target and form values before applying this operation.</p>
+            </div>
+        </div>
+    </template>
+{% endif %}

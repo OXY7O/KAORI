@@ -1,0 +1,81 @@
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/table_label.html" as table_label %}
+{% set reporting = dashboard.reporting %}
+{% set source_available = reporting.source_status|default('Unavailable', true)|lower == 'available' %}
+{% call operational_section_card.render(
+    'Reporting Summary',
+    'Object Storage report output, definitions, schedules, and recent generation activity.',
+    'file-chart-column',
+    action_href=url_for('reports.overview'),
+    action_label='Open Reports Workspace',
+    header_badge=table_label.status_label(
+    reporting.source_status|default('Unavailable', true),
+    tone='normal' if source_available else 'unknown'
+    ),
+    body_classes='space-y-5 p-5',
+    extra_classes='h-full'
+    ) %}
+    <div class="grid gap-3 sm:grid-cols-3">
+        {% set reporting_metrics = [
+                    ('Generated Reports', reporting.generated_reports, 'files', 'Stored Object Storage report artifacts in the active scope.'),
+                    ('Report Templates', reporting.templates, 'layout-template', 'Reusable approved Object Storage report definitions.'),
+                    ('Report Schedules', reporting.schedules, 'calendar-clock', 'Configured recurring plans that define when reports are generated automatically.')
+                ] %}
+        {% for label, value, icon, description in reporting_metrics %}
+            <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                </span>
+                <p class="mt-3 text-xs font-semibold text-content-secondary">{{ label }}</p>
+                <p class="mt-1 text-2xl font-semibold text-content-primary">{{ value }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+            </article>
+        {% endfor %}
+    </div>
+    <section aria-labelledby="object-storage-recent-report-activity-title">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div class="min-w-0">
+                <h3 id="object-storage-recent-report-activity-title"
+                    class="text-sm font-semibold text-content-primary">Recent Report Activity</h3>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Up to three latest generated Object Storage report records.</p>
+            </div>
+            {% if reporting.latest_reports %}
+                {{ table_label.metadata_label(table_label.count_text(reporting.latest_reports|length, 'Record') ,
+                icon='history'
+                ) }}
+            {% endif %}
+        </div>
+        {% if reporting.latest_reports %}
+            <div class="divide-y divide-outline-subtle border-y border-outline-subtle">
+                {% for report in reporting.latest_reports %}
+                    {% set normalized_status = report.status|default('Unknown', true)|lower %}
+                    {% set status_tone = 'normal' if normalized_status in ['completed', 'ready', 'succeeded'] else ('critical' if normalized_status in ['failed', 'error'] else ('info' if normalized_status in ['queued', 'running', 'pending', 'in progress'] else 'unknown')) %}
+                    <article class="flex min-w-0 flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="file-check-2" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="break-words text-sm font-semibold text-content-primary">{{ report.title }}</p>
+                                <p class="mt-1 inline-flex items-center gap-1 text-xs text-content-muted">
+                                    <i data-lucide="clock-3" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                    {{ report.generated_at }}
+                                </p>
+                            </div>
+                        </div>
+                        {{ table_label.status_label(report.status, tone=status_tone) }}
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            {% set empty_state_icon = "file-clock" %}
+            {% set empty_state_label = "No Activity" %}
+            {% set empty_state_title = "No Object Storage Reports Generated" %}
+            {% set empty_state_description = "Generate an Object Storage report to establish recent reporting activity for this scope." %}
+            {% set empty_state_variant = "panel" %}
+            {% include 'components/states/_empty_state.html' %}
+        {% endif %}
+    </section>
+{% endcall %}

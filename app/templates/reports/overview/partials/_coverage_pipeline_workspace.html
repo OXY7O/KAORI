@@ -1,0 +1,61 @@
+<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+         aria-labelledby="reporting-capability-title">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex items-start gap-3">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-kaori-primary/20 bg-kaori-soft text-kaori-primary shadow-sm"
+                      aria-hidden="true">
+                    <i data-lucide="workflow" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 id="reporting-capability-title"
+                        class="text-base font-semibold leading-6 text-content-primary">Reporting Capability</h2>
+                    <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Review available report contracts and follow the operational path from Generate Report to stored PDF, XLSX, or CSV artifact and optional Notification Channel delivery.</p>
+                </div>
+            </div>
+            <nav class="inline-flex w-full rounded-xl border border-kaori-primary/20 bg-kaori-soft p-1 sm:w-auto"
+                 aria-label="Reporting capability tabs">
+                <button type="button"
+                        @click="activateReportWorkspaceTab('coverage')"
+                        :class="reportWorkspaceTab === 'coverage' ? 'bg-kaori-primary text-white shadow-sm' : 'text-kaori-primary hover:bg-surface-card'"
+                        class="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition sm:flex-none"
+                        :aria-selected="reportWorkspaceTab === 'coverage'"
+                        role="tab">
+                    <i data-lucide="clipboard-list" class="h-4 w-4" aria-hidden="true"></i>
+                    Types
+                </button>
+                <button type="button"
+                        @click="activateReportWorkspaceTab('pipeline')"
+                        :class="reportWorkspaceTab === 'pipeline' ? 'bg-kaori-primary text-white shadow-sm' : 'text-kaori-primary hover:bg-surface-card'"
+                        class="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition sm:flex-none"
+                        :aria-selected="reportWorkspaceTab === 'pipeline'"
+                        role="tab">
+                    <i data-lucide="git-branch" class="h-4 w-4" aria-hidden="true"></i>
+                    Pipeline
+                </button>
+            </nav>
+        </div>
+    </header>
+    <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-2">
+        <div class="flex items-start gap-3 bg-surface-card px-5 py-4 sm:px-6">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="file-stack" class="h-4 w-4"></i></span>
+            <div class="min-w-0">
+                <p class="text-sm font-semibold leading-5 text-content-primary">Types</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Browse report contracts currently supported by connected and validated data sources.</p>
+            </div>
+        </div>
+        <div class="flex items-start gap-3 bg-surface-card px-5 py-4 sm:px-6">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
+            <div class="min-w-0">
+                <p class="text-sm font-semibold leading-5 text-content-primary">Pipeline</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Follow request creation, format-specific execution, artifact storage, and optional Notification Channel delivery.</p>
+            </div>
+        </div>
+    </div>
+    <div x-show="reportWorkspaceTab === 'coverage'" x-cloak role="tabpanel">
+        {% include "reports/overview/partials/_report_type_coverage.html" %}
+    </div>
+    <div x-show="reportWorkspaceTab === 'pipeline'" x-cloak role="tabpanel">
+        {% include "reports/overview/partials/_pipeline_status.html" %}
+    </div>
+</section>

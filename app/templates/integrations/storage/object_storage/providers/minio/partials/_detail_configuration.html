@@ -1,0 +1,33 @@
+{% import "integrations/components/_provider_configuration_contract.html" as provider_configuration_contract %}
+{% set readiness = instance.readiness_status or "validation_required" %}
+{% set compatibility_label = instance.compatibility_profile or compatibility_policy.profile_label %}
+{% set summary_items = [
+    ("Canonical Identity", "#" ~ canonical.id ~ " · " ~ asset.name, "Stable provider, asset, and audit identity"),
+    ("Environment", instance.environment|default("")|title, "Coverage and policy context"),
+    ("Detected Product", compatibility_policy.product_label, "Product family resolved by Full Validation"),
+    ("Compatibility", compatibility_label, "Supported Range · " ~ compatibility_policy.supported_range)
+] %}
+{% set evidence_items = [
+    ("server", "brand", "MinIO S3 API Endpoint", instance.endpoint, "Base S3-compatible API endpoint used by KAORI for governed discovery and validation."),
+    ("shield-check", "success" if instance.verify_ssl else "warning", "TLS Verification", "Enabled" if instance.verify_ssl else "Disabled", "Certificate validation policy for the MinIO API endpoint."),
+    ("key-round", "info", "Access Contract", instance.access_key, "The secret key stays encrypted; registration and Full Validation use governed S3 discovery."),
+    ("database", "success", "Storage Authority", "Object Storage System", "MinIO owns S3 state; observability sources remain independent consumers.")
+] %}
+{% set flow_items = [('Configure', 'Register S3 identity, credentials, TLS, region, and request policy.', 'settings-2'), ('Validate', 'Resolve MinIO product identity, release compatibility, S3 access, and provider capabilities.', 'badge-check'), ('Observe', 'Persist runtime health and endpoint diagnostics independently from consumer bindings.', 'activity'), ('Bind', 'Associate reusable Metrics Source and Alertmanager sources only when required.', 'waypoints')] %}
+{% set operational_metadata = [
+    "S3 API Authority",
+    "Read-Only Discovery",
+    "Region · " ~ (instance.region or "us-east-1"),
+    (instance.addressing_style or "path")|title ~ " Addressing"
+] %}
+{{ provider_configuration_contract.render("MinIO",
+"database-zap",
+readiness,
+summary_items,
+evidence_items,
+"MinIO owns S3 storage state; observability sources remain independent. KAORI correlates asset-scoped binding evidence without copying credentials.",
+flow_items,
+"Connection-sensitive changes reset readiness until Full Validation confirms the updated MinIO contract. Consumer bindings remain attached to the canonical object-storage asset.",
+url_for("minio.edit_instance", instance_id=instance.id) ,
+operational_metadata=operational_metadata
+) }}

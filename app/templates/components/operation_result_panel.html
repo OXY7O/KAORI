@@ -1,0 +1,43 @@
+{% import 'components/table_label.html' as table_label %}
+{% macro render(feedback, pending_title='Validation Required', pending_message='Validate the latest form values before applying this operation.') -%}
+    {% if feedback %}
+        {% set status = feedback.status|default('info') %}
+        {% set tone = 'normal' if status == 'success' else 'warning' if status == 'warning' else 'critical' if status == 'error' else 'info' %}
+        {% set icon = 'shield-check' if status == 'success' else 'triangle-alert' if status == 'warning' else 'circle-x' if status == 'error' else 'info' %}
+        <section data-operation-result-panel
+                 data-operation-result-status="{{ status }}"
+                 class="rounded-xl border {{ table_label.tone_border_classes(tone) }} {{ table_label.tone_surface_classes(tone) }} p-4 sm:p-5"
+                 role="{{ 'alert' if status in ('warning', 'error') else 'status' }}"
+                 aria-live="{{ 'assertive' if status == 'error' else 'polite' }}">
+            <div class="flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-elevated {{ table_label.tone_icon_classes(tone) }}"
+                      aria-hidden="true">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <h3 class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ feedback.title }}</h3>
+                        {{ table_label.status_label(status|title, tone, icon) }}
+                    </div>
+                    <p class="mt-1 break-words text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ feedback.message }}</p>
+                    {% if feedback.detail %}
+                        <p class="mt-2 break-words rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2 text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ feedback.detail }}</p>
+                    {% endif %}
+                    <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-outline-subtle pt-3 text-xs font-medium text-content-muted">
+                        {% if feedback.activity_audit_saved %}
+                            <span class="inline-flex items-center gap-1.5">
+                                <i data-lucide="panel-right-open" class="h-3.5 w-3.5"></i>
+                                Recorded in Activity Audit
+                            </span>
+                        {% elif feedback.activity_audit_expected|default(false) %}
+                            <span class="inline-flex items-center gap-1.5 text-status-warning-text">
+                                <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>
+                                Activity Audit persistence not confirmed
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </section>
+    {% endif %}
+{%- endmacro %}

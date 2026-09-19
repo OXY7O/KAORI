@@ -1,0 +1,13 @@
+{# Canonical presentation for exact technical values without creating a second typography system. #}
+{% macro render(value, empty='-', title=None, align='left', break_all=true, class_name='', monospace=false, size='compact') -%}
+    {% set display_value = value if value not in [None, ''] else empty %}
+    {% set size_classes = 'text-sm leading-5' if size == 'body' else 'text-xs leading-5' %}
+    {% set common_classes = "inline-block max-w-full " ~ size_classes ~ " font-medium text-content-primary " ~ ('break-all' if break_all else 'break-words') ~ ' ' ~ ('text-right' if align == 'right' else 'text-left') ~ ' ' ~ class_name %}
+    {% if monospace %}
+        <code class="font-mono {{ common_classes }}"
+              {% if title or display_value %}title="{{ title or display_value }}"{% endif %}>{{ display_value }}</code>
+    {% else %}
+        <span class="{{ common_classes }}"
+              {% if title or display_value %}title="{{ title or display_value }}"{% endif %}>{{ display_value }}</span>
+    {% endif %}
+{%- endmacro %}

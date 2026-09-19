@@ -1,0 +1,243 @@
+{% import "components/table_label.html" as table_label %}
+<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card"
+         data-account-profile-workspace="full-width">
+    <header class="flex flex-col gap-4 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                <i data-lucide="id-card" class="h-5 w-5"></i>
+            </span>
+            <div>
+                <h2 class="text-base font-bold text-content-primary">Account Profile & Access</h2>
+                <p class="mt-1 text-sm leading-6 text-content-muted">Read-only identity, authorization posture, provider ownership, and personal account presentation in one workspace.</p>
+            </div>
+        </div>
+        {{ table_label.metadata_label('Read-Only Account View', 'scan-eye') }}
+    </header>
+    <div class="space-y-7 p-5 xl:p-6">
+        <section aria-labelledby="account-posture-title">
+            <div class="mb-3">
+                <h3 id="account-posture-title"
+                    class="text-sm font-bold text-content-primary">Access Posture</h3>
+                <p class="mt-1 text-xs leading-5 text-content-muted">KAORI authorization, lifecycle state, and administrative tier after identity verification succeeds.</p>
+            </div>
+            <div class="grid gap-3 md:grid-cols-3">
+                <article class="rounded-xl border border-outline-default bg-surface-subtle p-4">
+                    <div class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                        <i data-lucide="shield" class="h-4 w-4 text-kaori-primary"></i>
+                        Assigned Role
+                    </div>
+                    <p class="mt-2 text-sm font-bold text-content-primary">{{ user_role }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Applied by KAORI after identity verification.</p>
+                </article>
+                <article class="rounded-xl border border-outline-default bg-surface-subtle p-4">
+                    <div class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                        <i data-lucide="power" class="h-4 w-4 text-kaori-primary"></i>
+                        Account Lifecycle
+                    </div>
+                    <div class="mt-2">
+                        {{ table_label.status_indicator_label('Active Account', 'normal') if current_user.account_is_active else table_label.status_indicator_label('Inactive Account', 'warning') }}
+                    </div>
+                    <p class="mt-2 text-xs leading-5 text-content-muted">Global admission gate for every authentication provider.</p>
+                </article>
+                <article class="rounded-xl border border-outline-default bg-surface-subtle p-4">
+                    <div class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                        <i data-lucide="crown" class="h-4 w-4 text-kaori-primary"></i>
+                        Administrative Tier
+                    </div>
+                    <p class="mt-2 text-sm font-bold text-content-primary">{{ 'Super Admin' if current_user.is_super_admin else 'Standard Account' }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Independent KAORI safeguard for administrative authority.</p>
+                </article>
+            </div>
+        </section>
+        <section aria-labelledby="identity-profile-title"
+                 data-identity-profile-layout="identity-record">
+            <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h3 id="identity-profile-title"
+                        class="text-sm font-bold text-content-primary">Identity Profile</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Canonical account identity and provider ownership used across KAORI and administrative evidence.</p>
+                </div>
+                {% if identity_context.provider_enabled %}
+                    {{ table_label.status_indicator_label('Provider Ready', 'normal') }}
+                {% else %}
+                    {{ table_label.status_indicator_label('Provider Disabled', 'warning') }}
+                {% endif %}
+            </div>
+            <div class="border-y border-outline-subtle py-5">
+                <div class="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(20rem,0.8fr)] xl:items-center">
+                    <div class="flex min-w-0 items-start gap-4">
+                        <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-kaori-soft text-kaori-primary">
+                            <i data-lucide="user-round" class="h-6 w-6"></i>
+                        </span>
+                        <div class="min-w-0 pt-0.5">
+                            <p class="text-xs font-semibold text-kaori-primary">Canonical Account</p>
+                            <p class="mt-1 break-words text-xl font-bold tracking-tight text-content-primary">{{ current_user.display_label }}</p>
+                            <div class="mt-3 flex flex-col gap-2 text-xs text-content-muted sm:flex-row sm:flex-wrap sm:gap-x-5">
+                                <span class="inline-flex min-w-0 items-center gap-2">
+                                    <i data-lucide="at-sign"
+                                       class="h-3.5 w-3.5 shrink-0 text-content-disabled"></i>
+                                    <span class="break-all font-semibold text-content-secondary">{{ current_user.username }}</span>
+                                </span>
+                                <span class="inline-flex min-w-0 items-center gap-2">
+                                    <i data-lucide="mail" class="h-3.5 w-3.5 shrink-0 text-content-disabled"></i>
+                                    <span class="break-all font-semibold text-content-secondary">{{ current_user.email|default('Not configured', true) }}</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <dl class="divide-y divide-outline-subtle xl:border-l xl:border-outline-subtle xl:pl-6">
+                        <div class="flex items-start justify-between gap-5 py-2.5 first:pt-0 xl:first:pt-0">
+                            <dt class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                                <i data-lucide="{{ identity_context.icon }}"
+                                   class="h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
+                                Identity Source
+                            </dt>
+                            <dd class="min-w-0 text-right">
+                                <p class="break-words text-sm font-bold text-content-primary">{{ identity_context.type_label }}</p>
+                                <p class="mt-0.5 break-words text-xs text-content-muted">{{ identity_context.provider_name }}</p>
+                            </dd>
+                        </div>
+                        <div class="flex items-start justify-between gap-5 py-2.5">
+                            <dt class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                                <i data-lucide="key-round"
+                                   class="h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
+                                Credential Owner
+                            </dt>
+                            <dd class="max-w-[60%] break-words text-right text-sm font-bold text-content-primary">
+                                {{ identity_context.credential_owner }}
+                            </dd>
+                        </div>
+                        <div class="flex items-start justify-between gap-5 py-2.5 last:pb-0">
+                            <dt class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                                <i data-lucide="git-branch"
+                                   class="h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
+                                Provisioning Mode
+                            </dt>
+                            <dd class="max-w-[60%] break-words text-right text-sm font-bold text-content-primary">
+                                {{ identity_context.projection_label }}
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+        </section>
+        {% if identity_context.provider_key or identity_context.external_username or identity_context.subject or identity_context.distinguished_name %}
+            <section aria-labelledby="provider-linkage-title">
+                <div class="mb-3">
+                    <h3 id="provider-linkage-title"
+                        class="text-sm font-bold text-content-primary">Provider Linkage</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Stable provider references used to map the external identity to this KAORI account.</p>
+                </div>
+                <dl class="grid gap-px overflow-hidden rounded-xl border border-outline-default bg-outline-subtle md:grid-cols-2">
+                    {% if identity_context.provider_key %}
+                        <div class="bg-surface-subtle px-4 py-3.5">
+                            <dt class="text-xs font-semibold text-content-muted">Provider Key</dt>
+                            <dd class="mt-1 break-all font-mono text-xs font-semibold leading-5 text-content-secondary">
+                                {{ identity_context.provider_key }}
+                            </dd>
+                        </div>
+                    {% endif %}
+                    {% if identity_context.external_username %}
+                        <div class="bg-surface-subtle px-4 py-3.5">
+                            <dt class="text-xs font-semibold text-content-muted">External Username</dt>
+                            <dd class="mt-1 break-all text-sm font-semibold text-content-primary">
+                                {{ identity_context.external_username }}
+                            </dd>
+                        </div>
+                    {% endif %}
+                    {% if identity_context.subject %}
+                        <div class="bg-surface-subtle px-4 py-3.5">
+                            <dt class="text-xs font-semibold text-content-muted">Stable External Subject</dt>
+                            <dd class="mt-1 break-all font-mono text-xs leading-5 text-content-secondary">
+                                {{ identity_context.subject }}
+                            </dd>
+                        </div>
+                    {% endif %}
+                    {% if identity_context.distinguished_name %}
+                        <div class="bg-surface-subtle px-4 py-3.5">
+                            <dt class="text-xs font-semibold text-content-muted">Directory DN</dt>
+                            <dd class="mt-1 break-all font-mono text-xs leading-5 text-content-secondary">
+                                {{ identity_context.distinguished_name }}
+                            </dd>
+                        </div>
+                    {% endif %}
+                </dl>
+                <div class="mt-3 flex items-start gap-2 text-xs leading-5 text-content-muted">
+                    <i data-lucide="shield-check"
+                       class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                    <p>{{ identity_context.credential_detail }}</p>
+                </div>
+            </section>
+        {% endif %}
+        <section class="grid gap-4 lg:grid-cols-2" aria-label="Account context">
+            <article class="rounded-xl border border-kaori-primary/20 bg-kaori-soft/60 p-4">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                        <i data-lucide="clock-3" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0 flex-1">
+                        <h3 class="text-sm font-bold text-content-primary">Personal Presentation</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Time zone and regional format remain owned by General Settings.</p>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            {{ table_label.metadata_label(current_timezone, 'map-pinned') }}
+                            {{ table_label.metadata_label(current_locale, 'languages') }}
+                        </div>
+                        <a href="{{ url_for('settings.general', tab='time-locale') }}"
+                           class="mt-4 inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                            <i data-lucide="external-link" class="h-3.5 w-3.5"></i>
+                            Open General Settings
+                        </a>
+                    </div>
+                </div>
+            </article>
+            <article class="rounded-xl border border-kaori-primary/20 bg-kaori-soft/60 p-4"
+                     aria-labelledby="last-verified-signin-title">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                        <i data-lucide="log-in" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0 flex-1">
+                        <h3 id="last-verified-signin-title"
+                            class="text-sm font-bold text-content-primary">Last Verified Sign-In</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Updated only after successful authentication.</p>
+                        <dl class="mt-3 grid gap-3 sm:grid-cols-3">
+                            <div>
+                                <dt class="text-xs font-semibold text-content-muted">Time</dt>
+                                <dd class="mt-1 text-sm font-bold text-kaori-primary">
+                                    {% if current_user.last_login_at %}
+                                        {{ current_user.last_login_at|user_datetime(include_seconds=true) }}
+                                    {% else %}
+                                        Not recorded
+                                    {% endif %}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-semibold text-content-muted">Provider</dt>
+                                <dd class="mt-1 text-sm font-bold text-content-primary">
+                                    {{ last_auth_label }}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-semibold text-content-muted">IP Address</dt>
+                                <dd class="mt-1 break-all text-sm font-bold text-content-primary">
+                                    {{ current_user.last_login_ip|default('Not recorded', true) }}
+                                </dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+            </article>
+        </section>
+        <section class="rounded-xl border border-outline-default bg-surface-subtle px-4 py-3.5"
+                 aria-label="Access boundary">
+            <div class="flex items-start gap-3">
+                <i data-lucide="shield-check"
+                   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                <div>
+                    <p class="text-xs font-bold text-content-primary">Access Boundary</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">The identity provider verifies who you are. KAORI independently enforces account lifecycle, assigned role, administrative tier, and permission checks before privileged operations are allowed.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+</section>

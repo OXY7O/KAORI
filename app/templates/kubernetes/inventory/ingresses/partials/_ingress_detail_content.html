@@ -1,0 +1,187 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/details/_detail_content.html" as detail %}
+{% import "components/technical_metadata_collection.html" as metadata_collection %}
+{% import "components/related_resource_collection.html" as related_collection %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/table.html" as table_ui %}
+{% import "components/technical_value.html" as technical_value %}
+<div data-kaori-detail-variant="full-workspace-modal"
+     data-kaori-detail-density="unified-resource-sheet"
+     data-kaori-inventory-detail="v10"
+     data-kaori-inventory-detail-layout="unified-resource-sheet"
+     class="{{ detail.expanded_workspace_outer_classes() }}">
+    <div class="{{ detail.expanded_workspace_shell_classes() }}">
+        {% set detail_description = "Host, publication, TLS Secret, and backend route evidence from the committed snapshot." %}
+        {% call detail.workspace_header(detail_description, 'route') %}
+            {% call detail.header_identity_row() %}
+                {{ detail.inventory_title(ingress.name) }}
+                {{ table_label.metadata_label(ingress.cluster_name, 'building-2') }}
+                {{ table_label.metadata_label(ingress.namespace, 'folder-tree') }}
+                {{ table_label.metadata_label(ingress.class) }}
+                {{ table_label.status_indicator_label(ingress.detail_posture_label, ingress.detail_posture_tone, size='detail') }}
+            {% endcall %}
+        {% endcall %}
+        {{ detail.inspector_summary_strip([
+                {'label': 'Host Scope', 'value': ingress.host_label, 'supporting': ingress.host_supporting, 'icon': 'globe-2', 'tone': 'brand'},
+                {'label': 'Publication', 'value': ingress.publication_label, 'supporting': ingress.publication_supporting, 'icon': 'radio-tower', 'tone': ingress.detail_posture_tone},
+                {'label': 'Backend Routes', 'value': ingress.backend_count, 'supporting': ingress.service_count ~ ' Services · ' ~ ingress.resource_backend_count ~ ' Resource Backends', 'icon': 'git-branch', 'tone': 'brand'},
+                {'label': 'TLS References', 'value': ingress.tls_secret_count, 'supporting': ingress.secret_collection_state, 'icon': 'shield', 'tone': 'brand'}
+                ]) }}
+        <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+                {% call detail.inventory_section('Ingress Identity', 'badge-info', ingress.age, badge_size='detail', stretch=false, density='compact', description='Ingress identity, namespace ownership, class, lifecycle age, and collection context.') %}
+                    {{ detail.inventory_row('Cluster', ingress.cluster_name) }}
+                    {{ detail.inventory_row('Namespace', ingress.namespace) }}
+                    {{ detail.inventory_metadata_row('Ingress Class', ingress.class) }}
+                    {{ detail.inventory_row('Class Evidence', ingress.class_supporting) }}
+                    {{ detail.inventory_row('Age', ingress.age) }}
+                    {{ detail.inventory_technical_row('Kubernetes UID', ingress.uid, copyable=true) }}
+                    {{ detail.inventory_row('Generation', ingress.generation) }}
+                    {{ detail.inventory_row('Created', ingress.created_at|user_datetime if ingress.created_at else 'Not Reported') }}
+                    {{ detail.inventory_row('Collected', ingress.collected_at|user_datetime if ingress.collected_at else 'Not Reported') }}
+                    {% if ingress.finalizers %}
+                        <div class="mt-3">{{ metadata_collection.render('Finalizers', ingress.finalizer_entries, 'lock-keyhole', 'No Finalizers', 'No finalizer is represented in the committed snapshot.', 'Finalizers remain factual lifecycle metadata.', compact=true) }}</div>
+                    {% endif %}
+                {% endcall %}
+                {% call detail.inventory_section('Publication Evidence', 'globe-2', ingress.publication_label, badge_size='detail', stretch=false, density='compact', description='Hostname, address, publication state, and external reachability evidence from the snapshot.') %}
+                    {{ detail.inventory_fact_grid([
+                                        {'label': 'Host Scope', 'value': ingress.host_label},
+                                        {'label': 'Explicit Hosts', 'value': ingress.host_count},
+                                        {'label': 'All-Host Rules', 'value': ingress.hostless_rule_count},
+                                        {'label': 'Published Addresses', 'value': ingress.addresses|length}
+                                        ], columns=2) }}
+                    <div class="mt-3">{{ table_label.status_indicator_label(ingress.publication_label, ingress.publication_tone) }}</div>
+                    <p class="mt-2 text-xs leading-5 text-content-muted">{{ ingress.publication_supporting }}</p>
+                    {% if ingress.host_access_rows %}
+                        <div class="mt-3 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                             data-kaori-ingress-dns-access>
+                            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle bg-surface-elevated/35 px-4 py-3">
+                                <div class="flex min-w-0 items-center gap-2.5">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary ring-1 ring-inset ring-brand-outline/50"
+                                          aria-hidden="true"><i data-lucide="globe-2" class="h-4 w-4"></i></span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold leading-5 text-content-primary">DNS Hosts</p>
+                                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Open a concrete declared host directly; wildcard hosts remain reference-only.</p>
+                                    </div>
+                                </div>
+                                {{ table_label.metadata_label(ingress.host_count ~ ' ' ~ ('Host' if ingress.host_count == 1 else 'Hosts') ) }}
+                            </div>
+                            <div class="divide-y divide-outline-subtle">
+                                {% for host in ingress.host_access_rows %}
+                                    <div class="flex min-w-0 flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div class="min-w-0">
+                                            {{ technical_value.render(host.host, class_name='font-semibold', break_all=false, size='body') }}
+                                            <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ host.scheme }} access target</p>
+                                        </div>
+                                        {% if host.url %}
+                                            <a href="{{ host.url }}"
+                                               target="_blank"
+                                               rel="noopener noreferrer"
+                                               class="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                                               aria-label="Open {{ host.host }}">
+                                                <i data-lucide="external-link" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                Open
+                                            </a>
+                                        {% else %}
+                                            {{ table_label.metadata_label('Reference Only', 'globe-2') }}
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if ingress.addresses %}
+                        <div class="mt-3">{{ metadata_collection.render('Controller-Published Addresses', ingress.address_entries, 'map-pin', 'No Published Addresses', 'No controller address is represented in this snapshot.', 'Addresses are controller status evidence and do not prove external reachability.', compact=true) }}</div>
+                    {% endif %}
+                {% endcall %}
+            </div>
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+                {% call detail.inventory_section('TLS Reference Evidence', 'shield', ingress.tls_secret_count ~ ' Secrets', badge_size='detail', stretch=false, density='compact', description='Referenced TLS Secrets and certificate binding evidence declared by this Ingress.') %}
+                    {{ detail.inventory_fact_grid([
+                                        {'label': 'TLS Declared', 'value': 'Yes' if ingress.tls else 'No'},
+                                        {'label': 'Secret References', 'value': ingress.tls_secret_count},
+                                        {'label': 'Missing Secrets', 'value': ingress.missing_tls_secret_count},
+                                        {'label': 'Collection State', 'value': ingress.secret_collection_state}
+                                        ], columns=2) }}
+                    {{ detail.inventory_note('A resolved Secret reference confirms only that a Secret exists in the same committed namespace snapshot. It does not validate certificate contents, expiry, key matching, or hostname coverage.', 'info') }}
+                {% endcall %}
+                {% call detail.inventory_section('Routing Evidence', 'git-branch', ingress.backend_count ~ ' Routes', badge_size='detail', stretch=false, density='compact', description='Host, path, backend Service, and port mappings used to route incoming traffic.') %}
+                    {{ detail.inventory_fact_grid([
+                                        {'label': 'Backend Routes', 'value': ingress.backend_count},
+                                        {'label': 'Service Backends', 'value': ingress.service_count},
+                                        {'label': 'Resource Backends', 'value': ingress.resource_backend_count},
+                                        {'label': 'Missing Services', 'value': ingress.missing_backend_count},
+                                        {'label': 'Unreported References', 'value': ingress.unresolved_backend_count},
+                                        {'label': 'Service Collection', 'value': ingress.service_collection_state}
+                                        ], columns=2) }}
+                    {{ detail.inventory_note('Service references are resolved only against the current committed Service Inventory. Resource backends are preserved as declarations and are not resolved by this page.', 'info') }}
+                {% endcall %}
+            </div>
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="git-branch" class="h-4 w-4"></i></span>
+                        <div>
+                            <h4 class="text-sm font-semibold text-content-primary">Backend Routes</h4>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Declared host, path, source, backend identity, and committed reference resolution.</p>
+                        </div>
+                    </div>
+                    {{ table_label.metadata_label(ingress.backend_count ~ ' ' ~ ('Route' if ingress.backend_count == 1 else 'Routes') ) }}
+                </header>
+                {% if ingress.backend_paths %}
+                    <div class="overflow-x-auto">
+                        <table class="{{ table_ui.table_classes('min-w-[76rem]') }}">
+                            <caption class="sr-only">Declared backend routes for Ingress {{ ingress.name }}.</caption>
+                            <thead class="{{ table_ui.head_classes() }}">
+                                <tr>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Host</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Path</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Route Source</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Path Type</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Backend</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Reference State</th>
+                                </tr>
+                            </thead>
+                            <tbody class="{{ table_ui.body_classes() }}">
+                                {% for backend in ingress.backend_paths %}
+                                    <tr class="{{ table_ui.row_classes() }}">
+                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(backend.host, class_name='font-medium', size='body') }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(backend.path, class_name='font-medium', size='body') }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(backend.route_source) }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(backend.path_type) }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">
+                                            <p class="text-sm font-semibold text-content-primary">{{ backend.backend_name }}</p>
+                                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ backend.backend_supporting }}</p>
+                                        </td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(backend.reference_state, backend.reference_tone) }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="p-4">{{ detail.empty_evidence('No Backend Routes', 'No backend route is represented in the committed snapshot.', 'route-off') }}</div>
+                {% endif %}
+            </section>
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+                {{ related_collection.inventory_render('Backend Services', 'Service references resolved against current committed Service evidence.', ingress.backend_resources, ingress.backend_resources|length, 'network', 'No Service Backends', 'No Service backend reference is represented in this Ingress snapshot.', false, url_for('inventory.services', cluster_id=ingress.cluster_id, namespace=ingress.namespace) , 'Open Service Inventory', embedded=true) }}
+                {{ related_collection.inventory_render('TLS Secret References', 'Secret references resolved against current committed Secret evidence.', ingress.tls_resources, ingress.tls_resources|length, 'key-round', 'No TLS Reference', 'No TLS Secret reference is declared in this Ingress snapshot.', false, url_for('inventory.configuration', cluster_id=ingress.cluster_id, namespace=ingress.namespace, type='Secret') , 'Open Secret Inventory', embedded=true) }}
+            </div>
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+                {{ metadata_collection.render('Ingress Labels', ingress.labels, 'tags', 'No Ingress Labels', 'No Ingress labels were reported in the committed snapshot.', 'Labels remain factual identity and controller metadata.', embedded=true) }}
+                {{ metadata_collection.render('Ingress Annotations', ingress.annotations, 'notebook-tabs', 'No Ingress Annotations', 'No Ingress annotations were reported in the committed snapshot.', 'Annotations may influence controller and integration behavior.', embedded=true) }}
+            </div>
+            <section class="space-y-3">
+                <h4 class="text-sm font-semibold text-content-primary">Operational Context</h4>
+                <div class="grid gap-3 lg:grid-cols-2">
+                    {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reports declared Ingress configuration and controller publication evidence. It does not validate public exposure, live traffic, DNS resolution, reachability, certificate validity, or certificate expiry.', 'database', 'info') }}
+                    {{ operational_callout.render(ingress.operational_context.title, ingress.operational_context.description, ingress.operational_context.icon, ingress.operational_context.tone, 'semantic') }}
+                </div>
+            </section>
+        </div>
+    </div>
+</div>

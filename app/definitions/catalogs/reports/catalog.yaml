@@ -1,0 +1,357 @@
+schema_version: 1
+kind: report_catalog
+output_formats:
+- value: pdf
+  label: PDF
+  extension: .pdf
+  mimetype: application/pdf
+- value: xlsx
+  label: Excel Workbook (.xlsx)
+  extension: .xlsx
+  mimetype: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+- value: csv
+  label: CSV (.csv)
+  extension: .csv
+  mimetype: text/csv
+report_types:
+- value: analytics_overview
+  label: Analytics Overview Report
+  description: High-level analytics summary across utilization, capacity, forecast, and alerts.
+  icon: layout-dashboard
+  family: analytics
+  default_format: pdf
+  allowed_formats:
+  - pdf
+  - xlsx
+  - csv
+  default_sections:
+  - executive_brief
+  - resource_posture
+  - trend_forecast
+  - top_consumers
+  - capacity_pressure
+  - alerts_anomalies
+  - reporting_summary
+  - inventory_snapshot
+  - data_freshness_reliability
+  - recommendation_plan
+  - methodology_evidence_boundary
+  period_mode: range
+- value: resource_utilization
+  label: Resource Utilization Report
+  description: CPU, memory, storage, pod utilization, and node resource detail.
+  icon: activity
+  family: analytics
+  default_format: pdf
+  allowed_formats:
+  - pdf
+  - xlsx
+  - csv
+  default_sections:
+  - executive_summary
+  - cpu_utilization
+  - memory_utilization
+  - storage_utilization
+  - pod_utilization
+  - node_resource_detail
+  - operational_recommendations
+  period_mode: range
+- value: capacity_analysis
+  label: Capacity Analysis Report
+  description: Worker capacity, allocation, headroom, and pressure risk.
+  icon: database
+  family: analytics
+  default_format: pdf
+  allowed_formats:
+  - pdf
+  - xlsx
+  - csv
+  default_sections:
+  - executive_summary
+  - worker_capacity_summary
+  - resource_allocation_headroom
+  - capacity_pressure_risk
+  - operational_recommendations
+  period_mode: range
+- value: storage_analysis
+  label: Storage Analysis Report
+  description: Filesystem, persistent volume, PVC, capacity, usage, and free space summary.
+  icon: hard-drive
+  family: analytics
+  default_format: pdf
+  allowed_formats:
+  - pdf
+  - xlsx
+  - csv
+  default_sections:
+  - executive_summary
+  - filesystem_summary
+  - persistent_volume_summary
+  - persistent_volume_claims
+  - storage_risk
+  - operational_recommendations
+  period_mode: range
+- value: workload_analysis
+  label: Workload Analysis Report
+  description: Workload resource requests, limits, mapping, and namespace resource behavior.
+  icon: boxes
+  family: analytics
+  default_format: pdf
+  allowed_formats:
+  - pdf
+  - xlsx
+  - csv
+  default_sections:
+  - executive_summary
+  - tenant_quota_summary
+  - request_limit_coverage
+  - workload_resource_mapping
+  - governance_findings
+  - operational_recommendations
+  period_mode: range
+- value: resource_forecast
+  label: Resource Forecast Report
+  description: Forecast CPU, memory, storage, and pod growth using historical metrics.
+  icon: line-chart
+  family: analytics
+  default_format: pdf
+  allowed_formats:
+  - pdf
+  - xlsx
+  - csv
+  default_sections:
+  - executive_summary
+  - forecast_summary
+  - cpu_forecast
+  - memory_forecast
+  - storage_forecast
+  - pod_forecast
+  - capacity_projection
+  - operational_recommendations
+  period_mode: range
+- value: top_consumers
+  label: Top Consumers Report
+  description: Top namespaces, workloads, and pods consuming cluster resources.
+  icon: users
+  family: analytics
+  default_format: pdf
+  allowed_formats:
+  - pdf
+  - xlsx
+  - csv
+  default_sections:
+  - executive_summary
+  - top_namespace_consumers
+  - top_workload_consumers
+  - top_pod_consumers
+  - resource_hotspots
+  - operational_recommendations
+  period_mode: range
+- value: alerts_anomalies
+  label: Alerts & Anomalies Report
+  description: Alert visibility, anomaly context, source health, routing, ownership, incident readiness, and recommendation
+    notes.
+  icon: triangle-alert
+  family: analytics
+  default_format: pdf
+  allowed_formats:
+  - pdf
+  - xlsx
+  - csv
+  default_sections:
+  - executive_summary
+  - active_alerts
+  - alert_severity_summary
+  - source_health
+  - routing_grouping
+  - silence_inhibition
+  - ownership_runbook
+  - incident_readiness
+  - anomaly_context
+  - affected_resources
+  - operational_recommendations
+  period_mode: range
+- value: inventory_overview
+  label: Inventory Overview
+  description: Committed Kubernetes asset totals by inventory category.
+  icon: layout-dashboard
+  family: inventory
+  default_format: xlsx
+  allowed_formats:
+  - xlsx
+  - csv
+  default_sections:
+  - inventory_assets
+  - inventory_metadata
+  - inventory_field_dictionary
+  period_mode: snapshot
+- value: node_inventory
+  label: Nodes Inventory
+  description: Node identities, readiness, platform, capacity, addressing, and collection evidence.
+  icon: server-cog
+  family: inventory
+  default_format: xlsx
+  allowed_formats:
+  - xlsx
+  - csv
+  default_sections:
+  - inventory_assets
+  - inventory_metadata
+  - inventory_field_dictionary
+  period_mode: snapshot
+- value: namespace_inventory
+  label: Namespaces Inventory
+  description: Namespace identities, lifecycle state, controls, and service-account posture.
+  icon: folder-tree
+  family: inventory
+  default_format: xlsx
+  allowed_formats:
+  - xlsx
+  - csv
+  default_sections:
+  - inventory_assets
+  - inventory_metadata
+  - inventory_field_dictionary
+  period_mode: snapshot
+- value: workload_inventory
+  label: Workloads Inventory
+  description: Workload identities, readiness, replica state, runtime status, and update strategy.
+  icon: boxes
+  family: inventory
+  default_format: xlsx
+  allowed_formats:
+  - xlsx
+  - csv
+  default_sections:
+  - inventory_assets
+  - inventory_metadata
+  - inventory_field_dictionary
+  period_mode: snapshot
+- value: pod_inventory
+  label: Pods Inventory
+  description: Pod identities, ownership, phase, readiness, placement, restarts, and attached evidence.
+  icon: box
+  family: inventory
+  default_format: xlsx
+  allowed_formats:
+  - xlsx
+  - csv
+  default_sections:
+  - inventory_assets
+  - inventory_metadata
+  - inventory_field_dictionary
+  period_mode: snapshot
+- value: service_inventory
+  label: Services Inventory
+  description: Service identities, types, addresses, ports, selectors, and exposure fields.
+  icon: waypoints
+  family: inventory
+  default_format: xlsx
+  allowed_formats:
+  - xlsx
+  - csv
+  default_sections:
+  - inventory_assets
+  - inventory_metadata
+  - inventory_field_dictionary
+  period_mode: snapshot
+- value: ingress_inventory
+  label: Ingresses Inventory
+  description: Ingress identities, class, hosts, addresses, backend counts, and TLS references.
+  icon: route
+  family: inventory
+  default_format: xlsx
+  allowed_formats:
+  - xlsx
+  - csv
+  default_sections:
+  - inventory_assets
+  - inventory_metadata
+  - inventory_field_dictionary
+  period_mode: snapshot
+- value: configuration_inventory
+  label: Configuration Inventory
+  description: ConfigMap and Secret metadata, key names, immutability, and payload size without values.
+  icon: file-key-2
+  family: inventory
+  default_format: xlsx
+  allowed_formats:
+  - xlsx
+  - csv
+  default_sections:
+  - inventory_assets
+  - inventory_metadata
+  - inventory_field_dictionary
+  period_mode: snapshot
+- value: storage_inventory
+  label: Storage Inventory
+  description: StorageClass, persistent-volume, and persistent-volume-claim identities and lifecycle fields.
+  icon: database-zap
+  family: inventory
+  default_format: xlsx
+  allowed_formats:
+  - xlsx
+  - csv
+  default_sections:
+  - inventory_assets
+  - inventory_metadata
+  - inventory_field_dictionary
+  period_mode: snapshot
+- value: tls_inventory
+  label: TLS Certificate Inventory
+  description: Certificate validity, usage references, hostname coverage, and collection evidence without private keys.
+  icon: shield-check
+  family: inventory
+  default_format: xlsx
+  allowed_formats:
+  - xlsx
+  - csv
+  default_sections:
+  - inventory_assets
+  - inventory_metadata
+  - inventory_field_dictionary
+  period_mode: snapshot
+- value: object_storage_inventory
+  label: Object Storage Inventory Report
+  description: Provider-neutral Object Storage systems, buckets or containers, committed usage, quota, protection, and lifecycle evidence.
+  icon: database-backup
+  family: inventory
+  default_format: xlsx
+  allowed_formats:
+  - xlsx
+  - csv
+  default_sections:
+  - object_storage_inventory_assets
+  - object_storage_inventory_metadata
+  - object_storage_inventory_field_dictionary
+  period_mode: snapshot
+  requires_cluster: false
+  domain: object_storage
+  source_kind: object_storage
+  scope_asset_type: object_storage_system
+- value: object_storage_analysis
+  label: Object Storage Analysis Report
+  description: Capacity, usage, quota headroom, request performance, forecast, consumer concentration, and operational risk for one Object Storage system.
+  icon: chart-no-axes-combined
+  family: analytics
+  default_format: pdf
+  allowed_formats:
+  - pdf
+  - xlsx
+  - csv
+  default_sections:
+  - executive_summary
+  - object_storage_capacity_usage
+  - object_storage_bucket_distribution
+  - object_storage_quota_headroom
+  - object_storage_performance
+  - object_storage_forecast
+  - object_storage_top_consumers
+  - object_storage_risk_findings
+  - operational_recommendations
+  - methodology_evidence_boundary
+  period_mode: range
+  requires_cluster: false
+  domain: object_storage
+  source_kind: object_storage
+  scope_asset_type: object_storage_system

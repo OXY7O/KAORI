@@ -1,0 +1,55 @@
+name: Technical Debt
+description: Track explicit KAORI maintainability, reliability, performance, security, or structural debt.
+title: ""
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use a concise sentence-case title that describes the debt outcome. Native GitHub Issue Type is the type authority; do not add `[TECH-DEBT]` to the title.
+  - type: input
+    id: parent
+    attributes:
+      label: Parent Work Item
+      description: Reference an Epic, Story, Bug, or governance initiative when applicable.
+  - type: textarea
+    id: debt
+    attributes:
+      label: Debt Statement
+      description: Describe the current structural or quality debt precisely.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Explain the current engineering, reliability, security, performance, or delivery impact.
+    validations:
+      required: true
+  - type: textarea
+    id: desired
+    attributes:
+      label: Target State
+      description: Describe the bounded remediation outcome without unrelated refactoring.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Link code-health, incident, benchmark, security, or maintenance evidence where available.
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies / Constraints
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification Strategy
+      description: Define regression and quality evidence required to prove the debt is reduced without logic regressions.
+    validations:
+      required: true
+  - type: textarea
+    id: uat
+    attributes:
+      label: UAT Evidence
+      description: Record staging UAT evidence when remediation changes user-visible or operational behavior.

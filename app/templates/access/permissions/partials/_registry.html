@@ -1,0 +1,207 @@
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/pagination.html" as pagination_ui %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
+<header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="list-tree" class="h-5 w-5"></i></span>
+            <div class="min-w-0">
+                <h2 class="{{ table_ui.block_title_classes() }}">Permission Registry</h2>
+                <p class="{{ table_ui.block_description_classes() }}">Inspect code-owned contracts, dependencies, role coverage, and registry alignment.</p>
+            </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            {{ table_label.metadata_label(matching_count ~ ' Matching ' ~ ('Permission' if matching_count == 1 else 'Permissions') , 'key-round') }}
+            {% if filters.search or filters.module != 'all' or filters.coverage != 'all' or filters.delegation != 'all' %}
+                {{ registry_ui.clear_filters_action(url_for('access.permissions.index', view='registry', per_page=filters.per_page) ,
+                table_ui.action_classes(),
+                hx_get=url_for('access.permissions.index', view='registry', per_page=filters.per_page),
+                target='#permission-workspace',
+                indicator='#permission-registry-loading',
+                push_url='true'
+                ) }}
+            {% endif %}
+        </div>
+    </div>
+    {{ loading_bar.render('permission-registry-loading', label='Refreshing Permission Registry') }}
+</header>
+<form id="permission-registry-filter-form"
+      class="{{ table_ui.inventory_filter_bar_classes() }}"
+      method="get"
+      action="{{ url_for('access.permissions.index') }}"
+      hx-get="{{ url_for('access.permissions.index') }}"
+      hx-trigger="keyup changed delay:450ms from:input[name='search'], change from:select[name='module'], change from:select[name='coverage'], change from:select[name='delegation']"
+      hx-target="#permission-workspace"
+      hx-swap="outerHTML"
+      hx-push-url="true"
+      hx-indicator="#permission-registry-loading">
+    <input type="hidden" name="view" value="registry">
+    <div class="{{ table_ui.filter_layout_classes() }}">
+        <label class="block min-w-0">
+            <span class="{{ table_ui.filter_label_classes() }}">Search Permission</span>
+            <div class="relative">
+                <i data-lucide="search"
+                   class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+                   aria-hidden="true"></i>
+                <input type="search"
+                       name="search"
+                       value="{{ filters.search }}"
+                       placeholder="Permission key, action, module, or description"
+                       class="{{ table_ui.filter_input_classes() }} pl-9">
+            </div>
+        </label>
+        <label class="block min-w-0">
+            <span class="{{ table_ui.filter_label_classes() }}">Control Module</span>
+            <select name="module" class="{{ table_ui.filter_select_classes() }}">
+                <option value="all"{% if filters.module == 'all' %} selected{% endif %}>All Modules</option>
+                {% for option in module_options %}
+                    <option value="{{ option.key }}"
+                            {% if filters.module == option.key %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="block min-w-0">
+            <span class="{{ table_ui.filter_label_classes() }}">Coverage</span>
+            <select name="coverage" class="{{ table_ui.filter_select_classes() }}">
+                <option value="all"{% if filters.coverage == 'all' %} selected{% endif %}>All Coverage</option>
+                <option value="mapped"
+                        {% if filters.coverage == 'mapped' %}selected{% endif %}>Mapped to Roles</option>
+                <option value="unassigned"
+                        {% if filters.coverage == 'unassigned' %}selected{% endif %}>Unassigned</option>
+                <option value="drift"{% if filters.coverage == 'drift' %} selected{% endif %}>Registry Drift</option>
+            </select>
+        </label>
+        <label class="block min-w-0">
+            <span class="{{ table_ui.filter_label_classes() }}">Delegation Boundary</span>
+            <select name="delegation" class="{{ table_ui.filter_select_classes() }}">
+                <option value="all"{% if filters.delegation == 'all' %} selected{% endif %}>All Delegation Tiers</option>
+                <option value="standard"
+                        {% if filters.delegation == 'standard' %}selected{% endif %}>Standard Capability</option>
+                <option value="access_admin"
+                        {% if filters.delegation == 'access_admin' %}selected{% endif %}>Access Administration</option>
+            </select>
+        </label>
+    </div>
+</form>
+<div class="overflow-x-auto">
+    <table class="{{ table_ui.table_classes('min-w-[82rem]') }}">
+        <thead class="{{ table_ui.head_classes() }}">
+            <tr>
+                <th class="{{ table_ui.header_cell_classes() }}">Permission</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Module</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Action</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Delegation</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Dependencies</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Role Coverage</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Registry State</th>
+                <th class="{{ table_ui.header_cell_classes(true) }}">Action</th>
+            </tr>
+        </thead>
+        <tbody class="{{ table_ui.body_classes() }}">
+            {% for permission in registry_rows %}
+                <tr class="{{ table_ui.row_classes() }}">
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(permission.title, permission.key, 'key-round') }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(permission.module_label, 'boxes') }}</td>
+                    <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-medium text-content-primary">{{ permission.action|replace('_', ' ') |title }}</span></td>
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(permission.delegation_tier.label, permission.delegation_tier.tone, permission.delegation_tier.icon) }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        {% set dependency_count = permission.requires|length %}
+                        {% if dependency_count %}
+                            {{ table_label.metadata_label(dependency_count ~ ' Required', 'git-merge') }}
+                        {% else %}
+                            <span class="text-sm text-content-muted">None</span>
+                        {% endif %}
+                    </td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        {% if permission.role_count %}
+                            {{ table_label.metadata_label(permission.role_count ~ ' ' ~ ('Role' if permission.role_count == 1 else 'Roles') , 'shield-check') }}
+                            {% if permission.active_user_count or permission.jit_provider_count %}
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ permission.active_user_count }} Active User{{ '' if permission.active_user_count == 1 else 's' }} · {{ permission.jit_provider_count }} JIT Path{{ '' if permission.jit_provider_count == 1 else 's' }}</p>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-sm text-content-muted">Unassigned</span>
+                        {% endif %}
+                    </td>
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(permission.state.label, permission.state.tone, permission.state.icon) }}</td>
+                    <td class="{{ table_ui.cell_classes(true) }}">
+                        {{ resource_detail_modal.detail_button(permission.key,
+                                                url_for('access.permissions.modal_details', permission_key=permission.key) ,
+                        permission.title,
+                        'Permission',
+                        label='View Details'
+                        ) }}
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="8" class="px-5 py-12 text-center">
+                        <div class="mx-auto max-w-md">
+                            <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true"><i data-lucide="search-x" class="h-5 w-5"></i></span>
+                            <p class="mt-3 text-sm font-semibold text-content-primary">No Matching Permissions</p>
+                            <p class="mt-1 text-sm leading-6 text-content-muted">Adjust the search, module, or coverage filter to review another permission contract.</p>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<footer class="{{ pagination_ui.footer_classes() }}">
+    <div class="{{ pagination_ui.summary_group_classes() }}">
+        <span>Showing <strong class="font-semibold text-content-primary">{{ pagination.start_item }}–{{ pagination.end_item }}</strong> of <strong class="font-semibold text-content-primary">{{ pagination.total_items }}</strong> {{ pagination_ui.resource_name('Permissions', pagination.total_items) }}</span>
+        <label class="{{ pagination_ui.rows_group_classes() }}">
+            <span class="font-semibold text-content-secondary">Rows</span>
+            <select name="per_page"
+                    form="permission-registry-filter-form"
+                    aria-label="Rows Per Page"
+                    class="{{ pagination_ui.page_size_classes() }}"
+                    hx-get="{{ url_for('access.permissions.index') }}"
+                    hx-include="#permission-registry-filter-form"
+                    hx-target="#permission-workspace"
+                    hx-swap="outerHTML"
+                    hx-push-url="true"
+                    hx-indicator="#permission-registry-loading">
+                {% for option in per_page_options %}
+                    <option value="{{ option }}"
+                            {% if filters.per_page == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+            </select>
+        </label>
+    </div>
+    <nav class="{{ pagination_ui.navigation_group_classes() }}"
+         aria-label="Permission Registry Pagination">
+        {% if pagination.has_prev %}
+            <a href="{{ url_for('access.permissions.index', view='registry', search=filters.search, module=filters.module, coverage=filters.coverage, delegation=filters.delegation, per_page=filters.per_page, page=pagination.prev_page) }}"
+               hx-get="{{ url_for('access.permissions.index', view='registry', search=filters.search, module=filters.module, coverage=filters.coverage, delegation=filters.delegation, per_page=filters.per_page, page=pagination.prev_page) }}"
+               hx-target="#permission-workspace"
+               hx-swap="outerHTML"
+               hx-push-url="true"
+               hx-indicator="#permission-registry-loading"
+               class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+        {% endif %}
+        {{ pagination_ui.numeric_pages(pagination.page,
+                pagination.total_pages,
+                hx_target='#permission-workspace',
+                hx_indicator='#permission-registry-loading',
+                endpoint='access.permissions.index',
+                query_params=pagination_query,
+                hx_swap='outerHTML') }}
+        {% if pagination.has_next %}
+            <a href="{{ url_for('access.permissions.index', view='registry', search=filters.search, module=filters.module, coverage=filters.coverage, delegation=filters.delegation, per_page=filters.per_page, page=pagination.next_page) }}"
+               hx-get="{{ url_for('access.permissions.index', view='registry', search=filters.search, module=filters.module, coverage=filters.coverage, delegation=filters.delegation, per_page=filters.per_page, page=pagination.next_page) }}"
+               hx-target="#permission-workspace"
+               hx-swap="outerHTML"
+               hx-push-url="true"
+               hx-indicator="#permission-registry-loading"
+               class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+        {% endif %}
+    </nav>
+</footer>

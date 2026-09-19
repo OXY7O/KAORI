@@ -1,0 +1,42 @@
+{#
+  Static box-based action flow for peer operational content.
+
+  Rows is a list of rows; each row contains two or three
+  (icon, title, description) tuples. The component owns step geometry and
+  connectors. It never collapses or hides the workflow.
+#}
+{% macro render(rows, aria_label='Operational Flow') -%}
+    <div class="space-y-2" role="list" aria-label="{{ aria_label }}">
+        {% for row in rows %}
+            {% set row_classes = 'sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]' if row|length == 2 else 'sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)]' %}
+            <div class="grid gap-2 {{ row_classes }} sm:items-stretch">
+                {% for icon, title, detail in row %}
+                    <article class="h-full rounded-lg border border-outline-subtle bg-surface-card p-3"
+                             role="listitem">
+                        <div class="flex items-start gap-2">
+                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-kaori-outline bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ detail }}</p>
+                            </div>
+                        </div>
+                    </article>
+                    {% if not loop.last %}
+                        <div class="hidden items-center justify-center text-kaori-primary sm:flex"
+                             aria-hidden="true">
+                            <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% if not loop.last %}
+                <div class="flex justify-center text-kaori-primary" aria-hidden="true">
+                    <i data-lucide="arrow-down" class="h-4 w-4"></i>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+{%- endmacro %}

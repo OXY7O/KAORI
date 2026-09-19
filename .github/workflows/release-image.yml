@@ -1,0 +1,487 @@
+name: Release KAORI
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable Semantic Version, for example 0.1.0
+        required: true
+        type: string
+      candidate_tag:
+        description: Explicitly UAT-accepted RC tag, for example v0.1.0-rc.11
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: kaori-release
+  cancel-in-progress: false
+
+jobs:
+  quality:
+    name: Quality Gate
+    uses: ./.github/workflows/quality.yml
+
+  preflight:
+    name: Release Preflight
+    needs: quality
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    timeout-minutes: 120
+    env:
+      REGISTRY_HOST: ${{ vars.KAORI_DOCKER_REGISTRY_HOST }}
+      REGISTRY_IMAGE: ${{ vars.KAORI_DOCKER_REGISTRY_IMAGE }}
+      RELEASE_INPUT_VERSION: ${{ inputs.version }}
+      CANDIDATE_TAG: ${{ inputs.candidate_tag }}
+    outputs:
+      release_sha: ${{ steps.identity.outputs.release_sha }}
+      release_version: ${{ steps.identity.outputs.release_version }}
+      candidate_tag: ${{ steps.rc.outputs.candidate_tag }}
+      rc_source_sha: ${{ steps.rc.outputs.rc_source_sha }}
+      rc_image_digest: ${{ steps.rc.outputs.rc_image_digest }}
+    steps:
+      - name: Check Out Exact Main Dispatch Commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Validate Stable Release Request
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "$GITHUB_REF" == 'refs/heads/main' ]] || {
+            printf 'Release workflow must be dispatched from main, got %s\n' "$GITHUB_REF" >&2
+            exit 1
+          }
+          [[ "$RELEASE_INPUT_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || {
+            printf 'Stable release version must be strict SemVer, got %s\n' "$RELEASE_INPUT_VERSION" >&2
+            exit 1
+          }
+          expected_prefix="v${RELEASE_INPUT_VERSION}-rc."
+          if [[ "$CANDIDATE_TAG" != "$expected_prefix"* ]] || \
+            [[ ! "${CANDIDATE_TAG#"$expected_prefix"}" =~ ^[1-9][0-9]*$ ]]
+          then
+            printf 'Stable promotion requires an accepted RC prerelease for v%s, got %s\n' \
+              "$RELEASE_INPUT_VERSION" "$CANDIDATE_TAG" >&2
+            exit 1
+          fi
+          : "${REGISTRY_HOST:?Missing repository variable KAORI_DOCKER_REGISTRY_HOST}"
+          : "${REGISTRY_IMAGE:?Missing repository variable KAORI_DOCKER_REGISTRY_IMAGE}"
+          [[ "$REGISTRY_IMAGE" == "$REGISTRY_HOST/"* ]] || {
+            printf 'KAORI_DOCKER_REGISTRY_IMAGE must be rooted at KAORI_DOCKER_REGISTRY_HOST\n' >&2
+            exit 1
+          }
+
+      - name: Resolve Accepted RC Evidence
+        id: rc
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          RELEASE_SHA="$GITHUB_SHA"
+          RC_SOURCE_SHA="$(git rev-list -n 1 "$CANDIDATE_TAG" 2>/dev/null || true)"
+          [[ "$RC_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+            printf 'Accepted RC tag is missing or does not resolve to a commit: %s\n' "$CANDIDATE_TAG" >&2
+            exit 1
+          }
+          git merge-base --is-ancestor "$RC_SOURCE_SHA" "$RELEASE_SHA" || {
+            printf 'Accepted RC source %s is not an ancestor of release SHA %s.\n' \
+              "$RC_SOURCE_SHA" "$RELEASE_SHA" >&2
+            exit 1
+          }
+
+          ALLOWED_POST_UAT_PATHS=(
+            '.github/workflows/release-image.yml'
+            '.github/workflows/deploy-staging-host.yml'
+            '.github/ci/release-lib.sh'
+            'tests/contracts/release/test_stable_release_reuses_accepted_rc_digest_contract.py'
+            'tests/contracts/release/test_ci_output_readability_contract.py'
+            'tests/contracts/release/test_stable_release_cosign_auth_permissions_contract.py'
+            'tests/contracts/release/test_stable_release_reviewed_control_paths_contract.py'
+            'tests/contracts/release/test_stable_release_tag_auth_contract.py'
+            'tests/contracts/release/test_actions_display_names_contract.py'
+          )
+          mapfile -t changed_paths < <(git diff --name-only "$RC_SOURCE_SHA" "$RELEASE_SHA")
+          for path in "${changed_paths[@]}"; do
+            allowed=false
+            for allowed_path in "${ALLOWED_POST_UAT_PATHS[@]}"; do
+              if [[ "$path" == "$allowed_path" ]]; then
+                allowed=true
+                break
+              fi
+            done
+            [[ "$allowed" == 'true' ]] || {
+              printf 'Unaccepted post-UAT source drift blocks stable promotion: %s\n' "$path" >&2
+              exit 1
+            }
+          done
+
+          repo_api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          release_json="$(curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "${repo_api}/releases/tags/${CANDIDATE_TAG}")"
+          [[ "$(jq -r '.prerelease' <<<"$release_json")" == 'true' ]] || {
+            printf 'Stable promotion requires an accepted RC prerelease: %s\n' "$CANDIDATE_TAG" >&2
+            exit 1
+          }
+          target_commitish="$(jq -r '.target_commitish // ""' <<<"$release_json")"
+          [[ "$target_commitish" == "$RC_SOURCE_SHA" ]] || {
+            printf 'RC prerelease target %s differs from RC source %s.\n' \
+              "$target_commitish" "$RC_SOURCE_SHA" >&2
+            exit 1
+          }
+          release_body="$(jq -r '.body // ""' <<<"$release_json")"
+          body_source="$(grep -oE "Staging source SHA: \`[0-9a-f]{40}\`" <<<"$release_body" | \
+            head -n 1 | grep -oE '[0-9a-f]{40}' || true)"
+          RC_IMAGE_DIGEST="$(grep -oE "Immutable digest: \`sha256:[0-9a-f]{64}\`" <<<"$release_body" | \
+            head -n 1 | grep -oE 'sha256:[0-9a-f]{64}' || true)"
+          [[ "$body_source" == "$RC_SOURCE_SHA" ]] || {
+            printf 'RC release body source %s differs from tag source %s.\n' \
+              "${body_source:-missing}" "$RC_SOURCE_SHA" >&2
+            exit 1
+          }
+          [[ "$RC_IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+            printf 'RC release body does not contain a valid immutable digest.\n' >&2
+            exit 1
+          }
+          expected_authority="Deployment authority: \`${REGISTRY_IMAGE}@${RC_IMAGE_DIGEST}\`"
+          grep -Fq "$expected_authority" <<<"$release_body" || {
+            printf 'RC release body does not bind digest to expected registry image.\n' >&2
+            exit 1
+          }
+
+          {
+            printf 'candidate_tag=%s\n' "$CANDIDATE_TAG"
+            printf 'rc_source_sha=%s\n' "$RC_SOURCE_SHA"
+            printf 'rc_image_digest=%s\n' "$RC_IMAGE_DIGEST"
+          } >> "$GITHUB_OUTPUT"
+          printf 'Accepted RC authority: tag=%s source=%s digest=%s\n' \
+            "$CANDIDATE_TAG" "$RC_SOURCE_SHA" "$RC_IMAGE_DIGEST"
+
+      - name: Resolve CI Toolchain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
+          image="kaori-ci-toolchain:$key"
+          docker image inspect "$image" >/dev/null 2>&1 || \
+            docker build --file .github/ci/Dockerfile --tag "$image" .
+          printf 'KAORI_CI_TOOLCHAIN_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
+
+      - name: Prepare Final Release Runtime
+        shell: bash
+        run: |
+          {
+            echo "CI_UID=$(id -u)"
+            echo "CI_GID=$(id -g)"
+            echo "COMPOSE_PROJECT_NAME=kaori-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-preflight"
+          } >> "$GITHUB_ENV"
+
+      - name: Start Final Release Services
+        run: docker compose --file .github/ci/compose.yml up -d postgres redis ci-reports-worker
+
+      - name: Wait for Reports Worker
+        shell: bash
+        run: |
+          for _ in $(seq 1 30); do
+            if docker compose --file .github/ci/compose.yml run --rm ci \
+              python scripts/verify_reports_worker_runtime.py --timeout 1 >/dev/null 2>&1
+            then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose --file .github/ci/compose.yml logs --no-color ci-reports-worker || true
+          printf 'KAORI source Reports worker did not become ready within 60 seconds\n' >&2
+          exit 1
+
+      - name: Run Canonical Final Release Gate
+        run: >-
+          docker compose --file .github/ci/compose.yml
+          run --rm ci python scripts/verify_final_release.py --all --runtime
+
+      - name: Emit Locked Release Identity
+        id: identity
+        shell: bash
+        run: |
+          {
+            echo "release_sha=$GITHUB_SHA"
+            echo "release_version=$RELEASE_INPUT_VERSION"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Cleanup Preflight Services
+        if: ${{ always() }}
+        run: docker compose --file .github/ci/compose.yml down --volumes --remove-orphans
+
+  publish:
+    name: Publish Stable
+    needs: preflight
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    timeout-minutes: 180
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      RELEASE_VERSION: ${{ needs.preflight.outputs.release_version }}
+      RELEASE_SHA: ${{ needs.preflight.outputs.release_sha }}
+      CANDIDATE_TAG: ${{ needs.preflight.outputs.candidate_tag }}
+      RC_SOURCE_SHA: ${{ needs.preflight.outputs.rc_source_sha }}
+      RC_IMAGE_DIGEST: ${{ needs.preflight.outputs.rc_image_digest }}
+      REGISTRY_HOST: ${{ vars.KAORI_DOCKER_REGISTRY_HOST }}
+      REGISTRY_IMAGE: ${{ vars.KAORI_DOCKER_REGISTRY_IMAGE }}
+      COSIGN_IMAGE: ghcr.io/sigstore/cosign/cosign:v3.1.3
+    steps:
+      - name: Check Out Exact Approved Main SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.preflight.outputs.release_sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Resolve CI Toolchain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
+          image="kaori-ci-toolchain:$key"
+          docker image inspect "$image" >/dev/null 2>&1 || \
+            docker build --file .github/ci/Dockerfile --tag "$image" .
+          printf 'CI_TOOLCHAIN_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
+
+      - name: Log In to Docker Registry
+        shell: bash
+        env:
+          REGISTRY_USERNAME: ${{ secrets.KAORI_DOCKER_REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.KAORI_DOCKER_REGISTRY_PASSWORD }}
+        run: |
+          set -Eeuo pipefail
+          : "${REGISTRY_USERNAME:?Missing repository secret KAORI_DOCKER_REGISTRY_USERNAME}"
+          : "${REGISTRY_PASSWORD:?Missing repository secret KAORI_DOCKER_REGISTRY_PASSWORD}"
+          printf '%s' "$REGISTRY_PASSWORD" | \
+            docker login "$REGISTRY_HOST" --username "$REGISTRY_USERNAME" --password-stdin
+
+      - name: Verify Accepted RC Registry Identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          RC_REGISTRY_DIGEST="$(bash .github/ci/release-lib.sh digest "${REGISTRY_IMAGE}:${CANDIDATE_TAG}")"
+          [[ "$RC_REGISTRY_DIGEST" == "$RC_IMAGE_DIGEST" ]] || {
+            printf 'RC registry digest mismatch: evidence=%s registry=%s\n' \
+              "$RC_IMAGE_DIGEST" "$RC_REGISTRY_DIGEST" >&2
+            exit 1
+          }
+          source_ref="${REGISTRY_IMAGE}@${RC_IMAGE_DIGEST}"
+          bash .github/ci/release-lib.sh verify-labels "$source_ref" "$CANDIDATE_TAG" "$RC_SOURCE_SHA"
+          RC_BUILD_DATE="$(bash .github/ci/release-lib.sh build-date "$source_ref")"
+          {
+            printf 'RC_REGISTRY_DIGEST=%s\n' "$RC_REGISTRY_DIGEST"
+            printf 'RC_BUILD_DATE=%s\n' "$RC_BUILD_DATE"
+          } >> "$GITHUB_ENV"
+          printf 'Verified accepted immutable RC: %s\n' "$source_ref"
+
+      - name: Scan Exact Accepted Digest
+        shell: bash
+        run: |
+          source_ref="${REGISTRY_IMAGE}@${RC_IMAGE_DIGEST}"
+          docker run --rm \
+            --volume /var/run/docker.sock:/var/run/docker.sock \
+            --volume kaori-trivy-cache:/root/.cache/trivy \
+            "$CI_TOOLCHAIN_IMAGE" \
+            trivy image \
+              --cache-dir /root/.cache/trivy \
+              --exit-code 1 \
+              --ignore-unfixed \
+              --severity HIGH,CRITICAL \
+              --scanners vuln \
+              "$source_ref"
+
+      - name: Validate Exact Accepted Digest Runtime and DAST
+        shell: bash
+        run: |
+          export KAORI_RUNTIME_APP_VERSION="$RELEASE_VERSION"
+          export KAORI_RUNTIME_BUILD_SHA="$RC_SOURCE_SHA"
+          export KAORI_RUNTIME_BUILD_DATE="$RC_BUILD_DATE"
+          export KAORI_CI_TOOLCHAIN_IMAGE="$CI_TOOLCHAIN_IMAGE"
+          export COMPOSE_PROJECT_NAME="kaori-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-accepted"
+          source_ref="${REGISTRY_IMAGE}@${RC_IMAGE_DIGEST}"
+          bash .github/ci/run-runtime-validation.sh "$source_ref"
+
+      - name: Sign Exact Accepted Digest with GitHub OIDC
+        shell: bash
+        run: |
+          source_ref="${REGISTRY_IMAGE}@${RC_IMAGE_DIGEST}"
+          docker run --rm \
+            --user 0:0 \
+            --env ACTIONS_ID_TOKEN_REQUEST_TOKEN \
+            --env ACTIONS_ID_TOKEN_REQUEST_URL \
+            --env DOCKER_CONFIG=/root/.docker \
+            --volume "$HOME/.docker:/root/.docker:ro" \
+            "$COSIGN_IMAGE" \
+            sign --yes "$source_ref"
+
+      - name: Verify Stable Promotion Signature
+        shell: bash
+        run: |
+          source_ref="${REGISTRY_IMAGE}@${RC_IMAGE_DIGEST}"
+          docker run --rm \
+            --user 0:0 \
+            --env DOCKER_CONFIG=/root/.docker \
+            --volume "$HOME/.docker:/root/.docker:ro" \
+            "$COSIGN_IMAGE" \
+            verify \
+              --certificate-identity "https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release-image.yml@refs/heads/main" \
+              --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+              "$source_ref"
+
+      - name: Create or Verify Stable Git Tag
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bash .github/ci/release-lib.sh tag "$RELEASE_VERSION" "$RELEASE_SHA"
+
+      - name: Protect Existing Stable Registry Tags
+        shell: bash
+        run: |
+          major_minor="${RELEASE_VERSION%.*}"
+          bash .github/ci/release-lib.sh registry-tag "${REGISTRY_IMAGE}:v${RELEASE_VERSION}" "$RC_IMAGE_DIGEST"
+          bash .github/ci/release-lib.sh registry-tag "${REGISTRY_IMAGE}:v${major_minor}" "$RC_IMAGE_DIGEST"
+
+      - name: Promote Same Immutable Digest
+        shell: bash
+        run: |
+          major_minor="${RELEASE_VERSION%.*}"
+          source_ref="${REGISTRY_IMAGE}@${RC_IMAGE_DIGEST}"
+          docker buildx imagetools create \
+            --tag "${REGISTRY_IMAGE}:v${RELEASE_VERSION}" \
+            --tag "${REGISTRY_IMAGE}:v${major_minor}" \
+            "$source_ref"
+
+      - name: Verify Promoted Digest Identity
+        shell: bash
+        run: |
+          major_minor="${RELEASE_VERSION%.*}"
+          for tag in "$CANDIDATE_TAG" "v${RELEASE_VERSION}" "v${major_minor}"; do
+            actual="$(bash .github/ci/release-lib.sh digest "${REGISTRY_IMAGE}:${tag}")"
+            printf '%s -> %s\n' "$tag" "$actual"
+            [[ "$actual" == "$RC_IMAGE_DIGEST" ]] || {
+              printf 'Digest mismatch for %s: expected %s, got %s\n' \
+                "$tag" "$RC_IMAGE_DIGEST" "$actual" >&2
+              exit 1
+            }
+          done
+
+      - name: Generate Stable Release Manifest
+        shell: bash
+        run: |
+          mkdir -p tmp/ci-artifacts/release
+          jq -n \
+            --arg version "$RELEASE_VERSION" \
+            --arg release_sha "$RELEASE_SHA" \
+            --arg rc_tag "$CANDIDATE_TAG" \
+            --arg source_sha "$RC_SOURCE_SHA" \
+            --arg image "$REGISTRY_IMAGE" \
+            --arg digest "$RC_IMAGE_DIGEST" \
+            --arg build_date "$RC_BUILD_DATE" \
+            '{schema_version: 2, version: $version, release_sha: $release_sha, accepted_rc: $rc_tag, source_sha: $source_sha, image: $image, digest: $digest, build_date: $build_date, rebuild: false}' \
+            > tmp/ci-artifacts/release/kaori-release-manifest.json
+          cat tmp/ci-artifacts/release/kaori-release-manifest.json
+
+      - name: Build Stable Release Notes
+        shell: bash
+        run: |
+          cat > tmp/ci-artifacts/release/stable-release-notes.md <<EOF
+          ## KAORI v${RELEASE_VERSION}
+
+          This stable release promotes the explicitly UAT-accepted release candidate **without rebuilding application bits**.
+
+          ### Accepted lineage
+          - Stable Git source: \`${RELEASE_SHA}\`
+          - Accepted application source: \`${RC_SOURCE_SHA}\`
+          - Accepted RC: \`${CANDIDATE_TAG}\`
+          - Immutable image: \`${REGISTRY_IMAGE}@${RC_IMAGE_DIGEST}\`
+          - Stable registry tag: \`${REGISTRY_IMAGE}:v${RELEASE_VERSION}\`
+
+          ### Validation
+          - Main Full KAORI CI: **PASS**
+          - Accepted RC registry identity: **PASS**
+          - HIGH/CRITICAL image scan: **PASS**
+          - Runtime, migration, Reports worker, and baseline DAST: **PASS**
+          - Stable tag digest identity: **PASS**
+
+          ### Promotion invariant
+          The stable tags resolve to the exact immutable digest accepted during UAT. No application image rebuild occurred during stable promotion.
+          EOF
+
+      - name: Publish GitHub Stable Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          repo_api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          stable_tag="v${RELEASE_VERSION}"
+          release_file="$(mktemp)"
+          status="$(curl --silent --show-error \
+            --output "$release_file" \
+            --write-out '%{http_code}' \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "${repo_api}/releases/tags/${stable_tag}")"
+          if [[ "$status" =~ ^2[0-9][0-9]$ ]]; then
+            existing="$(cat "$release_file")"
+            [[ "$(jq -r '.prerelease' <<<"$existing")" == 'false' ]] || {
+              printf 'Existing stable tag is attached to a prerelease: %s\n' "$stable_tag" >&2
+              exit 1
+            }
+            [[ "$(jq -r '.target_commitish' <<<"$existing")" == "$RELEASE_SHA" ]] || {
+              printf 'Existing GitHub release targets a different source SHA.\n' >&2
+              exit 1
+            }
+            printf 'GitHub stable release already exists with expected source: %s\n' "$stable_tag"
+          elif [[ "$status" == '404' ]]; then
+            body="$(cat tmp/ci-artifacts/release/stable-release-notes.md)"
+            payload="$(jq -nc \
+              --arg tag "$stable_tag" \
+              --arg sha "$RELEASE_SHA" \
+              --arg name "KAORI ${stable_tag}" \
+              --arg body "$body" \
+              '{tag_name: $tag, target_commitish: $sha, name: $name, body: $body, draft: false, prerelease: false, make_latest: "true"}')"
+            curl --fail-with-body --silent --show-error \
+              --request POST \
+              --header "Authorization: Bearer ${GH_TOKEN}" \
+              --header 'Accept: application/vnd.github+json' \
+              --header 'X-GitHub-Api-Version: 2022-11-28' \
+              --data "$payload" \
+              "${repo_api}/releases" >/dev/null
+          else
+            printf 'GitHub stable release lookup failed with HTTP %s.\n' "$status" >&2
+            cat "$release_file" >&2 || true
+            rm -f "$release_file"
+            exit 1
+          fi
+          rm -f "$release_file"
+
+      - name: Upload Stable Release Evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-${{ inputs.version }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            tmp/ci-artifacts/release
+            tmp/ci-artifacts/runtime
+            tmp/ci-artifacts/zap
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Log Out from Docker Registry
+        if: ${{ always() }}
+        run: docker logout "$REGISTRY_HOST"

@@ -1,0 +1,42 @@
+{% import "components/page_hero.html" as page_hero %}
+{% set blocker_kind = dependency_blocker.kind %}
+{% set blocker_tone = 'warning' if blocker_kind in ['cluster_required', 'metrics_source_setup', 'metrics_source_capability', 'alert_source_setup'] else 'critical' %}
+{% set active_scope = cluster.name if cluster is defined and cluster else 'No Cluster Selected' %}
+{% if blocker_kind == 'cluster_required' %}
+    {% set readiness_title = "Cluster Setup Required" %}
+    {% set missing_evidence = "Cluster Context" %}
+    {% set missing_helper = "Required before analytics" %}
+    {% set readiness_info = "Add or select a Kubernetes cluster to activate this analytics workspace." %}
+{% elif blocker_kind in ['metrics_source_setup', 'metrics_source_capability'] %}
+    {% set readiness_title = "Metrics Source Required" if blocker_kind == 'metrics_source_setup' else "Metrics Capability Required" %}
+    {% set missing_evidence = "Operational Metrics" %}
+    {% set missing_helper = "Required for analysis" %}
+    {% set readiness_info = "Configure and validate the metrics source to activate this analytics workspace." %}
+{% elif blocker_kind == 'metrics_source_connection' %}
+    {% set readiness_title = "Metrics Source Unavailable" %}
+    {% set missing_evidence = "Operational Metrics" %}
+    {% set missing_helper = "Required for analysis" %}
+    {% set readiness_info = "Restore metrics source connectivity to resume this analytics workspace." %}
+{% elif blocker_kind == 'alert_source_setup' %}
+    {% set readiness_title = "Alert Source Required" %}
+    {% set missing_evidence = "Alert Evidence" %}
+    {% set missing_helper = "Required for alert analysis" %}
+    {% set readiness_info = "Configure the alert source to activate alert evidence for this analytics workspace." %}
+{% else %}
+    {% set readiness_title = "Alert Source Unavailable" %}
+    {% set missing_evidence = "Alert Evidence" %}
+    {% set missing_helper = "Required for alert analysis" %}
+    {% set readiness_info = "Restore alert source connectivity to resume alert evidence collection." %}
+{% endif %}
+{{ page_hero.blocked_context_body('Analytics Readiness',
+readiness_title,
+[
+('scan-search', 'Active Scope', active_scope, 'Analytics scope', 'text-sm font-semibold leading-5') ,
+('file-warning', 'Missing Evidence', missing_evidence, missing_helper, 'text-sm font-semibold leading-5')
+],
+readiness_info,
+'Blocked',
+blocker_tone,
+'lock-keyhole',
+'info'
+) }}

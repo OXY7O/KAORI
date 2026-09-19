@@ -1,0 +1,329 @@
+name: KAORI Staging Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_tag:
+        description: Accepted KAORI RC tag (for example v0.1.0-rc.11)
+        required: true
+        type: string
+  push:
+    branches:
+      - kaori/uat-request
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: kaori-staging-host-deploy
+  cancel-in-progress: false
+
+jobs:
+  admission:
+    name: Release Evidence
+    runs-on: [self-hosted, linux, x64, platform-ci]
+    timeout-minutes: 10
+    outputs:
+      accepted_sha: ${{ steps.evidence.outputs.accepted_sha }}
+      image_ref: ${{ steps.evidence.outputs.image_ref }}
+      candidate_tag: ${{ steps.evidence.outputs.candidate_tag }}
+    steps:
+      - name: Resolve Release Evidence
+        id: evidence
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_TAG: ${{ inputs.candidate_tag }}
+        run: |
+          set -Eeuo pipefail
+
+          api_root="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          headers=(
+            --header "Authorization: Bearer ${GH_TOKEN}"
+            --header 'Accept: application/vnd.github+json'
+            --header 'X-GitHub-Api-Version: 2022-11-28'
+          )
+
+          staging_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
+            "$api_root/git/ref/heads/kaori/staging")"
+          current_staging="$(jq -r '.object.sha' <<<"$staging_json")"
+          [[ "$current_staging" =~ ^[0-9a-f]{40}$ ]] || {
+            printf 'Unable to resolve current kaori/staging SHA.\n' >&2
+            exit 1
+          }
+
+          if [[ "$GITHUB_EVENT_NAME" == 'push' ]]; then
+            [[ "$GITHUB_REF" == 'refs/heads/kaori/uat-request' ]] || {
+              printf 'Staging deployment requests are allowed only from kaori/uat-request.\n' >&2
+              exit 1
+            }
+            [[ "$GITHUB_SHA" == "$current_staging" ]] || {
+              printf 'Staging request SHA %s is stale; current kaori/staging is %s.\n' \
+                "$GITHUB_SHA" "$current_staging" >&2
+              exit 1
+            }
+
+            releases_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
+              "$api_root/releases?per_page=100")"
+            matching_releases="$(jq -c --arg sha "$current_staging" \
+              '[.[] | select(.prerelease == true and .target_commitish == $sha and (.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+-rc\\.[0-9]+$")))]' \
+              <<<"$releases_json")"
+            matching_count="$(jq 'length' <<<"$matching_releases")"
+            [[ "$matching_count" == '1' ]] || {
+              printf 'Expected exactly one intentional RC for admitted staging %s, found %s.\n' \
+                "$current_staging" "$matching_count" >&2
+              exit 1
+            }
+            CANDIDATE_TAG="$(jq -r '.[0].tag_name' <<<"$matching_releases")"
+          elif [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
+            [[ "$GITHUB_REF" == 'refs/heads/kaori/staging' ]] || {
+              printf 'Manual staging deployment must be dispatched from kaori/staging.\n' >&2
+              exit 1
+            }
+            [[ "$GITHUB_SHA" == "$current_staging" ]] || {
+              printf 'Manual staging dispatch SHA %s is stale; current kaori/staging is %s.\n' \
+                "$GITHUB_SHA" "$current_staging" >&2
+              exit 1
+            }
+          else
+            printf 'Unsupported staging deployment event: %s\n' "$GITHUB_EVENT_NAME" >&2
+            exit 1
+          fi
+
+          [[ "$CANDIDATE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$ ]] || {
+            printf 'candidate_tag is not a KAORI RC tag.\n' >&2
+            exit 1
+          }
+
+          release_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
+            "$api_root/releases/tags/$CANDIDATE_TAG")"
+          [[ "$(jq -r '.prerelease' <<<"$release_json")" == 'true' ]] || {
+            printf '%s is not an intentional GitHub prerelease.\n' "$CANDIDATE_TAG" >&2
+            exit 1
+          }
+          [[ "$(jq -r '.target_commitish' <<<"$release_json")" == "$current_staging" ]] || {
+            printf '%s does not target current admitted staging %s.\n' \
+              "$CANDIDATE_TAG" "$current_staging" >&2
+            exit 1
+          }
+
+          tag_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
+            "$api_root/git/ref/tags/$CANDIDATE_TAG")"
+          accepted_sha="$(jq -r '.object.sha' <<<"$tag_json")"
+          [[ "$accepted_sha" =~ ^[0-9a-f]{40}$ ]] || {
+            printf 'Unable to resolve RC source SHA.\n' >&2
+            exit 1
+          }
+          [[ "$accepted_sha" == "$current_staging" && "$GITHUB_SHA" == "$current_staging" ]] || {
+            printf 'RC source %s is not current admitted staging %s.\n' "$accepted_sha" "$current_staging" >&2
+            exit 1
+          }
+
+          quality_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
+            "$api_root/actions/workflows/quality.yml/runs?branch=kaori%2Fstaging&event=push&per_page=100")"
+          quality="$(jq -c --arg sha "$accepted_sha" \
+            '[.workflow_runs[] | select(.head_sha == $sha and .status == "completed" and .conclusion == "success")] | sort_by(.run_number) | last // empty' \
+            <<<"$quality_json")"
+          [[ -n "$quality" ]] || {
+            printf 'Exact successful quality.yml evidence is missing for %s.\n' "$accepted_sha" >&2
+            exit 1
+          }
+
+          rc_runs_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
+            "$api_root/actions/workflows/publish-staging-image.yml/runs?per_page=100")"
+          rc_run_id="$(jq -r --arg sha "$accepted_sha" \
+            '[.workflow_runs[] | select(.head_sha == $sha and .status == "completed" and .conclusion == "success")] | sort_by(.run_number) | last.id // empty' \
+            <<<"$rc_runs_json")"
+          [[ "$rc_run_id" =~ ^[0-9]+$ ]] || {
+            printf 'Successful publish-staging-image.yml evidence is missing for %s.\n' "$accepted_sha" >&2
+            exit 1
+          }
+
+          artifact_name="staging-image-${accepted_sha}"
+          artifacts_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
+            "$api_root/actions/runs/$rc_run_id/artifacts?name=$artifact_name")"
+          artifact_id="$(jq -r '.artifacts | map(select(.expired == false)) | first.id // empty' <<<"$artifacts_json")"
+          [[ "$artifact_id" =~ ^[0-9]+$ ]] || {
+            printf 'Immutable staging-image evidence artifact is missing for %s.\n' "$accepted_sha" >&2
+            exit 1
+          }
+
+          tmpdir="$(mktemp -d)"
+          trap 'rm -rf -- "$tmpdir"' EXIT
+          curl --fail-with-body --silent --show-error --location "${headers[@]}" \
+            "$api_root/actions/artifacts/$artifact_id/zip" --output "$tmpdir/evidence.zip"
+          unzip -q "$tmpdir/evidence.zip" -d "$tmpdir/evidence"
+          evidence_file="$tmpdir/evidence/staging-image.env"
+          [[ -f "$evidence_file" ]] || {
+            printf 'staging-image.env is missing from RC evidence.\n' >&2
+            exit 1
+          }
+
+          KAORI_IMAGE_REF=''
+          KAORI_SOURCE_SHA=''
+          KAORI_CANDIDATE_TAG=''
+          while IFS='=' read -r key value; do
+            case "$key" in
+              KAORI_IMAGE_REF) KAORI_IMAGE_REF="$value" ;;
+              KAORI_SOURCE_SHA) KAORI_SOURCE_SHA="$value" ;;
+              KAORI_CANDIDATE_TAG) KAORI_CANDIDATE_TAG="$value" ;;
+            esac
+          done < "$evidence_file"
+
+          [[ "$KAORI_IMAGE_REF" =~ @sha256:[0-9a-f]{64}$ ]] || {
+            printf 'KAORI_IMAGE_REF is not immutable.\n' >&2
+            exit 1
+          }
+          [[ "$KAORI_SOURCE_SHA" == "$accepted_sha" ]] || {
+            printf 'RC artifact source SHA does not match tag authority.\n' >&2
+            exit 1
+          }
+          [[ "$KAORI_CANDIDATE_TAG" == "$CANDIDATE_TAG" ]] || {
+            printf 'RC artifact candidate tag does not match requested prerelease.\n' >&2
+            exit 1
+          }
+
+          {
+            printf 'accepted_sha=%s\n' "$accepted_sha"
+            printf 'image_ref=%s\n' "$KAORI_IMAGE_REF"
+            printf 'candidate_tag=%s\n' "$CANDIDATE_TAG"
+          } >> "$GITHUB_OUTPUT"
+          printf 'Staging authority resolved: %s %s\n' "$CANDIDATE_TAG" "$accepted_sha"
+
+  deploy:
+    name: Deploy Staging
+    needs: admission
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    environment: uat
+    timeout-minutes: 30
+    env:
+      KAORI_HOST: ${{ vars.KAORI_HOST }}
+      KAORI_HOST_USER: ${{ vars.KAORI_HOST_USER }}
+      KAORI_HOST_PORT: ${{ vars.KAORI_HOST_PORT }}
+      KAORI_HOST_DEPLOY_ROOT: ${{ vars.KAORI_HOST_DEPLOY_ROOT }}
+      KAORI_LETSENCRYPT_EMAIL: ${{ vars.KAORI_LETSENCRYPT_EMAIL }}
+      KAORI_HOST_SSH_PRIVATE_KEY: ${{ secrets.KAORI_HOST_SSH_PRIVATE_KEY }}
+      KAORI_HOST_SSH_PASSPHRASE: ${{ secrets.KAORI_HOST_SSH_PASSPHRASE }}
+      KAORI_HOST_KNOWN_HOSTS: ${{ secrets.KAORI_HOST_KNOWN_HOSTS }}
+      KAORI_DOCKER_REGISTRY_USERNAME: ${{ secrets.KAORI_DOCKER_REGISTRY_USERNAME }}
+      KAORI_DOCKER_REGISTRY_PASSWORD: ${{ secrets.KAORI_DOCKER_REGISTRY_PASSWORD }}
+      REQUESTED_IMAGE: ${{ needs.admission.outputs.image_ref }}
+      REQUESTED_SHA: ${{ needs.admission.outputs.accepted_sha }}
+      REQUESTED_VERSION: ${{ needs.admission.outputs.candidate_tag }}
+    steps:
+      - name: Check Out Admitted Staging SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.admission.outputs.accepted_sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Validate Deployment Inputs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          : "${KAORI_HOST:?Missing KAORI_HOST variable}"
+          : "${KAORI_HOST_USER:?Missing KAORI_HOST_USER variable}"
+          : "${KAORI_LETSENCRYPT_EMAIL:?Missing KAORI_LETSENCRYPT_EMAIL variable}"
+          : "${KAORI_HOST_SSH_PRIVATE_KEY:?Missing KAORI_HOST_SSH_PRIVATE_KEY secret}"
+          : "${KAORI_HOST_SSH_PASSPHRASE:?Missing KAORI_HOST_SSH_PASSPHRASE secret}"
+          : "${KAORI_HOST_KNOWN_HOSTS:?Missing KAORI_HOST_KNOWN_HOSTS secret}"
+          : "${KAORI_DOCKER_REGISTRY_USERNAME:?Missing KAORI_DOCKER_REGISTRY_USERNAME secret}"
+          : "${KAORI_DOCKER_REGISTRY_PASSWORD:?Missing KAORI_DOCKER_REGISTRY_PASSWORD secret}"
+          [[ "$REQUESTED_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$ ]] || {
+            printf 'REQUESTED_VERSION is not an intentional KAORI RC identity.\n' >&2
+            exit 1
+          }
+          [[ "$KAORI_HOST_USER" =~ ^[A-Za-z0-9._-]+$ ]] || exit 1
+          port="${KAORI_HOST_PORT:-22}"
+          if ! [[ "$port" =~ ^[0-9]{1,5}$ ]] || (( port < 1 || port > 65535 )); then
+            printf 'KAORI_HOST_PORT is invalid.\n' >&2
+            exit 1
+          fi
+          root="${KAORI_HOST_DEPLOY_ROOT:-/opt/kaori}"
+          [[ "$root" =~ ^/[A-Za-z0-9._/-]+$ ]] || exit 1
+
+      - name: Deploy via Pinned SSH Trust
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          key_file="$(mktemp)"
+          known_hosts_file="$(mktemp)"
+          askpass_file="$(mktemp)"
+          agent_started=false
+          cleanup() {
+            [[ "$agent_started" == 'false' ]] || ssh-agent -k >/dev/null 2>&1 || true
+            rm -f -- "$key_file" "$known_hosts_file" "$askpass_file"
+          }
+          trap cleanup EXIT INT TERM HUP
+
+          printf '%s\n' "$KAORI_HOST_SSH_PRIVATE_KEY" > "$key_file"
+          printf '%s\n' "$KAORI_HOST_KNOWN_HOSTS" > "$known_hosts_file"
+          chmod 600 "$key_file" "$known_hosts_file"
+          cat > "$askpass_file" <<'ASKPASS'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          printf '%s\n' "$KAORI_HOST_SSH_PASSPHRASE"
+          ASKPASS
+          chmod 700 "$askpass_file"
+
+          eval "$(ssh-agent -s)" >/dev/null
+          agent_started=true
+          export SSH_ASKPASS="$askpass_file"
+          export SSH_ASKPASS_REQUIRE=force
+          export DISPLAY=:0
+          setsid -w ssh-add "$key_file" </dev/null >/dev/null
+
+          port="${KAORI_HOST_PORT:-22}"
+          deploy_root="${KAORI_HOST_DEPLOY_ROOT:-/opt/kaori}"
+          remote_release="$deploy_root/releases/$REQUESTED_SHA"
+          target="$KAORI_HOST_USER@$KAORI_HOST"
+          ssh_opts=(-p "$port" -i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$known_hosts_file")
+          scp_opts=(-P "$port" -i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$known_hosts_file")
+
+          run_remote_script() {
+            ssh "${ssh_opts[@]}" "$target" 'bash -s'
+          }
+
+          {
+            printf 'set -Eeuo pipefail\n'
+            printf 'remote_release=%q\n' "$remote_release"
+            printf 'deploy_root=%q\n' "$deploy_root"
+            cat <<'REMOTE_PREPARE'
+          mkdir -p -- "$remote_release/deploy" "$deploy_root/releases"
+          REMOTE_PREPARE
+          } | run_remote_script
+
+          scp "${scp_opts[@]}" compose.production.yml "$target:$remote_release/compose.production.yml"
+          scp "${scp_opts[@]}" -r deploy/server "$target:$remote_release/deploy/"
+          scp "${scp_opts[@]}" -r deploy/nginx "$target:$remote_release/deploy/"
+
+          {
+            printf 'set -Eeuo pipefail\n'
+            printf 'remote_release=%q\n' "$remote_release"
+            cat <<'REMOTE_PERMISSIONS'
+          chmod 700 -- "$remote_release"/deploy/server/*.sh
+          chmod 755 -- "$remote_release"/deploy/nginx/*.sh
+          REMOTE_PERMISSIONS
+          } | run_remote_script
+
+          # Registry auth remains remote and ephemeral; deploy.sh uses docker login --password-stdin.
+          {
+            printf 'set -Eeuo pipefail\n'
+            printf 'deploy_script=%q\n' "$remote_release/deploy/server/deploy.sh"
+            printf 'requested_image=%q\n' "$REQUESTED_IMAGE"
+            printf 'requested_sha=%q\n' "$REQUESTED_SHA"
+            printf 'requested_version=%q\n' "$REQUESTED_VERSION"
+            printf 'registry_user=%q\n' "$KAORI_DOCKER_REGISTRY_USERNAME"
+            printf 'registry_password=%q\n' "$KAORI_DOCKER_REGISTRY_PASSWORD"
+            printf 'letsencrypt_email=%q\n' "$KAORI_LETSENCRYPT_EMAIL"
+            cat <<'REMOTE_DEPLOY'
+          export KAORI_LETSENCRYPT_EMAIL="$letsencrypt_email"
+          {
+            printf '%s\n' "$registry_user"
+            printf '%s\n' "$registry_password"
+          } | bash "$deploy_script" "$requested_image" "$requested_sha" "$requested_version"
+          REMOTE_DEPLOY
+          } | run_remote_script

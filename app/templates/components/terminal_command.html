@@ -1,0 +1,34 @@
+{% macro render(command, label='CLI / API Probe', prompt='$', copy_label='Copy') -%}
+    <div class="overflow-hidden rounded-lg border border-outline-strong bg-kaori-primary-dark shadow-sm"
+         data-kaori-terminal-command
+         data-kaori-copy-root>
+        <div class="flex items-center justify-between gap-3 border-b border-white/10 bg-black/15 px-3 py-2">
+            <div class="flex min-w-0 items-center gap-2 text-xs font-semibold tracking-wider text-brand-foreground-muted">
+                <span class="flex shrink-0 gap-1" aria-hidden="true">
+                    <span class="h-2 w-2 rounded-full bg-status-critical"></span>
+                    <span class="h-2 w-2 rounded-full bg-status-warning"></span>
+                    <span class="h-2 w-2 rounded-full bg-status-normal"></span>
+                </span>
+                <span class="truncate">{{ label }}</span>
+            </div>
+            <button type="button"
+                    data-kaori-copy-button
+                    data-copy-label="{{ copy_label }}"
+                    data-copied-label="Copied"
+                    class="inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-md border border-white/15 bg-white/10 px-2 text-xs font-semibold text-brand-foreground transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                <i data-lucide="copy"
+                   data-kaori-copy-icon
+                   class="h-3 w-3"
+                   aria-hidden="true"></i>
+                <span data-kaori-copy-label aria-live="polite">{{ copy_label }}</span>
+            </button>
+        </div>
+        <div class="flex items-start gap-2 overflow-x-auto px-3 py-3 font-mono text-xs leading-5 text-brand-foreground">
+            {% if prompt %}
+                <span class="select-none font-semibold text-kaori-accent"
+                      aria-hidden="true">{{ prompt }}</span>
+            {% endif %}
+            <code data-kaori-copy-source class="whitespace-pre-wrap break-words">{{ command }}</code>
+        </div>
+    </div>
+{%- endmacro %}

@@ -1,0 +1,147 @@
+{% import "components/action_button.html" as action_button %}
+{#
+  Canonical KAORI right-side detail drawer.
+
+  The caller owns domain content. This component owns overlay, panel geometry,
+  header hierarchy, close behavior, scrolling, and optional footer action.
+#}
+{% macro render(
+    id,
+    title,
+    description='',
+    x_show='drawerOpen',
+    close_expression='drawerOpen = null',
+    action_href=None,
+    action_label=None,
+    action_icon='arrow-up-right',
+    width='lg'
+    ) -%}
+    {% set width_classes = 'max-w-5xl' if width == '3xl' else 'max-w-4xl' if width == '2xl' else 'max-w-2xl' if width == 'xl' else 'max-w-xl' if width == 'lg' else 'max-w-lg' %}
+    <div x-cloak
+         x-show="{{ x_show }}"
+         class="fixed inset-0 z-50"
+         @keydown.escape.window="{{ close_expression }}">
+        <button type="button"
+                class="absolute inset-0 h-full w-full cursor-default bg-surface-overlay/70 backdrop-blur-sm"
+                aria-label="Close {{ title }}"
+                @click="{{ close_expression }}"></button>
+        <section role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="{{ id }}-title"
+                 {% if description %}aria-describedby="{{ id }}-description"{% endif %}
+                 x-show="{{ x_show }}"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="translate-x-full"
+                 x-transition:enter-end="translate-x-0"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="translate-x-0"
+                 x-transition:leave-end="translate-x-full"
+                 @click.stop
+                 class="absolute inset-y-0 right-0 flex w-full {{ width_classes }} flex-col border-l border-outline-default bg-surface-card shadow-xl">
+            <header class="flex items-start justify-between gap-4 border-b border-outline-subtle px-5 py-4 sm:px-6">
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold text-kaori-primary">Details</p>
+                    <h2 id="{{ id }}-title"
+                        class="mt-1 text-base font-semibold leading-6 text-content-primary">{{ title }}</h2>
+                    {% if description %}
+                        <p id="{{ id }}-description"
+                           class="mt-1 text-sm leading-5 text-content-secondary">{{ description }}</p>
+                    {% endif %}
+                </div>
+                <button type="button"
+                        class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-secondary transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                        aria-label="Close {{ title }}"
+                        @click="{{ close_expression }}">
+                    <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                </button>
+            </header>
+            <div class="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">{{ caller() }}</div>
+            {% if action_href and action_label %}
+                <footer class="flex items-center justify-end gap-2 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
+                    <button type="button"
+                            class="{{ action_button.classes('secondary') }}"
+                            @click="{{ close_expression }}">Close</button>
+                    <a href="{{ action_href }}"
+                       class="{{ action_button.classes('primary') }}">
+                        <i data-lucide="{{ action_icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                        {{ action_label }}
+                    </a>
+                </footer>
+            {% endif %}
+        </section>
+    </div>
+{%- endmacro %}
+{# Shared content section for detail drawers. #}
+{% macro section(title, description='', icon='info', badge=None, variant='default', density='default') -%}
+    {% set shell_classes = 'border-kaori-primary/20 bg-surface-card' if variant == 'highlight' else 'border-outline-subtle bg-surface-card' %}
+    {% set padding_classes = 'p-3.5' if density == 'compact' else 'p-4' %}
+    {% set body_spacing = 'mt-3' if density == 'compact' else 'mt-4' %}
+    <section class="rounded-xl border {{ shell_classes }} {{ padding_classes }}">
+        <div class="flex items-start justify-between gap-4">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h3 class="text-sm font-semibold leading-5 text-content-primary">{{ title }}</h3>
+                    {% if description %}
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% if badge %}
+                <div class="shrink-0">{{ badge }}</div>
+            {% endif %}
+        </div>
+        <div class="{{ body_spacing }}">{{ caller() }}</div>
+    </section>
+{%- endmacro %}
+{# Shared compact metric for drawer summaries. #}
+{% macro metric(label, value, icon='circle-dot', helper='', variant='card') -%}
+    {% if variant == 'plain' %}
+        <div class="min-w-0">
+            <div class="flex items-center gap-2 text-content-muted">
+                <i data-lucide="{{ icon }}"
+                   class="h-3.5 w-3.5 shrink-0 text-kaori-primary"
+                   aria-hidden="true"></i>
+                <dt class="truncate text-xs font-semibold">{{ label }}</dt>
+            </div>
+            <dd class="mt-1.5 break-words text-base font-semibold leading-6 text-content-primary">
+                {{ value }}
+            </dd>
+            {% if helper %}
+                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ helper }}</p>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-3 shadow-sm">
+            <div class="flex items-center gap-2 text-content-muted">
+                <i data-lucide="{{ icon }}"
+                   class="h-3.5 w-3.5 text-kaori-primary"
+                   aria-hidden="true"></i>
+                <dt class="text-xs font-semibold">{{ label }}</dt>
+            </div>
+            <dd class="mt-2 text-base font-semibold leading-6 text-content-primary">
+                {{ value }}
+            </dd>
+            {% if helper %}
+                <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+            {% endif %}
+        </div>
+    {% endif %}
+{%- endmacro %}
+{# Compact factual metadata for drawer context surfaces. Values intentionally use body scale, not KPI scale. #}
+{% macro context_fact(label, value, icon='circle-dot') -%}
+    <div class="min-w-0">
+        <div class="flex items-center gap-1.5 text-content-muted">
+            <i data-lucide="{{ icon }}"
+               class="h-3.5 w-3.5 shrink-0 text-kaori-primary"
+               aria-hidden="true"></i>
+            <dt class="truncate text-xs font-medium leading-5">{{ label }}</dt>
+        </div>
+        <dd class="mt-0.5 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">
+            {{ value }}
+        </dd>
+    </div>
+{%- endmacro %}

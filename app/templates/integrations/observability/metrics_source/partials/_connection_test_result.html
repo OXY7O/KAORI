@@ -1,0 +1,4 @@
+{# Connection-test feedback is toast-only.
+   Registration state is delivered through the HX-Trigger response header. #}
+{% set operation_feedback = connection_feedback if connection_feedback is defined else none %}
+{% include "components/operation_feedback_oob.html" %}

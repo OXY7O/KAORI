@@ -1,0 +1,77 @@
+{% macro semantic_border_classes(tone='info', variant='default') -%}
+    {%- if variant == 'subtle' -%}
+        {%- if tone == 'normal' -%}border-status-normal-border/60
+        {%- elif tone == 'warning' -%}border-status-warning-border/60
+        {%- elif tone == 'critical' -%}border-status-critical-border/60
+        {%- elif tone == 'unknown' -%}border-status-unknown-border/60
+        {%- else -%}border-status-info-border/60
+        {%- endif -%}
+    {%- elif tone == 'normal' -%}border-status-normal-border
+    {%- elif tone == 'warning' -%}border-status-warning-border
+    {%- elif tone == 'critical' -%}border-status-critical-border
+    {%- elif tone == 'unknown' -%}border-status-unknown-border
+    {%- else -%}border-status-info-border
+    {%- endif -%}
+{%- endmacro %}
+{% macro semantic_hover_border_classes(tone='info') -%}
+    {%- if tone == 'normal' -%}hover:border-status-normal-border
+    {%- elif tone == 'warning' -%}hover:border-status-warning-border
+    {%- elif tone == 'critical' -%}hover:border-status-critical-border
+    {%- elif tone == 'unknown' -%}hover:border-status-unknown-border
+    {%- else -%}hover:border-status-info-border
+    {%- endif -%}
+{%- endmacro %}
+{% macro semantic_surface_classes(tone='info') -%}
+    {{ semantic_border_classes(tone) }} {{ 'bg-status-normal-soft' if tone == 'normal' else ('bg-status-warning-soft' if tone == 'warning' else ('bg-status-critical-soft' if tone == 'critical' else ('bg-status-unknown-soft' if tone == 'unknown' else 'bg-status-info-soft'))) }}
+{%- endmacro %}
+{#
+  Reusable operational callout.
+
+  Neutral callouts use a semantic icon tile on an elevated surface. Semantic
+  callouts tint the complete card for severity interpretation. Page templates
+  provide content only and do not copy semantic border bundles.
+#}
+{% macro render(
+    title,
+    description,
+    icon='info',
+    tone='info',
+    variant='neutral',
+    extra_classes='',
+    action_href=None,
+    action_label=None,
+    action_icon='arrow-right',
+    title_id=None
+    ) -%}
+    {% set border_class = 'border-status-normal-border' if tone == 'normal' else ('border-status-warning-border' if tone == 'warning' else ('border-status-critical-border' if tone == 'critical' else ('border-status-unknown-border' if tone == 'unknown' else 'border-status-info-border'))) %}
+    {% set surface_class = 'bg-status-normal-soft' if tone == 'normal' else ('bg-status-warning-soft' if tone == 'warning' else ('bg-status-critical-soft' if tone == 'critical' else ('bg-status-unknown-soft' if tone == 'unknown' else 'bg-status-info-soft'))) %}
+    {% set text_class = 'text-status-normal-text' if tone == 'normal' else ('text-status-warning-text' if tone == 'warning' else ('text-status-critical-text' if tone == 'critical' else ('text-status-unknown-text' if tone == 'unknown' else 'text-status-info-text'))) %}
+    <article class="rounded-xl border {{ border_class if variant == 'semantic' else 'border-outline-subtle' }} {{ surface_class if variant == 'semantic' else 'bg-surface-elevated' }} {% if variant == 'semantic' %}p-3{% else %}p-4{% endif %} {{ extra_classes }}"
+             {% if title_id %}aria-labelledby="{{ title_id }}"{% endif %}>
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border {{ border_class }} {{ surface_class }} {{ text_class }}"
+                  aria-hidden="true">
+                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0 flex-1">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <p {% if title_id %}id="{{ title_id }}"{% endif %}
+                       class="min-w-0 {{ 'text-xs' if variant == 'semantic' else 'text-sm' }} font-semibold {{ text_class if variant == 'semantic' else 'text-content-primary' }} [overflow-wrap:anywhere]">{{ title }}</p>
+                    {% if action_href and action_label %}
+                        <a href="{{ action_href }}"
+                           class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border {{ border_class }} bg-surface-card px-3 text-xs font-semibold {{ text_class }} transition hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                            <i data-lucide="{{ action_icon }}" class="h-3.5 w-3.5"></i>
+                            {{ action_label }}
+                        </a>
+                    {% endif %}
+                </div>
+                <p class="mt-2 text-xs leading-5 {{ text_class if variant == 'semantic' else 'text-content-muted' }}">{{ description }}</p>
+                {% if caller is defined %}
+                    <div class="mt-2 text-xs leading-5 {{ text_class if variant == 'semantic' else 'text-content-muted' }}">
+                        {{ caller() }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </article>
+{%- endmacro %}

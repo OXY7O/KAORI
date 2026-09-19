@@ -1,0 +1,73 @@
+{% import "components/table.html" as table_ui %}
+{% import "integrations/components/_provider_registry.html" as provider_registry %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+<section id="minio-integration-coverage"
+         class="{{ integration_ui.section_shell_classes() }}"
+         aria-labelledby="minio-coverage-title">
+    {% set coverage_filters_active = selected_coverage_query or selected_coverage_environment or selected_coverage_status %}
+    {% set coverage_clear_url = url_for('minio.index',
+            tab='coverage',
+            q=selected_query,
+            environment=selected_environment,
+            readiness=selected_readiness,
+            compatibility=selected_compatibility,
+            page=1,
+            per_page=pagination.per_page,
+            coverage_page=1,
+        coverage_per_page=coverage_pagination.per_page) %}
+    {% set coverage_clear_action = registry_ui.clear_filters_action(
+            coverage_clear_url,
+            table_ui.action_classes(),
+            hx_get=coverage_clear_url,
+            target='#minio-integration-coverage',
+            indicator='#minio-coverage-loading',
+            push_url='true',
+            swap='outerHTML',
+            marker='minio-coverage'
+        ) if coverage_filters_active else '' %}
+    {{ provider_registry.registry_header("MinIO Integration Coverage",
+        "Review the MinIO API connection and independent observability consumers associated with each object-storage asset.",
+        "route",
+        "minio-coverage-loading",
+        title_id="minio-coverage-title",
+        action_html=coverage_clear_action) }}
+    <div class="{{ integration_ui.filter_region_classes() }}">
+        <form id="minio-coverage-filter-form"
+              method="get"
+              action="{{ url_for('minio.index') }}"
+              hx-get="{{ url_for('minio.index') }}"
+              hx-target="#minio-coverage-content"
+              hx-swap="innerHTML"
+              hx-push-url="true"
+              hx-trigger="change from:select, keyup changed delay:500ms from:input[name='coverage_q'], search from:input[name='coverage_q']"
+              hx-indicator="#minio-coverage-loading"
+              class="{{ table_ui.filter_layout_classes() }}">
+            <input type="hidden" name="tab" value="coverage">
+            <input type="hidden" name="coverage_page" value="1">
+            <input type="hidden"
+                   name="coverage_per_page"
+                   value="{{ coverage_pagination.per_page }}">
+            <input type="hidden" name="q" value="{{ selected_query }}">
+            <input type="hidden" name="environment" value="{{ selected_environment }}">
+            <input type="hidden" name="readiness" value="{{ selected_readiness }}">
+            <input type="hidden"
+                   name="compatibility"
+                   value="{{ selected_compatibility }}">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+            <div class="min-w-0">
+                {{ provider_registry.search_field("minio-coverage-search", "coverage_q", selected_coverage_query, "Asset, connection, metrics, or alert source", label="Search Asset") }}
+            </div>
+            <div class="min-w-0">
+                {{ provider_registry.select_field("minio-coverage-environment", "coverage_environment", selected_coverage_environment, "Environment", coverage_environment_options, "All Environments") }}
+            </div>
+            <div class="min-w-0">
+                {{ provider_registry.select_field("minio-coverage-status", "coverage_status", selected_coverage_status, "Coverage", coverage_status_options, "All Coverage States") }}
+            </div>
+        </form>
+    </div>
+    <div id="minio-coverage-content">
+        {% include "integrations/storage/object_storage/providers/minio/partials/_coverage_content.html" %}
+    </div>
+</section>

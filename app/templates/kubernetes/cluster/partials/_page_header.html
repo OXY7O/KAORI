@@ -1,0 +1,34 @@
+{% import "components/page_hero.html" as page_hero %}
+<section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">
+            {% call page_hero.intro('server-cog', page_eyebrow or 'Kubernetes Integration', page_icon) %}
+                <h1 class="{{ page_hero.title_classes() }}">{{ page_title }}</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Update KAORI identity, environment, and Kubernetes API transport policy without replacing the saved connection record.</p>
+                {% if page_badges %}
+                    <div class="{{ page_hero.metadata_row_classes() }}">
+                        {% for badge in page_badges %}{{ page_hero.meta_label(badge.icon or 'tag', badge.label) }}{% endfor %}
+                    </div>
+                {% endif %}
+            {% endcall %}
+        </div>
+        <aside class="{{ page_hero.aside_classes() }}"
+               aria-label="Kubernetes connection workflow">
+            <div class="{{ page_hero.context_panel_classes() }}">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">{{ page_posture_eyebrow or 'Connection Posture' }}</p>
+                        <h2 class="{{ page_hero.context_panel_title_classes() }}">{{ page_posture_title or 'Kubernetes Connection Workflow' }}</h2>
+                    </div>
+                    <span class="{{ page_hero.context_icon_classes() }}"><i data-lucide="route" class="h-5 w-5"></i></span>
+                </div>
+                <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                    {{ page_hero.context_metric(page_metric_one[0], page_metric_one[1], page_metric_one[2], page_metric_one[3], value_classes='text-sm font-semibold leading-5') }}
+                    {{ page_hero.context_metric(page_metric_two[0], page_metric_two[1], page_metric_two[2], page_metric_two[3], value_classes='text-sm font-semibold leading-5') }}
+                </div>
+                <a href="{{ url_for('integrations.kubernetes') }}"
+                   class="{{ page_hero.context_single_action_classes() }}"><i data-lucide="arrow-left" class="h-4 w-4"></i>Back to Registry</a>
+            </div>
+        </aside>
+    </div>
+</section>

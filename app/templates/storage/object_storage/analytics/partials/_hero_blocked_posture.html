@@ -1,0 +1,42 @@
+{% import "components/page_hero.html" as page_hero %}
+{% set blocker_kind = dependency_blocker.kind %}
+{% set blocker_tone = dependency_blocker.tone|default('warning') %}
+{% set active_scope = system.name if system else 'No System Selected' %}
+{% if blocker_kind == 'system_required' %}
+    {% set readiness_title = "Object Storage Setup Required" %}
+    {% set missing_evidence = "System Context" %}
+    {% set missing_helper = "Required before analytics" %}
+    {% set readiness_info = "Register and validate an Object Storage system to activate this analytics workspace." %}
+{% elif blocker_kind == 'inventory_required' %}
+    {% set readiness_title = "Inventory Sync Required" %}
+    {% set missing_evidence = "Inventory Snapshot" %}
+    {% set missing_helper = "Required before analytics" %}
+    {% set readiness_info = "Run Object Storage Inventory Sync to establish committed inventory evidence." %}
+{% elif blocker_kind in ['metrics_source_setup', 'metrics_source_validation', 'metrics_source_capability'] %}
+    {% set readiness_title = "Metrics Required" %}
+    {% set missing_evidence = "Operational Metrics" %}
+    {% set missing_helper = "Required for analysis" %}
+    {% set readiness_info = "Configure and validate the metrics source to activate this analytics workspace." %}
+{% elif blocker_kind in ['metrics_source_connection', 'metrics_source_authentication', 'metrics_source_query'] %}
+    {% set readiness_title = "Metrics Unavailable" %}
+    {% set missing_evidence = "Operational Metrics" %}
+    {% set missing_helper = "Required for analysis" %}
+    {% set readiness_info = "Restore validated metrics access to resume Object Storage analytics." %}
+{% else %}
+    {% set readiness_title = "Analytics Snapshot Required" %}
+    {% set missing_evidence = "Analytics Snapshot" %}
+    {% set missing_helper = "Required for analysis" %}
+    {% set readiness_info = "Wait for or review the analytics worker snapshot before using this workspace." %}
+{% endif %}
+{{ page_hero.blocked_context_body('Analytics Readiness',
+readiness_title,
+[
+('scan-search', 'Active Scope', active_scope, 'Analytics scope', 'text-sm font-semibold leading-5') ,
+('file-warning', 'Missing Evidence', missing_evidence, missing_helper, 'text-sm font-semibold leading-5')
+],
+readiness_info,
+'Blocked',
+blocker_tone,
+'lock-keyhole',
+'info'
+) }}

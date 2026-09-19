@@ -1,0 +1,40 @@
+{% set object_storage_active = request.endpoint and request.endpoint.startswith('object_storage_inventory.') %}
+<details class="sidebar-menu space-y-1"
+         {% if object_storage_active %}open{% endif %}>
+    <summary class="{{ 'sidebar-parent-active' if object_storage_active else 'sidebar-item-idle' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
+             title="Object Storage"
+             aria-label="Object Storage"
+             @click="if (!sidebarExpanded) { $event.preventDefault(); toggleSidebar(); $el.parentElement.open = true }">
+        <div class="flex min-w-0 items-center gap-2.5">
+            <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if object_storage_active else 'sidebar-item-idle-icon' }} transition">
+                <i data-lucide="database" class="h-4 w-4"></i>
+            </span>
+            <span class="sidebar-expanded-only truncate whitespace-nowrap">Object Storage</span>
+        </div>
+        <i data-lucide="chevron-right"
+           class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if object_storage_active else 'text-white/[0.35]' }}"></i>
+    </summary>
+    <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
+        {% set overview_active = request.endpoint == 'object_storage_inventory.overview' %}
+        <a href="{{ url_for('object_storage_inventory.overview') }}"
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if overview_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if overview_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+            <i data-lucide="layout-grid" class="h-3.5 w-3.5"></i>
+            <span class="truncate whitespace-nowrap">Overview</span>
+        </a>
+        {% set systems_active = request.endpoint in ['object_storage_inventory.systems', 'object_storage_inventory.system_details'] %}
+        <a href="{{ url_for('object_storage_inventory.systems') }}"
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if systems_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if systems_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+            <i data-lucide="server" class="h-3.5 w-3.5"></i>
+            <span class="truncate whitespace-nowrap">Systems</span>
+        </a>
+        {% set buckets_active = request.endpoint in ['object_storage_inventory.buckets', 'object_storage_inventory.bucket_details'] %}
+        <a href="{{ url_for('object_storage_inventory.buckets') }}"
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if buckets_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if buckets_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+            <i data-lucide="container" class="h-3.5 w-3.5"></i>
+            <span class="truncate whitespace-nowrap">Buckets &amp; Containers</span>
+        </a>
+    </div>
+</details>

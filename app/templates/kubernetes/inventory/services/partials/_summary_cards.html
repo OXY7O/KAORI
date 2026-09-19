@@ -1,0 +1,19 @@
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/resource_posture_grid.html" as posture_grid %}
+{% set neutral_tone = 'unknown' if inventory.total_services == 0 else 'brand' %}
+{% set metrics = [
+    ('shield', 'ClusterIP & Headless', inventory.cluster_ip + inventory.headless, 'Cluster-internal and direct Pod discovery access models.', neutral_tone),
+    ('plug-zap', 'NodePort', inventory.node_port, 'Services declaring node-level port publication.', neutral_tone),
+    ('globe-2', 'LoadBalancer', inventory.load_balancer, 'Services declaring load balancer publication.', neutral_tone),
+    ('external-link', 'ExternalName', inventory.external_name, 'Services delegating resolution to external DNS.', neutral_tone),
+    ('triangle-alert', 'Backend Exceptions', inventory.backend_exceptions, 'Partial, not-ready, missing, or empty manual backend registration evidence.', 'unknown' if inventory.total_services == 0 else ('warning' if inventory.backend_exceptions > 0 else 'normal')),
+    ('database-zap', 'Endpoint Evidence Missing', inventory.endpoint_evidence_missing, 'Services whose EndpointSlice or Endpoints evidence was not reported.', 'unknown' if inventory.total_services == 0 or inventory.endpoint_evidence_missing > 0 else 'normal')
+] %}
+{% call operational_section_card.render(
+    'Service Network Posture',
+    'Access-model composition and backend registration evidence for the active Service Inventory filters.',
+    'gauge',
+    body_classes='p-0'
+    ) %}
+    {{ posture_grid.render(metrics, columns=3) }}
+{% endcall %}

@@ -1,0 +1,211 @@
+schema_version: 1
+kind: kubernetes_analytics_datasets
+datasets:
+- key: dashboard.kubernetes.alerts
+  label: Kubernetes Dashboard Alerts
+  builder_path: app.kubernetes.analytics.materialization.dashboard_alerts:build_dashboard_alerts_context
+  default_parameters:
+  - {}
+  freshness_minutes: 5
+  stale_grace_minutes: 30
+  required_binding_capabilities:
+  - metrics
+  - alert_metrics
+  source_kind: alert
+  execution_priority: 10
+  task_budget_seconds: 60
+- key: analytics.alerts
+  label: Alerts and Anomalies
+  builder_path: app.kubernetes.analytics.alerts.application:get_alerts_materialization_context
+  default_parameters:
+  - source: auto
+  freshness_minutes: 5
+  stale_grace_minutes: 30
+  snapshot_parameter_keys:
+  - source
+  required_binding_capabilities:
+  - metrics
+  - alert_metrics
+  source_kind: alert
+  execution_priority: 20
+  task_budget_seconds: 90
+- key: analytics.utilization.summary
+  label: Utilization Summary
+  builder_path: app.kubernetes.analytics.utilization.materialization:get_utilization_summary_context
+  default_parameters:
+  - {}
+  freshness_minutes: 10
+  stale_grace_minutes: 120
+  required_binding_capabilities:
+  - metrics
+  - utilization
+  required_capabilities:
+  - instant_query
+  - range_query
+  - kubernetes_identity
+  - utilization_metrics
+  - node_filesystem_identity
+  execution_priority: 30
+  task_budget_seconds: 120
+- key: analytics.utilization.trend
+  label: Utilization Trend
+  builder_path: app.kubernetes.analytics.utilization.materialization:get_utilization_trend_context
+  default_parameters:
+  - trend_hours: '1'
+  - trend_hours: '6'
+  - trend_hours: '12'
+  - trend_hours: '24'
+  - trend_hours: '168'
+  - trend_hours: '720'
+  - trend_hours: '1440'
+  freshness_minutes: 15
+  stale_grace_minutes: 720
+  snapshot_parameter_keys:
+  - trend_hours
+  - trend_node
+  required_binding_capabilities:
+  - metrics
+  - utilization
+  required_capabilities:
+  - instant_query
+  - range_query
+  - kubernetes_identity
+  - utilization_metrics
+  - node_filesystem_identity
+  execution_priority: 90
+  task_budget_seconds: 300
+- key: analytics.utilization.node
+  label: Utilization Node Detail
+  builder_path: app.kubernetes.analytics.utilization.materialization:get_utilization_node_context
+  default_parameters: []
+  freshness_minutes: 10
+  stale_grace_minutes: 120
+  snapshot_parameter_keys:
+  - node
+  required_binding_capabilities:
+  - metrics
+  - utilization
+  required_capabilities:
+  - instant_query
+  - range_query
+  - kubernetes_identity
+  - utilization_metrics
+  - node_filesystem_identity
+  execution_priority: 35
+  task_budget_seconds: 180
+- key: analytics.capacity
+  label: Capacity Analysis
+  builder_path: app.kubernetes.analytics.capacity.service:get_capacity_page_context
+  default_parameters:
+  - time_range: 1h
+  - time_range: 6h
+  - time_range: 12h
+  - time_range: 24h
+  - time_range: 7d
+  - time_range: 30d
+  - time_range: 60d
+  freshness_minutes: 20
+  stale_grace_minutes: 1440
+  snapshot_parameter_keys:
+  - time_range
+  required_binding_capabilities:
+  - metrics
+  - capacity
+  required_capabilities:
+  - instant_query
+  - range_query
+  - kubernetes_identity
+  - capacity_metrics
+  - resource_requests_limits
+  execution_priority: 40
+  task_budget_seconds: 240
+- key: analytics.storage
+  label: Storage Analysis
+  builder_path: app.kubernetes.analytics.storage.service:get_storage_analysis_context
+  default_parameters:
+  - {}
+  freshness_minutes: 20
+  stale_grace_minutes: 1440
+  required_binding_capabilities:
+  - metrics
+  - storage
+  required_capabilities:
+  - instant_query
+  - kubernetes_identity
+  - pvc_usage
+  - node_filesystem_identity
+  execution_priority: 50
+  task_budget_seconds: 180
+- key: analytics.workload
+  label: Workload Analysis
+  builder_path: app.kubernetes.analytics.workload.service:get_workload_analysis_context
+  default_parameters:
+  - time_range: 1h
+  - time_range: 6h
+  - time_range: 12h
+  - time_range: 24h
+  - time_range: 7d
+  - time_range: 30d
+  - time_range: 60d
+  freshness_minutes: 20
+  stale_grace_minutes: 1440
+  snapshot_parameter_keys:
+  - time_range
+  required_binding_capabilities:
+  - metrics
+  - workload
+  required_capabilities:
+  - instant_query
+  - range_query
+  - kubernetes_identity
+  - workload_metrics
+  - resource_requests_limits
+  execution_priority: 60
+  task_budget_seconds: 300
+- key: analytics.top_consumers
+  label: Top Consumers
+  builder_path: app.kubernetes.analytics.top_consumers.service:get_top_consumers_context
+  default_parameters:
+  - {}
+  freshness_minutes: 15
+  stale_grace_minutes: 720
+  snapshot_parameter_keys:
+  - namespace
+  required_binding_capabilities:
+  - metrics
+  - top_consumers
+  required_capabilities:
+  - instant_query
+  - kubernetes_identity
+  - workload_metrics
+  - resource_requests_limits
+  - capacity_metrics
+  - pvc_usage
+  execution_priority: 70
+  task_budget_seconds: 240
+forecast_dataset:
+  key: analytics.forecast
+  label: Capacity Forecast
+  builder_path: app.kubernetes.analytics.forecast.service:get_forecast_analysis_context
+  default_parameters:
+  - history_window: 7d
+  - history_window: 30d
+  - history_window: 90d
+  freshness_minutes: 120
+  stale_grace_minutes: 4320
+  snapshot_parameter_keys:
+  - history_window
+  - namespace
+  required_binding_capabilities:
+  - metrics
+  - forecast
+  required_capabilities:
+  - instant_query
+  - range_query
+  - long_term_history
+  - kubernetes_identity
+  - workload_metrics
+  - capacity_metrics
+  - pvc_usage
+  execution_priority: 100
+  task_budget_seconds: 600

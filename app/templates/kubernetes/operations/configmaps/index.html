@@ -1,0 +1,83 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/operational_workflow_card.html" as workflow_card %}
+{% import "components/operational_workflow_catalog.html" as workflow_catalog %}
+{% import "components/operation_evidence_boundary.html" as evidence_boundary %}
+{% block title %}ConfigMap Management{% endblock title %}
+{% block dashboard_content %}
+    {% set can_create = current_user.has_permission('kubernetes_configmaps.create') %}
+    {% set can_update = current_user.has_permission('kubernetes_configmaps.update') %}
+    {% set can_delete = current_user.has_permission('kubernetes_configmaps.delete') %}
+    <div class="grid gap-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('workflow', 'Kubernetes Operations', 'file-cog') %}
+                        <h1 class="{{ page_hero.title_classes() }}">ConfigMap Management</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Manage live ConfigMaps through validated, auditable, target-aware workflows with governed operational context.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('database', total_configmaps ~ ' Tracked') }}
+                            {{ page_hero.meta_label('boxes', namespace_count ~ ' Namespaces') }}
+                            {{ page_hero.meta_label('lock-keyhole', immutable_count ~ ' Immutable') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ page_hero.context_card('ConfigMap Management context',
+                                'Operation Boundary',
+                                'Live ConfigMap Workflows',
+                                'Validate First',
+                                'info',
+                                [
+                                ('radio-tower', 'Target', 'Live API', 'Live Kubernetes') ,
+                ('scroll-text', 'Outcome', 'Audited', 'Activity Audit')
+                ],
+                'Manage Clusters',
+                url_for('integrations.kubernetes'),
+                'server-cog'
+                ) }}
+            </div>
+        </section>
+        {{ evidence_boundary.render() }}
+        <div id="configmap-workflows">
+            {% call workflow_catalog.render(
+                'Choose a ConfigMap Operation',
+                'Each workflow owns its live target, validation, impact, and audit boundary.'
+                ) %}
+                {{ workflow_card.render('Create ConfigMap',
+                                'Create text or binary configuration without overwriting an existing object.',
+                                'file-plus-2',
+                                can_create,
+                                'Standard Operation',
+                                'Server-Side Dry-Run',
+                                'Create Only',
+                                url_for('kubernetes_operations.create_configmap') ,
+                'Create',
+                'plus'
+                ) }}
+                {{ workflow_card.render('Update ConfigMap',
+                                'Review live values and apply a validated merge or complete replacement.',
+                                'file-pen-line',
+                                can_update,
+                                'Controlled Mutation',
+                                'Diff and Dry-Run',
+                                'Live Object',
+                                url_for('kubernetes_operations.update_configmap') ,
+                'Update',
+                'pencil-line'
+                ) }}
+                {{ workflow_card.render('Delete ConfigMap',
+                                'Review known consumers before a validated and explicitly confirmed deletion.',
+                                'trash-2',
+                                can_delete,
+                                'Destructive Operation',
+                                'Authorization Preflight',
+                                'Exact Target',
+                                url_for('kubernetes_operations.delete_configmap') ,
+                'Delete',
+                'trash-2',
+                'critical'
+                ) }}
+            {% endcall %}
+        </div>
+    </div>
+{% endblock dashboard_content %}

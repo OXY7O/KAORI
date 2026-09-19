@@ -1,0 +1,9 @@
+{% extends "layouts/app.html" %}
+{% block title %}
+    General Settings
+{% endblock title %}
+{% block dashboard_content %}
+    {% include "settings/general/partials/_page_content.html" %}
+    <script defer
+            src="{{ url_for('static', filename='js/settings/time_locale.js') }}"></script>
+{% endblock dashboard_content %}

@@ -1,0 +1,135 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/details/_detail_content.html" as detail_ui %}
+{% import "components/table.html" as table_ui %}
+<div data-kaori-detail-variant="full-workspace-modal"
+     data-kaori-detail-density="adaptive-stacks"
+     class="{{ detail_ui.expanded_workspace_outer_classes() }}">
+    <div class="{{ detail_ui.expanded_workspace_shell_classes() }}">
+        <header data-resource-detail-header
+                class="{{ detail_ui.expanded_workspace_header_classes() }}">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ detail_ui.expanded_workspace_icon_classes() }}"
+                      aria-hidden="true"><i data-lucide="key-round" class="h-5 w-5"></i></span>
+                <div class="min-w-0">
+                    {% call detail_ui.header_identity_row() %}
+                        <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ permission.title }}</h3>
+                        {{ table_label.metadata_label(permission.module_label, 'boxes') }}
+                        {{ table_label.status_label(permission.state.label, permission.state.tone, permission.state.icon, 'detail') }}
+                        {{ table_label.metadata_label(permission.key, 'key-round', true, 'detail') }}
+                        {{ table_label.status_label(permission.delegation_tier.label, permission.delegation_tier.tone, permission.delegation_tier.icon, 'detail') }}
+                    {% endcall %}
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Permission identity, dependency contract, role coverage, and code-to-registry alignment.</p>
+                </div>
+            </div>
+        </header>
+        {{ detail_ui.summary_strip([
+                ('Control Module', permission.module_label, 'Source-controlled ownership') ,
+        ('Mapped Roles', permission.role_count, 'Current role mappings'),
+        ('Active Users', permission.active_user_count, 'Current effective subjects'),
+        ('JIT Paths', permission.jit_provider_count, 'Enabled provider projections'),
+        ('Effective Requires', effective_requires|length, 'Transitive dependency closure')
+        ], compact=true) }}
+        <div class="grid items-start gap-4 p-5 xl:grid-cols-2">
+            {% call detail_ui.detail_card('Permission Identity', 'badge-info', permission.state.label, badge_type='status', badge_tone=permission.state.tone, badge_size='detail', stretch=false, density='compact') %}
+                {{ detail_ui.detail_row('Permission Key', permission.key) }}
+                {{ detail_ui.detail_row('Control Module', permission.module_label) }}
+                {{ detail_ui.detail_row('Action', permission.action|replace('_', ' ') |title) }}
+                {{ detail_ui.detail_row('Delegation Tier', permission.delegation_tier.label) }}
+                {{ detail_ui.stacked_detail_row('Description', permission.description or 'No permission description is defined.') }}
+            {% endcall %}
+            {% call detail_ui.detail_card('Dependency Contract', 'git-merge', (effective_requires|length + required_by|length) ~ ' Links', badge_size='detail', stretch=false, density='compact') %}
+                <div>
+                    <p class="text-xs font-semibold text-content-secondary">Requires</p>
+                    {% if requires %}
+                        <div class="mt-2 flex flex-wrap gap-1.5">
+                            {% for item in requires %}{{ table_label.metadata_label(item.title, 'arrow-down-left') }}{% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="mt-1 text-xs leading-5 text-content-muted">No baseline dependency is required.</p>
+                    {% endif %}
+                </div>
+                {% if effective_requires|length > requires|length %}
+                    <div class="pt-1">
+                        <p class="text-xs font-semibold text-content-secondary">Effective Requirements</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ effective_requires|length }} permissions are required after transitive dependency expansion.</p>
+                    </div>
+                {% endif %}
+                <div class="pt-1">
+                    <p class="text-xs font-semibold text-content-secondary">Required By</p>
+                    {% if required_by %}
+                        <div class="mt-2 flex flex-wrap gap-1.5">
+                            {% for item in required_by %}{{ table_label.metadata_label(item.title, 'arrow-up-right') }}{% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="mt-1 text-xs leading-5 text-content-muted">No permission currently depends on this contract.</p>
+                    {% endif %}
+                </div>
+            {% endcall %}
+            {% call detail_ui.detail_card('Delegation Boundary', permission.delegation_tier.icon, permission.delegation_tier.label, badge_type='status', badge_tone=permission.delegation_tier.tone, badge_size='detail', stretch=false, density='compact', class_name='xl:col-span-2') %}
+                {% if permission.is_access_administration %}
+                    {{ detail_ui.stacked_detail_row('Authority', 'This permission controls Access administration. Only the Local Database Super Admin break-glass authority may delegate it through Roles, User Management, JIT defaults, or Directory Provisioning.') }}
+                {% else %}
+                    {{ detail_ui.stacked_detail_row('Authority', 'A non-Super Admin may delegate this permission only when it is already inside that actor’s effective permission set. Server-side delegation checks remain authoritative.') }}
+                {% endif %}
+            {% endcall %}
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card xl:col-span-2">
+                <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
+                        <div class="min-w-0">
+                            <h4 class="text-sm font-semibold text-content-primary">Role Coverage</h4>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Current roles that include this effective permission contract.</p>
+                        </div>
+                    </div>
+                    {{ table_label.metadata_label(permission.role_count ~ ' ' ~ ('Role' if permission.role_count == 1 else 'Roles') , 'shield-check') }}
+                </header>
+                {% if role_rows %}
+                    <div class="overflow-x-auto">
+                        <table class="{{ table_ui.table_classes('min-w-[44rem]') }}">
+                            <thead class="{{ table_ui.head_classes() }}">
+                                <tr>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Role</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Type</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">State</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Active Users</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">JIT Paths</th>
+                                </tr>
+                            </thead>
+                            <tbody class="{{ table_ui.body_classes() }}">
+                                {% for role in role_rows %}
+                                    <tr class="{{ table_ui.row_classes() }}">
+                                        <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(role.name, role.key, role.type_icon) }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(role.type_label, role.type_icon) }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(role.state_label, role.state_tone) }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary">{{ role.active_user_count }}</span></td>
+                                        <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary">{{ role.jit_provider_count }}</span></td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="p-4">{{ detail_ui.empty_evidence('No Role Coverage', 'This permission is not currently mapped to a role. Unused code-owned contracts are not automatically treated as errors.', 'shield-check') }}</div>
+                {% endif %}
+            </section>
+            {% call detail_ui.detail_card('Registry Boundary', 'database-zap', permission.state.label, badge_type='status', badge_tone=permission.state.tone, badge_size='detail', stretch=false, density='compact', class_name='xl:col-span-2') %}
+                {% if permission.state_key == 'canonical' %}
+                    {{ detail_ui.stacked_detail_row('Registry State', 'The persisted permission metadata matches the application code contract.') }}
+                {% elif permission.state_key == 'missing' %}
+                    {{ detail_ui.stacked_detail_row('Registry State', 'The permission exists in application code but is missing from the persisted RBAC registry.') }}
+                    {{ detail_ui.stacked_detail_row('Recovery', 'Run the governed flask seed-rbac deployment step after confirming the intended RBAC baseline.') }}
+                {% elif permission.state_key == 'metadata_drift' %}
+                    {{ detail_ui.stacked_detail_row('Registry State', 'The permission exists in both code and database, but persisted metadata differs from the current code contract.') }}
+                    {{ detail_ui.detail_row('Stored Module', permission.database_module or '-') }}
+                    {{ detail_ui.detail_row('Stored Action', permission.database_action or '-') }}
+                    {{ detail_ui.stacked_detail_row('Recovery', 'Run the governed flask seed-rbac deployment step to synchronize canonical metadata.') }}
+                {% else %}
+                    {{ detail_ui.stacked_detail_row('Registry State', 'This database permission no longer exists in the current application permission baseline.') }}
+                    {{ detail_ui.stacked_detail_row('Cleanup Boundary', 'Review role mappings before removing database-only permission records through a controlled RBAC migration.') }}
+                {% endif %}
+                {{ detail_ui.stacked_detail_row('Read Boundary', 'Permission Catalog never mutates or synchronizes the RBAC registry during HTTP GET requests.') }}
+            {% endcall %}
+        </div>
+    </div>
+</div>

@@ -1,0 +1,402 @@
+{% import "components/visualization_workspace.html" as visualization_workspace %}
+{% import "components/segmented_tabs.html" as segmented_tabs %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% set topology_filters_active = filters.cluster_id or filters.namespace or filters.scope != 'all' or filters.depth != '1' %}
+{% set topology_header_actions = registry_ui.clear_filters_action(
+    url_for('inventory.topology'),
+    table_ui.action_classes(),
+    marker='topology-filter-form',
+    swap='',
+    id='topology-clear-filters-button',
+    hidden=not topology_filters_active
+) %}
+{% call visualization_workspace.render(
+    'topology-workspace',
+    'Inventory Relationship Map',
+    'Explore committed Kubernetes inventory relationships without running live provider queries.',
+    icon='git-fork',
+    action_id='topology-reload-button',
+    action_label='Reload Snapshot',
+    action_icon='refresh-cw',
+    loading_id='topology-loading',
+    header_actions=topology_header_actions,
+    action_classes=table_ui.action_classes()
+    ) %}
+    <div class="border-b border-outline-subtle bg-surface-elevated px-5 py-4">
+        <form id="topology-filter-form"
+              class="{{ table_ui.filter_layout_classes() }}">
+            <div class="min-w-0">
+                <label for="topology-cluster"
+                       class="mb-2 block text-xs font-semibold text-content-secondary">Cluster</label>
+                <select id="topology-cluster"
+                        name="cluster_id"
+                        class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                    <option value="">All Clusters</option>
+                    {% for cluster in clusters %}
+                        <option value="{{ cluster.id }}"
+                                {% if filters.cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="min-w-0">
+                <label for="topology-namespace"
+                       class="mb-2 block text-xs font-semibold text-content-secondary">Namespace</label>
+                <select id="topology-namespace"
+                        name="namespace"
+                        {% if not filters.cluster_id %}disabled{% endif %}
+                        class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                    <option value="">All Namespaces</option>
+                    {% if filters.cluster_id %}
+                        {% for item in namespace_map.get(filters.cluster_id, []) %}
+                            <option value="{{ item }}"
+                                    {% if filters.namespace == item %}selected{% endif %}>{{ item }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+            <div class="min-w-0">
+                <label for="topology-scope"
+                       class="mb-2 block text-xs font-semibold text-content-secondary">Resource Scope</label>
+                <select id="topology-scope"
+                        name="scope"
+                        class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                    {% for value, label in scope_options.items() %}
+                        <option value="{{ value }}"
+                                {% if filters.scope == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="min-w-0">
+                <label for="topology-depth"
+                       class="mb-2 block text-xs font-semibold text-content-secondary">Depth</label>
+                <select id="topology-depth"
+                        name="depth"
+                        class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                    {% for value, label in depth_options.items() %}
+                        <option value="{{ value }}"
+                                {% if filters.depth == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="min-w-0">
+                <label for="topology-search"
+                       class="mb-2 block text-xs font-semibold text-content-secondary">Search Resource</label>
+                <div class="relative">
+                    <i data-lucide="search"
+                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
+                    <input id="topology-search"
+                           type="search"
+                           role="combobox"
+                           aria-autocomplete="list"
+                           aria-expanded="false"
+                           aria-controls="topology-search-results"
+                           autocomplete="off"
+                           placeholder="Search resources"
+                           class="h-10 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                    <div id="topology-search-results"
+                         role="listbox"
+                         aria-label="Topology Search Results"
+                         class="absolute left-0 right-0 top-full z-50 mt-2 hidden max-h-80 overflow-y-auto rounded-xl border border-outline-default bg-surface-card p-1 shadow-xl">
+                    </div>
+                </div>
+            </div>
+        </form>
+        <div class="mt-3 text-xs text-content-muted">
+            <span id="topology-filter-summary" class="font-medium text-kaori-primary">{{ graph.summary.scope_label }} · {{ graph.summary.depth_label }}</span>
+        </div>
+    </div>
+    <div id="topology-limit-warning"
+         class="{% if not graph.summary.truncated %}hidden {% endif %}border-b {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft px-5 py-3 text-xs text-status-warning-text">
+        <span class="inline-flex items-start gap-2">
+            <i data-lucide="triangle-alert"
+               class="mt-0.5 h-4 w-4 shrink-0"
+               aria-hidden="true"></i>
+            <span id="topology-limit-message">The graph was limited for readability. Narrow the cluster or namespace scope to display more resources.</span>
+        </span>
+    </div>
+    <div id="topology-error"
+         role="alert"
+         class="hidden border-b {{ table_label.tone_border_classes('critical') }} bg-status-critical-soft px-5 py-3 text-xs text-status-critical-text">
+    </div>
+    <div id="topology-runtime-status"
+         role="status"
+         class="border-b {{ table_label.tone_border_classes('pending') }} bg-status-pending-soft px-5 py-3 text-xs text-status-pending-text">
+        <span class="inline-flex items-center gap-2">
+            <i data-lucide="loader-circle"
+               class="h-4 w-4 animate-spin"
+               aria-hidden="true"></i>
+            Preparing the topology renderer and committed inventory snapshot...
+        </span>
+    </div>
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
+        <div class="flex flex-wrap items-center gap-2">
+            {{ segmented_tabs.render([('graph', 'Graph', 'share-2') , ('list', 'Resource List', 'list-tree')],
+            prefix='topology-view',
+            active_key='graph',
+            aria_label='Topology View'
+            ) }}
+            <button type="button"
+                    id="topology-controls-button"
+                    class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                <i data-lucide="sliders-horizontal" class="h-4 w-4" aria-hidden="true"></i>
+                Controls
+            </button>
+            <button type="button"
+                    id="topology-details-button"
+                    class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                <i data-lucide="panel-right-open" class="h-4 w-4" aria-hidden="true"></i>
+                Details
+            </button>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <button type="button"
+                    id="topology-fit-button"
+                    class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                <i data-lucide="maximize-2"
+                   class="h-4 w-4 text-kaori-primary"
+                   aria-hidden="true"></i>
+                Fit
+            </button>
+            <button type="button"
+                    id="topology-reset-button"
+                    class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                <i data-lucide="rotate-ccw"
+                   class="h-4 w-4 text-kaori-primary"
+                   aria-hidden="true"></i>
+                Reset
+            </button>
+            <details class="relative">
+                <summary class="inline-flex min-h-9 cursor-pointer list-none items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                    <i data-lucide="download"
+                       class="h-4 w-4 text-kaori-primary"
+                       aria-hidden="true"></i>
+                    Export
+                    <i data-lucide="chevron-down" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                </summary>
+                <div class="absolute right-0 z-30 mt-2 w-44 rounded-xl border border-outline-default bg-surface-card p-1.5 shadow-xl">
+                    <button type="button"
+                            id="topology-export-png-button"
+                            class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft hover:text-kaori-primary">
+                        <i data-lucide="image-down" class="h-4 w-4" aria-hidden="true"></i>
+                        Export PNG
+                    </button>
+                    <button type="button"
+                            id="topology-export-json-button"
+                            class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft hover:text-kaori-primary">
+                        <i data-lucide="braces" class="h-4 w-4" aria-hidden="true"></i>
+                        Export JSON
+                    </button>
+                </div>
+            </details>
+        </div>
+    </div>
+    <div id="topology-pane-backdrop"
+         class="fixed inset-0 z-40 hidden bg-surface-overlay/70 backdrop-blur-sm"
+         aria-hidden="true"></div>
+    <div class="{{ visualization_workspace.adaptive_grid_classes() }}">
+        <aside id="topology-controls-panel"
+               aria-label="Topology Display Controls"
+               class="{{ visualization_workspace.drawer_pane_classes('left') }}">
+            <div class="flex items-start justify-between gap-4 border-b border-outline-subtle px-4 py-4">
+                <div>
+                    <h3 class="text-base font-semibold text-content-primary">Display Controls</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Adjust the current graph presentation.</p>
+                </div>
+                <button type="button"
+                        data-topology-close-pane
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default text-content-secondary hover:bg-surface-hover"
+                        aria-label="Close Display Controls">
+                    <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="p-4">
+                <div class="mt-4 space-y-2.5">
+                    {% for control_id, label, checked in [
+                        ('topology-node-label-toggle', 'Resource Labels', true),
+                        ('topology-edge-label-toggle', 'Relationship Labels', false),
+                        ('topology-group-namespace-toggle', 'Group by Namespace', false)
+                        ] %}
+                        <label class="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2 text-xs font-medium text-content-secondary">
+                            <span>{{ label }}</span>
+                            <input id="{{ control_id }}"
+                                   type="checkbox"
+                                   {% if checked %}checked{% endif %}
+                                   class="h-4 w-4 rounded border-outline-strong accent-kaori-primary focus:ring-outline-focus">
+                        </label>
+                    {% endfor %}
+                    <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
+                        <label for="topology-layout-mode"
+                               class="block text-xs font-semibold text-content-secondary">Layout Mode</label>
+                        <select id="topology-layout-mode"
+                                class="mt-2 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                            <option value="hierarchy">Hierarchy View</option>
+                            <option value="dependency">Dependency View</option>
+                        </select>
+                    </div>
+                </div>
+                <details open
+                         class="mt-5 rounded-xl border border-outline-subtle bg-surface-card p-3">
+                    <summary class="cursor-pointer text-sm font-semibold text-content-primary">Resource Visibility</summary>
+                    <div class="mt-3 grid gap-1.5 text-xs text-content-secondary">
+                        {% for value, label, icon, domain in [
+                            ('cluster', 'Cluster', 'server-cog', 'scope'),
+                            ('namespace', 'Namespace', 'layers-3', 'scope'),
+                            ('node', 'Node', 'server', 'compute'),
+                            ('workload', 'Workload', 'boxes', 'compute'),
+                            ('pod', 'Pod', 'circle-dot', 'compute'),
+                            ('service', 'Service', 'network', 'networking'),
+                            ('ingress', 'Ingress', 'route', 'networking'),
+                            ('configmap', 'ConfigMap', 'file-cog', 'configuration'),
+                            ('secret', 'Secret', 'key-round', 'configuration'),
+                            ('pvc', 'PVC', 'database', 'storage'),
+                            ('pv', 'PV', 'hard-drive', 'storage')
+                            ] %}
+                            <label class="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-1.5 transition hover:bg-surface-hover">
+                                <span class="inline-flex min-w-0 items-center gap-2">
+                                    <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border kaori-topology-domain-{{ domain }}"
+                                          aria-hidden="true">
+                                        <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+                                    </span>
+                                    <span class="truncate">{{ label }}</span>
+                                </span>
+                                <span class="flex items-center gap-2">
+                                    <span data-topology-count-type="{{ value }}"
+                                          class="text-xs font-semibold text-content-muted">0</span>
+                                    <input type="checkbox"
+                                           checked
+                                           data-topology-resource-toggle="{{ value }}"
+                                           class="h-3.5 w-3.5 rounded border-outline-strong accent-kaori-primary focus:ring-outline-focus">
+                                </span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                </details>
+                <details open
+                         class="mt-4 rounded-xl border border-outline-subtle bg-surface-card p-3">
+                    <summary class="cursor-pointer text-sm font-semibold text-content-primary">Relationship Visibility</summary>
+                    <div class="mt-3 grid gap-2 text-xs text-content-secondary">
+                        {% for value, label, edge_class in [
+                            ('contains', 'Contains', 'contains'),
+                            ('owns', 'Owns', 'owns'),
+                            ('scheduled_on', 'Scheduled on', 'scheduled'),
+                            ('selects', 'Selects', 'selects'),
+                            ('routes_to', 'Routes to', 'routes'),
+                            ('uses', 'Uses Configuration', 'uses'),
+                            ('mounts', 'Mounts Claim', 'mounts'),
+                            ('binds', 'Binds Volume', 'binds')
+                            ] %}
+                            <label class="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-1.5 transition hover:bg-surface-hover">
+                                <span class="inline-flex min-w-0 items-center gap-2">
+                                    <span class="h-0.5 w-7 shrink-0 rounded-full kaori-topology-edge-{{ edge_class }}"
+                                          aria-hidden="true"></span>
+                                    <span>{{ label }}</span>
+                                </span>
+                                <input type="checkbox"
+                                       checked
+                                       data-topology-relationship-toggle="{{ value }}"
+                                       class="h-3.5 w-3.5 rounded border-outline-strong accent-kaori-primary focus:ring-outline-focus">
+                            </label>
+                        {% endfor %}
+                    </div>
+                </details>
+                <div class="mt-5">
+                    <h3 class="text-sm font-semibold text-content-primary">Status Legend</h3>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        {{ table_label.status_indicator_label('Healthy', 'normal') }}
+                        {{ table_label.status_indicator_label('Warning', 'warning') }}
+                        {{ table_label.status_indicator_label('Critical', 'critical') }}
+                        {{ table_label.status_indicator_label('Unknown', 'unknown') }}
+                    </div>
+                </div>
+            </div>
+        </aside>
+        <main class="min-w-0">
+            <section id="topology-view-panel-graph"
+                     data-topology-view-panel="graph"
+                     role="tabpanel"
+                     aria-labelledby="topology-view-tab-graph">
+                <div id="topology-canvas-shell"
+                     class="{{ visualization_workspace.canvas_classes() }}">
+                    <div id="topology-namespace-boundaries"
+                         class="pointer-events-none absolute inset-0 z-0"></div>
+                    <div id="topology-canvas"
+                         role="img"
+                         aria-label="Kubernetes resource relationship graph. Use Resource List for a keyboard-accessible representation."
+                         class="absolute inset-0 z-10 h-full w-full"></div>
+                    <div id="topology-empty-state"
+                         class="pointer-events-none absolute inset-0 hidden items-center justify-center p-8">
+                        <div class="pointer-events-auto w-full max-w-md">
+                            {% set empty_state_icon = "waypoints" %}
+                            {% set empty_state_label = "No Results" %}
+                            {% set empty_state_title = "No Topology Resources Found" %}
+                            {% set empty_state_description = "Adjust the cluster, namespace, scope, or depth. Run inventory sync if KAORI has not collected this cluster yet." %}
+                            {% set empty_state_variant = "panel" %}
+                            {% set empty_state_min_height = "min-h-[220px]" %}
+                            {% include 'components/states/_empty_state.html' %}
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section id="topology-view-panel-list"
+                     data-topology-view-panel="list"
+                     role="tabpanel"
+                     aria-labelledby="topology-view-tab-list"
+                     hidden
+                     class="kaori-visualization-canvas overflow-auto bg-surface-card">
+                <div class="min-w-[760px]">
+                    <table class="{{ table_ui.table_classes() }}">
+                        <thead class="{{ table_ui.head_classes() }}">
+                            <tr>
+                                <th class="{{ table_ui.header_cell_classes() }}">Resource</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Type</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Cluster</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Namespace</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Status</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Relationships</th>
+                                <th class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topology-resource-list-body"
+                               class="{{ table_ui.body_classes() }}">
+                        </tbody>
+                    </table>
+                </div>
+                <div id="topology-resource-list-empty" class="hidden p-6">
+                    {% set empty_state_icon = "list-tree" %}
+                    {% set empty_state_label = "No Results" %}
+                    {% set empty_state_title = "No Resources in the Current View" %}
+                    {% set empty_state_description = "Adjust resource visibility or the topology filters to display inventory resources." %}
+                    {% set empty_state_variant = "panel" %}
+                    {% set empty_state_min_height = "min-h-[220px]" %}
+                    {% include 'components/states/_empty_state.html' %}
+                </div>
+            </section>
+        </main>
+        <aside id="topology-details-panel"
+               aria-label="Topology Details"
+               class="{{ visualization_workspace.drawer_pane_classes('right') }}">
+            <div class="flex items-start justify-between gap-4 border-b border-outline-subtle px-4 py-4">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="panel-right" class="h-4 w-4"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-base font-semibold text-content-primary">Topology Details</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Inspect a selected resource or relationship.</p>
+                    </div>
+                </div>
+                <button type="button"
+                        data-topology-close-pane
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default text-content-secondary hover:bg-surface-hover"
+                        aria-label="Close Topology Details">
+                    <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div id="topology-detail-content" class="p-4"></div>
+        </aside>
+    </div>
+    {% include "kubernetes/inventory/topology/partials/_inspector_templates.html" %}
+{% endcall %}

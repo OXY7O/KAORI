@@ -1,0 +1,109 @@
+{% import "components/progress_bar.html" as progress_bar %}
+<section class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}">
+                    <i data-lucide="database" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Capacity &amp; Usage Overview</p>
+                    <h2 class="mt-1 text-base font-semibold text-content-primary">Capacity Operating Boundary</h2>
+                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
+                        Review usable capacity, consumption, headroom, and growth for the selected system.
+                    </p>
+                </div>
+            </div>
+            {{ table_label.status_label(metrics.capacity_posture.status, metrics.capacity_posture.tone) }}
+        </div>
+    </header>
+    <div class="{{ analysis_surface.metric_grid_classes(4) }}">
+        {% set cards = [
+                    ('Usable Capacity', metrics.capacity_total_display, 'Physical capacity available to this system', 'hard-drive'),
+                    ('Current Usage', metrics.usage_total_display, 'Operational stored-data usage', 'database'),
+                    ('Remaining Headroom', metrics.capacity_free_display, metrics.capacity_usage.headroom_source, 'circle-gauge'),
+                    ('Stored Objects', metrics.object_count_display, 'Current object population', 'boxes')
+                ] %}
+        {% for label, value, helper, icon in cards %}
+            <article class="{{ analysis_surface.metric_cell_classes() }}">
+                <div class="flex items-center gap-2">
+                    <span class="{{ analysis_surface.metric_icon_classes('compact') }}">
+                        <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+                    </span>
+                    <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                </div>
+                <p class="mt-3 break-words text-xl font-semibold tabular-nums {{ 'text-content-primary' if value != 'N/A' else analysis_surface.unavailable_value_classes() }}">{{ value }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+            </article>
+        {% endfor %}
+    </div>
+    <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
+        <article class="bg-surface-card p-5 sm:p-6">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="{{ analysis_surface.metric_label_classes() }}">Physical Capacity Utilization</p>
+                    <p class="mt-2 text-2xl font-semibold tabular-nums {{ 'text-content-primary' if metrics.capacity_usage.capacity_evidence_available else analysis_surface.unavailable_value_classes() }}">{{ metrics.capacity_usage.utilization_display }}</p>
+                </div>
+                {{ table_label.status_label(metrics.capacity_posture.status, metrics.capacity_posture.tone) }}
+            </div>
+            {% if metrics.capacity_usage.capacity_evidence_available %}
+                {{ progress_bar.semantic_bar(metrics.capacity_usage.utilization, metrics.capacity_usage.utilization_tone, track_classes='mt-4 h-2.5 overflow-hidden rounded-full bg-surface-hover', label='Object Storage physical capacity utilization') }}
+                <div class="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <span class="text-content-muted">{{ metrics.usage_total_display }} used</span>
+                    <span class="font-semibold text-content-secondary">{{ metrics.capacity_free_display }} remaining</span>
+                </div>
+            {% else %}
+                <div class="mt-4 rounded-lg border border-dashed border-outline-strong bg-surface-muted px-4 py-4 text-sm text-content-muted">
+                    Complete usable-capacity and usage evidence is required before utilization can be evaluated.
+                </div>
+            {% endif %}
+            <p class="mt-4 text-xs leading-5 text-content-secondary">{{ metrics.capacity_posture.detail }}</p>
+        </article>
+        <article class="bg-surface-card p-5 sm:p-6">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="{{ analysis_surface.metric_label_classes() }}">Usage Direction</p>
+                    <p class="mt-2 text-lg font-semibold text-content-primary">{{ metrics.capacity_usage.trend_direction_label }}</p>
+                </div>
+                {{ table_label.status_label(metrics.capacity_usage.trend_direction_label, metrics.capacity_usage.trend_tone) }}
+            </div>
+            <dl class="mt-4 grid grid-cols-2 gap-4 border-t border-outline-subtle pt-4 text-xs">
+                <div>
+                    <dt class="text-content-muted">Growth / Day</dt>
+                    <dd class="mt-1 font-semibold tabular-nums text-content-primary">
+                        {{ metrics.capacity_usage.growth_per_day_display }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-content-muted">Window Change</dt>
+                    <dd class="mt-1 font-semibold tabular-nums text-content-primary">
+                        {{ metrics.capacity_usage.window_delta_display }} · {{ metrics.capacity_usage.window_delta_percent_display }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-content-muted">Daily Capacity Change</dt>
+                    <dd class="mt-1 font-semibold tabular-nums text-content-primary">
+                        {{ metrics.capacity_usage.growth_capacity_percent_display }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-content-muted">Samples</dt>
+                    <dd class="mt-1 font-semibold tabular-nums text-content-primary">
+                        {{ metrics.capacity_usage.trend_sample_count }}
+                    </dd>
+                </div>
+            </dl>
+            <p class="mt-4 text-xs leading-5 text-content-secondary">
+                {% if metrics.capacity_usage.trend_evidence_available %}
+                    Growth describes observed usage direction inside {{ selected_time_range }}; it is not a capacity-exhaustion forecast.
+                {% else %}
+                    At least two valid historical samples are required before a growth direction can be established.
+                {% endif %}
+            </p>
+        </article>
+    </div>
+    <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+        {{ analysis_surface.interpretation_callout('Capacity Reading', metrics.capacity_posture.headline, metrics.capacity_posture.detail, icon='shield-check', role='status', tone=metrics.capacity_posture.tone) }}
+        {{ analysis_surface.interpretation_callout('Measurement Boundary', 'Physical headroom and bucket quota are separate controls', 'Usable capacity is physical headroom; quotas are governance limits, not free capacity.', icon='ruler', role='insight') }}
+    </div>
+</section>

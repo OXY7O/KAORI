@@ -1,0 +1,41 @@
+{% extends "layouts/app.html" %}
+{% import "components/integration_workspace_tabs.html" as integration_tabs %}
+{% import "integrations/components/_provider_frontpage.html" as provider_front %}
+{% block title %}Kubernetes Integrations · KAORI{% endblock title %}
+{% block dashboard_content %}
+    {% set posture_status = "Healthy" if stats.total > 0 and stats.fully_operational == stats.total else ("Attention" if stats.total > 0 else "Not Configured") %}
+    {% set uncovered_assets = stats.total - stats.fully_operational %}
+    {% set overview_metrics = [
+            {"label": "Registered Connections", "value": stats.total, "description": "Reusable Kubernetes API endpoints", "icon": "server-cog"},
+            {"label": "Validated Connections", "value": stats.ready, "description": "Core Kubernetes API validation ready", "icon": "badge-check"},
+            {"label": "Needs Attention", "value": stats.attention, "description": "Validation or runtime review", "icon": "triangle-alert"},
+            {"label": "Coverage Gaps", "value": uncovered_assets, "description": "Clusters without complete consumer coverage", "icon": "unlink"}
+        ] %}
+    <div class="kaori-integration-semantic space-y-6"
+         data-kaori-kubernetes-integration-icon-palette
+         x-data="{ deleteModal: false, deleteUrl: '', deleteName: '', openDelete(url, name) { this.deleteUrl = url; this.deleteName = name; this.deleteModal = true; } }">
+        {{ provider_front.hero("boxes", "network",
+                "Kubernetes Integrations",
+                "Register, validate, and govern reusable Kubernetes API connections and consumer bindings.",
+                stats.total, stats.ready, stats.bindings, posture_status, url_for('cluster.add_cluster') ,
+        ready_total=stats.total) }}
+        {{ provider_front.overview("network",
+                "Kubernetes Integration Overview",
+                "Each Kubernetes connection is registered once; direct API authority and downstream metrics or alert consumers remain separate operational evidence.",
+                overview_metrics,
+                "Kubernetes API",
+                "Endpoint identity, authentication, effective RBAC, version compatibility, and core API capabilities are validated before use.",
+                "Direct Authority and Binding Aware",
+                "Inventory uses direct Kubernetes authority, while Analytics and Alert Intelligence resolve eligible Metrics Source and Alertmanager consumer bindings.",
+                "Kubernetes Remains Authoritative",
+                "Kubernetes owns cluster state, workloads, namespaces, configuration, and API authorization; KAORI governs validation and consumer-resolution evidence.") }}
+        {% call(tab_name) integration_tabs.render("kubernetes", active_tab, stats.total, stats.total) %}
+            {% if tab_name == "coverage" %}
+                {% include "integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_integration_coverage.html" %}
+            {% else %}
+                {% include "integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html" %}
+            {% endif %}
+        {% endcall %}
+        {% include "integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_delete_modal.html" %}
+    </div>
+{% endblock dashboard_content %}

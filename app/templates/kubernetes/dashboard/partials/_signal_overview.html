@@ -1,0 +1,73 @@
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table.html" as table_ui %}
+{% set active_scope = namespace(name='All Clusters') %}
+{% if dashboard.selected_cluster_id %}
+    {% set active_scope.name = "Selected Cluster" %}
+    {% for cluster in dashboard.clusters %}
+        {% if cluster.id|string == dashboard.selected_cluster_id|string %}
+            {% set active_scope.name = cluster.name %}
+        {% endif %}
+    {% endfor %}
+{% endif %}
+{% call operational_section_card.render(
+    'Operational Signal Overview',
+    'Inventory, utilization, and alert posture for the active scope.',
+    'scan-line',
+    header_badge=table_label.metadata_label('8 Indicators', icon='scan-line'),
+    body_classes='p-0'
+    ) %}
+    <div class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex min-w-0 flex-wrap items-center gap-2">
+            <span class="text-xs font-semibold text-content-muted">Active Scope</span>
+            {{ table_label.metadata_label(active_scope.name,
+                        icon='boxes' if dashboard.selected_cluster_id else 'network',
+                        wrap=true,
+                        size='detail') }}
+            {% if dashboard.selected_cluster_id %}
+                {{ table_label.status_indicator_label('Cluster Signals Available', 'normal', size='detail') }}
+            {% else %}
+                {{ table_label.status_indicator_label('Select a Cluster for Detailed Signals', 'warning', size='detail') }}
+            {% endif %}
+            <span class="inline-flex items-center gap-1.5 text-xs text-content-muted">
+                <i data-lucide="clock-3" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                Updated {{ dashboard.last_updated }}
+            </span>
+        </div>
+        <div class="flex w-full items-center gap-2 lg:w-auto">
+            <label for="cluster_id" class="sr-only">Cluster Scope</label>
+            <div class="relative min-w-0 flex-1 lg:w-72 lg:flex-none">
+                <i data-lucide="sliders-horizontal"
+                   class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+                   aria-hidden="true"></i>
+                <select id="cluster_id"
+                        name="cluster_id"
+                        hx-get="{{ url_for('kubernetes_dashboard.index') }}"
+                        hx-target="#dashboard-content"
+                        hx-swap="innerHTML"
+                        hx-push-url="true"
+                        hx-trigger="change"
+                        hx-disabled-elt="this"
+                        hx-include="#dashboard-active-tab"
+                        class="{{ table_ui.filter_select_classes() }} pl-10">
+                    <option value="">All Clusters</option>
+                    {% for cluster in dashboard.clusters %}
+                        <option value="{{ cluster.id }}"
+                                {% if dashboard.selected_cluster_id|string == cluster.id|string %}selected{% endif %}>{{ cluster.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="p-5">
+        <div id="dashboard-kpi-cards"
+             hx-get="{{ url_for('kubernetes_dashboard.section', section='kpi_cards') }}?{{ dashboard_cluster_query }}"
+             hx-trigger="load"
+             hx-target="this"
+             hx-swap="outerHTML">
+            {% with title="Operational Indicators", description="Preparing inventory, utilization, and alert signals.", icon="scan-line", embedded=true %}
+                {% include "kubernetes/dashboard/partials/_section_loading.html" %}
+            {% endwith %}
+        </div>
+    </div>
+{% endcall %}

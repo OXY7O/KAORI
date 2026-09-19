@@ -1,0 +1,54 @@
+{% import "components/table.html" as table_ui %}
+<form id="users-filter-form"
+      method="get"
+      action="{{ url_for('users.index') }}"
+      class="{{ table_ui.filter_layout_classes() }}"
+      hx-get="{{ url_for('users.index') }}"
+      hx-trigger="submit, change delay:120ms from:select, keyup changed delay:450ms from:input[name='search']"
+      hx-target="#users-page-content"
+      hx-swap="outerHTML settle:150ms"
+      hx-push-url="true"
+      hx-indicator="#users-refresh-indicator"
+      hx-sync="#users-filter-form:replace">
+    <input type="hidden" name="page" value="1">
+    <input type="hidden" name="per_page" value="{{ filters.per_page }}">
+    <label class="min-w-0">
+        <span class="{{ table_ui.filter_label_classes() }}">Search User</span>
+        {{ table_ui.search_field('search', filters.search, 'Username, display name, or email', 'users-search') }}
+    </label>
+    <label class="min-w-0">
+        <span class="{{ table_ui.filter_label_classes() }}">Account State</span>
+        <select name="status" class="{{ table_ui.filter_select_classes() }}">
+            {% for option in status_options %}
+                <option value="{{ option }}"
+                        {% if filters.status == option %}selected{% endif %}>
+                    {{ {'all': 'All States', 'active': 'Active', 'inactive': 'Inactive', 'deleted': 'Deleted'}.get(option, option|title) }}
+                </option>
+            {% endfor %}
+        </select>
+    </label>
+    <label class="min-w-0">
+        <span class="{{ table_ui.filter_label_classes() }}">Identity Source</span>
+        <select name="auth_source" class="{{ table_ui.filter_select_classes() }}">
+            {% for option in auth_source_options %}
+                <option value="{{ option }}"
+                        {% if filters.auth_source == option %}selected{% endif %}>
+                    {{ {'all': 'All Sources', 'database': 'Local Database', 'directory': 'Directory', 'sso': 'SSO'}.get(option, option|title) }}
+                </option>
+            {% endfor %}
+        </select>
+    </label>
+    <label class="min-w-0">
+        <span class="{{ table_ui.filter_label_classes() }}">Role</span>
+        <select name="role_id" class="{{ table_ui.filter_select_classes() }}">
+            <option value="all">All Roles</option>
+            {% for role in roles %}
+                <option value="{{ role.id }}"
+                        {% if filters.role_id == role.id %}selected{% endif %}>
+                    {{ role.display_name }}
+                    {% if not role.is_active %}· Inactive{% endif %}
+                </option>
+            {% endfor %}
+        </select>
+    </label>
+</form>

@@ -1,0 +1,58 @@
+<div class="space-y-4 p-5 sm:p-6" x-data="{ openPipelineStage: null }">
+    <div class="grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-3">
+        <div class="bg-surface-card px-4 py-3">
+            <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Entry Modes</p>
+            <p class="mt-1.5 text-sm font-semibold leading-6 text-content-primary">Manual + Scheduled</p>
+        </div>
+        <div class="bg-surface-card px-4 py-3">
+            <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Published Outputs</p>
+            <p class="mt-1.5 text-sm font-semibold leading-6 text-content-primary">PDF / XLSX / CSV</p>
+        </div>
+        <div class="bg-surface-card px-4 py-3">
+            <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Delivery Integration</p>
+            <p class="mt-1.5 text-sm font-semibold leading-6 text-content-primary">Notification Channels</p>
+        </div>
+    </div>
+    <div class="space-y-2" aria-label="Generate report pipeline stages">
+        {% for item in payload.pipeline_status %}
+            <article class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                <button type="button"
+                        class="flex w-full items-start gap-3 px-4 py-3.5 text-left transition hover:bg-surface-hover"
+                        @click="openPipelineStage = openPipelineStage === {{ loop.index0 }} ? null : {{ loop.index0 }}"
+                        :aria-expanded="openPipelineStage === {{ loop.index0 }}"
+                        aria-controls="report-pipeline-stage-{{ loop.index0 }}">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-primary text-xs font-semibold text-white"
+                          aria-hidden="true">{{ loop.index }}</span>
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
+                    </span>
+                    <span class="min-w-0 flex-1">
+                        <span class="block text-sm font-semibold leading-5 text-content-primary">{{ item.name }}</span>
+                        <span class="mt-1 block text-xs leading-5 text-content-muted">{{ item.summary|default(item.description) }}</span>
+                    </span>
+                    <span class="flex shrink-0 items-center gap-2 pt-0.5">
+                        {{ table_label.status_label(item.status, item.tone, none, 'detail') }}
+                        <i data-lucide="chevron-down"
+                           class="h-4 w-4 shrink-0 text-content-muted transition-transform"
+                           :class="{ 'rotate-180': openPipelineStage === {{ loop.index0 }} }"
+                           aria-hidden="true"></i>
+                    </span>
+                </button>
+                <div id="report-pipeline-stage-{{ loop.index0 }}"
+                     x-show="openPipelineStage === {{ loop.index0 }}"
+                     x-collapse
+                     x-cloak
+                     class="border-t border-outline-subtle bg-surface-hover px-4 py-3 sm:pl-[6.75rem]">
+                    <p class="text-xs leading-5 text-content-secondary">{{ item.description }}</p>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+    <div class="flex items-start gap-2 rounded-lg border border-kaori-primary/20 bg-kaori-soft px-3 py-2.5 text-xs leading-5 text-content-secondary">
+        <i data-lucide="info"
+           class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+           aria-hidden="true"></i>
+        <p><span class="font-semibold text-content-primary">Canonical flow:</span> manual and scheduled requests both create a report record and enqueue one JobExecution on the dedicated Reports queue. The Reports worker renders and stores the artifact, then scheduled delivery emits a governed report event to the selected Notification Channels.</p>
+    </div>
+</div>

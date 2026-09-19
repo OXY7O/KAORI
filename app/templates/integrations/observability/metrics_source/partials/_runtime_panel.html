@@ -1,0 +1,156 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "integrations/components/_runtime_decision.html" as runtime_decision %}
+{% import "integrations/components/_provider_job_status.html" as provider_job_status %}
+{% import "integrations/components/_validation_poller.html" as validation_poller %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% set runtime_product = runtime_state.capability_metadata.endpoint_product|default(instance.endpoint_product or provider.label, true) %}
+{% set runtime_version = runtime_state.capability_metadata.endpoint_version|default(instance.detected_version or 'Not Detected', true) %}
+{% set runtime_provider = runtime_state.capability_metadata.provider_key|default(instance.provider_key, true) %}
+{% set runtime_adapter = runtime_state.capability_metadata.adapter_key|default(instance.adapter_key, true) %}
+{% set runtime_query_language = runtime_state.capability_metadata.query_language|default(instance.query_language, true) %}
+{% set runtime_profile_label = provider_runtime_profile_label %}
+{% set runtime_query_contract_label = query_contract_label %}
+{% set runtime_attention = runtime_state.attention_factors|default([], true) %}
+{% set runtime_observed = runtime_state.observed_at is not none %}
+{% set health_tone = 'ready' if runtime_observed and runtime_state.health_status == 'healthy' else ('degraded' if runtime_observed and runtime_state.health_status in ['degraded', 'warning'] else ('blocked' if runtime_observed and runtime_state.health_status in ['unhealthy', 'failed'] else 'not_observed')) %}
+{% set runtime_gate_label = 'Observation Required' if not runtime_observed else ('Runtime Healthy' if runtime_state.health_status == 'healthy' else ('Runtime Blocked' if runtime_state.health_status in ['unhealthy', 'failed'] else 'Runtime Attention Required')) %}
+{% if runtime_state.diagnostics %}
+    {% set runtime_primary_finding = runtime_state.diagnostics[0].summary %}
+{% elif runtime_state.health_summary %}
+    {% set runtime_primary_finding = runtime_state.health_summary %}
+{% elif runtime_state.message %}
+    {% set runtime_primary_finding = runtime_state.message %}
+{% else %}
+    {% set runtime_primary_finding = "No current runtime finding requires operator attention." %}
+{% endif %}
+{% if not runtime_observed %}
+    {% set runtime_next_action = "Run Runtime Refresh to establish persisted provider-health evidence." %}
+{% elif runtime_state.health_status in ['unhealthy', 'failed'] %}
+    {% set runtime_next_action = "Restore metrics-source endpoint reachability, refresh runtime evidence, and rerun Full Validation when the provider compatibility or core API contract changed." %}
+{% elif runtime_state.readiness != 'ready' %}
+    {% set runtime_next_action = "Resolve provider-level Full Validation blockers before using this runtime as a metrics source." %}
+{% elif runtime_attention %}
+    {% set runtime_next_action = "Review the active runtime finding, remediate it, then refresh persisted runtime evidence." %}
+{% else %}
+    {% set runtime_next_action = "No immediate remediation is required. Continue scheduled Runtime Refresh after endpoint or infrastructure changes." %}
+{% endif %}
+{% set observation_rows = [
+    ('Observed', runtime_state.observed_at_display),
+    ('Latency', runtime_state.latency_display),
+    ('Diagnostics', (runtime_state.diagnostics|length) ~ ' checks')
+] %}
+<article id="metrics-source-runtime-panel"
+         class="relative {{ integration_ui.section_shell_classes() }} font-sans"
+         data-kaori-metrics-source-runtime-v4
+         data-kaori-provider-runtime-kubernetes-pattern>
+    {{ validation_poller.render(runtime_refresh_job and runtime_refresh_job.is_active,
+        url_for('metrics.runtime_refresh_status', instance_id=instance.id, task_id=runtime_refresh_job.task_id) if runtime_refresh_job and runtime_refresh_job.is_active else '',
+    '#metrics-source-runtime-panel'
+    ) }}
+    {% call connection_validation_header.render(
+        'Runtime Health & Diagnostics',
+        'Review provider health, concise diagnostics, endpoint context, and Runtime Refresh vs Full Validation ownership.',
+        icon='activity',
+        loading_id='metrics-source-runtime-loading',
+        loading_active=runtime_refresh_job and runtime_refresh_job.is_active,
+        loading_label='Refreshing metrics-source runtime health'
+        ) %}
+        <button type="button"
+                hx-post="{{ runtime_state.refresh_url }}"
+                hx-target="#metrics-source-runtime-panel"
+                hx-swap="outerHTML"
+                hx-disabled-elt="this"
+                hx-indicator="#metrics-source-runtime-loading"
+                {% if runtime_refresh_job and runtime_refresh_job.is_active %}disabled{% endif %}
+                class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70">
+            <i data-lucide="{{ 'loader-circle' if runtime_refresh_job and runtime_refresh_job.is_active else 'refresh-cw' }}"
+               class="h-4 w-4{% if runtime_refresh_job and runtime_refresh_job.is_active %} animate-spin{% endif %}"
+               aria-hidden="true"></i>
+            {{ 'Refresh Running' if runtime_refresh_job and runtime_refresh_job.is_active else 'Refresh Runtime' }}
+        </button>
+    {% endcall %}
+    {{ provider_job_status.render(runtime_refresh_job, 'Metrics source runtime refresh running', provider.label) }}
+    <div class="space-y-4 p-4 sm:p-5" data-kaori-metrics-source-runtime-layout>
+        {{ runtime_decision.render(health_tone,
+                runtime_state.health_status_label if runtime_observed else 'Not Observed',
+                runtime_state.health_score_display if runtime_observed else 'N/A',
+                'Persisted Runtime Refresh evidence',
+                runtime_gate_label,
+                'Health gate only; provider Full Validation and consumer-binding validation remain independent.',
+                runtime_state.readiness,
+                runtime_state.readiness_label,
+                runtime_profile_label ~ ' · ' ~ runtime_state.capability_count ~ ' observed capabilities',
+                observation_rows,
+                runtime_primary_finding,
+                runtime_attention|length,
+                runtime_next_action,
+                'Full technical diagnostic detail and remediation stay in Recent Runtime Observations. This workspace keeps only the current operational summary.') }}
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                 aria-labelledby="metrics-source-runtime-evidence-title"
+                 data-kaori-metrics-source-runtime-evidence>
+            <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+                <div class="flex min-w-0 items-start gap-3">
+                    {{ integration_ui.palette_icon('stethoscope', 'brand', size='md') }}
+                    <div class="min-w-0">
+                        <h3 id="metrics-source-runtime-evidence-title"
+                            class="text-base font-semibold leading-6 text-content-primary">Runtime Evidence</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Endpoint contract context and concise persisted diagnostics share one full-width evidence surface.</p>
+                    </div>
+                </div>
+                {{ table_label.metadata_label((runtime_state.diagnostics|length) ~ ' Checks') }}
+            </header>
+            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6"
+                 data-kaori-metrics-source-endpoint-contract>
+                {% for label, value, helper in [
+                    ('Endpoint Product', runtime_product|replace('_', ' ')|title, 'Validated provider product'),
+                    ('Detected Runtime', runtime_version, 'Observed provider version'),
+                    ('Provider Runtime Profile', runtime_profile_label, 'Detected provider runtime compatibility'),
+                    ('Query Contract', runtime_query_contract_label, 'Shared Prometheus HTTP API and PromQL contract'),
+                    ('Provider Key', runtime_provider|replace('_', ' ')|title, 'Registered metrics provider'),
+                    ('Adapter / Query', runtime_adapter|replace('_', ' ')|title ~ ' · ' ~ runtime_query_language|upper, 'Execution adapter and query-language contract')
+                    ] %}
+                    <div class="bg-surface-card px-4 py-3.5 sm:px-5">
+                        <p class="text-xs font-medium text-content-muted">{{ label }}</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="border-t border-outline-subtle"
+                 data-kaori-metrics-source-diagnostic-list>
+                {% for step in runtime_state.diagnostics %}
+                    {% set step_tone = 'ready' if step.status == 'success' else ('degraded' if step.status == 'warning' else ('blocked' if step.status == 'failed' else 'validation_required')) %}
+                    <article class="grid gap-3 border-b border-outline-subtle px-4 py-4 last:border-b-0 sm:px-5 lg:grid-cols-12 lg:items-center">
+                        <div class="lg:col-span-3">
+                            <p class="text-sm font-semibold text-content-primary">{{ step.label }}</p>
+                            <p class="mt-0.5 text-xs text-content-muted">{{ step.category_label }}</p>
+                        </div>
+                        <p class="text-xs leading-5 text-content-secondary [overflow-wrap:anywhere] lg:col-span-6">{{ step.summary }}</p>
+                        <p class="text-xs font-semibold text-content-secondary lg:col-span-1">{{ step.duration_display }}</p>
+                        <div class="lg:col-span-2 lg:text-right">{{ integration_status(step_tone, step.status_label, display='indicator') }}</div>
+                    </article>
+                {% else %}
+                    <div class="px-5 py-10 text-center">
+                        <p class="text-sm font-semibold text-content-primary">No Diagnostic Evidence Yet</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Run Refresh Runtime to establish endpoint health and diagnostic evidence.</p>
+                    </div>
+                {% endfor %}
+            </div>
+            <footer class="border-t border-outline-subtle bg-surface-hover px-4 py-3.5 sm:px-5">
+                <div class="flex items-start gap-3">
+                    {{ integration_ui.palette_icon('shield-check', 'brand', size='sm') }}
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-content-primary">Observation Boundary</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime Refresh owns reachability, latency, current health, and diagnostics. Full Validation owns provider compatibility and core metrics-source capabilities; consumer bindings own Kubernetes, Object Storage, and future metric contracts.</p>
+                    </div>
+                </div>
+            </footer>
+        </section>
+    </div>
+</article>
+{% include "components/operation_feedback_oob.html" %}
+{{ framed_workspace_tabs.badge_oob("metrics-source", "runtime", runtime_state.health_status_label|default("Not Observed") ) }}

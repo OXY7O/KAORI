@@ -1,0 +1,230 @@
+{% import "components/pagination.html" as pagination_ui %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
+<section id="tls-certificates-table-card"
+         class="{{ table_ui.block_classes() }}">
+    {% set inventory_header_actions = none %}
+    {% if payload.filters.cluster_id or payload.filters.namespace or payload.filters.status != 'all' or payload.filters.search %}
+        {% set inventory_header_actions %}
+            {{ registry_ui.clear_filters_action(url_for('governance.tls_certificates', per_page=payload.pagination.per_page) ,
+            table_ui.action_classes(),
+            hx_get=url_for('governance.tls_certificates', per_page=payload.pagination.per_page, partial_mode='page_workspace'),
+            target='#tls-certificates-page-workspace',
+            indicator='#tls-certificates-table-loading'
+            ) }}
+        {% endset %}
+    {% endif %}
+    {{ table_ui.inventory_block_header('lock-keyhole',
+        'TLS Certificate Registry',
+        'Certificate validity, declared host coverage, and Ingress relationship evidence.',
+        'tls-certificates-table-loading',
+        'Refreshing TLS Certificate Registry',
+        url_for('integrations.kubernetes') ,
+    header_actions=inventory_header_actions
+    ) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% include "kubernetes/governance/tls_certificates/partials/_filters.html" %}
+    </div>
+    <div class="w-full overflow-hidden">
+        <table class="w-full table-fixed text-left text-sm text-content-secondary">
+            <caption class="sr-only">TLS certificate governance registry for the selected committed worker snapshot.</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="w-[29%] px-4 py-3 text-left">Certificate</th>
+                    <th scope="col" class="w-[20%] px-4 py-3 text-left">Scope</th>
+                    <th scope="col" class="w-[16%] px-4 py-3 text-left">Validity</th>
+                    <th scope="col" class="hidden w-[13%] px-4 py-3 text-left lg:table-cell">Host Coverage</th>
+                    <th scope="col" class="hidden w-[10%] px-4 py-3 text-left xl:table-cell">Ingress Usage</th>
+                    <th scope="col" class="w-[12%] px-3 py-3 text-right">Details</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for record in payload.records %}
+                    {% set presentation = record.presentation or {} %}
+                    {% set cluster_name = record.cluster.name if record.cluster else record.cluster_id %}
+                    {% set cluster_environment = record.cluster.environment if record.cluster else '' %}
+                    <tr id="tls-certificate-row-{{ record.id }}"
+                        class="{{ table_ui.row_classes() }}">
+                        <td class="min-w-0 px-4 py-3 align-middle">
+                            <div class="flex min-w-0 items-start gap-2.5">
+                                <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="shield-check" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]"
+                                       title="{{ record.secret_name }}">{{ record.secret_name }}</p>
+                                    <p class="mt-1 truncate text-xs leading-5 text-content-muted"
+                                       title="Common Name · {{ record.common_name or 'Not Reported' }}">CN · {{ record.common_name or 'Not Reported' }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="min-w-0 px-4 py-3 align-middle">
+                            <div class="flex min-w-0 items-start gap-2.5">
+                                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="server" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-semibold leading-5 text-content-primary"
+                                       title="{{ cluster_name }}">{{ cluster_name }}</p>
+                                    <p class="mt-0.5 truncate text-xs leading-5 text-content-muted"
+                                       title="{{ cluster_environment|environment_name(empty='Environment not specified') }}">{{ cluster_environment|environment_name(empty='Environment not specified') }}</p>
+                                    <p class="truncate text-xs leading-5 text-content-muted"
+                                       title="Namespace · {{ record.namespace }}">Namespace · {{ record.namespace }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="min-w-0 px-4 py-3 align-middle">
+                            <div class="min-w-0 space-y-1">
+                                {{ table_label.status_indicator_label(presentation.status_label or 'Unknown', presentation.status_tone or 'unknown') }}
+                                {% if record.not_after %}
+                                    <p class="truncate text-xs font-medium leading-5 text-content-primary"
+                                       title="{{ record.not_after|user_date('N/A') }}">{{ record.not_after|user_date("N/A") }}</p>
+                                    <p class="truncate text-xs leading-5 text-content-muted">
+                                        {% if record.status == 'expired' %}
+                                            {{ (record.days_remaining or 0)|abs }} Days Expired
+                                        {% else %}
+                                            {{ record.days_remaining }} Days Remaining
+                                        {% endif %}
+                                    </p>
+                                {% else %}
+                                    <p class="line-clamp-2 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]"
+                                       title="{{ record.parse_error or 'Validity not reported' }}">{{ record.parse_error or 'Validity not reported' }}</p>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="hidden min-w-0 px-4 py-3 align-middle lg:table-cell">
+                            <div class="min-w-0 space-y-1">
+                                {{ table_label.status_indicator_label(presentation.coverage_label or 'Not Reported', presentation.coverage_tone or 'unknown') }}
+                                {% if not presentation.coverage_reported %}
+                                    <p class="text-xs leading-5 text-content-muted">Host mapping evidence unavailable</p>
+                                {% elif (record.declared_host_count or 0) == 0 %}
+                                    <p class="text-xs leading-5 text-content-muted">No Declared Hosts</p>
+                                {% else %}
+                                    <p class="truncate text-xs font-medium leading-5 text-content-primary">{{ record.covered_host_count or 0 }}/{{ record.declared_host_count }} Hosts Covered</p>
+                                    <p class="truncate text-xs leading-5 text-content-muted"
+                                       {% if record.uncovered_hosts %}title="{{ record.uncovered_hosts|join(', ') }}"{% endif %}>
+                                        {{ (record.uncovered_hosts or [])|length }} Uncovered
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="hidden min-w-0 px-4 py-3 align-middle xl:table-cell">
+                            {% if presentation.ingress_mapping_reported %}
+                                {% set consumer_count = presentation.ingress_consumer_count or 0 %}
+                                <p class="truncate text-sm font-semibold text-content-primary">{{ consumer_count }} {{ 'Ingress' if consumer_count == 1 else 'Ingresses' }}</p>
+                                <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ presentation.declared_host_count or 0 }} Declared Hosts</p>
+                            {% else %}
+                                <p class="text-sm font-semibold text-content-primary">Not Reported</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Ingress mapping unavailable</p>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-3 text-right align-middle">
+                            {{ resource_detail_modal.detail_button(record.id,
+                                                        url_for('governance.tls_certificates_detail', certificate_id=record.id) ,
+                            record.secret_name,
+                            'TLS Certificate',
+                            'whitespace-nowrap'
+                            ) }}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="p-0">
+                            {% set empty_state_icon = "shield-check" %}
+                            {% set empty_state_title = "No TLS Certificates Found" %}
+                            {% set empty_state_description = "Adjust the filters or run Sync TLS to collect certificate metadata from registered clusters." %}
+                            {% include 'components/states/_empty_state.html' %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% set base_query = {
+            'cluster_id': payload.filters.cluster_id,
+            'namespace': payload.filters.namespace,
+            'status': payload.filters.status,
+            'search': payload.filters.search,
+            'per_page': payload.pagination.per_page
+        } %}
+    {% set partial_query = {
+            'cluster_id': payload.filters.cluster_id,
+            'namespace': payload.filters.namespace,
+            'status': payload.filters.status,
+            'search': payload.filters.search,
+            'per_page': payload.pagination.per_page,
+            'partial_mode': 'table'
+        } %}
+    <footer class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <p>
+                Showing <span class="font-semibold text-content-primary">{{ payload.pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ payload.pagination.end_item }}</span>
+                of <span class="font-semibold text-content-primary">{{ payload.pagination.total_items }}</span>
+                {{ 'TLS Certificate' if payload.pagination.total_items == 1 else 'TLS Certificates' }}
+            </p>
+            <form hx-get="{{ url_for('governance.tls_certificates') }}"
+                  hx-target="#tls-certificates-table-card"
+                  hx-swap="outerHTML"
+                  hx-indicator="#tls-certificates-table-loading"
+                  class="flex items-center gap-2 text-left">
+                <input type="hidden" name="partial_mode" value="table">
+                <input type="hidden" name="page" value="1">
+                <input type="hidden"
+                       name="cluster_id"
+                       value="{{ payload.filters.cluster_id }}">
+                <input type="hidden"
+                       name="namespace"
+                       value="{{ payload.filters.namespace }}">
+                <input type="hidden" name="status" value="{{ payload.filters.status }}">
+                <input type="hidden" name="search" value="{{ payload.filters.search }}">
+                <span class="font-semibold text-content-secondary">Rows</span>
+                <select name="per_page"
+                        aria-label="Rows Per Page"
+                        data-kaori-auto-submit
+                        class="{{ pagination_ui.page_size_classes() }}">
+                    {% for option in payload.pagination.allowed_per_page %}
+                        <option value="{{ option }}"
+                                {% if payload.pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            {% if payload.pagination.has_prev %}
+                {% set prev_href = url_for('governance.tls_certificates', page=payload.pagination.prev_page, **base_query) %}
+                {% set prev_partial = url_for('governance.tls_certificates', page=payload.pagination.prev_page, **partial_query) %}
+                <a href="{{ prev_href }}"
+                   hx-get="{{ prev_partial }}"
+                   hx-target="#tls-certificates-table-card"
+                   hx-swap="outerHTML"
+                   hx-indicator="#tls-certificates-table-loading"
+                   class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+            {% endif %}
+            {{ pagination_ui.numeric_pages(payload.pagination.page,
+                        payload.pagination.total_pages,
+                        endpoint='governance.tls_certificates',
+                        query_params=partial_query,
+                        hx_target='#tls-certificates-table-card',
+                        hx_indicator='#tls-certificates-table-loading',
+                        hx_swap='outerHTML') }}
+            {% if payload.pagination.has_next %}
+                {% set next_href = url_for('governance.tls_certificates', page=payload.pagination.next_page, **base_query) %}
+                {% set next_partial = url_for('governance.tls_certificates', page=payload.pagination.next_page, **partial_query) %}
+                <a href="{{ next_href }}"
+                   hx-get="{{ next_partial }}"
+                   hx-target="#tls-certificates-table-card"
+                   hx-swap="outerHTML"
+                   hx-indicator="#tls-certificates-table-loading"
+                   class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+            {% endif %}
+        </div>
+    </footer>
+</section>

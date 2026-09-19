@@ -1,0 +1,47 @@
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/table_label.html" as table_label %}
+{% set recommendation_count = dashboard.recommended_actions|length %}
+{% call operational_section_card.render(
+    'Recommended Actions',
+    'Top active findings from the Intelligence recommendation catalog.',
+    'sparkles',
+    id='object-storage-dashboard-recommended-actions',
+    header_badge=table_label.metadata_label(recommendation_count ~ ' Active', icon='list-checks'),
+    body_classes='grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-5'
+    ) %}
+    {% for action in dashboard.recommended_actions %}
+        <a href="{{ url_for('intelligence.recommendation_details', recommendation_key=action.rule_key) }}"
+           title="{{ action.rule_key }}"
+           class="group flex min-h-[190px] flex-col rounded-lg border border-outline-subtle bg-surface-elevated p-4 transition-colors hover:border-outline-focus hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card">
+            <div class="mb-3 flex items-start justify-between gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if action.severity == 'critical' %}bg-status-critical-soft text-status-critical{% elif action.severity == 'warning' %}bg-status-warning-soft text-status-warning{% elif action.severity == 'success' %}bg-status-normal-soft text-status-normal{% else %}bg-status-info-soft text-status-info{% endif %}"
+                      aria-hidden="true">
+                    <i data-lucide="{{ action.icon }}" class="h-4 w-4"></i>
+                </span>
+                <div class="flex flex-wrap justify-end gap-1.5">
+                    {% set normalized_priority = action.priority|default('P3', true)|upper %}
+                    {% set priority_tone = 'critical' if normalized_priority == 'P1' else ('warning' if normalized_priority == 'P2' else ('info' if normalized_priority == 'P3' else 'unknown')) %}
+                    {{ table_label.status_label(normalized_priority, tone=priority_tone) }}
+                    {{ table_label.metadata_label(action.category) }}
+                </div>
+            </div>
+            <p class="text-sm font-semibold leading-5 text-content-primary transition-colors group-hover:text-kaori-primary">{{ action.title }}</p>
+            <p class="mt-2 line-clamp-4 text-xs leading-5 text-content-muted">{{ action.description }}</p>
+            <div class="mt-auto flex items-center gap-2 border-t border-outline-subtle pt-3 text-xs font-medium text-content-muted">
+                <i data-lucide="database"
+                   class="h-3.5 w-3.5 shrink-0 text-kaori-primary"
+                   aria-hidden="true"></i>
+                <span class="truncate">{{ action.source }}</span>
+            </div>
+        </a>
+    {% else %}
+        <div class="md:col-span-2 xl:col-span-5">
+            {% set empty_state_icon = "sparkles" %}
+            {% set empty_state_label = "No Findings" %}
+            {% set empty_state_title = "No Active Recommendations" %}
+            {% set empty_state_description = "No catalog-backed recommendation matches the current dashboard scope." %}
+            {% set empty_state_variant = "panel" %}
+            {% include 'components/states/_empty_state.html' %}
+        </div>
+    {% endfor %}
+{% endcall %}

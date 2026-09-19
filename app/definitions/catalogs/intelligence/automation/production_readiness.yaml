@@ -1,0 +1,25 @@
+schema_version: 1
+kind: automation_production_readiness
+required_checks:
+  - architecture_boundaries
+  - functional_tests
+  - contract_tests
+  - migration_upgrade
+  - migration_downgrade
+  - registry_fingerprint_parity
+  - kubernetes_rbac
+  - server_side_dry_run
+  - duplicate_delivery
+  - worker_loss_recovery
+  - resource_version_conflict
+  - kill_switch
+  - maintenance_mode
+  - circuit_breaker
+  - rollback_drill
+  - activity_audit
+rollout_stages:
+  - disabled
+  - shadow
+  - non_production
+  - canary
+  - production

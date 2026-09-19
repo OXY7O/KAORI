@@ -1,0 +1,35 @@
+{% import "integrations/components/_provider_configuration_contract.html" as provider_configuration_contract %}
+{% set readiness = instance.readiness_status or "validation_required" %}
+{% set auth_label = (instance.auth_type or "none")|replace("_", " ")|title %}
+{% set deployment_label = (instance.deployment_type or "external_managed")|replace("_", " ")|title %}
+{% set compatibility_label = instance.compatibility_profile or "Validation Required" %}
+{% set summary_items = [
+    ("Canonical Identity", instance.name, "Stable provider and audit identity"),
+    ("Environment", instance.environment|default("")|title, "Coverage and policy context"),
+    ("Detected Version", instance.detected_version or "Not Observed", "Observed from the Alertmanager API"),
+    ("Compatibility", compatibility_label, "Resolved by Validation & Capabilities")
+] %}
+{% set evidence_items = [
+    ("server", "brand", "Alertmanager API Endpoint", instance.endpoint, "Base API endpoint queried by KAORI."),
+    ("shield-check", "success" if instance.verify_ssl else "warning", "TLS Verification", "Enabled" if instance.verify_ssl else "Disabled", "Certificate validation policy for this source."),
+    ("key-round", "info", "Access Contract", auth_label, "Credentials remain encrypted and independent from consumer selectors."),
+    ("siren", "success" if instance.enabled else "warning", "Alerting Authority", deployment_label if instance.enabled else "Source Disabled", "Alertmanager owns alert routing and delivery; bindings only scope consumer use.")
+] %}
+{% set flow_items = [('Configure', 'Set reusable identity, endpoint access, TLS, authentication, and deployment contract.', 'settings-2'), ('Validate', 'Confirm provider-neutral Alertmanager status, alerts, and silences APIs.', 'badge-check'), ('Observe', 'Persist runtime health and provider diagnostics independently from consumers.', 'activity'), ('Bind', 'Associate Kubernetes, Object Storage, and future managed assets through alert consumer profiles.', 'waypoints')] %}
+{% set operational_metadata = [
+    "Alert Routing Authority",
+    "Read-Only Discovery",
+    "Alertmanager API v2",
+    "Deployment · " ~ deployment_label
+] %}
+{{ provider_configuration_contract.render("Alertmanager",
+"siren",
+readiness,
+summary_items,
+evidence_items,
+"Alertmanager owns alert routing and delivery. KAORI keeps provider readiness separate from consumer bindings.",
+flow_items,
+"Connection changes require revalidation; existing consumer bindings stay attached to their managed assets.",
+url_for("alertmanager.edit_instance", instance_id=instance.id) ,
+operational_metadata=operational_metadata
+) }}

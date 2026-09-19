@@ -1,0 +1,150 @@
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/table_label.html" as table_label %}
+{% import "intelligence/components/_workspace.html" as intelligence_ui %}
+{% import "intelligence/partials/automation_control/_components.html" as automation_ui %}
+{% set control = payload.overview_state %}
+{% call automation_ui.section(
+    'Control Path',
+    'Evidence moves through runbook matching, review, execution admission, and verification. Later gates cannot bypass earlier controls.',
+    'route',
+    control.posture.label,
+    control.posture.tone
+    ) %}
+    <div class="space-y-4 px-4 pb-5 sm:px-5">
+        <div>
+            <div class="mb-3 flex items-center gap-2">
+                <span class="inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 text-xs font-semibold leading-5 text-kaori-primary-dark">Phase 1</span>
+                <p class="text-xs font-semibold leading-5 text-content-secondary">Evidence & Decision Formation</p>
+            </div>
+            <ol class="grid gap-3 lg:grid-cols-3">
+                {% for stage in control.pipeline[:3] %}
+                    <li class="min-w-0">
+                        <article class="h-full rounded-xl border border-outline-subtle bg-surface-hover p-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-outline bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ stage.number }}</span>
+                                    <div class="flex min-w-0 items-center gap-2">
+                                        <i data-lucide="{{ stage.icon }}"
+                                           class="h-4 w-4 shrink-0 text-kaori-primary"
+                                           aria-hidden="true"></i>
+                                        <h4 class="text-sm font-semibold leading-5 text-content-primary">{{ stage.label }}</h4>
+                                    </div>
+                                </div>
+                                {{ table_label.status_label(stage.status, stage.tone, size='compact') }}
+                            </div>
+                            <p class="mt-3 text-xs leading-5 text-content-muted">{{ stage.description }}</p>
+                        </article>
+                    </li>
+                {% endfor %}
+            </ol>
+        </div>
+        <div class="flex items-center gap-3" aria-hidden="true">
+            <span class="h-px flex-1 bg-outline-subtle"></span>
+            <span class="flex h-7 w-7 items-center justify-center rounded-full border border-brand-outline bg-surface-card text-kaori-primary">
+                <i data-lucide="arrow-down" class="h-3.5 w-3.5"></i>
+            </span>
+            <span class="h-px flex-1 bg-outline-subtle"></span>
+        </div>
+        <div>
+            <div class="mb-3 flex items-center gap-2">
+                <span class="inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 text-xs font-semibold leading-5 text-kaori-primary-dark">Phase 2</span>
+                <p class="text-xs font-semibold leading-5 text-content-secondary">Approval, Execution & Verification</p>
+            </div>
+            <ol start="4" class="grid gap-3 lg:grid-cols-3">
+                {% for stage in control.pipeline[3:] %}
+                    <li class="min-w-0">
+                        <article class="h-full rounded-xl border border-outline-subtle bg-surface-hover p-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-outline bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ stage.number }}</span>
+                                    <div class="flex min-w-0 items-center gap-2">
+                                        <i data-lucide="{{ stage.icon }}"
+                                           class="h-4 w-4 shrink-0 text-kaori-primary"
+                                           aria-hidden="true"></i>
+                                        <h4 class="text-sm font-semibold leading-5 text-content-primary">{{ stage.label }}</h4>
+                                    </div>
+                                </div>
+                                {{ table_label.status_label(stage.status, stage.tone, size='compact') }}
+                            </div>
+                            <p class="mt-3 text-xs leading-5 text-content-muted">{{ stage.description }}</p>
+                        </article>
+                    </li>
+                {% endfor %}
+            </ol>
+        </div>
+    </div>
+{% endcall %}
+{% call automation_ui.section(
+    'Safety & Readiness',
+    'Execution state, safety blocks, readiness evidence, and lifecycle delivery are reported independently instead of collapsing into one Ready status.',
+    'shield-check'
+    ) %}
+    <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-5">
+        {% set guardrails = [
+                    ('lock-keyhole' if not control.execution.enabled else 'unlock', 'Execution State', control.execution.label, control.execution.tone, control.execution.helper),
+                    ('shield-alert', 'Global Kill Switch', control.guardrails.kill_switch.label, control.guardrails.kill_switch.tone, control.guardrails.kill_switch.helper),
+                    ('construction', 'Maintenance Mode', control.guardrails.maintenance.label, control.guardrails.maintenance.tone, control.guardrails.maintenance.helper),
+                    ('clipboard-check', 'Production Readiness', control.guardrails.readiness.label, control.guardrails.readiness.tone, control.guardrails.readiness.helper),
+                    ('send', 'Notification Delivery', control.guardrails.notifications.label, control.guardrails.notifications.tone, control.guardrails.notifications.helper)
+                ] %}
+        {% for icon, label, value, tone, helper in guardrails %}
+            <article class="bg-surface-card px-4 py-4 sm:px-5">
+                <div class="flex items-start justify-between gap-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                    {{ table_label.status_label(value, tone, size='compact') }}
+                </div>
+                <p class="mt-3 text-xs font-semibold leading-5 text-content-secondary">{{ label }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+            </article>
+        {% endfor %}
+    </div>
+    <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
+        {{ operational_callout.render('First Controlled Execution Pilot',
+                control.pilot.helper,
+                icon='rotate-cw',
+                tone=control.pilot.tone,
+                variant='semantic') }}
+    </div>
+{% endcall %}
+{% call automation_ui.section(
+    'Current Activity',
+    'Decision review and execution evidence remain separate so authorization state cannot be mistaken for remediation success.',
+    'activity'
+    ) %}
+    <div class="grid gap-4 px-4 pb-5 xl:grid-cols-2 sm:px-5">
+        {% call automation_ui.panel('Decision Review', 'Latest candidates awaiting accountable review.', 'clipboard-check', payload.counts.pending_candidates ~ ' Pending', 'warning' if payload.counts.pending_candidates else 'normal') %}
+            <div class="grid gap-3 p-4">
+                {% for row in payload.candidate_rows[:3] %}
+                    {% call intelligence_ui.record(row.rule_key, row.runbook_key ~ ' · ' ~ row.runbook_version, icon='clipboard-clock', status_text=row.status|replace('_',' ')|title, status_tone='warning' if row.status == 'pending' else 'normal') %}
+                        <dl class="mt-3 grid gap-3 sm:grid-cols-2">
+                            {{ intelligence_ui.field('Scope', row.cluster ~ ' / ' ~ row.namespace) }}
+                            {{ intelligence_ui.field('Action', row.action_key, true) }}
+                        </dl>
+                    {% endcall %}
+                {% else %}
+                    {{ intelligence_ui.empty_state('Decision Queue Clear', 'No decision candidate currently requires review.', 'circle-check', 'Queue Clear', 'normal') }}
+                {% endfor %}
+                <a href="{{ url_for('automation_control.index', workspace='decisions') }}"
+                   class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark"><i data-lucide="clipboard-check" class="h-3.5 w-3.5"></i>Open Decision Review</a>
+            </div>
+        {% endcall %}
+        {% call automation_ui.panel('Execution Evidence', 'Latest orchestration journals and resolver outcomes.', 'server-cog', payload.counts.running ~ ' Active', 'warning' if payload.counts.running else 'normal') %}
+            <div class="grid gap-3 p-4">
+                {% for row in payload.journal_rows[:3] %}
+                    {% set journal_tone = 'critical' if row.orchestration_status == 'dead_letter' else ('warning' if row.orchestration_status in ['queued', 'retry_wait', 'running'] else 'normal') %}
+                    {% call intelligence_ui.record(row.action_key, row.cluster ~ ' / ' ~ row.namespace, icon='scroll-text', status_text=row.orchestration_status|replace('_',' ')|title, status_tone=journal_tone) %}
+                        <dl class="mt-3 grid gap-3 sm:grid-cols-2">
+                            {{ intelligence_ui.field('Resolver Result', row.status|replace('_',' ') |title) }}
+                            {{ intelligence_ui.field('Attempts', row.attempts) }}
+                        </dl>
+                    {% endcall %}
+                {% else %}
+                    {{ intelligence_ui.empty_state('No Execution Activity', 'No resolver execution journal has been recorded.', 'activity') }}
+                {% endfor %}
+                <a href="{{ url_for('automation_control.index', workspace='operations') }}"
+                   class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark"><i data-lucide="server-cog" class="h-3.5 w-3.5"></i>Open Execution Control</a>
+            </div>
+        {% endcall %}
+    </div>
+{% endcall %}

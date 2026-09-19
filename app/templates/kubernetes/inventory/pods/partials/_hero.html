@@ -1,0 +1,44 @@
+{% import "components/page_hero.html" as page_hero %}
+<section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">
+            {% call page_hero.intro('package-search', 'Kubernetes Pod Inventory', 'package') %}
+                <h1 class="{{ page_hero.title_classes() }}">Pod Inventory</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review committed Pods, readiness, placement, ownership, runtime conditions, and container images.</p>
+                <div class="{{ page_hero.metadata_row_classes() }}">
+                    {% if cluster_onboarding.is_blocked %}
+                        {{ page_hero.meta_label('database', 'Committed Inventory') }}
+                        {{ page_hero.meta_label('lock-keyhole', 'Cluster Setup Required') }}
+                    {% else %}
+                        {{ page_hero.meta_label('package', inventory.total_pods ~ ' Pods in Scope') }}
+                        {{ page_hero.meta_label('scan-search', inventory.scope_label) }}
+                        {{ page_hero.meta_label('git-branch', inventory.owner_type_count ~ ' Owner Types') }}
+                    {% endif %}
+                </div>
+            {% endcall %}
+        </div>
+        {% if cluster_onboarding.is_blocked %}
+            <aside class="{{ page_hero.aside_classes() }}"
+                   aria-label="Kubernetes inventory availability">
+                {% set cluster_blocked_scope = "Inventory Readiness" %}
+                {% set cluster_blocked_title = "Cluster Setup Required" %}
+                {% set cluster_blocked_info = "Add a Kubernetes cluster to activate committed Pod inventory evidence." %}
+                {% include 'components/cluster/_hero_blocked_context.html' %}
+            </aside>
+        {% else %}
+            {{ page_hero.context_card('Pod Runtime Posture',
+                        'Pod Posture',
+                        'Runtime Posture',
+                        inventory.overall_posture,
+                        inventory.overall_posture_tone,
+                        [
+                        ('circle-check', 'Ready', inventory.ready_count, 'All containers ready') ,
+            ('triangle-alert', 'Exceptions', inventory.exception_count, 'Starting or unhealthy')
+            ],
+            'Manage Clusters',
+            url_for('integrations.kubernetes'),
+            'server-cog'
+            ) }}
+        {% endif %}
+    </div>
+</section>

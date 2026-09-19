@@ -1,0 +1,37 @@
+{% set metrics_source_label = provider.label %}
+{% import "integrations/components/_provider_configuration_contract.html" as provider_configuration_contract %}
+{% set readiness = instance.readiness_status or "validation_required" %}
+{% set auth_label = (instance.auth_type or "none")|replace("_", " ")|title %}
+{% set compatibility_label = provider_runtime_profile_label %}
+{% set summary_items = [
+    ("Canonical Identity", instance.name, "Stable provider and audit identity"),
+    ("Environment", instance.environment|default("")|title, "Coverage and policy context"),
+    ("Detected Version", instance.detected_version or "Not Observed", "Observed from the configured metrics adapter"),
+    ("Provider Runtime Profile", compatibility_label, "Detected provider runtime compatibility")
+] %}
+{% set evidence_items = [
+    ("server", "brand", metrics_source_label ~ ' Metrics Endpoint', instance.endpoint, "Base HTTP API endpoint queried by KAORI."),
+    ("shield-check", "success" if instance.verify_ssl else "warning", "TLS Verification", "Enabled" if instance.verify_ssl else "Disabled", "Certificate validation policy for this source."),
+    ("key-round", "info", "Access Contract", auth_label, "Credentials remain encrypted and independent from consumer bindings."),
+    ("database", "success" if instance.enabled else "warning", "Metrics Authority", metrics_source_label ~ " Runtime" if instance.enabled else "Source Disabled", metrics_source_label ~ " owns metric query execution and retention; bindings only govern consumer selection.")
+] %}
+{% set flow_items = [('Configure', 'Set reusable identity, endpoint access, TLS, authentication, and compatibility detection.', 'settings-2'), ('Validate', 'Confirm the adapter, query-language, and provider capability contract.', 'badge-check'), ('Observe', 'Persist runtime health and historical provider evidence independently from consumers.', 'activity'), ('Bind', 'Associate Kubernetes, Object Storage, and future managed assets through consumer profiles.', 'waypoints')] %}
+{% set operational_metadata = [
+    "Metrics Authority",
+    "Read-Only Query",
+    metrics_source_label ~ " Query API",
+    "Runtime · " ~ compatibility_label,
+    "Query · " ~ query_contract_label
+] %}
+{{ provider_configuration_contract.render(metrics_source_label,
+"chart-spline",
+readiness,
+summary_items,
+evidence_items,
+metrics_source_label ~ " owns its metrics and retention. KAORI keeps source readiness separate from consumer bindings and query routing.",
+flow_items,
+"Connection changes require revalidation; existing consumer bindings stay attached to their managed assets.",
+url_for("metrics.edit_instance", instance_id=instance.id) ,
+operational_metadata=operational_metadata,
+setup_reference_template="integrations/observability/metrics_source/partials/_minimum_validation_metrics.html"
+) }}

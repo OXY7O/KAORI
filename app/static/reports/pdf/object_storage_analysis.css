@@ -1,0 +1,99 @@
+/*
+ * KAORI Object Storage Analytics Overview PDF specialization v3.1.
+ * Shared publication geometry and typography are owned by analytics_publication.css.
+ * This stylesheet owns only Object Storage overview page budgets and concise registers.
+ */
+.kaori-object-storage-analysis-report .cover-grid { grid-template-columns: 1.08fr .92fr; }
+.kaori-object-storage-analysis-report .availability-status {
+  margin-top: 1mm;
+  padding: 4.5mm;
+  border-left: 1.1mm solid #7C3AED;
+  background: #F8FAFC;
+}
+.kaori-object-storage-analysis-report .availability-status span {
+  display: block;
+  color: #64748B;
+  font-size: 6.2pt;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.kaori-object-storage-analysis-report .availability-status strong {
+  display: block;
+  margin-top: 1.4mm;
+  color: #182033;
+  font-size: 12pt;
+  line-height: 1.15;
+}
+.kaori-object-storage-analysis-report .availability-status p {
+  margin: 1.8mm 0 0;
+  color: #475569;
+  font-size: 6.8pt;
+  line-height: 1.4;
+}
+
+.kaori-object-storage-analysis-report .object-storage-executive-split,
+.kaori-object-storage-analysis-report .object-storage-analysis-split {
+}
+.kaori-object-storage-analysis-report .object-storage-risk-split {
+}
+
+/* Analytical registers stay one-line. Long identities live in reference blocks. */
+.kaori-object-storage-analysis-report .single-line-register th,
+.kaori-object-storage-analysis-report .single-line-register td {
+  white-space: nowrap;
+  overflow: hidden;
+}
+.kaori-object-storage-analysis-report .single-line-register {
+  font-size: var(--analytics-type-table);
+}
+.kaori-object-storage-analysis-report .object-storage-overview-register th:nth-child(1),
+.kaori-object-storage-analysis-report .object-storage-posture-register th:nth-child(1),
+.kaori-object-storage-analysis-report .object-storage-reliability-register th:nth-child(1),
+.kaori-object-storage-analysis-report .object-storage-forecast-register th:nth-child(1) { width: 11%; }
+.kaori-object-storage-analysis-report .object-storage-overview-register th:nth-child(2) { width: 37%; }
+.kaori-object-storage-analysis-report .object-storage-overview-register th:nth-child(3) { width: 22%; }
+.kaori-object-storage-analysis-report .object-storage-overview-register th:nth-child(4) { width: 30%; }
+.kaori-object-storage-analysis-report .object-storage-posture-register th:nth-child(2),
+.kaori-object-storage-analysis-report .object-storage-reliability-register th:nth-child(2),
+.kaori-object-storage-analysis-report .object-storage-forecast-register th:nth-child(2) { width: 34%; }
+.kaori-object-storage-analysis-report .object-storage-posture-register th:nth-child(3),
+.kaori-object-storage-analysis-report .object-storage-reliability-register th:nth-child(3),
+.kaori-object-storage-analysis-report .object-storage-forecast-register th:nth-child(3) { width: 24%; }
+.kaori-object-storage-analysis-report .object-storage-posture-register th:nth-child(4),
+.kaori-object-storage-analysis-report .object-storage-reliability-register th:nth-child(4),
+.kaori-object-storage-analysis-report .object-storage-forecast-register th:nth-child(4) { width: 31%; }
+
+.kaori-object-storage-analysis-report .object-storage-consumer-register th:nth-child(1) { width: 12%; }
+.kaori-object-storage-analysis-report .object-storage-consumer-register th:nth-child(2) { width: 22%; }
+.kaori-object-storage-analysis-report .object-storage-consumer-register th:nth-child(3) { width: 18%; }
+.kaori-object-storage-analysis-report .object-storage-consumer-register th:nth-child(4) { width: 20%; }
+.kaori-object-storage-analysis-report .object-storage-consumer-register th:nth-child(5) { width: 28%; }
+.kaori-object-storage-analysis-report .object-storage-consumer-identities { margin-top: 4.2mm; }
+.kaori-object-storage-analysis-report .object-storage-consumer-identities .identity-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 0 7mm;
+}
+.kaori-object-storage-analysis-report .object-storage-consumer-identities .identity-item {
+  padding-top: 1.5mm;
+  padding-bottom: 1.5mm;
+}
+
+.kaori-object-storage-analysis-report .object-storage-risk-register th:nth-child(1) { width: 14%; }
+.kaori-object-storage-analysis-report .object-storage-risk-register th:nth-child(2) { width: 26%; }
+.kaori-object-storage-analysis-report .object-storage-risk-register th:nth-child(3) { width: 60%; }
+.kaori-object-storage-analysis-report .object-storage-action-register th:nth-child(1) { width: 12%; }
+.kaori-object-storage-analysis-report .object-storage-action-register th:nth-child(2) { width: 16%; }
+.kaori-object-storage-analysis-report .object-storage-action-register th:nth-child(3) { width: 54%; }
+.kaori-object-storage-analysis-report .object-storage-action-register th:nth-child(4) { width: 18%; }
+.kaori-object-storage-analysis-report .object-storage-risk-references { margin-top: 3mm; }
+.kaori-object-storage-analysis-report .object-storage-risk-references .reference-item {
+  padding-top: 1.45mm;
+  padding-bottom: 1.45mm;
+}
+.kaori-object-storage-analysis-report .object-storage-risk-references .reference-copy p { font-size: 6.35pt; }
+
+.kaori-object-storage-analysis-report .page-object-storage-methodology .source-register,
+.kaori-object-storage-analysis-report .page-object-storage-methodology .methodology-register {
+  font-size: var(--analytics-type-table-dense);
+}

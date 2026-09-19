@@ -1,0 +1,136 @@
+{#
+  KAORI Content Tabs — shared compact tab treatment.
+
+  This is the canonical compact content-tab geometry originally established
+  by Kubernetes Analytics. Use it for switching closely-related content views
+  within one workspace surface.
+
+  render_buttons(): client-owned tab state; the consumer supplies the controller.
+  render_links(): server/URL-owned workspace state with optional HTMX navigation.
+
+  Both modes share one visual contract. Server-owned consumers may request
+  nowrap overflow and an HTMX synchronization boundary without duplicating
+  tab classes or adopting the Analytics client-side controller.
+#}
+{# djlint:off #}
+{% macro shell_classes(embedded=false, nowrap=false) -%}
+    {{ ('overflow-x-auto ' if nowrap else '') ~ ('border-b border-outline-subtle bg-surface-hover px-5 py-2 sm:px-6' if embedded else 'rounded-xl border border-outline-default bg-surface-card p-2 shadow-sm') }}
+{%- endmacro %}
+
+{% macro item_classes() -%}
+    inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg border px-3.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card
+{%- endmacro %}
+
+{% macro active_classes() -%}
+    border-kaori-primary bg-kaori-soft text-kaori-primary-dark dark:text-kaori-accent
+{%- endmacro %}
+
+{% macro inactive_classes() -%}
+    border-transparent bg-surface-card text-content-secondary hover:border-outline-default hover:bg-surface-card hover:text-content-primary
+{%- endmacro %}
+
+{% macro render_buttons(tabset_id, tabs, aria_label, embedded=false, data_namespace='content', active_key=none, show_badges=true, nowrap=false) -%}
+    <div class="{{ shell_classes(embedded, nowrap) }}" data-kaori-tab-variant="content-tabs">
+        <div class="flex {{ 'min-w-max flex-nowrap' if nowrap else 'flex-wrap' }} gap-2"
+             role="tablist"
+             aria-label="{{ aria_label }}">
+            {% for tab in tabs %}
+                {% set tab_id = tab[0] %}
+                {% set tab_label = tab[1] %}
+                {% set tab_icon = tab[2] %}
+                {% set tab_badge = tab[3] if show_badges and tab|length > 3 else none %}
+                {% set is_active = active_key == tab_id if active_key is not none else loop.first %}
+                <button type="button"
+                        id="{{ tabset_id }}-tab-{{ tab_id }}"
+                        role="tab"
+                        data-{{ data_namespace }}-tab-button="{{ tab_id }}"
+                        data-kaori-tab-active-classes="{{ active_classes()|trim }}"
+                        data-kaori-tab-inactive-classes="{{ inactive_classes()|trim }}"
+                        aria-controls="{{ tabset_id }}-panel-{{ tab_id }}"
+                        aria-selected="{{ 'true' if is_active else 'false' }}"
+                        tabindex="{{ 0 if is_active else -1 }}"
+                        class="{{ item_classes() }} {{ active_classes() if is_active else inactive_classes() }}">
+                    <i data-lucide="{{ tab_icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                    <span>{{ tab_label }}</span>
+                    {% if tab_badge is not none and tab_badge != '' %}
+                        <span class="kaori-semantic-label inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-card px-2 text-xs font-semibold text-content-muted whitespace-nowrap">{{ tab_badge }}</span>
+                    {% endif %}
+                </button>
+            {% endfor %}
+        </div>
+    </div>
+{%- endmacro %}
+
+{% macro render_controlled_links(tabset_id, tabs, active_key, aria_label, embedded=false, data_namespace='content', nowrap=false) -%}
+    <nav class="{{ shell_classes(embedded, nowrap) }}"
+         aria-label="{{ aria_label }}"
+         data-kaori-tab-variant="content-tabs-controlled"
+         data-kaori-tab-control="alpine-url-fallback">
+        <div class="flex {{ 'min-w-max flex-nowrap' if nowrap else 'flex-wrap' }} gap-2"
+             role="tablist"
+             aria-label="{{ aria_label }}">
+            {% for tab in tabs %}
+                {% set tab_id = tab[0] %}
+                {% set tab_label = tab[1] %}
+                {% set tab_icon = tab[2] %}
+                {% set tab_badge = tab[3] if tab|length > 3 else none %}
+                {% set tab_href = tab[4] if tab|length > 4 else none %}
+                <a id="{{ tabset_id }}-tab-{{ tab_id }}"
+                   href="{{ tab_href }}"
+                   role="tab"
+                   aria-controls="{{ tabset_id }}-panel-{{ tab_id }}"
+                   :aria-selected="activeTab === '{{ tab_id }}' ? 'true' : 'false'"
+                   :tabindex="activeTab === '{{ tab_id }}' ? '0' : '-1'"
+                   :class="activeTab === '{{ tab_id }}' ? '{{ active_classes()|trim }}' : '{{ inactive_classes()|trim }}'"
+                   data-{{ data_namespace }}-tab-link="{{ tab_id }}"
+                   data-kaori-tab-fallback="server-navigation"
+                   class="{{ item_classes() }}"
+                   @click.prevent="setTab('{{ tab_id }}')"
+                   @keydown.arrow-right.prevent="moveTab('{{ tab_id }}', 1, '{{ tabset_id }}')"
+                   @keydown.arrow-left.prevent="moveTab('{{ tab_id }}', -1, '{{ tabset_id }}')"
+                   @keydown.home.prevent="moveTab('{{ tab_id }}', 'home', '{{ tabset_id }}')"
+                   @keydown.end.prevent="moveTab('{{ tab_id }}', 'end', '{{ tabset_id }}')">
+                    <i data-lucide="{{ tab_icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                    <span>{{ tab_label }}</span>
+                    {% if tab_badge is not none and tab_badge != '' %}
+                        <span id="{{ tabset_id }}-tab-count-{{ tab_id }}"
+                              class="kaori-semantic-label inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-card px-2 text-xs font-semibold text-content-muted whitespace-nowrap">{{ tab_badge }}</span>
+                    {% endif %}
+                </a>
+            {% endfor %}
+        </div>
+    </nav>
+{%- endmacro %}
+
+{% macro render_links(tabset_id, tabs, active_key, aria_label, embedded=false, data_namespace='content', hx_target=none, hx_select=none, hx_swap='outerHTML', hx_push_url='true', hx_indicator=none, nowrap=false, hx_sync=none) -%}
+    <nav class="{{ shell_classes(embedded, nowrap) }}"
+         aria-label="{{ aria_label }}"
+         data-kaori-tab-variant="content-tabs-server">
+        <div class="flex {{ 'min-w-max flex-nowrap' if nowrap else 'flex-wrap' }} gap-2">
+            {% for tab in tabs %}
+                {% set tab_id = tab[0] %}
+                {% set tab_label = tab[1] %}
+                {% set tab_icon = tab[2] %}
+                {% set tab_href = tab[3] %}
+                {% set tab_badge = tab[4] if tab|length > 4 else none %}
+                <a id="{{ tabset_id }}-nav-{{ tab_id }}"
+                   href="{{ tab_href }}"
+                   data-{{ data_namespace }}-tab-link="{{ tab_id }}"
+                   {% if active_key == tab_id %}aria-current="page"{% endif %}
+                   {% if hx_target %}hx-get="{{ tab_href }}" hx-target="{{ hx_target }}" hx-swap="{{ hx_swap }}" hx-push-url="{{ hx_push_url }}"{% endif %}
+                   {% if hx_select %}hx-select="{{ hx_select }}"{% endif %}
+                   {% if hx_indicator %}hx-indicator="{{ hx_indicator }}"{% endif %}
+                   {% if hx_sync %}hx-sync="{{ hx_sync }}"{% endif %}
+                   class="{{ item_classes() }} {{ active_classes() if active_key == tab_id else inactive_classes() }}">
+                    <i data-lucide="{{ tab_icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                    <span>{{ tab_label }}</span>
+                    {% if tab_badge is not none and tab_badge != '' %}
+                        <span id="{{ tabset_id }}-{{ tab_id }}-nav-badge"
+                              class="kaori-semantic-label inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-card px-2 text-xs font-semibold text-content-muted whitespace-nowrap">{{ tab_badge }}</span>
+                    {% endif %}
+                </a>
+            {% endfor %}
+        </div>
+    </nav>
+{%- endmacro %}
+{# djlint:on #}

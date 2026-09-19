@@ -1,0 +1,46 @@
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "components/table_primitives.html" as surface_ui %}
+<div id="users-page-content" class="space-y-6">
+    {% include "access/users/partials/_summary_cards.html" %}
+    <section id="user-directory" class="{{ surface_ui.block_classes() }}">
+        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex min-w-0 items-center gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="users" class="h-5 w-5" aria-hidden="true"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h2 class="text-base font-semibold text-content-primary">User Directory</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Search account lifecycle, identity source, role assignment, and administrative state.</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-md border border-outline-default bg-surface-subtle px-3 text-xs font-semibold text-content-secondary">
+                        <i data-lucide="scan-search"
+                           class="h-3.5 w-3.5 text-kaori-primary"
+                           aria-hidden="true"></i>
+                        {{ pagination.total_items }} Matching {{ 'User' if pagination.total_items == 1 else 'Users' }}
+                    </span>
+                    {% if filters.search or filters.status != 'all' or filters.auth_source != 'all' or filters.role_id %}
+                        {{ registry_ui.clear_filters_action(url_for('users.index', per_page=filters.per_page) ,
+                        table_ui.action_classes(),
+                        hx_get=url_for('users.index', per_page=filters.per_page),
+                        target='#users-page-content',
+                        indicator='#users-refresh-indicator',
+                        push_url='true',
+                        swap='outerHTML settle:150ms',
+                        sync='#users-filter-form:replace'
+                        ) }}
+                    {% endif %}
+                </div>
+            </div>
+            {{ loading_bar.render('users-refresh-indicator', label='Refreshing User Directory') }}
+        </header>
+        <div class="border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
+            {% include "access/users/partials/_filters.html" %}
+        </div>
+        <div id="users-table-content">{% include "access/users/partials/_table.html" %}</div>
+    </section>
+</div>

@@ -1,0 +1,36 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% block title %}TLS Certificate · {{ record.secret_name }}{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('shield-check', 'Kubernetes Governance', 'key-round') %}
+                        <h1 class="{{ page_hero.title_classes() }} break-words [overflow-wrap:anywhere]">{{ record.secret_name }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review certificate validity, host coverage, issuer details, and committed collection evidence.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('building-2', record.cluster.name if record.cluster else record.cluster_id) }}
+                            {{ page_hero.meta_label('folder-tree', record.namespace) }}
+                            {{ page_hero.meta_label('clock-3', 'Collected ' ~ (record.collected_at|user_datetime('Not Reported') )) }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ page_hero.context_card('TLS certificate context',
+                                'Certificate Posture',
+                                'Validity and Coverage',
+                                record.presentation.status_label or 'Unknown',
+                                record.presentation.status_tone or 'unknown',
+                                [
+                                ('calendar-clock', 'Days Remaining', record.days_remaining if record.days_remaining is not none else 'N/A', 'Exact timestamp status') ,
+                ('shield-check', 'Host Coverage', record.presentation.coverage_label or 'Not Reported', (record.covered_host_count or 0) ~ '/' ~ (record.declared_host_count or 0) ~ ' hosts')
+                ],
+                'Back to Registry',
+                url_for('governance.tls_certificates'),
+                'arrow-left'
+                ) }}
+            </div>
+        </section>
+        {% include "kubernetes/governance/tls_certificates/partials/_detail_content.html" %}
+    </div>
+{% endblock dashboard_content %}

@@ -1,0 +1,153 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "integrations/components/_provider_registry.html" as provider_registry %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+<section id="kubernetes-connection-registry"
+         class="{{ integration_ui.section_shell_classes() }}"
+         data-kaori-kubernetes-registry-icon-palette>
+    {% set registry_filters_active = selected_query or selected_environment or selected_readiness or selected_coverage %}
+    {% set registry_clear_url = url_for('integrations.kubernetes',
+            tab='registry',
+            page=1,
+            per_page=pagination.per_page,
+            coverage_page=1,
+            coverage_per_page=coverage_pagination.per_page,
+            coverage_q=selected_coverage_query,
+            coverage_environment=selected_coverage_environment,
+        coverage_status=selected_coverage_status) %}
+    {% set registry_clear_action = registry_ui.clear_filters_action(
+            registry_clear_url,
+            table_ui.action_classes(),
+            hx_get=registry_clear_url,
+            target='#kubernetes-connection-registry',
+            indicator='#kubernetes-registry-loading',
+            push_url='true',
+            swap='outerHTML',
+            marker='kubernetes-registry'
+        ) if registry_filters_active else '' %}
+    {{ provider_registry.registry_header("Kubernetes Connection Registry",
+        "Manage reusable Kubernetes API connections and their downstream consumer bindings.",
+        "database-zap",
+        "kubernetes-registry-loading",
+        action_html=registry_clear_action) }}
+    <div class="{{ integration_ui.filter_region_classes() }}"
+         data-kaori-one-line-filters>
+        <form method="get"
+              action="{{ url_for('integrations.kubernetes') }}"
+              hx-get="{{ url_for('integrations.kubernetes') }}"
+              hx-target="#kubernetes-connection-registry"
+              hx-swap="outerHTML"
+              hx-push-url="true"
+              hx-indicator="#kubernetes-registry-loading"
+              hx-trigger="input changed delay:300ms from:#kubernetes-registry-search, change delay:100ms from:select"
+              class="{{ table_ui.filter_layout_classes() }}">
+            <input type="hidden" name="tab" value="registry">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+            <input type="hidden" name="coverage_page" value="1">
+            <input type="hidden"
+                   name="coverage_per_page"
+                   value="{{ coverage_pagination.per_page }}">
+            <input type="hidden" name="coverage_q" value="{{ selected_coverage_query }}">
+            <input type="hidden"
+                   name="coverage_environment"
+                   value="{{ selected_coverage_environment }}">
+            <input type="hidden"
+                   name="coverage_status"
+                   value="{{ selected_coverage_status }}">
+            <div>
+                {{ provider_registry.search_field("kubernetes-registry-search", "q", selected_query, "Cluster, endpoint, version, or profile") }}
+            </div>
+            <div>
+                {{ provider_registry.select_field("kubernetes-registry-environment", "environment", selected_environment, "Environment", environment_options, "All Environments") }}
+            </div>
+            <div>
+                {{ provider_registry.select_field("kubernetes-registry-readiness", "readiness", selected_readiness, "Core Readiness", readiness_options, "All Readiness") }}
+            </div>
+            <div>
+                {{ provider_registry.select_field("kubernetes-registry-coverage", "coverage", selected_coverage, "Coverage", coverage_options, "All Coverage States") }}
+            </div>
+        </form>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="{{ provider_registry.connection_registry_table_classes() }}">
+            {{ provider_registry.connection_registry_colgroup() }}
+            {{ provider_registry.connection_registry_head() }}
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for row in rows %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {% set connection_icon_tone = "success" if row.readiness == "ready" else ("warning" if row.readiness in ["degraded", "validation_required"] else "neutral") %}
+                            <div class="flex min-w-0 items-start gap-3">
+                                {{ integration_ui.palette_icon("server-cog", connection_icon_tone) }}
+                                <div class="min-w-0">
+                                    <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.cluster_name }}</p>
+                                    <p class="mt-1 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ row.server }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-sm font-semibold text-content-primary">{{ row.environment }}</p>
+                            <p class="mt-1 text-xs text-content-muted">Kubernetes API</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(row.readiness, display="indicator") }}
+                            <p class="mt-1 text-xs text-content-muted">Validated {{ row.last_validated_at }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.compatibility_profile or "Validation Required" }}</p>
+                            <p class="mt-1 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ row.version or "Version not discovered" }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="font-semibold tabular-nums text-content-primary">{{ row.source_binding_count }}</p>
+                            <p class="mt-1 text-xs text-content-muted">Consumer associations</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }}">
+                            <a href="{{ url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id) }}"
+                               class="{{ table_ui.action_classes() }}">
+                                <i data-lucide="settings-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                Manage
+                            </a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="p-0">
+                            {% set empty_state_icon = "boxes" %}
+                            {% set empty_state_label = "No Results" if registry_has_active_filters else "Setup Required" %}
+                            {% set empty_state_title = "No Kubernetes Connections Match the Active Filters" if registry_has_active_filters else "No Kubernetes Connections Found" %}
+                            {% set empty_state_description = "Adjust the registry filters to review another Kubernetes connection." if registry_has_active_filters else "Register a Kubernetes API connection to establish Core Validation and downstream consumer coverage." %}
+                            {% set empty_state_action_url = url_for('cluster.add_cluster') %}
+                            {% set empty_state_action_label = "Register Connection" %}
+                            {% set empty_state_action_icon = "plus" %}
+                            {% set empty_state_permission = "clusters.manage" %}
+                            {% set empty_state_show_admin_required = true %}
+                            {% set empty_state_min_height = "min-h-[210px]" %}
+                            {% include "components/states/_empty_state.html" %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% set registry_query_params = {
+            "tab": "registry",
+            "q": selected_query,
+            "environment": selected_environment,
+            "readiness": selected_readiness,
+            "coverage": selected_coverage,
+            "coverage_page": 1,
+            "coverage_per_page": coverage_pagination.per_page,
+            "coverage_q": selected_coverage_query,
+            "coverage_environment": selected_coverage_environment,
+            "coverage_status": selected_coverage_status
+        } %}
+    {{ provider_registry.pagination_footer(pagination,
+        "integrations.kubernetes",
+        "#kubernetes-connection-registry",
+        "#kubernetes-registry-loading",
+        registry_query_params,
+        item_label="Connections",
+        swap="outerHTML") }}
+</section>

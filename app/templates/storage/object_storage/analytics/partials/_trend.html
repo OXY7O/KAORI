@@ -1,0 +1,87 @@
+{% set trend_mode = object_storage_trend_mode|default('performance' if page_key == 'performance' else ('forecast' if page_key == 'forecast' else 'usage')) %}
+{% set trend = metrics.request_trend|default([]) if trend_mode == 'performance' else (metrics.forecast_history|default([]) if trend_mode == 'forecast' else metrics.usage_trend|default([])) %}
+{% set secondary_trend = metrics.error_trend|default([]) if trend_mode == 'performance' else [] %}
+{% set projection_trend = metrics.forecast_projection|default([]) if trend_mode == 'forecast' else [] %}
+{% set trend_summary = metrics.request_trend_summary|default({}, true) if trend_mode == 'performance' else (metrics.forecast_history_summary|default({}, true) if trend_mode == 'forecast' else metrics.usage_trend_summary|default({}, true)) %}
+<section class="{{ analysis_surface.evidence_shell_classes() }}"
+         data-object-storage-trend-panel
+         data-object-storage-chart-mode="{{ trend_mode }}"
+         data-object-storage-page-key="{{ page_key }}"
+         data-object-storage-time-range="{{ selected_forecast_history_window if trend_mode == 'forecast' else selected_time_range }}"
+         data-object-storage-trend-points="{{ trend|tojson|forceescape }}"
+         data-object-storage-secondary-trend-points="{{ secondary_trend|tojson|forceescape }}"
+         data-object-storage-projection-points="{{ projection_trend|tojson|forceescape }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="min-w-0">
+                <h2 class="text-base font-semibold text-content-primary">
+                    {% if trend_mode == 'performance' %}
+                        Request &amp; Error Trend
+                    {% elif trend_mode == 'forecast' %}
+                        Storage Usage Forecast
+                    {% else %}
+                        Storage Usage Trend
+                    {% endif %}
+                </h2>
+                <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
+                    {% if trend_mode == 'forecast' %}
+                        Committed forecast history is solid; the linear 30-day projection is dashed.
+                    {% elif trend_mode == 'performance' %}
+                        {{ metrics_source.provider_label }} range evidence for {{ selected_time_range }}. Request demand and error activity remain separate series so higher traffic is not automatically classified as unhealthy.
+                    {% else %}
+                        {{ metrics_source.provider_label }} {{ selected_time_range }} range. Use slope and change for direction; Inventory remains point-in-time.
+                    {% endif %}
+                </p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                {{ table_label.metadata_label(trend|length ~ ' Primary Samples', none, size='compact') }}
+                {% if trend_mode == 'performance' %}{{ table_label.metadata_label(secondary_trend|length ~ ' Error Samples', none, size='compact') }}{% endif %}
+                {% if trend_mode == 'forecast' %}{{ table_label.metadata_label(selected_forecast_history_window|upper ~ ' History', 'calendar-range', size='compact') }}{% endif %}
+            </div>
+        </div>
+    </header>
+    <div class="p-5 sm:p-6">
+        {% if trend %}
+            <div class="relative h-[340px] rounded-lg border border-outline-subtle bg-surface-card p-3"
+                 data-object-storage-chart-container>
+                <canvas data-object-storage-chart
+                        role="img"
+                        aria-label="{{ 'Request and error trend' if trend_mode == 'performance' else ('Storage usage forecast' if trend_mode == 'forecast' else 'Storage usage trend') }} chart"
+                        width="1200"
+                        height="340"></canvas>
+            </div>
+            {% if trend_mode != 'performance' %}
+                <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
+                        <p class="{{ analysis_surface.metric_label_classes() }}">Observed Samples</p>
+                        <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ trend_summary.sample_count|default(trend|length) }}</p>
+                    </article>
+                    <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
+                        <p class="{{ analysis_surface.metric_label_classes() }}">Window Direction</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ trend_summary.direction_label|default(trend_summary.direction|default('Unknown') |title) }}</p>
+                    </article>
+                    <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
+                        <p class="{{ analysis_surface.metric_label_classes() }}">Window Change</p>
+                        <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">
+                            {{ trend_summary.delta_display|default("N/A") }}
+                            {% if trend_summary.delta_percent_display|default('') %}· {{ trend_summary.delta_percent_display }}{% endif %}
+                        </p>
+                    </article>
+                    <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
+                        <p class="{{ analysis_surface.metric_label_classes() }}">Growth / Day</p>
+                        <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ metrics.forecast_display.growth_per_day if trend_mode == 'forecast' else trend_summary.growth_per_day_display|default("N/A") }}</p>
+                    </article>
+                </div>
+            {% endif %}
+        {% else %}
+            {% set empty_state_icon = "line-chart" %}
+            {% set empty_state_label = "Refresh Required" if trend_mode == 'forecast' else "No Range Data" %}
+            {% set empty_state_tone = "warning" %}
+            {% set empty_state_title = "Historical Evidence Not Available" %}
+            {% set empty_state_description = 'The forecasting worker has not committed usable history for this window.' if trend_mode == 'forecast' else 'The active metrics source returned no range samples for this metric and time window.' %}
+            {% set empty_state_variant = "panel" %}
+            {% set empty_state_min_height = "min-h-[220px]" %}
+            {% include 'components/states/_empty_state.html' %}
+        {% endif %}
+    </div>
+</section>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en"
+      class="h-full overflow-hidden text-xs 2xl:text-sm min-[1920px]:text-sm">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon"
+              type="image/svg+xml"
+              href="{{ url_for('static', filename='favicon.svg') }}" />
+        <title>
+            {% block title %}
+                KAORI
+            {% endblock title %}
+        </title>
+        <script data-kaori-prepaint-bootstrap="app-shell">
+            ;(function () {
+                const theme = localStorage.getItem('theme')
+                const savedSidebarState = localStorage.getItem('kaori.sidebarExpanded')
+
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark')
+                }
+
+                if (savedSidebarState === 'false') {
+                    document.documentElement.classList.add('sidebar-collapsed')
+                }
+            })()
+        </script>
+        <link rel="stylesheet"
+              href="{{ url_for('static', filename='css/output.css') }}" />
+        {% block page_styles %}
+        {% endblock page_styles %}
+    </head>
+    <body class="h-full overflow-hidden bg-surface-page font-sans text-content-primary antialiased transition-colors duration-300">
+        <div class="flex h-full min-h-0 gap-2 overflow-hidden bg-surface-page p-2"
+             x-data="{ sidebarExpanded: (localStorage.getItem('kaori.sidebarExpanded') || 'true') !== 'false', toggleSidebar() { this.sidebarExpanded = !this.sidebarExpanded; localStorage.setItem('kaori.sidebarExpanded', this.sidebarExpanded ? 'true' : 'false'); document.documentElement.classList.toggle('sidebar-collapsed', !this.sidebarExpanded); } }"
+             x-init="document.documentElement.classList.toggle('sidebar-collapsed', !sidebarExpanded)"
+             @keydown.escape.window="if (window.innerWidth < 1024 && sidebarExpanded) { toggleSidebar() }">
+            {% include "components/navigation/sidebar.html" %}
+            <div class="flex min-h-0 flex-1 flex-col overflow-hidden kaori-app-shell rounded-2xl border border-outline-subtle bg-surface-shell shadow-sm">
+                {% include "components/navigation/navbar.html" %}
+                <main class="min-h-0 flex-1 overflow-y-auto bg-surface-page transition-colors duration-300 [scrollbar-gutter:stable]">
+                    <div class="p-5 lg:p-6 2xl:p-7">
+                        {% include "components/states/_flash_messages.html" %}
+                        {% block dashboard_content %}
+                        {% endblock dashboard_content %}
+                    </div>
+                </main>
+            </div>
+        </div>
+        {% set queued_operational_feedback = load_operational_feedback() %}
+        <div id="operational-toast-region"
+             class="pointer-events-none w-[min(28rem,calc(100vw-2rem))] fixed right-4 top-20 z-50 flex flex-col gap-3 sm:right-6 lg:right-8">
+            <div id="operational-toast-stack" class="flex w-full flex-col gap-3">
+                {% if queued_operational_feedback %}
+                    {% with
+                        status=queued_operational_feedback.status,
+                        title=queued_operational_feedback.title,
+                        message=queued_operational_feedback.message,
+                        detail=queued_operational_feedback.detail,
+                        view_url=queued_operational_feedback.view_url,
+                        action_label=queued_operational_feedback.action_label,
+                        action_icon=queued_operational_feedback.action_icon,
+                        completed_label=queued_operational_feedback.completed_label,
+                        activity_audit_saved=queued_operational_feedback.activity_audit_saved,
+                        activity_audit_expected=queued_operational_feedback.activity_audit_expected|default(queued_operational_feedback.activity_audit_saved),
+                        notification_deck_visible=queued_operational_feedback.notification_deck_visible|default(false),
+                        feedback_id=queued_operational_feedback.feedback_id|default(None),
+                        auto_dismiss_ms=queued_operational_feedback.auto_dismiss_ms|default(None),
+                        delivery=queued_operational_feedback.delivery|default('toast')
+                        %}
+                        {% include "components/operational_toast.html" %}
+                    {% endwith %}
+                {% endif %}
+            </div>
+        </div>
+        {% if current_user.is_authenticated %}
+            <div id="kaori-user-timezone-sync"
+                 class="hidden"
+                 data-mode="{{ current_timezone_mode }}"
+                 data-timezone="{{ current_timezone }}"
+                 data-url="{{ url_for('settings.sync_browser_timezone') }}"
+                 data-csrf="{{ csrf_token() }}"></div>
+            <script defer
+                    src="{{ url_for('static', filename='js/user_timezone_sync.js') }}"></script>
+        {% endif %}
+        <script src="{{ url_for('static', filename='js/safe_html.js') }}"></script>
+        <script defer src="{{ url_for('static', filename='js/navbar.js') }}"></script>
+        <script defer
+                src="{{ url_for('static', filename='vendor/alpine/alpine.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='vendor/htmx/htmx.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='vendor/lucide/lucide.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/clipboard.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/application_shell.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/pagination.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/detail_rows.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/recommendation_pagination.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/analytics/controls.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/integration_workspace_tabs.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/native_dialogs.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/operational_toasts.js') }}"></script>
+        {% block scripts %}
+        {% endblock scripts %}
+    </body>
+</html>

@@ -1,0 +1,127 @@
+{% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "integrations/components/_validation_poller.html" as validation_poller %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "integrations/components/_provider_job_status.html" as provider_job_status %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "integrations/components/_capability_readiness.html" as capability_readiness %}
+{% set capability_counts = namespace(required=0, optional=0, ready=0, legacy=0, blocked=0) %}
+{% for capability_row in feature_rows %}
+    {% if capability_row.required %}
+        {% set capability_counts.required = capability_counts.required + 1 %}
+    {% else %}
+        {% set capability_counts.optional = capability_counts.optional + 1 %}
+    {% endif %}
+    {% if capability_row.status == 'ready' %}
+        {% set capability_counts.ready = capability_counts.ready + 1 %}
+    {% elif capability_row.status == 'legacy' %}
+        {% set capability_counts.legacy = capability_counts.legacy + 1 %}
+    {% elif capability_row.status == 'blocked' %}
+        {% set capability_counts.blocked = capability_counts.blocked + 1 %}
+    {% endif %}
+{% endfor %}
+{% set capability_total = feature_rows|length %}
+{% set capability_readiness_percent = ((validated_feature_count * 100 / capability_total) if capability_total else 0) %}
+{% set required_usable_count = capability_counts.required - blocked_features|length %}
+{% set capability_metadata = [
+    'Profile · ' ~ (runtime_state.compatibility_profile or 'Validation Required'),
+    capability_counts.required ~ ' Required',
+    capability_counts.optional ~ ' Optional'
+] %}
+{% set capability_metrics = [
+    {'icon': 'layers-3', 'tone': 'normal', 'label': 'Validated Capabilities', 'value': validated_feature_count, 'description': 'Usable Kubernetes API and effective RBAC evidence.'},
+    {'icon': 'history', 'tone': 'warning' if legacy_features else 'neutral', 'label': 'Legacy Fallbacks', 'value': legacy_features|length, 'description': 'Required contracts currently resolved through fallback APIs.'},
+    {'icon': 'shield-x', 'tone': 'critical' if blocked_features else 'normal', 'label': 'Required Blocks', 'value': blocked_features|length, 'description': 'Core capability contracts blocked by API discovery or RBAC.'}
+] %}
+{% if blocked_features %}
+    {% set capability_next_action = 'Resolve ' ~ (blocked_features|length) ~ ' required API or RBAC block' ~ ('' if blocked_features|length == 1 else 's') ~ ', then rerun Full Validation.' %}
+{% elif legacy_features %}
+    {% set capability_next_action = 'Migrate ' ~ (legacy_features|length) ~ ' legacy API fallback' ~ ('' if legacy_features|length == 1 else 's') ~ ', then rerun Full Validation.' %}
+{% elif optional_blocked_features %}
+    {% set capability_next_action = "Review optional access only when needed." %}
+{% else %}
+    {% set capability_next_action = "Revalidate after Kubernetes, API, or RBAC changes." %}
+{% endif %}
+<section id="kubernetes-capability-workspace"
+         class="relative font-sans {{ integration_ui.section_shell_classes() }}"
+         data-kaori-capability-native-dialogs
+         data-kaori-capability-workspace-v3
+         data-kaori-capability-workspace-v4
+         data-kaori-capability-workspace-v5
+         data-kaori-capability-workspace-v6
+         data-kaori-capability-workspace-v7
+         data-kaori-capability-workspace-v8>
+    {% call connection_validation_header.render(
+        'Kubernetes Full Validation',
+        'Validate served APIs, effective RBAC, compatibility, and downstream eligibility.',
+        icon='scan-search',
+        loading_id='kubernetes-validation-loading',
+        loading_active=validation_job and validation_job.is_active,
+        loading_label='Running Kubernetes Full Validation',
+        ) %}
+        {% if current_user.has_permission('clusters.sync') %}
+            <form method="post"
+                  action="{{ url_for('integrations.kubernetes_capability_validate', cluster_id=cluster.id) }}"
+                  hx-post="{{ url_for('integrations.kubernetes_capability_validate', cluster_id=cluster.id) }}"
+                  hx-target="#kubernetes-capability-workspace"
+                  hx-swap="outerHTML"
+                  hx-disabled-elt="button"
+                  hx-indicator="#kubernetes-validation-loading">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit"
+                        {% if validation_job and validation_job.is_active %}disabled{% endif %}
+                        class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover disabled:cursor-wait disabled:opacity-70">
+                    <i data-lucide="{{ 'loader-circle' if validation_job and validation_job.is_active else 'scan-line' }}"
+                       class="h-4 w-4{% if validation_job and validation_job.is_active %} animate-spin{% endif %}"
+                       aria-hidden="true"></i>
+                    {{ 'Validation Running' if validation_job and validation_job.is_active else 'Run Full Validation' }}
+                </button>
+            </form>
+        {% endif %}
+    {% endcall %}
+    {{ validation_poller.render(validation_job and validation_job.is_active, url_for('integrations.kubernetes_capability_validation_status', cluster_id=cluster.id, task_id=validation_job.task_id) if validation_job and validation_job.is_active else '', '#kubernetes-capability-workspace') }}
+    {{ provider_job_status.render(validation_job, 'Kubernetes validation running in worker', 'Kubernetes') }}
+    <div class="p-5 sm:p-6">
+        {{ capability_readiness.render('Kubernetes Capability Readiness',
+                'Required API and RBAC evidence for Kubernetes workspaces.',
+                validation_state.readiness,
+                validation_state.readiness_label,
+                'Validated Capabilities',
+                validated_feature_count ~ ' / ' ~ capability_total,
+                capability_readiness_percent,
+                capability_metadata,
+                capability_metrics,
+                'Core Workspaces Eligible' if validation_state.readiness == 'ready' else 'Remediation Required',
+                'Required API and RBAC contracts are usable.' if validation_state.readiness == 'ready' else 'Resolve required API or RBAC gaps.',
+                'normal' if validation_state.readiness == 'ready' else 'critical',
+                'Full Validation owns API and RBAC evidence; Runtime Refresh owns live API health.',
+                capability_next_action) }}
+        {% if validation_state.readiness != 'ready' or optional_blocked_features %}
+            <section class="mt-4 rounded-xl border border-outline-subtle bg-surface-card p-4"
+                     data-kaori-capability-attention>
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        {{ integration_ui.palette_icon('circle-help', 'warning' if validation_state.readiness != 'ready' else 'info', size='md') }}
+                        <div class="min-w-0">
+                            {% if validation_state.readiness != 'ready' %}
+                                <p class="text-sm font-semibold text-content-primary">Why Readiness Is {{ validation_state.readiness_label }}</p>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">{{ validation_state.message }}</p>
+                            {% else %}
+                                <p class="text-sm font-semibold text-content-primary">Optional Capability Access Is Limited</p>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">Core Kubernetes readiness remains independent from optional sensitive-resource workflows. Review {{ optional_blocked_features|join(", ") }}. Do not expand the baseline ClusterRole.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 lg:justify-end">
+                        {{ table_label.metadata_label((blocked_features|length) ~ ' blocked') }}
+                        {{ table_label.metadata_label((legacy_features|length) ~ ' legacy') }}
+                        {{ table_label.metadata_label((optional_blocked_features|length) ~ ' optional gap') }}
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+        {% include 'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_registry.html' %}
+    </div>
+</section>
+{% include 'components/operation_feedback_oob.html' %}
+{{ framed_workspace_tabs.badge_oob("kubernetes", "validation", validation_state.readiness_label) }}

@@ -1,0 +1,24 @@
+{% import "intelligence/components/_workspace.html" as intelligence_ui %}
+{% import "components/table_label.html" as table_label %}
+<div id="catalog-summary-shell">
+    {% set summary_footer = payload.scope_label ~ ' · ' ~ payload.result_context.active_filters ~ ' active filters · Canonical definitions remain catalog-owned.' %}
+    {% call intelligence_ui.posture_panel(
+        'Rule Catalog Summary',
+        'Review the current catalog scope before scanning definitions, evaluator readiness, and imported-signal coverage.',
+        'layout-dashboard',
+        payload.posture.label,
+        payload.posture.tone,
+        summary_footer,
+        actions=[
+        ('sparkles', 'Recommendations', url_for('intelligence.recommendations')),
+        ('workflow', 'Automation Control', url_for('automation_control.index'))
+        ]
+        ) %}
+        <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+            {{ intelligence_ui.posture_metric('list-checks', 'Matching Rules', payload.result_context.matching_items, 'Definitions matching the current catalog scope.') }}
+            {{ intelligence_ui.posture_metric('circle-check', 'Available', payload.result_context.available_items, 'Rules with an active evaluator or approved execution boundary.') }}
+            {{ intelligence_ui.posture_metric('clock-3', 'Reserved Plan', payload.result_context.reserved_items, 'Definitions visible but not enabled for execution.') }}
+            {{ intelligence_ui.posture_metric('arrow-down-to-line', 'Imported Signal', payload.result_context.imported_items, 'Rules enriched from an authoritative upstream signal source.') }}
+        </div>
+    {% endcall %}
+</div>

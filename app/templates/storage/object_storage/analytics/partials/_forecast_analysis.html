@@ -1,0 +1,43 @@
+<section class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="line-chart" class="h-5 w-5"></i></span>
+                <div>
+                    <h2 class="text-base font-semibold text-content-primary">Forecast Operating Boundary</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Use the selected history as a planning signal. The current baseline is intentionally linear and should not be interpreted as a guaranteed exhaustion date.</p>
+                </div>
+            </div>
+            {{ table_label.status_label(metrics.forecast_posture.status, metrics.forecast_posture.tone) }}
+        </div>
+    </header>
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Growth / Day</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.forecast_display.growth_per_day }}</p>
+            <p class="mt-1 text-xs text-content-muted">Slope across selected range.</p>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Projected 7d</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.forecast_display.projected_7d }}</p>
+            <p class="mt-1 text-xs text-content-muted">Linear planning projection.</p>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Projected 30d</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.forecast_display.projected_30d }}</p>
+            <p class="mt-1 text-xs text-content-muted">Linear planning projection.</p>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Capacity ETA</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.forecast_display.days_to_capacity }}</p>
+            <p class="mt-1 text-xs text-content-muted">Only when growth is positive.</p>
+        </article>
+    </div>
+    <div class="border-t border-outline-subtle p-4 sm:p-5">
+        {% set object_storage_trend_mode = "forecast" %}
+        {% include "storage/object_storage/analytics/partials/_trend.html" %}
+    </div>
+    <div class="border-t border-outline-subtle">
+        {{ analysis_surface.interpretation_callout('Operational Reading', metrics.forecast_posture.headline, metrics.forecast_posture.detail, icon='calendar-clock', role='status', tone=metrics.forecast_posture.tone) }}
+    </div>
+</section>

@@ -1,0 +1,21 @@
+{% import "components/operational_metric_card.html" as operational_metric_card %}
+<div id="dashboard-kpi-cards"
+     class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
+     aria-live="polite">
+    {% for kpi in dashboard.global_kpis %}
+        {% if kpi.label in ['CPU Usage', 'Memory Usage'] %}
+            {% set source_label = "Metrics Source" %}
+        {% elif kpi.label == 'Active Alerts' %}
+            {% set source_label = "Alert Signals" %}
+        {% else %}
+            {% set source_label = "Inventory" %}
+        {% endif %}
+        {% set scope_label = 'Fleet' if kpi.label == 'Clusters' else 'Active Scope' %}
+        {{ operational_metric_card.render(label=kpi.label,
+                value=kpi.value,
+                description=kpi.description,
+                icon=kpi.icon,
+                source_label=source_label,
+                scope_label=scope_label) }}
+    {% endfor %}
+</div>

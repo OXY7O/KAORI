@@ -1,0 +1,52 @@
+{% if page_key == 'alerts' %}
+    {% set dependency_steps = [
+        {
+            "label": "Object Storage",
+            "icon": "database-zap",
+            "description": "Registered system and committed inventory"
+        },
+        {
+            "label": "Metrics",
+            "icon": "activity",
+            "description": "Validated operational metrics source"
+        },
+        {
+            "label": "Analytics Snapshot",
+            "icon": "database-clock",
+            "description": "Worker-committed metrics and alert evidence"
+        }
+    ] %}
+    {% set dependency_route_summary = "Object Storage → Metrics → Analytics Snapshot" %}
+    {% set dependency_grid_classes = "lg:grid-cols-3" %}
+{% else %}
+    {% set dependency_steps = [
+        {
+            "label": "Object Storage",
+            "icon": "database-zap",
+            "description": "Registered system and committed inventory"
+        },
+        {
+            "label": "Metrics",
+            "icon": "activity",
+            "description": "Validated operational metrics source"
+        },
+        {
+            "label": "Analytics Snapshot",
+            "icon": "database-clock",
+            "description": "Worker-committed operational analytics"
+        }
+    ] %}
+    {% set dependency_route_summary = "Object Storage → Metrics → Analytics Snapshot" %}
+    {% set dependency_grid_classes = "lg:grid-cols-3" %}
+{% endif %}
+{% if dependency_blocker.kind == 'system_required' %}
+    {% set dependency_missing_label = "system context" %}
+{% elif dependency_blocker.kind == 'inventory_required' %}
+    {% set dependency_missing_label = "committed inventory snapshot" %}
+{% elif dependency_blocker.kind.startswith('metrics_source') %}
+    {% set dependency_missing_label = "validated operational metrics" %}
+{% else %}
+    {% set dependency_missing_label = "committed analytics snapshot" %}
+{% endif %}
+{% set dependency_capability_kinds = ["metrics_source_capability"] %}
+{% include "components/dependencies/_blocker.html" %}

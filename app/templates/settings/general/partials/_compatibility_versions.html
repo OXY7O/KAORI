@@ -1,0 +1,210 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card"
+         data-compatibility-versions-workspace="unified"
+         data-compatibility-visual-hierarchy="contract-led">
+    <header class="border-b border-outline-default bg-kaori-soft/35 px-5 py-5 sm:px-6">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-kaori-primary/15 bg-surface-card text-kaori-primary shadow-sm">
+                    <i data-lucide="badge-check" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-base font-bold text-content-primary">Integration Compatibility</h2>
+                    <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">
+                        Annual five-year lifecycle policy with stable capability contracts, qualified versions, upstream lifecycle, and live readiness evidence.
+                    </p>
+                </div>
+            </div>
+            {{ table_label.special_label('Capability Evidence Required', 'info', 'scan-search') }}
+        </div>
+        <dl class="mt-5 grid divide-y divide-outline-subtle border-y border-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+            {% for icon, label, value, supporting in [
+                ('calendar-range', 'Lifecycle Policy', 'v' ~ system_information.compatibility_policy_version ~ ' · ' ~ system_information.compatibility_policy_year, 'Annual compatibility policy generation'),
+                ('history', 'Support Window', system_information.compatibility_window_label, system_information.compatibility_lookback_years ~ '-year calendar lookback'),
+                ('layers-3', 'General Contracts', system_information.compatibility_contract_count, 'Stable API and capability generations'),
+                ('git-branch', 'Qualification Rows', system_information.compatibility_qualification_count, 'Version-to-contract evidence mappings'),
+                ] %}
+                <div class="py-3 sm:px-4 sm:first:pl-0 sm:last:pr-0">
+                    <dt class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                        <i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary"></i>
+                        {{ label }}
+                    </dt>
+                    <dd class="mt-1.5 text-base font-bold text-content-primary">
+                        {{ value }}
+                    </dd>
+                    <dd class="mt-1 text-xs leading-5 text-content-muted">
+                        {{ supporting }}
+                    </dd>
+                </div>
+            {% endfor %}
+        </dl>
+    </header>
+    <section class="px-5 py-5 sm:px-6"
+             aria-labelledby="compatibility-reading-heading">
+        <div class="flex items-start gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <i data-lucide="book-open-check" class="h-4 w-4"></i>
+            </span>
+            <div>
+                <h3 id="compatibility-reading-heading"
+                    class="text-sm font-bold text-content-primary">Reading the Matrix</h3>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Read compatibility as contract, qualification evidence, then observed runtime readiness.</p>
+            </div>
+        </div>
+        <ol class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {% for step, icon, title, text in [
+                ('01', 'calendar-range', 'Annual Lifecycle', 'Policy version advances once per year and shifts the five-year compatibility anchor forward.'),
+                ('02', 'layers-3', 'General Contract', 'Core-vN changes only when the stable API or capability contract itself changes.'),
+                ('03', 'badge-check', 'Version Qualification', 'Stable releases inside the annual window map to the general contract with Current or Extended support.'),
+                ('04', 'scan-search', 'Live Readiness', 'Mandatory APIs, permissions, metrics, labels, and binding evidence still decide whether the integration is usable.'),
+                ] %}
+                <li class="relative border-l-2 border-kaori-primary/25 pl-4">
+                    <div class="flex items-center gap-2">
+                        <span class="font-mono text-xs font-bold text-kaori-primary">{{ step }}</span>
+                        <i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary"></i>
+                    </div>
+                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ title }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ text }}</p>
+                </li>
+            {% endfor %}
+        </ol>
+    </section>
+    <section class="border-y border-outline-default"
+             aria-labelledby="compatibility-matrix-heading">
+        <header class="flex flex-col gap-3 bg-surface-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+            <div class="flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                    <i data-lucide="table-properties" class="h-4 w-4"></i>
+                </span>
+                <div>
+                    <h3 id="compatibility-matrix-heading"
+                        class="text-base font-semibold leading-6 text-content-primary">Compatibility Qualification Matrix</h3>
+                    <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">
+                        Version qualification is supporting evidence. Live capability validation remains the operational readiness authority.
+                    </p>
+                </div>
+            </div>
+            {{ table_label.metadata_label(system_information.compatibility_product_count ~ ' Products', 'unplug') }}
+        </header>
+        <div class="overflow-x-auto">
+            <table class="{{ table_ui.table_classes('min-w-[76rem]') }}">
+                <thead class="{{ table_ui.head_classes() }}">
+                    <tr>
+                        <th class="{{ table_ui.header_cell_classes() }}">Integration</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">General Contract</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Qualified Versions</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Upstream Lifecycle</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">KAORI Support</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Readiness Authority</th>
+                    </tr>
+                </thead>
+                <tbody class="{{ table_ui.body_classes() }}">
+                    {% for item in system_information.compatibility_products %}
+                        <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <div class="flex min-w-[11rem] items-start gap-2.5">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
+                                        <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-content-primary">{{ item.product }}</p>
+                                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ item.version_scheme }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="font-mono text-xs font-semibold text-kaori-primary">{{ item.contract_profile }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.capability_summary }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="text-sm font-semibold text-content-primary">{{ item.qualified_versions }}</p>
+                                <p class="mt-0.5 text-xs text-content-muted">Policy {{ item.policy_version }} · {{ item.policy_window }}</p>
+                                <p class="mt-0.5 text-xs text-content-muted">Preferred: {{ item.recommended_label }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="text-xs leading-5 text-content-secondary">{{ item.upstream_lifecycle }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                {{ table_label.status_label(item.support_label, item.support_tone, 'badge-check') }}
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="text-xs leading-5 text-content-secondary">{{ item.validation_basis }}</p>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <section class="grid lg:grid-cols-2"
+             aria-label="Compatibility policy and validation basis">
+        <article class="p-5 sm:p-6 lg:border-r lg:border-outline-default"
+                 aria-labelledby="compatibility-policy-heading">
+            <div class="flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="shield-ellipsis" class="h-4 w-4"></i>
+                </span>
+                <div>
+                    <h3 id="compatibility-policy-heading"
+                        class="text-sm font-bold text-content-primary">Policy Boundary</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Upstream lifecycle, KAORI qualification, and live readiness are independent evidence layers.</p>
+                </div>
+            </div>
+            <dl class="mt-4 divide-y divide-outline-subtle border-l-2 border-kaori-primary/25 pl-4">
+                <div class="pb-3">
+                    <dt class="text-xs font-semibold text-content-primary">Annual Rollover</dt>
+                    <dd class="mt-1 text-xs leading-5 text-content-muted">
+                        Policy v{{ system_information.compatibility_policy_version }} uses {{ system_information.compatibility_anchor_year }} as the anchor year and {{ system_information.compatibility_policy_year }} as the current policy year.
+                    </dd>
+                </div>
+                <div class="py-3">
+                    <dt class="text-xs font-semibold text-content-primary">General Contract Version</dt>
+                    <dd class="mt-1 text-xs leading-5 text-content-muted">
+                        Core-vN does not advance every year; it changes only when the stable API or capability contract has a breaking semantic change.
+                    </dd>
+                </div>
+                <div class="py-3">
+                    <dt class="text-xs font-semibold text-content-primary">Lifecycle Boundary</dt>
+                    <dd class="mt-1 text-xs leading-5 text-content-muted">
+                        Pre-window releases are End of Life. Future versions remain Unverified until the next qualification update, even when core capability probes succeed.
+                    </dd>
+                </div>
+                <div class="pt-3">
+                    <dt class="text-xs font-semibold text-content-primary">Blocking Rule</dt>
+                    <dd class="mt-1 text-xs leading-5 text-content-muted">
+                        End-of-life releases, missing mandatory capabilities, invalid provider identity, or failed live validation remain blocking conditions.
+                    </dd>
+                </div>
+            </dl>
+        </article>
+        <article class="p-5 sm:p-6" aria-labelledby="capability-validation-heading">
+            <div class="flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="scan-search" class="h-4 w-4"></i>
+                </span>
+                <div>
+                    <h3 id="capability-validation-heading"
+                        class="text-sm font-bold text-content-primary">Contract Ownership</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Multiple product versions may map to one stable contract without creating runtime branches.</p>
+                </div>
+            </div>
+            <div class="mt-4 divide-y divide-outline-subtle">
+                {% for item in system_information.compatibility_products %}
+                    <div class="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                            <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="text-sm font-semibold text-content-primary">{{ item.product }}</p>
+                                {{ table_label.metadata_label(item.contract_profile, 'layers-2') }}
+                            </div>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.profile_count }} qualification row{{ '' if item.profile_count == 1 else 's' }} · {{ item.validation_basis }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </article>
+    </section>
+</section>

@@ -1,0 +1,123 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/operational_section_card.html" as operational_section %}
+{% import "components/operational_point_flow.html" as point_flow %}
+{% import "components/destructive_confirmation_modal.html" as destructive_modal %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
+{% block title %}Roles & Access{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('shield-check', 'Access', 'key-round') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Roles &amp; Access</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Manage protected defaults and custom authorization roles while keeping permission definitions code-owned.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('shield', summary.total_roles ~ ' Roles') }}
+                            {{ page_hero.meta_label('key-round', summary.total_permissions ~ ' Permissions') }}
+                            {{ page_hero.meta_label('users', summary.assigned_users ~ ' Assigned Users') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ page_hero.context_card('Authorization posture',
+                                'Identity & Authorization',
+                                'Authorization Posture',
+                                summary.posture_label,
+                                summary.posture_tone,
+                                [
+                                ('circle-check', 'Active Roles', summary.active_roles, 'Available for assignment') ,
+                ('sparkles', 'Custom Roles', summary.custom_roles, 'Administrator-managed profiles')
+                ],
+                'Add Custom Role' if can_manage_roles else 'Permission Catalog',
+                url_for('access.roles.create') if can_manage_roles else url_for('access.permissions.index'),
+                'plus' if can_manage_roles else 'book-key'
+                ) }}
+            </div>
+        </section>
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+            <header class="border-b border-outline-subtle px-5 py-4 lg:px-6">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
+                        <div class="min-w-0">
+                            <h2 class="text-base font-semibold text-content-primary">Role Registry Overview</h2>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Current role population, assignment posture, and authorization ownership boundaries.</p>
+                        </div>
+                    </div>
+                    {{ table_label.status_indicator_label(summary.posture_label, summary.posture_tone) }}
+                </div>
+            </header>
+            <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
+                {% set overview_metrics = [
+                                    ('circle-check', 'Active Roles', summary.active_roles, 'Profiles currently available for assignment.', 'bg-status-normal-soft text-status-normal-text'),
+                                    ('lock-keyhole', 'System Roles', summary.system_roles, 'Protected defaults owned by the RBAC baseline.', 'bg-kaori-soft text-kaori-primary'),
+                                    ('sparkles', 'Custom Roles', summary.custom_roles, 'Editable administrator-managed access profiles.', 'bg-status-info-soft text-status-info-text'),
+                                    ('triangle-alert', 'Baseline Drift', summary.baseline_drift_count, 'Protected default definitions requiring RBAC convergence review.', 'bg-status-warning-soft text-status-warning-text' if summary.baseline_drift_count else 'bg-status-normal-soft text-status-normal-text')
+                                ] %}
+                {% for icon, label, value, description, tone in overview_metrics %}
+                    <article class="flex min-h-[11rem] flex-col bg-surface-card p-5">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
+                                <p class="mt-2 truncate text-3xl font-bold tracking-tight text-content-primary">{{ value }}</p>
+                            </div>
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ tone }}"
+                                  aria-hidden="true"><i data-lucide="{{ icon }}" class="h-5 w-5"></i></span>
+                        </div>
+                        <p class="mt-3 text-sm leading-6 text-content-muted">{{ description }}</p>
+                    </article>
+                {% endfor %}
+            </div>
+            <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
+                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    {% set boundaries = [('lock-keyhole', 'Protected Defaults', 'Code-Owned', 'System roles are code-owned and must be cloned before customization.'), ('shield-ellipsis', 'Delegation Boundary', 'Effective Access', 'Role managers may only delegate permissions already inside their own effective access ceiling.'), ('git-merge', 'Permission Dependencies', 'Catalog-Owned', 'Required baseline permissions are source-controlled and expanded automatically when needed.'), ('shield-check', 'Effective Authorization', 'Fail Closed', 'Inactive roles fail closed on the next authorization check.')] %}
+                    {% for icon, title, value, description in boundaries %}
+                        <article class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+                                    <h3 class="text-sm font-semibold text-content-primary">{{ title }}</h3>
+                                    <p class="text-xs font-semibold text-content-secondary">{{ value }}</p>
+                                </div>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+        {% call operational_section.render(
+            'Role Assignment Flow',
+            'How code-owned permissions become effective user authorization.',
+            'workflow',
+            action_href=url_for('access.permissions.index'),
+            action_label='Open Permission Catalog',
+            action_icon='book-key',
+            body_classes='p-5'
+            ) %}
+            {% set role_flow = [('book-key', 'Permission Catalog', 'Code-owned capabilities define the available permission contracts.'), ('layers-3', 'Role Composition', 'Default or custom roles package permissions into reusable profiles.'), ('user-round-check', 'User Assignment', 'User Management assigns one active role to each managed account.'), ('shield-check', 'Authorization Check', 'Server-side guards evaluate effective permissions on every protected action.')] %}
+            {{ point_flow.render(role_flow, aria_label='Role Assignment Flow') }}
+            <p class="mt-4 text-xs leading-5 text-content-muted">Super Admin remains a separately controlled Local Database emergency authority flag and is never granted through a normal role. Custom role delegation cannot exceed the administrator's own effective permission boundary.</p>
+        {% endcall %}
+        {% include "access/roles/partials/_registry.html" %}
+        {{ resource_detail_modal.host('Role',
+                url_for('access.roles.modal_details', role_id=0) ,
+        footer_text='Role evidence reflects the current committed RBAC registry.',
+        context_label='Access',
+        dialog_max_width='max-w-6xl'
+        ) }}
+        {{ destructive_modal.render('role-delete-confirmation',
+                'Delete Custom Role',
+                '',
+                'This permanently removes the custom role definition and its permission assignments. Historical Activity Audit evidence remains retained.',
+                '',
+                action_label='Delete Role',
+                notice='Only an unreferenced custom role can be deleted.',
+                scope_value='Roles & Access') }}
+    </div>
+    <script src="{{ url_for('static', filename='js/destructive_confirmation_modal.js') }}"></script>
+{% endblock dashboard_content %}

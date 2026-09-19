@@ -1,0 +1,129 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "intelligence/components/_workspace.html" as intelligence_ui %}
+{% block title %}Intelligence Overview{% endblock title %}
+{% block dashboard_content %}
+    {% set hero_metrics = [
+            ('sparkles', 'Active Findings', payload.summary.findings, 'Current recommendations'),
+            ('bell-ring', 'Active Alerts', payload.alerts.active, 'Open alert cases')
+        ] %}
+    <div class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('brain-circuit', 'Infrastructure Intelligence', 'scan-search') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Intelligence Overview</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review recommendations, alerts, rules, automation controls, operational posture, and supporting operator evidence.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('database', 'Committed Evidence') }}
+                            {{ page_hero.meta_label('shield-check', 'Operator Governed') }}
+                            {{ page_hero.meta_label('layout-dashboard', '4 Workspaces') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ page_hero.context_card('Intelligence posture',
+                                'Intelligence Posture',
+                                'Current State',
+                                payload.posture.label,
+                                payload.posture.tone,
+                                hero_metrics,
+                                'Open Recommendations',
+                                url_for('intelligence.recommendations') ,
+                'brain-circuit'
+                ) }}
+            </div>
+        </section>
+        {% call intelligence_ui.posture_panel(
+            'Intelligence Summary',
+            'Current cross-workspace posture for recommendations, alert operations, rule coverage, and governed automation.',
+            'chart-no-axes-column-increasing',
+            payload.posture.label,
+            payload.posture.tone,
+            payload.posture.helper,
+            actions=[
+            ('sparkles', 'Recommendations', url_for('intelligence.recommendations')),
+            ('siren', 'Alert Intelligence', url_for('alert_intelligence.index'))
+            ]
+            ) %}
+            <div aria-label="Intelligence key metrics"
+                 class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+                {% for metric in payload.kpi_cards %}
+                    {{ intelligence_ui.posture_metric(metric.icon, metric.label, metric.value, metric.supporting) }}
+                {% endfor %}
+            </div>
+        {% endcall %}
+        {% call intelligence_ui.section(
+            'Intelligence Posture',
+            'Three signals summarize what needs attention, how evidence is served, and whether governed automation needs review.',
+            'activity'
+            ) %}
+            <div class="grid gap-3 p-4 sm:p-5 lg:grid-cols-3">
+                {% for item in payload.posture_items %}
+                    {% set surface_classes = 'bg-status-critical-soft text-status-critical-text' if item.tone == 'critical' else ('bg-status-warning-soft text-status-warning-text' if item.tone == 'warning' else ('bg-status-normal-soft text-status-normal-text' if item.tone == 'normal' else 'bg-status-info-soft text-status-info-text')) %}
+                    <a href="{{ url_for(item.href_endpoint) }}"
+                       class="group flex min-w-0 items-center gap-3 rounded-xl border {{ operational_callout.semantic_border_classes(item.tone) }} {{ surface_classes }} p-4 transition hover:bg-surface-card">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-card/80"
+                              aria-hidden="true">
+                            <i data-lucide="{{ item.icon }}" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <h3 class="text-sm font-semibold leading-5">{{ item.label }}</h3>
+                            <p class="mt-1 text-sm font-semibold leading-5">{{ item.value }}</p>
+                            <p class="mt-0.5 text-xs leading-5 opacity-80">{{ item.supporting }}</p>
+                        </div>
+                        <i data-lucide="chevron-right"
+                           class="h-4 w-4 shrink-0 opacity-70 transition group-hover:translate-x-0.5"
+                           aria-hidden="true"></i>
+                    </a>
+                {% endfor %}
+            </div>
+        {% endcall %}
+        {% call intelligence_ui.section(
+            'Intelligence Workspaces',
+            'Navigate to the workspace you need. Overview stays focused on aggregate posture and does not duplicate record-level operations.',
+            'layout-dashboard'
+            ) %}
+            <div class="divide-y divide-outline-subtle">
+                {% for workspace in payload.workspaces %}
+                    {% set workspace_icon_classes = 'bg-status-critical-soft text-status-critical' if workspace.tone == 'critical' else ('bg-status-warning-soft text-status-warning' if workspace.tone == 'warning' else ('bg-status-normal-soft text-status-normal' if workspace.tone == 'normal' else 'bg-status-info-soft text-status-info')) %}
+                    <article class="grid gap-4 px-4 py-4 sm:px-5 lg:grid-cols-[minmax(0,1fr)_7rem_7rem_10rem] lg:items-center">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg {{ workspace_icon_classes }}"
+                                  aria-hidden="true">
+                                <i data-lucide="{{ workspace.icon }}" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold leading-5 text-content-primary">{{ workspace.title }}</h3>
+                                <p class="mt-1 max-w-3xl text-xs leading-5 text-content-muted">{{ workspace.description }}</p>
+                            </div>
+                        </div>
+                        <div class="lg:border-l lg:border-outline-subtle lg:pl-4">
+                            <p class="text-xl font-semibold leading-7 text-content-primary">{{ workspace.primary_value }}</p>
+                            <p class="text-xs leading-5 text-content-muted">{{ workspace.primary_label }}</p>
+                        </div>
+                        <div class="lg:border-l lg:border-outline-subtle lg:pl-4">
+                            <p class="text-xl font-semibold leading-7 text-content-primary">{{ workspace.secondary_value }}</p>
+                            <p class="text-xs leading-5 text-content-muted">{{ workspace.secondary_label }}</p>
+                        </div>
+                        <a href="{{ url_for(workspace.href_endpoint) }}"
+                           class="{{ table_ui.action_classes() }} min-h-10 justify-center">
+                            Open Workspace
+                            <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
+                        </a>
+                    </article>
+                {% endfor %}
+            </div>
+        {% endcall %}
+        {% call operational_callout.render(
+            'Operational Boundary',
+            'Overview only presents aggregate Intelligence posture. Open a dedicated workspace for affected assets, alert-case actions, notification evidence, rule logic, remediation detail, or execution controls.',
+            'info',
+            'info',
+            'semantic'
+            ) %}
+            <p class="text-xs leading-5 text-content-muted">Provider collection and refresh remain worker-owned; this page reads committed KAORI state only.</p>
+        {% endcall %}
+    </div>
+{% endblock dashboard_content %}

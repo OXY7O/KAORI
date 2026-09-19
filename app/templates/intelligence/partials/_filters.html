@@ -1,0 +1,153 @@
+{% import "components/table.html" as table_ui %}
+{% set resolved_endpoint = endpoint_name|default('intelligence.recommendations') %}
+{% set resolved_scope = filter_scope|default('recommendation') %}
+{% set resolved_title = filter_title|default('Recommendation Filters') %}
+{% set resolved_description = filter_description|default('Results refresh automatically when search or scope filters change.') %}
+{% set resolved_search_placeholder = search_placeholder|default('Recommendation') %}
+{% set resolved_results_target = filter_results_target|default('#recommendations-results-content') %}
+{% set resolved_indicator = filter_indicator|default('#recommendations-loading-bar') %}
+<form id="{{ resolved_scope }}-filter-form"
+      method="get"
+      action="{{ url_for(resolved_endpoint) }}"
+      hx-get="{{ url_for(resolved_endpoint) }}"
+      hx-target="{{ resolved_results_target }}"
+      hx-swap="innerHTML show:none focus-scroll:false"
+      hx-push-url="true"
+      hx-indicator="{{ resolved_indicator }}"
+      hx-sync="{{ resolved_results_target }}:replace"
+      hx-trigger="input changed delay:350ms from:input[name='q'], change from:select"
+      autocomplete="off"
+      class="border-b border-outline-subtle bg-surface-hover px-4 py-4 sm:px-5">
+    <input type="hidden" name="page" value="1">
+    <input type="hidden"
+           name="per_page"
+           value="{{ payload.pagination.per_page }}">
+    <div class="mb-4">
+        <p class="text-sm font-semibold leading-5 text-content-primary">{{ resolved_title }}</p>
+        <p class="mt-1 text-xs leading-5 text-content-muted">{{ resolved_description }}</p>
+    </div>
+    <div class="{{ table_ui.filter_layout_classes() }}">
+        <label class="block">
+            <span class="{{ table_ui.filter_label_classes() }}">Search</span>
+            {{ table_ui.search_field('q', payload.filters.q, resolved_search_placeholder) }}
+        </label>
+        <label class="block">
+            <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
+            <select name="domain"
+                    autocomplete="off"
+                    class="{{ table_ui.filter_select_classes() }}">
+                {% for option in payload.filter_options.domains %}
+                    <option value="{{ option.value }}"
+                            {% if payload.filters.domain == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="block">
+            <span class="{{ table_ui.filter_label_classes() }}">Provider Coverage</span>
+            <select name="provider"
+                    autocomplete="off"
+                    class="{{ table_ui.filter_select_classes() }}">
+                {% for option in payload.filter_options.providers %}
+                    <option value="{{ option.value }}"
+                            {% if payload.filters.provider == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        {% if filter_compact_two_rows|default(false) %}
+            <label class="block">
+                <span class="{{ table_ui.filter_label_classes() }}">Signal Source</span>
+                <select name="signal_source"
+                        autocomplete="off"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for option in payload.filter_options.signal_sources %}
+                        <option value="{{ option.value }}"
+                                {% if payload.filters.signal_source == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        {% endif %}
+        <label class="block">
+            <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
+            <select name="severity"
+                    autocomplete="off"
+                    class="{{ table_ui.filter_select_classes() }}">
+                {% for option in payload.filter_options.severities %}
+                    <option value="{{ option.value }}"
+                            {% if payload.filters.severity == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        {% if filter_include_status|default(false) %}
+            <label class="block">
+                <span class="{{ table_ui.filter_label_classes() }}">Availability</span>
+                <select name="status"
+                        autocomplete="off"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for option in payload.filter_options.statuses %}
+                        <option value="{{ option.value }}"
+                                {% if payload.filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        {% endif %}
+        {% if filter_include_alert_handling|default(false) %}
+            <label class="block">
+                <span class="{{ table_ui.filter_label_classes() }}">Alert Handling</span>
+                <select name="alert_handling"
+                        autocomplete="off"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for option in payload.filter_options.alert_handling %}
+                        <option value="{{ option.value }}"
+                                {% if payload.filters.alert_handling == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        {% endif %}
+        <label class="block">
+            <span class="{{ table_ui.filter_label_classes() }}">Category</span>
+            <select name="category"
+                    autocomplete="off"
+                    class="{{ table_ui.filter_select_classes() }}">
+                {% for option in payload.filter_options.categories %}
+                    <option value="{{ option.value }}"
+                            {% if payload.filters.category == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="block">
+            <span class="{{ table_ui.filter_label_classes() }}">Resource Type</span>
+            <select name="source_kind"
+                    autocomplete="off"
+                    class="{{ table_ui.filter_select_classes() }}">
+                {% for option in payload.filter_options.source_kinds %}
+                    <option value="{{ option.value }}"
+                            {% if payload.filters.source_kind == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="block">
+            <span class="{{ table_ui.filter_label_classes() }}">Rule Type</span>
+            <select name="logic_type"
+                    autocomplete="off"
+                    class="{{ table_ui.filter_select_classes() }}">
+                {% for option in payload.filter_options.logic_types %}
+                    <option value="{{ option.value }}"
+                            {% if payload.filters.logic_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        {% if not filter_compact_two_rows|default(false) %}
+            <label class="block">
+                <span class="{{ table_ui.filter_label_classes() }}">Signal Source</span>
+                <select name="signal_source"
+                        autocomplete="off"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for option in payload.filter_options.signal_sources %}
+                        <option value="{{ option.value }}"
+                                {% if payload.filters.signal_source == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        {% endif %}
+    </div>
+</form>

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <linearGradient id="g1" x1="180" y1="180" x2="844" y2="844" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#B99BFF"/>
+      <stop offset="1" stop-color="#8E66FF"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="180" y1="180" x2="844" y2="844" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7C3AED"/>
+      <stop offset="1" stop-color="#5B21B6"/>
+    </linearGradient>
+    <linearGradient id="g3" x1="180" y1="844" x2="844" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6D28D9"/>
+      <stop offset="1" stop-color="#4C1D95"/>
+    </linearGradient>
+    <linearGradient id="g4" x1="844" y1="844" x2="180" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5120C9"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="frame" x1="350" y1="350" x2="674" y2="674" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EEE7FF" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#D9CCFF" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="430" y1="430" x2="594" y2="594" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#B696FF"/>
+      <stop offset="1" stop-color="#9D7BFF"/>
+    </linearGradient>
+    <filter id="shadow" x="120" y="120" width="784" height="784" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="28" flood-color="#5B21B6" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <rect x="180" y="180" width="304" height="304" rx="68" fill="url(#g1)"/>
+    <rect x="540" y="180" width="304" height="304" rx="68" fill="url(#g2)"/>
+    <rect x="180" y="540" width="304" height="304" rx="68" fill="url(#g3)"/>
+    <rect x="540" y="540" width="304" height="304" rx="68" fill="url(#g4)"/>
+
+    <rect x="340" y="340" width="344" height="344" rx="14" stroke="url(#frame)" stroke-width="38"/>
+    <circle cx="512" cy="512" r="112" fill="url(#ring)"/>
+    <circle cx="512" cy="512" r="74" fill="#F8F7FC"/>
+  </g>
+</svg>

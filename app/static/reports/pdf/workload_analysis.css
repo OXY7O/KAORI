@@ -1,0 +1,141 @@
+/*
+ * KAORI Workload Analysis PDF specialization v3.0.
+ * Shared typography, publication geometry, tables, references, header, footer,
+ * and cover treatment are owned by analytics_publication.css.
+ */
+
+.workload-executive-split { }
+.workload-inventory-split { }
+.workload-quota-split { }
+.workload-mapping-split { }
+.workload-config-split { }
+.workload-governance-split { }
+
+.governance-bars { padding-top: 1mm; }
+.governance-row {
+  display: grid;
+  grid-template-columns: 31mm minmax(0, 1fr) 28mm;
+  gap: 3mm;
+  align-items: center;
+  margin: 3mm 0;
+}
+.governance-row strong { font-size: 6.9pt; line-height: 1.25; }
+.governance-row > span { text-align: right; font-size: 6.5pt; font-weight: 700; white-space: nowrap; }
+.governance-track { position: relative; height: 5mm; overflow: hidden; background: #E5E7EB; }
+.governance-track > i { display: block; height: 100%; background: #7C3AED; }
+.governance-track > i.normal-fill { background: #15803D; }
+.governance-track.unavailable {
+  background: repeating-linear-gradient(135deg, #F1F5F9 0, #F1F5F9 2.5mm, #E2E8F0 2.5mm, #E2E8F0 5mm);
+}
+
+.inventory-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+.inventory-card { min-height: 22mm; padding: 4mm; background: #F8FAFC; }
+.inventory-card span { display: block; color: #64748B; font-size: 6pt; font-weight: 650; text-transform: uppercase; }
+.inventory-card strong { display: block; margin-top: 2mm; font-size: 12pt; line-height: 1.05; }
+.inventory-card small { display: block; margin-top: 2mm; color: #64748B; font-size: 6pt; line-height: 1.35; }
+
+.signal-table { font-size: 6.65pt; }
+.signal-table th:nth-child(1) { width: 8%; }
+.signal-table th:nth-child(2) { width: 53%; }
+.signal-table th:nth-child(3) { width: 22%; }
+.signal-table th:nth-child(4) { width: 17%; }
+
+.findings-register th:nth-child(1) { width: 9%; }
+.findings-register th:nth-child(2) { width: 12%; }
+.findings-register th:nth-child(3) { width: 39%; }
+.findings-register th:nth-child(4) { width: 25%; }
+.findings-register th:nth-child(5) { width: 15%; }
+
+.inventory-register th:nth-child(1) { width: 8%; }
+.inventory-register th:nth-child(2) { width: 24%; }
+.inventory-register th:nth-child(3) { width: 21%; }
+.inventory-register th:nth-child(4) { width: 30%; }
+.inventory-register th:nth-child(5) { width: 17%; }
+.page-workload-inventory .management-decision { margin-top: 7mm; }
+
+.quota-summary-card { min-height: 48mm; border: .3mm solid #E2E8F0; padding: 5mm; }
+.quota-number-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4mm; margin-top: 4mm; }
+.quota-number { padding: 4mm; background: #F8FAFC; }
+.quota-number span { display: block; color: #64748B; font-size: 6pt; }
+.quota-number strong { display: block; margin-top: 1.5mm; font-size: 11pt; }
+.quota-register th:nth-child(1) { width: 8%; }
+.quota-register th:nth-child(2) { width: 32%; }
+.quota-register th:nth-child(3) { width: 21%; }
+.quota-register th:nth-child(4) { width: 21%; }
+.quota-register th:nth-child(5) { width: 18%; }
+.quota-requirements th:nth-child(1) { width: 8%; }
+.quota-requirements th:nth-child(2) { width: 25%; }
+.quota-requirements th:nth-child(3) { width: 40%; }
+.quota-requirements th:nth-child(4) { width: 15%; }
+.quota-requirements th:nth-child(5) { width: 12%; }
+
+.mapping-register th:nth-child(1) { width: 10%; }
+.mapping-register th:nth-child(2) { width: 27%; }
+.mapping-register th:nth-child(3) { width: 43%; }
+.mapping-register th:nth-child(4) { width: 20%; }
+.configuration-register th:nth-child(1) { width: 10%; }
+.configuration-register th:nth-child(2) { width: 23%; }
+.configuration-register th:nth-child(3) { width: 23%; }
+.configuration-register th:nth-child(4) { width: 24%; }
+.configuration-register th:nth-child(5) { width: 20%; }
+.mapping-register td,
+.configuration-register td { white-space: normal; overflow: visible; text-overflow: clip; }
+.page-workload-mapping .identity-register,
+.page-workload-configuration .identity-register { margin-top: 3.2mm; }
+
+.risk-register th:nth-child(1) { width: 8%; }
+.risk-register th:nth-child(2) { width: 35%; }
+.risk-register th:nth-child(3) { width: 10%; }
+.risk-register th:nth-child(4) { width: 12%; }
+.risk-register th:nth-child(5) { width: 23%; }
+.risk-register th:nth-child(6) { width: 12%; }
+
+.recommendation-register th:nth-child(1) { width: 8%; }
+.recommendation-register th:nth-child(2) { width: 9%; }
+.recommendation-register th:nth-child(3) { width: 34%; }
+.recommendation-register th:nth-child(4) { width: 22%; }
+.recommendation-register th:nth-child(5) { width: 17%; }
+.recommendation-register th:nth-child(6) { width: 10%; }
+
+.governance-table th { width: 27%; }
+.warning-card { border-left-color: #D97706; }
+.critical-card { border-left-color: #DC2626; }
+
+.methodology-tables { grid-template-columns: 1.42fr .88fr; gap: 6mm; }
+.data-source-table .compact-register th:nth-child(1) { width: 50%; }
+.data-source-table .compact-register th:nth-child(2) { width: 20%; }
+.data-source-table .compact-register th:nth-child(3) { width: 30%; }
+.methodology-tables td { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; }
+.page-workload-mapping .identity-item,
+.page-workload-configuration .identity-item { padding-top: 1.6mm; padding-bottom: 1.6mm; }
+
+/* Keep comparison registers compact, but never let the signal text collide. */
+.signal-table th:first-child,
+.signal-table td:first-child,
+.signal-table th:nth-child(3),
+.signal-table td:nth-child(3),
+.signal-table th:nth-child(4),
+.signal-table td:nth-child(4) { white-space: nowrap; }
+.signal-table th:nth-child(2),
+.signal-table td:nth-child(2) {
+  white-space: normal;
+  overflow-wrap: break-word;
+  line-height: 1.26;
+}
+.signal-table td:nth-child(4) {
+  text-align: left;
+}
+.page-workload-inventory .signal-table + .interpretation-card {
+  margin-top: 3.2mm;
+}
+
+/* R5 layout cleanup: governance signal rows must remain readable on one page. */
+.page-workload-inventory .workload-inventory-split > .content-section {
+  min-width: 0;
+}
+.page-workload-inventory .inventory-card-grid {
+  gap: 3.5mm;
+}
+.page-workload-inventory .inventory-card {
+  min-height: 21mm;
+}

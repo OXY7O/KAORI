@@ -1,0 +1,156 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
+{% import "integrations/components/_record_actions.html" as record_actions %}
+{% import "components/table_label.html" as table_label %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% block title %}{{ domain.label }} Integrations · KAORI{% endblock title %}
+{% block dashboard_content %}
+    {% set posture_label = "Ready" if posture_status == "ready" else ("Attention" if posture_status == "attention" else "Not Configured") %}
+    <div class="kaori-integration-semantic space-y-6"
+         data-kaori-integration-domain-workspace>
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro(domain.icon, "Integrations · " ~ domain.label, domain.icon) %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ domain.label }} Integrations</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">{{ domain.description }}</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label("layers-3", stats.capability_types ~ " Capabilities") }}
+                            {{ page_hero.meta_label("package-search", stats.provider_types ~ " Provider Types") }}
+                            {{ page_hero.meta_label("link-2", stats.bindings ~ " Bindings") }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="{{ domain.label }} integration posture">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Domain Posture</p>
+                                <p class="{{ page_hero.context_panel_title_classes() }}">Provider Readiness</p>
+                            </div>
+                            {{ integration_status(posture_status, posture_label, display="text") }}
+                        </div>
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric("server-cog", "Registered", stats.registered_targets, "Configured provider targets") }}
+                            {{ page_hero.context_metric("badge-check", "Ready", stats.ready_targets ~ " / " ~ stats.enabled_targets, "Eligible enabled targets") }}
+                        </div>
+                        <div class="{{ page_hero.context_actions_classes() }}">
+                            <a href="{{ url_for('integrations.overview') }}"
+                               class="{{ page_hero.context_action_classes() }}">
+                                <i data-lucide="layout-grid" class="h-4 w-4" aria-hidden="true"></i>
+                                Integration Overview
+                            </a>
+                            <a href="{{ url_for('integrations.overview', tab='runtime') }}#integration-workspace"
+                               class="{{ page_hero.context_action_classes() }}">
+                                <i data-lucide="activity" class="h-4 w-4" aria-hidden="true"></i>
+                                Runtime Overview
+                            </a>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+        <section class="{{ integration_ui.section_shell_classes() }}"
+                 aria-label="{{ domain.label }} Capability Registry">
+            {{ integration_ui.section_header("layers-3",
+                        "Capability Registry",
+                        "Capability boundaries define provider ownership and which managed assets may receive bindings.",
+                        eyebrow=domain.label ~ " Domain") }}
+            <div class="divide-y divide-outline-subtle">
+                {% for item in capabilities %}
+                    <article class="px-5 py-4 sm:px-6">
+                        <div class="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(260px,0.9fr)_auto] lg:items-center">
+                            <div class="flex min-w-0 items-start gap-3">
+                                {{ integration_ui.palette_icon("box", "brand", size="sm") }}
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="text-sm font-semibold text-content-primary">{{ item.label }}</h3>
+                                        {{ integration_status(item.status, "Ready" if item.status == "ready" else ("Attention" if item.status == "attention" else ("Not Configured" if item.provider_labels else "No Provider") ), display="indicator") }}
+                                    </div>
+                                    <p class="mt-1 text-sm leading-6 text-content-secondary">{{ item.description }}</p>
+                                </div>
+                            </div>
+                            <div class="min-w-0 lg:border-l lg:border-outline-subtle lg:pl-5">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Provider Ownership</p>
+                                {% if item.provider_labels %}
+                                    <div class="mt-2 flex flex-wrap gap-2">
+                                        {% for label in item.provider_labels %}
+                                            <span class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-hover px-2 py-1 text-xs font-semibold text-content-secondary">{{ label }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">No provider implementation is registered for this capability.</p>
+                                {% endif %}
+                            </div>
+                            <div class="flex flex-wrap items-center gap-3 lg:justify-end">
+                                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-content-secondary">
+                                    <span><strong class="font-semibold text-content-primary">{{ item.registered }}</strong> Target{{ "" if item.registered == 1 else "s" }}</span>
+                                    <span><strong class="font-semibold text-content-primary">{{ item.bindings }}</strong> Binding{{ "" if item.bindings == 1 else "s" }}</span>
+                                </div>
+                                {{ record_actions.view_more("domain-capability-detail-" ~ item.key, role="capability") }}
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+        {% for item in capabilities %}
+            {% call record_detail_modal.render(
+                "domain-capability-detail-" ~ item.key,
+                item.key,
+                domain.label ~ " Capability",
+                item.label,
+                "Provider ownership and managed-asset boundary",
+                icon="layers-3",
+                footer_text="Domain capabilities define ownership and eligible consumer-binding boundaries.",
+                size="standard"
+                ) %}
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <section class="rounded-xl border border-outline-subtle bg-surface-subtle p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Capability Boundary</p>
+                        <p class="mt-2 text-sm leading-6 text-content-secondary">{{ item.description }}</p>
+                    </section>
+                    <section class="rounded-xl border border-outline-subtle bg-surface-subtle p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Provider Ownership</p>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            {% for label in item.provider_labels %}
+                                {{ table_label.metadata_label(label) }}
+                            {% else %}
+                                {{ table_label.metadata_label("No Provider") }}
+                            {% endfor %}
+                        </div>
+                    </section>
+                    <section class="rounded-xl border border-outline-subtle bg-surface-subtle p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Managed Asset Types</p>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            {% for asset_type in item.asset_types %}
+                                {{ table_label.metadata_label(asset_type|replace("_", " ") |title) }}
+                            {% else %}
+                                {{ table_label.metadata_label("Source Provider Capability") }}
+                            {% endfor %}
+                        </div>
+                    </section>
+                    <section class="rounded-xl border border-outline-subtle bg-surface-subtle p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Current Coverage</p>
+                        <p class="mt-2 text-sm font-semibold text-content-primary">{{ item.ready }} Ready / {{ item.enabled }} Enabled</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.registered }} registered target{{ "" if item.registered == 1 else "s" }} · {{ item.bindings }} consumer binding{{ "" if item.bindings == 1 else "s" }}.</p>
+                    </section>
+                </div>
+            {% endcall %}
+        {% endfor %}
+        {% include "integrations/partials/_domain_workspace.html" %}
+        <div class="rounded-xl border border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6"
+             data-kaori-domain-operating-boundary>
+            <div class="flex items-start gap-3">
+                {{ integration_ui.palette_icon("shield-check", "brand", size="sm") }}
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-content-primary">Domain Operating Boundary</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">External systems remain authoritative for native configuration and runtime state. KAORI owns provider registration, compatibility and Core Validation, asset-centric bindings, binding-specific consumer evidence, and consumer eligibility.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock dashboard_content %}

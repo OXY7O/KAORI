@@ -1,0 +1,32 @@
+{% import "intelligence/components/_workspace.html" as intelligence_ui %}
+{% import "components/table_label.html" as table_label %}
+{% set matching_items = payload.result_context.matching_items|default(payload.pagination.total_items, true) %}
+{% set source_items = payload.result_context.source_items|default(payload.summary.actionable, true) %}
+{% set active_filters = payload.result_context.active_filters|default(0, true) %}
+{% set kubernetes_items = payload.result_context.kubernetes_items|default(0, true) %}
+{% set object_storage_items = payload.result_context.object_storage_items|default(0, true) %}
+{% set critical_items = payload.result_context.critical_items|default(0, true) %}
+{% set warning_items = payload.result_context.warning_items|default(0, true) %}
+<div id="recommendation-summary-section"
+     {% if recommendation_summary_oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}>
+    {% set summary_footer = payload.scope_label ~ ' · ' ~ ((active_filters ~ ' active filters') if active_filters else 'no active filters') ~ ' · Committed Evidence only.' %}
+    {% call intelligence_ui.posture_panel(
+        'Recommendation Summary',
+        'Current evidence-backed recommendation posture for the active filter scope.',
+        'chart-no-axes-column-increasing',
+        payload.posture.label,
+        payload.posture.tone,
+        summary_footer,
+        actions=[
+        ('book-open-check', 'Rule Catalog', url_for('intelligence.catalog')),
+        ('siren', 'Alert Intelligence', url_for('alert_intelligence.index'))
+        ]
+        ) %}
+        <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+            {{ intelligence_ui.posture_metric('scan-search', 'Matching Findings', matching_items, source_items ~ ' active finding(s) before filters') }}
+            {{ intelligence_ui.posture_metric('ship-wheel', 'Kubernetes', kubernetes_items, 'Committed Kubernetes finding(s)') }}
+            {{ intelligence_ui.posture_metric('database-zap', 'Object Storage', object_storage_items, 'Committed Object Storage finding(s)') }}
+            {{ intelligence_ui.posture_metric('triangle-alert', 'Priority', critical_items ~ ' Critical · ' ~ warning_items ~ ' Warning', 'Priority across matching findings') }}
+        </div>
+    {% endcall %}
+</div>

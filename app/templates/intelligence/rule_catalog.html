@@ -1,0 +1,40 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "intelligence/components/_workspace.html" as intelligence_ui %}
+{% block title %}Rule Catalog{% endblock title %}
+{% block dashboard_content %}
+    {% set hero_metrics = [
+            ('circle-check', 'Available', payload.summary.available, 'Active definitions'),
+            ('boxes', 'Asset Domains', payload.summary.domains, 'Canonical domains')
+        ] %}
+    <div class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('list-checks', 'Infrastructure Intelligence', 'book-open-check') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Rule Catalog</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review canonical detection logic, evidence requirements, ownership, severity, and governed response definitions.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('list-checks', payload.catalog|length ~ ' Rules') }}
+                            {{ page_hero.meta_label('boxes', payload.summary.domains ~ ' Asset Domains') }}
+                            {{ page_hero.meta_label('book-open-check', 'Canonical Definitions') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ page_hero.context_card('Rule catalog posture', payload.scope_label, payload.posture.title, payload.posture.label, payload.posture.tone, hero_metrics, 'Open Recommendations', url_for('intelligence.recommendations') , 'sparkles') }}
+            </div>
+        </section>
+        <div id="catalog-summary-section">{% include 'intelligence/partials/_catalog_summary.html' %}</div>
+        {% call intelligence_ui.section(
+            'Rule Definitions',
+            'Search ownership, coverage, readiness, severity, and response. View Rule expands below the selected record.',
+            'list-checks',
+            payload.posture.label,
+            payload.posture.tone,
+            indicator_id='catalog-loading-bar',
+            loading_label='Filtering Rule Catalog'
+            ) %}
+            {% include 'intelligence/partials/_catalog_workspace.html' %}
+        {% endcall %}
+    </div>
+{% endblock dashboard_content %}

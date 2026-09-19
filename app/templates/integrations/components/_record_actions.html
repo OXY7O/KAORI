@@ -1,0 +1,16 @@
+{#
+  Shared KAORI Integration record action.
+
+  Registry/table detail actions reuse the global table action primitive so
+  Capability Registry, Runtime Observations, Metrics Source, Alertmanager, and the
+  Integration Runtime Overview keep one compact interaction contract.
+#}
+{% import "components/table.html" as table_ui %}
+{% macro view_more(dialog_id, label='View More', role='record', hx_get=None, hx_target=None) -%}
+    {% set dialog_target = dialog_id %}
+    <button type="button" data-kaori-dialog-open data-kaori-record-action data-dialog-target="{{ dialog_target }}" aria-haspopup="dialog" aria-controls="{{ dialog_target }}" data-kaori-{{ role }}-view-more {% if hx_get %} hx-get="{{ hx_get }}" hx-target="{{ hx_target or '#integration-dialog-host' }}" hx-swap="innerHTML" hx-on::after-request="requestAnimationFrame(() => document.getElementById('{{ dialog_target }}')?.showModal())" {% endif %}
+        class="{{ table_ui.action_classes() }} whitespace-nowrap">
+        <span>{{ label }}</span>
+        <i data-lucide="chevron-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+    </button>
+{%- endmacro %}

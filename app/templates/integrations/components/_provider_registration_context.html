@@ -1,0 +1,31 @@
+{% import "components/info_flow.html" as info_flow %}
+{% import "components/related_page_card.html" as related_page_card %}
+{% macro render(flow_title,
+    flow_description,
+    flow_items,
+    related_title,
+    related_description,
+    related_url,
+    related_action_label,
+    flow_icon="workflow",
+    flow_note=None,
+    flow_note_icon="circle-alert",
+    related_icon="waypoints",
+    authority_boundary=None) -%}
+    <div class="space-y-4" data-kaori-provider-registration-context>
+        {{ info_flow.render(flow_title,
+                flow_description,
+                flow_items,
+                icon=flow_icon,
+                note=flow_note,
+                note_icon=flow_note_icon,
+                open_by_default=true) }}
+        {{ related_page_card.render(related_title,
+                related_description,
+                related_url,
+                related_action_label,
+                icon=related_icon,
+                eyebrow="Related Operational Workspace",
+                boundary=authority_boundary) }}
+    </div>
+{%- endmacro %}

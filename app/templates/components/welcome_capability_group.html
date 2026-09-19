@@ -1,0 +1,20 @@
+{% macro render(group) -%}
+    <section class="grid gap-4 rounded-2xl border border-outline-subtle bg-surface-card p-4 shadow-sm xl:grid-cols-[15rem_minmax(0,1fr)]"
+             data-workspace-group>
+        <header class="flex min-h-full flex-col kaori-hero-shell rounded-xl p-5 text-brand-foreground">
+            <span class="flex h-11 w-11 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface-strong text-brand-foreground"
+                  aria-hidden="true">
+                <i data-lucide="{{ group.icon }}" class="h-5 w-5"></i>
+            </span>
+            <p class="mt-5 text-xs font-semibold uppercase tracking-wider text-kaori-accent">{{ group.eyebrow }}</p>
+            <h3 class="mt-2 text-lg font-semibold leading-6 text-brand-foreground">{{ group.title }}</h3>
+            <p class="mt-3 text-sm leading-6 text-brand-foreground-muted">{{ group.description }}</p>
+            <div class="mt-auto flex items-end gap-2 pt-6">
+                <strong class="text-2xl font-semibold leading-none text-brand-foreground"
+                        data-group-result-count>{{ group.shortcut_count }}</strong>
+                <span class="text-xs text-brand-foreground-muted">Workspaces</span>
+            </div>
+        </header>
+        <div class="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">{{ caller() }}</div>
+    </section>
+{%- endmacro %}

@@ -1,0 +1,104 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+<section id="pods-inventory-card" class="{{ table_ui.block_classes() }}">
+    {% set inventory_header_actions = none %}
+    {% if selected_cluster_id or selected_namespace or selected_owner_type or selected_node or selected_status or search %}
+        {% set inventory_header_actions %}
+            {{ registry_ui.clear_filters_action(url_for('inventory.pods', per_page=pagination.per_page) ,
+            table_ui.action_classes(),
+            hx_get=url_for('inventory.pods', per_page=pagination.per_page, partial_mode='page_workspace'),
+            target='#pods-page-workspace',
+            indicator='#pods-table-loading'
+            ) }}
+        {% endset %}
+    {% endif %}
+    {{ table_ui.inventory_block_header('package-search',
+        'Pod Inventory',
+        'Kubernetes Pod runtime, placement, ownership, and activity evidence collected from connected clusters.',
+        'pods-table-loading',
+        'Refreshing Pod Inventory',
+        url_for('integrations.kubernetes') ,
+    'Open Cluster List',
+    header_actions=inventory_header_actions
+    ) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        <form hx-get="{{ url_for('inventory.pods') }}"
+              hx-target="#pods-page-workspace"
+              hx-swap="outerHTML"
+              hx-trigger="change, keyup changed delay:500ms from:find input[name='search']"
+              hx-indicator="#pods-table-loading"
+              aria-label="Pod inventory filters"
+              class="{{ table_ui.filter_layout_classes() }}">
+            <input type="hidden" name="page" value="1" />
+            <input type="hidden" name="per_page" value="{{ pagination.per_page }}" />
+            <input type="hidden" name="partial_mode" value="page_workspace" />
+            <div>
+                <label for="pods-cluster-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Cluster</label>
+                <select id="pods-cluster-filter"
+                        name="cluster_id"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Clusters</option>
+                    {% for cluster in clusters %}
+                        <option value="{{ cluster.id }}"
+                                {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="pods-namespace-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Namespace</label>
+                <select id="pods-namespace-filter"
+                        name="namespace"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="" {% if not selected_namespace %}selected{% endif %}>All Namespaces</option>
+                    {% for namespace_name in inventory.namespaces %}
+                        <option value="{{ namespace_name }}"
+                                {% if selected_namespace == namespace_name %}selected{% endif %}>{{ namespace_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="pods-owner-filter" class="{{ table_ui.filter_label_classes() }}">Owner Type</label>
+                <select id="pods-owner-filter"
+                        name="owner_type"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="" {% if not selected_owner_type %}selected{% endif %}>All Owners</option>
+                    {% for owner_name in inventory.owner_types %}
+                        <option value="{{ owner_name }}"
+                                {% if selected_owner_type == owner_name %}selected{% endif %}>{{ owner_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="pods-phase-filter" class="{{ table_ui.filter_label_classes() }}">Lifecycle Phase</label>
+                <select id="pods-phase-filter"
+                        name="status"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="" {% if not selected_status %}selected{% endif %}>All Phases</option>
+                    {% for status_option in inventory.pod_statuses %}
+                        <option value="{{ status_option.value }}"
+                                {% if selected_status == status_option.value %}selected{% endif %}>{{ status_option.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="pods-node-filter" class="{{ table_ui.filter_label_classes() }}">Node</label>
+                <select id="pods-node-filter"
+                        name="node"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="" {% if not selected_node %}selected{% endif %}>All Nodes</option>
+                    {% for node_option in inventory.nodes %}
+                        <option value="{{ node_option.value }}"
+                                {% if selected_node == node_option.value %}selected{% endif %}>{{ node_option.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="pods-search" class="{{ table_ui.filter_label_classes() }}">Search</label>
+                {{ table_ui.search_field('search', search, 'Name, IP, owner, or node', id='pods-search') }}
+            </div>
+        </form>
+    </div>
+    <div id="pods-table-content">{% include "kubernetes/inventory/pods/partials/_table_content.html" %}</div>
+</section>

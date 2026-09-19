@@ -1,0 +1,124 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
+{% block title %}Permission Catalog{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('book-key', 'Access', 'key-round') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Permission Catalog</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review code-owned authorization contracts, dependencies, cross-role coverage, and enforcement posture across governed access workflows.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('key-round', summary.canonical_permissions ~ ' Permissions') }}
+                            {{ page_hero.meta_label('boxes', summary.control_modules ~ ' Modules') }}
+                            {{ page_hero.meta_label('shield-check', roles|length ~ ' Roles') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ page_hero.context_card('Authorization registry',
+                                'Identity & Authorization',
+                                'Registry Posture',
+                                summary.posture_label,
+                                summary.posture_tone,
+                                [
+                                ('circle-check', 'Canonical Permissions', summary.canonical_permissions, 'Code-owned contracts') ,
+                ('triangle-alert', 'Registry Drift', summary.drift_count, 'Out-of-sync records')
+                ],
+                'Open Roles & Access',
+                url_for('access.roles.index'),
+                'shield-check'
+                ) }}
+            </div>
+        </section>
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+            <header class="border-b border-outline-subtle px-5 py-4 lg:px-6">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="book-key" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 class="text-base font-semibold text-content-primary">Permission Registry Overview</h2>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Current code-owned contracts, registry alignment, and role consumption.</p>
+                        </div>
+                    </div>
+                    {{ table_label.status_indicator_label(summary.posture_label, summary.posture_tone) }}
+                </div>
+            </header>
+            <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
+                {% set metrics = [
+                                    ('key-round', 'Permission Contracts', summary.canonical_permissions, 'Atomic authorization contracts defined by application code.', 'bg-kaori-soft text-kaori-primary'),
+                                    ('boxes', 'Control Modules', summary.control_modules, 'Source-controlled operational ownership represented by the registry.', 'bg-status-info-soft text-status-info-text'),
+                                    ('shield-alert', 'Access Administration', summary.access_administration_contracts, 'Privileged delegation contracts reserved to the Local Database Super Admin boundary.', 'bg-status-warning-soft text-status-warning-text'),
+                                    ('triangle-alert', 'Registry Drift', summary.drift_count, 'Code-to-database permission records requiring operator review.', 'bg-status-unknown-soft text-status-unknown-text')
+                                ] %}
+                {% for icon, label, value, description, tone in metrics %}
+                    <article class="flex min-h-[11rem] flex-col bg-surface-card p-5">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
+                                <p class="mt-2 truncate text-3xl font-bold tracking-tight text-content-primary">{{ value }}</p>
+                            </div>
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ tone }}"
+                                  aria-hidden="true">
+                                <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+                            </span>
+                        </div>
+                        <p class="mt-3 text-sm leading-6 text-content-muted">{{ description }}</p>
+                    </article>
+                {% endfor %}
+            </div>
+            <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
+                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    {% set boundaries = [
+                                            ('code-xml', 'Code Ownership', 'Application Code', 'Permission keys, module ownership, dependencies, and delegation tiers are source-controlled.'),
+                                            ('git-merge', 'Dependency Graph', 'Normalized', 'Dependent capabilities expand their transitive baseline requirements automatically.'),
+                                            ('shield-check', 'Role Consumption', summary.role_mappings ~ ' Mappings', summary.unused_contracts ~ ' canonical contracts are currently unassigned.'),
+                                            ('lock-keyhole', 'Authoritative Enforcement', 'Server Side', 'Route, service, role delegation, JIT, and provisioning guards remain authoritative.')
+                                        ] %}
+                    {% for icon, title, value, description in boundaries %}
+                        <article class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+                                    <h3 class="text-sm font-semibold text-content-primary">{{ title }}</h3>
+                                    <p class="text-xs font-semibold text-content-secondary">{{ value }}</p>
+                                </div>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+                {% if summary.drift_count %}
+                    <div class="mt-3 flex items-start gap-3 rounded-xl border {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft p-3.5 text-status-warning-text">
+                        <i data-lucide="triangle-alert"
+                           class="mt-0.5 h-4 w-4 shrink-0"
+                           aria-hidden="true"></i>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold">Registry Drift Detected</p>
+                            <p class="mt-1 text-xs leading-5">{{ summary.drift_count }} permission contract{{ '' if summary.drift_count == 1 else 's' }} differ between application code and the persisted RBAC registry. Run the governed <strong>flask seed-rbac</strong> deployment step after reviewing database-only permission usage.</p>
+                            {% if summary.database_only_in_use_count %}
+                                <p class="mt-2 text-xs font-semibold leading-5">{{ summary.database_only_in_use_count }} database-only permission contract{{ '' if summary.database_only_in_use_count == 1 else 's' }} still map to roles and must be reviewed before any controlled cleanup migration.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+        {% include "access/permissions/partials/_workspace.html" %}
+        {{ resource_detail_modal.host('Permission',
+                url_for('access.permissions.modal_details', permission_key='__detail__') ,
+        footer_text='Permission evidence reflects application code and the current committed RBAC registry.',
+        context_label='Access',
+        dialog_max_width='max-w-5xl',
+        content_driven=true
+        ) }}
+    </div>
+{% endblock dashboard_content %}

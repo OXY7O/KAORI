@@ -1,0 +1,7 @@
+{% extends "layouts/app.html" %}
+{% block title %}Object Storage Operations Dashboard{% endblock title %}
+{% block dashboard_content %}
+    <div id="object-storage-dashboard-content" class="space-y-5">
+        {% include "storage/object_storage/dashboard/partials/_content.html" %}
+    </div>
+{% endblock dashboard_content %}

@@ -1,0 +1,95 @@
+{% import "components/table_label.html" as table_label %}
+{% set bucket_forecasts = metrics.bucket_forecasts|default([], true) %}
+{% set bucket_forecast_summary = metrics.bucket_forecast_summary|default({}, true) %}
+<section class="{{ analysis_surface.evidence_shell_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="container" class="h-5 w-5"></i></span>
+                <div class="min-w-0">
+                    <h2 class="text-base font-semibold text-content-primary">Bucket Forecast Watch</h2>
+                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">
+                        Review bucket growth, 30-day projection, quota timing, and history coverage. These are planning signals, not active alerts.
+                    </p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                {{ table_label.metadata_label(bucket_forecast_summary.ready_count|default(0) ~ ' Forecast Ready', 'chart-spline', size='compact') }}
+                {% if bucket_forecast_summary.attention_count|default(0) > 0 %}
+                    {{ table_label.status_label(bucket_forecast_summary.attention_count ~ ' Need Attention', 'warning', size='compact') }}
+                {% else %}
+                    {{ table_label.status_label('No Quota ETA Warning', 'normal', size='compact') }}
+                {% endif %}
+            </div>
+        </div>
+    </header>
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+        {% for label, value, helper in [
+            ('Tracked Buckets', bucket_forecast_summary.tracked_count|default(0), 'Inventory buckets plus observed metric series'),
+            ('Forecast Ready', bucket_forecast_summary.ready_count|default(0), 'At least two usable range samples'),
+            ('Quota-Bounded', bucket_forecast_summary.quota_bounded_count|default(0), 'Configured quotas can produce quota ETA'),
+            ('History Gaps', bucket_forecast_summary.history_gap_count|default(0), 'One or zero usable range samples')
+            ] %}
+            <article class="bg-surface-card p-4 sm:p-5">
+                <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+            </article>
+        {% endfor %}
+    </div>
+    {% if bucket_forecasts %}
+        {% if bucket_forecast_summary.ready_count|default(0) > 0 %}
+            <section class="border-t border-outline-subtle bg-surface-card"
+                     data-object-storage-bucket-forecast-chart-panel
+                     data-object-storage-bucket-forecast-rows="{{ bucket_forecasts|tojson|forceescape }}">
+                <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+                    <div class="min-w-0">
+                        <h3 class="text-base font-semibold leading-6 text-content-primary">Current vs 30-Day Projected Usage</h3>
+                        <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
+                            Compare current usage with the 30-day projection for forecast-ready buckets; full names remain available in the chart and records.
+                        </p>
+                    </div>
+                    {{ table_label.metadata_label(([bucket_forecast_summary.ready_count|default(0) , 8]|min) ~ ' Buckets Charted', 'bar-chart-3', size='compact') }}
+                </header>
+                <div class="h-[360px] min-w-0 px-4 py-4 sm:px-6">
+                    <canvas data-object-storage-bucket-forecast-chart
+                            role="img"
+                            aria-label="Current and projected Object Storage bucket usage chart"></canvas>
+                </div>
+                <div class="border-t border-outline-subtle px-5 py-3 sm:px-6">
+                    <p class="text-xs leading-5 text-content-muted">
+                        Chart ranking uses projected 30-day usage and shows up to eight forecast-ready buckets. Quota timing and evidence quality remain explicit in the standard record table.
+                    </p>
+                </div>
+            </section>
+        {% else %}
+            <section class="border-t border-outline-subtle bg-surface-card p-5 sm:p-6">
+                {% set empty_state_icon = "chart-spline" %}
+                {% set empty_state_label = "History Required" %}
+                {% set empty_state_tone = "warning" %}
+                {% set empty_state_title = "Bucket Forecast Chart Is Waiting for History" %}
+                {% set empty_state_description = "At least two usable bucket-level usage samples are required before KAORI can compare current usage with a 30-day projection. Evidence-gap records remain visible below." %}
+                {% set empty_state_variant = "panel" %}
+                {% set empty_state_min_height = "min-h-[180px]" %}
+                {% include 'components/states/_empty_state.html' %}
+            </section>
+        {% endif %}
+        {% include "storage/object_storage/analytics/partials/_bucket_forecast_table.html" %}
+        <div class="border-t border-outline-subtle px-5 py-4 sm:px-6">
+            <p class="text-xs leading-5 text-content-muted">
+                Forecast Watch is derived from committed bucket usage history and configured quota evidence. Critical and warning labels indicate projected planning pressure only; active alert lifecycle and routing remain owned by Alertmanager.
+            </p>
+        </div>
+    {% else %}
+        <div class="p-5 sm:p-6">
+            {% set empty_state_icon = "chart-spline" %}
+            {% set empty_state_label = "Refresh Required" %}
+            {% set empty_state_tone = "warning" %}
+            {% set empty_state_title = "Bucket Forecast Evidence Is Not Available" %}
+            {% set empty_state_description = "Run Object Storage Forecast Data Refresh after bucket-level Metrics Source history is available. Existing system forecast evidence remains valid independently." %}
+            {% set empty_state_variant = "panel" %}
+            {% set empty_state_min_height = "min-h-[220px]" %}
+            {% include 'components/states/_empty_state.html' %}
+        </div>
+    {% endif %}
+</section>

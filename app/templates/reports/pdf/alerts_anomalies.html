@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>{{ document.report_name }}</title>
+    </head>
+    <body class="kaori-analytics-publication kaori-reporting-v3 kaori-alerts-anomalies-report">
+        {% set p = document.presentation %}
+        {% import 'reports/pdf/components/analytics_publication.html' as ui %}
+        {% macro report_header() -%}
+            {{ ui.report_header("Alerts & Anomalies") }}{%- endmacro %}
+            {% macro page_title(number, title, subtitle) -%}
+                {{ ui.page_title(number, title, subtitle, p.data_cutoff) }}{%- endmacro %}
+                {% macro footer(page_number) -%}
+                    {{ ui.footer(p.report_id, p.classification, page_number, p.page_count) }}{%- endmacro %}
+                    {% macro metric_strip(items, limit=4) -%}
+                        {{ ui.metric_strip(items, limit) }}{%- endmacro %}
+                        {% macro section(title, subtitle='', extra_class='') -%}
+                            {% call ui.section(title, subtitle, extra_class) %}
+                                {{ caller() }}
+                            {% endcall %}
+                        {%- endmacro %}
+                        {% macro reference_item(item) -%}
+                            <div class="reference-item">
+                                <span class="reference-code">{{ item.ref }}</span>
+                                <div>
+                                    <strong>{{ item.title }}</strong>
+                                    <p>{{ item.description }}</p>
+                                </div>
+                            </div>
+                        {%- endmacro %}
+                        {% macro distribution_row(item, tone='primary') -%}
+                            <div class="distribution-row">
+                                <strong>{{ item.label }}</strong>
+                                <div class="distribution-track">{{ ui.percent_fill(item.bar, 'distribution-fill ' ~ tone) }}</div>
+                                <span>{{ item.count }}</span>
+                            </div>
+                        {%- endmacro %}
+                        <article class="page cover-page">
+                            <div class="cover-band">
+                                {{ ui.cover_brand(p.report_id, p.classification, 'ANALYTICS REPORT') }}
+                                {{ ui.cover_title('Alerts & Anomalies', 'A focused operational view of active alert severity, category distribution, sustained conditions, anomaly evidence, ownership, and accountable response validation.') }}
+                            </div>
+                            <div class="cover-main">
+                                <div class="cover-grid">
+                                    <section>
+                                        <h2>Reporting Boundary</h2>
+                                        <dl class="context-list">
+                                            <dt>Cluster</dt>
+                                            <dd>
+                                                {{ p.cluster_scope }}
+                                            </dd>
+                                            <dt>Environment</dt>
+                                            <dd>
+                                                {{ p.cover.environment }}
+                                            </dd>
+                                            <dt>Namespace</dt>
+                                            <dd>
+                                                {{ p.namespace_scope }}
+                                            </dd>
+                                            <dt>Reporting Period</dt>
+                                            <dd>
+                                                {{ p.period_label }}
+                                            </dd>
+                                            <dt>Data Cut-off</dt>
+                                            <dd>
+                                                {{ p.data_cutoff }}
+                                            </dd>
+                                        </dl>
+                                    </section>
+                                    <section>
+                                        <h2>Report Purpose</h2>
+                                        <p>{{ p.cover.purpose }}</p>
+                                    </section>
+                                </div>
+                                <div class="cover-context">
+                                    <strong>Evidence Context</strong>
+                                    <p>{{ p.cover.context }}</p>
+                                </div>
+                                {{ ui.cover_contents([
+                                    "01 Executive Alert Brief",
+                                    "02 Severity & Category",
+                                    "03 Active Alerts",
+                                    "04 Anomaly Evidence",
+                                    "05 Duration & Ownership",
+                                    "06 Correlation & Evidence Boundary",
+                                    "07 Recommendation Plan",
+                                    "08 Methodology and Evidence Boundary"
+                                ]) }}
+                            </div>
+                        {{ footer(1) }}</article>
+                        <article class="page page-alert-executive">{{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(1, 'Executive Alert Brief', 'Management position for active alerts and anomaly evidence at the report cut-off.') }}{{ metric_strip(p.executive.metrics) }}
+                                <div class="two-column publication-pair paired-sections executive-split">
+                                    {% call ui.section('Figure 1 - Alert Posture', 'Severity and displayed active-alert category distribution.') %}
+                                        <h3>Severity Distribution</h3>
+                                        <div class="distribution-list">
+                                            {% for item in p.executive.severity_rows %}{{ distribution_row(item, 'critical' if item.label == 'Critical' else ('warning' if item.label == 'Warning' else 'info') ) }}{% endfor %}
+                                        </div>
+                                        <h3 class="subheading">Category Distribution</h3>
+                                        <div class="distribution-list">
+                                            {% for item in p.executive.category_rows %}
+                                                {{ distribution_row(item) }}
+                                            {% else %}
+                                                <p class="empty-state">Category evidence is Not Available.</p>
+                                            {% endfor %}
+                                        </div>
+                                    {% endcall %}
+                                    {% call ui.section('Management Interpretation', 'The principal operational signal and the decision required.') %}
+                                        <div class="interpretation-card {{ p.executive.tone }}-card">
+                                            <strong>{{ p.executive.interpretation_title }}</strong>
+                                            <p>{{ p.executive.interpretation_body }}</p>
+                                            <small>{{ p.executive.interpretation_note }}</small>
+                                        </div>
+                                    {% endcall %}
+                                </div>
+                                {% call ui.section('Priority Alert Findings', 'Decision fields stay concise; full identities remain on detail pages.') %}
+                                    <table class="report-table decision-register">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Priority</th>
+                                                <th>Finding</th>
+                                                <th>Owner</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in p.executive.decisions %}
+                                                <tr>
+                                                    <td class="ref">{{ item.ref }}</td>
+                                                    <td>{{ item.priority }}</td>
+                                                    <td>{{ item.title }}</td>
+                                                    <td>{{ item.owner }}</td>
+                                                    <td class="status {{ item.tone }}">{{ item.status }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    <div class="reference-grid">{% for item in p.executive.decisions %}{{ reference_item(item) }}{% endfor %}</div>
+                                {% endcall %}
+                            </div>
+                        {{ footer(2) }}</article>
+                        <article class="page page-severity-category">{{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(2, 'Severity & Category', 'Alert count, category coverage, and interpretation boundary.') }}{{ metric_strip(p.severity_category.metrics) }}
+                                <div class="two-column publication-pair paired-sections severity-split">
+                                    {% call ui.section('Severity Distribution', 'Active alerts by committed severity label.') %}
+                                        <div class="distribution-list large-distribution">
+                                            {% for item in p.severity_category.severity_rows %}{{ distribution_row(item, 'critical' if item.label == 'Critical' else ('warning' if item.label == 'Warning' else 'info') ) }}{% endfor %}
+                                        </div>
+                                        <div class="compact-callout">
+                                            <strong>Severity boundary</strong>
+                                            <p>Severity does not by itself establish business impact, ownership, or remediation priority.</p>
+                                        </div>
+                                    {% endcall %}
+                                    {% call ui.section('Category Distribution', 'Displayed categories and active-alert count coverage.') %}
+                                        <div class="distribution-list large-distribution">
+                                            {% for item in p.severity_category.category_rows %}
+                                                {{ distribution_row(item) }}
+                                            {% else %}
+                                                <p class="empty-state">Category evidence is Not Available.</p>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="compact-callout warning">
+                                            <strong>Coverage boundary</strong>
+                                            <p>Uncategorized alerts remain explicit and are not assigned to a category without committed labels.</p>
+                                        </div>
+                                    {% endcall %}
+                                </div>
+                                {% call ui.section('Severity and Category Register', 'Counts remain separated from ownership and impact interpretation.') %}
+                                    <table class="report-table severity-register">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Dimension</th>
+                                                <th>Count</th>
+                                                <th>Evidence</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in p.severity_category.register %}
+                                                <tr>
+                                                    <td class="ref">{{ item.ref }}</td>
+                                                    <td>{{ item.dimension }}</td>
+                                                    <td>{{ item.count }}</td>
+                                                    <td>{{ item.evidence }}</td>
+                                                    <td class="status {{ item.tone }}">{{ item.status }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endcall %}
+                            </div>
+                        {{ footer(3) }}</article>
+                        <article class="page page-active-alerts">{{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(3, 'Active Alerts', 'Leading active conditions, namespace scope, duration, and firing state.') }}{{ metric_strip(p.active_alerts.metrics) }}
+                                {% call ui.section('Top Active Alert Register', 'Comparable alert fields stay in-table; identities remain by reference.') %}
+                                    <table class="report-table active-alert-summary">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Severity</th>
+                                                <th>Since</th>
+                                                <th>State</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in p.active_alerts.rows %}
+                                                <tr>
+                                                    <td class="ref">{{ item.ref }}</td>
+                                                    <td class="status {{ item.tone }}">{{ item.severity }}</td>
+                                                    <td class="nowrap">{{ item.starts_at_display }}</td>
+                                                    <td>{{ item.status }}</td>
+                                                </tr>
+                                            {% else %}
+                                                <tr>
+                                                    <td colspan="4" class="empty-row">No active alert record is available.</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    <div class="identity-register">
+                                        <h3>Active Alert References</h3>
+                                        <div class="identity-grid">
+                                            {% for item in p.active_alerts.rows %}
+                                                <div class="identity-item">
+                                                    <span class="reference-code">{{ item.ref }}</span>
+                                                    <div class="identity-copy">
+                                                        <strong class="identity-title">{{ item.name }}</strong>
+                                                        <p class="identity-meta"><b>Namespace.</b> {{ item.namespace }} &nbsp; <b>State.</b> {{ item.status }}</p>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Alert Interpretation', 'Operational meaning and validation remain outside the register.') %}
+                                    <div class="reference-grid alert-references">
+                                        {% for item in p.active_alerts.references %}
+                                            {{ reference_item(item) }}
+                                        {% else %}
+                                            <p class="empty-state">No alert reference is available.</p>
+                                        {% endfor %}
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Management Decision', 'Validate sustained active conditions against live state before closure.') %}
+                                    <p class="narrative-copy">Confirm current firing state, expected workload behavior, controller events, accountable owner, and approved response before any remediation.</p>
+                                {% endcall %}
+                            </div>
+                        {{ footer(4) }}</article>
+                        <article class="page page-anomaly-evidence">{{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(4, 'Anomaly Evidence', 'Detected anomaly count, displayed records, and explicit evidence availability.') }}{{ metric_strip(p.anomalies.metrics) }}
+                                <div class="two-column publication-pair paired-sections anomaly-split">
+                                    {% call ui.section('Recent Anomaly Register', 'Comparable anomaly evidence stays in-table; scope remains by reference.') %}
+                                        <table class="report-table anomaly-summary-register">
+                                            <thead>
+                                                <tr>
+                                                    <th>Ref.</th>
+                                                    <th>Anomaly</th>
+                                                    <th>Evidence</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for item in p.anomalies.rows %}
+                                                    <tr>
+                                                        <td class="ref">{{ item.ref }}</td>
+                                                        <td>{{ item.name }}</td>
+                                                        <td>{{ item.evidence }}</td>
+                                                        <td class="status {{ item.tone }}">{{ item.status }}</td>
+                                                    </tr>
+                                                {% else %}
+                                                    <tr>
+                                                        <td colspan="4" class="empty-row">No anomaly record is available.</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    {% endcall %}
+                                    {% call ui.section('Anomaly Decision Boundary', 'What may and may not be concluded from committed evidence.') %}
+                                        <div class="interpretation-card warning-card">
+                                            <strong>Anomaly evidence must remain explicit.</strong>
+                                            <p>An anomaly label does not establish root cause, severity, duration, or business impact.</p>
+                                            <small>Missing supporting evidence must not be translated into no anomaly or no impact.</small>
+                                        </div>
+                                    {% endcall %}
+                                </div>
+                                <div class="identity-register anomaly-identities">
+                                    <h3>Anomaly Scope References</h3>
+                                    <div class="identity-grid">
+                                        {% for item in p.anomalies.rows %}
+                                            <div class="identity-item">
+                                                <span class="reference-code">{{ item.ref }}</span>
+                                                <div class="identity-copy">
+                                                    <strong class="identity-title">{{ item.name }}</strong>
+                                                    <p class="identity-meta"><b>Namespace.</b> {{ item.namespace }} &nbsp; <b>Evidence.</b> {{ item.evidence }}</p>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% call ui.section('Anomaly Evidence Requirements', 'Minimum committed evidence required before anomaly remediation.') %}
+                                    <table class="report-table requirement-register">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Evidence</th>
+                                                <th>Definition</th>
+                                                <th>Status</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in p.anomalies.requirements %}
+                                                <tr>
+                                                    <td class="ref">{{ item.ref }}</td>
+                                                    <td>{{ item.evidence }}</td>
+                                                    <td>{{ item.definition }}</td>
+                                                    <td>{{ item.status }}</td>
+                                                    <td>{{ item.action }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endcall %}
+                            </div>
+                        {{ footer(5) }}</article>
+                        <article class="page page-alert-ownership">{{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(5, 'Duration & Ownership', 'Sustained conditions, accountable scope, metadata coverage, and response state.') }}{{ metric_strip(p.ownership.metrics) }}
+                                <div class="two-column publication-pair paired-sections ownership-split">
+                                    {% call ui.section('Duration Review', 'Committed start times support prioritization, not autonomous closure.') %}
+                                        <div class="interpretation-card warning-card">
+                                            <strong>Sustained alerts require explicit ownership.</strong>
+                                            <p>Long-running conditions should be validated against live state, expected behavior, and controller events.</p>
+                                            <small>The report cut-off remains the evidence boundary.</small>
+                                        </div>
+                                    {% endcall %}
+                                    {% call ui.section('Ownership Boundary', 'Namespace scope is not an authoritative application-owner assignment.') %}
+                                        <div class="interpretation-card warning-card">
+                                            <strong>Owner, runbook, and contact metadata are independent controls.</strong>
+                                            <p>Missing metadata remains visible and must be resolved before remediation accountability is assigned.</p>
+                                        </div>
+                                    {% endcall %}
+                                </div>
+                                {% call ui.section('Ownership Review Register', 'Owner, coverage, and validation focus remain comparable.') %}
+                                    <table class="report-table ownership-summary-register">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Owner Domain</th>
+                                                <th>Coverage</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in p.ownership.rows %}
+                                                <tr>
+                                                    <td class="ref">{{ item.ref }}</td>
+                                                    <td>{{ item.owner }}</td>
+                                                    <td>{{ item.coverage }}</td>
+                                                    <td>{{ item.status }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    <div class="identity-register">
+                                        <h3>Ownership Scope References</h3>
+                                        <div class="identity-grid">
+                                            {% for item in p.ownership.rows %}
+                                                <div class="identity-item">
+                                                    <span class="reference-code">{{ item.ref }}</span>
+                                                    <div class="identity-copy">
+                                                        <strong class="identity-title">{{ item.scope }}</strong>
+                                                        <p class="identity-meta"><b>Validation focus.</b> {{ item.focus }} &nbsp; <b>Owner.</b> {{ item.owner }}</p>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endcall %}
+                            </div>
+                        {{ footer(6) }}</article>
+                        <article class="page page-alert-correlation">{{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(6, 'Correlation & Evidence Boundary', 'Cross-signal relationships, evidence gaps, and interpretation limits.') }}{{ metric_strip(p.correlation.metrics) }}
+                                <div class="two-column publication-pair paired-sections correlation-split">
+                                    {% call ui.section('Potential Cross-Signal Review', 'Shared namespace and timing can suggest review, not causality.') %}
+                                        <div class="interpretation-card warning-card">
+                                            <strong>Potential relationships remain unconfirmed.</strong>
+                                            <p>Use live events, metrics, change history, and ownership evidence before treating alerts and anomalies as correlated.</p>
+                                        </div>
+                                    {% endcall %}
+                                    {% call ui.section('Evidence Boundary', 'The report separates committed alert state from anomaly inference.') %}
+                                        <div class="interpretation-card normal-card">
+                                            <strong>Alerts and anomalies are different evidence domains.</strong>
+                                            <p>Alerts are committed firing conditions. Anomalies are unusual patterns whose supporting evidence may be incomplete.</p>
+                                        </div>
+                                    {% endcall %}
+                                </div>
+                                {% call ui.section('Correlation Review Register', 'Signal relationship and review state remain comparable.') %}
+                                    <table class="report-table correlation-summary-register">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Relationship</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in p.correlation.rows %}
+                                                <tr>
+                                                    <td class="ref">{{ item.ref }}</td>
+                                                    <td>{{ item.relationship }}</td>
+                                                    <td>{{ item.status }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    <div class="identity-register">
+                                        <h3>Correlation Evidence References</h3>
+                                        <div class="identity-grid">
+                                            {% for item in p.correlation.rows %}
+                                                <div class="identity-item">
+                                                    <span class="reference-code">{{ item.ref }}</span>
+                                                    <div class="identity-copy">
+                                                        <strong class="identity-title">{{ item.scope }}</strong>
+                                                        <p class="identity-meta"><b>Signal A.</b> {{ item.signal_a }} &nbsp; <b>Signal B.</b> {{ item.signal_b }}</p>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endcall %}
+                            </div>
+                        {{ footer(7) }}</article>
+                        <article class="page page-alert-recommendations">{{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(7, 'Recommendation Plan', 'Prioritized response actions, accountable owners, target windows, and validation gates.') }}{{ metric_strip(p.recommendations.metrics) }}
+                                {% call ui.section('Priority Recommendations', 'Fixed decision fields stay in-table; details remain by reference.') %}
+                                    <table class="report-table recommendation-register">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Priority</th>
+                                                <th>Recommendation</th>
+                                                <th>Owner</th>
+                                                <th>Target</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in p.recommendations.rows %}
+                                                <tr>
+                                                    <td class="ref">{{ item.ref }}</td>
+                                                    <td>{{ item.priority }}</td>
+                                                    <td>{{ item.title }}</td>
+                                                    <td>{{ item.owner }}</td>
+                                                    <td>{{ item.target }}</td>
+                                                    <td class="status {{ item.tone }}">{{ item.status }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    <div class="reference-grid recommendation-references">
+                                        {% for item in p.recommendations.rows %}{{ reference_item(item) }}{% endfor %}
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Execution Governance', 'Actions require live-state validation and approved change control.') %}
+                                    <table class="report-table governance-register">
+                                        <tbody>
+                                            {% for item in p.recommendations.governance %}
+                                                <tr>
+                                                    <th>{{ item.field }}</th>
+                                                    <td>{{ item.requirement }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endcall %}
+                            </div>
+                        {{ footer(8) }}</article>
+                        <article class="page page-alert-methodology">{{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(8, 'Methodology and Evidence Boundary', 'Alert sources, classification rules, anomaly policy, and explicit limitations.') }}{{ metric_strip(p.methodology.metrics) }}
+                                {% call ui.section('Data Sources and Methodology', 'Source names, classification rules, and limitations remain explicit.') %}
+                                    {{ ui.methodology_register(p.methodology.sources, p.methodology.rules) }}
+                                {% endcall %}
+                                {% call ui.section('Evidence Boundary', 'Included and excluded evidence at the committed cut-off.') %}
+                                    {{ ui.evidence_boundary(p.methodology.included, p.methodology.excluded) }}
+                                {% endcall %}
+                                {% call ui.section('Limitations and Status Language', 'Operational limits and evidence-status definitions.') %}
+                                    <div class="limitations-grid">
+                                        <div class="limitations-copy">
+                                            <h3>Known Limitations and Operational Use</h3>
+                                            <ul>
+                                                {% for item in p.methodology.limitations %}
+                                                    <li>{{ item }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                        <div class="status-language-block">
+                                            <h3>Status Language</h3>
+                                            {{ ui.status_language(p.methodology.status_language) }}
+                                        </div>
+                                    </div>
+                                {% endcall %}
+                            </div>
+                        {{ footer(9) }}</article>
+                    </body>
+                </html>

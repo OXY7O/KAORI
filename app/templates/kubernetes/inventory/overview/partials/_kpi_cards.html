@@ -1,0 +1,25 @@
+{% import "components/inventory_asset_card.html" as inventory_asset_card %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/table_label.html" as table_label %}
+{% set asset_badge %}
+    {{ table_label.metadata_label(overview.asset_catalog|length ~ ' Asset Types', icon='layers-3') }}
+{% endset %}
+{% call operational_section_card.render(
+    'Inventory Asset Catalog',
+    'Open one Kubernetes asset inventory to review the objects collected from the current committed snapshots.',
+    'layout-grid',
+    id='inventory-asset-catalog',
+    header_badge=asset_badge,
+    body_classes='p-5'
+    ) %}
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {% for asset in overview.asset_catalog %}
+            {{ inventory_asset_card.render(asset.title,
+                        asset.count,
+                        asset.description,
+                        url_for(asset.endpoint) ,
+            asset.icon
+            ) }}
+        {% endfor %}
+    </div>
+{% endcall %}

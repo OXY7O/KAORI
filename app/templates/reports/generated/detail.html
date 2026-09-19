@@ -1,0 +1,682 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/progress_bar.html" as progress_bar %}
+{% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
+{% block title %}Generated Report Detail{% endblock title %}
+{% block dashboard_content %}
+    {% set can_generate_reports = current_user.has_permission('reports.generate') %}
+    {% set can_manage_storage = current_user.has_permission('reports.manage_storage') %}
+    {% set report_status_tone = 'normal' if payload.report.raw_status == 'ready' else ('critical' if payload.report.raw_status == 'failed' else ('warning' if payload.report.raw_status == 'archived' else 'pending')) %}
+    {% set file_tone = 'normal' if payload.report.file_state.tone == 'green' else ('critical' if payload.report.file_state.tone == 'red' else ('warning' if payload.report.file_state.tone == 'amber' else 'unknown')) %}
+    {% set attempt_active = payload.job_execution and payload.job_execution.is_active %}
+    {% set attempt_failed = payload.job_execution and payload.job_execution.status_tone == 'critical' %}
+    {% set retained_ready_artifact = payload.report.raw_status == 'ready' and payload.report.can_download_artifact %}
+    {% set hero_storage_action = payload.artifact_access_notice and can_manage_storage %}
+    {% set hero_action_label = 'Download ' ~ payload.report.artifact_label if payload.report.can_download_artifact else ('Open Storage' if hero_storage_action else 'Back to Registry') %}
+    {% set hero_action_href = url_for('reports.download_report_artifact', report_id=payload.report.id, next=payload.registry_return_url) if payload.report.can_download_artifact else (payload.artifact_access_notice.action_href if hero_storage_action else payload.registry_return_url) %}
+    {% set hero_action_icon = 'download' if payload.report.can_download_artifact else ('hard-drive' if hero_storage_action else 'arrow-left') %}
+    {% set primary_action_classes = "inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-kaori-soft disabled:text-content-muted" %}
+    {% set storage_reference_modal_id = 'generated-report-storage-reference-' ~ payload.report.id %}
+    <div class="space-y-5"
+         data-generated-report-detail="operational-dossier-v5"
+         data-generated-detail-polish="professional-v1"
+         {% if payload.poll_interval_seconds %} hx-get="{{ url_for('reports.generated_report_detail', report_id=payload.report.id, next=payload.registry_return_url) }}" hx-trigger="every {{ payload.poll_interval_seconds }}s" hx-select="[data-generated-report-detail]" hx-target="this" hx-swap="outerHTML" hx-on::before-request="if (event.detail.elt === this && this.querySelector('dialog[open]')) event.preventDefault()" {% endif %}>
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('file-check-2', 'Generated Report', payload.report.report_icon) %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ payload.report.name }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            Review report scope, artifact evidence, execution state, retained history, and delivery readiness.
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label(payload.report.report_icon, payload.report.report_type) }}
+                            {{ page_hero.meta_label('boxes', payload.report.scope) }}
+                            {{ page_hero.meta_label('calendar-range', payload.report.period) }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ page_hero.context_card('Generated Report Delivery Posture',
+                                'Delivery Posture',
+                                'Report Status',
+                                payload.report.status,
+                                report_status_tone,
+                                [
+                                ('file-type-2', 'Format', payload.report.output_format, 'Artifact Contract') ,
+                (payload.report.file_state.icon, 'Availability', payload.report.file_state.label, 'Verified On Detail View')
+                ],
+                hero_action_label,
+                hero_action_href,
+                hero_action_icon
+                ) }}
+            </div>
+        </section>
+        {% if attempt_active and retained_ready_artifact %}
+            <section class="rounded-2xl border border-kaori-primary/20 bg-kaori-soft/45 px-5 py-4 shadow-sm"
+                     role="status"
+                     data-generated-detail-regeneration-state="active-retained">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"
+                              aria-hidden="true">
+                            <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 class="text-sm font-semibold leading-5 text-content-primary">Regeneration In Progress</h2>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">The verified artifact remains available while the latest regeneration attempt is running.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        {{ table_label.status_indicator_label('Verified Artifact Available', 'normal') }}
+                        {{ table_label.status_indicator_label(payload.job_execution.status_label, payload.job_execution.status_tone) }}
+                    </div>
+                </div>
+            </section>
+        {% elif attempt_failed and retained_ready_artifact %}
+            <section class="rounded-2xl border border-outline-default bg-status-warning-soft px-5 py-4 shadow-sm"
+                     role="status"
+                     data-generated-detail-regeneration-state="failed-retained">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text shadow-sm"
+                              aria-hidden="true">
+                            <i data-lucide="shield-check" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 class="text-sm font-semibold leading-5 text-content-primary">Latest Regeneration Failed</h2>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">The latest attempt failed, but the previously verified artifact is still available for download.</p>
+                        </div>
+                    </div>
+                    {{ table_label.status_indicator_label('Verified Artifact Available', 'normal') }}
+                </div>
+            </section>
+        {% endif %}
+        {% if payload.artifact_access_notice %}
+            <section class="rounded-2xl border {{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft px-5 py-4 shadow-sm"
+                     role="status"
+                     aria-labelledby="artifact-storage-unavailable-title"
+                     data-generated-detail-storage-notice="true">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text"
+                              aria-hidden="true">
+                            <i data-lucide="{{ payload.artifact_access_notice.icon }}"
+                               class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 id="artifact-storage-unavailable-title"
+                                class="text-sm font-semibold leading-5 text-status-warning-text">{{ payload.artifact_access_notice.title }}</h2>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ payload.artifact_access_notice.description }}</p>
+                        </div>
+                    </div>
+                    {% if can_manage_storage %}
+                        <a href="{{ payload.artifact_access_notice.action_href }}"
+                           class="{{ table_ui.action_classes() }} shrink-0">
+                            <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
+                            {{ payload.artifact_access_notice.action_label }}
+                        </a>
+                    {% endif %}
+                </div>
+            </section>
+        {% elif payload.report.raw_status == 'ready' and payload.report.file_path and not payload.report.file_exists %}
+            <section class="rounded-2xl border {{ operational_callout.semantic_border_classes('critical') }} bg-status-critical-soft px-5 py-4 shadow-sm"
+                     role="status"
+                     data-generated-detail-missing-artifact="true">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-critical-text"
+                          aria-hidden="true">
+                        <i data-lucide="file-warning" class="h-4 w-4"></i>
+                    </span>
+                    <div>
+                        <h2 class="text-sm font-semibold leading-5 text-status-critical-text">Generated Artifact Missing</h2>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">The report is Ready, but its referenced artifact could not be found. Regenerate the artifact or review report storage.</p>
+                    </div>
+                </div>
+            </section>
+        {% elif payload.report.raw_status == 'archived' and not payload.report.can_restore_report %}
+            <section class="rounded-2xl border {{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft px-5 py-4 shadow-sm"
+                     role="status"
+                     data-generated-detail-archived-artifact-missing="true">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text"
+                              aria-hidden="true">
+                            <i data-lucide="archive-x" class="h-4 w-4"></i>
+                        </span>
+                        <div>
+                            <h2 class="text-sm font-semibold leading-5 text-status-warning-text">Archived Artifact Missing</h2>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">This historical report record is retained, but its archived artifact or storage reference is not currently restorable. Recover the retained evidence before restoring this record; create a new report if fresh evidence is required.</p>
+                        </div>
+                    </div>
+                    {% if can_manage_storage %}
+                        <a href="{{ url_for('reports.storage') }}"
+                           class="{{ table_ui.action_classes() }} shrink-0">
+                            <i data-lucide="hard-drive" class="h-4 w-4" aria-hidden="true"></i>
+                            Open Storage
+                        </a>
+                    {% endif %}
+                </div>
+            </section>
+        {% endif %}
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                 data-generated-detail-block="report-overview"
+                 data-report-overview-layout="balanced-dossier">
+            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="layout-dashboard" class="h-5 w-5"></i></span>
+                        <div class="min-w-0">
+                            <h2 class="{{ table_ui.block_title_classes() }}">Report Overview</h2>
+                            <p class="{{ table_ui.block_description_classes() }}">A compact view of identity, governed scope, ownership, and artifact delivery.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        {{ table_label.status_indicator_label(payload.report.status, report_status_tone) }}
+                        {{ table_label.status_indicator_label(payload.report.file_state.label, file_tone) }}
+                    </div>
+                </div>
+            </header>
+            <div class="grid gap-0 xl:grid-cols-12" data-report-overview-grid="true">
+                <div class="xl:col-span-8 xl:border-r xl:border-outline-subtle">
+                    <div class="p-5 sm:p-6">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="file-text" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold leading-5 text-content-primary">Report Context</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Persisted contract and ownership context used to generate this artifact.</p>
+                            </div>
+                        </div>
+                        <dl class="mt-5 grid gap-x-8 gap-y-0 sm:grid-cols-2 lg:grid-cols-3"
+                            data-report-context="true">
+                            <div class="border-t border-outline-subtle py-3">
+                                <dt class="text-xs font-semibold text-content-muted">Report Type</dt>
+                                <dd class="mt-1.5 text-sm font-semibold text-content-primary">
+                                    {{ payload.report.report_type }}
+                                </dd>
+                            </div>
+                            <div class="border-t border-outline-subtle py-3">
+                                <dt class="text-xs font-semibold text-content-muted">{{ payload.report.scope_label }}</dt>
+                                <dd class="mt-1.5 break-words text-sm font-semibold text-content-primary">
+                                    {{ payload.report.scope }}
+                                </dd>
+                            </div>
+                            <div class="border-t border-outline-subtle py-3">
+                                <dt class="text-xs font-semibold text-content-muted">Secondary Scope</dt>
+                                <dd class="mt-1.5 break-words text-sm font-semibold text-content-primary">
+                                    {{ payload.report.secondary_scope }}
+                                </dd>
+                            </div>
+                            <div class="border-t border-outline-subtle py-3">
+                                <dt class="text-xs font-semibold text-content-muted">Period</dt>
+                                <dd class="mt-1.5 text-sm font-semibold text-content-primary">
+                                    {{ payload.report.period }}
+                                </dd>
+                            </div>
+                            <div class="border-t border-outline-subtle py-3">
+                                <dt class="text-xs font-semibold text-content-muted">Requested By</dt>
+                                <dd class="mt-1.5 text-sm font-semibold text-content-primary">
+                                    {{ payload.report.generated_by }}
+                                </dd>
+                                <p class="mt-0.5 text-xs text-content-muted">{{ payload.report.generated_by_meta.status_label }}</p>
+                            </div>
+                            <div class="border-t border-outline-subtle py-3">
+                                <dt class="text-xs font-semibold text-content-muted">Report ID</dt>
+                                <dd class="mt-1.5 break-all text-sm font-semibold text-content-primary">
+                                    {{ payload.report.id }}
+                                </dd>
+                            </div>
+                        </dl>
+                        <div class="mt-2 flex items-start gap-3 rounded-xl border border-kaori-primary/15 bg-kaori-soft/30 px-4 py-3"
+                             data-governed-scope-note="true">
+                            <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="shield-check" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-content-primary">Governed Evidence Scope</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Regeneration reuses this persisted infrastructure asset, secondary scope, period, and section coverage without silently broadening the evidence boundary.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <aside class="xl:col-span-4"
+                       aria-labelledby="generated-detail-artifact-delivery-title"
+                       data-artifact-delivery-panel="true">
+                    <div class="p-5 sm:p-6">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="package-check" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 id="generated-detail-artifact-delivery-title"
+                                    class="text-sm font-semibold leading-5 text-content-primary">Artifact Delivery</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Retained artifact state and storage delivery posture. Analytics XLSX is a drill-down analysis artifact; PDF remains the default Analytics publication.</p>
+                            </div>
+                        </div>
+                        <dl class="mt-5 divide-y divide-outline-subtle border-y border-outline-subtle">
+                            <div class="flex items-start justify-between gap-4 py-3">
+                                <dt class="text-xs font-semibold text-content-muted">Output Format</dt>
+                                <dd class="text-right text-sm font-semibold text-content-primary">
+                                    {{ payload.report.output_format }}
+                                </dd>
+                            </div>
+                            <div class="flex items-start justify-between gap-4 py-3">
+                                <dt class="text-xs font-semibold text-content-muted">File Size</dt>
+                                <dd class="text-right text-sm font-semibold text-content-primary">
+                                    {{ payload.report.file_size }}
+                                </dd>
+                            </div>
+                            <div class="flex items-start justify-between gap-4 py-3">
+                                <dt class="text-xs font-semibold text-content-muted">Storage Backend</dt>
+                                <dd class="max-w-[62%] break-words text-right text-sm font-semibold text-content-primary">
+                                    {{ payload.report.storage_backend_label }}
+                                </dd>
+                            </div>
+                            <div class="flex items-center justify-between gap-4 py-3">
+                                <dt class="text-xs font-semibold text-content-muted">Availability</dt>
+                                <dd>
+                                    {{ table_label.status_indicator_label(payload.report.file_state.label, file_tone) }}
+                                </dd>
+                            </div>
+                        </dl>
+                        <div class="mt-4 flex flex-col gap-3 rounded-xl border border-outline-subtle bg-surface-subtle/45 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                             data-storage-reference-handoff="true">
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-content-primary">Technical Storage Reference</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">View retained storage URI and object key.</p>
+                            </div>
+                            <button type="button"
+                                    class="group shrink-0 {{ table_ui.action_classes() }}"
+                                    data-kaori-dialog-open
+                                    data-dialog-target="{{ storage_reference_modal_id }}"
+                                    aria-haspopup="dialog"
+                                    aria-controls="{{ storage_reference_modal_id }}"
+                                    data-generated-storage-reference-open>
+                                <span>View Storage Reference</span>
+                                <i data-lucide="chevron-right"
+                                   class="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5"
+                                   aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+        {% call record_detail_modal.render(
+            storage_reference_modal_id,
+            'report-' ~ payload.report.id ~ '-storage-reference',
+            'Generated Report Storage Evidence',
+            'Storage Reference',
+            'Read-only delivery evidence for the retained generated artifact.',
+            icon='hard-drive',
+            footer_text='Storage references are read-only artifact delivery evidence. Use Reports Storage for backend validation and repair.',
+            size='standard'
+            ) %}
+            <div class="space-y-4" data-generated-storage-reference-modal="true">
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                         data-storage-reference-delivery-context="true">
+                    <div class="flex flex-col gap-4 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="package-check" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Artifact Delivery Context</p>
+                                <h3 class="mt-1 text-base font-semibold leading-6 text-content-primary">{{ payload.report.name }}</h3>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">Technical locator retained by the report record for artifact delivery and troubleshooting.</p>
+                            </div>
+                        </div>
+                        {{ table_label.status_indicator_label(payload.report.file_state.label, file_tone) }}
+                    </div>
+                    <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2">
+                        <div class="bg-surface-card px-4 py-3.5 sm:px-5">
+                            <dt class="text-xs font-semibold text-content-muted">Storage Backend</dt>
+                            <dd class="mt-1.5 break-words text-sm font-semibold text-content-primary">
+                                {{ payload.report.storage_backend_label }}
+                            </dd>
+                        </div>
+                        <div class="bg-surface-card px-4 py-3.5 sm:px-5">
+                            <dt class="text-xs font-semibold text-content-muted">Output Format</dt>
+                            <dd class="mt-1.5 text-sm font-semibold text-content-primary">
+                                {{ payload.report.output_format }}
+                            </dd>
+                        </div>
+                        <div class="bg-surface-card px-4 py-3.5 sm:px-5">
+                            <dt class="text-xs font-semibold text-content-muted">File Size</dt>
+                            <dd class="mt-1.5 text-sm font-semibold text-content-primary">
+                                {{ payload.report.file_size }}
+                            </dd>
+                        </div>
+                        <div class="bg-surface-card px-4 py-3.5 sm:px-5">
+                            <dt class="text-xs font-semibold text-content-muted">Report ID</dt>
+                            <dd class="mt-1.5 break-all text-sm font-semibold text-content-primary">
+                                {{ payload.report.id }}
+                            </dd>
+                        </div>
+                    </dl>
+                </section>
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                         data-storage-reference-technical-evidence="true">
+                    <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="route" class="h-4 w-4"></i>
+                            </span>
+                            <div>
+                                <h3 class="text-sm font-semibold leading-5 text-content-primary">Technical Reference</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Exact retained storage locators. Values may be long and are intentionally kept out of the primary report workspace.</p>
+                            </div>
+                        </div>
+                    </header>
+                    <div class="divide-y divide-outline-subtle px-4 sm:px-5">
+                        <div class="py-4">
+                            <p class="text-xs font-semibold text-content-muted">Storage URI</p>
+                            <p class="mt-2 break-all rounded-lg bg-surface-subtle px-3 py-2.5 text-xs leading-6 text-content-secondary">{{ payload.report.storage_uri_display }}</p>
+                        </div>
+                        <div class="py-4">
+                            <p class="text-xs font-semibold text-content-muted">Object Key</p>
+                            <p class="mt-2 break-all rounded-lg bg-surface-subtle px-3 py-2.5 text-xs leading-6 text-content-secondary">{{ payload.report.storage_object_key or 'Not Generated Yet' }}</p>
+                        </div>
+                    </div>
+                </section>
+                <section class="rounded-xl border border-kaori-primary/15 bg-kaori-soft/30 px-4 py-3.5"
+                         data-storage-reference-boundary="true">
+                    <div class="flex items-start gap-3">
+                        <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="shield-check" class="h-4 w-4"></i>
+                        </span>
+                        <div>
+                            <p class="text-xs font-semibold text-content-primary">Reference Boundary</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">These values identify the retained artifact only. Storage readiness and repair remain owned by the Reports Storage workspace.</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        {% endcall %}
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                 data-generated-detail-block="generation-evidence"
+                 data-generated-detail-actions-embedded="true">
+            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                <div class="flex flex-col gap-4 xl:flex-row xl:flex-nowrap xl:items-center xl:justify-between"
+                     data-generated-detail-header-layout="single-row-desktop">
+                    <div class="flex min-w-0 items-start gap-3 xl:min-w-[320px] xl:flex-1"
+                         data-generated-detail-status-placement="identity">
+                        <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="workflow" class="h-5 w-5"></i></span>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="{{ table_ui.block_title_classes() }}">Generation & Evidence</h2>
+                                {% if payload.job_execution %}{{ table_label.status_indicator_label(payload.job_execution.status_label, payload.job_execution.status_tone) }}{% endif %}
+                            </div>
+                            <p class="{{ table_ui.block_description_classes() }} xl:whitespace-nowrap">Manage report execution, evidence, lifecycle, and operator actions.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 whitespace-nowrap xl:flex-nowrap xl:shrink-0 xl:justify-end"
+                         id="report-actions"
+                         data-generated-detail-report-actions="true"
+                         data-generated-detail-action-row="desktop-nowrap">
+                        <a href="{{ payload.registry_return_url }}"
+                           aria-label="Back to Registry"
+                           class="{{ table_ui.action_classes() }}">
+                            <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+                            Registry
+                        </a>
+                        {% if payload.report.can_download_artifact %}
+                            <a href="{{ url_for('reports.download_report_artifact', report_id=payload.report.id, next=payload.registry_return_url) }}"
+                               class="{{ primary_action_classes }}"
+                               data-generated-detail-primary-action="download">
+                                <i data-lucide="download" class="h-4 w-4" aria-hidden="true"></i>
+                                Download {{ payload.report.artifact_label }}
+                            </a>
+                        {% endif %}
+                        {% if can_generate_reports and payload.report.can_generate_artifact %}
+                            <form method="POST"
+                                  action="{{ url_for('reports.generate_report_output', report_id=payload.report.id) }}">
+                                {% if csrf_token is defined %}
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                {% endif %}
+                                <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
+                                <button type="submit"
+                                        data-operation-submit
+                                        data-loading-label="Queueing Generation..."
+                                        class="{{ primary_action_classes if not payload.report.can_download_artifact and not payload.report.can_restore_report else table_ui.action_classes() }}"
+                                        {% if not payload.report.can_download_artifact and not payload.report.can_restore_report %}data-generated-detail-primary-action="regenerate"{% endif %}>
+                                    <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                                    <span data-operation-submit-label>{{ 'Regenerate' if payload.report.can_download_artifact else payload.report.generate_artifact_label }}</span>
+                                </button>
+                            </form>
+                        {% endif %}
+                        {% if can_manage_storage and payload.report.can_archive_report %}
+                            <form method="POST"
+                                  action="{{ url_for('reports.archive_generated_report', report_id=payload.report.id) }}">
+                                {% if csrf_token is defined %}
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                {% endif %}
+                                <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
+                                <button type="submit"
+                                        data-operation-submit
+                                        data-loading-label="Archiving Report..."
+                                        class="{{ table_ui.action_classes() }}">
+                                    <i data-lucide="archive" class="h-4 w-4" aria-hidden="true"></i>
+                                    <span data-operation-submit-label>Archive</span>
+                                </button>
+                            </form>
+                        {% endif %}
+                        {% if can_manage_storage and payload.report.can_restore_report %}
+                            <form method="POST"
+                                  action="{{ url_for('reports.restore_generated_report', report_id=payload.report.id) }}">
+                                {% if csrf_token is defined %}
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                {% endif %}
+                                <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
+                                <button type="submit"
+                                        data-operation-submit
+                                        data-loading-label="Restoring Report..."
+                                        class="{{ primary_action_classes }}"
+                                        data-generated-detail-primary-action="restore">
+                                    <i data-lucide="rotate-ccw" class="h-4 w-4" aria-hidden="true"></i>
+                                    <span data-operation-submit-label>Restore</span>
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </header>
+            <div class="p-5 sm:p-6">
+                {% if payload.job_execution %}
+                    {% set lifecycle_items = [
+                                            ('01', 'Requested', payload.report.created_at, 'Request Persisted'),
+                                            ('02', 'Queued', payload.job_execution.queued_at, 'Reports Queue'),
+                                            ('03', 'Started', payload.job_execution.started_at, 'Worker Execution'),
+                                            ('04', 'Completed', payload.job_execution.completed_at, 'Terminal Attempt')
+                                        ] %}
+                    <div class="border-b border-outline-subtle pb-5"
+                         data-generation-lifecycle="true">
+                        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                            {% for number, label, value, caption in lifecycle_items %}
+                                <div class="relative min-w-0 xl:pr-5 {% if not loop.last %}xl:after:absolute xl:after:right-0 xl:after:top-4 xl:after:h-px xl:after:w-5 xl:after:bg-outline-subtle{% endif %}">
+                                    <div class="flex items-center gap-2">
+                                        <span class="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-xs font-semibold text-kaori-primary">{{ number }}</span>
+                                        <p class="text-sm font-semibold text-content-primary">{{ label }}</p>
+                                    </div>
+                                    <p class="mt-2.5 break-words text-sm font-semibold text-content-secondary">{{ value }}</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ caption }}</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+                <div class="mt-5 space-y-5"
+                     data-generated-evidence-layout="stacked-bands-v2">
+                    <section class="min-w-0"
+                             aria-labelledby="generated-detail-latest-attempt-title"
+                             data-generated-detail-latest-attempt-panel="true">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <h3 id="generated-detail-latest-attempt-title"
+                                    class="text-sm font-semibold leading-5 text-content-primary">Latest Generation Attempt</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Latest worker execution attached to this report record.</p>
+                            </div>
+                            {% if payload.job_execution %}{{ table_label.status_indicator_label(payload.job_execution.status_label, payload.job_execution.status_tone) }}{% endif %}
+                        </div>
+                        {% if payload.job_execution %}
+                            <dl class="mt-4 grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4"
+                                data-generated-detail-latest-attempt="true">
+                                <div class="min-w-0 bg-surface-card px-4 py-3.5">
+                                    <dt class="text-xs font-semibold text-content-muted">Execution ID</dt>
+                                    <dd class="mt-1.5 break-all text-sm font-semibold text-content-primary">
+                                        {{ payload.job_execution.public_id }}
+                                    </dd>
+                                </div>
+                                <div class="min-w-0 bg-surface-card px-4 py-3.5">
+                                    <dt class="text-xs font-semibold text-content-muted">Trigger</dt>
+                                    <dd class="mt-1.5 text-sm font-semibold text-content-primary">
+                                        {{ payload.job_execution.trigger_label }}
+                                    </dd>
+                                </div>
+                                <div class="min-w-0 bg-surface-card px-4 py-3.5">
+                                    <dt class="text-xs font-semibold text-content-muted">Queue</dt>
+                                    <dd class="mt-1.5 text-sm font-semibold text-content-primary">
+                                        {{ payload.job_execution.queue_name }}
+                                    </dd>
+                                </div>
+                                <div class="min-w-0 bg-surface-card px-4 py-3.5">
+                                    <dt class="text-xs font-semibold text-content-muted">Duration</dt>
+                                    <dd class="mt-1.5 text-sm font-semibold text-content-primary">
+                                        {{ payload.job_execution.duration }}
+                                    </dd>
+                                </div>
+                            </dl>
+                            {% if payload.job_execution.is_active %}
+                                <div class="mt-3 rounded-xl border border-kaori-primary/15 bg-kaori-soft/35 px-4 py-3"
+                                     data-generated-detail-active-progress="true">
+                                    {{ progress_bar.job_progress(payload.job_execution, label='Report generation progress') }}
+                                </div>
+                            {% else %}
+                                <div class="mt-3 flex items-start gap-3 rounded-xl border border-kaori-primary/15 bg-kaori-soft/25 px-4 py-3"
+                                     data-generated-attempt-interpretation="true">
+                                    <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
+                                          aria-hidden="true"><i data-lucide="split" class="h-4 w-4"></i></span>
+                                    <div>
+                                        <p class="text-xs font-semibold text-content-primary">Artifact and Attempt Are Independent</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">Artifact availability is evaluated independently from the latest generation attempt. A failed regeneration does not invalidate a previously verified retained artifact.</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="mt-4 rounded-xl border border-dashed border-outline-default bg-surface-subtle/55 px-4 py-6 text-center">
+                                <p class="text-sm font-semibold text-content-primary">No Job Execution Linked</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">This report does not currently reference a canonical Reports worker execution.</p>
+                            </div>
+                        {% endif %}
+                        {% if payload.report.error_message and payload.report.error_message != 'No error recorded' %}
+                            <div class="mt-3 rounded-xl border {{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft px-4 py-3"
+                                 data-generated-detail-generation-note="true">
+                                <p class="text-xs font-semibold text-status-warning-text">Latest Generation Note</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ payload.report.error_message }}</p>
+                            </div>
+                        {% endif %}
+                    </section>
+                    <section class="border-t border-outline-subtle pt-5"
+                             aria-labelledby="generated-detail-definition-title"
+                             data-generated-detail-definition-panel="true">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <h3 id="generated-detail-definition-title"
+                                    class="text-sm font-semibold leading-5 text-content-primary">Persisted Report Definition</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Content selection and governed evidence scope reused by regeneration.</p>
+                            </div>
+                            {{ table_label.metadata_label(payload.report.sections_count ~ ' Sections', 'list-checks') }}
+                        </div>
+                        <div class="mt-4 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card"
+                             data-generated-definition-workspace="true">
+                            <section class="px-4 py-4 sm:px-5" data-generated-definition-sections="true">
+                                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <p class="text-xs font-semibold text-content-primary">Included Sections</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">Persisted content coverage included in this report definition.</p>
+                                    </div>
+                                    <span class="text-xs font-semibold text-content-muted">{{ payload.report.sections_count }} Selected</span>
+                                </div>
+                                {% if payload.report.sections %}
+                                    <div class="mt-3 flex flex-wrap gap-2"
+                                         data-generated-detail-sections="true">
+                                        {% for section in payload.report.sections %}
+                                            <span class="inline-flex items-center gap-1.5 rounded-md border border-outline-subtle bg-surface-subtle/55 px-2.5 py-1.5 text-xs font-semibold text-content-secondary">
+                                                <i data-lucide="check"
+                                                   class="h-3.5 w-3.5 text-kaori-primary"
+                                                   aria-hidden="true"></i>
+                                                {{ section.label }}
+                                            </span>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="mt-3 rounded-xl border border-dashed border-outline-default bg-surface-subtle/55 px-4 py-5 text-center">
+                                        <p class="text-sm font-semibold text-content-primary">No Selected Sections</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">This report contract does not contain persisted section selections.</p>
+                                    </div>
+                                {% endif %}
+                            </section>
+                            <section class="border-t border-outline-subtle"
+                                     data-generated-definition-scope-section="true">
+                                <div class="px-4 pt-4 sm:px-5">
+                                    <p class="text-xs font-semibold text-content-primary">Evidence Scope</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Persisted runtime boundary reused for regeneration.</p>
+                                </div>
+                                <dl class="mt-3 grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4"
+                                    data-generated-definition-scope="true">
+                                    <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
+                                        <dt class="text-xs font-semibold text-content-muted">{{ payload.report.scope_label }}</dt>
+                                        <dd class="mt-1.5 break-words text-sm font-semibold text-content-primary">
+                                            {{ payload.report.scope }}
+                                        </dd>
+                                    </div>
+                                    <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
+                                        <dt class="text-xs font-semibold text-content-muted">Secondary Scope</dt>
+                                        <dd class="mt-1.5 break-words text-sm font-semibold text-content-primary">
+                                            {{ payload.report.secondary_scope }}
+                                        </dd>
+                                    </div>
+                                    <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
+                                        <dt class="text-xs font-semibold text-content-muted">Period</dt>
+                                        <dd class="mt-1.5 text-sm font-semibold text-content-primary">
+                                            {{ payload.report.period }}
+                                        </dd>
+                                    </div>
+                                    <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
+                                        <dt class="text-xs font-semibold text-content-muted">Output Format</dt>
+                                        <dd class="mt-1.5 text-sm font-semibold text-content-primary">
+                                            {{ payload.report.output_format }}
+                                        </dd>
+                                    </div>
+                                </dl>
+                            </section>
+                            <section class="border-t border-kaori-primary/15 bg-kaori-soft/30 px-4 py-3.5 sm:px-5"
+                                     data-generated-definition-governance="true">
+                                <div class="flex items-start gap-3">
+                                    <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="shield-check" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-semibold text-content-primary">Governed Evidence Scope</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">Regeneration reuses the persisted scope and does not silently broaden the infrastructure asset, secondary scope, period, or selected sections.</p>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </section>
+    </div>
+{% endblock dashboard_content %}

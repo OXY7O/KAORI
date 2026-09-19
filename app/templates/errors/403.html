@@ -1,0 +1,64 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% block title %}Access Denied{% endblock title %}
+{% block dashboard_content %}
+    {% set assigned_role = current_user.role_record if current_user.is_authenticated else none %}
+    {% set role_unavailable = current_user.is_authenticated and not current_user.is_super_admin and (not assigned_role or not assigned_role.is_active) %}
+    {% set role_label = 'Super Admin' if current_user.is_super_admin else (assigned_role.display_name if assigned_role else 'No Active Role') %}
+    <div class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('shield-alert', 'Access Boundary', 'shield-x') %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ 'Access Role Unavailable' if role_unavailable else 'Access Denied' }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            {{ 'KAORI cannot open protected workspaces until an access administrator assigns or reactivates an RBAC role.' if role_unavailable else 'Your active role does not include the permission required to open this workspace or perform this action.' }}
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('shield-user', role_label) }}
+                            {{ page_hero.meta_label('lock-keyhole', 'Server-Side Enforcement') }}
+                            {{ page_hero.meta_label('scan-search', 'Authorization Review') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Access resolution actions">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        {{ page_hero.context_header('Authorization Context', 'Current Access Scope', 'key-round') }}
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric('shield-user', 'Assigned Role', role_label, 'Current KAORI authorization profile', value_classes='text-sm font-semibold leading-5') }}
+                            {{ page_hero.context_metric('shield-alert', 'Requested Access', 'Blocked', 'Permission boundary remains active', value_classes='text-sm font-semibold leading-5') }}
+                        </div>
+                        <div class="{{ page_hero.context_actions_classes() }}">
+                            <a href="{{ url_for('welcome.index') }}"
+                               class="{{ page_hero.context_action_classes() }}"><i data-lucide="house" class="h-4 w-4"></i>Welcome</a>
+                            <a href="{{ url_for('settings.account') }}"
+                               class="{{ page_hero.context_action_classes() }}"><i data-lucide="user-round-cog" class="h-4 w-4"></i>Review Access</a>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+        <section class="grid gap-4 lg:grid-cols-2"
+                 aria-label="Access resolution guidance">
+            <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="user-cog" class="h-5 w-5"></i></span>
+                    <div>
+                        <h2 class="text-sm font-semibold text-content-primary">Access Administrator Action</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Review the account in User Management and assign an active role with the required operational responsibility.</p>
+                    </div>
+                </div>
+            </article>
+            <article class="rounded-xl border border-kaori-primary/20 bg-kaori-soft p-5 text-kaori-primary shadow-sm">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-card"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
+                    <div>
+                        <h2 class="text-sm font-semibold">Security Boundary</h2>
+                        <p class="mt-1 text-sm leading-6">Navigation visibility is a usability layer. Server-side permission checks remain authoritative.</p>
+                    </div>
+                </div>
+            </article>
+        </section>
+    </div>
+{% endblock dashboard_content %}

@@ -1,0 +1,149 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "integrations/components/_provider_registry.html" as provider_registry %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+<section id="kubernetes-integration-coverage"
+         class="{{ integration_ui.section_shell_classes() }}"
+         aria-labelledby="kubernetes-coverage-title">
+    {% set coverage_filters_active = selected_coverage_query or selected_coverage_environment or selected_coverage_status %}
+    {% set coverage_clear_url = url_for('integrations.kubernetes',
+            tab='coverage',
+            q=selected_query,
+            environment=selected_environment,
+            readiness=selected_readiness,
+            coverage=selected_coverage,
+            page=1,
+            per_page=pagination.per_page,
+            coverage_page=1,
+        coverage_per_page=coverage_pagination.per_page) %}
+    {% set coverage_clear_action = registry_ui.clear_filters_action(
+            coverage_clear_url,
+            table_ui.action_classes(),
+            hx_get=coverage_clear_url,
+            target='#kubernetes-integration-coverage',
+            indicator='#kubernetes-coverage-loading',
+            push_url='true',
+            swap='outerHTML',
+            marker='kubernetes-coverage'
+        ) if coverage_filters_active else '' %}
+    {{ provider_registry.registry_header("Kubernetes Integration Coverage",
+        "Review direct Kubernetes API authority and the independent metrics and alert consumers associated with each cluster.",
+        "route",
+        "kubernetes-coverage-loading",
+        title_id="kubernetes-coverage-title",
+        action_html=coverage_clear_action) }}
+    <div class="{{ integration_ui.filter_region_classes() }}">
+        <form id="kubernetes-coverage-filter-form"
+              method="get"
+              action="{{ url_for('integrations.kubernetes') }}"
+              hx-get="{{ url_for('integrations.kubernetes') }}"
+              hx-target="#kubernetes-integration-coverage"
+              hx-swap="outerHTML"
+              hx-push-url="true"
+              hx-trigger="change from:select, keyup changed delay:500ms from:input[name='coverage_q'], search from:input[name='coverage_q']"
+              hx-indicator="#kubernetes-coverage-loading"
+              class="{{ table_ui.filter_layout_classes() }}">
+            <input type="hidden" name="tab" value="coverage">
+            <input type="hidden" name="coverage_page" value="1">
+            <input type="hidden"
+                   name="coverage_per_page"
+                   value="{{ coverage_pagination.per_page }}">
+            <input type="hidden" name="q" value="{{ selected_query }}">
+            <input type="hidden" name="environment" value="{{ selected_environment }}">
+            <input type="hidden" name="readiness" value="{{ selected_readiness }}">
+            <input type="hidden" name="coverage" value="{{ selected_coverage }}">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+            <div class="min-w-0">
+                {{ provider_registry.search_field("kubernetes-coverage-search", "coverage_q", selected_coverage_query, "Cluster, API endpoint, metrics, or alert source", label="Search Asset") }}
+            </div>
+            <div class="min-w-0">
+                {{ provider_registry.select_field("kubernetes-coverage-environment", "coverage_environment", selected_coverage_environment, "Environment", coverage_environment_options, "All Environments") }}
+            </div>
+            <div class="min-w-0">
+                {{ provider_registry.select_field("kubernetes-coverage-status", "coverage_status", selected_coverage_status, "Coverage", coverage_status_options, "All Coverage States") }}
+            </div>
+        </form>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="{{ provider_registry.asset_coverage_table_classes() }}">
+            {{ provider_registry.asset_coverage_colgroup() }}
+            {{ provider_registry.asset_coverage_head('Kubernetes Cluster', 'Kubernetes API') }}
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for row in coverage_rows %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <div class="flex min-w-0 items-start gap-3">
+                                {{ integration_ui.palette_icon('boxes', 'brand') }}
+                                <div class="min-w-0">
+                                    <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.cluster_name }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ row.environment }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(row.inventory_coverage.status, row.inventory_coverage.label, display="indicator") }}
+                            <p class="mt-1 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ row.server }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(row.metrics_source_operational.status, row.metrics_source_operational.label, display="indicator") }}
+                            <p class="mt-1 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ row.metrics_source_name or "No Metrics Source Binding" }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(row.alertmanager_operational.status, row.alertmanager_operational.label, display="indicator") }}
+                            <p class="mt-1 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ row.alertmanager_name or "No Alertmanager binding" }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(row.coverage_summary.status, row.coverage_summary.label, display="indicator") }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }}">
+                            <a href="{{ url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id) }}"
+                               class="{{ table_ui.action_classes() }}">
+                                <i data-lucide="activity" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                View Details
+                            </a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="p-0">
+                            {% set empty_state_icon = "route" %}
+                            {% set empty_state_label = "No Results" if coverage_has_active_filters else "Setup Required" %}
+                            {% set empty_state_title = "No Kubernetes Coverage Matches the Active Filters" if coverage_has_active_filters else "No Kubernetes Coverage Found" %}
+                            {% set empty_state_description = "Adjust the coverage filters to review another Kubernetes cluster." if coverage_has_active_filters else "Register a Kubernetes API connection, then bind a Metrics Source or Alertmanager only when those consumer planes are required." %}
+                            {% set empty_state_action_url = url_for('cluster.add_cluster') %}
+                            {% set empty_state_action_label = "Register Connection" %}
+                            {% set empty_state_action_icon = "plus" %}
+                            {% set empty_state_permission = "clusters.manage" %}
+                            {% set empty_state_show_admin_required = true %}
+                            {% set empty_state_min_height = "min-h-[210px]" %}
+                            {% include "components/states/_empty_state.html" %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% set coverage_query_params = {
+            "tab": "coverage",
+            "q": selected_query,
+            "environment": selected_environment,
+            "readiness": selected_readiness,
+            "coverage": selected_coverage,
+            "page": 1,
+            "per_page": pagination.per_page,
+            "coverage_q": selected_coverage_query,
+            "coverage_environment": selected_coverage_environment,
+            "coverage_status": selected_coverage_status
+        } %}
+    {{ provider_registry.pagination_footer(coverage_pagination,
+        "integrations.kubernetes",
+        "#kubernetes-integration-coverage",
+        "#kubernetes-coverage-loading",
+        coverage_query_params,
+        item_label="Assets",
+        swap="outerHTML",
+        page_param="coverage_page",
+        per_page_param="coverage_per_page") }}
+</section>

@@ -1,0 +1,41 @@
+TLS_SECRET_TYPE = 'kubernetes.io/tls'
+TLS_CRT_KEY = 'tls.crt'
+TLS_KEY_KEY = 'tls.key'
+
+TLS_STATUS_HEALTHY = 'healthy'
+TLS_STATUS_WARNING = 'warning'
+TLS_STATUS_CRITICAL = 'critical'
+TLS_STATUS_EXPIRED = 'expired'
+TLS_STATUS_INVALID = 'invalid'
+TLS_STATUS_UNKNOWN = 'unknown'
+
+TLS_COVERAGE_FULL = 'fully_covered'
+TLS_COVERAGE_PARTIAL = 'partial'
+TLS_COVERAGE_UNCOVERED = 'uncovered'
+TLS_COVERAGE_NONE = 'no_declared_hosts'
+TLS_COVERAGE_NOT_REPORTED = 'not_reported'
+
+TLS_COLLECTION_COLLECTED = 'collected'
+TLS_COLLECTION_PERMISSION_UNAVAILABLE = 'permission_unavailable'
+TLS_COLLECTION_API_UNAVAILABLE = 'api_unavailable'
+TLS_COLLECTION_FAILED = 'collection_failed'
+TLS_COLLECTION_NOT_REPORTED = 'not_reported'
+
+TLS_DEFAULT_RENEWAL_WINDOW_DAYS = 30
+TLS_DEFAULT_CRITICAL_WINDOW_DAYS = 7
+
+TLS_SYNC_QUEUE = 'inventory'
+TLS_SYNC_JOB_TYPE = 'tls_certificate_inventory'
+TLS_SYNC_OPERATION = 'tls_certificate_sync'
+
+TLS_PER_PAGE_OPTIONS = [5, 10, 25, 50]
+TLS_DEFAULT_PER_PAGE = 5
+TLS_STATUS_OPTIONS = [
+    'all',
+    TLS_STATUS_HEALTHY,
+    TLS_STATUS_WARNING,
+    TLS_STATUS_CRITICAL,
+    TLS_STATUS_EXPIRED,
+    TLS_STATUS_INVALID,
+    TLS_STATUS_UNKNOWN,
+]

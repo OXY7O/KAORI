@@ -1,0 +1,35 @@
+{% import "components/pagination.html" as pagination_ui %}
+{% macro controls(total_items, item_label='Recommendations', page_size=3) -%}
+    {% set normalized_total = total_items|int %}
+    {% set total_pages = ((normalized_total + page_size - 1) // page_size) if normalized_total else 1 %}
+    {% if normalized_total > 0 %}
+        <nav class="flex items-center justify-between gap-3 border-t border-outline-subtle bg-surface-subtle px-4 py-3"
+             data-kaori-recommendation-controls
+             aria-label="{{ item_label }} Pagination">
+            <button type="button"
+                    class="{{ pagination_ui.navigation_classes() }} disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-content-muted disabled:opacity-70"
+                    data-recommendation-previous
+                    aria-label="Previous {{ item_label }} Page"
+                    aria-disabled="true"
+                    disabled>
+                <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
+                Previous
+            </button>
+            <span class="shrink-0 text-center text-xs font-semibold text-content-muted"
+                  aria-live="polite"
+                  aria-atomic="true">
+                Page <span class="text-content-primary" data-recommendation-page>1</span>
+                of <span class="text-content-primary" data-recommendation-total-pages>{{ total_pages }}</span>
+            </span>
+            <button type="button"
+                    class="{{ pagination_ui.navigation_classes() }} disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-content-muted disabled:opacity-70"
+                    data-recommendation-next
+                    aria-label="Next {{ item_label }} Page"
+                    aria-disabled="{{ 'true' if total_pages <= 1 else 'false' }}"
+                    {% if total_pages <= 1 %}disabled{% endif %}>
+                Next
+                <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
+            </button>
+        </nav>
+    {% endif %}
+{%- endmacro %}

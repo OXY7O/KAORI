@@ -1,0 +1,5 @@
+# Deprecated standalone example.
+# KAORI VPS ingress is now Compose-managed. The canonical templates are:
+#   deploy/nginx/kaori-http.conf.template
+#   deploy/nginx/kaori.conf.template
+# and are rendered by deploy/nginx/nginx-entrypoint.sh inside the Nginx container.

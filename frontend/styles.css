@@ -1,0 +1,782 @@
+@font-face {
+    font-family: 'Inter Variable';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url('../fonts/inter/inter-latin-wght-normal.woff2') format('woff2-variations');
+}
+
+@import 'tailwindcss';
+
+@source '../app/templates';
+@source '../app/static/js';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+    color-scheme: light;
+
+    --kaori-brand-primary: #7c3aed;
+    --kaori-brand-primary-hover: #6d28d9;
+    --kaori-brand-primary-dark: #5b21b6;
+    --kaori-brand-accent: #a78bfa;
+    --kaori-brand-border: #c4b5fd;
+    --kaori-brand-soft: #f5f3ff;
+    --kaori-brand-foreground: #ffffff;
+    --kaori-brand-foreground-muted: #ddd6fe;
+    --kaori-brand-surface: rgba(255, 255, 255, 0.08);
+    --kaori-brand-surface-strong: rgba(255, 255, 255, 0.14);
+    --kaori-brand-outline: rgba(255, 255, 255, 0.16);
+
+    --kaori-surface-page: #f8f7fc;
+    --kaori-surface-shell: #ffffff;
+    --kaori-surface-sidebar: #1e172d;
+    --kaori-surface-card: #ffffff;
+    --kaori-surface-elevated: #ffffff;
+    --kaori-surface-muted: #f5f2f8;
+    --kaori-surface-sunken: #f0ecf5;
+    --kaori-surface-hover: #f4f1f8;
+    --kaori-surface-selected: #f5f3ff;
+    --kaori-surface-overlay: rgba(36, 31, 46, 0.48);
+
+    --kaori-hero-background: #7c3aed;
+    --kaori-hero-panel: rgba(255, 255, 255, 0.14);
+    --kaori-hero-tile: rgba(255, 255, 255, 0.08);
+    --kaori-hero-chip: rgba(255, 255, 255, 0.08);
+    --kaori-hero-outline: rgba(255, 255, 255, 0.16);
+    --kaori-brand-domain-panel: #5b21b6;
+
+    --kaori-sidebar-content-muted: #d8d1e1;
+    --kaori-sidebar-section: rgba(255, 255, 255, 0.48);
+    --kaori-sidebar-active: #7c3aed;
+    --kaori-sidebar-active-outline: rgba(255, 255, 255, 0.1);
+    --kaori-sidebar-active-icon: rgba(255, 255, 255, 0.15);
+
+    --kaori-content-primary: #241f2e;
+    --kaori-content-secondary: #514a5d;
+    --kaori-content-muted: #6f687a;
+    --kaori-content-disabled: #a39bab;
+    --kaori-content-inverse: #ffffff;
+
+    --kaori-outline-subtle: #eeeaf4;
+    --kaori-outline-default: #e8e3f0;
+    --kaori-outline-strong: #cfc7da;
+    --kaori-outline-focus: #7c3aed;
+
+    --kaori-status-normal: #059669;
+    --kaori-status-normal-soft: #ecfdf5;
+    --kaori-status-normal-border: #a7f3d0;
+    --kaori-status-normal-text: #047857;
+
+    --kaori-status-info: #2563eb;
+    --kaori-status-info-soft: #eff6ff;
+    --kaori-status-info-border: #bfdbfe;
+    --kaori-status-info-text: #1d4ed8;
+
+    --kaori-status-warning: #d97706;
+    --kaori-status-warning-soft: #fffbeb;
+    --kaori-status-warning-border: #fde68a;
+    --kaori-status-warning-text: #b45309;
+
+    --kaori-status-critical: #dc2626;
+    --kaori-status-critical-soft: #fef2f2;
+    --kaori-status-critical-border: #fecaca;
+    --kaori-status-critical-text: #b91c1c;
+
+    --kaori-status-unknown: #64748b;
+    --kaori-status-unknown-soft: #f8fafc;
+    --kaori-status-unknown-border: #cbd5e1;
+    --kaori-status-unknown-text: #475569;
+
+    --kaori-status-disabled: #64748b;
+    --kaori-status-disabled-soft: #f8fafc;
+    --kaori-status-disabled-border: #cbd5e1;
+    --kaori-status-disabled-text: #475569;
+
+    --kaori-status-maintenance: #d97706;
+    --kaori-status-maintenance-soft: #fffbeb;
+    --kaori-status-maintenance-border: #fde68a;
+    --kaori-status-maintenance-text: #b45309;
+
+    --kaori-status-pending: #2563eb;
+    --kaori-status-pending-soft: #eff6ff;
+    --kaori-status-pending-border: #bfdbfe;
+    --kaori-status-pending-text: #1d4ed8;
+
+    --kaori-topology-domain-scope-fill: #eff6ff;
+    --kaori-topology-domain-scope-border: #2563eb;
+    --kaori-topology-domain-scope-text: #1e3a8a;
+    --kaori-topology-domain-compute-fill: #f5f3ff;
+    --kaori-topology-domain-compute-border: #7c3aed;
+    --kaori-topology-domain-compute-text: #4c1d95;
+    --kaori-topology-domain-networking-fill: #ecfdf5;
+    --kaori-topology-domain-networking-border: #059669;
+    --kaori-topology-domain-networking-text: #065f46;
+    --kaori-topology-domain-configuration-fill: #f0f9ff;
+    --kaori-topology-domain-configuration-border: #0284c7;
+    --kaori-topology-domain-configuration-text: #075985;
+    --kaori-topology-domain-storage-fill: #fffbeb;
+    --kaori-topology-domain-storage-border: #d97706;
+    --kaori-topology-domain-storage-text: #92400e;
+    --kaori-topology-edge-contains: #94a3b8;
+    --kaori-topology-edge-owns: #8b5cf6;
+    --kaori-topology-edge-scheduled: #64748b;
+    --kaori-topology-edge-selects: #10b981;
+    --kaori-topology-edge-routes: #14b8a6;
+    --kaori-topology-edge-uses: #0ea5e9;
+    --kaori-topology-edge-mounts: #f97316;
+    --kaori-topology-edge-binds: #65a30d;
+}
+
+.dark {
+    color-scheme: dark;
+
+    --kaori-brand-primary: #8b5cf6;
+    --kaori-brand-primary-hover: #9d7cfa;
+    --kaori-brand-primary-dark: #6d28d9;
+    --kaori-brand-accent: #c4b5fd;
+    --kaori-brand-border: rgba(167, 139, 250, 0.42);
+    --kaori-brand-soft: rgba(139, 92, 246, 0.12);
+    --kaori-brand-foreground: #ffffff;
+    --kaori-brand-foreground-muted: #ddd7e6;
+    --kaori-brand-surface: rgba(255, 255, 255, 0.07);
+    --kaori-brand-surface-strong: rgba(255, 255, 255, 0.1);
+    --kaori-brand-outline: rgba(255, 255, 255, 0.14);
+
+    --kaori-surface-page: #0f0d15;
+    --kaori-surface-shell: #15121d;
+    --kaori-surface-sidebar: #171321;
+    --kaori-surface-card: #1d1925;
+    --kaori-surface-elevated: #25202f;
+    --kaori-surface-muted: #201b2a;
+    --kaori-surface-sunken: #121019;
+    --kaori-surface-hover: #282231;
+    --kaori-surface-selected: rgba(139, 92, 246, 0.14);
+    --kaori-surface-overlay: rgba(5, 3, 9, 0.76);
+
+    --kaori-hero-background:
+        radial-gradient(circle at 14% 18%, rgba(167, 139, 250, 0.16), transparent 36%),
+        linear-gradient(120deg, #3b176e 0%, #4c1d95 52%, #32135d 100%);
+    --kaori-hero-panel: rgba(15, 10, 24, 0.32);
+    --kaori-hero-tile: rgba(255, 255, 255, 0.065);
+    --kaori-hero-chip: rgba(255, 255, 255, 0.075);
+    --kaori-hero-outline: rgba(233, 228, 255, 0.16);
+    --kaori-brand-domain-panel: #2f1a4f;
+
+    --kaori-sidebar-content-muted: #b9b1c4;
+    --kaori-sidebar-section: #81788e;
+    --kaori-sidebar-active: rgba(139, 92, 246, 0.18);
+    --kaori-sidebar-active-outline: rgba(167, 139, 250, 0.3);
+    --kaori-sidebar-active-icon: rgba(139, 92, 246, 0.18);
+
+    --kaori-content-primary: #f5f3f7;
+    --kaori-content-secondary: #cbc5d2;
+    --kaori-content-muted: #9d95a7;
+    --kaori-content-disabled: #706878;
+    --kaori-content-inverse: #0f0d15;
+
+    --kaori-outline-subtle: #2b2535;
+    --kaori-outline-default: #373043;
+    --kaori-outline-strong: #4b4258;
+    --kaori-outline-focus: #a78bfa;
+
+    --kaori-status-normal: #22c55e;
+    --kaori-status-normal-soft: rgba(34, 197, 94, 0.12);
+    --kaori-status-normal-border: rgba(34, 197, 94, 0.32);
+    --kaori-status-normal-text: #86efac;
+
+    --kaori-status-info: #3b82f6;
+    --kaori-status-info-soft: rgba(59, 130, 246, 0.12);
+    --kaori-status-info-border: rgba(59, 130, 246, 0.32);
+    --kaori-status-info-text: #93c5fd;
+
+    --kaori-status-warning: #f59e0b;
+    --kaori-status-warning-soft: rgba(245, 158, 11, 0.13);
+    --kaori-status-warning-border: rgba(245, 158, 11, 0.35);
+    --kaori-status-warning-text: #fcd34d;
+
+    --kaori-status-critical: #ef4444;
+    --kaori-status-critical-soft: rgba(239, 68, 68, 0.13);
+    --kaori-status-critical-border: rgba(239, 68, 68, 0.35);
+    --kaori-status-critical-text: #fca5a5;
+
+    --kaori-status-unknown: #94a3b8;
+    --kaori-status-unknown-soft: rgba(148, 163, 184, 0.1);
+    --kaori-status-unknown-border: rgba(148, 163, 184, 0.25);
+    --kaori-status-unknown-text: #cbd5e1;
+
+    --kaori-status-disabled: #64748b;
+    --kaori-status-disabled-soft: rgba(100, 116, 139, 0.1);
+    --kaori-status-disabled-border: rgba(100, 116, 139, 0.22);
+    --kaori-status-disabled-text: #94a3b8;
+
+    --kaori-status-maintenance: #f59e0b;
+    --kaori-status-maintenance-soft: rgba(217, 119, 6, 0.18);
+    --kaori-status-maintenance-border: rgba(253, 230, 138, 0.34);
+    --kaori-status-maintenance-text: #fde68a;
+
+    --kaori-status-pending: #60a5fa;
+    --kaori-status-pending-soft: rgba(37, 99, 235, 0.18);
+    --kaori-status-pending-border: rgba(191, 219, 254, 0.32);
+    --kaori-status-pending-text: #bfdbfe;
+
+    --kaori-topology-domain-scope-fill: #172554;
+    --kaori-topology-domain-scope-border: #60a5fa;
+    --kaori-topology-domain-scope-text: #dbeafe;
+    --kaori-topology-domain-compute-fill: #2e1065;
+    --kaori-topology-domain-compute-border: #a78bfa;
+    --kaori-topology-domain-compute-text: #ede9fe;
+    --kaori-topology-domain-networking-fill: #022c22;
+    --kaori-topology-domain-networking-border: #34d399;
+    --kaori-topology-domain-networking-text: #d1fae5;
+    --kaori-topology-domain-configuration-fill: #082f49;
+    --kaori-topology-domain-configuration-border: #38bdf8;
+    --kaori-topology-domain-configuration-text: #e0f2fe;
+    --kaori-topology-domain-storage-fill: #451a03;
+    --kaori-topology-domain-storage-border: #fbbf24;
+    --kaori-topology-domain-storage-text: #fef3c7;
+    --kaori-topology-edge-contains: #94a3b8;
+    --kaori-topology-edge-owns: #a78bfa;
+    --kaori-topology-edge-scheduled: #94a3b8;
+    --kaori-topology-edge-selects: #34d399;
+    --kaori-topology-edge-routes: #2dd4bf;
+    --kaori-topology-edge-uses: #38bdf8;
+    --kaori-topology-edge-mounts: #fb923c;
+    --kaori-topology-edge-binds: #a3e635;
+}
+
+/* Analytics pages inherit the same KAORI surface, outline, and typography
+   tokens as Inventory. Domain-specific differentiation belongs in reusable
+   visual roles, charts, status badges, and evidence semantics—not a second
+   workspace palette. */
+
+@theme inline {
+    --font-sans:
+        'Inter Variable', Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+    --color-kaori-primary: var(--kaori-brand-primary);
+    --color-kaori-primary-hover: var(--kaori-brand-primary-hover);
+    --color-kaori-primary-dark: var(--kaori-brand-primary-dark);
+    --color-kaori-accent: var(--kaori-brand-accent);
+    --color-kaori-border: var(--kaori-brand-border);
+    --color-kaori-soft: var(--kaori-brand-soft);
+    --color-brand-foreground: var(--kaori-brand-foreground);
+    --color-brand-foreground-muted: var(--kaori-brand-foreground-muted);
+    --color-brand-surface: var(--kaori-brand-surface);
+    --color-brand-surface-strong: var(--kaori-brand-surface-strong);
+    --color-brand-outline: var(--kaori-brand-outline);
+
+    --color-surface-page: var(--kaori-surface-page);
+    --color-surface-shell: var(--kaori-surface-shell);
+    --color-surface-sidebar: var(--kaori-surface-sidebar);
+    --color-surface-card: var(--kaori-surface-card);
+    --color-surface-elevated: var(--kaori-surface-elevated);
+    --color-surface-muted: var(--kaori-surface-muted);
+    --color-surface-sunken: var(--kaori-surface-sunken);
+    --color-surface-hover: var(--kaori-surface-hover);
+    --color-surface-selected: var(--kaori-surface-selected);
+    --color-surface-overlay: var(--kaori-surface-overlay);
+
+    --color-content-primary: var(--kaori-content-primary);
+    --color-content-secondary: var(--kaori-content-secondary);
+    --color-content-muted: var(--kaori-content-muted);
+    --color-content-disabled: var(--kaori-content-disabled);
+    --color-content-inverse: var(--kaori-content-inverse);
+
+    --color-outline-subtle: var(--kaori-outline-subtle);
+    --color-outline-default: var(--kaori-outline-default);
+    --color-outline-strong: var(--kaori-outline-strong);
+    --color-outline-focus: var(--kaori-outline-focus);
+
+    --color-status-normal: var(--kaori-status-normal);
+    --color-status-normal-soft: var(--kaori-status-normal-soft);
+    --color-status-normal-border: var(--kaori-status-normal-border);
+    --color-status-normal-text: var(--kaori-status-normal-text);
+
+    --color-status-info: var(--kaori-status-info);
+    --color-status-info-soft: var(--kaori-status-info-soft);
+    --color-status-info-border: var(--kaori-status-info-border);
+    --color-status-info-text: var(--kaori-status-info-text);
+
+    --color-status-warning: var(--kaori-status-warning);
+    --color-status-warning-soft: var(--kaori-status-warning-soft);
+    --color-status-warning-border: var(--kaori-status-warning-border);
+    --color-status-warning-text: var(--kaori-status-warning-text);
+
+    --color-status-critical: var(--kaori-status-critical);
+    --color-status-critical-soft: var(--kaori-status-critical-soft);
+    --color-status-critical-border: var(--kaori-status-critical-border);
+    --color-status-critical-text: var(--kaori-status-critical-text);
+
+    --color-status-unknown: var(--kaori-status-unknown);
+    --color-status-unknown-soft: var(--kaori-status-unknown-soft);
+    --color-status-unknown-border: var(--kaori-status-unknown-border);
+    --color-status-unknown-text: var(--kaori-status-unknown-text);
+
+    --color-status-disabled: var(--kaori-status-disabled);
+    --color-status-disabled-soft: var(--kaori-status-disabled-soft);
+    --color-status-disabled-border: var(--kaori-status-disabled-border);
+    --color-status-disabled-text: var(--kaori-status-disabled-text);
+
+    --color-status-maintenance: var(--kaori-status-maintenance);
+    --color-status-maintenance-soft: var(--kaori-status-maintenance-soft);
+    --color-status-maintenance-border: var(--kaori-status-maintenance-border);
+    --color-status-maintenance-text: var(--kaori-status-maintenance-text);
+
+    --color-status-pending: var(--kaori-status-pending);
+    --color-status-pending-soft: var(--kaori-status-pending-soft);
+    --color-status-pending-border: var(--kaori-status-pending-border);
+    --color-status-pending-text: var(--kaori-status-pending-text);
+}
+
+/* KAORI Dark Mode Standard — neutral-first surfaces with controlled violet. */
+.kaori-app-shell {
+    background-color: var(--kaori-surface-shell);
+}
+
+.kaori-hero-shell {
+    background: var(--kaori-hero-background);
+}
+
+.kaori-hero-panel {
+    border-color: var(--kaori-hero-outline);
+    background: var(--kaori-hero-panel);
+}
+
+.kaori-hero-tile {
+    border-color: var(--kaori-hero-outline);
+    background: var(--kaori-hero-tile);
+}
+
+.kaori-hero-chip {
+    background: var(--kaori-hero-chip);
+}
+
+.kaori-brand-domain-panel {
+    background: var(--kaori-brand-domain-panel);
+}
+
+.sidebar-parent-active {
+    position: relative;
+    border: 1px solid var(--kaori-sidebar-active-outline);
+    background: var(--kaori-sidebar-active);
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(91, 33, 182, 0.18);
+}
+
+.sidebar-parent-active-icon {
+    background: var(--kaori-sidebar-active-icon);
+    color: #fff;
+}
+
+.sidebar-item-idle {
+    color: var(--kaori-sidebar-content-muted);
+}
+
+.sidebar-item-idle:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: #fff;
+}
+
+.sidebar-item-idle-icon {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--kaori-sidebar-content-muted);
+}
+
+.sidebar-item-idle:hover .sidebar-item-idle-icon {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.sidebar-section-label {
+    color: var(--kaori-sidebar-section);
+}
+
+.dark .sidebar-parent-active {
+    border-color: var(--kaori-sidebar-active-outline);
+    box-shadow: 0 8px 20px rgba(5, 3, 9, 0.24);
+}
+
+.dark .sidebar-parent-active-icon {
+    color: var(--kaori-brand-accent);
+}
+
+.dark .kaori-sidebar > [aria-hidden='true'] {
+    opacity: 0.42;
+}
+
+.dark .kaori-workspace-card:hover {
+    background-color: var(--kaori-surface-elevated);
+    box-shadow: 0 12px 28px rgba(5, 3, 9, 0.24);
+}
+
+/*
+ * KAORI global semantic contract.
+ * The former integration scope remains as a compatibility hook only; the
+ * canonical palette now lives in :root/.dark and applies to every workspace.
+ */
+.kaori-integration-semantic {
+    color: inherit;
+}
+
+/* Status and metadata labels are borderless globally. Border tokens remain
+ * available for semantic panels, callouts, dialogs, inputs, and destructive
+ * controls where a visible boundary communicates structure or risk. */
+.kaori-semantic-label,
+.kaori-context-label,
+span.inline-flex[class*='bg-status-'][class*='-soft'] {
+    border-color: transparent !important;
+    border-width: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Legacy compact labels inherit the global semantic contract until their
+ * templates are migrated to table_label/status_badge macros. These selectors
+ * intentionally target span labels only, not panels, charts, or action buttons. */
+span.inline-flex[class*='bg-emerald-'],
+span.inline-flex[class*='bg-green-'] {
+    background-color: var(--kaori-status-normal-soft) !important;
+    color: var(--kaori-status-normal-text) !important;
+    border-color: transparent !important;
+    border-width: 0 !important;
+    border-radius: 0.375rem !important;
+    box-shadow: none !important;
+}
+
+span.inline-flex[class*='bg-blue-'],
+span.inline-flex[class*='bg-cyan-'] {
+    background-color: var(--kaori-status-info-soft) !important;
+    color: var(--kaori-status-info-text) !important;
+    border-color: transparent !important;
+    border-width: 0 !important;
+    border-radius: 0.375rem !important;
+    box-shadow: none !important;
+}
+
+span.inline-flex[class*='bg-amber-'],
+span.inline-flex[class*='bg-yellow-'] {
+    background-color: var(--kaori-status-warning-soft) !important;
+    color: var(--kaori-status-warning-text) !important;
+    border-color: transparent !important;
+    border-width: 0 !important;
+    border-radius: 0.375rem !important;
+    box-shadow: none !important;
+}
+
+span.inline-flex[class*='bg-red-'],
+span.inline-flex[class*='bg-rose-'] {
+    background-color: var(--kaori-status-critical-soft) !important;
+    color: var(--kaori-status-critical-text) !important;
+    border-color: transparent !important;
+    border-width: 0 !important;
+    border-radius: 0.375rem !important;
+    box-shadow: none !important;
+}
+
+span.inline-flex[class*='bg-slate-'],
+span.inline-flex[class*='bg-gray-'] {
+    background-color: var(--kaori-status-unknown-soft) !important;
+    color: var(--kaori-status-unknown-text) !important;
+    border-color: transparent !important;
+    border-width: 0 !important;
+    border-radius: 0.375rem !important;
+    box-shadow: none !important;
+}
+
+span.inline-flex.bg-kaori-soft,
+span.inline-flex[class*='bg-kaori-soft'] {
+    border-color: transparent !important;
+    border-width: 0 !important;
+    border-radius: 0.375rem !important;
+    box-shadow: none !important;
+}
+
+/* Global application shell behavior compiled through Tailwind. */
+[x-cloak] {
+    display: none !important;
+}
+
+.sidebar-collapsed .sidebar-expanded-only,
+.sidebar-collapsed .sidebar-menu-chevron,
+.sidebar-collapsed .sidebar-submenu {
+    display: none !important;
+}
+
+.sidebar-collapsed .sidebar-parent-link,
+.sidebar-collapsed .sidebar-brand-card {
+    justify-content: center;
+}
+
+.sidebar-collapsed .kubereport-sidebar nav {
+    padding-inline: 0.5rem;
+}
+
+.sidebar-collapsed .sidebar-nav-section + .sidebar-nav-section {
+    margin-top: 0.5rem;
+}
+
+.sidebar-menu > summary {
+    list-style: none;
+}
+
+.sidebar-menu > summary::-webkit-details-marker {
+    display: none;
+}
+
+.sidebar-menu-chevron {
+    transform: rotate(0deg);
+    transition: transform 150ms ease;
+}
+
+.sidebar-menu[open] > summary .sidebar-menu-chevron {
+    transform: rotate(90deg);
+}
+
+/* Keep nested navigation readable without making long menus feel oversized. */
+.sidebar-submenu.sidebar-expanded-only {
+    margin-top: 0.5rem;
+}
+
+.sidebar-submenu > :not(:last-child) {
+    margin-block-end: 0.5rem;
+}
+
+.sidebar-submenu > a {
+    min-height: 2.5rem;
+    padding-inline: 0.875rem;
+    padding-block: 0.625rem;
+}
+
+.sidebar-submenu > a:hover {
+    padding-inline: 1rem;
+}
+
+/* Keep glyph descenders clear without making submenu rows feel too loose. */
+.sidebar-submenu > a > span:last-child {
+    display: block;
+    line-height: 1.125rem;
+}
+
+.kaori-activity-grid {
+    grid-template-columns:
+        minmax(6.75rem, 0.72fr) minmax(12rem, 1.12fr) minmax(16rem, 1.85fr)
+        minmax(6.5rem, 0.62fr) minmax(6.5rem, 0.62fr) 6.25rem;
+}
+
+.kaori-change-grid {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.htmx-indicator {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 150ms ease-in;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+    visibility: visible;
+    opacity: 1;
+}
+
+@keyframes kaori-loading-bar-indeterminate {
+    0% {
+        transform: translateX(-120%);
+    }
+    55% {
+        transform: translateX(160%);
+    }
+    100% {
+        transform: translateX(340%);
+    }
+}
+
+.kaori-loading-bar-segment {
+    animation: kaori-loading-bar-indeterminate 1.15s ease-in-out infinite;
+    will-change: transform;
+}
+
+#operational-action-feedback:empty,
+#quick-sync-feedback:empty {
+    display: none;
+}
+
+@keyframes notification-progress-indeterminate {
+    0% {
+        transform: translateX(-120%);
+    }
+
+    50% {
+        transform: translateX(190%);
+    }
+
+    100% {
+        transform: translateX(420%);
+    }
+}
+
+.notification-progress-indeterminate {
+    width: 32%;
+    animation: notification-progress-indeterminate 1.35s ease-in-out infinite;
+    will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .notification-progress-indeterminate {
+        width: 100%;
+        animation: none;
+    }
+}
+
+/* Kubernetes operation choice cards use a calm selected state: one brand
+ * border, a soft surface, and a narrow left accent. Keyboard focus remains
+ * distinct without leaving a second ring after a pointer selection. */
+.secret-type-choice:has(.secret-type-input:focus-visible) .secret-type-option {
+    outline: 2px solid var(--kaori-outline-focus);
+    outline-offset: 2px;
+}
+
+.secret-type-option::before {
+    position: absolute;
+    top: 0.75rem;
+    bottom: 0.75rem;
+    left: 0;
+    width: 0.1875rem;
+    border-radius: 0 9999px 9999px 0;
+    background-color: var(--kaori-brand-primary);
+    content: '';
+    opacity: 0;
+    transition: opacity 150ms ease;
+}
+
+.secret-type-input:checked + .secret-type-option {
+    border-color: var(--kaori-brand-primary);
+    background-color: var(--kaori-surface-selected);
+    box-shadow: none;
+}
+
+.secret-type-input:checked + .secret-type-option::before {
+    opacity: 1;
+}
+
+.secret-type-input:checked + .secret-type-option .secret-type-icon {
+    border-color: var(--kaori-brand-border);
+    background-color: var(--kaori-brand-soft);
+    color: var(--kaori-brand-primary);
+}
+
+.secret-type-input:checked + .secret-type-option .secret-type-title {
+    color: var(--kaori-brand-primary);
+}
+
+.secret-type-selected-indicator {
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-2px);
+    transition:
+        opacity 150ms ease,
+        transform 150ms ease;
+}
+
+.secret-type-input:checked + .secret-type-option .secret-type-selected-indicator {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* KAORI table-column standard: every semantic table header is rendered in
+ * display capitals without rewriting technical labels in template content. */
+thead th {
+    text-transform: uppercase;
+}
+
+/* Visualization Workspace Style 1 — Adaptive Explorer. */
+.kaori-visualization-canvas {
+    height: clamp(38rem, 72vh, 48rem);
+}
+
+.kaori-topology-domain-scope {
+    border-color: var(--kaori-topology-domain-scope-border);
+    background-color: var(--kaori-topology-domain-scope-fill);
+    color: var(--kaori-topology-domain-scope-text);
+}
+.kaori-topology-domain-compute {
+    border-color: var(--kaori-topology-domain-compute-border);
+    background-color: var(--kaori-topology-domain-compute-fill);
+    color: var(--kaori-topology-domain-compute-text);
+}
+.kaori-topology-domain-networking {
+    border-color: var(--kaori-topology-domain-networking-border);
+    background-color: var(--kaori-topology-domain-networking-fill);
+    color: var(--kaori-topology-domain-networking-text);
+}
+.kaori-topology-domain-configuration {
+    border-color: var(--kaori-topology-domain-configuration-border);
+    background-color: var(--kaori-topology-domain-configuration-fill);
+    color: var(--kaori-topology-domain-configuration-text);
+}
+.kaori-topology-domain-storage {
+    border-color: var(--kaori-topology-domain-storage-border);
+    background-color: var(--kaori-topology-domain-storage-fill);
+    color: var(--kaori-topology-domain-storage-text);
+}
+
+.kaori-topology-edge-contains {
+    background-color: var(--kaori-topology-edge-contains);
+}
+.kaori-topology-edge-owns {
+    background-color: var(--kaori-topology-edge-owns);
+}
+.kaori-topology-edge-scheduled {
+    background-color: var(--kaori-topology-edge-scheduled);
+}
+.kaori-topology-edge-selects {
+    background-color: var(--kaori-topology-edge-selects);
+}
+.kaori-topology-edge-routes {
+    background-color: var(--kaori-topology-edge-routes);
+}
+.kaori-topology-edge-uses {
+    background-color: var(--kaori-topology-edge-uses);
+}
+.kaori-topology-edge-mounts {
+    background-color: var(--kaori-topology-edge-mounts);
+}
+.kaori-topology-edge-binds {
+    background-color: var(--kaori-topology-edge-binds);
+}
+
+/* Hero context status labels sit on the Violet hero surface. They use an
+ * opaque white backing and fixed dark foregrounds so dark-page semantic tokens
+ * cannot reduce contrast inside the brand panel. */
+.kaori-hero-status-badge {
+    background-color: rgba(255, 255, 255, 0.96);
+}
+
+.kaori-hero-status-normal {
+    color: #047857;
+}
+
+.kaori-hero-status-warning {
+    color: #b45309;
+}
+
+.kaori-hero-status-critical {
+    color: #b91c1c;
+}
+
+.kaori-hero-status-unknown {
+    color: #475569;
+}
+
+.kaori-hero-status-info {
+    color: #6d28d9;
+}
+
+/* Shared native-dialog backdrop for Integration workspaces. The overlay follows
+ * surface tokens in both light and dark mode instead of using a fixed palette. */
+.kaori-native-dialog::backdrop {
+    background: var(--kaori-surface-overlay);
+    backdrop-filter: blur(1px);
+}

@@ -1,0 +1,14 @@
+{% macro render(title, description, icon='info', aria_label=None) -%}
+    <article class="rounded-xl border border-brand-outline bg-kaori-soft p-4 shadow-sm"
+             aria-label="{{ aria_label or title }}">
+        <div class="flex items-start gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary">
+                <i data-lucide="{{ icon }}" class="h-4 w-4" aria-hidden="true"></i>
+            </span>
+            <div class="min-w-0">
+                <h2 class="text-base font-semibold leading-6 text-content-primary">{{ title }}</h2>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">{{ description }}</p>
+            </div>
+        </div>
+    </article>
+{%- endmacro %}

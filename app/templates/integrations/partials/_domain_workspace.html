@@ -1,0 +1,444 @@
+{% import "components/content_tabs.html" as content_tabs %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/pagination.html" as pagination_ui %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "integrations/components/_provider_registry.html" as provider_registry %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% set workspace_tabs = [
+    (
+    "registry",
+    "Provider Registry",
+    "server-cog",
+    url_for(
+    domain.workspace_endpoint,
+    tab="registry",
+    provider_q=selected_provider_query,
+    provider_key=selected_provider_key,
+    provider_readiness=selected_provider_readiness,
+    provider_per_page=provider_per_page,
+    binding_q=selected_binding_query,
+    binding_provider=selected_binding_provider,
+    binding_status=selected_binding_status,
+    binding_per_page=binding_per_page
+    ),
+    stats.registered_targets
+    ),
+    (
+    "bindings",
+    "Consumer Bindings",
+    "link-2",
+    url_for(
+    domain.workspace_endpoint,
+    tab="bindings",
+    provider_q=selected_provider_query,
+    provider_key=selected_provider_key,
+    provider_readiness=selected_provider_readiness,
+    provider_per_page=provider_per_page,
+    binding_q=selected_binding_query,
+    binding_provider=selected_binding_provider,
+    binding_status=selected_binding_status,
+    binding_per_page=binding_per_page
+    ),
+    stats.bindings
+    )
+] %}
+<section class="{{ integration_ui.section_shell_classes() }}"
+         id="domain-workspace"
+         aria-labelledby="domain-workspace-title">
+    <header class="px-5 pt-4 sm:px-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                {{ integration_ui.palette_icon("waypoints", "brand", size="lg") }}
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">{{ domain.label }} Workspace</p>
+                    <h2 id="domain-workspace-title"
+                        class="mt-0.5 text-base font-semibold text-content-primary">Registry and Consumer Bindings</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Review provider connections and cross-domain consumer bindings for assets in this domain.</p>
+                </div>
+            </div>
+            {% if integration_types %}
+                <div class="flex flex-wrap items-center gap-2 lg:justify-end"
+                     aria-label="{{ domain.label }} integration type workspaces">
+                    {% for item in integration_types %}
+                        <a href="{{ url_for(item.workspace_endpoint) }}"
+                           class="inline-flex h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary dark:hover:text-kaori-accent">
+                            <i data-lucide="{{ item.icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                            Open {{ item.runtime_label }}
+                        </a>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        {{ loading_bar.render("integration-domain-workspace-loading", label="Switching domain workspace") }}
+    </header>
+    <div class="mt-4">
+        {{ content_tabs.render_links("integration-domain-workspace", workspace_tabs, active_tab, "Integration Domain Workspace", embedded=true, data_namespace="integration-domain", hx_target="#domain-workspace", hx_select="#domain-workspace", hx_swap="outerHTML", hx_push_url="true", hx_indicator="#integration-domain-workspace-loading") }}
+    </div>
+    {% if active_tab == "registry" %}
+        <div class="p-4 sm:p-5" data-kaori-domain-provider-registry>
+            {% set provider_filters_active = selected_provider_query or selected_provider_key or selected_provider_readiness %}
+            {% set provider_clear_query = {
+                            'tab': 'registry',
+                            'binding_q': selected_binding_query,
+                            'binding_provider': selected_binding_provider,
+                            'binding_status': selected_binding_status,
+                            'binding_per_page': binding_per_page
+                        } %}
+            <div class="overflow-hidden rounded-xl border border-outline-subtle"
+                 data-kaori-domain-registry-surface>
+                <div class="flex items-start justify-between gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3 sm:px-5">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Provider Registry Filters</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Search registered targets and narrow the registry by provider or Core Validation readiness.</p>
+                    </div>
+                    {% if provider_filters_active %}
+                        {{ registry_ui.clear_filters_link(domain.workspace_endpoint,
+                                                'domain-workspace',
+                                                'integration-domain-workspace-loading',
+                                                provider_registry_pagination.per_page,
+                                                table_ui.action_classes() ,
+                        query_params=provider_clear_query,
+                        page_param='provider_page',
+                        per_page_param='provider_per_page'
+                        ) }}
+                    {% endif %}
+                </div>
+                {% call registry_ui.filter_form(
+                    domain.workspace_endpoint,
+                    'domain-workspace',
+                    'integration-domain-workspace-loading',
+                    provider_registry_pagination.per_page,
+                    'border-b border-outline-subtle bg-surface-card px-4 py-4 sm:px-5',
+                    page_param='provider_page',
+                    per_page_param='provider_per_page'
+                    ) %}
+                    <input type="hidden" name="tab" value="registry">
+                    <input type="hidden" name="binding_q" value="{{ selected_binding_query }}">
+                    <input type="hidden"
+                           name="binding_provider"
+                           value="{{ selected_binding_provider }}">
+                    <input type="hidden"
+                           name="binding_status"
+                           value="{{ selected_binding_status }}">
+                    <input type="hidden" name="binding_per_page" value="{{ binding_per_page }}">
+                    {{ provider_registry.search_field('domain-provider-search',
+                                        'provider_q',
+                                        selected_provider_query,
+                                        'Search Connections...',
+                                        label='Search') }}
+                    {% if provider_filter_options|length > 1 %}
+                        {{ provider_registry.select_field('domain-provider-key',
+                                                'provider_key',
+                                                selected_provider_key,
+                                                'Provider',
+                                                provider_filter_options,
+                                                'All Providers') }}
+                    {% else %}
+                        <input type="hidden" name="provider_key" value="{{ selected_provider_key }}">
+                    {% endif %}
+                    {{ provider_registry.select_field('domain-provider-readiness',
+                                        'provider_readiness',
+                                        selected_provider_readiness,
+                                        'Core Readiness',
+                                        provider_readiness_options,
+                                        'All Readiness States') }}
+                {% endcall %}
+                <div class="overflow-x-auto">
+                    <table class="{{ table_ui.table_classes('min-w-[920px]') }}">
+                        <colgroup>
+                            <col class="w-[32%]">
+                            <col class="w-[20%]">
+                            <col class="w-[20%]">
+                            <col class="w-[12%]">
+                            <col class="w-[16%]">
+                        </colgroup>
+                        <thead class="{{ table_ui.head_classes() }}">
+                            <tr>
+                                <th class="{{ table_ui.header_cell_classes() }}">Provider</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Capability</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Runtime</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Consumer Bindings</th>
+                                <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="{{ table_ui.body_classes() }}">
+                            {% for row in provider_registry_rows %}
+                                <tr class="{{ table_ui.row_classes() }}">
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        <div class="flex min-w-0 items-start gap-3">
+                                            {{ integration_ui.palette_icon(row.provider_icon, "brand", size="sm") }}
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]"
+                                                   title="{{ row.name }}">{{ row.name }}</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ row.provider_label }} · {{ row.environment }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        <p class="text-sm font-semibold text-content-primary">{{ row.capability_label }}</p>
+                                        <p class="mt-1 text-xs text-content-muted">{{ row.integration_type|replace('_', ' ') |title }}</p>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        {{ integration_status(row.readiness, display="indicator") }}
+                                        <p class="mt-1 text-xs text-content-muted">Checked {{ row.last_checked }}</p>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        <p class="text-sm font-semibold text-content-primary">{{ row.bindings }}</p>
+                                        <p class="mt-1 text-xs text-content-muted">Consumer binding{{ "" if row.bindings == 1 else "s" }}</p>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes(action=true) }}">
+                                        <a href="{{ row.detail_url or url_for(row.workspace_endpoint) }}"
+                                           class="{{ table_ui.action_classes() }}">
+                                            <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                            Open
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="p-0">
+                                        {% if selected_provider_query or selected_provider_key or selected_provider_readiness %}
+                                            {% set empty_state_icon = "search-x" %}
+                                            {% set empty_state_label = "No Results" %}
+                                            {% set empty_state_title %}
+                                                No {{ domain.label }} Providers Match These Filters
+                                            {% endset %}
+                                            {% set empty_state_description = "Clear or adjust the search, provider, or readiness filters to expand the result set." %}
+                                        {% else %}
+                                            {% set empty_state_icon = domain.icon %}
+                                            {% set empty_state_label = "Setup Required" %}
+                                            {% set empty_state_tone = "warning" %}
+                                            {% set empty_state_title %}
+                                                No {{ domain.label }} Provider Registered
+                                            {% endset %}
+                                            {% set empty_state_description = "The domain contract is ready. Open the provider workspace above to register the first connection and run Core Validation." %}
+                                        {% endif %}
+                                        {% set empty_state_min_height = "min-h-[170px]" %}
+                                        {% include 'components/states/_empty_state.html' %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if provider_registry_pagination.total_items > 0 %}
+                    {% set provider_query_params = {
+                                            'tab': 'registry',
+                                            'provider_q': selected_provider_query,
+                                            'provider_key': selected_provider_key,
+                                            'provider_readiness': selected_provider_readiness,
+                                            'binding_q': selected_binding_query,
+                                            'binding_provider': selected_binding_provider,
+                                            'binding_status': selected_binding_status,
+                                            'binding_per_page': binding_per_page
+                                        } %}
+                    {{ registry_ui.footer(domain.workspace_endpoint,
+                                        'domain-workspace',
+                                        'integration-domain-workspace-loading',
+                                        provider_registry_pagination,
+                                        provider_query_params,
+                                        provider_registry_pagination.allowed_per_page,
+                                        resource_label='Providers',
+                                        rows_aria_label='Providers per page',
+                                        control_name='integration-domain-providers',
+                                        page_param='provider_page',
+                                        per_page_param='provider_per_page') }}
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <div class="p-4 sm:p-5" data-kaori-domain-binding-registry>
+            {% if domain.key == 'observability' %}
+                <div class="mb-4 flex flex-wrap items-start justify-between gap-3 rounded-lg border border-brand-outline bg-kaori-soft px-4 py-3">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Observability Routing</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Metrics sources are independent reusable providers. Query age selects the recent or historical horizon first; source role, routing weight, and priority then choose among healthy matching bindings.</p>
+                    </div>
+                    <p class="text-xs leading-5 text-content-muted">Alertmanager remains an alert source and does not participate in metrics-query horizon routing.</p>
+                </div>
+            {% endif %}
+            {% if domain.key == 'storage' %}
+                <div class="mb-4 flex flex-wrap items-start justify-between gap-3 rounded-lg border border-brand-outline bg-kaori-soft px-4 py-3"
+                     data-kaori-storage-binding-boundary>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Storage Authority Boundary</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">MinIO owns the object-storage API and managed asset. A Metrics Source provides metrics, while Alertmanager provides alert evidence through independent source-owned bindings.</p>
+                    </div>
+                    <p class="text-xs leading-5 text-content-muted">File Storage and Block Storage remain capability placeholders until a provider implementation is registered.</p>
+                </div>
+            {% endif %}
+            {% set binding_filters_active = selected_binding_query or selected_binding_provider or selected_binding_status %}
+            {% set binding_clear_query = {
+                            'tab': 'bindings',
+                            'provider_q': selected_provider_query,
+                            'provider_key': selected_provider_key,
+                            'provider_readiness': selected_provider_readiness,
+                            'provider_per_page': provider_per_page
+                        } %}
+            <div class="overflow-hidden rounded-xl border border-outline-subtle"
+                 data-kaori-domain-registry-surface>
+                <div class="flex items-start justify-between gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3 sm:px-5">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Consumer Binding Filters</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Search asset-to-source contracts and narrow the registry by provider or validation state.</p>
+                    </div>
+                    {% if binding_filters_active %}
+                        {{ registry_ui.clear_filters_link(domain.workspace_endpoint,
+                                                'domain-workspace',
+                                                'integration-domain-workspace-loading',
+                                                binding_registry_pagination.per_page,
+                                                table_ui.action_classes() ,
+                        query_params=binding_clear_query,
+                        page_param='binding_page',
+                        per_page_param='binding_per_page'
+                        ) }}
+                    {% endif %}
+                </div>
+                {% call registry_ui.filter_form(
+                    domain.workspace_endpoint,
+                    'domain-workspace',
+                    'integration-domain-workspace-loading',
+                    binding_registry_pagination.per_page,
+                    'border-b border-outline-subtle bg-surface-card px-4 py-4 sm:px-5',
+                    page_param='binding_page',
+                    per_page_param='binding_per_page'
+                    ) %}
+                    <input type="hidden" name="tab" value="bindings">
+                    <input type="hidden" name="provider_q" value="{{ selected_provider_query }}">
+                    <input type="hidden" name="provider_key" value="{{ selected_provider_key }}">
+                    <input type="hidden"
+                           name="provider_readiness"
+                           value="{{ selected_provider_readiness }}">
+                    <input type="hidden"
+                           name="provider_per_page"
+                           value="{{ provider_per_page }}">
+                    {{ provider_registry.search_field('domain-binding-search',
+                                        'binding_q',
+                                        selected_binding_query,
+                                        'Search Consumer Bindings...',
+                                        label='Search') }}
+                    {{ provider_registry.select_field('domain-binding-provider',
+                                        'binding_provider',
+                                        selected_binding_provider,
+                                        'Source Provider',
+                                        binding_provider_options,
+                                        'All Source Providers') }}
+                    {{ provider_registry.select_field('domain-binding-status',
+                                        'binding_status',
+                                        selected_binding_status,
+                                        'Validation',
+                                        binding_status_options,
+                                        'All Validation States') }}
+                {% endcall %}
+                <div class="overflow-x-auto">
+                    <table class="{{ table_ui.table_classes('min-w-[920px]') }}">
+                        <colgroup>
+                            <col class="w-[27%]">
+                            <col class="w-[23%]">
+                            <col class="w-[24%]">
+                            <col class="w-[16%]">
+                            <col class="w-[10%]">
+                        </colgroup>
+                        <thead class="{{ table_ui.head_classes() }}">
+                            <tr>
+                                <th class="{{ table_ui.header_cell_classes() }}">Consumer Asset</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Provider Source</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Consumer Contract</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Validation</th>
+                                <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="{{ table_ui.body_classes() }}">
+                            {% for row in binding_registry_rows %}
+                                <tr class="{{ table_ui.row_classes() }}">
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        <p class="text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]"
+                                           title="{{ row.consumer_label }}">{{ row.consumer_label }}</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted [overflow-wrap:anywhere]"
+                                           title="{{ row.asset_key }}">{{ row.asset_type_label }} · {{ row.asset_key }}</p>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        <div class="flex min-w-0 items-start gap-2.5">
+                                            {{ integration_ui.palette_icon(row.source_icon, "brand", size="sm") }}
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ row.source_name }}</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ row.source_provider }} · {{ row.role }}</p>
+                                                {% if row.routing_label %}
+                                                    <p class="mt-1 text-xs font-medium text-kaori-primary dark:text-kaori-accent">{{ row.routing_label }}</p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        <p class="text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]"
+                                           title="{{ row.profile }}">{{ row.profile }}</p>
+                                        <p class="mt-1 truncate font-mono text-xs text-content-muted"
+                                           title="{{ row.selector }}">{{ row.selector }}</p>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        {{ integration_status(row.validation_status, display="indicator") }}
+                                        <p class="mt-1 text-xs text-content-muted">Validated {{ row.last_validated }}</p>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes(action=true) }}">
+                                        <a href="{{ row.detail_url or url_for(row.workspace_endpoint) }}"
+                                           class="{{ table_ui.action_classes() }}">
+                                            <i data-lucide="route" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                            Source
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="p-0">
+                                        {% if selected_binding_query or selected_binding_provider or selected_binding_status %}
+                                            {% set empty_state_icon = "search-x" %}
+                                            {% set empty_state_label = "No Results" %}
+                                            {% set empty_state_title %}
+                                                No {{ domain.label }} Consumer Bindings Match These Filters
+                                            {% endset %}
+                                            {% set empty_state_description = "Clear or adjust the search, source-provider, or validation filters to expand the result set." %}
+                                        {% else %}
+                                            {% set empty_state_icon = "link-2" %}
+                                            {% set empty_state_label = "No Data" %}
+                                            {% set empty_state_title %}
+                                                No {{ domain.label }} Consumer Bindings Yet
+                                            {% endset %}
+                                            {% set empty_state_description = "Consumer bindings appear after a reusable source is associated with a managed asset. Native provider ownership is represented by the Provider Registry and is not duplicated as a consumer binding. Create reusable bindings from the owning provider or managed-asset workspace." %}
+                                        {% endif %}
+                                        {% set empty_state_min_height = "min-h-[170px]" %}
+                                        {% include 'components/states/_empty_state.html' %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if binding_registry_pagination.total_items > 0 %}
+                    {% set binding_query_params = {
+                                            'tab': 'bindings',
+                                            'binding_q': selected_binding_query,
+                                            'binding_provider': selected_binding_provider,
+                                            'binding_status': selected_binding_status,
+                                            'provider_q': selected_provider_query,
+                                            'provider_key': selected_provider_key,
+                                            'provider_readiness': selected_provider_readiness,
+                                            'provider_per_page': provider_per_page
+                                        } %}
+                    {{ registry_ui.footer(domain.workspace_endpoint,
+                                        'domain-workspace',
+                                        'integration-domain-workspace-loading',
+                                        binding_registry_pagination,
+                                        binding_query_params,
+                                        binding_registry_pagination.allowed_per_page,
+                                        resource_label='Bindings',
+                                        rows_aria_label='Bindings per page',
+                                        control_name='integration-domain-bindings',
+                                        page_param='binding_page',
+                                        per_page_param='binding_per_page') }}
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</section>

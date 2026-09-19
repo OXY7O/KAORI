@@ -1,0 +1,34 @@
+rules:
+  - id: kaori-python-eval
+    languages: [python]
+    message: Avoid eval(); evaluate structured data with an explicit parser instead.
+    severity: ERROR
+    pattern: eval(...)
+
+  - id: kaori-python-exec
+    languages: [python]
+    message: Avoid exec(); executable source text is not an admitted KAORI runtime input.
+    severity: ERROR
+    pattern: exec(...)
+
+  - id: kaori-python-subprocess-shell
+    languages: [python]
+    message: Avoid subprocess execution with shell=True; pass an argument vector instead.
+    severity: ERROR
+    patterns:
+      - pattern: subprocess.$FUNC(..., shell=True, ...)
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: ^(run|Popen|call|check_call|check_output)$
+
+  - id: kaori-flask-debug-run
+    languages: [python]
+    message: Flask debug mode must not be enabled from committed application runtime code.
+    severity: ERROR
+    pattern: $APP.run(..., debug=True, ...)
+
+  - id: kaori-javascript-innerhtml-assignment
+    languages: [javascript]
+    message: Avoid direct innerHTML assignment; prefer textContent or explicit DOM construction.
+    severity: ERROR
+    pattern: $ELEMENT.innerHTML = $VALUE

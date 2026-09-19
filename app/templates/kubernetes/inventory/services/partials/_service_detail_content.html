@@ -1,0 +1,163 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/details/_detail_content.html" as detail %}
+{% import "components/technical_metadata_collection.html" as metadata_collection %}
+{% import "components/related_resource_collection.html" as related_collection %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/table.html" as table_ui %}
+<div data-kaori-detail-variant="full-workspace-modal"
+     data-kaori-detail-density="unified-resource-sheet"
+     data-kaori-inventory-detail="v10"
+     data-kaori-inventory-detail-layout="unified-resource-sheet"
+     class="{{ detail.expanded_workspace_outer_classes() }}">
+    <div class="{{ detail.expanded_workspace_shell_classes() }}">
+        {% set detail_description = "Access, backend, port, selected Pod, and network evidence from the committed snapshot." %}
+        {% call detail.workspace_header(detail_description, 'network') %}
+            {% call detail.header_identity_row() %}
+                {{ detail.inventory_title(service.name) }}
+                {{ table_label.metadata_label(service.cluster_name, 'building-2') }}
+                {{ table_label.metadata_label(service.namespace, 'folder-tree') }}
+                {{ table_label.metadata_label(service.type) }}
+                {{ table_label.status_indicator_label(service.backend.label, service.backend.tone, size='detail') }}
+            {% endcall %}
+        {% endcall %}
+        {{ detail.inspector_summary_strip([
+                {'label': 'Access Model', 'value': service.access_model, 'supporting': service.type, 'icon': 'globe-2', 'tone': 'brand'},
+                {'label': 'Ports', 'value': service.port_count, 'supporting': 'Declared Service ports', 'icon': 'plug-zap', 'tone': 'brand'},
+                {'label': 'Ready Endpoints', 'value': 'Not Applicable' if not service.endpoint_registration_applicable else (service.ready_endpoint_count if service.ready_endpoint_count is not none else 'Not Reported') , 'supporting': 'External DNS destination' if not service.endpoint_registration_applicable else (service.endpoint_source if service.endpoints_reported else 'Endpoint evidence unavailable'), 'icon': 'waypoints', 'tone': service.backend.tone},
+        {'label': 'Selected Pods', 'value': service.pod_count if service.pod_count is not none else 'Not Applicable', 'supporting': 'Selector matches' if service.pod_relationship_applicable else 'No Service selector', 'icon': 'package-check', 'tone': 'brand'}
+        ]) }}
+        <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+                {% call detail.inventory_section('Service Identity', 'badge-info', service.age, badge_size='detail', stretch=false, density='compact', description='Service identity, namespace ownership, type, lifecycle age, and collection context.') %}
+                    {{ detail.inventory_row('Cluster', service.cluster_name) }}
+                    {{ detail.inventory_row('Namespace', service.namespace) }}
+                    {{ detail.inventory_metadata_row('Service Type', service.type) }}
+                    {{ detail.inventory_row('Age', service.age) }}
+                    {{ detail.inventory_technical_row('Kubernetes UID', service.uid, copyable=true) }}
+                    {{ detail.inventory_row('Generation', service.generation) }}
+                    {{ detail.inventory_row('Created', service.created_at|user_datetime if service.created_at else 'Not Reported') }}
+                    {{ detail.inventory_row('Collected', service.collected_at|user_datetime if service.collected_at else 'Not Reported') }}
+                    <div class="mt-3">{{ operational_callout.render('Access Model Context', service.type_description, 'network', 'info') }}</div>
+                {% endcall %}
+                {% call detail.inventory_section('Network Identity', 'globe-2', service.access_model, badge_size='detail', stretch=false, density='compact', description='Cluster addressing, external exposure, ports, and IP-family evidence for this Service.') %}
+                    {{ detail.inventory_fact_grid([
+                                        {'label': 'Cluster IP', 'value': service.cluster_ip, 'copyable': true},
+                                        {'label': 'Cluster IPs', 'value': service.cluster_ips|join(', ') if service.cluster_ips else ('Not Applicable' if service.type == 'Headless' else 'Not Configured')},
+                    {'label': 'Declared External IPs', 'value': service.declared_external_ips|join(', ') if service.declared_external_ips else 'Not Configured'},
+                    {'label': 'Load Balancer Addresses', 'value': service.load_balancer_addresses|join(', ') if service.load_balancer_addresses else (('No Address Assigned' if service.load_balancer_status_reported else 'Not Reported') if service.type == 'LoadBalancer' else 'Not Applicable')},
+                    {'label': 'External Name', 'value': service.external_name},
+                    {'label': 'IP Families', 'value': service.ip_families|join(', ') if service.ip_families else 'Not Reported'},
+                    {'label': 'Load Balancer Class', 'value': service.load_balancer_class},
+                    {'label': 'Allocate LB NodePorts', 'value': 'Enabled' if service.allocate_load_balancer_node_ports is true else ('Disabled' if service.allocate_load_balancer_node_ports is false else 'Not Reported')}
+                    ], columns=2) }}
+                {% endcall %}
+            </div>
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+                {% call detail.inventory_section('Backend Registration', 'waypoints', service.backend.label, 'status', service.backend.tone, badge_size='detail', stretch=false, density='compact', description='Endpoint and selector evidence that determines whether traffic has registered backends.') %}
+                    {{ detail.inventory_fact_grid([
+                                        {'label': 'Registration State', 'value': service.backend.label, 'supporting': service.backend.supporting},
+                                        {'label': 'Evidence Source', 'value': 'Not Applicable' if service.type == 'ExternalName' else service.endpoint_source},
+                                        {'label': 'Ready Addresses', 'value': service.ready_endpoint_count if service.ready_endpoint_count is not none else 'Not Reported'},
+                                        {'label': 'Not-Ready Addresses', 'value': service.not_ready_endpoint_count if service.not_ready_endpoint_count is not none else 'Not Reported'},
+                                        {'label': 'Selector Rules', 'value': service.selector|length if service.selector_applicable else 'Not Applicable'},
+                                        {'label': 'Selected Pods', 'value': service.pod_count if service.pod_count is not none else 'Not Applicable'}
+                                        ], columns=3) }}
+                    {% if service.selector_entries %}
+                        <div class="mt-3">{{ metadata_collection.render('Service Selectors', service.selector_entries, 'scan-search', 'No Service Selectors', 'No Pod selector is declared for this Service.', 'Selectors remain factual matching evidence.', compact=true) }}</div>
+                    {% elif service.selector_applicable %}
+                        <div class="mt-3">{{ detail.empty_evidence('No Service Selector Configured', 'Backend registration for this Service is managed independently from Pod label selection.', 'scan-search') }}</div>
+                    {% endif %}
+                {% endcall %}
+                {% call detail.inventory_section('Traffic Configuration', 'sliders-horizontal', service.ip_family_policy, badge_size='detail', stretch=false, density='compact', description='Traffic policy, session affinity, IP-family behavior, and publication settings.') %}
+                    {{ detail.inventory_fact_grid([
+                                        {'label': 'IP Family Policy', 'value': service.ip_family_policy},
+                                        {'label': 'Session Affinity', 'value': service.session_affinity},
+                                        {'label': 'Internal Traffic Policy', 'value': service.internal_traffic_policy},
+                                        {'label': 'External Traffic Policy', 'value': service.external_traffic_policy},
+                                        {'label': 'Publish Not-Ready', 'value': 'Enabled' if service.publish_not_ready_addresses else 'Disabled'},
+                                        {'label': 'Health Check NodePort', 'value': service.health_check_node_port or 'Not Configured'}
+                                        ], columns=2) }}
+                    {{ detail.inventory_note('Traffic policies and publication configuration remain factual evidence until evaluated against an explicit governance policy.', 'info') }}
+                {% endcall %}
+            </div>
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="plug-zap" class="h-4 w-4"></i></span>
+                        <div>
+                            <h4 class="text-sm font-semibold text-content-primary">Port Mappings</h4>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Declared Service ports, target ports, protocols, application protocols, and NodePort assignments.</p>
+                        </div>
+                    </div>
+                    {{ table_label.metadata_label(service.port_count ~ ' ' ~ ('Port' if service.port_count == 1 else 'Ports') ) }}
+                </header>
+                {% if service.ports %}
+                    <div class="overflow-x-auto">
+                        <table class="{{ table_ui.table_classes('min-w-[56rem]') }}">
+                            <caption class="sr-only">Declared port mappings for Service {{ service.name }}.</caption>
+                            <thead class="{{ table_ui.head_classes() }}">
+                                <tr>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Name</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Service Port</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Target Port</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Protocol</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">NodePort</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">App Protocol</th>
+                                </tr>
+                            </thead>
+                            <tbody class="{{ table_ui.body_classes() }}">
+                                {% for port in service.ports %}
+                                    <tr class="{{ table_ui.row_classes() }}">
+                                        <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ port.name }}</span></td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ port.port }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ port.target_port }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ port.protocol }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ port.node_port or 'Not Configured' }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ port.app_protocol }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="p-4">{{ detail.empty_evidence('No Ports Configured', 'The committed Service specification contains no port mapping.', 'plug-zap') }}</div>
+                {% endif %}
+            </section>
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+                {% if not service.endpoint_registration_applicable %}
+                    <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                        <div class="p-4">{{ detail.empty_evidence('Endpoint Registration Not Applicable', 'ExternalName Services delegate resolution to DNS and do not use Service endpoint registration.', 'external-link') }}</div>
+                    </section>
+                {% elif service.endpoints_reported %}
+                    {{ related_collection.inventory_render('Endpoint Addresses', 'Registered backend addresses from EndpointSlice or Endpoints evidence.', service.endpoint_resources, service.ready_endpoint_count + service.not_ready_endpoint_count, 'waypoints', 'No Endpoint Addresses', 'No registered backend address is represented in the committed snapshot.', service.endpoints_truncated, embedded=true) }}
+                {% else %}
+                    <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                        <div class="p-4">{{ detail.empty_evidence('Endpoint Evidence Not Reported', 'EndpointSlice and Endpoints evidence was unavailable during the committed inventory collection.', 'database-zap') }}</div>
+                    </section>
+                {% endif %}
+                {% if service.pod_relationship_applicable %}
+                    {{ related_collection.inventory_render('Selected Pods', 'Pods matching the Service selector in the current committed snapshot.', service.pods, service.pod_count, 'package-check', 'No Selected Pods', 'No committed Pod label set matches the Service selector.', service.pods_truncated, url_for('inventory.pods', cluster_id=service.cluster_id, namespace=service.namespace) , 'Open Pod Inventory', embedded=true) }}
+                {% else %}
+                    <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                        <div class="p-4">{{ detail.empty_evidence('Pod Selection Not Applicable', 'This Service does not declare a Pod selector. Backend registration is external or manually managed.', 'package-x') }}</div>
+                    </section>
+                {% endif %}
+            </div>
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+                {{ metadata_collection.render('Service Labels', service.labels, 'tags', 'No Service Labels', 'No Service labels were reported in the committed snapshot.', 'Labels remain factual identity and selection metadata.', embedded=true) }}
+                {{ metadata_collection.render('Service Annotations', service.annotations, 'notebook-tabs', 'No Service Annotations', 'No Service annotations were reported in the committed snapshot.', 'Annotations may influence controller and integration behavior.', embedded=true) }}
+            </div>
+            <section class="space-y-3">
+                <h4 class="text-sm font-semibold text-content-primary">Operational Context</h4>
+                <div class="grid gap-3 lg:grid-cols-2">
+                    {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reports Service configuration and registered backend evidence. It does not prove application reachability, traffic health, or public exposure.', 'database', 'info') }}
+                    {{ operational_callout.render(service.operational_context.title, service.operational_context.description, service.operational_context.icon, service.operational_context.tone, 'semantic') }}
+                </div>
+            </section>
+        </div>
+    </div>
+</div>

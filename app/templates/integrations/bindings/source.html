@@ -1,0 +1,41 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% block title %}Bind {{ provider.label }} Source · KAORI{% endblock %}
+{% block dashboard_content %}
+    <div class="kaori-integration-semantic space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro(provider.icon, 'Integration Binding', 'route') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Bind {{ provider.label }} Source</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Bind reusable provider connections to governed scopes with isolated selectors and explicit ownership boundaries.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('boxes', cluster.name if cluster else 'Scope unavailable') }}
+                            {{ page_hero.meta_label('server-cog', source_options|length ~ ' Existing Sources') }}
+                            {{ page_hero.meta_label('fingerprint', 'Selector Required for Shared Sources') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Binding Posture</p>
+                                <p class="{{ page_hero.context_panel_title_classes() }}">Reuse Before Registration</p>
+                            </div>
+                            {{ integration_status(scope_row.coverage_status if scope_row and scope_row.source else 'validation_required', scope_row.coverage_label if scope_row and scope_row.source else 'Selection Required') }}
+                        </div>
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric('database', 'Connection Records', source_options|length, 'Registered once and reusable') }}
+                            {{ page_hero.context_metric('link-2', 'Current Binding', 1 if scope_row and scope_row.source else 0, 'One primary source per scope') }}
+                        </div>
+                        <a href="{{ url_for(provider.registry_endpoint) }}"
+                           class="{{ page_hero.context_single_action_classes() }}"><i data-lucide="arrow-left" class="h-4 w-4"></i>Back to {{ provider.label }} Registry</a>
+                    </div>
+                </aside>
+            </div>
+        </section>
+        {% include 'integrations/bindings/partials/_workspace.html' %}
+    </div>
+{% endblock %}

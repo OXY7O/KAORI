@@ -1,0 +1,94 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+<section class="{{ table_ui.block_classes() }}"
+         aria-labelledby="recent-reports-title">
+    <header class="{{ table_ui.block_header_classes() }}">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                    <i data-lucide="file-text" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 id="recent-reports-title"
+                        class="{{ table_ui.block_title_classes() }}">Recent Generated Reports</h2>
+                    <p class="{{ table_ui.block_description_classes() }}">Latest artifact records across governed cluster scopes.</p>
+                </div>
+            </div>
+            <a href="{{ url_for('reports.generated_reports') }}"
+               class="{{ table_ui.action_classes() }}">
+                <i data-lucide="folder-open" class="h-4 w-4" aria-hidden="true"></i>
+                View All Reports
+            </a>
+        </div>
+    </header>
+    {% if payload.recent_reports %}
+        <div class="overflow-x-auto">
+            <table class="{{ table_ui.table_classes('min-w-[68rem]') }}">
+                <thead class="{{ table_ui.head_classes() }}">
+                    <tr>
+                        <th class="{{ table_ui.header_cell_classes() }}">Report</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Cluster</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Format</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Status</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Generated</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Size</th>
+                        <th class="{{ table_ui.header_cell_classes(true) }}">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="{{ table_ui.body_classes() }}">
+                    {% for report in payload.recent_reports %}
+                        <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <div class="flex min-w-[15rem] items-start gap-3">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="{{ report.icon|default('file-text') }}" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="max-w-xs truncate text-sm font-semibold leading-5 text-content-primary"
+                                           title="{{ report.name }}">{{ report.name }}</p>
+                                        <p class="mt-0.5 truncate text-xs leading-5 text-content-muted"
+                                           title="{{ report.report_type_label }}">{{ report.report_type_label }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <div class="min-w-[12rem]">
+                                    <p class="truncate text-sm font-semibold text-content-primary"
+                                       title="{{ report.cluster_name }}">{{ report.cluster_name }}</p>
+                                    <p class="mt-0.5 truncate text-xs text-content-muted"
+                                       title="{{ report.scope }}">{{ report.scope }}</p>
+                                </div>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                {{ table_label.metadata_label(report.output_format, 'file-output', false, 'detail') }}
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                {{ table_label.status_indicator_label(report.status_label, report.status_tone, none, 'detail') }}
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <span class="whitespace-nowrap text-sm text-content-secondary">{{ report.created_at|user_datetime }}</span>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <span class="whitespace-nowrap text-sm text-content-secondary">{{ report.file_size }}</span>
+                            </td>
+                            <td class="{{ table_ui.cell_classes(true) }}">
+                                <a href="{{ report.href }}" class="{{ table_ui.action_classes() }}">View</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        {% set empty_state_icon = "file-plus-2" %}
+        {% set empty_state_label = "No Data" %}
+        {% set empty_state_title = "No Generated Reports Yet" %}
+        {% set empty_state_description = "Generate the first report to establish artifact history and reporting evidence for this workspace." %}
+        {% set empty_state_action_url = url_for('reports.generate_report') %}
+        {% set empty_state_action_label = "Generate Report" %}
+        {% set empty_state_action_icon = "plus-circle" %}
+        {% set empty_state_min_height = "min-h-[180px]" %}
+        {% include 'components/states/_empty_state.html' %}
+    {% endif %}
+</section>

@@ -1,0 +1,206 @@
+{% import "components/pagination.html" as pagination_ui %}
+{% import "components/table.html" as table_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% macro registry_header(title, description, icon, loading_id, title_id=None, tone='brand', action_html='') -%}
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                {{ integration_ui.palette_icon(icon, tone, size='lg', rounded='xl') }}
+                <div class="min-w-0">
+                    <h2 {% if title_id %}id="{{ title_id }}"{% endif %}
+                        class="text-base font-semibold text-content-primary">{{ title }}</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">{{ description }}</p>
+                </div>
+            </div>
+            {% if action_html %}<div class="flex shrink-0 flex-wrap items-center gap-2">{{ action_html }}</div>{% endif %}
+        </div>
+        {{ loading_bar.render(loading_id, label='Refreshing ' ~ title) }}
+    </header>
+{%- endmacro %}
+{% macro search_field(field_id, name, value, placeholder, label='Search Connection') -%}
+    <div>
+        <label class="{{ integration_ui.control_label_classes() }}"
+               for="{{ field_id }}">{{ label }}</label>
+        <div class="relative">
+            <i data-lucide="search"
+               class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+               aria-hidden="true"></i>
+            <input id="{{ field_id }}"
+                   type="search"
+                   name="{{ name }}"
+                   value="{{ value }}"
+                   placeholder="{{ placeholder }}"
+                   class="{{ integration_ui.search_classes() }}">
+        </div>
+    </div>
+{%- endmacro %}
+{% macro select_field(field_id, name, value, label, options, all_label) -%}
+    <div>
+        <label class="{{ integration_ui.control_label_classes() }}"
+               for="{{ field_id }}">{{ label }}</label>
+        <select id="{{ field_id }}"
+                name="{{ name }}"
+                class="{{ integration_ui.control_classes() }}">
+            <option value="">{{ all_label }}</option>
+            {% for option in options %}
+                {% set option_value = option.value if option.value is defined else option %}
+                {% set option_label = option.label if option.label is defined else (option|replace('_', ' ')|title) %}
+                <option value="{{ option_value }}"
+                        {% if value == option_value %}selected{% endif %}>{{ option_label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+{%- endmacro %}
+{% macro pagination_footer(
+    pagination,
+    endpoint,
+    target,
+    indicator,
+    query_params,
+    item_label='Connections',
+    swap='innerHTML',
+    page_param='page',
+    per_page_param='per_page'
+    ) -%}
+    <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex flex-wrap items-center gap-3 text-content-muted">
+            <span>Showing <strong class="font-semibold text-content-primary">{{ pagination.start_item }}–{{ pagination.end_item }}</strong> of <strong class="font-semibold text-content-primary">{{ pagination.total_items }}</strong> {{ item_label }}</span>
+            <div class="inline-flex items-center gap-2">
+                <span class="font-semibold text-content-secondary">Rows</span>
+                <form method="get"
+                      action="{{ url_for(endpoint) }}"
+                      hx-get="{{ url_for(endpoint) }}"
+                      hx-target="{{ target }}"
+                      hx-swap="{{ swap }}"
+                      hx-indicator="{{ indicator }}"
+                      hx-push-url="true"
+                      class="inline-flex items-center">
+                    <input type="hidden" name="{{ page_param }}" value="1">
+                    {% for name, value in query_params.items() %}
+                        {% if name not in [page_param, per_page_param] %}
+                            <input type="hidden" name="{{ name }}" value="{{ value }}">
+                        {% endif %}
+                    {% endfor %}
+                    <select name="{{ per_page_param }}"
+                            aria-label="{{ item_label|title }} per page"
+                            data-kaori-auto-submit
+                            class="{{ pagination_ui.page_size_classes() }}">
+                        {% for option in pagination.allowed_per_page %}
+                            <option value="{{ option }}"
+                                    {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+        </div>
+        <nav class="flex flex-wrap items-center gap-2"
+             aria-label="{{ item_label|title }} pagination">
+            {% set args = query_params.copy() %}
+            {% set _ = args.update({per_page_param: pagination.per_page}) %}
+            {% if pagination.has_prev %}
+                {% set prev_args = args.copy() %}
+                {% set _ = prev_args.update({page_param: pagination.prev_page}) %}
+                {% set prev_url = url_for(endpoint, **prev_args) %}
+                <a href="{{ prev_url }}"
+                   hx-get="{{ prev_url }}"
+                   hx-target="{{ target }}"
+                   hx-swap="{{ swap }}"
+                   hx-indicator="{{ indicator }}"
+                   hx-push-url="true"
+                   class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
+                      aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+            {% endif %}
+            {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, page_param, hx_target=target, hx_indicator=indicator, endpoint=endpoint, query_params=args, hx_swap=swap, href_endpoint=endpoint) }}
+            {% if pagination.has_next %}
+                {% set next_args = args.copy() %}
+                {% set _ = next_args.update({page_param: pagination.next_page}) %}
+                {% set next_url = url_for(endpoint, **next_args) %}
+                <a href="{{ next_url }}"
+                   hx-get="{{ next_url }}"
+                   hx-target="{{ target }}"
+                   hx-swap="{{ swap }}"
+                   hx-indicator="{{ indicator }}"
+                   hx-push-url="true"
+                   class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
+                      aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+            {% endif %}
+        </nav>
+    </footer>
+{%- endmacro %}
+{% macro connection_registry_colgroup() -%}
+    <colgroup>
+        <col class="w-[26%]">
+        <col class="w-[24%]">
+        <col class="w-[15%]">
+        <col class="w-[19%]">
+        <col class="w-[8%]">
+        <col class="w-[8%]">
+    </colgroup>
+{%- endmacro %}
+{% macro connection_registry_head() -%}
+    <thead class="{{ table_ui.head_classes() }}">
+        <tr>
+            <th class="{{ table_ui.header_cell_classes() }}">Connection</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Endpoint / Scope</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Core Readiness</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Compatibility</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Bindings</th>
+            <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+        </tr>
+    </thead>
+{%- endmacro %}
+{% macro asset_coverage_colgroup() -%}
+    <colgroup>
+        <col class="w-[24%]">
+        <col class="w-[16%]">
+        <col class="w-[17%]">
+        <col class="w-[17%]">
+        <col class="w-[12%]">
+        <col class="w-[14%]">
+    </colgroup>
+{%- endmacro %}
+{% macro asset_coverage_head(asset_label, api_label) -%}
+    <thead class="{{ table_ui.head_classes() }}">
+        <tr>
+            <th class="{{ table_ui.header_cell_classes() }}">{{ asset_label }}</th>
+            <th class="{{ table_ui.header_cell_classes() }}">{{ api_label }}</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Metrics Source</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Alert Source</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Coverage</th>
+            <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+        </tr>
+    </thead>
+{%- endmacro %}
+{% macro scope_coverage_colgroup() -%}
+    <colgroup>
+        <col class="w-[24%]">
+        <col class="w-[14%]">
+        <col class="w-[20%]">
+        <col class="w-[20%]">
+        <col class="w-[10%]">
+        <col class="w-[12%]">
+    </colgroup>
+{%- endmacro %}
+{% macro scope_coverage_head() -%}
+    <thead class="{{ table_ui.head_classes() }}">
+        <tr>
+            <th class="{{ table_ui.header_cell_classes() }}">Consumer Asset</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Environment</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Primary Source</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Consumer Binding</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Coverage</th>
+            <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+        </tr>
+    </thead>
+{%- endmacro %}
+{% macro connection_registry_table_classes() -%}
+    {{ table_ui.table_classes() }}
+{%- endmacro %}
+{% macro asset_coverage_table_classes() -%}
+    {{ table_ui.table_classes() }}
+{%- endmacro %}

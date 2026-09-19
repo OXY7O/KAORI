@@ -1,0 +1,71 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+<section id="services-inventory-card" class="{{ table_ui.block_classes() }}">
+    {% set inventory_header_actions = none %}
+    {% if selected_cluster_id or selected_namespace or selected_type or search %}
+        {% set inventory_header_actions %}
+            {{ registry_ui.clear_filters_action(url_for('inventory.services', per_page=pagination.per_page) ,
+            table_ui.action_classes(),
+            hx_get=url_for('inventory.services', per_page=pagination.per_page, partial_mode='page_workspace'),
+            target='#services-page-workspace',
+            indicator='#services-table-loading'
+            ) }}
+        {% endset %}
+    {% endif %}
+    {{ table_ui.inventory_block_header('route',
+        'Service Inventory',
+        'Service identity, access models, port mappings, and backend registration evidence collected from connected clusters.',
+        'services-table-loading',
+        'Refreshing Service Inventory',
+        url_for('integrations.kubernetes') ,
+    'Open Cluster List',
+    header_actions=inventory_header_actions
+    ) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        <form hx-get="{{ url_for('inventory.services') }}"
+              hx-target="#services-page-workspace"
+              hx-swap="outerHTML"
+              hx-trigger="change, keyup changed delay:500ms from:find input[name='search']"
+              hx-indicator="#services-table-loading"
+              aria-label="Service inventory filters"
+              class="{{ table_ui.filter_layout_classes() }}">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+            <input type="hidden" name="partial_mode" value="page_workspace">
+            <div>
+                <label class="{{ table_ui.filter_label_classes() }}">Cluster</label>
+                <select name="cluster_id" class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Clusters</option>
+                    {% for cluster in clusters %}
+                        <option value="{{ cluster.id }}"
+                                {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="{{ table_ui.filter_label_classes() }}">Namespace</label>
+                <select name="namespace" class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Namespaces</option>
+                    {% for ns in inventory.namespaces %}
+                        <option value="{{ ns }}" {% if selected_namespace == ns %}selected{% endif %}>{{ ns }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="{{ table_ui.filter_label_classes() }}">Service Type</label>
+                <select name="type" class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Types</option>
+                    {% for type_name in inventory.service_filter_types %}
+                        <option value="{{ type_name }}"
+                                {% if selected_type == type_name %}selected{% endif %}>{{ type_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="{{ table_ui.filter_label_classes() }}">Search Services</label>
+                {{ table_ui.search_field('search', search, 'Search Service, namespace, type, IP, or port') }}
+            </div>
+        </form>
+    </div>
+    <div id="services-table-content">{% include "kubernetes/inventory/services/partials/_table_content.html" %}</div>
+</section>

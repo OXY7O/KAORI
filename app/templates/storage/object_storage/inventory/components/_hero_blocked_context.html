@@ -1,0 +1,16 @@
+{% import "components/page_hero.html" as page_hero %}
+{% set storage_blocked_scope = storage_blocked_scope|default('Inventory Readiness') %}
+{% set storage_blocked_title = storage_blocked_title|default('Object Storage Setup Required') %}
+{% set storage_blocked_info = storage_blocked_info|default('Register a Storage integration to activate committed Object Storage inventory in KAORI.') %}
+{{ page_hero.blocked_context_body(storage_blocked_scope,
+storage_blocked_title,
+[
+('server', 'Registered Systems', '0', 'No Object Storage system registered') ,
+('circle-dot-dashed', 'Workspace State', 'Blocked', 'Storage integration is required', 'text-sm font-semibold leading-5')
+],
+storage_blocked_info,
+none,
+'warning',
+'lock-keyhole',
+'triangle-alert'
+) }}

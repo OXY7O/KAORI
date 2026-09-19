@@ -1,0 +1,1 @@
+"""Kubernetes inventory topology domain."""

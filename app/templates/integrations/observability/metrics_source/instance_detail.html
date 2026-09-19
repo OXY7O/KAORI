@@ -1,0 +1,88 @@
+{% extends "layouts/app.html" %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% set metrics_source_label = provider.label %}
+{% block title %}{{ instance.name }} · {{ metrics_source_label }} · KAORI{% endblock title %}
+{% block dashboard_content %}
+    {% set readiness = instance.readiness_status or 'validation_required' %}
+    {% set source_posture = 'Ready' if readiness == 'ready' else ('Attention' if readiness in ['degraded', 'blocked'] else 'Configured') %}
+    <div class="kaori-integration-semantic space-y-6"
+         x-data="integrationWorkspaceTabs(['configuration', 'validation', 'runtime', 'scope'], 'configuration', 'metrics-source-detail-tabs')"
+         x-on:hashchange.window="syncTab()"
+         x-on:popstate.window="syncTab()">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro(provider.icon, metrics_source_label ~ ' Metrics Source', 'chart-spline') %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ instance.name }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review connection contracts, capability evidence, runtime health, consumer bindings, and resolution posture.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ') |title) }}
+                            {{ page_hero.meta_label('link-2', (bindings|length|string) ~ ' Bindings') }}
+                            {{ page_hero.meta_label('layers-3', (capability_summary.observed|default(0) |string) ~ ' Validated Capabilities') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ provider_detail_posture.render(metrics_source_label ~ " connection posture",
+                                metrics_source_label ~ " API Readiness",
+                                source_posture,
+                                "shield-check",
+                                metrics_source_label ~ " API",
+                                readiness|replace("_", " ") |title,
+                "Produced by Full Validation",
+                "layers-3",
+                "Validated Capabilities",
+                capability_summary.observed|default(0),
+                "Provider-neutral core capabilities",
+                url_for("integrations.metrics_sources", provider_key=provider.key)
+                ) }}
+            </div>
+        </section>
+        <section id="metrics-source-detail-tabs"
+                 class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
+            {{ framed_workspace_tabs.render([
+                        ('configuration', 'Configuration', 'settings-2', instance.environment|default('') |title),
+            ('validation', 'Validation & Capabilities', 'scan-search', (instance.readiness_status or 'validation_required')|replace('_', ' ')|title),
+            ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label|default('Not Observed')),
+            ('scope', 'Bindings & Consumers', 'waypoints', (binding_rows|default([])|length|string) ~ ' Bindings'),
+            ],
+            prefix='metrics-source',
+            aria_label=metrics_source_label ~ ' Connection Domains'
+            ) }}
+            <div class="p-4 sm:p-5 lg:p-6">
+                <div id="metrics-source-panel-configuration"
+                     role="tabpanel"
+                     aria-labelledby="metrics-source-tab-configuration"
+                     x-show="activeTab === 'configuration'">
+                    {% include "integrations/observability/metrics_source/partials/_detail_configuration.html" %}
+                </div>
+                <div id="metrics-source-panel-validation"
+                     role="tabpanel"
+                     aria-labelledby="metrics-source-tab-validation"
+                     x-show="activeTab === 'validation'"
+                     x-cloak>
+                    {% include "integrations/observability/metrics_source/partials/_detail_validation.html" %}
+                </div>
+                <div id="metrics-source-panel-runtime"
+                     role="tabpanel"
+                     aria-labelledby="metrics-source-tab-runtime"
+                     x-show="activeTab === 'runtime'"
+                     x-cloak>
+                    {% include "integrations/observability/metrics_source/partials/_detail_runtime.html" %}
+                </div>
+                <div id="metrics-source-panel-scope"
+                     role="tabpanel"
+                     aria-labelledby="metrics-source-tab-scope"
+                     x-show="activeTab === 'scope'"
+                     x-cloak>
+                    {% include "integrations/observability/metrics_source/partials/_detail_scope.html" %}
+                </div>
+            </div>
+        </section>
+        {% include "integrations/observability/metrics_source/partials/_delete_confirmation_modal.html" %}
+        <script src="{{ url_for('static', filename='js/destructive_confirmation_modal.js') }}"
+                defer></script>
+    </div>
+{% endblock dashboard_content %}

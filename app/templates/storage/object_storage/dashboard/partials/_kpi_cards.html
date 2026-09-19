@@ -1,0 +1,13 @@
+{% import "components/operational_metric_card.html" as operational_metric_card %}
+<div id="object-storage-dashboard-kpis"
+     class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
+     aria-live="polite">
+    {% for kpi in dashboard.kpis %}
+        {{ operational_metric_card.render(label=kpi.label,
+                value=kpi.value,
+                description=kpi.description,
+                icon=kpi.icon,
+                source_label='Committed Evidence',
+                scope_label='Selected System' if dashboard.selected_system else 'Fleet') }}
+    {% endfor %}
+</div>

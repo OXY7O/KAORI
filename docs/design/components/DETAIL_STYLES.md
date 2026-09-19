@@ -1,0 +1,159 @@
+# KAORI Detail Styles
+
+## Detail Style 1 — Inline Expanded Detail
+
+Semantic key: `inline-expanded`
+
+Shared owners:
+
+- `components/details/_expandable_row.html`
+- `components/details/_detail_content.html`
+- `app/static/js/detail_rows.js`
+
+Use this style only for short row-owned evidence that remains easy to scan inside the table context. It is retained for compact activity, audit, and small evidence tables.
+
+Do not use Inline Expanded Detail for Kubernetes Inventory resources with dense identity, runtime, relationship, metadata, and operational-context sections.
+
+## Detail Style 2 — Full Workspace Modal
+
+Semantic key: `full-workspace-modal`
+
+Shared owners:
+
+- `components/resource_detail_modal.html`
+- `components/details/_detail_content.html`
+- `app/static/js/detail_rows.js`
+
+Node, Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration Inventory use this style.
+
+### Required behavior
+
+- Kubernetes Inventory uses `resource_detail_modal.inventory_host(...)` for one shared modal contract;
+- `View Details` opens one near-fullscreen modal without changing table height;
+- desktop Inventory width is bounded by `92rem` and available viewport space;
+- mobile uses the available viewport as a full workspace;
+- header, summary strip, and footer remain visible while the detail body scrolls;
+- Escape, backdrop, and explicit Close dismiss the modal;
+- keyboard focus is trapped inside the dialog and returned to the opener;
+- background workspace scrolling is locked while open;
+- URL query state uses `detail=<resource-id>`;
+- browser Back closes the modal and Forward reopens it;
+- refresh/deep-link can load the detail even when its row is not on the current page;
+- filter, page, Rows, and scroll position remain unchanged;
+- loading and error states stay inside the modal;
+- detail root uses `data-kaori-detail-variant="full-workspace-modal"`;
+- fetched detail marks its resource header with `data-resource-detail-header`;
+- resource title, metadata, and primary lifecycle/readiness/collection state use the shared `detail.header_identity_row()` owner as one grouped identity row;
+- the supporting description renders below that identity row; do not float the primary state onto a second badge line or detach it beneath the leading icon/modal outer edge;
+- the summary uses the shared `data-resource-detail-summary` owner;
+- Kubernetes Inventory details and Object Storage System/Bucket details declare `data-kaori-inventory-detail="v10"` and `data-kaori-inventory-detail-layout="unified-resource-sheet"`;
+- resource headers use `detail.workspace_header(...)` instead of hand-authored heading/font classes;
+- the resource title is rendered through `detail.inventory_title(...)` inside `detail.header_identity_row()` so title, metadata, and primary state form one scan line.
+
+### Typography hierarchy
+
+Inventory View Details uses one predictable scale across Node, Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration:
+
+```text
+Resource title       text-xl / semibold
+Summary value        text-base / semibold
+Section/card title   text-sm / semibold
+Field label          text-sm / regular / secondary
+Field value          text-sm / medium / primary
+Supporting copy      text-xs / regular / muted
+```
+
+Technical identifiers use the same `text-sm / medium` body value scale through `technical_value.render(..., size='body')`. Inventory field labels and factual values intentionally share the same 14px body scale; hierarchy comes from tone and weight, not arbitrary font-size jumps. Supporting copy alone steps down to `text-xs`. Do not create smaller monospace or arbitrary-size value typography inside Inventory details. Metadata pair collections follow the same regular-secondary-label / medium-primary-value hierarchy.
+
+### Content order
+
+```text
+Resource Header
+Sticky Summary Strip
+Resource Profile Workspace
+Relationships and Technical Metadata
+Committed Snapshot Boundary
+State-Aware Guidance
+Optional Related Operation
+```
+
+## Retired Resource Profile Layout
+
+Resource Profile V5 is retained here only as migration history. New Inventory detail work must use Unified Resource Sheet V10.
+
+- mark Inventory implementations with `data-kaori-detail-density="resource-profile"`;
+- use independent vertical stacks rather than one equal-height row;
+- use natural-height cards with `stretch=false`;
+- use asymmetric splits when one evidence domain needs more width;
+- Kubernetes Inventory uses `detail.inventory_section(...)` for natural-height evidence groups;
+- use `detail.inventory_row(...)`, `detail.inventory_technical_row(...)`, and `detail.inventory_fact_grid(...)` for aligned factual evidence;
+- Inventory field values are left-aligned in a consistent second column to avoid large eye-travel across wide modal cards;
+- grouped fact grids use one shared boundary with internal separators instead of one rounded tile per value;
+- keep large tables, relationships, metadata, and Operational Context full width;
+- do not add fixed or minimum heights to mask content imbalance.
+
+Resource Profile is no longer the canonical Inventory detail presentation.
+
+### Inventory evidence surface rules
+
+The Inventory modal is an evidence workspace, not a card gallery. Keep the visual hierarchy restrained:
+
+```text
+Header identity row
+Summary strip
+Two-column natural-height evidence sections
+Full-width relationships / large collections
+Operational boundary and next action
+```
+
+Use one section boundary per evidence domain. Do not wrap every metric in a standalone rounded card. Large key inventories use the grouped shared collection surface so dozens of keys remain scannable without producing a wall of floating tiles. Identity labels and factual values share the same `text-sm` body scale. Labels use medium secondary text, values use medium primary text, section titles use semibold, and only supporting copy steps down to `text-xs`.
+
+### Inventory Resource Profile (V5)
+
+Kubernetes Inventory details use a contained resource-profile layout built for operational scanning.
+
+- The modal is intentionally narrower than the viewport (`78rem` maximum) so field labels and values remain readable and eye travel stays bounded.
+- The modal uses content-driven height up to the viewport limit; short resources do not look artificially empty while long resources scroll inside the workspace.
+- Evidence domains use one natural-height card each. Do not create one card per metric or one borderless wall of rows.
+- Two independent vertical stacks are preferred for the primary evidence area so a taller Identity card does not create empty space beneath a shorter Capacity card.
+- Field labels and values share the same `text-sm` body scale. Labels are secondary/regular; values are primary/medium.
+- Summary values use `text-base`; the resource title uses `text-xl`; supporting guidance stays `text-xs`.
+- Large metadata and key collections use one contained natural-height list surface with row dividers. The modal body remains the only vertical scrolling context.
+- KAORI violet is reserved for icons and selected emphasis. Factual surfaces remain neutral; semantic colors are used only for state.
+- Repeated committed-snapshot boundary copy should not be duplicated inside every resource section when the modal footer already establishes that boundary.
+
+
+## Retired Adaptive Detail Stacks
+
+The historical `data-kaori-detail-density="adaptive-stacks"` contract is retained only as migration terminology for earlier Inventory detail surfaces. New Inventory detail work uses Unified Resource Sheet V10.
+Historical adaptive-stack implementations used `detail.evidence_grid(...)` with `stretch=false`; those tokens remain documented for migration audits only.
+
+
+## Retired Kubernetes Inventory Horizontal Section Stack V6
+
+V6 introduced full-width horizontal evidence bands and is retained as migration history. V10 keeps the useful horizontal-band idea but unifies section geometry, typography, summary treatment, metadata collections, and relationship collections across Inventory domains.
+
+
+## Inventory Unified Resource Sheet V10
+
+Kubernetes Inventory and Object Storage Inventory detail surfaces use Unified Resource Sheet V10. This includes Overview-level resource details, not only resource-table rows. The objective is one coherent resource profile rather than a gallery of unrelated cards.
+
+- the header owns the resource name and a quiet inline context row for scope, kind/provider, environment, and primary state;
+- the four-item operational summary remains one connected strip and uses the shared `detail.inspector_summary_strip(...)` geometry;
+- the evidence body is one rounded resource sheet with horizontal evidence bands rather than peer cards with mismatched heights;
+- every evidence band uses the same left identity rail and the same proportional `text-sm` label/value scale;
+- the desktop identity rail uses a consistent `20rem` width so section titles, descriptions, and state/count badges have breathing room without forcing the factual value area into narrow card-like columns;
+- every left identity rail includes a concise evidence-scope description so the rail remains informative even when the right evidence body is tall;
+- desktop state/count badges live with the section identity rail instead of floating above the factual values, while mobile keeps the badge in the rail header;
+- the left rail uses a soft elevated background and icon tile without a separate violet edge stripe, keeping the surface calmer while preserving section identity;
+- long identity, endpoint, hostname, UID, image, storage, provider, and timestamp values receive full-width or desktop-nowrap treatment when their expected length requires it;
+- technical values stay on normal proportional KAORI typography. Monospace is not introduced merely because a value is machine-oriented;
+- factual label/value rows keep a bottom separator, including the final visible row in a group, so horizontal rhythm does not stop halfway through a section;
+- informational metadata notes use the shared icon note treatment instead of plain trailing text;
+- labels, annotations, key inventories, provider metadata, and related-resource collections use full-width natural-height list bands; no nested vertical scrolling is introduced;
+- long metadata, taints, selectors, endpoints, and provider-specific evidence may wrap on smaller viewports, but desktop layouts use available width before wrapping;
+- semantic state uses green/amber/red only for actual state signals. Violet remains the navigation and structural accent;
+- the modal body is the single scrolling context. Sections do not create independent scroll regions;
+- Committed Snapshot Boundary and state-aware Operational Context remain the final peer callouts below the resource sheet.
+
+V10 replaces the remaining Inventory card-grid and V6 per-section-card variants. The Unified Resource Sheet is the cross-domain reference pattern for Kubernetes Inventory and Object Storage Inventory because it produces stronger alignment, calmer typography, predictable long-value behavior, and one consistent visual language.

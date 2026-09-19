@@ -1,0 +1,36 @@
+<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+         aria-labelledby="reports-related-information-title">
+    <header class="border-b border-outline-subtle px-5 py-4">
+        <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="route" class="h-5 w-5"></i>
+            </span>
+            <div>
+                <h2 id="reports-related-information-title"
+                    class="text-base font-semibold leading-6 text-content-primary">Related KAORI Information</h2>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Open the workspaces that define report inputs, automation, templates, and artifact lifecycle.</p>
+            </div>
+        </div>
+    </header>
+    <div class="divide-y divide-outline-subtle">
+        {% for item in payload.related_information %}
+            <a href="{{ item.href }}"
+               class="flex items-start justify-between gap-3 px-5 py-3.5 transition hover:bg-surface-hover">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-content-primary">{{ item.label }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.description }}</p>
+                    </div>
+                </div>
+                <i data-lucide="chevron-right"
+                   class="mt-1 h-4 w-4 shrink-0 text-content-muted"
+                   aria-hidden="true"></i>
+            </a>
+        {% endfor %}
+    </div>
+</section>

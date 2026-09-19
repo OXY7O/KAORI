@@ -1,0 +1,62 @@
+{% import "components/page_hero.html" as page_hero %}
+<section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">
+            {% if active_tab == 'activity' %}
+                {% set eyebrow_label = "Authentication Evidence" %}
+                {% set eyebrow_icon = "activity" %}
+                {% set leading_icon = "scroll-text" %}
+                {% set summary = "Review recent authentication events, sign-in outcomes, and account access evidence for this identity." %}
+            {% elif active_tab == 'credentials' %}
+                {% set eyebrow_label = "Credential Security" %}
+                {% set eyebrow_icon = "key-round" %}
+                {% set leading_icon = "shield-check" %}
+                {% set summary = "Manage account credentials, session impact, recovery ownership, and audit controls for this identity." %}
+            {% else %}
+                {% set eyebrow_label = "Identity & Access" %}
+                {% set eyebrow_icon = "id-card" %}
+                {% set leading_icon = "user-round-cog" %}
+                {% set summary = "Review account identity, access posture, authentication source, role assignment, and recent sign-in state." %}
+            {% endif %}
+            {% call page_hero.intro(eyebrow_icon, eyebrow_label, leading_icon) %}
+                <h1 class="{{ page_hero.title_classes() }}">Account & Authentication</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">{{ summary }}</p>
+                <div class="{{ page_hero.metadata_row_classes() }}">
+                    {{ page_hero.meta_label(identity_context.icon, identity_context.provider_name) }}
+                    {{ page_hero.meta_label('shield', user_role) }}
+                    {{ page_hero.meta_label('circle-check' if current_user.account_is_active else 'circle-pause', 'Active Account' if current_user.account_is_active else 'Inactive Account') }}
+                </div>
+            {% endcall %}
+        </div>
+        <aside class="{{ page_hero.aside_classes() }}">
+            <div class="{{ page_hero.context_panel_classes() }}">
+                {% if active_tab == 'activity' %}
+                    {{ page_hero.context_header('Authentication Evidence', 'Latest Five Events', 'activity') }}
+                    <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                        {{ page_hero.context_metric('circle-check', 'Successful', activity_summary.success, 'Verified sign-ins') }}
+                        {{ page_hero.context_metric('circle-x', 'Failed', activity_summary.failed, 'Rejected attempts') }}
+                    </div>
+                    {{ page_hero.context_info('shield-check', 'Personal view only; full evidence remains in Activity Audit.') }}
+                {% elif active_tab == 'credentials' %}
+                    {{ page_hero.context_header('Credential Posture', identity_context.credential_owner, 'key-round') }}
+                    <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                        {{ page_hero.context_metric(identity_context.icon, 'Ownership', 'KAORI Local' if can_change_password else 'Provider Managed', identity_context.type_label, 'text-sm font-semibold leading-6') }}
+                        {{ page_hero.context_metric('shield-off' if can_change_password else 'external-link', 'Session Effect', 'Revoke Others' if can_change_password else 'External Recovery', 'Current browser stays active' if can_change_password else 'Provider-managed recovery', 'text-sm font-semibold leading-6') }}
+                    </div>
+                    {% if can_change_password %}
+                        {{ page_hero.context_info('lock-keyhole', 'Other sessions are revoked; secrets stay out of audit.') }}
+                    {% else %}
+                        {{ page_hero.context_info('lock-keyhole', 'Recovery stays with the provider; KAORI retains access controls.') }}
+                    {% endif %}
+                {% else %}
+                    {{ page_hero.context_header('Account Posture', current_user.display_label, 'badge-check') }}
+                    <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                        {{ page_hero.context_metric(identity_context.icon, 'Identity Source', identity_context.type_label, identity_context.provider_name, 'text-sm font-semibold leading-6') }}
+                        {{ page_hero.context_metric('shield', 'Access Role', user_role, 'KAORI authorization role', 'text-sm font-semibold leading-6') }}
+                    </div>
+                    {{ page_hero.context_info('workflow', 'Provider verifies identity; KAORI enforces lifecycle and RBAC.') }}
+                {% endif %}
+            </div>
+        </aside>
+    </div>
+</section>

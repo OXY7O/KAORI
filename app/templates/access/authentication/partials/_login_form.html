@@ -1,0 +1,114 @@
+<section class="kaori-login-form-panel relative flex min-h-full items-center overflow-hidden bg-surface-card px-6 py-6 sm:px-8 lg:col-span-7 lg:px-10 xl:px-12">
+    <div class="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-kaori-soft blur-3xl"
+         aria-hidden="true"></div>
+    <div class="pointer-events-none absolute -bottom-32 right-8 h-64 w-64 rounded-full bg-kaori-soft opacity-50 blur-3xl"
+         aria-hidden="true"></div>
+    <button id="auth-theme-toggle"
+            type="button"
+            class="absolute right-4 top-4 z-20 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-outline-default bg-surface-elevated text-content-muted shadow-sm transition hover:border-kaori-accent hover:bg-surface-hover hover:text-kaori-primary focus:outline-none focus:ring-2 focus:ring-outline-focus focus:ring-offset-2 focus:ring-offset-surface-card"
+            aria-label="Switch to Dark Mode"
+            title="Switch to Dark Mode">
+        <i id="auth-theme-icon" data-lucide="moon" class="h-4 w-4"></i>
+    </button>
+    <div class="relative z-10 mx-auto w-full max-w-md">
+        <div class="mb-6 flex items-center gap-3 lg:hidden">
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-primary shadow-lg shadow-kaori-primary/20">
+                <img src="{{ url_for('static', filename='images/kaori-logo.svg') }}"
+                     alt=""
+                     class="h-6 w-6 brightness-0 invert" />
+            </span>
+            <span class="text-lg font-bold tracking-widest text-content-primary">KAORI</span>
+        </div>
+        <header class="kaori-login-form-header">
+            <span class="inline-flex items-center gap-2 rounded-md border border-outline-default bg-surface-hover px-3 py-1 text-xs font-semibold text-content-secondary">
+                <i data-lucide="shield-check" class="h-3.5 w-3.5 text-kaori-primary"></i>
+                Secure Platform Access
+            </span>
+            <h2 class="mt-4 text-2xl font-bold tracking-tight text-content-primary sm:text-3xl">Welcome Back</h2>
+            <p class="mt-2 text-sm leading-5 text-content-muted">Sign in to continue to your permitted KAORI workspace.</p>
+        </header>
+        {% include "access/authentication/partials/_login_alerts.html" %}
+        <form class="mt-6 space-y-4" method="POST">
+            {{ form.hidden_tag() }}
+            <div>
+                <label for="{{ form.username.id }}"
+                       class="mb-1.5 block text-sm font-semibold text-content-primary">Username</label>
+                <div class="relative">
+                    <i data-lucide="user-round"
+                       class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-content-disabled"
+                       aria-hidden="true"></i>
+                    {{ form.username(class="kaori-login-control h-11 w-full rounded-xl border border-outline-default bg-surface-card pl-10 pr-3.5 text-sm text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-soft",
+                                        placeholder="Enter your username",
+                                        autocomplete="username",
+                                        autofocus=true) }}
+                </div>
+                {% if form.username.errors %}
+                    <p class="mt-1.5 flex items-center gap-2 text-xs text-status-critical-text">
+                        <i data-lucide="circle-alert" class="h-3.5 w-3.5"></i>
+                        {{ form.username.errors[0] }}
+                    </p>
+                {% endif %}
+            </div>
+            <div>
+                <label for="{{ form.password.id }}"
+                       class="mb-1.5 block text-sm font-semibold text-content-primary">Password</label>
+                <div class="relative">
+                    <i data-lucide="key-round"
+                       class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-content-disabled"
+                       aria-hidden="true"></i>
+                    {{ form.password(class="kaori-login-control h-11 w-full rounded-xl border border-outline-default bg-surface-card pl-10 pr-11 text-sm text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-soft",
+                                        placeholder="Enter your password",
+                                        autocomplete="current-password",
+                                        data_password_input="") }}
+                    <button type="button"
+                            class="absolute right-1.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-content-muted transition hover:bg-surface-hover hover:text-kaori-primary focus:outline-none focus:ring-2 focus:ring-outline-focus"
+                            data-password-toggle
+                            aria-label="Show password">
+                        <i data-lucide="eye"
+                           data-password-icon
+                           class="h-4 w-4"
+                           aria-hidden="true"></i>
+                    </button>
+                </div>
+                {% if form.password.errors %}
+                    <p class="mt-1.5 flex items-center gap-2 text-xs text-status-critical-text">
+                        <i data-lucide="circle-alert" class="h-3.5 w-3.5"></i>
+                        {{ form.password.errors[0] }}
+                    </p>
+                {% endif %}
+            </div>
+            <div class="flex items-center">
+                <label class="inline-flex cursor-pointer items-center gap-2.5 text-sm text-content-secondary">
+                    {{ form.remember(class="h-4 w-4 rounded border-outline-strong bg-surface-card accent-kaori-primary focus:ring-2 focus:ring-outline-focus focus:ring-offset-2 focus:ring-offset-surface-card") }}
+                    <span>Remember Me</span>
+                </label>
+            </div>
+            {{ form.submit(class="kaori-login-submit inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-kaori-primary px-5 text-sm font-semibold text-white shadow-md shadow-kaori-primary/20 transition hover:bg-kaori-primary-hover focus:outline-none focus:ring-2 focus:ring-outline-focus focus:ring-offset-2 focus:ring-offset-surface-card disabled:cursor-not-allowed disabled:opacity-60") }}
+        </form>
+        {% if sso_provider_rows %}
+            <div class="my-5 flex items-center gap-3" aria-hidden="true">
+                <span class="h-px flex-1 bg-outline-subtle"></span>
+                <span class="text-xs font-semibold tracking-wide text-content-disabled">Or Continue With</span>
+                <span class="h-px flex-1 bg-outline-subtle"></span>
+            </div>
+            <div class="grid gap-2 sm:grid-cols-2">
+                {% for row in sso_provider_rows %}
+                    {% set provider = row.record %}
+                    {% set provider_login_url = url_for('auth.sso_start', provider_key=provider.key, next=form.next.data) if form.next.data else url_for('auth.sso_start', provider_key=provider.key) %}
+                    <a href="{{ provider_login_url }}"
+                       class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary shadow-sm transition hover:border-kaori-accent hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-outline-focus">
+                        <i data-lucide="{{ row.definition.icon }}" class="h-4 w-4"></i>
+                        {{ provider.display_name }}
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <div class="mt-4 flex items-center justify-center gap-2 text-xs text-content-muted">
+            <i data-lucide="lock-keyhole"
+               class="h-3.5 w-3.5 text-kaori-primary"
+               aria-hidden="true"></i>
+            Authentication Activity Is Recorded for Audit
+        </div>
+        {% include "access/authentication/partials/_footer_meta.html" %}
+    </div>
+</section>

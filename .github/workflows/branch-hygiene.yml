@@ -1,0 +1,79 @@
+name: KAORI Branch Hygiene
+
+on:
+  push:
+    branches:
+      - kaori/staging
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kaori-branch-hygiene
+  cancel-in-progress: false
+
+jobs:
+  retire:
+    name: Retire Merged Branches
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    timeout-minutes: 20
+    steps:
+      - name: Check Out Staging Authority
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: kaori/staging
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Retire Fully Merged Temporary Branches
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'
+
+          printf '== KAORI Repository · Branch Hygiene ==\n'
+          printf '  staging : %s\n' "$(git rev-parse origin/kaori/staging)"
+          printf '  main    : %s\n' "$(git rev-parse origin/main)"
+
+          protected_branch() {
+            case "$1" in
+              main|kaori/staging|kaori/rc-request|kaori/uat-request)
+                return 0
+                ;;
+              kaori/tenant-*|kaori/*tenant*|tenant/*)
+                return 0
+                ;;
+              *)
+                return 1
+                ;;
+            esac
+          }
+
+          deleted=0
+          kept=0
+          while IFS= read -r ref; do
+            branch="${ref#origin/}"
+            [[ "$branch" == 'HEAD' ]] && continue
+
+            if protected_branch "$branch"; then
+              printf 'SKIP — protected branch: %s\n' "$branch"
+              kept=$((kept + 1))
+              continue
+            fi
+
+            if git merge-base --is-ancestor "$ref" origin/kaori/staging || \
+              git merge-base --is-ancestor "$ref" origin/main
+            then
+              printf 'PASS — retire merged branch: %s\n' "$branch"
+              git push origin --delete "$branch"
+              deleted=$((deleted + 1))
+            else
+              printf 'SKIP — branch has unmerged lineage: %s\n' "$branch"
+              kept=$((kept + 1))
+            fi
+          done < <(git for-each-ref --format='%(refname:short)' refs/remotes/origin | sort)
+
+          printf '\nPASS — Branch Hygiene\n'
+          printf '  retired : %d\n' "$deleted"
+          printf '  retained: %d\n' "$kept"

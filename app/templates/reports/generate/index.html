@@ -1,0 +1,817 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/form_field.html" as form_field %}
+{% macro workflow_number(number, compact=false) -%}
+    <span class="inline-flex shrink-0 items-center justify-center rounded-lg border border-kaori-primary/20 bg-kaori-soft font-semibold tracking-wide text-kaori-primary {% if compact %}h-7 min-w-7 px-1.5 text-xs{% else %}h-8 min-w-8 px-2 text-xs{% endif %}"
+          data-generate-section-number="{{ number }}"
+          aria-hidden="true">{{ number }}</span>
+{%- endmacro %}
+{% macro context_icon_marker(icon_name) -%}
+    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/20 bg-kaori-soft text-kaori-primary"
+          data-generate-context-marker="{{ icon_name }}"
+          aria-hidden="true">
+        <i data-lucide="{{ icon_name }}" class="h-4 w-4"></i>
+    </span>
+{%- endmacro %}
+{% block title %}Generate Report{% endblock title %}
+{% block dashboard_content %}
+    {% set initial_scope_ready = payload.scope_ready %}
+    {% set initial_sections_ready = payload.form_state.sections|length > 0 %}
+    {% set initial_request_ready = initial_scope_ready and initial_sections_ready and payload.generation_allowed %}
+    {% set hero_status_label = 'Ready' if initial_request_ready else ('Storage Degraded' if not payload.generation_allowed else 'Action Required') %}
+    {% set hero_status_tone = 'normal' if initial_request_ready else 'warning' %}
+    <div class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('wand-sparkles', 'Generate Report', 'file-plus-2') %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('crosshair', 'Infrastructure Asset Scope') }}
+                            {{ page_hero.meta_label('book-open-check', 'Catalog-Driven Contract') }}
+                            {{ page_hero.meta_label('file-clock', 'Queued Artifact Generation') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ page_hero.context_card('Report request readiness',
+                                'Request Readiness',
+                                'Governed Report Request',
+                                hero_status_label,
+                                hero_status_tone,
+                                [
+                                ('files', 'Report Types', payload.report_type_options|length, 'Catalog contracts') ,
+                ('hard-drive', 'Artifact Storage', payload.storage_context.status, payload.storage_context.label)
+                ],
+                'Open Templates',
+                url_for('reports.report_templates'),
+                'layout-template'
+                ) }}
+            </div>
+        </section>
+        {% if payload.worker_context.show_warning %}
+            <section class="rounded-xl border p-4 {{ operational_callout.semantic_surface_classes(payload.worker_context.tone) }}"
+                     role="status"
+                     aria-label="Reports worker queue state">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-surface-card {{ operational_callout.semantic_border_classes(payload.worker_context.tone) }} {% if payload.worker_context.tone == 'critical' %}text-status-critical-text{% else %}text-status-warning-text{% endif %}">
+                            <i data-lucide="{{ payload.worker_context.icon }}"
+                               class="h-4 w-4"
+                               aria-hidden="true"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="text-sm font-semibold text-content-primary">Reports Worker Offline</p>
+                                {{ table_label.status_indicator_label('Queuing Available', 'warning') }}
+                            </div>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Requests can still be queued; artifact generation starts after <span class="font-semibold text-content-secondary">reports-worker</span> reconnects.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+        {% if not payload.generation_allowed %}
+            <section class="rounded-xl border {{ operational_callout.semantic_surface_classes('warning') }} p-4"
+                     role="status"
+                     aria-label="Artifact storage unavailable">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border {{ operational_callout.semantic_border_classes('warning') }} bg-surface-card text-status-warning-text">
+                            <i data-lucide="hard-drive-off" class="h-4 w-4" aria-hidden="true"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="text-sm font-semibold text-content-primary">Artifact Storage Needs Review</p>
+                                {{ table_label.status_indicator_label(payload.storage_context.status, 'warning') }}
+                            </div>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">The request workspace remains available, but new artifact generation is paused until storage write readiness recovers.</p>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('reports.storage') }}"
+                       class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border {{ operational_callout.semantic_border_classes('warning') }} bg-surface-card px-4 text-sm font-semibold text-content-primary transition hover:border-kaori-primary/40 hover:text-kaori-primary">
+                        <i data-lucide="hard-drive" class="h-4 w-4" aria-hidden="true"></i>
+                        Open Storage
+                    </a>
+                </div>
+            </section>
+        {% endif %}
+        {% if payload.errors %}
+            <section class="rounded-xl border {{ operational_callout.semantic_surface_classes('critical') }} p-4"
+                     role="alert"
+                     aria-label="Unable to create report request">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border {{ operational_callout.semantic_border_classes('critical') }} bg-surface-card text-status-critical-text">
+                        <i data-lucide="triangle-alert" class="h-4 w-4" aria-hidden="true"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-status-critical-text">Unable to Create Report Request</p>
+                        <ul class="mt-2 list-disc space-y-1 pl-5 text-xs leading-5 text-status-critical-text">
+                            {% for error in payload.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                 data-generate-report-workspace="wizard">
+            <form method="POST"
+                  action="{{ url_for('reports.generate_report') }}"
+                  id="generate-report-form"
+                  data-generate-wizard="true"
+                  data-wizard-initial-step="{{ 5 if payload.errors else 1 }}">
+                {% if csrf_token is defined %}
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% endif %}
+                <header class="flex flex-col gap-3 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                            <i data-lucide="file-cog" class="h-5 w-5" aria-hidden="true"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 class="text-base font-semibold leading-6 text-content-primary">Build Governed Report</h2>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Complete five guided steps. Nothing is saved or queued until the final Review &amp; Queue step.</p>
+                        </div>
+                    </div>
+                    {{ table_label.metadata_label('Draft Until Queued', 'route') }}
+                </header>
+                <nav class="border-b border-outline-default bg-surface-subtle px-4 py-3 sm:px-6"
+                     aria-label="Generate report steps"
+                     data-generate-wizard-navigation="true">
+                    <ol class="grid gap-2 md:grid-cols-5">
+                        {% set wizard_steps = [('1', 'Report Contract', 'Choose report'), ('2', 'Infrastructure Scope', 'Bind target'), ('3', 'Artifact Contract', 'Choose output'), ('4', 'Report Content', 'Select sections'), ('5', 'Review & Queue', 'Validate request')] %}
+                        {% for step_number, step_label, step_hint in wizard_steps %}
+                            <li class="min-w-0">
+                                <button type="button"
+                                        class="flex w-full items-center gap-2 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5 text-left transition hover:border-kaori-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
+                                        data-wizard-step-button="{{ step_number }}"
+                                        aria-controls="generate-wizard-step-{{ step_number }}"
+                                        {% if step_number != '1' and not payload.errors %}disabled{% endif %}>
+                                    <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-outline-default bg-surface-hover text-xs font-semibold text-content-secondary"
+                                          data-wizard-step-marker="{{ step_number }}">0{{ step_number }}</span>
+                                    <span class="min-w-0">
+                                        <span class="block truncate text-xs font-semibold text-content-primary">{{ step_label }}</span>
+                                        <span class="mt-0.5 block truncate text-xs text-content-muted"
+                                              data-wizard-step-state="{{ step_number }}">{{ 'Current' if step_number == '1' and not payload.errors else ('Review errors' if step_number == '5' and payload.errors else step_hint) }}</span>
+                                    </span>
+                                </button>
+                            </li>
+                        {% endfor %}
+                    </ol>
+                </nav>
+                <div class="px-5 py-5 sm:px-6">
+                    <section id="generate-wizard-step-1"
+                             data-generate-step="report"
+                             data-wizard-panel="1">
+                        <div class="flex items-start gap-3"
+                             data-generate-section-header="report-contract">
+                            {{ workflow_number("01") }}
+                            <div class="min-w-0">
+                                <h3 class="text-base font-semibold leading-6 text-content-primary">Report Contract</h3>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">Choose the published report contract first. KAORI derives the domain, required infrastructure scope, allowed artifact formats, period behavior, and section contract from this selection.</p>
+                            </div>
+                        </div>
+                        <div class="mt-5 grid gap-5 lg:grid-cols-3">
+                            <div class="space-y-4 lg:col-span-2">
+                                <label class="block">
+                                    <span class="text-sm font-semibold text-content-primary">Report Type <span class="text-status-critical-text">*</span></span>
+                                    <select name="report_type"
+                                            id="report-type-select"
+                                            class="{{ form_field.select_classes() }}">
+                                        {% for group in payload.report_type_groups %}
+                                            <optgroup label="{{ group.label }}"
+                                                      data-report-contract-group="{{ group.key }}">
+                                                {% for option in group.options %}
+                                                    <option value="{{ option.value }}"
+                                                            class="font-normal"
+                                                            {% if payload.form_state.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                                {% endfor %}
+                                            </optgroup>
+                                        {% endfor %}
+                                    </select>
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">The report type is the authoritative contract. Changing it recalculates compatible periods, formats, scope requirements, and sections.</p>
+                                </label>
+                                <label class="block">
+                                    <span class="flex items-center gap-2 text-sm font-semibold text-content-primary"><span>Report Name</span><span class="text-xs font-normal text-content-muted">Optional</span></span>
+                                    <input type="text"
+                                           name="name"
+                                           id="report-name-input"
+                                           value="{{ payload.form_state.name }}"
+                                           placeholder="Auto-generated from report type and period"
+                                           class="{{ form_field.input_classes() }}">
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Leave blank to let KAORI generate a consistent name from the selected report type and period.</p>
+                                </label>
+                                <div id="selected-template-summary"
+                                     class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-subtle p-4"
+                                     data-selected-report-summary="true">
+                                    {{ context_icon_marker("file-check-2") }}
+                                    <div class="min-w-0 flex-1">
+                                        <p class="mb-1 text-xs font-semibold text-content-muted">Selected Report Contract</p>
+                                        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                            <p id="selected-report-label"
+                                               class="text-sm font-semibold text-content-primary">{{ payload.selected_report_type.label }}</p>
+                                            <span id="selected-report-scope"
+                                                  class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-kaori-soft px-2 text-xs font-semibold text-kaori-primary">{{ payload.selected_report_type.scope_label }}</span>
+                                            <span id="selected-report-count"
+                                                  class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-hover px-2 text-xs font-semibold text-content-secondary">{{ payload.selected_report_type.section_count }} Sections</span>
+                                        </div>
+                                        <p id="selected-report-description"
+                                           class="mt-1 text-xs leading-5 text-content-muted">{{ payload.selected_report_type.description }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <aside class="rounded-xl border border-kaori-primary/20 bg-kaori-soft/45 p-4"
+                                   aria-label="Report contract guidance">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="book-open-check"
+                                       class="h-4 w-4 text-kaori-primary"
+                                       aria-hidden="true"></i>
+                                    <h4 class="text-sm font-semibold leading-5 text-content-primary">What This Step Controls</h4>
+                                </div>
+                                <dl class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle">
+                                    <div class="flex items-center justify-between gap-3 py-2.5">
+                                        <dt class="text-xs font-semibold text-content-muted">Domain</dt>
+                                        <dd id="wizard-contract-domain"
+                                            class="text-right text-xs font-semibold text-content-primary">
+                                            {{ payload.selected_report_type.domain|replace('_', ' ') |title }}
+                                        </dd>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-3 py-2.5">
+                                        <dt class="text-xs font-semibold text-content-muted">Scope Model</dt>
+                                        <dd id="wizard-contract-scope"
+                                            class="text-right text-xs font-semibold text-content-primary">
+                                            {{ payload.selected_report_type.scope_label }}
+                                        </dd>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-3 py-2.5">
+                                        <dt class="text-xs font-semibold text-content-muted">Content Mode</dt>
+                                        <dd id="wizard-contract-family"
+                                            class="text-right text-xs font-semibold text-content-primary">
+                                            {{ payload.selected_report_type.family|title }}
+                                        </dd>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-3 py-2.5">
+                                        <dt class="text-xs font-semibold text-content-muted">Default Format</dt>
+                                        <dd id="wizard-contract-format"
+                                            class="text-right text-xs font-semibold text-kaori-primary">
+                                            {{ payload.selected_report_type.primary_format|upper }}
+                                        </dd>
+                                    </div>
+                                </dl>
+                                <p class="mt-3 text-xs leading-5 text-content-muted">Use Templates when you want a reusable starting structure. This wizard always validates the final request against the current catalog contract before queueing.</p>
+                            </aside>
+                        </div>
+                    </section>
+                    <section id="generate-wizard-step-2"
+                             class="hidden"
+                             data-generate-step="scope"
+                             data-wizard-panel="2">
+                        <div class="flex items-start gap-3"
+                             data-generate-section-header="infrastructure-scope">
+                            {{ workflow_number("02") }}
+                            <div class="min-w-0">
+                                <h3 id="scope-step-title"
+                                    class="text-base font-semibold leading-6 text-content-primary">Infrastructure Scope</h3>
+                                <p id="scope-step-description"
+                                   class="mt-1 text-sm leading-6 text-content-secondary">Bind the report to the exact infrastructure asset required by its contract, then define the applicable namespace and period boundary.</p>
+                            </div>
+                        </div>
+                        <div class="mt-5 grid gap-5 lg:grid-cols-3">
+                            <div class="space-y-4 lg:col-span-2">
+                                <div id="kubernetes-scope-fields"
+                                     class="grid gap-4 sm:grid-cols-2 {% if payload.selected_report_type.scope_asset_type != 'kubernetes_cluster' %}hidden{% endif %}"
+                                     data-report-scope-panel="kubernetes_cluster">
+                                    <label class="block sm:col-span-2">
+                                        <span class="text-sm font-semibold text-content-primary">Cluster <span class="text-status-critical-text">*</span></span>
+                                        <select name="cluster_id"
+                                                id="cluster-select"
+                                                class="{{ form_field.select_classes() }}">
+                                            <option value=""
+                                                    {% if not payload.form_state.cluster_id %}selected{% endif %}>Select Cluster</option>
+                                            {% for cluster in payload.clusters %}
+                                                <option value="{{ cluster.value }}"
+                                                        {% if payload.form_state.cluster_id == cluster.value %}selected{% endif %}>{{ cluster.label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <p class="mt-1.5 text-xs leading-5 text-content-muted">One validated cluster is mandatory for every Kubernetes report artifact.</p>
+                                    </label>
+                                    <div class="min-w-0 sm:col-span-2" data-scope-filter="namespace">
+                                        <div class="flex min-h-5 items-center justify-between gap-2">
+                                            <label for="namespace-select"
+                                                   class="text-sm font-semibold text-content-primary">Namespace</label>
+                                            <span id="namespace-option-count"
+                                                  class="text-xs font-medium text-content-muted {% if not payload.form_state.cluster_id %}hidden{% endif %}">
+                                                {% if payload.form_state.cluster_id %}{{ payload.selected_namespace_options|length }} available{% endif %}
+                                            </span>
+                                        </div>
+                                        <select name="namespace"
+                                                id="namespace-select"
+                                                {% if not payload.form_state.cluster_id %}disabled{% endif %}
+                                                class="{{ form_field.select_classes() }}">
+                                            <option value="">All Namespaces</option>
+                                            {% for namespace in payload.selected_namespace_options %}
+                                                <option value="{{ namespace }}"
+                                                        {% if payload.form_state.namespace == namespace %}selected{% endif %}>{{ namespace }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <p class="mt-1.5 text-xs leading-5 text-content-muted">Leave as All Namespaces for cluster-wide evidence. Namespace choices come from the latest committed inventory generation.</p>
+                                    </div>
+                                </div>
+                                <div id="object-storage-scope-fields"
+                                     class="{% if payload.selected_report_type.scope_asset_type != 'object_storage_system' %}hidden{% endif %}"
+                                     data-report-scope-panel="object_storage_system">
+                                    <label class="block">
+                                        <span class="text-sm font-semibold text-content-primary">Object Storage System <span class="text-status-critical-text">*</span></span>
+                                        <select name="object_storage_system_id"
+                                                id="object-storage-system-select"
+                                                class="{{ form_field.select_classes() }}">
+                                            <option value=""
+                                                    {% if not payload.form_state.object_storage_system_id %}selected{% endif %}>Select Object Storage System</option>
+                                            {% for system in payload.object_storage_systems %}
+                                                <option value="{{ system.value }}"
+                                                        {% if payload.form_state.object_storage_system_id == system.value %}selected{% endif %}>{{ system.label }} · {{ system.environment }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <p class="mt-1.5 text-xs leading-5 text-content-muted">Object Storage reports are bound to one registered system. Kubernetes cluster and namespace are not part of this scope contract.</p>
+                                    </label>
+                                </div>
+                                <div data-scope-filter="period">
+                                    <div class="flex min-h-5 items-center justify-between gap-2">
+                                        <label for="period-select"
+                                               class="text-sm font-semibold text-content-primary">Period</label>
+                                        <span id="period-mode-label" class="text-xs font-medium text-content-muted">
+                                            {% if payload.selected_report_type.family == 'inventory' %}
+                                                Snapshot
+                                            {% else %}
+                                                Time Range
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <select name="period"
+                                            id="period-select"
+                                            class="{{ form_field.select_classes() }}">
+                                        {% for option in payload.period_options %}
+                                            {% set period_allowed = (payload.selected_report_type.family == 'inventory' and option.value == 'snapshot') or (payload.selected_report_type.family != 'inventory' and option.value != 'snapshot') %}
+                                            <option value="{{ option.value }}"
+                                                    {% if payload.form_state.period == option.value %}selected{% endif %}
+                                                    {% if not period_allowed %}hidden{% endif %}>{{ option.label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Inventory reports capture a committed snapshot. Analytical reports evaluate the selected historical time range.</p>
+                                </div>
+                                <div id="wizard-scope-validation"
+                                     class="hidden rounded-lg border border-outline-default bg-status-warning-soft px-3 py-2.5 text-xs font-semibold text-status-warning-text"
+                                     role="status">Select the required infrastructure asset before continuing.</div>
+                            </div>
+                            <aside class="rounded-xl border border-kaori-primary/20 bg-kaori-soft/45 p-4"
+                                   aria-label="Infrastructure scope guidance"
+                                   data-generate-scope-tip="true">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="crosshair"
+                                       class="h-4 w-4 text-kaori-primary"
+                                       aria-hidden="true"></i>
+                                    <h4 class="text-sm font-semibold leading-5 text-content-primary">Scope Contract</h4>
+                                </div>
+                                <p id="scope-tip-copy" class="mt-3 text-xs leading-5 text-content-muted">Kubernetes reports use one selected cluster; Object Storage reports use one registered Object Storage system.</p>
+                                <div class="mt-4 space-y-3">
+                                    <div class="flex items-start gap-2">
+                                        <i data-lucide="database"
+                                           class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+                                           aria-hidden="true"></i>
+                                        <p class="text-xs leading-5 text-content-secondary"><span class="font-semibold text-content-primary">Asset identity is retained.</span> KAORI snapshots the selected asset label into the generated report record for historical evidence.</p>
+                                    </div>
+                                    <div class="flex items-start gap-2">
+                                        <i data-lucide="clock-3"
+                                           class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+                                           aria-hidden="true"></i>
+                                        <p class="text-xs leading-5 text-content-secondary"><span class="font-semibold text-content-primary">Period semantics are contract-driven.</span> Snapshot reports cannot be changed to analytical ranges and vice versa.</p>
+                                    </div>
+                                </div>
+                            </aside>
+                        </div>
+                    </section>
+                    <section id="generate-wizard-step-3"
+                             class="hidden"
+                             data-generate-step="artifact"
+                             data-wizard-panel="3">
+                        <div class="flex items-start gap-3"
+                             data-generate-section-header="artifact">
+                            {{ workflow_number("03") }}
+                            <div class="min-w-0">
+                                <h3 class="text-base font-semibold leading-6 text-content-primary">Artifact Contract</h3>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">Choose one allowed output format and confirm the publication path.</p>
+                            </div>
+                        </div>
+                        <div class="mt-5 space-y-4" data-artifact-contract-layout="full-width">
+                            <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-subtle"
+                                 data-report-output-contract="true">
+                                <div class="grid lg:grid-cols-12">
+                                    <div class="p-4 lg:col-span-4 lg:border-r lg:border-outline-subtle">
+                                        <label class="block">
+                                            <span class="text-xs font-semibold uppercase tracking-wide text-content-muted">Output Format</span>
+                                            <select name="output_format"
+                                                    id="output-format-select"
+                                                    class="{{ form_field.select_classes() }}">
+                                                {% for option in payload.output_format_options %}
+                                                    {% set format_allowed = option.value in payload.selected_report_type.allowed_formats %}
+                                                    <option value="{{ option.value }}"
+                                                            {% if payload.form_state.output_format == option.value %}selected{% endif %}
+                                                            {% if not format_allowed %}disabled hidden{% endif %}>{{ option.label }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </label>
+                                    </div>
+                                    <div class="border-t border-outline-subtle p-4 lg:col-span-5 lg:border-r lg:border-t-0 lg:border-outline-subtle">
+                                        <div class="flex items-start gap-3">
+                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                                  aria-hidden="true">
+                                                <i data-lucide="file-check-2" class="h-4 w-4"></i>
+                                            </span>
+                                            <div class="min-w-0">
+                                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Selected Artifact</p>
+                                                <p id="output-format-selected"
+                                                   class="mt-1 text-sm font-semibold text-content-primary">
+                                                    {% if payload.form_state.output_format == 'csv' %}
+                                                        CSV Export
+                                                    {% elif payload.form_state.output_format == 'xlsx' %}
+                                                        XLSX Workbook
+                                                    {% else %}
+                                                        PDF Publication
+                                                    {% endif %}
+                                                </p>
+                                                <p id="output-format-purpose"
+                                                   class="mt-1 text-xs leading-5 text-content-secondary">
+                                                    {% if payload.form_state.output_format == 'csv' %}
+                                                        Portable machine-readable evidence for downstream analysis and audit.
+                                                    {% elif payload.form_state.output_format == 'xlsx' %}
+                                                        {% if payload.selected_report_type.family == 'analytics' %}
+                                                            Analytical workbook for drill-down, filtering, trends, and evidence review.
+                                                        {% else %}
+                                                            Governed workbook preserving inventory structure and tabular review.
+                                                        {% endif %}
+                                                    {% else %}
+                                                        Governed publication for review and operational communication.
+                                                    {% endif %}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="border-t border-outline-subtle p-4 lg:col-span-3 lg:border-t-0">
+                                        <div class="flex items-center gap-2">
+                                            <i data-lucide="shield-check"
+                                               class="h-4 w-4 shrink-0 text-kaori-primary"
+                                               aria-hidden="true"></i>
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Publication Contract</p>
+                                        </div>
+                                        <div class="mt-3 divide-y divide-outline-subtle border-y border-outline-subtle">
+                                            <div class="flex items-center justify-between gap-3 py-2">
+                                                <span class="text-xs font-semibold text-content-secondary">Default</span>
+                                                <span id="output-format-default"
+                                                      class="text-xs font-semibold text-content-primary">{{ payload.selected_report_type.primary_format|upper }}</span>
+                                            </div>
+                                            <div class="flex items-center justify-between gap-3 py-2">
+                                                <span class="text-xs font-semibold text-content-secondary">Allowed</span>
+                                                <span id="output-format-contract"
+                                                      class="text-right text-xs font-semibold text-kaori-primary">{{ payload.selected_report_type.allowed_formats|join(" · ") |upper }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft/45 p-4"
+                                 data-artifact-format-guide="true">
+                                <div class="flex items-start gap-3">
+                                    <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="info" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-semibold text-content-primary">Choose the artifact for the review workflow.</p>
+                                        <div class="mt-3 grid gap-3 md:grid-cols-3">
+                                            <p class="text-xs leading-5 text-content-secondary"><span class="font-semibold text-content-primary">PDF</span> for governed publication and operational sharing.</p>
+                                            <p class="text-xs leading-5 text-content-secondary"><span class="font-semibold text-content-primary">XLSX</span> for drill-down and evidence review.</p>
+                                            <p class="text-xs leading-5 text-content-secondary"><span class="font-semibold text-content-primary">CSV</span> for portable tabular evidence.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="rounded-xl border border-outline-subtle bg-surface-card p-4"
+                                 data-artifact-publication-readiness="true">
+                                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                    <div class="flex items-start gap-3">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                              aria-hidden="true">
+                                            <i data-lucide="hard-drive" class="h-4 w-4"></i>
+                                        </span>
+                                        <div>
+                                            <h4 class="text-sm font-semibold leading-5 text-content-primary">Publication Readiness</h4>
+                                            <p class="mt-1 text-xs leading-5 text-content-muted">Queueing creates a governed report request first. The Reports worker renders and publishes asynchronously.</p>
+                                        </div>
+                                    </div>
+                                    <dl class="grid shrink-0 gap-3 sm:grid-cols-3 sm:divide-x sm:divide-outline-subtle">
+                                        <div class="min-w-32 sm:px-4 sm:first:pl-0">
+                                            <dt class="text-xs text-content-muted">Backend</dt>
+                                            <dd class="mt-1 text-xs font-semibold text-content-primary">
+                                                {{ payload.storage_context.label }}
+                                            </dd>
+                                        </div>
+                                        <div class="min-w-32 sm:px-4">
+                                            <dt class="text-xs text-content-muted">Write State</dt>
+                                            <dd class="mt-1">
+                                                {{ table_label.status_indicator_label(payload.storage_context.status, 'normal' if payload.generation_allowed else 'warning') }}
+                                            </dd>
+                                        </div>
+                                        <div class="min-w-28 sm:px-4 sm:last:pr-0">
+                                            <dt class="text-xs text-content-muted">Worker Queue</dt>
+                                            <dd class="mt-1 text-xs font-semibold text-content-primary">
+                                                reports
+                                            </dd>
+                                        </div>
+                                    </dl>
+                                </div>
+                            </div>
+                            {% if not payload.generation_allowed %}
+                                <div class="rounded-xl border border-outline-default bg-status-warning-soft p-4">
+                                    <div class="flex items-start gap-3">
+                                        <i data-lucide="hard-drive-off"
+                                           class="mt-0.5 h-4 w-4 shrink-0 text-status-warning-text"
+                                           aria-hidden="true"></i>
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-semibold text-status-warning-text">Artifact Storage Is Not Write-Ready</p>
+                                            <p class="mt-1 text-xs leading-5 text-status-warning-text">You can review the request, but Queue stays disabled until storage write readiness recovers.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </section>
+                    <section id="generate-wizard-step-4"
+                             class="hidden"
+                             data-generate-step="content"
+                             data-wizard-panel="4">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div class="flex items-start gap-3"
+                                 data-generate-section-header="report-content">
+                                {{ workflow_number("04") }}
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="text-base font-semibold leading-6 text-content-primary">Report Content</h3>
+                                        <span id="selected-section-count-badge"
+                                              class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-kaori-soft px-2 text-xs font-semibold text-kaori-primary">{{ payload.form_state.sections|length }} {{ 'Locked' if payload.selected_report_type.family == 'inventory' else 'Selected' }}</span>
+                                    </div>
+                                    <p id="section-contract-note"
+                                       class="mt-1 text-sm leading-6 text-content-secondary">
+                                        {% if payload.selected_report_type.family == 'inventory' %}
+                                            Workbook structure is locked by the report contract.
+                                        {% else %}
+                                            Choose the analytics sections included in this artifact.
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            <div id="section-selection-actions"
+                                 class="flex shrink-0 items-center gap-2 {% if payload.selected_report_type.family == 'inventory' %}hidden{% endif %}">
+                                <button type="button"
+                                        id="select-all-sections"
+                                        class="inline-flex min-h-8 items-center rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary">Select All</button>
+                                <button type="button"
+                                        id="reset-default-sections"
+                                        class="inline-flex min-h-8 items-center rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary">Defaults</button>
+                            </div>
+                        </div>
+                        <div class="mt-5 space-y-4" data-report-content-layout="full-width">
+                            <div id="selected-section-validation"
+                                 class="hidden rounded-lg border border-outline-default bg-status-critical-soft px-3 py-2.5 text-xs font-semibold text-status-critical-text">Select at least one section before continuing.</div>
+                            <div id="selected-section-list" class="grid gap-2 sm:grid-cols-2">
+                                {% for section in payload.section_options_by_report_type[payload.form_state.report_type] %}
+                                    {% if payload.selected_report_type.family == 'inventory' %}
+                                        <div class="flex min-w-0 items-start gap-2.5 rounded-lg border border-outline-subtle bg-surface-hover px-3 py-3">
+                                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
+                                                <i data-lucide="file-spreadsheet" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                            </span>
+                                            <input type="hidden" name="sections" value="{{ section.value }}">
+                                            <span class="min-w-0">
+                                                <span class="block text-sm font-semibold text-content-primary">{{ section.label }}</span>
+                                                <span class="mt-0.5 block text-xs leading-5 text-content-muted">{{ section.description }}</span>
+                                            </span>
+                                        </div>
+                                    {% else %}
+                                        <label class="flex min-w-0 cursor-pointer items-start gap-2.5 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3 transition hover:border-kaori-primary/40 hover:bg-kaori-soft/30">
+                                            <input type="checkbox"
+                                                   name="sections"
+                                                   value="{{ section.value }}"
+                                                   {% if section.value in payload.form_state.sections %}checked{% endif %}
+                                                   class="mt-0.5 h-4 w-4 shrink-0 rounded border-outline-default bg-surface-card text-kaori-primary focus:ring-kaori-primary/20">
+                                            <span class="min-w-0">
+                                                <span class="block text-sm font-semibold text-content-primary">{{ section.label }}</span>
+                                                <span class="mt-0.5 block text-xs leading-5 text-content-muted">{{ section.description }}</span>
+                                            </span>
+                                        </label>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft/45 p-4"
+                                 data-content-contract="full-width">
+                                <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:items-start">
+                                    <div class="flex items-start gap-3">
+                                        <i data-lucide="list-checks"
+                                           class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+                                           aria-hidden="true"></i>
+                                        <div class="min-w-0">
+                                            <h4 class="text-sm font-semibold leading-5 text-content-primary">Content Contract</h4>
+                                            <p id="wizard-content-guidance"
+                                               class="mt-1 text-xs leading-5 text-content-muted">
+                                                {% if payload.selected_report_type.family == 'inventory' %}
+                                                    Inventory content is contract-locked for consistent workbook structure.
+                                                {% else %}
+                                                    Analytics content is selectable; keep at least one published section selected.
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start gap-2 md:border-l md:border-kaori-primary/15 md:pl-4">
+                                        <i data-lucide="shield-check"
+                                           class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+                                           aria-hidden="true"></i>
+                                        <p class="text-xs leading-5 text-content-secondary">Only sections published for the selected report type can be submitted. KAORI validates the selection again before queueing.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <section id="generate-wizard-step-5"
+                             class="hidden"
+                             aria-labelledby="request-summary-title"
+                             data-generate-step="summary"
+                             data-wizard-panel="5">
+                        <div class="flex items-start gap-3"
+                             data-generate-section-header="review-queue">
+                            {{ workflow_number("05") }}
+                            <div class="min-w-0">
+                                <h3 id="request-summary-title"
+                                    class="text-base font-semibold leading-6 text-content-primary">Review &amp; Queue</h3>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">Confirm the complete request contract. This is the only step that persists the report request and dispatches generation.</p>
+                            </div>
+                        </div>
+                        <div class="mt-5 grid gap-5 lg:grid-cols-3">
+                            <div class="space-y-4 lg:col-span-2">
+                                <div class="grid gap-3 rounded-xl border border-outline-subtle bg-surface-subtle p-4 sm:grid-cols-2"
+                                     data-report-request-summary="true">
+                                    <div class="min-w-0 border-l-2 border-kaori-primary/30 pl-3">
+                                        <p class="text-xs font-semibold text-content-muted">Report</p>
+                                        <p id="preview-report-type"
+                                           class="mt-1 truncate text-sm font-semibold text-content-primary">{{ payload.selected_report_type.label }}</p>
+                                        <p id="preview-report-name"
+                                           class="mt-0.5 truncate text-xs text-content-muted">{{ payload.preview_report_name }}</p>
+                                    </div>
+                                    <div class="min-w-0 border-l-2 border-outline-default pl-3">
+                                        <p class="text-xs font-semibold text-content-muted">Scope</p>
+                                        <p id="preview-cluster"
+                                           class="mt-1 truncate text-sm font-semibold text-content-primary">
+                                            {% if payload.selected_report_type.scope_asset_type == 'object_storage_system' %}
+                                                {{ payload.form_state.object_storage_system_id or 'Select Object Storage System' }}
+                                            {% else %}
+                                                {{ payload.form_state.cluster_id or 'Select Cluster' }}
+                                            {% endif %}
+                                        </p>
+                                        <p class="mt-0.5 truncate text-xs text-content-muted"><span id="preview-namespace">{{ 'System Scope' if payload.selected_report_type.scope_asset_type == 'object_storage_system' else (payload.form_state.namespace or 'All Namespaces') }}</span><span aria-hidden="true">·</span><span id="preview-period">{{ payload.form_state.period }}</span></p>
+                                    </div>
+                                    <div class="min-w-0 border-l-2 border-outline-default pl-3">
+                                        <p class="text-xs font-semibold text-content-muted">Output</p>
+                                        <p id="preview-output-format"
+                                           class="mt-1 text-sm font-semibold text-content-primary">{{ payload.form_state.output_format|upper }}</p>
+                                        <p class="mt-0.5 text-xs text-content-muted">Governed artifact format</p>
+                                    </div>
+                                    <div class="min-w-0 border-l-2 border-outline-default pl-3">
+                                        <p class="text-xs font-semibold text-content-muted">Content</p>
+                                        <p id="preview-sections"
+                                           class="mt-1 text-sm font-semibold text-content-primary">{{ payload.form_state.sections|length }} {{ 'Locked' if payload.selected_report_type.family == 'inventory' else 'Selected' }}</p>
+                                        <p id="preview-included-sections"
+                                           class="mt-0.5 text-xs leading-5 text-content-muted">{{ payload.selected_section_options|map(attribute='label') |join(', ') }}</p>
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-2 rounded-xl border border-outline-subtle bg-surface-card p-4"
+                                     aria-label="Request readiness">
+                                    <span id="preview-eligibility-status"
+                                          class="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold leading-4 {% if initial_request_ready %}{{ operational_callout.semantic_border_classes('normal') }} bg-status-normal-soft text-status-normal-text{% else %}{{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft text-status-warning-text{% endif %}">
+                                        <i id="preview-eligibility-icon"
+                                           data-lucide="{{ 'circle-check' if initial_request_ready else 'triangle-alert' }}"
+                                           class="h-3 w-3 shrink-0 {% if initial_request_ready %}text-status-normal{% else %}text-status-warning{% endif %}"
+                                           aria-hidden="true"></i>
+                                        <span id="preview-eligibility-label">{{ 'Ready to Queue' if initial_request_ready else 'Action Required' }}</span>
+                                    </span>
+                                    <span id="readiness-scope-status"
+                                          class="inline-flex min-h-6 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold leading-4 {% if initial_scope_ready %}{{ operational_callout.semantic_border_classes('normal') }} bg-status-normal-soft text-status-normal-text{% else %}{{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft text-status-warning-text{% endif %}">
+                                        <i data-readiness-status-icon
+                                           data-lucide="{{ 'check' if initial_scope_ready else 'triangle-alert' }}"
+                                           class="h-3 w-3 shrink-0"
+                                           aria-hidden="true"></i>
+                                        <span data-readiness-status-label>{{ 'Scope Ready' if initial_scope_ready else ('Select Object Storage System' if payload.selected_report_type.scope_asset_type == 'object_storage_system' else 'Select Cluster') }}</span>
+                                    </span>
+                                    <span id="readiness-sections-status"
+                                          class="inline-flex min-h-6 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold leading-4 {% if initial_sections_ready %}{{ operational_callout.semantic_border_classes('normal') }} bg-status-normal-soft text-status-normal-text{% else %}{{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft text-status-warning-text{% endif %}">
+                                        <i data-readiness-status-icon
+                                           data-lucide="{{ 'check' if initial_sections_ready else 'triangle-alert' }}"
+                                           class="h-3 w-3 shrink-0"
+                                           aria-hidden="true"></i>
+                                        <span data-readiness-status-label>{{ 'Content Ready' if initial_sections_ready else 'Selection Required' }}</span>
+                                    </span>
+                                    {{ table_label.status_indicator_label(payload.storage_context.status, 'normal' if payload.generation_allowed else 'warning') }}
+                                </div>
+                                <div id="readiness-summary"
+                                     class="flex min-w-0 items-start gap-2 rounded-xl border border-outline-subtle bg-surface-subtle p-4 text-xs leading-5 {% if initial_request_ready %}text-status-normal-text{% else %}text-status-warning-text{% endif %}">
+                                    <i id="readiness-summary-icon"
+                                       data-lucide="{{ 'circle-check' if initial_request_ready else 'circle-alert' }}"
+                                       class="mt-0.5 h-4 w-4 shrink-0"
+                                       aria-hidden="true"></i>
+                                    <p id="readiness-summary-text">{{ 'Scope and artifact requirements are valid. The request is ready to queue.' if initial_request_ready else ('Artifact storage is unavailable. Restore storage connectivity before creating a report.' if not payload.generation_allowed else 'Complete the required infrastructure scope or section selection before queueing.') }}</p>
+                                </div>
+                            </div>
+                            <aside class="rounded-xl border border-kaori-primary/20 bg-kaori-soft/45 p-4"
+                                   aria-label="Queue lifecycle guidance">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="workflow"
+                                       class="h-4 w-4 text-kaori-primary"
+                                       aria-hidden="true"></i>
+                                    <h4 class="text-sm font-semibold leading-5 text-content-primary">What Happens Next</h4>
+                                </div>
+                                <ol class="mt-4 space-y-3">
+                                    <li class="flex gap-2 text-xs leading-5 text-content-secondary"><span class="font-semibold text-kaori-primary">1.</span><span>The report request is saved with a snapshot of its selected asset and contract.</span></li>
+                                    <li class="flex gap-2 text-xs leading-5 text-content-secondary"><span class="font-semibold text-kaori-primary">2.</span><span>The request is dispatched to the canonical Reports worker queue.</span></li>
+                                    <li class="flex gap-2 text-xs leading-5 text-content-secondary"><span class="font-semibold text-kaori-primary">3.</span><span>Generated Reports tracks Requested, Queued, Generating, Ready, or Failed lifecycle state.</span></li>
+                                    <li class="flex gap-2 text-xs leading-5 text-content-secondary"><span class="font-semibold text-kaori-primary">4.</span><span>Ready artifacts follow the Generated Report Data Lifecycle retention policy.</span></li>
+                                </ol>
+                            </aside>
+                        </div>
+                        <p id="preview-report-description" class="sr-only">{{ payload.selected_report_type.description }}</p>
+                    </section>
+                </div>
+                <footer class="flex flex-col gap-3 border-t border-outline-default bg-surface-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-content-primary"
+                           id="wizard-footer-title">Step 1 of 5 · Report Contract</p>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted"
+                           id="wizard-footer-description">Choose a report contract. You can go back and change previous steps before queueing.</p>
+                    </div>
+                    <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                        <a href="{{ url_for('reports.generated_reports') }}"
+                           class="inline-flex min-h-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary">Cancel</a>
+                        <button type="button"
+                                id="wizard-back-button"
+                                class="hidden min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary">
+                            <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+                            Back
+                        </button>
+                        <button type="button"
+                                id="wizard-next-button"
+                                class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
+                            Next
+                            <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
+                        </button>
+                        <button type="submit"
+                                id="generate-report-button"
+                                data-operation-submit
+                                data-loading-label="Queueing report..."
+                                {% if not initial_request_ready %}disabled{% endif %}
+                                class="hidden min-h-9 cursor-pointer items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-kaori-soft disabled:text-content-muted">
+                            <i data-lucide="file-plus-2" class="h-4 w-4" aria-hidden="true"></i>
+                            <span data-operation-submit-label>Create &amp; Queue Report</span>
+                        </button>
+                    </div>
+                </footer>
+                <div class="hidden" aria-hidden="true">
+                    <span id="readiness-scope-description"></span>
+                    <span id="readiness-sections-description"></span>
+                    <span id="readiness-overall-status"></span>
+                    <span id="readiness-overall-icon"></span>
+                    <span id="readiness-overall-label"></span>
+                    <span id="preview-next-step-icon"><i data-lucide="arrow-right"></i></span>
+                    <span id="preview-next-step-title"></span>
+                    <span id="preview-next-step-description"></span>
+                    <span id="preview-report-scope-requirement">{{ payload.selected_report_type.cluster_scope_label }}</span>
+                    <span id="preview-report-section-count">{{ payload.form_state.sections|length }} Sections</span>
+                    <span id="preview-report-icon"></span>
+                </div>
+            </form>
+        </section>
+        <script id="reports-generate-bootstrap" type="application/json">
+            {
+                "default_sections_by_report_type": {{ payload.default_sections_by_report_type|tojson }},
+                "section_options_by_report_type": {{ payload.section_options_by_report_type|tojson }},
+                "report_type_options": {{ payload.report_type_options|tojson }},
+                "namespace_options_by_cluster": {{ payload.namespace_options_by_cluster|tojson }},
+                "has_clusters": {{ payload.has_clusters|tojson }},
+                "has_object_storage_systems": {{ payload.has_object_storage_systems|tojson }},
+                "initial_sections": {{ payload.form_state.sections|tojson }},
+                "initial_namespace": {{ payload.form_state.namespace|tojson }},
+                "generation_allowed": {{ payload.generation_allowed|tojson }},
+                "initial_request_ready": {{ initial_request_ready|tojson }}
+            }
+        </script>
+        <script defer
+                src="{{ url_for('static', filename='js/reports/generate.js') }}"></script>
+    {% endblock dashboard_content %}

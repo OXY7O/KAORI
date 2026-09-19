@@ -1,0 +1,235 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+<div class="bg-surface-page p-4 sm:p-5" data-user-detail-workspace>
+    <div class="grid gap-4 xl:grid-cols-2">
+        <section class="rounded-xl border border-outline-default bg-surface-card p-4">
+            <div class="flex items-center gap-2">
+                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true"><i data-lucide="contact" class="h-4 w-4"></i></span>
+                <h3 class="text-sm font-semibold text-content-primary">Identity</h3>
+            </div>
+            <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                <div>
+                    <dt class="text-xs text-content-muted">User ID</dt>
+                    <dd class="mt-1 font-semibold text-content-primary">
+                        {{ user.id }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Username</dt>
+                    <dd class="mt-1 break-all font-semibold text-content-primary">
+                        {{ user.username }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Display Name</dt>
+                    <dd class="mt-1 font-medium text-content-secondary">
+                        {{ user.display_name or 'Not Set' }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Email</dt>
+                    <dd class="mt-1 break-all font-medium text-content-secondary">
+                        {{ user.email }}
+                    </dd>
+                </div>
+            </dl>
+        </section>
+        <section class="rounded-xl border border-outline-default bg-surface-card p-4">
+            <div class="flex items-center gap-2">
+                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true"><i data-lucide="fingerprint" class="h-4 w-4"></i></span>
+                <h3 class="text-sm font-semibold text-content-primary">Authentication</h3>
+            </div>
+            <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                <div>
+                    <dt class="text-xs text-content-muted">Identity Source</dt>
+                    <dd class="mt-1">
+                        {{ table_label.metadata_label(user_view.source.label, icon=user_view.source.icon) }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Credential Owner</dt>
+                    <dd class="mt-1 font-medium text-content-secondary">
+                        {{ identity_context.credential_owner }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Provider</dt>
+                    <dd class="mt-1 font-medium text-content-secondary">
+                        {{ identity_context.provider_name }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Identity Admission</dt>
+                    <dd class="mt-1">
+                        {{ table_label.status_label(identity_context.identity_state, identity_context.identity_tone, 'fingerprint') }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Last Authentication</dt>
+                    <dd class="mt-1 font-medium text-content-secondary">
+                        {{ user.last_login_at|user_datetime("Never") }}
+                    </dd>
+                </div>
+            </dl>
+            <p class="mt-4 border-t border-outline-subtle pt-4 text-xs leading-5 text-content-muted">{{ identity_context.credential_detail }}</p>
+        </section>
+        <section class="rounded-xl border border-outline-default bg-surface-card p-4">
+            <div class="flex items-center gap-2">
+                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
+                <h3 class="text-sm font-semibold text-content-primary">Authorization</h3>
+            </div>
+            <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                <div>
+                    <dt class="text-xs text-content-muted">Assigned Role</dt>
+                    <dd class="mt-1 font-semibold text-content-primary">
+                        {{ user_view.role.label }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Role State</dt>
+                    <dd class="mt-1">
+                        {{ table_label.status_label(user_view.role.state_label, user_view.role.state_tone, user_view.role.state_icon) }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Emergency Access</dt>
+                    <dd class="mt-1">
+                        {{ table_label.status_label('Enabled' if user.is_super_admin else 'Disabled', 'maintenance' if user.is_super_admin else 'unknown', 'shield-check') }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Effective Access</dt>
+                    <dd class="mt-1 font-medium text-content-secondary">
+                        {{ user_view.access.label }} · {{ user_view.access.reason }}
+                    </dd>
+                </div>
+            </dl>
+        </section>
+        <section class="rounded-xl border border-outline-default bg-surface-card p-4">
+            <div class="flex items-center gap-2">
+                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true"><i data-lucide="history" class="h-4 w-4"></i></span>
+                <h3 class="text-sm font-semibold text-content-primary">Lifecycle</h3>
+            </div>
+            <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                <div>
+                    <dt class="text-xs text-content-muted">Account State</dt>
+                    <dd class="mt-1">
+                        {{ table_label.status_label(user_view.lifecycle.label, user_view.lifecycle.tone, user_view.lifecycle.icon) }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Created</dt>
+                    <dd class="mt-1 font-medium text-content-secondary">
+                        {{ user.created_at|user_datetime("-") }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Updated</dt>
+                    <dd class="mt-1 font-medium text-content-secondary">
+                        {{ user.updated_at|user_datetime("-") }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-content-muted">Deleted</dt>
+                    <dd class="mt-1 font-medium text-content-secondary">
+                        {{ user.deleted_at|user_datetime("Not Deleted") }}
+                    </dd>
+                </div>
+            </dl>
+        </section>
+    </div>
+    <section class="mt-4 rounded-xl border border-outline-default bg-surface-card p-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <h3 class="text-sm font-semibold text-content-primary">Administrative Actions</h3>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Only actions allowed by the current RBAC and lifecycle guardrails are shown.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                {% if actions.get('can_edit') %}
+                    <a href="{{ url_for('users.edit', user_id=user.id) }}"
+                       class="{{ table_ui.action_classes() }}">
+                        <i data-lucide="pencil" class="h-3.5 w-3.5" aria-hidden="true"></i>Edit
+                    </a>
+                {% endif %}
+                {% if actions.get('can_reset_password') %}
+                    <a href="{{ url_for('users.reset_password', user_id=user.id) }}"
+                       class="{{ table_ui.action_classes() }}">
+                        <i data-lucide="key-round" class="h-3.5 w-3.5" aria-hidden="true"></i>Reset Password
+                    </a>
+                {% endif %}
+                {% if user.deleted_at %}
+                    {% if actions.get('can_restore') %}
+                        <form method="post"
+                              action="{{ url_for('users.restore', user_id=user.id) }}"
+                              hx-post="{{ url_for('users.restore', user_id=user.id) }}"
+                              hx-target="#users-page-content"
+                              hx-swap="outerHTML settle:150ms"
+                              hx-indicator="#users-refresh-indicator"
+                              hx-include="#users-filter-form">
+                            {% if csrf_token is defined %}
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            {% endif %}
+                            <button class="{{ table_ui.action_classes() }}"><i data-lucide="rotate-ccw" class="h-3.5 w-3.5" aria-hidden="true"></i>Restore</button>
+                        </form>
+                    {% endif %}
+                {% else %}
+                    {% if user.account_is_active and actions.get('can_deactivate') %}
+                        <form method="post"
+                              action="{{ url_for('users.deactivate', user_id=user.id) }}"
+                              hx-post="{{ url_for('users.deactivate', user_id=user.id) }}"
+                              hx-target="#users-page-content"
+                              hx-swap="outerHTML settle:150ms"
+                              hx-indicator="#users-refresh-indicator"
+                              hx-include="#users-filter-form">
+                            {% if csrf_token is defined %}
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            {% endif %}
+                            <button class="{{ table_ui.action_classes() }}"><i data-lucide="pause-circle" class="h-3.5 w-3.5" aria-hidden="true"></i>Deactivate</button>
+                        </form>
+                    {% elif not user.account_is_active and actions.get('can_activate') %}
+                        <form method="post"
+                              action="{{ url_for('users.activate', user_id=user.id) }}"
+                              hx-post="{{ url_for('users.activate', user_id=user.id) }}"
+                              hx-target="#users-page-content"
+                              hx-swap="outerHTML settle:150ms"
+                              hx-indicator="#users-refresh-indicator"
+                              hx-include="#users-filter-form">
+                            {% if csrf_token is defined %}
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            {% endif %}
+                            <button class="{{ table_ui.action_classes() }}"><i data-lucide="play-circle" class="h-3.5 w-3.5" aria-hidden="true"></i>Activate</button>
+                        </form>
+                    {% endif %}
+                    {% if actions.get('can_delete') %}
+                        <form method="post" action="{{ url_for('users.delete', user_id=user.id) }}">
+                            {% if csrf_token is defined %}
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            {% endif %}
+                            <button id="delete-user-submit-{{ user.id }}"
+                                    type="submit"
+                                    class="hidden"
+                                    aria-hidden="true"
+                                    tabindex="-1"></button>
+                            <button type="button"
+                                    data-destructive-modal-open
+                                    data-destructive-modal-id="delete-user-modal"
+                                    data-destructive-submit-button-id="delete-user-submit-{{ user.id }}"
+                                    data-destructive-target="{{ user.display_label }}"
+                                    data-destructive-scope="{{ user.username }} · {{ user_view.role.label }}"
+                                    class="{{ table_ui.action_classes(destructive=true) }}">
+                                <i data-lucide="trash-2" class="h-3.5 w-3.5" aria-hidden="true"></i>Delete
+                            </button>
+                        </form>
+                    {% endif %}
+                {% endif %}
+                {% if not actions.get('can_edit') and not actions.get('can_reset_password') and not actions.get('can_restore') and not actions.get('can_activate') and not actions.get('can_deactivate') and not actions.get('can_delete') %}
+                    <span class="inline-flex min-h-8 items-center rounded-md border border-outline-default bg-surface-subtle px-3 text-xs font-semibold text-content-muted">No Administrative Action</span>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+</div>

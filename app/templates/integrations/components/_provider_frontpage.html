@@ -1,0 +1,90 @@
+{% import "components/page_hero.html" as page_hero %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% macro hero(icon, accent_icon, title, description, registered_count, ready_count, binding_count, posture_status, register_url, ready_total=None, secondary_register_url=None, secondary_register_label=None, register_label='Register Connection') -%}
+    {% set denominator = ready_total if ready_total is not none else registered_count %}
+    <section class="{{ page_hero.shell_classes() }}"
+             data-kaori-provider-frontpage-hero>
+        <div class="{{ page_hero.layout_classes() }}">
+            <div class="{{ page_hero.content_classes() }}">
+                {% call page_hero.intro(icon, "Operational Integration", accent_icon) %}
+                    <h1 class="{{ page_hero.title_classes() }}">{{ title }}</h1>
+                    <p class="mt-2 {{ page_hero.description_classes() }}">{{ description }}</p>
+                    <div class="{{ page_hero.metadata_row_classes() }}">
+                        {{ page_hero.meta_label("server-cog", registered_count ~ " Registered Connections") }}
+                        {{ page_hero.meta_label("circle-check-big", ready_count ~ " Ready Connections") }}
+                        {{ page_hero.meta_label("link-2", binding_count ~ " Consumer Bindings") }}
+                    </div>
+                {% endcall %}
+            </div>
+            <aside class="{{ page_hero.aside_classes() }}"
+                   aria-label="{{ title }} posture">
+                <div class="{{ page_hero.context_panel_classes() }}">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Integration Posture</p>
+                            <p class="{{ page_hero.context_panel_title_classes() }}">Connection Readiness and Bindings</p>
+                        </div>
+                        {{ integration_status("healthy" if posture_status == "Healthy" else ("degraded" if posture_status == "Attention" else "not_configured") , posture_status, display="text") }}
+                    </div>
+                    <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                        {{ page_hero.context_metric("badge-check", "Ready", ready_count ~ " / " ~ denominator, "Validated connections available") }}
+                        {{ page_hero.context_metric("link-2", "Bindings", binding_count, "Governed consumer associations") }}
+                    </div>
+                    <div class="{{ page_hero.context_actions_classes(2 if secondary_register_url else 1) }}">
+                        <a href="{{ register_url }}"
+                           class="{{ page_hero.context_action_classes() }}">
+                            <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                            {{ register_label }}
+                        </a>
+                        {% if secondary_register_url %}
+                            <a href="{{ secondary_register_url }}"
+                               class="{{ page_hero.context_action_classes() }}">
+                                <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                                {{ secondary_register_label or 'Register Connection' }}
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </section>
+{%- endmacro %}
+{% macro overview(icon, title, description, metrics, contract_title, contract_description, resolution_title, resolution_description, authority_title, authority_description) -%}
+    <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+             data-kaori-provider-integration-overview>
+        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
+                    <i data-lucide="{{ icon }}" class="h-5 w-5" aria-hidden="true"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
+                    <p class="mt-1 max-w-5xl text-sm leading-6 text-content-secondary">{{ description }}</p>
+                </div>
+            </div>
+        </header>
+        <div class="{{ integration_ui.metric_grid_classes(4) }}">
+            {% for item in metrics %}
+                {{ integration_ui.metric_card(item.label, item.value, item.description, item.icon) }}
+            {% endfor %}
+        </div>
+        <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle md:grid-cols-3">
+            <article class="bg-surface-card px-5 py-4 sm:px-6">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Integration Contract</p>
+                <p class="mt-1.5 text-sm font-semibold text-content-primary">{{ contract_title }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ contract_description }}</p>
+            </article>
+            <article class="bg-surface-card px-5 py-4 sm:px-6">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Consumer Resolution</p>
+                <p class="mt-1.5 text-sm font-semibold text-content-primary">{{ resolution_title }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ resolution_description }}</p>
+            </article>
+            <article class="bg-surface-card px-5 py-4 sm:px-6">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Authority Boundary</p>
+                <p class="mt-1.5 text-sm font-semibold text-content-primary">{{ authority_title }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ authority_description }}</p>
+            </article>
+        </div>
+    </section>
+{%- endmacro %}

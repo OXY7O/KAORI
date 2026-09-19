@@ -1,0 +1,113 @@
+{% import "components/table_label.html" as table_label %}
+{% macro render(
+    score,
+    status_label,
+    status_tone,
+    status_icon,
+    summary,
+    factors,
+    readiness_label=None,
+    aria_label='Health Interpretation'
+    ) -%}
+    {% set score_value = score|int %}
+    {% set posture_border = table_label.tone_border_classes(status_tone)|trim if status_tone in ['normal', 'warning', 'critical'] else 'border-outline-default' %}
+    {% set posture_surface = 'bg-status-normal-soft' if status_tone == 'normal' else ('bg-status-warning-soft' if status_tone == 'warning' else ('bg-status-critical-soft' if status_tone == 'critical' else 'bg-surface-hover')) %}
+    {% set posture_text = 'text-status-normal-text' if status_tone == 'normal' else ('text-status-warning-text' if status_tone == 'warning' else ('text-status-critical-text' if status_tone == 'critical' else 'text-content-secondary')) %}
+    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+             aria-label="{{ aria_label }}">
+        <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3.5 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="gauge" class="h-4 w-4" aria-hidden="true"></i>
+                </span>
+                <div class="min-w-0">
+                    <h3 class="text-sm font-semibold text-content-primary">Health Interpretation</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">How the latest runtime evidence maps to the current operational health posture.</p>
+                </div>
+            </div>
+            {{ table_label.status_label(status_label, status_tone, status_icon) }}
+        </header>
+        <div class="grid gap-4 p-4 sm:p-5 xl:grid-cols-5">
+            <article class="rounded-xl border {{ posture_border }} {{ posture_surface }} p-4 xl:col-span-2">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs font-semibold text-content-secondary">Current Health Score</p>
+                        <p class="mt-2 text-3xl font-semibold leading-none {{ posture_text }}">
+                            {{ score_value }}<span class="ml-1 text-sm font-semibold text-content-muted">/100</span>
+                        </p>
+                    </div>
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border {{ posture_border }} bg-surface-card {{ posture_text }}">
+                        <i data-lucide="{{ status_icon }}" class="h-5 w-5" aria-hidden="true"></i>
+                    </span>
+                </div>
+                <p class="mt-4 text-sm font-semibold leading-5 text-content-primary">{{ summary }}</p>
+                <p class="mt-1.5 text-xs leading-5 text-content-secondary">Health reflects the latest runtime observation, not the saved validation contract.</p>
+                {% if readiness_label %}
+                    <div class="mt-4 rounded-lg border border-brand-outline bg-surface-card px-3 py-2.5">
+                        <p class="text-xs font-semibold text-kaori-primary">Readiness Boundary</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Readiness remains <strong class="font-semibold text-content-primary">{{ readiness_label }}</strong> until configuration and Full Validation establish a new contract.</p>
+                    </div>
+                {% endif %}
+                <div class="mt-4 grid grid-cols-3 gap-2" aria-label="Health score ranges">
+                    <div class="rounded-lg border {{ table_label.tone_border_classes('critical') }} bg-status-critical-soft px-2.5 py-2 text-center {% if status_tone == 'critical' %}shadow-sm{% endif %}">
+                        <p class="text-xs font-semibold text-status-critical-text">0–59</p>
+                        <p class="mt-0.5 text-xs font-semibold text-content-secondary">
+                            Critical
+                            {% if status_tone == 'critical' %}· Current{% endif %}
+                        </p>
+                    </div>
+                    <div class="rounded-lg border {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft px-2.5 py-2 text-center {% if status_tone == 'warning' %}shadow-sm{% endif %}">
+                        <p class="text-xs font-semibold text-status-warning-text">60–84</p>
+                        <p class="mt-0.5 text-xs font-semibold text-content-secondary">
+                            Attention
+                            {% if status_tone == 'warning' %}· Current{% endif %}
+                        </p>
+                    </div>
+                    <div class="rounded-lg border {{ table_label.tone_border_classes('normal') }} bg-status-normal-soft px-2.5 py-2 text-center {% if status_tone == 'normal' %}shadow-sm{% endif %}">
+                        <p class="text-xs font-semibold text-status-normal-text">85–100</p>
+                        <p class="mt-0.5 text-xs font-semibold text-content-secondary">
+                            Healthy
+                            {% if status_tone == 'normal' %}· Current{% endif %}
+                        </p>
+                    </div>
+                </div>
+            </article>
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card xl:col-span-3"
+                     aria-label="Contributing health evidence">
+                <header class="flex items-center justify-between gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3">
+                    <div>
+                        <h4 class="text-sm font-semibold text-content-primary">Contributing Evidence</h4>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Weighted factors recorded by the latest runtime observation.</p>
+                    </div>
+                    {{ table_label.metadata_label(factors|length ~ ' Factors', 'scan-search') }}
+                </header>
+                <div class="divide-y divide-outline-subtle">
+                    {% for factor in factors %}
+                        {% set factor_score = factor.score|int %}
+                        {% set factor_tone = 'normal' if factor_score >= 85 else ('warning' if factor_score >= 60 else 'critical') %}
+                        {% set factor_icon = 'circle-check' if factor_score >= 85 else ('triangle-alert' if factor_score >= 60 else 'octagon-alert') %}
+                        <article class="flex items-start gap-3 px-4 py-3.5">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {% if factor_tone == 'normal' %}bg-status-normal-soft text-status-normal-text{% elif factor_tone == 'warning' %}bg-status-warning-soft text-status-warning-text{% else %}bg-status-critical-soft text-status-critical-text{% endif %}">
+                                <i data-lucide="{{ factor_icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-content-primary">{{ factor.label }}</p>
+                                        {% if factor.detail %}<p class="mt-1 text-xs leading-5 text-content-secondary">{{ factor.detail }}</p>{% endif %}
+                                    </div>
+                                    <div class="shrink-0">{{ table_label.status_label(factor_score ~ '/100', factor_tone, factor_icon) }}</div>
+                                </div>
+                            </div>
+                        </article>
+                    {% else %}
+                        <div class="m-4 rounded-lg border border-dashed border-outline-default bg-surface-hover p-4">
+                            <p class="text-sm font-semibold text-content-primary">No Health Evidence Yet</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Run Full Validation and Refresh Runtime to establish the first health interpretation.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+    </section>
+{%- endmacro %}

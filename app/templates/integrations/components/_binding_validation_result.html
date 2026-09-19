@@ -1,0 +1,148 @@
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% macro render(row, family='metrics') -%}
+    {% set evidence = row.validation_evidence or {} %}
+    {% set source_identity = evidence.get('source_identity') if evidence else none %}
+    {% set capability_assessments = evidence.get('capability_assessments', []) if evidence else [] %}
+    {% set metrics_readiness = evidence.get('metrics_readiness') if evidence else none %}
+    <div class="space-y-4" data-kaori-binding-validation-result>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <p class="text-sm font-semibold text-content-primary">Binding Validation Result</p>
+                    {{ integration_status(row.validation_status, row.validation_status|replace('_', ' ') |title, display='indicator') }}
+                </div>
+                <p class="mt-1 max-w-4xl text-xs leading-5 text-content-secondary">{{ row.validation_message }}</p>
+            </div>
+            <div class="shrink-0 text-left sm:text-right">
+                <p class="text-xs font-semibold text-content-muted">Last Validated</p>
+                <p class="mt-1 text-xs font-medium text-content-primary">{{ row.last_validated_at }}</p>
+            </div>
+        </div>
+        <div class="grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-3">
+            <div class="bg-surface-card px-4 py-3">
+                <p class="text-xs font-semibold text-content-muted">Consumer Profile</p>
+                <p class="mt-1 break-words text-xs font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.consumer_profile_label }}</p>
+            </div>
+            <div class="bg-surface-card px-4 py-3">
+                <p class="text-xs font-semibold text-content-muted">Selector</p>
+                <p class="mt-1 break-words font-mono text-xs text-content-primary [overflow-wrap:anywhere]">{{ row.selector_summary }}</p>
+            </div>
+            <div class="bg-surface-card px-4 py-3">
+                <p class="text-xs font-semibold text-content-muted">Effective Resolution</p>
+                <div class="mt-1">{{ integration_status(row.operational_status, row.operational_label, display='indicator') }}</div>
+            </div>
+        </div>
+        {% if source_identity %}
+            <section class="border-l-2 border-kaori-primary pl-4">
+                <div class="flex flex-wrap items-center gap-2">
+                    <p class="text-xs font-semibold text-content-primary">{{ source_identity.get('label', 'Source Identity') }}</p>
+                    {{ integration_status('ready' if source_identity.get('status') == 'ready' else 'blocked', source_identity.get('status_label', 'Unknown'), display='indicator') }}
+                </div>
+                <div class="mt-2 grid gap-3 sm:grid-cols-2">
+                    <div>
+                        <p class="text-xs font-semibold text-content-muted">Expected</p>
+                        <p class="mt-1 break-words font-mono text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ source_identity.get('expected', 'No expected identity recorded.') }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-content-muted">Observed</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ source_identity.get('observed', 'No source identity evidence recorded.') }}</p>
+                    </div>
+                </div>
+                {% if source_identity.get('status') != 'ready' %}
+                    <p class="mt-2 text-xs leading-5 text-status-critical-text">{{ source_identity.get('recommendation', '') }}</p>
+                {% endif %}
+            </section>
+        {% endif %}
+        {% if capability_assessments %}
+            <section>
+                <div class="mb-2 flex items-center justify-between gap-3">
+                    <p class="text-xs font-semibold text-content-primary">Consumer Capability Evidence</p>
+                    <p class="text-xs text-content-muted">{{ capability_assessments|length }} contracts</p>
+                </div>
+                <div class="divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
+                    {% for item in capability_assessments %}
+                        {% set item_ready = item.get('status') in ['available', 'ready'] %}
+                        <details class="group px-4 py-3">
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="truncate text-xs font-semibold text-content-primary"
+                                       title="{{ item.get('label', item.get('key', 'Consumer Capability') ) }}">{{ item.get('label', item.get('key', 'Consumer Capability') ) }}</p>
+                                    <p class="mt-0.5 truncate text-xs text-content-muted"
+                                       title="{{ item.get('observed', item.get('evidence', '') ) }}">{{ item.get('observed', item.get('evidence', 'No evidence recorded.') ) }}</p>
+                                </div>
+                                <div class="flex shrink-0 items-center gap-2">
+                                    {{ integration_status('ready' if item_ready else 'blocked', item.get('status_label', item.get('status', 'Unknown') |replace('_', ' ')|title), display='indicator') }}
+                                    <i data-lucide="chevron-down"
+                                       class="h-4 w-4 text-content-muted transition group-open:rotate-180"
+                                       aria-hidden="true"></i>
+                                </div>
+                            </summary>
+                            <div class="mt-3 grid gap-3 border-t border-outline-subtle pt-3 lg:grid-cols-2">
+                                <div>
+                                    <p class="text-xs font-semibold text-content-muted">Expected</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.get('expected', 'Use the registered consumer contract.') }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-semibold text-content-muted">Recommended Action</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.get('recommendation', 'No remediation recorded.') }}</p>
+                                </div>
+                            </div>
+                            {% if item.get('technical_checks') %}
+                                <div class="mt-3 space-y-2">
+                                    {% for check in item.get('technical_checks', []) %}
+                                        {% set check_ready = check.get('status') in ['available', 'ready'] %}
+                                        <div class="rounded-md bg-surface-subtle px-3 py-2.5">
+                                            <div class="flex items-start justify-between gap-3">
+                                                <p class="text-xs font-semibold text-content-primary">{{ check.get('label', check.get('key', 'Technical Check') ) }}</p>
+                                                {{ integration_status('ready' if check_ready else 'blocked', check.get('status_label', check.get('status', 'Unknown') |replace('_', ' ')|title), display='indicator') }}
+                                            </div>
+                                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ check.get('evidence', 'No evidence recorded.') }}</p>
+                                            {% if check.get('query') %}
+                                                <code class="mt-2 block overflow-x-auto rounded bg-surface-card px-2.5 py-2 text-xs text-content-primary">{{ check.get("query") }}</code>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </details>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+        {% if metrics_readiness %}
+            {% set readiness_summary = metrics_readiness.get('summary', {}) %}
+            <section class="border-l-2 border-kaori-primary pl-4">
+                <div class="flex flex-wrap items-center gap-2">
+                    <p class="text-xs font-semibold text-content-primary">Object Storage Metrics Contract</p>
+                    {{ integration_status('ready' if metrics_readiness.get('status') == 'ready' else 'degraded', metrics_readiness.get('status_label', metrics_readiness.get('status', 'Unknown')|replace('_', ' ')|title), display='indicator') }}
+                </div>
+                <p class="mt-2 text-xs leading-5 text-content-secondary">Required metrics ready {{ readiness_summary.get('required_ready', 0) }} / {{ readiness_summary.get('required_total', 0) }}. Exact Object Storage metric evidence remains owned by the bound consumer profile.</p>
+            </section>
+        {% endif %}
+        {% if family == 'alerts' and evidence %}
+            <section>
+                <p class="text-xs font-semibold text-content-primary">Alert Consumer Evidence</p>
+                <div class="mt-2 grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-3">
+                    <div class="bg-surface-card px-4 py-3">
+                        <p class="text-xs font-semibold text-content-muted">Matched Alerts</p>
+                        <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ evidence.get('matched_alerts', 0) }}</p>
+                    </div>
+                    <div class="bg-surface-card px-4 py-3">
+                        <p class="text-xs font-semibold text-content-muted">Matched Silences</p>
+                        <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ evidence.get('matched_silences', 0) }}</p>
+                    </div>
+                    <div class="bg-surface-card px-4 py-3">
+                        <p class="text-xs font-semibold text-content-muted">Missing Required</p>
+                        <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ evidence.get('missing_required_capabilities', []) |length }}</p>
+                    </div>
+                </div>
+                {% if evidence.get('missing_required_capabilities') %}
+                    <p class="mt-2 text-xs leading-5 text-status-critical-text">Missing required alert evidence: {{ evidence.get("missing_required_capabilities") |join(', ') }}.</p>
+                {% endif %}
+                {% if evidence.get('sample_alert_names') %}
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">Sample alerts: {{ evidence.get("sample_alert_names") |join(', ') }}.</p>
+                {% endif %}
+            </section>
+        {% endif %}
+    </div>
+{%- endmacro %}

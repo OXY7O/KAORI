@@ -1,0 +1,17 @@
+{% macro render(job, fallback_title, provider_label=None) -%}
+    {% if job and job.is_active %}
+        <div class="flex flex-col gap-2 border-b border-brand-outline bg-kaori-soft px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between"
+             data-kaori-provider-job-status>
+            <span class="inline-flex items-center gap-2 font-semibold text-kaori-primary dark:text-kaori-accent">
+                <i data-lucide="loader-circle"
+                   class="h-3.5 w-3.5 animate-spin"
+                   aria-hidden="true"></i>
+                {{ job.title or fallback_title }}
+            </span>
+            <span>
+                Task {{ job.task_id[:8] }} · {{ job.state_label|title }} · {{ job.elapsed_seconds }}s
+                {% if provider_label %}<span class="sr-only">· {{ provider_label }}</span>{% endif %}
+            </span>
+        </div>
+    {% endif %}
+{%- endmacro %}

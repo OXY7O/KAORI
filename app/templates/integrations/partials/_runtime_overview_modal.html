@@ -1,0 +1,96 @@
+{% import "components/table_label.html" as table_label %}
+{% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% if detail.integration_type == 'container_orchestrator' %}
+    {% set workspace_url = url_for('integrations.kubernetes_detail', cluster_id=detail.cluster_id) %}
+    {% set workspace_label = "Open Kubernetes Integration" %}
+{% elif detail.integration_type == 'metrics_source' %}
+    {% set workspace_url = url_for('metrics.instance_detail', instance_id=detail.instance_id) %}
+    {% set workspace_label = "Open Metrics Source" %}
+{% elif detail.integration_type == 'alert_source' %}
+    {% set workspace_url = url_for('alertmanager.instance_detail', instance_id=detail.instance_id) %}
+    {% set workspace_label = "Open Alert Source" %}
+{% elif detail.integration_type == 'object_storage' %}
+    {% set workspace_url = url_for('minio.instance_detail', instance_id=detail.instance_id) %}
+    {% set workspace_label = "Open Object Storage" %}
+{% else %}
+    {% set workspace_url = url_for('integrations.overview', tab='catalog') %}
+    {% set workspace_label = "Open Integrations" %}
+{% endif %}
+{% set modal_id = 'integration-runtime-detail-' ~ detail.integration_type ~ '-' ~ detail.instance_id %}
+{% call record_detail_modal.render(
+    modal_id,
+    detail.integration_type ~ ':' ~ detail.instance_id,
+    'Integration Runtime Evidence',
+    detail.instance_name,
+    detail.provider_label ~ ' · ' ~ detail.endpoint_product ~ ' · ' ~ detail.scope_label,
+    icon=detail.provider_icon,
+    footer_text='Runtime evidence is persisted independently from connection and Full Validation state.',
+    size='standard'
+    ) %}
+    <div class="space-y-4" data-kaori-runtime-overview-modal>
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+                {% for label, value, helper in [
+                    ('Runtime Health', detail.health_status|replace('_', ' ')|title, (detail.health_score ~ '/100 health score') if detail.health_score is not none else 'No persisted score'),
+                    ('Last Observation', detail.observed_at_display, detail.latency_display or 'Latency unavailable'),
+                    ('Validation Readiness', detail.readiness|replace('_', ' ')|title, 'Connection · ' ~ (detail.connection_status|replace('_', ' ')|title)),
+                    ('Capability Attention', detail.capability_attention, detail.capability_attention_display)
+                    ] %}
+                    <article class="bg-surface-card px-4 py-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+                        <p class="mt-2 text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+        <section class="grid gap-3 lg:grid-cols-2">
+            <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                <div class="flex items-start gap-3">
+                    {{ integration_ui.palette_icon('activity', 'brand', size='sm') }}
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Current Runtime Gate</p>
+                        <div class="mt-2 flex flex-wrap items-center gap-2">
+                            {{ integration_status(detail.health_status, display='indicator') }}
+                            {{ integration_status(detail.readiness, display='indicator') }}
+                        </div>
+                        <p class="mt-2 text-sm leading-6 text-content-secondary">Runtime health and Full Validation remain independent evidence dimensions.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                <div class="flex items-start gap-3">
+                    {{ integration_ui.palette_icon('puzzle', 'brand', size='sm') }}
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Capability Context</p>
+                        <p class="mt-2 text-sm font-semibold text-content-primary">{{ detail.capability_profile or 'Not Observed' }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ detail.capability_attention_display }}</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+            <div class="flex items-start gap-3">
+                {{ integration_ui.palette_icon('stethoscope', 'brand', size='sm') }}
+                <div class="min-w-0 flex-1">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Diagnostic Evidence</p>
+                    <p class="mt-2 text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ detail.message or 'No runtime or validation diagnostic message is currently persisted for this target.' }}</p>
+                </div>
+            </div>
+        </section>
+        <section class="grid gap-3 lg:grid-cols-2">
+            <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Evidence Boundary</p>
+                <p class="mt-2 text-sm leading-6 text-content-secondary">Runtime health comes only from a persisted observation. Connection and validation state remain independent supporting evidence.</p>
+            </div>
+            <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Recommended Action</p>
+                <p class="mt-2 text-sm leading-6 text-content-primary">{{ 'Review the provider workspace, endpoint, TLS, authentication, and capability evidence.' if detail.health_status != 'healthy' else 'No immediate intervention is required; maintain the current observation and validation cadence.' }}</p>
+                <a href="{{ workspace_url }}"
+                   class="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-kaori-primary hover:underline dark:text-kaori-accent">{{ workspace_label }}<i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i></a>
+            </div>
+        </section>
+    </div>
+{% endcall %}

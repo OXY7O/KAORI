@@ -1,0 +1,364 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+<div x-show="guideOpen"
+     x-cloak
+     class="fixed inset-0 z-[90] flex items-center justify-center p-2 sm:p-4 lg:p-6"
+     role="presentation">
+    <button type="button"
+            @click="guideOpen = false"
+            class="absolute inset-0 h-full w-full cursor-default bg-surface-overlay/75 backdrop-blur-md"
+            aria-label="Close Notification Channel Setup Guide"></button>
+    <section role="dialog"
+             aria-modal="true"
+             aria-labelledby="notification-channel-guide-title"
+             class="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-2xl">
+        <header class="shrink-0 border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex items-start justify-between gap-4">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="book-open-check" class="h-5 w-5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold leading-5 text-kaori-primary">Notification Channels</p>
+                        <h2 id="notification-channel-guide-title"
+                            class="mt-0.5 text-xl font-semibold leading-7 text-content-primary">Provider Setup Guide</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-muted">Follow the provider-specific prerequisites, then save and validate the destination in KAORI.</p>
+                    </div>
+                </div>
+                <button type="button"
+                        @click="guideOpen = false"
+                        class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                        aria-label="Close Setup Guide">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+        </header>
+        <div class="shrink-0 border-b border-outline-subtle bg-surface-elevated px-4 py-3 sm:px-6">
+            <nav class="flex flex-wrap gap-2"
+                 aria-label="Notification provider setup guides">
+                {% for provider in payload.providers %}
+                    <button type="button"
+                            @click="guideProvider = '{{ provider.key }}'"
+                            :class="guideProvider === '{{ provider.key }}' ? 'border-brand-outline bg-kaori-soft text-kaori-primary-dark' : 'border-outline-default bg-surface-card text-content-secondary hover:border-brand-outline hover:bg-kaori-soft'"
+                            class="inline-flex min-h-9 items-center gap-2 rounded-lg border px-3 text-xs font-semibold transition-colors"
+                            :aria-pressed="guideProvider === '{{ provider.key }}' ? 'true' : 'false'">
+                        <i data-lucide="{{ provider.icon }}" class="h-3.5 w-3.5"></i>
+                        {{ provider.label }}
+                    </button>
+                {% endfor %}
+            </nav>
+        </div>
+        <div class="min-h-0 flex-1 overflow-y-auto bg-surface-page p-4 sm:p-6">
+            {% for provider in payload.providers %}
+                <div x-show="guideProvider === '{{ provider.key }}'"
+                     x-cloak
+                     class="space-y-4">
+                    <section class="{{ integration_ui.section_shell_classes() }}">
+                        <header class="flex flex-col gap-4 border-b border-outline-subtle p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-brand-outline bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="{{ provider.icon }}" class="h-5 w-5"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="text-base font-semibold leading-6 text-content-primary">{{ provider.setup_title }}</h3>
+                                        {{ table_label.status_label(provider.status, provider.tone, size='compact') }}
+                                    </div>
+                                    <p class="mt-1 text-sm leading-6 text-content-secondary">{{ provider.setup_summary }}</p>
+                                </div>
+                            </div>
+                            <div class="shrink-0 text-left sm:text-right">
+                                <p class="text-xs font-semibold leading-5 text-content-muted">Transport</p>
+                                <p class="text-sm font-semibold leading-5 text-content-primary">{{ provider.transport }}</p>
+                            </div>
+                        </header>
+                        <div class="grid gap-px bg-outline-subtle lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+                            <section class="bg-surface-card p-4 sm:p-5">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="clipboard-list" class="h-4 w-4 text-kaori-primary"></i>
+                                    <h4 class="text-sm font-semibold leading-5 text-content-primary">What You Need</h4>
+                                </div>
+                                <ul class="mt-3 space-y-2.5">
+                                    {% for requirement in provider.setup_requirements %}
+                                        <li class="flex items-start gap-2.5 text-sm leading-6 text-content-secondary">
+                                            <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-kaori-primary"
+                                                  aria-hidden="true"></span>
+                                            <span>{{ requirement }}</span>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </section>
+                            <section class="bg-surface-card p-4 sm:p-5">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="route" class="h-4 w-4 text-kaori-primary"></i>
+                                    <h4 class="text-sm font-semibold leading-5 text-content-primary">Configuration Sequence</h4>
+                                </div>
+                                <ol class="mt-4 space-y-4">
+                                    {% for step in provider.setup_steps %}
+                                        <li class="grid grid-cols-[2rem_minmax(0,1fr)] gap-3">
+                                            <span class="flex h-8 w-8 items-center justify-center rounded-full border border-brand-outline bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ loop.index }}</span>
+                                            <div class="min-w-0 pt-1">
+                                                <p class="text-sm leading-6 text-content-secondary">{{ step }}</p>
+                                            </div>
+                                        </li>
+                                    {% endfor %}
+                                </ol>
+                            </section>
+                        </div>
+                    </section>
+                    <div class="grid gap-4 lg:grid-cols-2">
+                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5">
+                            <div class="flex items-start gap-3">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true"><i data-lucide="shield-check" class="h-3.5 w-3.5"></i></span>
+                                <div class="min-w-0">
+                                    <h4 class="text-sm font-semibold leading-5 text-content-primary">Credential & Security Boundary</h4>
+                                    <p class="mt-1 text-sm leading-6 text-content-secondary">{{ provider.security_note }}</p>
+                                </div>
+                            </div>
+                        </section>
+                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5">
+                            <div class="flex items-start gap-3">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true"><i data-lucide="send-horizontal" class="h-3.5 w-3.5"></i></span>
+                                <div class="min-w-0">
+                                    <h4 class="text-sm font-semibold leading-5 text-content-primary">What Test Delivery Proves</h4>
+                                    <p class="mt-1 text-sm leading-6 text-content-secondary">{{ provider.validation_note }}</p>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <footer class="flex shrink-0 flex-col gap-3 border-t border-outline-subtle bg-surface-card px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <p class="text-xs leading-5 text-content-muted">Provider secrets never appear in Toast, Notification Deck, or Activity Audit metadata.</p>
+            <div class="flex items-center gap-2">
+                <button type="button"
+                        @click="guideOpen = false"
+                        class="inline-flex min-h-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-xs font-semibold text-content-secondary hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark">
+                    Close
+                </button>
+                {% if can_manage %}
+                    <button type="button"
+                            @click="provider = guideProvider; guideOpen = false; configOpen = true"
+                            class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
+                        <i data-lucide="plus" class="h-3.5 w-3.5"></i>
+                        Configure This Provider
+                    </button>
+                {% endif %}
+            </div>
+        </footer>
+    </section>
+</div>
+<div x-show="configOpen"
+     x-cloak
+     class="fixed inset-0 z-[90] flex items-center justify-center p-2 sm:p-4 lg:p-5"
+     role="presentation">
+    {% if form_channel %}
+        <a href="{{ url_for('notification_channels.index', tab='channels') }}"
+           class="absolute inset-0 h-full w-full cursor-default bg-surface-overlay/75 backdrop-blur-md"
+           aria-label="Close Channel Configuration"></a>
+    {% else %}
+        <button type="button"
+                @click="configOpen = false"
+                class="absolute inset-0 h-full w-full cursor-default bg-surface-overlay/75 backdrop-blur-md"
+                aria-label="Close Channel Configuration"></button>
+    {% endif %}
+    <section role="dialog"
+             aria-modal="true"
+             aria-labelledby="notification-channel-config-title"
+             class="relative flex max-h-[calc(100dvh-1.5rem)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-2xl sm:max-h-[calc(100dvh-2rem)]">
+        <form method="post"
+              action="{{ url_for('notification_channels.update', channel_id=form_channel.id) if form_channel else url_for('notification_channels.create') }}"
+              class="flex min-h-0 flex-1 flex-col">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% if form_channel %}
+                <input type="hidden"
+                       name="provider_key"
+                       value="{{ form_channel.provider_key }}">
+            {% endif %}
+            <header class="shrink-0 border-b border-outline-subtle px-5 py-4 sm:px-6">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="settings-2" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold leading-5 text-kaori-primary">Notification Channels</p>
+                            <h2 id="notification-channel-config-title"
+                                class="mt-0.5 text-xl font-semibold leading-7 text-content-primary">{{ 'Edit Channel' if form_channel else 'Add Notification Channel' }}</h2>
+                            <p class="mt-1 text-sm leading-6 text-content-muted">Configure one reusable destination. Provider secrets remain encrypted and are never rendered back after save.</p>
+                        </div>
+                    </div>
+                    {% if form_channel %}
+                        <a href="{{ url_for('notification_channels.index', tab='channels') }}"
+                           class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark"
+                           aria-label="Close Channel Configuration"><i data-lucide="x" class="h-4 w-4"></i></a>
+                    {% else %}
+                        <button type="button"
+                                @click="configOpen = false"
+                                class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark"
+                                aria-label="Close Channel Configuration">
+                            <i data-lucide="x" class="h-4 w-4"></i>
+                        </button>
+                    {% endif %}
+                </div>
+            </header>
+            <div class="min-h-0 flex-1 overflow-y-auto bg-surface-page">
+                <section class="border-b border-outline-subtle bg-surface-card p-4 sm:p-5">
+                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <div>
+                            <label class="{{ table_ui.filter_label_classes() }}">Channel Name</label>
+                            <input name="name"
+                                   required
+                                   value="{{ form_channel.name if form_channel else '' }}"
+                                   class="{{ table_ui.filter_input_classes() }}"
+                                   placeholder="Operations Alerts">
+                        </div>
+                        <div>
+                            <label class="{{ table_ui.filter_label_classes() }}">Provider</label>
+                            {% if form_channel %}
+                                <div class="flex min-h-10 items-center rounded-md border border-outline-default bg-surface-subtle px-3 text-sm font-semibold text-content-primary">
+                                    {% for provider_option in payload.providers %}
+                                        {% if provider_option.key == form_channel.provider_key %}{{ provider_option.label }}{% endif %}
+                                    {% endfor %}
+                                </div>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Provider is immutable. Create a new channel to change transport.</p>
+                            {% else %}
+                                <select name="provider_key"
+                                        x-model="provider"
+                                        required
+                                        class="{{ table_ui.filter_select_classes() }}">
+                                    <option value="">Select provider</option>
+                                    {% for provider_option in payload.providers %}
+                                        <option value="{{ provider_option.key }}">{{ provider_option.label }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label class="{{ table_ui.filter_label_classes() }}">Minimum Alert Severity</label>
+                            <select name="minimum_severity"
+                                    class="{{ table_ui.filter_select_classes() }}">
+                                {% for option in payload.severity_options %}
+                                    <option value="{{ option.value }}"
+                                            {% if (form_channel.minimum_severity if form_channel else 'warning') == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                {% endfor %}
+                            </select>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Scheduled Reports and non-alert events ignore this threshold.</p>
+                        </div>
+                    </div>
+                </section>
+                {% if not form_channel %}
+                    <section x-show="!provider" class="p-4 sm:p-5">
+                        <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="mouse-pointer-click"
+                                   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                                <div>
+                                    <p class="text-sm font-semibold leading-5 text-content-primary">Select a provider to continue</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Provider-specific destination and credential fields appear here after you choose Telegram, Email, or Microsoft Teams.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                {% endif %}
+                {% for provider_option in payload.providers %}
+                    <section x-show="provider === '{{ provider_option.key }}'"
+                             x-cloak
+                             class="border-b border-outline-subtle bg-surface-card p-4 sm:p-5">
+                        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center gap-2">
+                                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true"><i data-lucide="{{ provider_option.icon }}" class="h-3.5 w-3.5"></i></span>
+                                <div>
+                                    <p class="text-sm font-semibold leading-5 text-content-primary">{{ provider_option.label }} Configuration</p>
+                                    <p class="text-xs leading-5 text-content-muted">{{ provider_option.configuration }}</p>
+                                </div>
+                            </div>
+                            <button type="button"
+                                    @click="guideProvider = '{{ provider_option.key }}'; configOpen = false; guideOpen = true"
+                                    class="inline-flex min-h-8 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark">
+                                <i data-lucide="book-open" class="h-3.5 w-3.5"></i>
+                                Open Setup Guide
+                            </button>
+                        </div>
+                        {% include provider_option.form_partial %}
+                    </section>
+                {% endfor %}
+                <section class="bg-surface-card p-4 sm:p-5">
+                    <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.65fr)]">
+                        <div>
+                            <span class="{{ table_ui.filter_label_classes() }}">Delivery Domains</span>
+                            {% set selected_domains = form_channel.domains if form_channel else [] %}
+                            <div class="mt-1 grid gap-2 rounded-lg border border-outline-default bg-surface-card p-3 sm:grid-cols-2">
+                                {% for option in payload.domain_options %}
+                                    <label class="flex items-center gap-2 text-sm text-content-secondary">
+                                        <input type="checkbox"
+                                               name="domains"
+                                               value="{{ option.value }}"
+                                               {% if option.value in selected_domains %}checked{% endif %}
+                                               class="h-4 w-4 rounded border-outline-default text-kaori-primary">
+                                        {{ option.label }}
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div>
+                            <span class="{{ table_ui.filter_label_classes() }}">Allowed Uses</span>
+                            {% set selected_events = form_channel.event_types if form_channel else [] %}
+                            <div class="mt-1 space-y-2 rounded-lg border border-outline-default bg-surface-card p-3">
+                                {% for option in payload.event_type_options %}
+                                    <label class="flex items-start gap-2 text-sm text-content-secondary">
+                                        <input type="checkbox"
+                                               name="event_types"
+                                               value="{{ option.value }}"
+                                               {% if option.value in selected_events %}checked{% endif %}
+                                               class="mt-0.5 h-4 w-4 rounded border-outline-default text-kaori-primary">
+                                        <span>{{ option.label }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <label class="mt-4 inline-flex items-center gap-2 text-sm font-medium text-content-secondary">
+                        <input type="checkbox"
+                               name="enabled"
+                               value="1"
+                               {% if not form_channel or form_channel.enabled %}checked{% endif %}
+                               class="h-4 w-4 rounded border-outline-default text-kaori-primary">
+                        Enabled for Eligible Delivery After Successful Validation
+                    </label>
+                </section>
+            </div>
+            <footer class="flex shrink-0 flex-col gap-3 border-t border-outline-subtle bg-surface-card px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <div class="flex items-center gap-2 text-xs leading-5 text-content-muted">
+                    <i data-lucide="shield-check" class="h-3.5 w-3.5 text-kaori-primary"></i>
+                    Save records Activity Audit evidence. Test failures also remain in the Notification Deck.
+                </div>
+                <div class="flex items-center justify-end gap-2">
+                    {% if form_channel %}
+                        <a href="{{ url_for('notification_channels.index', tab='channels') }}"
+                           class="inline-flex min-h-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-xs font-semibold text-content-secondary hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark">Cancel</a>
+                    {% else %}
+                        <button type="button"
+                                @click="configOpen = false"
+                                class="inline-flex min-h-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-xs font-semibold text-content-secondary hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark">Cancel</button>
+                    {% endif %}
+                    {% if can_manage %}
+                        <button type="submit"
+                                class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
+                            <i data-lucide="save" class="h-3.5 w-3.5"></i>
+                            {{ 'Update Channel' if form_channel else 'Save Channel' }}
+                        </button>
+                    {% endif %}
+                </div>
+            </footer>
+        </form>
+    </section>
+</div>

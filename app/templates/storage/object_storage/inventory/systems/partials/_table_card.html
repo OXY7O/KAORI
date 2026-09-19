@@ -1,0 +1,86 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+<section class="{{ table_ui.block_classes() }}">
+    {% set inventory_header_actions = none %}
+    {% if selected_provider or selected_environment or selected_status or search %}
+        {% set inventory_header_actions %}
+            {{ registry_ui.clear_filters_action(url_for('object_storage_inventory.systems', per_page=inventory.pagination.per_page) ,
+            table_ui.action_classes(),
+            hx_get=url_for('object_storage_inventory.systems', per_page=inventory.pagination.per_page, partial_mode='page_workspace'),
+            target='#object-storage-systems-workspace',
+            indicator='#object-storage-systems-loading'
+            ) }}
+        {% endset %}
+    {% endif %}
+    {{ table_ui.inventory_block_header('server',
+        'Object Storage Systems',
+        'Compare canonical system identity, provider posture, and committed inventory state. No live provider query is issued by this page.',
+        'object-storage-systems-loading',
+        'Refreshing Object Storage Systems',
+        url_for('jobs.configuration', job_key='object_storage.inventory.sync') ,
+    'Manage Inventory Jobs',
+    header_actions=inventory_header_actions
+    ) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        <form hx-get="{{ url_for('object_storage_inventory.systems') }}"
+              hx-target="#object-storage-systems-workspace"
+              hx-swap="outerHTML"
+              hx-trigger="change, keyup changed delay:500ms from:find input[name='search']"
+              hx-indicator="#object-storage-systems-loading"
+              aria-label="Object Storage Systems filters"
+              class="{{ table_ui.filter_layout_classes() }}">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden"
+                   name="per_page"
+                   value="{{ inventory.pagination.per_page }}">
+            <input type="hidden" name="partial_mode" value="page_workspace">
+            <div>
+                <label for="object-storage-systems-provider"
+                       class="{{ table_ui.filter_label_classes() }}">Provider</label>
+                <select id="object-storage-systems-provider"
+                        name="provider"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Providers</option>
+                    {% for option in inventory.providers %}
+                        <option value="{{ option.value }}"
+                                {% if selected_provider == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="object-storage-systems-environment"
+                       class="{{ table_ui.filter_label_classes() }}">Environment</label>
+                <select id="object-storage-systems-environment"
+                        name="environment"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Environments</option>
+                    {% for option in inventory.environments %}
+                        <option value="{{ option.value }}"
+                                {% if selected_environment == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="object-storage-systems-status"
+                       class="{{ table_ui.filter_label_classes() }}">Status</label>
+                <select id="object-storage-systems-status"
+                        name="status"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Statuses</option>
+                    {% for option in inventory.statuses %}
+                        <option value="{{ option.value }}"
+                                {% if selected_status == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="object-storage-systems-search"
+                       class="{{ table_ui.filter_label_classes() }}">Search Systems</label>
+                {{ table_ui.search_field('search', search, 'Search system, endpoint, or provider', id='object-storage-systems-search') }}
+            </div>
+        </form>
+    </div>
+    <div id="object-storage-systems-table-content">
+        {% include "storage/object_storage/inventory/systems/partials/_table_content.html" %}
+    </div>
+</section>

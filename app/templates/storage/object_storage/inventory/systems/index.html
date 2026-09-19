@@ -1,0 +1,11 @@
+{% extends "layouts/app.html" %}
+{% block title %}Object Storage Systems{% endblock title %}
+{% block dashboard_content %}
+    {% import "components/resource_detail_modal.html" as resource_detail_modal %}
+    {% include "storage/object_storage/inventory/systems/partials/_page_workspace.html" %}
+    {{ resource_detail_modal.inventory_host('Object Storage System',
+        url_for('object_storage_inventory.system_details', system_id=0) ,
+    'Committed Object Storage Inventory snapshot · No live provider API query.',
+    'Object Storage Inventory'
+    ) }}
+{% endblock dashboard_content %}
