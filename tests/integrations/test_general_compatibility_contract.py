@@ -1,4 +1,5 @@
 from app.integrations.compatibility import (
+    COMPATIBILITY_LIFECYCLE_POLICY,
     CONTRACT_PROFILES,
     QUALIFICATIONS,
     evaluate_compatibility,
@@ -7,7 +8,14 @@ from app.integrations.compatibility import (
 )
 
 
-def test_general_contract_profiles_are_separate_from_version_qualifications() -> None:
+def test_general_contract_profiles_are_separate_from_annual_policy_and_version_qualifications() -> None:
+    assert COMPATIBILITY_LIFECYCLE_POLICY.key == 'kaori-compatibility-policy-v1'
+    assert COMPATIBILITY_LIFECYCLE_POLICY.version == 1
+    assert COMPATIBILITY_LIFECYCLE_POLICY.policy_year == 2026
+    assert COMPATIBILITY_LIFECYCLE_POLICY.lookback_years == 5
+    assert COMPATIBILITY_LIFECYCLE_POLICY.anchor_year == 2021
+    assert COMPATIBILITY_LIFECYCLE_POLICY.window_label == '2021–2026'
+
     assert {
         'kubernetes-core-v1',
         'prometheus-http-core-v1',
@@ -19,10 +27,10 @@ def test_general_contract_profiles_are_separate_from_version_qualifications() ->
 
     thanos = QUALIFICATIONS['thanos']
     assert {item.contract_profile for item in thanos} == {'prometheus-http-core-v1'}
-    assert len(thanos) <= 2
+    assert len(thanos) == 2
 
 
-def test_alertmanager_034_is_qualified_by_general_api_v2_contract() -> None:
+def test_alertmanager_034_is_current_under_policy_v1() -> None:
     result = evaluate_compatibility(
         'alertmanager',
         '0.34.1',
@@ -34,6 +42,32 @@ def test_alertmanager_034_is_qualified_by_general_api_v2_contract() -> None:
     assert result.profile_key == 'alertmanager-api-v2-contract-v1'
     assert result.qualification_key == 'alertmanager-current'
     assert result.upstream_lifecycle == 'current'
+
+
+def test_alertmanager_anchor_window_release_is_extended_not_eol() -> None:
+    result = evaluate_compatibility(
+        'alertmanager',
+        '0.23.0',
+        capabilities={'status_v2', 'alerts_v2', 'silences_v2'},
+    )
+
+    assert result.status == 'compatible_with_warnings'
+    assert result.readiness == 'degraded'
+    assert result.support_level == 'extended_supported'
+    assert result.qualification_key == 'alertmanager-extended'
+
+
+def test_alertmanager_pre_window_release_is_end_of_life() -> None:
+    result = evaluate_compatibility(
+        'alertmanager',
+        '0.22.0',
+        capabilities={'status_v2', 'alerts_v2', 'silences_v2'},
+    )
+
+    assert result.status == 'end_of_life'
+    assert result.readiness == 'blocked'
+    assert result.support_level == 'end_of_life'
+    assert result.upstream_lifecycle == 'kaori_end_of_life'
 
 
 def test_future_alertmanager_version_with_required_api_is_unverified_not_blocked() -> None:
@@ -63,13 +97,23 @@ def test_future_alertmanager_version_still_blocks_when_required_api_is_missing()
     assert result.missing_capabilities == ('alerts_v2', 'silences_v2')
 
 
-def test_kubernetes_137_is_current_and_future_minor_is_unverified() -> None:
-    assert kubernetes_lifecycle('1.37.0') == 'current'
+def test_kubernetes_lifecycle_uses_2021_anchor_and_2026_upper_bound() -> None:
+    assert kubernetes_lifecycle('1.22.17') == 'end_of_life'
+    assert kubernetes_lifecycle('1.23.0') == 'extended'
+    assert kubernetes_lifecycle('1.34.6') == 'extended'
+    assert kubernetes_lifecycle('1.35.0') == 'current'
+    assert kubernetes_lifecycle('1.37.1') == 'current'
     assert kubernetes_lifecycle('1.38.0') == 'unknown'
 
-    policy = kubernetes_lifecycle_policy('1.37.0')
+    policy = kubernetes_lifecycle_policy('1.37.1')
+    assert policy['policy_version'] == 'v1'
+    assert policy['policy_year'] == '2026'
+    assert policy['anchor_year'] == '2021'
+    assert policy['lookback_years'] == '5'
+    assert policy['window_label'] == '2021–2026'
     assert policy['current_version_band'] == 'v1.35–v1.37'
     assert policy['upstream_supported_version_band'] == 'v1.35–v1.37'
+    assert policy['supported_version_band'].startswith('v1.23–v1.37')
 
 
 def test_thanos_042_uses_shared_prometheus_http_contract() -> None:
@@ -82,3 +126,21 @@ def test_thanos_042_uses_shared_prometheus_http_contract() -> None:
     assert result.readiness == 'ready'
     assert result.profile_key == 'prometheus-http-core-v1'
     assert result.qualification_key == 'thanos-current'
+
+
+def test_thanos_024_is_extended_and_023_is_eol() -> None:
+    extended = evaluate_compatibility(
+        'thanos',
+        '0.24.0',
+        capabilities={'prometheus_api_v1', 'instant_query', 'range_query'},
+    )
+    eol = evaluate_compatibility(
+        'thanos',
+        '0.23.0',
+        capabilities={'prometheus_api_v1', 'instant_query', 'range_query'},
+    )
+
+    assert extended.readiness == 'degraded'
+    assert extended.support_level == 'extended_supported'
+    assert eol.status == 'end_of_life'
+    assert eol.readiness == 'blocked'
