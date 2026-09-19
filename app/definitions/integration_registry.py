@@ -183,9 +183,7 @@ def integration_compatibility_document() -> dict[str, Any]:
             raise DefinitionError(f'{path}.contract_profile references unknown contract {contract_key!r}.')
         selection_mode = require_str(item, 'selection_mode', path)
         if selection_mode != 'automatic_detected_version':
-            raise DefinitionError(
-                f'{path}.selection_mode must be automatic_detected_version; got {selection_mode!r}.'
-            )
+            raise DefinitionError(f'{path}.selection_mode must be automatic_detected_version; got {selection_mode!r}.')
         for field in (
             'label',
             'icon',
