@@ -28,7 +28,7 @@ Prometheus and Thanos Query are current **provider implementations** of Metrics 
 2. Resolve `provider_key` from the Metrics Source provider catalog.
 3. Resolve `adapter_key`, `query_language`, default routing horizon, and compatibility policy from that provider definition.
 4. Validate network, TLS, authentication, endpoint identity, and adapter-level operations.
-5. Match a version-controlled compatibility profile where the selected adapter/provider requires one.
+5. Automatically match the detected runtime version to the source-controlled qualification band and general contract.
 6. Persist provider-level readiness evidence on the Metrics Source record.
 7. Create an asset-scoped `IntegrationBinding`.
 8. Resolve the binding profile by `adapter_key + asset_type`.
@@ -49,7 +49,7 @@ The source record is provider-neutral. The canonical persisted identity is:
 | `MetricsSource.query_language` | Query language declared by the provider definition. |
 | `MetricsSource.detected_version` | Version of the endpoint actually contacted by KAORI. |
 | `MetricsSource.compatibility_profile` | Qualified endpoint/provider compatibility evidence. |
-| `MetricsSource.compatibility_profile_override` | Explicit supported profile selection when automatic endpoint detection is insufficient. |
+| `MetricsSource.compatibility_profile_override` | Exceptional persisted override for migration/diagnostic recovery only; normal operator flow uses automatic detected-version selection. |
 
 The global resolver, runtime history, jobs, notifications, routing, analytics, reports, Intelligence, Kubernetes, and Object Storage use `metrics_source`. Product identity is presentation/adapter metadata and must not leak into the category contract.
 
@@ -150,6 +150,16 @@ Annual policy version and general core contract version are independent:
 - `compatibility-policy-v1` becomes `v2` on the 2027 annual lifecycle refresh;
 - `kubernetes-core-v1`, `prometheus-http-core-v1`, and other `core-vN` identities remain unchanged until their API/capability semantics require a breaking contract generation.
 
+### Definition-driven automatic selection
+
+Compatibility ranges are data. Runtime logic must not hard-code product release branches.
+
+For semver providers, `app/definitions/catalogs/integrations/compatibility.yaml` declares the automatic version source, qualification floor/ceiling, version bands, band-to-`core-vN` mapping, support posture, and capability deltas. KAORI detects the provider version first and selects the matching band without asking the operator to choose a year, release family, or compatibility profile.
+
+This is also how API evolution is modeled. If a future product range requires a new API generation, that version band maps to a new general core contract in the definition. The evaluator continues to execute the same generic resolution algorithm.
+
+MinIO uses its Object Storage provider definition because its release identifier is date-based rather than semver, but it follows the same automatic range-matching principle.
+
 ### Lifecycle states
 
 - **Current** — inside the annual window and current upstream-qualified line; live evidence may make the integration Ready.
@@ -190,7 +200,7 @@ Policy v1 / 2026 uses anchor year 2021 and a five-year annual lookback.
 
 For Kubernetes specifically, v1.23 is the final stable minor released in 2021, while v1.37 is the latest stable minor at the 2026 policy snapshot. Upstream currently maintains only v1.35–v1.37, so v1.23–v1.34 are KAORI Extended rather than Current.
 
-During the 2027 annual refresh, the policy generation becomes `kaori-compatibility-policy-v2`, the anchor year becomes 2022, and each product floor is recalculated from the latest stable release in 2022. General `core-vN` contracts do not change unless their capability semantics change.
+During the 2027 annual refresh, the policy generation becomes `kaori-compatibility-policy-v2`, the anchor year becomes 2022, and each product floor is recalculated from the latest stable release in 2022. The annual change is performed in definitions and evidence tests. General `core-vN` contracts do not change unless their capability semantics change, and even a new core generation is selected through definition mapping rather than product-version branching in evaluator code.
 
 ## Canonical navigation and route ownership
 
