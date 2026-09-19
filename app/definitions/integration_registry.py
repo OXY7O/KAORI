@@ -109,7 +109,8 @@ def integration_compatibility_document() -> dict[str, Any]:
         'integrations/compatibility.yaml',
         expected_kind='integration_compatibility',
     )
-    lifecycle_policy = require_mapping(document.get('lifecycle_policy'), 'lifecycle_policy')
+
+    lifecycle = require_mapping(document.get('lifecycle_policy'), 'lifecycle_policy')
     for key in (
         'key',
         'snapshot_date',
@@ -120,11 +121,11 @@ def integration_compatibility_document() -> dict[str, Any]:
         'future_posture',
         'core_contract_versioning',
     ):
-        require_str(lifecycle_policy, key, 'lifecycle_policy')
-    policy_version = require_int(lifecycle_policy, 'version', 'lifecycle_policy')
-    policy_year = require_int(lifecycle_policy, 'policy_year', 'lifecycle_policy')
-    lookback_years = require_int(lifecycle_policy, 'lookback_years', 'lifecycle_policy')
-    anchor_year = require_int(lifecycle_policy, 'anchor_year', 'lifecycle_policy')
+        require_str(lifecycle, key, 'lifecycle_policy')
+    policy_version = require_int(lifecycle, 'version', 'lifecycle_policy')
+    policy_year = require_int(lifecycle, 'policy_year', 'lifecycle_policy')
+    lookback_years = require_int(lifecycle, 'lookback_years', 'lifecycle_policy')
+    anchor_year = require_int(lifecycle, 'anchor_year', 'lifecycle_policy')
     if policy_version < 1:
         raise DefinitionError('lifecycle_policy.version must be >= 1.')
     if lookback_years < 1:
@@ -132,26 +133,31 @@ def integration_compatibility_document() -> dict[str, Any]:
     if anchor_year != policy_year - lookback_years:
         raise DefinitionError('lifecycle_policy.anchor_year must equal policy_year - lookback_years.')
 
-    policy = require_mapping(document.get('kubernetes_lifecycle_policy'), 'kubernetes_lifecycle_policy')
-    for key in (
-        'supported_version_constraint',
-        'extended_min_version',
-        'current_min_version',
-        'current_max_version_exclusive',
-        'current_version_label',
-        'upstream_supported_version_label',
-        'supported_version_label',
-        'anchor_release_label',
-        'upper_release_label',
-    ):
-        require_str(policy, key, 'kubernetes_lifecycle_policy')
+    postures = [
+        require_mapping(item, f'support_postures[{index}]')
+        for index, item in enumerate(require_list(document.get('support_postures'), 'support_postures'))
+    ]
+    unique_by(postures, 'key', 'support_postures')
+    posture_keys: set[str] = set()
+    for index, posture in enumerate(postures):
+        path = f'support_postures[{index}]'
+        posture_key = require_str(posture, 'key', path)
+        posture_keys.add(posture_key)
+        require_str(posture, 'result_status', path)
+        readiness = require_str(posture, 'readiness', path)
+        if readiness not in {'ready', 'degraded', 'blocked'}:
+            raise DefinitionError(f'{path}.readiness must be ready, degraded, or blocked; got {readiness!r}.')
+    for field in ('pre_window_posture', 'future_posture'):
+        posture_key = require_str(lifecycle, field, 'lifecycle_policy')
+        if posture_key not in posture_keys:
+            raise DefinitionError(f'lifecycle_policy.{field} references unknown support posture {posture_key!r}.')
 
     contracts = [
         require_mapping(item, f'contract_profiles[{index}]')
         for index, item in enumerate(require_list(document.get('contract_profiles'), 'contract_profiles'))
     ]
     unique_by(contracts, 'key', 'contract_profiles')
-    contract_keys = set()
+    contract_keys: set[str] = set()
     for index, item in enumerate(contracts):
         path = f'contract_profiles[{index}]'
         key = require_str(item, 'key', path)
@@ -167,7 +173,7 @@ def integration_compatibility_document() -> dict[str, Any]:
         for index, item in enumerate(require_list(document.get('products'), 'products'))
     ]
     unique_by(products, 'key', 'products')
-    product_keys = set()
+    product_keys: set[str] = set()
     for index, item in enumerate(products):
         path = f'products[{index}]'
         product_key = require_str(item, 'key', path)
@@ -175,15 +181,26 @@ def integration_compatibility_document() -> dict[str, Any]:
         contract_key = require_str(item, 'contract_profile', path)
         if contract_key not in contract_keys:
             raise DefinitionError(f'{path}.contract_profile references unknown contract {contract_key!r}.')
+        selection_mode = require_str(item, 'selection_mode', path)
+        if selection_mode != 'automatic_detected_version':
+            raise DefinitionError(
+                f'{path}.selection_mode must be automatic_detected_version; got {selection_mode!r}.'
+            )
         for field in (
             'label',
             'icon',
             'version_scheme',
+            'version_source',
             'qualification_floor',
             'qualification_ceiling_exclusive',
             'minimum_label',
             'recommended_label',
             'qualified_version_label',
+            'current_version_label',
+            'upstream_supported_version_label',
+            'supported_version_label',
+            'anchor_release_label',
+            'upper_release_label',
             'upstream_lifecycle_label',
             'support_label',
             'support_tone',
@@ -205,12 +222,14 @@ def integration_compatibility_document() -> dict[str, Any]:
         contract_key = require_str(item, 'contract_profile', path)
         if contract_key not in contract_keys:
             raise DefinitionError(f'{path}.contract_profile references unknown contract {contract_key!r}.')
+        support_level = require_str(item, 'support_level', path)
+        if support_level not in posture_keys:
+            raise DefinitionError(f'{path}.support_level references unknown support posture {support_level!r}.')
         require_str(item, 'version_constraint', path)
-        require_str(item, 'support_level', path)
         require_str(item, 'upstream_lifecycle', path)
         require_str(item, 'notes', path)
-    return document
 
+    return document
 
 @lru_cache(maxsize=8)
 def integration_provider_document(provider: str) -> dict[str, Any]:
