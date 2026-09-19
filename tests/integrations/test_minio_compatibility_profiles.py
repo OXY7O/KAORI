@@ -16,8 +16,17 @@ def test_minio_qualified_release_maps_to_general_s3_contract() -> None:
 
     assert result.readiness == 'ready'
     assert result.profile_key == 's3-object-storage-v1'
-    assert result.qualification_key == 'minio-community-qualified'
-    assert compatibility.SUPPORTED_RELEASE_MAX in result.supported_range
+    assert result.qualification_key == 'minio-community-policy-v1'
+    assert compatibility.SUPPORTED_RELEASE_MIN == 'RELEASE.2021-12-29T06-49-06Z'
+    assert compatibility.SUPPORTED_RELEASE_MAX == 'RELEASE.2025-10-15T17-29-55Z'
+
+
+def test_minio_release_before_2021_anchor_is_end_of_life() -> None:
+    result = compatibility.evaluate_minio_release('RELEASE.2021-12-20T22-07-16Z', product='minio')
+
+    assert result.status == 'end_of_life'
+    assert result.readiness == 'blocked'
+    assert result.support_level == 'end_of_life'
 
 
 def test_newer_minio_release_is_unverified_not_blocked_by_version_alone() -> None:
