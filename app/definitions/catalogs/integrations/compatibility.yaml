@@ -1,95 +1,162 @@
-schema_version: 1
+schema_version: 2
 kind: integration_compatibility
+
 kubernetes_lifecycle_policy:
   supported_version_constraint: '>=1.20,<2.0'
-  current_min_version: '1.34'
-  current_max_version_exclusive: '1.37'
-  current_version_label: v1.34–v1.36
-  supported_version_label: v1.20–v1.x
+  current_min_version: '1.35'
+  current_max_version_exclusive: '1.38'
+  current_version_label: v1.35–v1.37
+  upstream_supported_version_label: v1.35–v1.37
+  supported_version_label: v1.20–v1.37 qualified; future v1.x unverified
   legacy_min_version: '1.20'
-profiles:
-- key: kubernetes-api-v1
-  product: kubernetes
-  version_constraint: '>=1.20,<2.0'
-  support_level: supported
+
+contract_profiles:
+- key: kubernetes-core-v1
+  products:
+  - kubernetes
+  adapter_key: kubernetes_api
   required_capabilities: []
-  notes: KAORI Kubernetes API contract v1. Live API discovery and feature-level RBAC determine readiness.
+  notes: Stable Kubernetes API discovery contract; live resource discovery and feature-level RBAC remain authoritative.
   query_profile: null
-- key: prometheus-http-v2
+- key: prometheus-http-core-v1
+  products:
+  - prometheus
+  - thanos
+  adapter_key: prometheus_http
+  required_capabilities:
+  - instant_query
+  - range_query
+  notes: Stable Prometheus HTTP API v1 query contract shared by Prometheus and Thanos Query.
+  query_profile: prometheus-http-core-v1
+- key: alertmanager-api-v2-contract-v1
+  products:
+  - alertmanager
+  adapter_key: alertmanager_api_v2
+  required_capabilities:
+  - status_v2
+  - alerts_v2
+  - silences_v2
+  notes: Stable Alertmanager API v2 provider contract; payload and consumer evidence remain binding-scoped.
+  query_profile: null
+
+products:
+- key: kubernetes
+  label: Kubernetes
+  icon: ship-wheel
+  version_scheme: Semantic version
+  contract_profile: kubernetes-core-v1
+  minimum_label: v1.20
+  recommended_label: v1.37.x
+  qualified_version_label: v1.20–v1.37
+  upstream_lifecycle_label: Supported upstream: v1.35–v1.37
+  support_label: Current + Legacy Qualified
+  support_tone: info
+  capability_summary: API discovery, inventory, governed operations, and TLS governance.
+  validation_basis: Live API discovery and feature-level Kubernetes RBAC decide operational readiness.
+- key: prometheus
+  label: Prometheus
+  icon: activity
+  version_scheme: Semantic version
+  contract_profile: prometheus-http-core-v1
+  minimum_label: v2.40
+  recommended_label: v3.13 LTS
+  qualified_version_label: v2.40–v3.x
+  upstream_lifecycle_label: Prometheus 3.x current; 2.x legacy-qualified
+  support_label: HTTP Core Qualified
+  support_tone: normal
+  capability_summary: Prometheus HTTP API core queries with asset-scoped metric contracts.
+  validation_basis: Provider query APIs must validate; consumer metrics remain independently binding-scoped.
+- key: thanos
+  label: Thanos Query
+  icon: database-zap
+  version_scheme: Semantic version
+  contract_profile: prometheus-http-core-v1
+  minimum_label: v0.39
+  recommended_label: v0.42.4
+  qualified_version_label: v0.39–v0.42.x
+  upstream_lifecycle_label: v0.42.x current; v0.39–v0.41 qualified history
+  support_label: Shared HTTP Core Qualified
+  support_tone: normal
+  capability_summary: Long-retention PromQL through the shared Prometheus HTTP API v1 contract.
+  validation_basis: Provider query APIs and Thanos endpoint identity validate separately from asset metric bindings.
+- key: alertmanager
+  label: Alertmanager
+  icon: bell-ring
+  version_scheme: Semantic version
+  contract_profile: alertmanager-api-v2-contract-v1
+  minimum_label: v0.25
+  recommended_label: v0.34.1
+  qualified_version_label: v0.25–v0.34.x
+  upstream_lifecycle_label: v0.34.x current; v0.25–v0.33 qualified history
+  support_label: API v2 Qualified
+  support_tone: normal
+  capability_summary: Alertmanager API v2 status, alerts, and silences provider contract.
+  validation_basis: Mandatory API probes establish provider readiness; consumer alert evidence remains binding-scoped.
+
+qualifications:
+- key: kubernetes-legacy
+  product: kubernetes
+  version_constraint: '>=1.20,<1.35'
+  contract_profile: kubernetes-core-v1
+  support_level: legacy_supported
+  upstream_lifecycle: legacy
+  required_capabilities: []
+  notes: Legacy-qualified Kubernetes v1 line. Live API discovery and RBAC remain authoritative.
+- key: kubernetes-current
+  product: kubernetes
+  version_constraint: '>=1.35,<1.38'
+  contract_profile: kubernetes-core-v1
+  support_level: current
+  upstream_lifecycle: current
+  required_capabilities: []
+  notes: Current upstream-supported Kubernetes minors v1.35–v1.37.
+- key: prometheus-v2-legacy
   product: prometheus
   version_constraint: '>=2.40,<3.0'
+  contract_profile: prometheus-http-core-v1
   support_level: legacy_supported
-  required_capabilities:
-  - instant_query
-  - range_query
-  notes: Prometheus 2.x runtime profile using the stable Prometheus HTTP API v1 core contract.
-  query_profile: prometheus-http-core-v1
-- key: prometheus-http-v3
+  upstream_lifecycle: legacy
+  required_capabilities: []
+  notes: Prometheus 2.x qualified against the shared HTTP API core contract.
+- key: prometheus-v3-current
   product: prometheus
   version_constraint: '>=3.0,<4.0'
+  contract_profile: prometheus-http-core-v1
   support_level: current
-  required_capabilities:
-  - instant_query
-  - range_query
-  notes: Prometheus 3.x runtime profile using the stable Prometheus HTTP API v1 core contract.
-  query_profile: prometheus-http-core-v1
-- key: alertmanager-api-v2-legacy
+  upstream_lifecycle: current
+  required_capabilities: []
+  notes: Prometheus 3.x qualified against the shared HTTP API core contract.
+- key: alertmanager-legacy
   product: alertmanager
   version_constraint: '>=0.25,<0.27'
+  contract_profile: alertmanager-api-v2-contract-v1
   support_level: legacy
-  required_capabilities:
-  - status_v2
-  - alerts_v2
-  - silences_v2
-  notes: Legacy runtime line using Alertmanager API v2 only.
-  query_profile: null
-- key: alertmanager-api-v2-current
+  upstream_lifecycle: legacy
+  required_capabilities: []
+  notes: Legacy Alertmanager runtime line validated through API v2.
+- key: alertmanager-current
   product: alertmanager
-  version_constraint: '>=0.27,<0.34'
+  version_constraint: '>=0.27,<0.35'
+  contract_profile: alertmanager-api-v2-contract-v1
   support_level: current
-  required_capabilities:
-  - status_v2
-  - alerts_v2
-  - silences_v2
-  notes: Current Alertmanager API v2 profile.
-  query_profile: null
-- key: thanos-query-v0-39
+  upstream_lifecycle: current
+  required_capabilities: []
+  notes: Current qualified Alertmanager API v2 line including v0.34.x.
+- key: thanos-supported
   product: thanos
-  version_constraint: '>=0.39,<0.40'
+  version_constraint: '>=0.39,<0.42'
+  contract_profile: prometheus-http-core-v1
   support_level: supported
+  upstream_lifecycle: qualified_history
   required_capabilities:
   - prometheus_api_v1
-  - instant_query
-  - range_query
-  notes: Supported Thanos Query 0.39 profile.
-  query_profile: prometheus-http-core-v1
-- key: thanos-query-v0-40
-  product: thanos
-  version_constraint: '>=0.40,<0.41'
-  support_level: supported
-  required_capabilities:
-  - prometheus_api_v1
-  - instant_query
-  - range_query
-  notes: Supported Thanos Query 0.40 profile.
-  query_profile: prometheus-http-core-v1
-- key: thanos-query-v0-41
-  product: thanos
-  version_constraint: '>=0.41,<0.42'
-  support_level: supported
-  required_capabilities:
-  - prometheus_api_v1
-  - instant_query
-  - range_query
-  notes: Supported Thanos Query 0.41 profile.
-  query_profile: prometheus-http-core-v1
-- key: thanos-query-v0-42
+  notes: Thanos Query v0.39–v0.41 qualified through the shared Prometheus HTTP API contract.
+- key: thanos-current
   product: thanos
   version_constraint: '>=0.42,<0.43'
+  contract_profile: prometheus-http-core-v1
   support_level: current
+  upstream_lifecycle: current
   required_capabilities:
   - prometheus_api_v1
-  - instant_query
-  - range_query
-  notes: Current Thanos Query 0.42 profile using the Prometheus HTTP API v1 query contract.
-  query_profile: prometheus-http-core-v1
+  notes: Current Thanos Query v0.42 line using the shared Prometheus HTTP API contract.
