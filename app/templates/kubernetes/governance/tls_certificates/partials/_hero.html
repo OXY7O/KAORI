@@ -6,7 +6,7 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('key-round', 'Kubernetes Governance', 'shield-check') %}
                 <h1 class="{{ page_hero.title_classes() }}">TLS Certificate Governance</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review certificate validity, host coverage, issuer posture, renewal windows, and rotation readiness.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review certificate validity, host coverage, issuer posture, and rotation readiness in KAORI.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {% if cluster_onboarding.is_blocked %}
                         {{ page_hero.meta_label('badge-check', 'TLS Lifecycle') }}
