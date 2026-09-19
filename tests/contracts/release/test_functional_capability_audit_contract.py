@@ -296,7 +296,7 @@ def test_reports_generation_secondary_behaviors_bind_narrow_executable_evidence(
 SECONDARY_RECONCILIATION_SLICE = {
     ('settings', 'general'): {
         'normal_flow': ('covered', 'tests/settings/test_settings_action_characterization.py'),
-        'authorization': ('bounded_gap', None),
+        'authorization': ('covered', 'tests/settings/test_settings_route_authorization_characterization.py'),
         'validation_dependency': ('covered', 'tests/settings/test_settings_action_characterization.py'),
         'persistence': ('covered', 'tests/settings/test_settings_action_characterization.py'),
         'async_job': ('not_applicable', None),
@@ -305,7 +305,7 @@ SECONDARY_RECONCILIATION_SLICE = {
     },
     ('settings', 'account'): {
         'normal_flow': ('covered', 'tests/settings/test_settings_action_characterization.py'),
-        'authorization': ('bounded_gap', None),
+        'authorization': ('covered', 'tests/settings/test_settings_route_authorization_characterization.py'),
         'validation_dependency': ('covered', 'tests/settings/test_settings_action_characterization.py'),
         'persistence': ('covered', 'tests/settings/test_settings_action_characterization.py'),
         'async_job': ('not_applicable', None),
