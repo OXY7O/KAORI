@@ -459,9 +459,7 @@ def _constraint_bound(constraint: str, prefix: str) -> Version:
 
 
 _KUBERNETES_POLICY = PRODUCT_POLICIES['kubernetes']
-_KUBERNETES_CURRENT = next(
-    item for item in QUALIFICATIONS['kubernetes'] if item.support_level == 'current'
-)
+_KUBERNETES_CURRENT = next(item for item in QUALIFICATIONS['kubernetes'] if item.support_level == 'current')
 KUBERNETES_SUPPORTED_VERSION_CONSTRAINT = (
     f'>={_KUBERNETES_POLICY.qualification_floor},<{_KUBERNETES_POLICY.qualification_ceiling_exclusive}'
 )
