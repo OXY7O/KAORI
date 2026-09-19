@@ -115,6 +115,7 @@ _RELEASE_FEATURES: tuple[dict[str, Any], ...] = (
     },
 )
 
+
 def _object_storage_compatibility_presentation() -> dict[str, Any] | None:
     if not MINIO_COMPATIBILITY_PROFILES:
         return None
@@ -190,6 +191,7 @@ def _compatibility_catalog() -> tuple[dict[str, Any], ...]:
     if minio:
         catalog.append(minio)
     return tuple(catalog)
+
 
 def _clean_config_value(value: Any, fallback: str = 'Not provided') -> str:
     normalized = str(value or '').strip()
