@@ -48,7 +48,7 @@ def test_integration_domain_hero_descriptions_are_registered_with_global_budget_
 
     assert (
         descriptions['Integration domain Orchestration']
-        == 'Cluster providers, control-plane access, discovery, runtime connectivity, and governed orchestration integration workflows.'
+        == 'Connect cluster providers through discovery, connectivity, and governed orchestration workflows.'
     )
     assert set(descriptions) == {
         'Integration domain Orchestration',

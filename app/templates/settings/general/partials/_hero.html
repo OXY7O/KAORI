@@ -7,11 +7,11 @@
                 <h1 class="{{ page_hero.title_classes() }}">General Settings</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">
                     {% if active_tab == 'system-information' %}
-                        Review the KAORI release identity, build traceability, and capabilities included with this deployment.
+                        Review KAORI release identity, build traceability, and capabilities included in this deployment.
                     {% elif active_tab == 'compatibility-versions' %}
-                        Review supported integration baselines and the validation policy KAORI uses before a provider is considered ready.
+                        Review integration baselines and KAORI validation policy before providers are considered ready.
                     {% else %}
-                        Configure how KAORI presents time and regional information for your account without changing canonical operational data.
+                        Configure how KAORI presents time and regional information without changing operational data.
                     {% endif %}
                 </p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
