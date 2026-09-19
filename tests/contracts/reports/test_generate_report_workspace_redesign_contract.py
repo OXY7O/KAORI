@@ -405,9 +405,7 @@ def test_generate_report_readiness_badges_use_shared_semantic_border_authority()
     source = read(TEMPLATE)
     runtime = read(RUNTIME)
 
-    readiness = source.split('aria-label="Request readiness"', 1)[1].split(
-        '<div id="readiness-summary"', 1
-    )[0]
+    readiness = source.split('aria-label="Request readiness"', 1)[1].split('<div id="readiness-summary"', 1)[0]
 
     assert readiness.count("operational_callout.semantic_border_classes('normal')") == 3
     assert readiness.count("operational_callout.semantic_border_classes('warning')") == 3
