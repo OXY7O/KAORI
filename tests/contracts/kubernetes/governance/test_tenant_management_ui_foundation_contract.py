@@ -13,7 +13,7 @@ def test_tenant_management_ui_foundation_contract_is_registered_and_complete() -
     contract = CONTRACT.read_text(encoding='utf-8')
     design_index = DESIGN_INDEX.read_text(encoding='utf-8')
 
-    assert '`patterns/KUBERNETES_TENANT_MANAGEMENT.md`' in design_index
+    assert '\x60patterns/KUBERNETES_TENANT_MANAGEMENT.md\x60' in design_index
     assert 'Status: PRE-IMPLEMENTATION CONTRACT' in contract
     assert 'not release-visible' in contract
     assert 'one global sidebar destination' in contract
