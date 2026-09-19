@@ -29,20 +29,26 @@
                         <i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary"></i>
                         {{ label }}
                     </dt>
-                    <dd class="mt-1.5 text-base font-bold text-content-primary">{{ value }}</dd>
-                    <dd class="mt-1 text-xs leading-5 text-content-muted">{{ supporting }}</dd>
+                    <dd class="mt-1.5 text-base font-bold text-content-primary">
+                        {{ value }}
+                    </dd>
+                    <dd class="mt-1 text-xs leading-5 text-content-muted">
+                        {{ supporting }}
+                    </dd>
                 </div>
             {% endfor %}
         </dl>
     </header>
 
-    <section class="px-5 py-5 sm:px-6" aria-labelledby="compatibility-reading-heading">
+    <section class="px-5 py-5 sm:px-6"
+             aria-labelledby="compatibility-reading-heading">
         <div class="flex items-start gap-3">
             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                 <i data-lucide="book-open-check" class="h-4 w-4"></i>
             </span>
             <div>
-                <h3 id="compatibility-reading-heading" class="text-sm font-bold text-content-primary">Reading the Matrix</h3>
+                <h3 id="compatibility-reading-heading"
+                    class="text-sm font-bold text-content-primary">Reading the Matrix</h3>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Read compatibility as contract, qualification evidence, then observed runtime readiness.</p>
             </div>
         </div>
@@ -64,14 +70,16 @@
         </ol>
     </section>
 
-    <section class="border-y border-outline-default" aria-labelledby="compatibility-matrix-heading">
+    <section class="border-y border-outline-default"
+             aria-labelledby="compatibility-matrix-heading">
         <header class="flex flex-col gap-3 bg-surface-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
             <div class="flex items-start gap-3">
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
                     <i data-lucide="table-properties" class="h-4 w-4"></i>
                 </span>
                 <div>
-                    <h3 id="compatibility-matrix-heading" class="text-base font-semibold leading-6 text-content-primary">Compatibility Qualification Matrix</h3>
+                    <h3 id="compatibility-matrix-heading"
+                        class="text-base font-semibold leading-6 text-content-primary">Compatibility Qualification Matrix</h3>
                     <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">
                         Version qualification is supporting evidence. Live capability validation remains the operational readiness authority.
                     </p>
@@ -129,29 +137,38 @@
         </div>
     </section>
 
-    <section class="grid lg:grid-cols-2" aria-label="Compatibility policy and validation basis">
-        <article class="p-5 sm:p-6 lg:border-r lg:border-outline-default" aria-labelledby="compatibility-policy-heading">
+    <section class="grid lg:grid-cols-2"
+             aria-label="Compatibility policy and validation basis">
+        <article class="p-5 sm:p-6 lg:border-r lg:border-outline-default"
+                 aria-labelledby="compatibility-policy-heading">
             <div class="flex items-start gap-3">
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                     <i data-lucide="shield-ellipsis" class="h-4 w-4"></i>
                 </span>
                 <div>
-                    <h3 id="compatibility-policy-heading" class="text-sm font-bold text-content-primary">Policy Boundary</h3>
+                    <h3 id="compatibility-policy-heading"
+                        class="text-sm font-bold text-content-primary">Policy Boundary</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Upstream lifecycle, KAORI qualification, and live readiness are independent evidence layers.</p>
                 </div>
             </div>
             <dl class="mt-4 divide-y divide-outline-subtle border-l-2 border-kaori-primary/25 pl-4">
                 <div class="pb-3">
                     <dt class="text-xs font-semibold text-content-primary">General Contract</dt>
-                    <dd class="mt-1 text-xs leading-5 text-content-muted">Stable API/protocol generation; this is the runtime compatibility identity persisted by KAORI.</dd>
+                    <dd class="mt-1 text-xs leading-5 text-content-muted">
+                        Stable API/protocol generation; this is the runtime compatibility identity persisted by KAORI.
+                    </dd>
                 </div>
                 <div class="py-3">
                     <dt class="text-xs font-semibold text-content-primary">Unverified Future Version</dt>
-                    <dd class="mt-1 text-xs leading-5 text-content-muted">If mandatory contract probes pass, KAORI reports Degraded / Unverified instead of blocking solely on the version number.</dd>
+                    <dd class="mt-1 text-xs leading-5 text-content-muted">
+                        If mandatory contract probes pass, KAORI reports Degraded / Unverified instead of blocking solely on the version number.
+                    </dd>
                 </div>
                 <div class="pt-3">
                     <dt class="text-xs font-semibold text-content-primary">Blocking Rule</dt>
-                    <dd class="mt-1 text-xs leading-5 text-content-muted">Missing mandatory capabilities, invalid provider identity, or failed live validation remain blocking conditions.</dd>
+                    <dd class="mt-1 text-xs leading-5 text-content-muted">
+                        Missing mandatory capabilities, invalid provider identity, or failed live validation remain blocking conditions.
+                    </dd>
                 </div>
             </dl>
         </article>
@@ -161,7 +178,8 @@
                     <i data-lucide="scan-search" class="h-4 w-4"></i>
                 </span>
                 <div>
-                    <h3 id="capability-validation-heading" class="text-sm font-bold text-content-primary">Contract Ownership</h3>
+                    <h3 id="capability-validation-heading"
+                        class="text-sm font-bold text-content-primary">Contract Ownership</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Multiple product versions may map to one stable contract without creating runtime branches.</p>
                 </div>
             </div>
