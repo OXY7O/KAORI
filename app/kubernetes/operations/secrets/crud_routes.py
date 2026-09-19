@@ -119,7 +119,7 @@ def secret_namespace_options():
 @cluster_required(
     'Secret Management',
     page_title='Create Kubernetes Secret',
-    page_description='Create one validated Secret without overwriting or persisting values.',
+    page_description='Create one validated Secret without overwriting or persisting sensitive values safely.',
 )
 def create_secret():
     operation_feedback = None
@@ -437,7 +437,7 @@ def delete_secret_target():
 @cluster_required(
     'Secret Management',
     page_title='Delete Kubernetes Secret',
-    page_description='Validate the exact Secret target before explicitly confirming removal.',
+    page_description='Validate the exact Secret target before explicitly confirming governed removal safely.',
 )
 def delete_secret():
     operation_feedback = None

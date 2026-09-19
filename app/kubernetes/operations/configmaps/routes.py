@@ -508,7 +508,7 @@ def update_configmap_page():
 @cluster_required(
     'ConfigMap Management',
     page_title='Delete ConfigMap',
-    page_description='Validate the live target before explicitly confirming ConfigMap removal.',
+    page_description='Validate the live ConfigMap target before explicitly confirming governed removal.',
 )
 def delete_configmap_page():
     if request.method == 'POST':
