@@ -24,7 +24,7 @@ def test_reports_operational_copy_is_compact_and_consistent() -> None:
 
     assert has_python_string(
         templates_service,
-        'Manage protected system templates and reusable custom report structures for Analytics PDF/XLSX/CSV and Inventory XLSX/CSV.',
+        'Manage system templates and custom report structures for Analytics and Inventory formats.',
     )
     assert has_python_string(
         storage_service,

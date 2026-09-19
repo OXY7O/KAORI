@@ -69,7 +69,7 @@ def test_reports_requested_copy_is_compact() -> None:
     templates_service = read('app/reports/report_templates/service.py')
 
     assert (
-        'Build governed reports from connected data and approved formats. Analytics: PDF/XLSX/CSV · Inventory: XLSX/CSV.'
+        'Build governed reports from connected data and approved Analytics or Inventory output formats.'
         in generate_service
     )
     assert (
@@ -77,8 +77,7 @@ def test_reports_requested_copy_is_compact() -> None:
         in storage_service
     )
     assert (
-        'Manage protected system templates and reusable custom report structures for Analytics PDF/XLSX/CSV and Inventory XLSX/CSV.'
-        in templates_service
+        'Manage system templates and custom report structures for Analytics and Inventory formats.' in templates_service
     )
 
 
