@@ -18,7 +18,11 @@ from app.models.minio import MinioInstance
 def _health_factors(instance: MinioInstance) -> tuple[HealthFactor, ...]:
     connected = instance.last_status == 'connected'
     compatibility_ready = instance.compatibility_status in {'compatible', 'compatible_with_warnings'}
-    compatibility_unverified = instance.compatibility_status in {'unverified_version', 'version_unknown', 'product_unqualified'}
+    compatibility_unverified = instance.compatibility_status in {
+        'unverified_version',
+        'version_unknown',
+        'product_unqualified',
+    }
     latency_observed = instance.last_response_time_ms is not None
     high_latency = (instance.last_response_time_ms or 0) > 1500
     return (
@@ -33,9 +37,15 @@ def _health_factors(instance: MinioInstance) -> tuple[HealthFactor, ...]:
         HealthFactor(
             'compatibility',
             'MinIO compatibility',
-            'success' if compatibility_ready else ('warning' if compatibility_unverified else ('failed' if instance.compatibility_status else 'unknown')),
+            'success'
+            if compatibility_ready
+            else (
+                'warning' if compatibility_unverified else ('failed' if instance.compatibility_status else 'unknown')
+            ),
             35,
-            100 if compatibility_ready else (70 if compatibility_unverified else (0 if instance.compatibility_status else 50)),
+            100
+            if compatibility_ready
+            else (70 if compatibility_unverified else (0 if instance.compatibility_status else 50)),
             instance.validation_message or '',
         ),
         HealthFactor(
@@ -77,9 +87,15 @@ def _diagnostics(instance: MinioInstance) -> tuple[DiagnosticResult, ...]:
             key='compatibility',
             label='Compatibility Profile',
             category='compatibility',
-            status='success' if compatibility_ready else ('warning' if compatibility_unverified else ('failed' if instance.compatibility_status else 'unknown')),
+            status='success'
+            if compatibility_ready
+            else (
+                'warning' if compatibility_unverified else ('failed' if instance.compatibility_status else 'unknown')
+            ),
             detail=instance.validation_message or 'Run Full Validation to resolve the MinIO compatibility profile.',
-            severity='warning' if compatibility_unverified else ('critical' if instance.compatibility_status and not compatibility_ready else 'info'),
+            severity='warning'
+            if compatibility_unverified
+            else ('critical' if instance.compatibility_status and not compatibility_ready else 'info'),
         ),
     )
 
