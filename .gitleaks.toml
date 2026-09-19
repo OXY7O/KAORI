@@ -17,8 +17,560 @@ regexes = ['''^\s*-\s*key:\s*(?:k8s_inventory|k8s_operations)\s*$''']
 description = "KAORI integration provider/profile keys are contract identifiers"
 condition = "AND"
 regexTarget = "line"
-paths = ['''^app/definitions/catalogs/integrations/(?:compatibility|object_storage)\.yaml$''']
-regexes = ['''^\s*-\s*key:\s*(?:kubernetes-api-v1|s3_compatible)\s*$''']
+paths = ['''^app/definitions/catalogs/integrations/(?:compatibility|object_storage)\.yaml[[rules.allowlists]]
+description = "Historical integration architecture prose contains API terminology, not a key"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^docs/architecture/integration-module-map\.md$''']
+regexes = ['''Kubernetes API lifecycle bands, Prometheus/Thanos endpoint compatibility,''']
+
+[[rules.allowlists]]
+description = "KAORI Kubernetes permission tuples reference the k8s_operations module key"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/rbac/defaults\.py$''']
+regexes = ['''^\s*\('kubernetes_secrets\.[a-z_]+',\s*'k8s_operations',''']
+
+[[rules.allowlists]]
+description = "KAORI Kubernetes API profile identifiers are public compatibility contracts"
+condition = "AND"
+regexTarget = "line"
+paths = [
+  '''^app/kubernetes/README\.md$''',
+  '''^app/(?:kubernetes|integrations)/compatibility\.py$''',
+  '''^docs/INTEGRATION_COMPATIBILITY\.md$''',
+]
+regexes = ['''kubernetes-api-v1''']
+
+[[rules.allowlists]]
+description = "KAORI PromQL profile identifiers are public query contracts"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+regexes = ['''^PROFILE_KEY\s*=\s*['"]promql-kubernetes-v1['"]\s*$''']
+
+[[rules.allowlists]]
+description = "Historical PromQL profile key is a public query contract"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+regexes = ['''^prometheus-kubernetes-v1$''']
+
+[[rules.allowlists]]
+description = "Historical Prometheus compatibility selector is a profile identifier"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/prometheus/service\.py$''']
+regexes = ['''selected_profile_key\s*==\s*['"]prometheus-v2-kubernetes-v1['"]''']
+
+[[rules.allowlists]]
+description = "Historical Kubernetes compatibility key is a public profile identifier"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/integrations/compatibility\.py$''']
+regexes = ['''key\s*=\s*['"]kubernetes-legacy-v1['"]''']
+
+[[rules.allowlists]]
+description = "Bootstrap password example is an explicit non-secret placeholder"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^\.env\.example$''']
+regexes = ['''^replace-with-at-least-12-characters$''']
+'']
+regexes = ['''^\s*-\s*key:\s*(?:kubernetes-api-v1|s3_compatible)\s*[[rules.allowlists]]
+description = "Historical integration architecture prose contains API terminology, not a key"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^docs/architecture/integration-module-map\.md$''']
+regexes = ['''Kubernetes API lifecycle bands, Prometheus/Thanos endpoint compatibility,''']
+
+[[rules.allowlists]]
+description = "KAORI Kubernetes permission tuples reference the k8s_operations module key"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/rbac/defaults\.py$''']
+regexes = ['''^\s*\('kubernetes_secrets\.[a-z_]+',\s*'k8s_operations',''']
+
+[[rules.allowlists]]
+description = "KAORI Kubernetes API profile identifiers are public compatibility contracts"
+condition = "AND"
+regexTarget = "line"
+paths = [
+  '''^app/kubernetes/README\.md$''',
+  '''^app/(?:kubernetes|integrations)/compatibility\.py$''',
+  '''^docs/INTEGRATION_COMPATIBILITY\.md$''',
+]
+regexes = ['''kubernetes-api-v1''']
+
+[[rules.allowlists]]
+description = "KAORI PromQL profile identifiers are public query contracts"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+regexes = ['''^PROFILE_KEY\s*=\s*['"]promql-kubernetes-v1['"]\s*$''']
+
+[[rules.allowlists]]
+description = "Historical PromQL profile key is a public query contract"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+regexes = ['''^prometheus-kubernetes-v1$''']
+
+[[rules.allowlists]]
+description = "Historical Prometheus compatibility selector is a profile identifier"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/prometheus/service\.py$''']
+regexes = ['''selected_profile_key\s*==\s*['"]prometheus-v2-kubernetes-v1['"]''']
+
+[[rules.allowlists]]
+description = "Historical Kubernetes compatibility key is a public profile identifier"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/integrations/compatibility\.py$''']
+regexes = ['''key\s*=\s*['"]kubernetes-legacy-v1['"]''']
+
+[[rules.allowlists]]
+description = "Bootstrap password example is an explicit non-secret placeholder"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^\.env\.example$''']
+regexes = ['''^replace-with-at-least-12-characters$''']
+'']
+
+[[rules.allowlists]]
+description = "KAORI annual compatibility policy key is a public schema identifier"
+condition = "AND"
+regexTarget = "secret"
+paths = [
+  '''^app/definitions/catalogs/integrations/compatibility\.yaml[[rules.allowlists]]
+description = "Historical integration architecture prose contains API terminology, not a key"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^docs/architecture/integration-module-map\.md$''']
+regexes = ['''Kubernetes API lifecycle bands, Prometheus/Thanos endpoint compatibility,''']
+
+[[rules.allowlists]]
+description = "KAORI Kubernetes permission tuples reference the k8s_operations module key"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/rbac/defaults\.py$''']
+regexes = ['''^\s*\('kubernetes_secrets\.[a-z_]+',\s*'k8s_operations',''']
+
+[[rules.allowlists]]
+description = "KAORI Kubernetes API profile identifiers are public compatibility contracts"
+condition = "AND"
+regexTarget = "line"
+paths = [
+  '''^app/kubernetes/README\.md$''',
+  '''^app/(?:kubernetes|integrations)/compatibility\.py$''',
+  '''^docs/INTEGRATION_COMPATIBILITY\.md$''',
+]
+regexes = ['''kubernetes-api-v1''']
+
+[[rules.allowlists]]
+description = "KAORI PromQL profile identifiers are public query contracts"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+regexes = ['''^PROFILE_KEY\s*=\s*['"]promql-kubernetes-v1['"]\s*$''']
+
+[[rules.allowlists]]
+description = "Historical PromQL profile key is a public query contract"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+regexes = ['''^prometheus-kubernetes-v1$''']
+
+[[rules.allowlists]]
+description = "Historical Prometheus compatibility selector is a profile identifier"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/prometheus/service\.py$''']
+regexes = ['''selected_profile_key\s*==\s*['"]prometheus-v2-kubernetes-v1['"]''']
+
+[[rules.allowlists]]
+description = "Historical Kubernetes compatibility key is a public profile identifier"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/integrations/compatibility\.py$''']
+regexes = ['''key\s*=\s*['"]kubernetes-legacy-v1['"]''']
+
+[[rules.allowlists]]
+description = "Bootstrap password example is an explicit non-secret placeholder"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^\.env\.example$''']
+regexes = ['''^replace-with-at-least-12-characters$''']
+'',
+  '''^tests/integrations/test_general_compatibility_contract\.py[[rules.allowlists]]
+description = "Historical integration architecture prose contains API terminology, not a key"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^docs/architecture/integration-module-map\.md$''']
+regexes = ['''Kubernetes API lifecycle bands, Prometheus/Thanos endpoint compatibility,''']
+
+[[rules.allowlists]]
+description = "KAORI Kubernetes permission tuples reference the k8s_operations module key"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/rbac/defaults\.py$''']
+regexes = ['''^\s*\('kubernetes_secrets\.[a-z_]+',\s*'k8s_operations',''']
+
+[[rules.allowlists]]
+description = "KAORI Kubernetes API profile identifiers are public compatibility contracts"
+condition = "AND"
+regexTarget = "line"
+paths = [
+  '''^app/kubernetes/README\.md$''',
+  '''^app/(?:kubernetes|integrations)/compatibility\.py$''',
+  '''^docs/INTEGRATION_COMPATIBILITY\.md$''',
+]
+regexes = ['''kubernetes-api-v1''']
+
+[[rules.allowlists]]
+description = "KAORI PromQL profile identifiers are public query contracts"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+regexes = ['''^PROFILE_KEY\s*=\s*['"]promql-kubernetes-v1['"]\s*$''']
+
+[[rules.allowlists]]
+description = "Historical PromQL profile key is a public query contract"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+regexes = ['''^prometheus-kubernetes-v1$''']
+
+[[rules.allowlists]]
+description = "Historical Prometheus compatibility selector is a profile identifier"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/prometheus/service\.py$''']
+regexes = ['''selected_profile_key\s*==\s*['"]prometheus-v2-kubernetes-v1['"]''']
+
+[[rules.allowlists]]
+description = "Historical Kubernetes compatibility key is a public profile identifier"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/integrations/compatibility\.py$''']
+regexes = ['''key\s*=\s*['"]kubernetes-legacy-v1['"]''']
+
+[[rules.allowlists]]
+description = "Bootstrap password example is an explicit non-secret placeholder"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^\.env\.example$''']
+regexes = ['''^replace-with-at-least-12-characters$''']
+'',
+  '''^docs/architecture/compatibility-framework\.md[[rules.allowlists]]
+description = "Historical integration architecture prose contains API terminology, not a key"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^docs/architecture/integration-module-map\.md$''']
+regexes = ['''Kubernetes API lifecycle bands, Prometheus/Thanos endpoint compatibility,''']
+
+[[rules.allowlists]]
+description = "KAORI Kubernetes permission tuples reference the k8s_operations module key"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/rbac/defaults\.py$''']
+regexes = ['''^\s*\('kubernetes_secrets\.[a-z_]+',\s*'k8s_operations',''']
+
+[[rules.allowlists]]
+description = "KAORI Kubernetes API profile identifiers are public compatibility contracts"
+condition = "AND"
+regexTarget = "line"
+paths = [
+  '''^app/kubernetes/README\.md$''',
+  '''^app/(?:kubernetes|integrations)/compatibility\.py$''',
+  '''^docs/INTEGRATION_COMPATIBILITY\.md$''',
+]
+regexes = ['''kubernetes-api-v1''']
+
+[[rules.allowlists]]
+description = "KAORI PromQL profile identifiers are public query contracts"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+regexes = ['''^PROFILE_KEY\s*=\s*['"]promql-kubernetes-v1['"]\s*$''']
+
+[[rules.allowlists]]
+description = "Historical PromQL profile key is a public query contract"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+regexes = ['''^prometheus-kubernetes-v1$''']
+
+[[rules.allowlists]]
+description = "Historical Prometheus compatibility selector is a profile identifier"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/prometheus/service\.py$''']
+regexes = ['''selected_profile_key\s*==\s*['"]prometheus-v2-kubernetes-v1['"]''']
+
+[[rules.allowlists]]
+description = "Historical Kubernetes compatibility key is a public profile identifier"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/integrations/compatibility\.py$''']
+regexes = ['''key\s*=\s*['"]kubernetes-legacy-v1['"]''']
+
+[[rules.allowlists]]
+description = "Bootstrap password example is an explicit non-secret placeholder"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^\.env\.example$''']
+regexes = ['''^replace-with-at-least-12-characters$''']
+'',
+]
+regexes = ['''^kaori-compatibility-policy-v1[[rules.allowlists]]
+description = "Historical integration architecture prose contains API terminology, not a key"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^docs/architecture/integration-module-map\.md$''']
+regexes = ['''Kubernetes API lifecycle bands, Prometheus/Thanos endpoint compatibility,''']
+
+[[rules.allowlists]]
+description = "KAORI Kubernetes permission tuples reference the k8s_operations module key"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/rbac/defaults\.py$''']
+regexes = ['''^\s*\('kubernetes_secrets\.[a-z_]+',\s*'k8s_operations',''']
+
+[[rules.allowlists]]
+description = "KAORI Kubernetes API profile identifiers are public compatibility contracts"
+condition = "AND"
+regexTarget = "line"
+paths = [
+  '''^app/kubernetes/README\.md$''',
+  '''^app/(?:kubernetes|integrations)/compatibility\.py$''',
+  '''^docs/INTEGRATION_COMPATIBILITY\.md$''',
+]
+regexes = ['''kubernetes-api-v1''']
+
+[[rules.allowlists]]
+description = "KAORI PromQL profile identifiers are public query contracts"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+regexes = ['''^PROFILE_KEY\s*=\s*['"]promql-kubernetes-v1['"]\s*$''']
+
+[[rules.allowlists]]
+description = "Historical PromQL profile key is a public query contract"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+regexes = ['''^prometheus-kubernetes-v1$''']
+
+[[rules.allowlists]]
+description = "Historical Prometheus compatibility selector is a profile identifier"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/prometheus/service\.py$''']
+regexes = ['''selected_profile_key\s*==\s*['"]prometheus-v2-kubernetes-v1['"]''']
+
+[[rules.allowlists]]
+description = "Historical Kubernetes compatibility key is a public profile identifier"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/integrations/compatibility\.py$''']
+regexes = ['''key\s*=\s*['"]kubernetes-legacy-v1['"]''']
+
+[[rules.allowlists]]
+description = "Bootstrap password example is an explicit non-secret placeholder"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^\.env\.example$''']
+regexes = ['''^replace-with-at-least-12-characters$''']
+'']
+
+[[rules.allowlists]]
+description = "KAORI Prometheus lifecycle qualification key is a public schema identifier"
+condition = "AND"
+regexTarget = "secret"
+paths = [
+  '''^app/definitions/catalogs/integrations/compatibility\.yaml[[rules.allowlists]]
+description = "Historical integration architecture prose contains API terminology, not a key"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^docs/architecture/integration-module-map\.md$''']
+regexes = ['''Kubernetes API lifecycle bands, Prometheus/Thanos endpoint compatibility,''']
+
+[[rules.allowlists]]
+description = "KAORI Kubernetes permission tuples reference the k8s_operations module key"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/rbac/defaults\.py$''']
+regexes = ['''^\s*\('kubernetes_secrets\.[a-z_]+',\s*'k8s_operations',''']
+
+[[rules.allowlists]]
+description = "KAORI Kubernetes API profile identifiers are public compatibility contracts"
+condition = "AND"
+regexTarget = "line"
+paths = [
+  '''^app/kubernetes/README\.md$''',
+  '''^app/(?:kubernetes|integrations)/compatibility\.py$''',
+  '''^docs/INTEGRATION_COMPATIBILITY\.md$''',
+]
+regexes = ['''kubernetes-api-v1''']
+
+[[rules.allowlists]]
+description = "KAORI PromQL profile identifiers are public query contracts"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+regexes = ['''^PROFILE_KEY\s*=\s*['"]promql-kubernetes-v1['"]\s*$''']
+
+[[rules.allowlists]]
+description = "Historical PromQL profile key is a public query contract"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+regexes = ['''^prometheus-kubernetes-v1$''']
+
+[[rules.allowlists]]
+description = "Historical Prometheus compatibility selector is a profile identifier"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/prometheus/service\.py$''']
+regexes = ['''selected_profile_key\s*==\s*['"]prometheus-v2-kubernetes-v1['"]''']
+
+[[rules.allowlists]]
+description = "Historical Kubernetes compatibility key is a public profile identifier"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/integrations/compatibility\.py$''']
+regexes = ['''key\s*=\s*['"]kubernetes-legacy-v1['"]''']
+
+[[rules.allowlists]]
+description = "Bootstrap password example is an explicit non-secret placeholder"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^\.env\.example$''']
+regexes = ['''^replace-with-at-least-12-characters$''']
+'',
+  '''^tests/contracts/integrations/test_metrics_source_identity_validation_contract\.py[[rules.allowlists]]
+description = "Historical integration architecture prose contains API terminology, not a key"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^docs/architecture/integration-module-map\.md$''']
+regexes = ['''Kubernetes API lifecycle bands, Prometheus/Thanos endpoint compatibility,''']
+
+[[rules.allowlists]]
+description = "KAORI Kubernetes permission tuples reference the k8s_operations module key"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/rbac/defaults\.py$''']
+regexes = ['''^\s*\('kubernetes_secrets\.[a-z_]+',\s*'k8s_operations',''']
+
+[[rules.allowlists]]
+description = "KAORI Kubernetes API profile identifiers are public compatibility contracts"
+condition = "AND"
+regexTarget = "line"
+paths = [
+  '''^app/kubernetes/README\.md$''',
+  '''^app/(?:kubernetes|integrations)/compatibility\.py$''',
+  '''^docs/INTEGRATION_COMPATIBILITY\.md$''',
+]
+regexes = ['''kubernetes-api-v1''']
+
+[[rules.allowlists]]
+description = "KAORI PromQL profile identifiers are public query contracts"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+regexes = ['''^PROFILE_KEY\s*=\s*['"]promql-kubernetes-v1['"]\s*$''']
+
+[[rules.allowlists]]
+description = "Historical PromQL profile key is a public query contract"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+regexes = ['''^prometheus-kubernetes-v1$''']
+
+[[rules.allowlists]]
+description = "Historical Prometheus compatibility selector is a profile identifier"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/prometheus/service\.py$''']
+regexes = ['''selected_profile_key\s*==\s*['"]prometheus-v2-kubernetes-v1['"]''']
+
+[[rules.allowlists]]
+description = "Historical Kubernetes compatibility key is a public profile identifier"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/integrations/compatibility\.py$''']
+regexes = ['''key\s*=\s*['"]kubernetes-legacy-v1['"]''']
+
+[[rules.allowlists]]
+description = "Bootstrap password example is an explicit non-secret placeholder"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^\.env\.example$''']
+regexes = ['''^replace-with-at-least-12-characters$''']
+'',
+]
+regexes = ['''^prometheus-v2-legacy[[rules.allowlists]]
+description = "Historical integration architecture prose contains API terminology, not a key"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^docs/architecture/integration-module-map\.md$''']
+regexes = ['''Kubernetes API lifecycle bands, Prometheus/Thanos endpoint compatibility,''']
+
+[[rules.allowlists]]
+description = "KAORI Kubernetes permission tuples reference the k8s_operations module key"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/rbac/defaults\.py$''']
+regexes = ['''^\s*\('kubernetes_secrets\.[a-z_]+',\s*'k8s_operations',''']
+
+[[rules.allowlists]]
+description = "KAORI Kubernetes API profile identifiers are public compatibility contracts"
+condition = "AND"
+regexTarget = "line"
+paths = [
+  '''^app/kubernetes/README\.md$''',
+  '''^app/(?:kubernetes|integrations)/compatibility\.py$''',
+  '''^docs/INTEGRATION_COMPATIBILITY\.md$''',
+]
+regexes = ['''kubernetes-api-v1''']
+
+[[rules.allowlists]]
+description = "KAORI PromQL profile identifiers are public query contracts"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+regexes = ['''^PROFILE_KEY\s*=\s*['"]promql-kubernetes-v1['"]\s*$''']
+
+[[rules.allowlists]]
+description = "Historical PromQL profile key is a public query contract"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+regexes = ['''^prometheus-kubernetes-v1$''']
+
+[[rules.allowlists]]
+description = "Historical Prometheus compatibility selector is a profile identifier"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/prometheus/service\.py$''']
+regexes = ['''selected_profile_key\s*==\s*['"]prometheus-v2-kubernetes-v1['"]''']
+
+[[rules.allowlists]]
+description = "Historical Kubernetes compatibility key is a public profile identifier"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^app/integrations/compatibility\.py$''']
+regexes = ['''key\s*=\s*['"]kubernetes-legacy-v1['"]''']
+
+[[rules.allowlists]]
+description = "Bootstrap password example is an explicit non-secret placeholder"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^\.env\.example$''']
+regexes = ['''^replace-with-at-least-12-characters$''']
+'']
 
 [[rules.allowlists]]
 description = "Historical integration architecture prose contains API terminology, not a key"
