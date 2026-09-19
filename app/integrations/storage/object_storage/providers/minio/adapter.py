@@ -62,7 +62,11 @@ def _health_factors(instance: MinioInstance) -> tuple[HealthFactor, ...]:
 def _diagnostics(instance: MinioInstance) -> tuple[DiagnosticResult, ...]:
     connected = instance.last_status == 'connected'
     compatibility_ready = instance.compatibility_status in {'compatible', 'compatible_with_warnings'}
-    compatibility_unverified = instance.compatibility_status in {'unverified_version', 'version_unknown', 'product_unqualified'}
+    compatibility_unverified = instance.compatibility_status in {
+        'unverified_version',
+        'version_unknown',
+        'product_unqualified',
+    }
     api_detail = (
         f'{instance.detected_product or "S3-compatible endpoint"} runtime endpoint is reachable.'
         if connected
