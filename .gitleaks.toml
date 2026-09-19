@@ -21,6 +21,27 @@ paths = ['''^app/definitions/catalogs/integrations/(?:compatibility|object_stora
 regexes = ['''^\s*-\s*key:\s*(?:kubernetes-api-v1|s3_compatible)\s*$''']
 
 [[rules.allowlists]]
+description = "KAORI annual compatibility policy key is a public schema identifier"
+condition = "AND"
+regexTarget = "secret"
+paths = [
+  '''^app/definitions/catalogs/integrations/compatibility\.yaml$''',
+  '''^tests/integrations/test_general_compatibility_contract\.py$''',
+  '''^docs/architecture/compatibility-framework\.md$''',
+]
+regexes = ['''^kaori-compatibility-policy-v1$''']
+
+[[rules.allowlists]]
+description = "KAORI Prometheus lifecycle qualification key is a public schema identifier"
+condition = "AND"
+regexTarget = "secret"
+paths = [
+  '''^app/definitions/catalogs/integrations/compatibility\.yaml$''',
+  '''^tests/contracts/integrations/test_metrics_source_identity_validation_contract\.py$''',
+]
+regexes = ['''^prometheus-v2-legacy$''']
+
+[[rules.allowlists]]
 description = "Historical integration architecture prose contains API terminology, not a key"
 condition = "AND"
 regexTarget = "line"
