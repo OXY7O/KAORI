@@ -200,8 +200,8 @@ def main() -> int:
         errors,
     )
     require(
-        'data-compatibility-visual-hierarchy="matrix-led"' in compatibility_workspace,
-        'Compatibility Versions must keep the matrix-led full-width visual hierarchy',
+        'data-compatibility-visual-hierarchy="contract-led"' in compatibility_workspace,
+        'Compatibility Versions must keep the contract-led full-width visual hierarchy',
         errors,
     )
 
