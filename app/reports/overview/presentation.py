@@ -94,7 +94,7 @@ def normalize_reports_overview_payload(payload: Mapping[str, Any] | None) -> dic
     normalized.setdefault('page_title', 'Reports Overview')
     normalized.setdefault(
         'page_subtitle',
-        'Review reporting readiness, artifacts, automation, and report coverage across managed infrastructure.',
+        'Review reporting readiness, artifacts, automation, and coverage across KAORI infrastructure.',
     )
     normalized.setdefault('selected_cluster_label', 'All Infrastructure Scopes')
     normalized.setdefault('report_engine_status', 'Ready')

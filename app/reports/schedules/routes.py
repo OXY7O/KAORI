@@ -105,7 +105,7 @@ def schedules() -> ResponseReturnValue:
         logger.exception('Report Schedules could not be loaded.')
         return render_reports_unavailable(
             page_title='Report Schedules',
-            description='Automate report generation and delivery through the Reports worker.',
+            description='Automate report generation through the Reports worker with governed recovery evidence in KAORI.',
             reason='KAORI could not load schedule definitions or worker readiness. Existing schedules remain stored in the database.',
             retry_url=url_for('reports.schedules'),
         )
