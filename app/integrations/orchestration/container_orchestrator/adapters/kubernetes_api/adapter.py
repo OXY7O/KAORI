@@ -103,9 +103,9 @@ class KubernetesRuntimeAdapter:
             HealthFactor(
                 'compatibility',
                 'API compatibility and lifecycle',
-                'success' if readiness == 'ready' else ('failed' if blocked else 'warning'),
+                'success' if readiness == 'ready' else ('failed' if readiness == 'blocked' or blocked else 'warning'),
                 30,
-                100 if readiness == 'ready' else (20 if blocked else 60),
+                100 if readiness == 'ready' else (20 if readiness == 'blocked' or blocked else 60),
                 (
                     ' '.join(readiness_reasons)
                     or (
@@ -137,18 +137,37 @@ class KubernetesRuntimeAdapter:
                 'lifecycle',
                 'Version lifecycle',
                 'compatibility',
-                'warning' if lifecycle == 'legacy' else ('pending' if lifecycle == 'unknown' else 'success'),
+                (
+                    'failed'
+                    if lifecycle == 'end_of_life'
+                    else 'warning'
+                    if lifecycle == 'extended'
+                    else 'pending'
+                    if lifecycle == 'unknown'
+                    else 'success'
+                ),
                 (
                     (' '.join(readiness_reasons) + ' ' if readiness_reasons else '')
                     + f'KAORI current lifecycle band: {lifecycle_policy["current_version_band"]}; '
                     + f'accepted compatibility contract: {lifecycle_policy["supported_constraint"]}.'
                 ),
-                severity='warning' if lifecycle == 'legacy' else 'info',
+                severity=(
+                    'critical'
+                    if lifecycle == 'end_of_life'
+                    else 'warning'
+                    if lifecycle == 'extended'
+                    else 'info'
+                ),
                 recommendation=(
                     'Plan an upgrade into the KAORI current lifecycle band '
                     f'{lifecycle_policy["current_version_band"]}, then rerun Full Validation.'
-                    if lifecycle == 'legacy'
-                    else None
+                    if lifecycle == 'extended'
+                    else (
+                        'Upgrade into the KAORI supported lifecycle window '
+                        f'{lifecycle_policy["supported_version_band"]}, then rerun Full Validation.'
+                        if lifecycle == 'end_of_life'
+                        else None
+                    )
                 ),
             ),
             DiagnosticResult(

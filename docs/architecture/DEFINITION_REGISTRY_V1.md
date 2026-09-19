@@ -22,7 +22,8 @@ Templates, routes, provider adapters, and workers must never parse definition YA
 - Notification Center category/routing metadata.
 - Integration domain/capability taxonomy and managed consumer-asset metadata.
 - Kubernetes, Metrics Source, Alertmanager, and Object Storage provider capability catalogs.
-- Product/version compatibility profiles and Kubernetes lifecycle support policy.
+- Annual integration lifecycle policy, general capability-contract profiles, and product/version qualification mappings.
+- Provider-local non-semver qualification evidence, including the MinIO date-release lifecycle mapping.
 - Metrics Source and Alertmanager consumer binding/validation profiles.
 
 ## Code/DB-owned
@@ -38,6 +39,6 @@ Templates, routes, provider adapters, and workers must never parse definition YA
 
 ## Safety rules
 
-Every definition file has `schema_version: 1` and a canonical `kind`. YAML is loaded with a duplicate-key rejecting safe loader. Domain adapters reject duplicate identifiers, unknown enum values and broken references. CI runs `scripts/verify_definition_registry.py` before the rest of the release gates.
+Every definition file has `schema_version: 1` and a canonical `kind`. YAML is loaded with a duplicate-key rejecting safe loader. Domain adapters reject duplicate identifiers, unknown enum values and broken references. Compatibility validation additionally checks annual-policy arithmetic, support-posture references, contract-to-product ownership, qualification-to-contract mappings, and provider-local alignment. CI runs `scripts/verify_definition_registry.py` before the rest of the release gates.
 
 The registry is fail-closed: invalid system definitions prevent the affected module from initializing rather than silently falling back to a different policy.

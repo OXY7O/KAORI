@@ -168,9 +168,95 @@ def main() -> int:
             capability_ids.add(identity)
 
         compatibility = docs['integrations/compatibility.yaml']
-        compatibility_profiles = unique(compatibility['profiles'], 'key', 'integration compatibility profiles')
-        if not compatibility.get('kubernetes_lifecycle_policy'):
-            raise ValueError('integration compatibility Kubernetes lifecycle policy is missing')
+        lifecycle_policy = compatibility.get('lifecycle_policy') or {}
+        policy_year = lifecycle_policy.get('policy_year')
+        lookback_years = lifecycle_policy.get('lookback_years')
+        anchor_year = lifecycle_policy.get('anchor_year')
+        if not all(isinstance(value, int) for value in (policy_year, lookback_years, anchor_year)):
+            raise ValueError('integration compatibility lifecycle policy years must be integers')
+        if anchor_year != policy_year - lookback_years:
+            raise ValueError('integration compatibility anchor_year must equal policy_year - lookback_years')
+        if lifecycle_policy.get('renewal_cadence') != 'annual':
+            raise ValueError('integration compatibility lifecycle policy must renew annually')
+
+        support_postures = compatibility.get('support_postures') or []
+        posture_keys = unique(support_postures, 'key', 'integration compatibility support postures')
+        for field in ('pre_window_posture', 'future_posture'):
+            value = str(lifecycle_policy.get(field) or '').strip()
+            if value not in posture_keys:
+                raise ValueError(f'integration compatibility {field} references unknown posture {value!r}')
+
+        contract_profiles = compatibility.get('contract_profiles') or []
+        contract_keys = unique(contract_profiles, 'key', 'integration compatibility contract profiles')
+        products = compatibility.get('products') or []
+        product_keys = unique(products, 'key', 'integration compatibility products')
+
+        contract_products: dict[str, set[str]] = {}
+        for contract in contract_profiles:
+            contract_key = str(contract['key'])
+            declared_products = {str(value).strip() for value in contract.get('products') or () if str(value).strip()}
+            if not declared_products:
+                raise ValueError(f'integration compatibility contract {contract_key} must declare products')
+            unknown_products = sorted(declared_products - product_keys)
+            if unknown_products:
+                raise ValueError(
+                    f'integration compatibility contract {contract_key} references unknown products: '
+                    + ', '.join(unknown_products)
+                )
+            contract_products[contract_key] = declared_products
+
+        for product in products:
+            product_key = str(product['key'])
+            contract_key = str(product.get('contract_profile') or '').strip()
+            if contract_key not in contract_keys:
+                raise ValueError(
+                    f'integration compatibility product {product_key} references unknown contract {contract_key!r}'
+                )
+            if product_key not in contract_products[contract_key]:
+                raise ValueError(
+                    f'integration compatibility contract {contract_key} does not declare product {product_key}'
+                )
+            if product.get('selection_mode') != 'automatic_detected_version':
+                raise ValueError(
+                    f'integration compatibility product {product_key} must use automatic_detected_version'
+                )
+            if not str(product.get('version_source') or '').strip():
+                raise ValueError(f'integration compatibility product {product_key} must declare version_source')
+
+        qualifications = compatibility.get('qualifications') or []
+        qualification_keys = unique(qualifications, 'key', 'integration compatibility qualifications')
+        for qualification in qualifications:
+            qualification_key = str(qualification['key'])
+            product_key = str(qualification.get('product') or '').strip()
+            contract_key = str(qualification.get('contract_profile') or '').strip()
+            support_level = str(qualification.get('support_level') or '').strip()
+            if product_key not in product_keys:
+                raise ValueError(
+                    f'integration compatibility qualification {qualification_key} references unknown product '
+                    f'{product_key!r}'
+                )
+            if contract_key not in contract_keys:
+                raise ValueError(
+                    f'integration compatibility qualification {qualification_key} references unknown contract '
+                    f'{contract_key!r}'
+                )
+            if product_key not in contract_products[contract_key]:
+                raise ValueError(
+                    f'integration compatibility qualification {qualification_key} maps {product_key} '
+                    f'to incompatible contract {contract_key}'
+                )
+            if support_level not in posture_keys:
+                raise ValueError(
+                    f'integration compatibility qualification {qualification_key} references unknown posture '
+                    f'{support_level!r}'
+                )
+
+        qualification_by_key = {str(item['key']): item for item in qualifications}
+        qualifications_by_product = {
+            product_key: [item for item in qualifications if item.get('product') == product_key]
+            for product_key in product_keys
+        }
+        contracts_by_key = {str(item['key']): item for item in contract_profiles}
 
         integration_provider_counts: dict[str, int] = {}
         for relative, provider_key in (
@@ -186,26 +272,94 @@ def main() -> int:
             unique(provider_capabilities, 'key', f'{provider_key} capabilities')
             integration_provider_counts[provider_key] = len(provider_capabilities)
 
+        kubernetes = docs['integrations/orchestration/container_orchestrator/providers/kubernetes.yaml']
+        expected_kubernetes_contracts = {
+            str(item['contract_profile']) for item in qualifications_by_product['kubernetes']
+        }
+        if set(kubernetes.get('compatibility_profiles') or ()) != expected_kubernetes_contracts:
+            raise ValueError('Kubernetes compatibility profiles must match central contract mappings')
+
+        metrics_source = docs['integrations/observability/metrics_source/contract.yaml']
+        expected_metrics_contracts = {
+            str(item['contract_profile'])
+            for product_key in ('prometheus', 'thanos')
+            for item in qualifications_by_product[product_key]
+        }
+        if set(metrics_source.get('compatibility_profiles') or ()) != expected_metrics_contracts:
+            raise ValueError('Metrics Source compatibility profiles must match central contract mappings')
+        metrics_capability_keys = set(metrics_source.get('provider_capability_keys') or ())
+        for contract_key in expected_metrics_contracts:
+            missing = set(contracts_by_key[contract_key].get('required_capabilities') or ()) - metrics_capability_keys
+            if missing:
+                raise ValueError(
+                    f'Metrics Source contract {contract_key} references unknown provider capabilities: '
+                    f'{sorted(missing)}'
+                )
+
         alertmanager = docs['integrations/observability/alert_source/providers/alertmanager.yaml']
         alert_capability_keys = {str(item['key']) for item in alertmanager['capabilities']}
-        profile_keys = unique(alertmanager['profiles'], 'key', 'Alertmanager provider profiles')
+        expected_alert_contracts = {
+            str(item['contract_profile']) for item in qualifications_by_product['alertmanager']
+        }
+        if set(alertmanager.get('compatibility_profiles') or ()) != expected_alert_contracts:
+            raise ValueError('Alertmanager compatibility profiles must match central contract mappings')
+        expected_alert_qualifications = {
+            str(item['key']) for item in qualifications_by_product['alertmanager']
+        }
+        profile_keys = unique(alertmanager['profiles'], 'key', 'Alertmanager provider qualification profiles')
+        if profile_keys != expected_alert_qualifications:
+            raise ValueError('Alertmanager provider qualification keys must match central qualification definitions')
         for profile in alertmanager['profiles']:
+            profile_key = str(profile['key'])
+            canonical = qualification_by_key[profile_key]
+            if profile.get('version_constraint') != canonical.get('version_constraint'):
+                raise ValueError(f'Alertmanager profile {profile_key} version constraint drifted from central definition')
+            if profile.get('support_level') != canonical.get('support_level'):
+                raise ValueError(f'Alertmanager profile {profile_key} support level drifted from central definition')
             missing = set(profile.get('required_capabilities') or ()) - alert_capability_keys
             if missing:
                 raise ValueError(
-                    f'Alertmanager profile {profile["key"]} references unknown capabilities: {sorted(missing)}'
+                    f'Alertmanager profile {profile_key} references unknown capabilities: {sorted(missing)}'
                 )
-        if set(alertmanager.get('compatibility_profiles') or ()) != profile_keys:
-            raise ValueError('Alertmanager compatibility profile keys must match provider profile definitions')
+        expected_alert_core_capabilities = {
+            capability
+            for contract_key in expected_alert_contracts
+            for capability in contracts_by_key[contract_key].get('required_capabilities') or ()
+        }
+        if set(alertmanager.get('core_capability_keys') or ()) != expected_alert_core_capabilities:
+            raise ValueError('Alertmanager core capability keys must match the central contract requirements')
 
         object_storage = docs['integrations/storage/object_storage/contract.yaml']
-        products = object_storage.get('products') or []
-        unique(products, 'key', 'object-storage product families')
-        object_profile_keys = {
-            str(profile['key']) for product in products for profile in product.get('compatibility_profiles') or ()
-        }
+        object_contract_key = str(object_storage.get('capability_profile') or '').strip()
+        if not object_contract_key:
+            raise ValueError('object-storage provider must declare capability_profile')
+        object_products = object_storage.get('products') or []
+        unique(object_products, 'key', 'object-storage product families')
+        object_profiles = [
+            profile
+            for product in object_products
+            for profile in product.get('compatibility_profiles') or ()
+        ]
+        object_profile_keys = unique(
+            object_profiles,
+            'key',
+            'object-storage qualification profiles',
+        )
         if not object_profile_keys:
             raise ValueError('object-storage provider must define at least one qualified compatibility profile')
+        for profile in object_profiles:
+            profile_key = str(profile['key'])
+            if profile.get('contract_profile') != object_contract_key:
+                raise ValueError(
+                    f'object-storage profile {profile_key} must map to capability_profile {object_contract_key}'
+                )
+            if profile.get('support_level') not in posture_keys:
+                raise ValueError(
+                    f'object-storage profile {profile_key} references unknown support posture '
+                    f'{profile.get("support_level")!r}'
+                )
+
+        compatibility_contract_keys = set(contract_keys) | {object_contract_key}
 
     except Exception as exc:
         print(f'FAIL — KAORI Definition Registry v1: {exc}', file=sys.stderr)
@@ -217,7 +371,8 @@ def main() -> int:
         f'{len(datasets)} analytics datasets · {len(reports["report_types"])} report types · '
         f'{len(report_coverage["domains"])} report coverage domains · '
         f'{len(domain_keys)} integration domains · {sum(integration_provider_counts.values())} provider capabilities · '
-        f'{len(compatibility_profiles)} compatibility profiles'
+        f'{len(compatibility_contract_keys)} compatibility contracts · '
+        f'{len(qualification_keys) + len(object_profile_keys)} qualification profiles'
     )
     return 0
 

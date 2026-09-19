@@ -82,9 +82,10 @@ def test_rbac_and_jobs_reference_canonical_permissions():
             assert job['domain_execute_permission'] in permission_keys
 
 
-def test_integration_definitions_are_taxonomy_provider_and_profile_driven():
+def test_integration_definitions_are_taxonomy_policy_contract_and_qualification_driven():
     taxonomy = load('integrations/taxonomy.yaml')
     compatibility = load('integrations/compatibility.yaml')
+    kubernetes = load('integrations/orchestration/container_orchestrator/providers/kubernetes.yaml')
     metrics_source = load('integrations/observability/metrics_source/contract.yaml')
     alertmanager = load('integrations/observability/alert_source/providers/alertmanager.yaml')
     object_storage = load('integrations/storage/object_storage/contract.yaml')
@@ -95,12 +96,41 @@ def test_integration_definitions_are_taxonomy_provider_and_profile_driven():
         'kubernetes_cluster',
         'object_storage_system',
     }
-    assert {item['product'] for item in compatibility['profiles']} >= {
-        'kubernetes',
-        'prometheus',
-        'alertmanager',
-        'thanos',
+
+    lifecycle = compatibility['lifecycle_policy']
+    assert lifecycle['policy_year'] == 2026
+    assert lifecycle['lookback_years'] == 5
+    assert lifecycle['anchor_year'] == lifecycle['policy_year'] - lifecycle['lookback_years']
+    assert lifecycle['renewal_cadence'] == 'annual'
+
+    posture_keys = {item['key'] for item in compatibility['support_postures']}
+    assert {'current', 'extended_supported', 'end_of_life', 'unverified'} <= posture_keys
+
+    contracts = {item['key']: item for item in compatibility['contract_profiles']}
+    assert {
+        'kubernetes-core-v1',
+        'prometheus-http-core-v1',
+        'alertmanager-api-v2-contract-v1',
+    } <= set(contracts)
+
+    products = {item['key']: item for item in compatibility['products']}
+    assert set(products) == {'kubernetes', 'prometheus', 'alertmanager', 'thanos'}
+    assert all(item['selection_mode'] == 'automatic_detected_version' for item in products.values())
+    assert all(item['version_source'] for item in products.values())
+    assert all(item['contract_profile'] in contracts for item in products.values())
+
+    qualifications = compatibility['qualifications']
+    assert {item['product'] for item in qualifications} == set(products)
+    assert all(item['contract_profile'] in contracts for item in qualifications)
+    assert all(item['support_level'] in posture_keys for item in qualifications)
+
+    assert set(kubernetes['compatibility_profiles']) == {'kubernetes-core-v1'}
+    assert set(metrics_source['compatibility_profiles']) == {'prometheus-http-core-v1'}
+    assert set(alertmanager['compatibility_profiles']) == {'alertmanager-api-v2-contract-v1'}
+    assert {item['key'] for item in alertmanager['profiles']} == {
+        item['key'] for item in qualifications if item['product'] == 'alertmanager'
     }
+
     assert {item['profile_key'] for item in metrics_source['binding_profiles']} == {
         'kubernetes-metrics-v1',
         'object-storage-metrics-v1',
@@ -110,11 +140,17 @@ def test_integration_definitions_are_taxonomy_provider_and_profile_driven():
         'object-storage-alerts-v1',
         'global-alerts-v1',
     }
-    assert any(
-        profile['key'] == 'minio-release-2024-08-03'
+
+    assert object_storage['capability_profile'] == 's3-object-storage-v1'
+    minio_profiles = [
+        profile
         for product in object_storage['products']
+        if product['key'] == 'minio'
         for profile in product['compatibility_profiles']
-    )
+    ]
+    assert {profile['key'] for profile in minio_profiles} == {'minio-community-policy-v1'}
+    assert all(profile['contract_profile'] == object_storage['capability_profile'] for profile in minio_profiles)
+    assert all(profile['support_level'] in posture_keys for profile in minio_profiles)
 
 
 def test_integration_taxonomy_exposes_ordered_runtime_collections():
