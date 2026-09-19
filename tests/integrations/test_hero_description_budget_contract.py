@@ -63,7 +63,7 @@ def test_cluster_required_blocked_hero_descriptions_are_registered_with_global_b
     values = set(descriptions.values())
 
     assert 'Validate replacement certificate pairing and coverage before rotating one live TLS Secret.' in values
-    assert 'Validate one certificate pair against selected TLS Secrets before controlled rotation.' in values
+    assert 'Validate one certificate pair against selected TLS Secrets before controlled rotation in KAORI.' in values
     assert (
         'Validate replacement certificate material, key matching, and target coverage before rotating one live TLS Secret.'
         not in values

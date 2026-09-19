@@ -84,7 +84,7 @@ def _safe_opaque_entries(form: Any) -> list[dict[str, Any]]:
 @cluster_required(
     'Secret Management',
     page_title='Secret Management',
-    page_description='Manage live Kubernetes Secrets through validated, permission-aware workflows.',
+    page_description='Manage Kubernetes Secrets through validated, permission-aware workflows with governed context.',
 )
 def secret_management_index():
     return render_template(
@@ -277,7 +277,7 @@ def replace_secret_content():
 @cluster_required(
     'Secret Management',
     page_title='Replace Kubernetes Secret Data',
-    page_description='Replace selected Secret keys without reading or persisting current values.',
+    page_description='Replace selected Secret keys without reading or persisting current values within KAORI safely.',
 )
 def replace_secret():
     operation_feedback = None

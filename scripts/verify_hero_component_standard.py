@@ -47,7 +47,7 @@ DESCRIPTION_TARGET_MIN_WORDS = 10
 DESCRIPTION_TARGET_MAX_WORDS = 11
 DESCRIPTION_TARGET_MIN_CHARS = 89
 DESCRIPTION_TARGET_MAX_CHARS = 96
-CLUSTER_REQUIRED_CONTEXT_SUFFIX = 'with governed context.'
+CLUSTER_REQUIRED_CONTEXT_SUFFIX = 'in KAORI.'
 PROVIDER_EDIT_SHORT_DESCRIPTION_SUFFIX = 'Maintain governed validation and consumer-binding context.'
 REPORTS_UNAVAILABLE_SHORT_DESCRIPTION_SUFFIX = 'Maintain governed recovery and retained evidence context.'
 DESCRIPTION_WORD_PATTERN = re.compile(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*")
@@ -601,7 +601,8 @@ def _materialization_route_descriptions() -> dict[str, str]:
 
 
 def _effective_cluster_required_description(description: str) -> str:
-    if len(_description_words(description)) >= DESCRIPTION_TARGET_MIN_WORDS:
+    description = description.strip()
+    if len(description) >= DESCRIPTION_TARGET_MIN_CHARS:
         return description
     return f'{description.rstrip(".")} {CLUSTER_REQUIRED_CONTEXT_SUFFIX}'
 
