@@ -9,7 +9,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro(provider.icon, 'Integration Binding', 'route') %}
                         <h1 class="{{ page_hero.title_classes() }}">Bind {{ provider.label }} Source</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Bind reusable provider connections to governed scopes with isolated selectors and explicit ownership boundaries.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Bind provider connections to governed scopes with isolated selectors and ownership boundaries.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('boxes', cluster.name if cluster else 'Scope unavailable') }}
                             {{ page_hero.meta_label('server-cog', source_options|length ~ ' Existing Sources') }}

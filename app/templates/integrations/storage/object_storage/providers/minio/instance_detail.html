@@ -16,7 +16,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro("database", "MinIO Integration", "database-zap") %}
                         <h1 class="{{ page_hero.title_classes() }}">{{ instance.name }}</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Review MinIO connection evidence, runtime health, validated capabilities, consumer bindings, and lifecycle posture.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review MinIO connection evidence, health, bindings, and lifecycle posture across KAORI safely.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label("shield-check", readiness|replace("_", " ") |title) }}
                             {{ page_hero.meta_label("layers-3", (capability_count|string) ~ " Validated Capabilities") }}
