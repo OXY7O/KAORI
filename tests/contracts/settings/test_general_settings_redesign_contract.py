@@ -123,21 +123,30 @@ def test_system_information_is_explicitly_read_only_and_traceable() -> None:
     assert not (ROOT / 'app/templates/settings/general/partials/_system_information_context.html').exists()
 
 
-def test_compatibility_workspace_keeps_version_and_readiness_decisions_separate() -> None:
+def test_compatibility_workspace_keeps_policy_contract_qualification_and_readiness_separate() -> None:
     main = read('app/templates/settings/general/partials/_compatibility_versions.html')
     assert 'Integration Compatibility' in main
-    assert 'Validation Required' in main
-    assert 'Qualified Compatibility Matrix' in main
-    assert 'upstream support calendar' in main
+    assert 'Capability Evidence Required' in main
+    assert 'Compatibility Qualification Matrix' in main
+    assert 'Annual five-year lifecycle policy' in main
     assert 'item.version_scheme' in main
-    assert 'Capability Validation Basis' in main
+    assert 'Lifecycle Policy' in main
+    assert 'Support Window' in main
+    assert 'General Contracts' in main
+    assert 'Qualification Rows' in main
     assert 'Reading the Matrix' in main
-    assert 'Minimum Compatible' in main
-    assert 'Recommended Baseline' in main
+    assert 'Annual Lifecycle' in main
+    assert 'General Contract' in main
+    assert 'Version Qualification' in main
+    assert 'Qualified Versions' in main
+    assert 'Upstream Lifecycle' in main
+    assert 'KAORI Support' in main
+    assert 'Readiness Authority' in main
     assert 'Live Readiness' in main
     assert 'Policy Boundary' in main
+    assert 'Contract Ownership' in main
     assert 'data-compatibility-versions-workspace="unified"' in main
-    assert 'data-compatibility-visual-hierarchy="matrix-led"' in main
+    assert 'data-compatibility-visual-hierarchy="contract-led"' in main
     assert 'data-compatibility-versions-workspace-layout="full-width"' in read(
         'app/templates/settings/general/partials/_page_content.html'
     )
