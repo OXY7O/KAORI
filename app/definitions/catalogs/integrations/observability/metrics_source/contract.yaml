@@ -16,13 +16,13 @@ provider_kinds:
   - range_query
   compatibility_profile_options: []
   support_presentation:
-    minimum_version: '2.40'
-    minimum_label: v2.40
-    recommended_version: '3.13'
-    recommended_label: v3.13 LTS
-    support_band: v2.40–v3.x
-    current_band: v3.x
-    support_label: Prometheus 3 Current
+    minimum_version: '2.32'
+    minimum_label: v2.32
+    recommended_version: '3.13.3'
+    recommended_label: v3.13.3 LTS
+    support_band: v2.32–v3.13.x
+    current_band: v3.13.x
+    support_label: Current + Extended · Policy v1
     support_tone: normal
     capability_summary: Prometheus HTTP API core queries with asset-scoped consumer metric contracts.
     validation_basis: Provider readiness validates endpoint compatibility and the configured metrics adapter; consumer contracts are validated per asset binding.
@@ -42,13 +42,13 @@ provider_kinds:
   - long_term_history
   compatibility_profile_options: []
   support_presentation:
-    minimum_version: '0.39'
-    minimum_label: v0.39
+    minimum_version: '0.24'
+    minimum_label: v0.24
     recommended_version: '0.42.4'
     recommended_label: v0.42.4
-    support_band: v0.39–v0.42
+    support_band: v0.24–v0.42.x
     current_band: v0.42.x
-    support_label: Query Profile Current
+    support_label: Current + Extended · Policy v1
     support_tone: normal
     capability_summary: Long-retention PromQL queries through the shared Prometheus HTTP API v1 core contract.
     validation_basis: Thanos runtime compatibility and the shared Prometheus HTTP API v1 core are validated at provider level; asset metrics remain binding-specific.
