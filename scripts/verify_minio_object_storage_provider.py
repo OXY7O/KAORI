@@ -151,13 +151,29 @@ def main() -> None:
         'MinIO compatibility adapter must read the Definition Registry',
     )
     require(
-        'minimum_release: RELEASE.2024-08-03T04-33-23Z' in provider_catalog,
-        'supported MinIO release contract drifted',
+        'minimum_release: RELEASE.2021-12-29T06-49-06Z' in provider_catalog,
+        'MinIO lifecycle qualification floor drifted',
     )
-    require('key: minio-release-2024-08-03' in provider_catalog, 'MinIO compatibility profile missing')
     require(
-        'capability_profile: minio-object-storage-api-v1' in provider_catalog,
-        'MinIO API capability profile missing',
+        'maximum_release: RELEASE.2025-10-15T17-29-55Z' in provider_catalog,
+        'MinIO lifecycle qualification ceiling drifted',
+    )
+    require('key: minio-community-policy-v1' in provider_catalog, 'MinIO lifecycle qualification profile missing')
+    require(
+        'capability_profile: s3-object-storage-v1' in provider_catalog,
+        'MinIO general S3 capability contract missing',
+    )
+    require(
+        'contract_profile: s3-object-storage-v1' in provider_catalog,
+        'MinIO qualification must map to the general S3 capability contract',
+    )
+    require(
+        'support_level: extended_supported' in provider_catalog,
+        'MinIO lifecycle qualification support posture drifted',
+    )
+    require(
+        'upstream_lifecycle: archived_community' in provider_catalog,
+        'MinIO upstream lifecycle evidence drifted',
     )
 
     require(
