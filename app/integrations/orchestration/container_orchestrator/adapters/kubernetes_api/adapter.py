@@ -12,6 +12,29 @@ from app.integrations.runtime.scoring import calculate_health
 from app.models.kubernetes import KubernetesConnection
 
 
+def _lifecycle_presentation(
+    lifecycle: str,
+    lifecycle_policy: dict[str, str],
+) -> tuple[str, str, str | None]:
+    if lifecycle == 'end_of_life':
+        return (
+            'failed',
+            'critical',
+            'Upgrade into the KAORI supported lifecycle window '
+            f'{lifecycle_policy["supported_version_band"]}, then rerun Full Validation.',
+        )
+    if lifecycle == 'extended':
+        return (
+            'warning',
+            'warning',
+            'Plan an upgrade into the KAORI current lifecycle band '
+            f'{lifecycle_policy["current_version_band"]}, then rerun Full Validation.',
+        )
+    if lifecycle == 'unknown':
+        return 'pending', 'info', None
+    return 'success', 'info', None
+
+
 class KubernetesRuntimeAdapter:
     """Provider-neutral runtime adapter for canonical Kubernetes connections."""
 
@@ -85,6 +108,10 @@ class KubernetesRuntimeAdapter:
         optional_blocked = tuple(discovery.get('optional_blocked_features') or ())
         lifecycle = str(discovery.get('lifecycle_status') or 'unknown')
         lifecycle_policy = kubernetes_lifecycle_policy(connection.detected_version)
+        lifecycle_status, lifecycle_severity, lifecycle_recommendation = _lifecycle_presentation(
+            lifecycle,
+            lifecycle_policy,
+        )
         readiness_reasons = tuple(compact_readiness_reasons(discovery.get('readiness_reasons') or ()))
         selected_adapters = discovery.get('selected_adapters') or {}
         capabilities = tuple(sorted({key.split('.', 1)[0] for key in selected_adapters}))
@@ -137,34 +164,14 @@ class KubernetesRuntimeAdapter:
                 'lifecycle',
                 'Version lifecycle',
                 'compatibility',
-                (
-                    'failed'
-                    if lifecycle == 'end_of_life'
-                    else 'warning'
-                    if lifecycle == 'extended'
-                    else 'pending'
-                    if lifecycle == 'unknown'
-                    else 'success'
-                ),
+                lifecycle_status,
                 (
                     (' '.join(readiness_reasons) + ' ' if readiness_reasons else '')
                     + f'KAORI current lifecycle band: {lifecycle_policy["current_version_band"]}; '
                     + f'accepted compatibility contract: {lifecycle_policy["supported_constraint"]}.'
                 ),
-                severity=(
-                    'critical' if lifecycle == 'end_of_life' else 'warning' if lifecycle == 'extended' else 'info'
-                ),
-                recommendation=(
-                    'Plan an upgrade into the KAORI current lifecycle band '
-                    f'{lifecycle_policy["current_version_band"]}, then rerun Full Validation.'
-                    if lifecycle == 'extended'
-                    else (
-                        'Upgrade into the KAORI supported lifecycle window '
-                        f'{lifecycle_policy["supported_version_band"]}, then rerun Full Validation.'
-                        if lifecycle == 'end_of_life'
-                        else None
-                    )
-                ),
+                severity=lifecycle_severity,
+                recommendation=lifecycle_recommendation,
             ),
             DiagnosticResult(
                 'compatibility',
