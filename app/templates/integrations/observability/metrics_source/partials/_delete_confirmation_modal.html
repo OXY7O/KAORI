@@ -1,30 +1,36 @@
+{% import "components/operational_callout.html" as operational_callout %}
 <div id="metrics-source-delete-modal"
+     data-destructive-confirmation-modal
      class="fixed inset-0 z-50 hidden items-center justify-center bg-surface-overlay px-4 backdrop-blur-sm"
      aria-hidden="true">
-    <div class="absolute inset-0" data-metrics-source-delete-close></div>
+    <div class="absolute inset-0" data-destructive-modal-close></div>
     <div role="dialog"
          aria-modal="true"
          aria-labelledby="metrics-source-delete-modal-title"
          aria-describedby="metrics-source-delete-modal-description"
          class="relative w-full max-w-md overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-2xl">
         <div class="p-5">
-            <div class="flex h-11 w-11 items-center justify-center rounded-lg border border-status-critical-border bg-status-critical-soft text-status-critical-text">
+            <div class="flex h-11 w-11 items-center justify-center rounded-lg border {{ operational_callout.semantic_border_classes('critical') }} bg-status-critical-soft text-status-critical-text">
                 <i data-lucide="trash-2" class="h-5 w-5" aria-hidden="true"></i>
             </div>
             <h3 id="metrics-source-delete-modal-title"
+                data-destructive-modal-title
                 class="mt-4 text-lg font-semibold text-content-primary">Confirm Deletion</h3>
             <p id="metrics-source-delete-modal-description"
                class="mt-2 text-sm leading-6 text-content-secondary">
                 Confirm removal of <span id="metrics-source-delete-name"
+       data-destructive-target-name
        class="font-semibold text-content-primary">This Item</span>.
             </p>
             <p class="mt-1 text-sm font-semibold text-status-critical-text">This action cannot be undone.</p>
-            <div class="mt-4 rounded-lg border border-status-critical-border bg-status-critical-soft p-3">
+            <div class="mt-4 rounded-lg border {{ operational_callout.semantic_border_classes('critical') }} bg-status-critical-soft p-3">
                 <p id="metrics-source-delete-detail"
+                   data-destructive-detail
                    class="text-xs leading-5 text-status-critical-text"></p>
             </div>
         </div>
         <form id="metrics-source-delete-form"
+              data-destructive-dynamic-form
               method="post"
               action=""
               hx-target="#metrics-source-scope-workspace"
@@ -33,7 +39,7 @@
             {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
             <div class="flex justify-end gap-2 border-t border-outline-subtle bg-surface-hover px-5 py-4">
                 <button type="button"
-                        data-metrics-source-delete-close
+                        data-destructive-modal-close
                         class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                     Cancel
                 </button>
@@ -42,74 +48,11 @@
                         data-loading-label="Deleting..."
                         class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-status-critical px-4 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
                     <i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>
-                    <span id="metrics-source-delete-action-label" data-operation-submit-label>Delete</span>
+                    <span id="metrics-source-delete-action-label"
+                          data-destructive-action-label
+                          data-operation-submit-label>Delete</span>
                 </button>
             </div>
         </form>
     </div>
 </div>
-<script>
-(function () {
-    const modal = document.getElementById('metrics-source-delete-modal');
-    const form = document.getElementById('metrics-source-delete-form');
-    const title = document.getElementById('metrics-source-delete-modal-title');
-    const name = document.getElementById('metrics-source-delete-name');
-    const detail = document.getElementById('metrics-source-delete-detail');
-    const actionLabel = document.getElementById('metrics-source-delete-action-label');
-
-    if (!modal || !form || !title || !name || !detail || !actionLabel) {
-        return;
-    }
-
-    let trigger = null;
-
-    function openModal(button) {
-        trigger = button;
-        const deleteUrl = button.getAttribute('data-delete-url') || '';
-        form.setAttribute('action', deleteUrl);
-        form.setAttribute('hx-post', deleteUrl);
-        if (window.htmx) { window.htmx.process(form); }
-        title.textContent = button.getAttribute('data-delete-title') || 'Confirm deletion';
-        name.textContent = button.getAttribute('data-delete-name') || 'this item';
-        detail.textContent = button.getAttribute('data-delete-detail') || 'The selected Metrics Source configuration will be removed.';
-        actionLabel.textContent = button.getAttribute('data-delete-action-label') || 'Delete';
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        modal.setAttribute('aria-hidden', 'false');
-        modal.querySelector('[data-metrics-source-delete-close]')?.focus();
-    }
-
-    function closeModal() {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        modal.setAttribute('aria-hidden', 'true');
-        form.setAttribute('action', '');
-        form.removeAttribute('hx-post');
-        trigger?.focus();
-        trigger = null;
-    }
-
-    document.addEventListener('click', function (event) {
-        const deleteButton = event.target.closest('[data-metrics-source-delete-button]');
-        const closeButton = event.target.closest('[data-metrics-source-delete-close]');
-
-        if (deleteButton && !deleteButton.disabled) {
-            event.preventDefault();
-            openModal(deleteButton);
-            return;
-        }
-        if (closeButton) {
-            event.preventDefault();
-            closeModal();
-        }
-    });
-
-    form.addEventListener('htmx:afterRequest', closeModal);
-
-    document.addEventListener('keydown', function (event) {
-        if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
-            closeModal();
-        }
-    });
-})();
-</script>

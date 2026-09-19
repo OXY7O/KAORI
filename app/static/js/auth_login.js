@@ -5,7 +5,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    const associateValidationError = (fieldId) => {
+        const field = document.getElementById(fieldId)
+        const fieldGroup = field?.parentElement?.parentElement
+        if (!(field instanceof HTMLElement) || !(fieldGroup instanceof HTMLElement)) return
+
+        const error = Array.from(fieldGroup.children).find(
+            (element) => element instanceof HTMLElement && element.matches('p.text-status-critical-text')
+        )
+        if (!(error instanceof HTMLElement)) return
+
+        const errorId = `${fieldId}-error`
+        error.id = errorId
+        error.setAttribute('role', 'alert')
+        field.setAttribute('aria-invalid', 'true')
+        field.setAttribute('aria-describedby', errorId)
+    }
+
     renderIcons()
+    associateValidationError('username')
+    associateValidationError('password')
 
     const passwordInput = document.querySelector('[data-password-input]')
     const passwordToggle = document.querySelector('[data-password-toggle]')

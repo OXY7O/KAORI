@@ -81,7 +81,10 @@
                                :aria-activedescendant="globalSearchSelectedId ? 'global-search-option-' + globalSearchDomId(globalSearchSelectedId) : null">
                         <span x-show="searchLoading"
                               class="inline-flex h-5 w-5 items-center justify-center text-kaori-primary"
-                              aria-label="Searching">
+                              aria-label="Searching"
+                              role="status"
+                              aria-live="polite"
+                              aria-atomic="true">
                             <i data-lucide="loader-circle"
                                class="h-4 w-4 animate-spin"
                                aria-hidden="true"></i>
@@ -96,7 +99,10 @@
                      class="min-h-0 flex-1 overflow-y-auto bg-surface-page px-3 py-3 sm:px-4"
                      role="listbox">
                     <div x-show="searchError"
-                         class="rounded-xl border border-outline-default bg-status-warning-soft p-4">
+                         class="rounded-xl border border-outline-default bg-status-warning-soft p-4"
+                         role="alert"
+                         aria-live="assertive"
+                         aria-atomic="true">
                         <div class="flex items-start gap-3">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text"
                                   aria-hidden="true">
@@ -188,7 +194,10 @@
                         </section>
                     </template>
                     <div x-show="!searchLoading && !searchError && searchQuery.trim() && !globalSearchHasResults()"
-                         class="rounded-xl border border-outline-subtle bg-surface-card px-5 py-8 text-center">
+                         class="rounded-xl border border-outline-subtle bg-surface-card px-5 py-8 text-center"
+                         role="status"
+                         aria-live="polite"
+                         aria-atomic="true">
                         <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
                               aria-hidden="true">
                             <i data-lucide="search-x" class="h-5 w-5"></i>

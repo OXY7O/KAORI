@@ -50,6 +50,7 @@ def test_report_and_schedule_models_persist_generic_asset_scope_with_backfill_mi
 def test_generate_uses_dynamic_infrastructure_asset_scope_for_kubernetes_and_object_storage() -> None:
     service = read('app/reports/generate/service.py')
     page = read('app/templates/reports/generate/index.html')
+    runtime = read('app/static/js/reports/generate.js')
 
     assert 'ObjectStorageSystem' in service
     assert "'object_storage_systems': object_storage_system_options" in service
@@ -63,8 +64,8 @@ def test_generate_uses_dynamic_infrastructure_asset_scope_for_kubernetes_and_obj
     assert 'payload.report_type_groups' in page
     assert 'Selected Artifact' in page
     assert 'Publication Contract' in page
-    assert 'Governed workbook preserving inventory structure and tabular review.' in page
-    assert 'Governed analytical publication for review, evidence, and operational communication.' in page
+    assert 'Governed workbook preserving inventory structure and tabular review.' in runtime
+    assert 'Governed analytical publication for review, evidence, and operational communication.' in runtime
 
 
 def test_object_storage_inventory_export_reads_committed_snapshot_and_supports_xlsx_csv() -> None:

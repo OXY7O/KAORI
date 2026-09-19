@@ -1,17 +1,32 @@
 {% import "components/navigation/_global_search.html" as global_search %}
+{% import "components/table_primitives.html" as surface_ui %}
 {% set breadcrumb_items = navigation_breadcrumb|default([], true) %}
 {% set current_user_role = current_user.role_name|default('Viewer', true)|replace('_', ' ')|title %}
+{% set mobile_page = namespace(label='Welcome') %}
+{% for item in breadcrumb_items %}
+    {% if item.label != 'KAORI' %}
+        {% set mobile_page.label = item.label %}
+    {% endif %}
+{% endfor %}
 <header class="sticky top-0 z-30 kaori-app-shell border-b border-outline-subtle bg-surface-shell backdrop-blur-xl transition-colors duration-300"
         x-data="kaoriNavbar"
         @kaori:notifications-changed.window="if ($event.detail?.tab && ['activity', 'inbox', 'notifications'].includes($event.detail?.tab)) { notificationDeckTab = $event.detail.tab } queueNotificationDeckRefresh()"
         @keydown.window="handleGlobalSearchShortcut($event)"
         @keydown.escape.window="closeMenus()">
-    <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <!-- Left: sidebar control and current page context -->
+    <div class="flex h-14 items-center justify-between gap-2 px-3 sm:h-16 sm:px-4 lg:gap-4 lg:px-8">
+        <!-- Left: adaptive navigation control and current page context -->
         <div class="flex min-w-0 items-center gap-2">
+            <button type="button"
+                    data-mobile-menu-trigger
+                    @click="$dispatch('kaori:mobile-nav-open', { trigger: $el })"
+                    class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus lg:hidden"
+                    aria-label="Open navigation"
+                    aria-controls="app-sidebar">
+                <i data-lucide="menu" class="h-5 w-5" aria-hidden="true"></i>
+            </button>
             <button @click="toggleSidebar()"
                     type="button"
-                    class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                    class="hidden h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus lg:inline-flex"
                     :title="sidebarExpanded ? 'Collapse navigation' : 'Expand navigation'"
                     :aria-label="sidebarExpanded ? 'Collapse navigation' : 'Expand navigation'"
                     :aria-expanded="sidebarExpanded.toString()"
@@ -29,24 +44,30 @@
                     <i data-lucide="chevrons-right" class="h-4.5 w-4.5"></i>
                 </span>
             </button>
-            <nav class="inline-flex h-10 min-w-0 max-w-[min(42rem,calc(100vw-8rem))] items-center gap-1.5 overflow-hidden rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold shadow-sm transition"
-                 aria-label="Breadcrumb">
-                <span class="flex-shrink-0 uppercase tracking-wider text-content-muted">KAORI</span>
-                {% for item in breadcrumb_items %}
-                    {% if item.label != 'KAORI' %}
-                        <i data-lucide="chevron-right"
-                           class="h-3.5 w-3.5 flex-shrink-0 text-content-disabled"
-                           aria-hidden="true"></i>
-                        <span class="truncate {{ 'text-kaori-primary' if loop.last else 'text-content-secondary' }}"
-                              {% if loop.last %}aria-current="page"{% endif %}>{{ item.label }}</span>
-                    {% endif %}
-                {% endfor %}
-            </nav>
+            <div data-mobile-current-page class="min-w-0 lg:hidden">
+                <p class="truncate text-xs font-semibold uppercase tracking-wider text-content-muted">KAORI</p>
+                <p class="truncate text-sm font-semibold text-content-primary">{{ mobile_page.label }}</p>
+            </div>
+            <div class="hidden min-w-0 lg:block">
+                <nav class="{{ surface_ui.block_classes() }} inline-flex h-10 min-w-0 max-w-[min(42rem,calc(100vw-8rem))] items-center gap-1.5 px-3 py-2 text-xs font-semibold transition"
+                     aria-label="Breadcrumb">
+                    <span class="flex-shrink-0 uppercase tracking-wider text-content-muted">KAORI</span>
+                    {% for item in breadcrumb_items %}
+                        {% if item.label != 'KAORI' %}
+                            <i data-lucide="chevron-right"
+                               class="h-3.5 w-3.5 flex-shrink-0 text-content-disabled"
+                               aria-hidden="true"></i>
+                            <span class="truncate {{ 'text-kaori-primary' if loop.last else 'text-content-secondary' }}"
+                                  {% if loop.last %}aria-current="page"{% endif %}>{{ item.label }}</span>
+                        {% endif %}
+                    {% endfor %}
+                </nav>
+            </div>
         </div>
         <!-- Center: Global Search -->
         <div class="hidden min-w-0 flex-1 justify-center xl:flex">{{ global_search.desktop_trigger() }}</div>
         <!-- Right: actions -->
-        <div class="flex flex-shrink-0 items-center gap-2 sm:gap-3">
+        <div class="flex flex-shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-3">
             {{ global_search.mobile_trigger() }}
             <!-- Quick actions -->
             <div class="relative">
@@ -142,19 +163,23 @@
             </div>
             {% set activity_center = load_navigation_notification_context() %}
             {% include "components/navigation/_notification_center.html" %}
-            <!-- Theme -->
+            <!-- Theme remains a direct compact action at every supported viewport. -->
             <button id="theme-toggle"
                     type="button"
                     class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary"
-                    title="Toggle theme">
+                    title="Toggle theme"
+                    aria-label="Toggle theme">
                 <i id="theme-icon" data-lucide="moon" class="h-5 w-5"></i>
             </button>
             <!-- User menu -->
             <div class="relative">
                 <button @click="toggleUserMenu()"
+                        x-ref="userMenuTrigger"
                         type="button"
                         class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-surface-card p-1.5 pr-2 text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary"
-                        aria-label="Open user menu">
+                        aria-label="Open user menu"
+                        aria-controls="user-menu"
+                        :aria-expanded="userOpen.toString()">
                     <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-primary text-white">
                         <i data-lucide="user" class="h-4 w-4"></i>
                     </span>
@@ -162,11 +187,12 @@
                     <i data-lucide="chevron-down"
                        class="hidden h-4 w-4 text-content-muted lg:block"></i>
                 </button>
-                <div x-cloak
+                <div id="user-menu"
+                     x-cloak
                      x-show="userOpen"
                      @click.outside="userOpen = false"
                      x-transition.origin.top.right
-                     class="absolute right-0 mt-3 w-64 overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-xl shadow-black/10">
+                     class="absolute right-0 mt-3 w-[min(16rem,calc(100vw-1rem))] overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-xl shadow-black/10">
                     <div class="border-b border-outline-subtle px-4 py-3 ">
                         <div class="flex items-start gap-3">
                             <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-kaori-primary text-white">

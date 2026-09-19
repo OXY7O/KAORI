@@ -1,10 +1,11 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/table_primitives.html" as table_ui %}
 {% macro render(label, value, description, icon, source_label='Operational', scope_label='Active Scope') -%}
     {#
       Operational Signal cards intentionally use one neutral KAORI treatment
       so the overview remains calm and visually consistent.
     #}
-    <article class="relative flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
+    <article class="relative flex h-full min-w-0 flex-col {{ table_ui.block_classes() }} p-4">
         <div class="flex min-w-0 items-start gap-3">
             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary">
                 <i data-lucide="{{ icon }}" class="h-4 w-4" aria-hidden="true"></i>

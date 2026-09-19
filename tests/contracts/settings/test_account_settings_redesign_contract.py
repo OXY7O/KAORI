@@ -21,8 +21,17 @@ def test_account_hero_matches_general_context_pattern() -> None:
 
 def test_account_tabs_use_same_simple_navigation_contract_as_general() -> None:
     tabs = read('app/templates/settings/account/partials/_tabs.html')
-    assert 'border-b border-outline-default bg-surface-subtle px-5 pt-4' in tabs
-    assert 'flex gap-2 overflow-x-auto' in tabs
+    general_tabs = read('app/templates/settings/general/partials/_tabs.html')
+    shared = read('app/templates/components/workspace_tabs.html')
+
+    for source in (tabs, general_tabs):
+        assert '{% import "components/workspace_tabs.html" as workspace_tabs %}' in source
+        assert 'workspace_tabs.render_query_tabs(' in source
+        assert 'role="tablist"' not in source
+
+    assert 'border-b border-outline-default bg-surface-subtle px-5 pt-4' in shared
+    assert 'flex gap-2 overflow-x-auto' in shared
+    assert 'data-kaori-tab-variant="query-backed-htmx"' in shared
     assert 'Account Profile & Access' in tabs
     assert 'Recent Authentication Activity' in tabs
     assert 'Credential Management' in tabs

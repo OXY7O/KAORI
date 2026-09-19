@@ -10,7 +10,7 @@
     aria_label='Health Interpretation'
     ) -%}
     {% set score_value = score|int %}
-    {% set posture_border = 'border-status-normal-border' if status_tone == 'normal' else ('border-status-warning-border' if status_tone == 'warning' else ('border-status-critical-border' if status_tone == 'critical' else 'border-outline-default')) %}
+    {% set posture_border = table_label.tone_border_classes(status_tone)|trim if status_tone in ['normal', 'warning', 'critical'] else 'border-outline-default' %}
     {% set posture_surface = 'bg-status-normal-soft' if status_tone == 'normal' else ('bg-status-warning-soft' if status_tone == 'warning' else ('bg-status-critical-soft' if status_tone == 'critical' else 'bg-surface-hover')) %}
     {% set posture_text = 'text-status-normal-text' if status_tone == 'normal' else ('text-status-warning-text' if status_tone == 'warning' else ('text-status-critical-text' if status_tone == 'critical' else 'text-content-secondary')) %}
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
@@ -49,21 +49,21 @@
                     </div>
                 {% endif %}
                 <div class="mt-4 grid grid-cols-3 gap-2" aria-label="Health score ranges">
-                    <div class="rounded-lg border border-status-critical-border bg-status-critical-soft px-2.5 py-2 text-center {% if status_tone == 'critical' %}shadow-sm{% endif %}">
+                    <div class="rounded-lg border {{ table_label.tone_border_classes('critical') }} bg-status-critical-soft px-2.5 py-2 text-center {% if status_tone == 'critical' %}shadow-sm{% endif %}">
                         <p class="text-xs font-semibold text-status-critical-text">0–59</p>
                         <p class="mt-0.5 text-xs font-semibold text-content-secondary">
                             Critical
                             {% if status_tone == 'critical' %}· Current{% endif %}
                         </p>
                     </div>
-                    <div class="rounded-lg border border-status-warning-border bg-status-warning-soft px-2.5 py-2 text-center {% if status_tone == 'warning' %}shadow-sm{% endif %}">
+                    <div class="rounded-lg border {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft px-2.5 py-2 text-center {% if status_tone == 'warning' %}shadow-sm{% endif %}">
                         <p class="text-xs font-semibold text-status-warning-text">60–84</p>
                         <p class="mt-0.5 text-xs font-semibold text-content-secondary">
                             Attention
                             {% if status_tone == 'warning' %}· Current{% endif %}
                         </p>
                     </div>
-                    <div class="rounded-lg border border-status-normal-border bg-status-normal-soft px-2.5 py-2 text-center {% if status_tone == 'normal' %}shadow-sm{% endif %}">
+                    <div class="rounded-lg border {{ table_label.tone_border_classes('normal') }} bg-status-normal-soft px-2.5 py-2 text-center {% if status_tone == 'normal' %}shadow-sm{% endif %}">
                         <p class="text-xs font-semibold text-status-normal-text">85–100</p>
                         <p class="mt-0.5 text-xs font-semibold text-content-secondary">
                             Healthy

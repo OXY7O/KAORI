@@ -11,7 +11,7 @@ Create a Settings Overview only when at least three independently owned Settings
 
 ## Loading and action feedback contract
 
-- General and Account tab switches use the shared `components/loading_bar.html` indicator at the workspace boundary.
+- General and Account tab switches use `components/workspace_tabs.html::render_query_tabs` as the shared query-backed HTMX tab authority and `components/loading_bar.html` for the workspace loading indicator.
 - Settings save/password actions use the same indicator and shared primary action-button primitive.
 - Successful preference and credential mutations use the shared operational toast.
 - User-triggered save/password failures also return a canonical toast; field-level validation remains inline so the operator can correct the form without losing context.

@@ -167,7 +167,7 @@ def test_staging_publish_wait_does_not_occupy_kaori_ci_runner() -> None:
     wait_section = workflow.split('  wait-for-quality:\n', 1)[1].split('\n  publish:\n', 1)[0]
     publish_section = workflow.split('\n  publish:\n', 1)[1]
 
-    assert 'runs-on: ubuntu-latest' in wait_section
+    assert 'runs-on: [self-hosted, linux, x64, platform-ci]' in wait_section
     assert 'runs-on: [self-hosted, linux, x64, kaori-ci]' not in wait_section
     assert 'runs-on: [self-hosted, linux, x64, kaori-ci]' in publish_section
     assert 'contents: write' in publish_section

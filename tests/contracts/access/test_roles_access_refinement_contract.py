@@ -160,3 +160,13 @@ def test_role_registry_overview_matches_kaori_registry_overview_visual_grammar()
     ):
         assert required in index
     assert "operational_section.render(\n            'Role Registry Overview'" not in index
+
+
+def test_role_form_routes_semantic_borders_through_shared_authority() -> None:
+    form = read('app/templates/access/roles/form.html')
+
+    assert 'components/operational_callout.html' in form
+    assert "operational_callout.semantic_border_classes('warning')" in form
+    assert "operational_callout.semantic_border_classes('critical')" in form
+    assert 'border-status-warning-border' not in form
+    assert 'border-status-critical-border' not in form

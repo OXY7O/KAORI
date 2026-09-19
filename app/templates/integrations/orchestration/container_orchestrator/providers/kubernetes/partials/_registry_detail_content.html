@@ -1,10 +1,11 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/details/_detail_content.html" as detail %}
 {% import "components/detail_tip.html" as inventory_tip %}
+{% import "components/table_primitives.html" as surface_ui %}
 {% set readiness_tone = 'normal' if row.readiness == 'ready' else ('critical' if row.readiness == 'blocked' else 'warning') %}
 {% set readiness_label = row.readiness|replace('_', ' ')|title %}
 <div class="bg-surface-hover px-4 py-4">
-    <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <div class="{{ surface_ui.block_classes() }}">
         <header class="flex flex-col gap-4 border-b border-outline-subtle bg-surface-elevated px-5 py-4 xl:flex-row xl:items-center xl:justify-between">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
@@ -24,7 +25,7 @@
             <div class="flex flex-wrap items-center gap-2 xl:justify-end">
                 {% if row.metrics_source_id %}
                     <a href="{{ url_for('metrics.instance_detail', instance_id=row.metrics_source_id) }}#scope"
-                       class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-status-normal-border bg-status-normal-soft px-2.5 text-xs font-semibold text-status-normal transition hover:brightness-95">
+                       class="inline-flex h-8 items-center gap-1.5 rounded-lg border {{ table_label.tone_border_classes('normal') }} bg-status-normal-soft px-2.5 text-xs font-semibold text-status-normal transition hover:brightness-95">
                         <i data-lucide="chart-no-axes-combined" class="h-3.5 w-3.5"></i>
                         Metrics Source
                     </a>
@@ -36,7 +37,7 @@
                 {% endif %}
                 {% if row.alertmanager_instance_id %}
                     <a href="{{ url_for('alertmanager.instance_detail', instance_id=row.alertmanager_instance_id) }}#scope"
-                       class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-status-normal-border bg-status-normal-soft px-2.5 text-xs font-semibold text-status-normal transition hover:brightness-95">
+                       class="inline-flex h-8 items-center gap-1.5 rounded-lg border {{ table_label.tone_border_classes('normal') }} bg-status-normal-soft px-2.5 text-xs font-semibold text-status-normal transition hover:brightness-95">
                         <i data-lucide="siren" class="h-3.5 w-3.5"></i>
                         Alert Source
                     </a>
@@ -56,7 +57,7 @@
                             data-delete-url="{{ url_for('cluster.delete_cluster_route', cluster_id=row.cluster_id) }}"
                             data-delete-name="{{ row.cluster_name }}"
                             @click="openDelete($el.dataset.deleteUrl, $el.dataset.deleteName)"
-                            class="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-status-critical-border px-2.5 text-xs font-semibold text-status-critical transition hover:bg-status-critical-soft">
+                            class="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border {{ table_label.tone_border_classes('critical') }} px-2.5 text-xs font-semibold text-status-critical transition hover:bg-status-critical-soft">
                         <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
                         Delete
                     </button>

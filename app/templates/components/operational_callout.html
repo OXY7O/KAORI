@@ -1,9 +1,24 @@
-{% macro semantic_border_classes(tone='info') -%}
-    {%- if tone == 'normal' -%}border-status-normal-border
+{% macro semantic_border_classes(tone='info', variant='default') -%}
+    {%- if variant == 'subtle' -%}
+        {%- if tone == 'normal' -%}border-status-normal-border/60
+        {%- elif tone == 'warning' -%}border-status-warning-border/60
+        {%- elif tone == 'critical' -%}border-status-critical-border/60
+        {%- elif tone == 'unknown' -%}border-status-unknown-border/60
+        {%- else -%}border-status-info-border/60
+        {%- endif -%}
+    {%- elif tone == 'normal' -%}border-status-normal-border
     {%- elif tone == 'warning' -%}border-status-warning-border
     {%- elif tone == 'critical' -%}border-status-critical-border
     {%- elif tone == 'unknown' -%}border-status-unknown-border
     {%- else -%}border-status-info-border
+    {%- endif -%}
+{%- endmacro %}
+{% macro semantic_hover_border_classes(tone='info') -%}
+    {%- if tone == 'normal' -%}hover:border-status-normal-border
+    {%- elif tone == 'warning' -%}hover:border-status-warning-border
+    {%- elif tone == 'critical' -%}hover:border-status-critical-border
+    {%- elif tone == 'unknown' -%}hover:border-status-unknown-border
+    {%- else -%}hover:border-status-info-border
     {%- endif -%}
 {%- endmacro %}
 {% macro semantic_surface_classes(tone='info') -%}

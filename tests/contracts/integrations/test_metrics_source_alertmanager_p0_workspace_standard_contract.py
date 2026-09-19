@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 ROOT = Path('.')
@@ -61,3 +62,61 @@ def test_provider_detail_pages_use_shared_tab_style_v2_controller():
         assert "'Bindings & Consumers'" in content
         assert 'integrationWorkspaceTabs(' in content
         assert 'x-on:popstate.window="syncTab()"' in content
+
+
+def test_observability_delete_modals_delegate_to_shared_destructive_runtime():
+    shared_runtime = read('app/static/js/destructive_confirmation_modal.js')
+    baseline = json.loads(read('docs/architecture/ui-inline-debt-baseline.json'))['files']
+    providers = (
+        (
+            'metrics-source',
+            'app/templates/integrations/observability/metrics_source',
+            'metrics-source-delete-modal',
+            'data-metrics-source-delete-button',
+        ),
+        (
+            'alertmanager',
+            'app/templates/integrations/observability/alert_source/providers/alertmanager',
+            'alertmanager-delete-modal',
+            'data-alertmanager-delete-button',
+        ),
+    )
+
+    for provider, template_root, modal_id, legacy_trigger in providers:
+        modal_path = f'{template_root}/partials/_delete_confirmation_modal.html'
+        modal = read(modal_path)
+        detail = read(f'{template_root}/instance_detail.html')
+        scope = read(f'{template_root}/partials/_detail_scope.html')
+        bindings = read(f'{template_root}/partials/_binding_registry.html')
+
+        assert 'data-destructive-confirmation-modal' in modal
+        assert 'data-destructive-modal-close' in modal
+        assert 'data-destructive-dynamic-form' in modal
+        assert 'data-destructive-modal-title' in modal
+        assert 'data-destructive-target-name' in modal
+        assert 'data-destructive-detail' in modal
+        assert 'data-destructive-action-label' in modal
+        assert '<script>' not in modal
+        assert 'js/destructive_confirmation_modal.js' in detail
+
+        for trigger_source in (scope, bindings):
+            assert 'data-destructive-modal-open' in trigger_source
+            assert f'data-destructive-modal-id="{modal_id}"' in trigger_source
+            assert 'data-delete-url=' in trigger_source
+            assert 'data-delete-title=' in trigger_source
+            assert 'data-delete-name=' in trigger_source
+            assert 'data-delete-detail=' in trigger_source
+            assert 'data-delete-action-label=' in trigger_source
+            assert legacy_trigger not in trigger_source
+
+        assert modal_path not in baseline, provider
+
+    assert 'button.dataset.deleteUrl' in shared_runtime
+    assert "form.setAttribute('action', deleteUrl)" in shared_runtime
+    assert "form.setAttribute('hx-post', deleteUrl)" in shared_runtime
+    assert 'window.htmx.process(form)' in shared_runtime
+    assert 'button.dataset.deleteTitle' in shared_runtime
+    assert 'button.dataset.deleteName' in shared_runtime
+    assert 'button.dataset.deleteDetail' in shared_runtime
+    assert 'button.dataset.deleteActionLabel' in shared_runtime
+    assert "'htmx:afterRequest'" in shared_runtime

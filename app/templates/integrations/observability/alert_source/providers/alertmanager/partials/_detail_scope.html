@@ -174,7 +174,8 @@
             </div>
             <div class="flex items-center justify-end bg-surface-card px-5 py-4">
                 <button type="button"
-                        data-alertmanager-delete-button
+                        data-destructive-modal-open
+                        data-destructive-modal-id="alertmanager-delete-modal"
                         data-delete-url="{{ url_for('alertmanager.delete_instance', instance_id=instance.id) }}"
                         data-delete-title="Delete Alertmanager Instance?"
                         data-delete-name="{{ instance.name }}"

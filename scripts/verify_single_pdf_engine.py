@@ -72,7 +72,7 @@ def main() -> int:
         ('requirements/base.in', requirements_input),
         ('requirements/base.txt', requirements_lock),
     ):
-        if 'weasyprint==69.0' not in content:
+        if 'weasyprint==70.0' not in content:
             errors.append(f'{path} does not declare the canonical WeasyPrint runtime.')
 
     registry_path = export_root / 'artifacts.py'

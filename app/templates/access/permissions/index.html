@@ -97,7 +97,7 @@
                     {% endfor %}
                 </div>
                 {% if summary.drift_count %}
-                    <div class="mt-3 flex items-start gap-3 rounded-xl border border-status-warning-border bg-status-warning-soft p-3.5 text-status-warning-text">
+                    <div class="mt-3 flex items-start gap-3 rounded-xl border {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft p-3.5 text-status-warning-text">
                         <i data-lucide="triangle-alert"
                            class="mt-0.5 h-4 w-4 shrink-0"
                            aria-hidden="true"></i>

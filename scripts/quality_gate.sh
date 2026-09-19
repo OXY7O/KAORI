@@ -300,6 +300,8 @@ run_static() {
 
 run_tests() {
     python scripts/verify_test_prerequisites.py
+    npm ci --no-audit --no-fund
+    npm run build-css
 
     run_pytest_capture \
         'Functional Tests' \

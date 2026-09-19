@@ -108,7 +108,7 @@
         </div>
     </div>
     <div id="topology-limit-warning"
-         class="{% if not graph.summary.truncated %}hidden {% endif %}border-b border-status-warning-border bg-status-warning-soft px-5 py-3 text-xs text-status-warning-text">
+         class="{% if not graph.summary.truncated %}hidden {% endif %}border-b {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft px-5 py-3 text-xs text-status-warning-text">
         <span class="inline-flex items-start gap-2">
             <i data-lucide="triangle-alert"
                class="mt-0.5 h-4 w-4 shrink-0"
@@ -118,11 +118,11 @@
     </div>
     <div id="topology-error"
          role="alert"
-         class="hidden border-b border-status-critical-border bg-status-critical-soft px-5 py-3 text-xs text-status-critical-text">
+         class="hidden border-b {{ table_label.tone_border_classes('critical') }} bg-status-critical-soft px-5 py-3 text-xs text-status-critical-text">
     </div>
     <div id="topology-runtime-status"
          role="status"
-         class="border-b border-status-pending-border bg-status-pending-soft px-5 py-3 text-xs text-status-pending-text">
+         class="border-b {{ table_label.tone_border_classes('pending') }} bg-status-pending-soft px-5 py-3 text-xs text-status-pending-text">
         <span class="inline-flex items-center gap-2">
             <i data-lucide="loader-circle"
                class="h-4 w-4 animate-spin"

@@ -8,6 +8,8 @@ ROOT = Path(__file__).resolve().parents[3]
 DEV_COMPOSE = ROOT / '.devcontainer' / 'compose.devcontainer.yml'
 DEVCONTAINER = ROOT / '.devcontainer' / 'devcontainer.json'
 ENSURE_FRONTEND = ROOT / '.devcontainer' / 'ensure-frontend.sh'
+DOCKERFILE = ROOT / 'Dockerfile'
+DEV_REQUIREMENTS = ROOT / 'requirements' / 'dev.txt'
 
 
 def read(path: Path) -> str:
@@ -89,6 +91,19 @@ def test_devcontainer_frontend_bootstrap_repairs_generated_output_permissions() 
     assert "'app/static/vendor'" in source
     assert 'sudo chown -R "$(id -u):$(id -g)"' in source
     assert source.rindex('repair_frontend_output_permissions') < source.index('npm run prepare-frontend')
+
+
+def test_development_image_keeps_recursive_dev_requirements_available() -> None:
+    dockerfile = read(DOCKERFILE)
+    dev_requirements = read(DEV_REQUIREMENTS)
+
+    assert '-r base.txt' in dev_requirements
+
+    development = dockerfile.split('FROM base AS development', 1)[1].split('FROM node:22-alpine AS frontend-build', 1)[
+        0
+    ]
+    assert 'COPY requirements/base.txt requirements/dev.txt /tmp/requirements/' in development
+    assert 'python -m pip install -r /tmp/requirements/dev.txt' in development
 
 
 def test_development_docs_define_one_canonical_compose_boundary() -> None:

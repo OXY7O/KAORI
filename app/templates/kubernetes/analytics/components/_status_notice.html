@@ -1,5 +1,7 @@
+{% import "components/operational_callout.html" as operational_callout %}
 {% macro render(title, message, tone='warning', icon='triangle-alert', extra_class='') -%}
-    {% set border_class = 'border-status-critical-border' if tone == 'critical' else ('border-status-info-border' if tone == 'info' else 'border-status-warning-border') %}
+    {% set border_tone = tone if tone in ['critical', 'info'] else 'warning' %}
+    {% set border_class = operational_callout.semantic_border_classes(border_tone) %}
     {% set background_class = 'bg-status-critical-soft' if tone == 'critical' else ('bg-status-info-soft' if tone == 'info' else 'bg-status-warning-soft') %}
     {% set icon_class = 'text-status-critical' if tone == 'critical' else ('text-status-info' if tone == 'info' else 'text-status-warning') %}
     <section class="rounded-xl border {{ border_class }} {{ background_class }} px-4 py-3 {{ extra_class }}"

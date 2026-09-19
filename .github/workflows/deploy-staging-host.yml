@@ -22,7 +22,7 @@ concurrency:
 jobs:
   admission:
     name: Release Evidence
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, platform-ci]
     timeout-minutes: 10
     outputs:
       accepted_sha: ${{ steps.evidence.outputs.accepted_sha }}

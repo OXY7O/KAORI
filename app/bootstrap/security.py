@@ -4,7 +4,11 @@ import secrets
 
 from flask import Flask, Response, g
 
-_INLINE_SCRIPT_OPEN = '<script>'
+_TRUSTED_INLINE_SCRIPT_OPENINGS = (
+    '<script>',
+    '<script data-kaori-prepaint-bootstrap="app-shell">',
+    '<script data-kaori-prepaint-bootstrap="auth-theme">',
+)
 _PERMISSIONS_POLICY = 'camera=(), microphone=(), geolocation=()'
 
 
@@ -33,12 +37,18 @@ def _protect_inline_scripts(response: Response, nonce: str) -> None:
         return
 
     document = response.get_data(as_text=True)
-    if _INLINE_SCRIPT_OPEN not in document:
+    if '<script' not in document:
         return
 
-    # KAORI's trusted inline bootstrap blocks use the bare <script> opening
-    # tag. External scripts retain src= and are already admitted by 'self'.
-    response.set_data(document.replace(_INLINE_SCRIPT_OPEN, f'<script nonce="{nonce}">'))
+    # Keep nonce admission fail-closed. Only the historically trusted bare
+    # bootstrap opening and the two explicitly governed pre-paint markers are
+    # rewritten. Arbitrary inline script attributes must not become trusted
+    # merely because they appear in an HTML response.
+    for opening in _TRUSTED_INLINE_SCRIPT_OPENINGS:
+        protected_opening = f'{opening[:-1]} nonce="{nonce}">'
+        document = document.replace(opening, protected_opening)
+
+    response.set_data(document)
 
 
 def register_security_headers(app: Flask) -> None:

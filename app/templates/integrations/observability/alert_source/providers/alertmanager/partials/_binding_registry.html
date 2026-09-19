@@ -114,7 +114,8 @@
                                     </button>
                                 </form>
                                 <button type="button"
-                                        data-alertmanager-delete-button
+                                        data-destructive-modal-open
+                                        data-destructive-modal-id="alertmanager-delete-modal"
                                         data-delete-url="{{ url_for('alertmanager.remove_binding', instance_id=instance.id, binding_id=row.binding.id) }}"
                                         data-delete-title="Remove Consumer Binding?"
                                         data-delete-name="{{ row.scope_label }}"

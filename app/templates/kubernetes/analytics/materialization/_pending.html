@@ -1,6 +1,8 @@
 {% import "components/table_label.html" as table_label %}
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/progress_bar.html" as progress_bar %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% set critical_border_class = operational_callout.semantic_border_classes('critical') %}
 {% set progress_percent = materialization_progress_percent if materialization_progress_percent is defined else none %}
 {% set progress_message = materialization_progress_message if materialization_progress_message is defined else none %}
 {% set preparation_error = materialization_error if materialization_error is defined else none %}
@@ -29,7 +31,7 @@
     </header>
     <div class="p-5">
         {% if preparation_error %}
-            <div class="rounded-lg border border-status-critical-border bg-status-critical-soft p-4">
+            <div class="rounded-lg border {{ critical_border_class }} bg-status-critical-soft p-4">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div class="min-w-0">
                         <div class="flex flex-wrap items-center gap-2">
@@ -40,7 +42,7 @@
                         </div>
                         <p class="mt-2 text-sm leading-6 text-status-critical-text">{{ error_detail }}</p>
                         {% if error_remediation %}
-                            <div class="mt-3 border-t border-status-critical-border pt-3">
+                            <div class="mt-3 border-t {{ critical_border_class }} pt-3">
                                 {{ analysis_surface.interpretation_content('Recommended Action',
                                                                 'Restore Analytics Refresh',
                                                                 error_remediation,

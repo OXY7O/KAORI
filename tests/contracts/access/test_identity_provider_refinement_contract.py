@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -105,3 +106,46 @@ def test_identity_provider_secret_and_validation_evidence_remain_safe() -> None:
     for forbidden in ('Client Secret Value', 'Bind Password Value', 'Last Validated'):
         assert forbidden not in detail
         assert forbidden not in service
+
+
+def test_identity_provider_form_family_reuses_shared_surface_and_semantic_authority() -> None:
+    template_paths = (
+        'app/templates/access/identity_providers/form.html',
+        'app/templates/access/identity_providers/partials/_ldap_configuration.html',
+        'app/templates/access/identity_providers/partials/_provider_guidance.html',
+        'app/templates/access/identity_providers/partials/_provider_selector.html',
+        'app/templates/access/identity_providers/partials/_sso_configuration.html',
+    )
+    sources = {path: read(path) for path in template_paths}
+    baseline = json.loads(read('docs/architecture/ui-style-debt-baseline.json'))
+
+    for path, source in sources.items():
+        assert 'components/operational_section_card.html' in source, path
+        assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' not in source, path
+        assert path not in baseline['files']
+
+    assert sum(source.count('operational_section_card.shell_classes()') for source in sources.values()) == 8
+
+    form = sources['app/templates/access/identity_providers/form.html']
+    assert 'components/operational_callout.html' in form
+    assert "operational_callout.semantic_surface_classes('normal' if test_passed else 'critical')" in form
+    assert 'border-status-normal-border' not in form
+    assert 'border-status-critical-border' not in form
+    assert 'aria-live="polite"' in form
+    assert 'identity_provider_form.js' in form
+
+    sso = sources['app/templates/access/identity_providers/partials/_sso_configuration.html']
+    assert 'components/operational_callout.html' in sso
+    assert "operational_callout.semantic_surface_classes('info')" in sso
+    assert 'border-status-info-border' not in sso
+    assert 'data-jit-off-note' in sso
+    assert 'data-jit-settings' in sso
+
+    selector = sources['app/templates/access/identity_providers/partials/_provider_selector.html']
+    for hook in (
+        'data-provider-option',
+        'data-adapter-key',
+        'data-configuration-profile',
+        'data-admission-policy',
+    ):
+        assert hook in selector

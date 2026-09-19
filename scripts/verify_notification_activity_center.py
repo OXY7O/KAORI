@@ -31,6 +31,7 @@ required_files = (
     'app/templates/components/navigation/navbar.html',
     'app/static/js/safe_html.js',
     'app/static/js/navbar.js',
+    'app/static/js/application_shell.js',
 )
 for relative in required_files:
     read(relative)
@@ -48,6 +49,7 @@ progress_component = read('app/templates/components/progress_bar.html')
 routes = read('app/platform_operations/notifications/routes.py')
 presentation = read('app/common/job_execution_presentation.py')
 layout = read('app/templates/layouts/app.html')
+application_shell_js = read('app/static/js/application_shell.js')
 page_tabs = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
 readme = read('app/platform_operations/notifications/README.md')
 quick_sync = read('app/kubernetes/cluster/quick_sync.py')
@@ -291,8 +293,8 @@ for needle in (
     "document.getElementById('notification-deck-active-count')",
     "emptyState.classList.toggle('hidden', totalCount > 0)",
 ):
-    if needle not in layout:
-        raise SystemExit(f'Activity surface reconciliation is missing: {needle}')
+    if needle not in application_shell_js:
+        raise SystemExit(f'Activity surface reconciliation is missing from application shell runtime: {needle}')
 
 for needle in (
     'components/framed_workspace_tabs.html',

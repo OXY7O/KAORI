@@ -71,6 +71,7 @@ def main() -> int:
     quality_gate = read('scripts/quality_gate.sh')
     system_information = read('app/settings/system_information.py')
     timezone_js = read('app/static/js/user_timezone_sync.js')
+    workspace_tabs = read('app/templates/components/workspace_tabs.html')
 
     for required in (
         "@bp.route('/general', methods=['GET', 'POST'])",
@@ -129,14 +130,33 @@ def main() -> int:
             f'{label} semantic feedback must use shared callout ownership',
             errors,
         )
-    require('flex gap-2 overflow-x-auto' in general_tabs, 'General Settings tab contract drifted', errors)
-    require('components/loading_bar.html' in general_page, 'General Settings must use shared loading bar', errors)
-    require('general-settings-loading' in general_page, 'General Settings loading indicator missing', errors)
+    for required in (
+        'macro render_query_tabs(',
+        'data-kaori-tab-variant="query-backed-htmx"',
+        'class="flex gap-2 overflow-x-auto"',
+        'role="tablist"',
+        'role="tab"',
+        'hx-get="{{ tab_href }}"',
+        'hx-target="{{ hx_target }}"',
+        'hx-indicator="{{ hx_indicator }}"',
+        'hx-sync="{{ hx_sync }}"',
+        'hx-swap="outerHTML"',
+        'hx-push-url="true"',
+    ):
+        require(required in workspace_tabs, f'Shared Settings tab authority missing: {required}', errors)
     require(
-        'hx-indicator="#general-settings-loading"' in general_tabs,
-        'General Settings tabs must use shared loading indicator',
+        'workspace_tabs.render_query_tabs(' in general_tabs,
+        'General Settings tabs must delegate to shared query-backed HTMX tab authority',
         errors,
     )
+    require('components/loading_bar.html' in general_page, 'General Settings must use shared loading bar', errors)
+    require('general-settings-loading' in general_page, 'General Settings loading indicator missing', errors)
+    for required in (
+        "hx_target='#general-settings-page'",
+        "hx_indicator='#general-settings-loading'",
+        "hx_sync='#general-settings-page:replace'",
+    ):
+        require(required in general_tabs, f'General Settings shared tab binding missing: {required}', errors)
     require(
         'hx-indicator="#general-settings-loading"' in timezone,
         'Time Zone save must use shared loading indicator',
@@ -205,7 +225,11 @@ def main() -> int:
         "'remembered_sign_ins': 'revoked'",
     ):
         require(required in account_actions, f'Account security action contract missing: {required}', errors)
-    require('flex gap-2 overflow-x-auto' in account_tabs, 'Account tab contract drifted', errors)
+    require(
+        'workspace_tabs.render_query_tabs(' in account_tabs,
+        'Account tabs must delegate to shared query-backed HTMX tab authority',
+        errors,
+    )
     require('data-account-profile-workspace="full-width"' in profile, 'Account Profile must remain full-width', errors)
     require('Last Verified Sign-In' in profile, 'Account Profile sign-in evidence missing', errors)
     require('components/table.html' in activity, 'Authentication Activity must use shared table', errors)
@@ -232,11 +256,12 @@ def main() -> int:
     )
     require('components/loading_bar.html' in account_page, 'Account must use shared loading bar', errors)
     require('account-settings-loading' in account_page, 'Account loading indicator missing', errors)
-    require(
-        'hx-indicator="#account-settings-loading"' in account_tabs,
-        'Account tabs must use shared loading indicator',
-        errors,
-    )
+    for required in (
+        "hx_target='#account-authentication-page'",
+        "hx_indicator='#account-settings-loading'",
+        "hx_sync='#account-authentication-page:replace'",
+    ):
+        require(required in account_tabs, f'Account shared tab binding missing: {required}', errors)
     require(
         'hx-indicator="#account-settings-loading"' in credentials,
         'Credential action must use shared loading indicator',

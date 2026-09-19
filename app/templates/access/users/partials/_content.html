@@ -1,10 +1,10 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
+{% import "components/table_primitives.html" as surface_ui %}
 <div id="users-page-content" class="space-y-6">
     {% include "access/users/partials/_summary_cards.html" %}
-    <section id="user-directory"
-             class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <section id="user-directory" class="{{ surface_ui.block_classes() }}">
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div class="flex min-w-0 items-center gap-3">

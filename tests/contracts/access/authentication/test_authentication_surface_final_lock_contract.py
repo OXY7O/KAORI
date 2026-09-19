@@ -31,8 +31,12 @@ def test_authentication_presentation_uses_canonical_typography_and_external_runt
         assert 'font-extrabold' not in source
         assert ' uppercase ' not in f' {source} '
 
+    prepaint_marker = 'data-kaori-prepaint-bootstrap="auth-theme"'
+    stylesheet = "filename='css/output.css'"
+
     assert "filename='js/auth_login.js'" in layout
-    assert layout.count('<script>') == 1
+    assert layout.count(prepaint_marker) == 1
+    assert layout.index(prepaint_marker) < layout.index(stylesheet)
     assert "localStorage.getItem('theme')" in layout
 
 

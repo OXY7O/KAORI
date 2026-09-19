@@ -20,7 +20,7 @@
         url_for('metrics.binding_validation_status', instance_id=instance.id, binding_id=active_binding_id, task_id=active_binding_task_id) if binding_poll_active else '',
     '#metrics-source-scope-workspace'
     ) }}
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+    <section class="{{ integration_ui.section_shell_classes() }}"
              aria-labelledby="metrics-source-bindings-title">
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -195,7 +195,8 @@
             </div>
             <div class="flex items-center justify-end bg-surface-card px-5 py-4">
                 <button type="button"
-                        data-metrics-source-delete-button
+                        data-destructive-modal-open
+                        data-destructive-modal-id="metrics-source-delete-modal"
                         data-delete-url="{{ delete_instance_url }}"
                         data-delete-title="Delete {{ metrics_source_label }} Instance?"
                         data-delete-name="{{ instance.name }}"
