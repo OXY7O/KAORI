@@ -235,7 +235,7 @@ Copy budget is canonical and executable:
 
 The lower-bound reference is `Review cluster health, capacity, alerts, inventory, recommendations, and report evidence.` The upper-bound reference is `Review report execution, artifact readiness, storage availability, and retained lifecycle state.`
 
-Character count is the executable primary density boundary. The 10–11 word range protects scanability, while semantic clarity remains mandatory. Long evidence explanations belong below the Hero.
+Character count is the executable density boundary. The 10–11 word range guides editorial scanability, while semantic clarity remains mandatory. Long evidence explanations belong below the Hero.
 
 ## Dynamic and HTMX behavior
 
@@ -325,7 +325,7 @@ The verifier must:
 - reject unmanaged Hero-like local surfaces that bypass the component;
 - report compatibility-shell, profile-consumer, and description-audit counts separately.
 
-The canonical verifier enforces the 89–96 character target and approximately 10–11 words. A deterministic description outside either density boundary, containing a manual line break, or lacking a complete sentence terminator is a contract violation rather than an advisory warning.
+The canonical verifier enforces the 89–96 character target, one complete sentence, and no manual line break. The approximately 10–11 word range is an editorial target rather than a token-count gate because technical compounds, product names, and format tokens can remain compact while tokenizing differently.
 
 Integration domain descriptions are audited from `app/definitions/catalogs/integrations/taxonomy.yaml` because `app/templates/integrations/domain.html` renders those descriptions dynamically. Other source-controlled dynamic Hero copy must gain an equally explicit audit path when introduced.
 
