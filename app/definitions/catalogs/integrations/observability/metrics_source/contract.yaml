@@ -44,8 +44,8 @@ provider_kinds:
   support_presentation:
     minimum_version: '0.39'
     minimum_label: v0.39
-    recommended_version: '0.42'
-    recommended_label: v0.42.x
+    recommended_version: '0.42.4'
+    recommended_label: v0.42.4
     support_band: v0.39–v0.42
     current_band: v0.42.x
     support_label: Query Profile Current
@@ -53,12 +53,7 @@ provider_kinds:
     capability_summary: Long-retention PromQL queries through the shared Prometheus HTTP API v1 core contract.
     validation_basis: Thanos runtime compatibility and the shared Prometheus HTTP API v1 core are validated at provider level; asset metrics remain binding-specific.
 compatibility_profiles:
-- prometheus-http-v2
-- prometheus-http-v3
-- thanos-query-v0-39
-- thanos-query-v0-40
-- thanos-query-v0-41
-- thanos-query-v0-42
+- prometheus-http-core-v1
 provider_capability_keys:
 - instant_query
 - range_query
