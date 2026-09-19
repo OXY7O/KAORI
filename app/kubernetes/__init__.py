@@ -1,1 +1,0 @@
-"""Kubernetes managed-asset domain."""

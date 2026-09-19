@@ -17,17 +17,29 @@ def test_hero_description_budget_enforces_target_and_hard_boundary() -> None:
     validate = namespace['_validate_description_budget']
 
     validate(
-        'Review cluster posture, readiness, evidence, capacity, alerts, recommendations, and operational context.',
+        'Review cluster health, capacity, alerts, inventory, recommendations, and reporting evidence.',
         owner='compliant',
     )
 
-    with pytest.raises(AssertionError, match='11-19 words'):
+    with pytest.raises(AssertionError, match='89-96 characters'):
         validate('Too short.', owner='short')
 
-    with pytest.raises(AssertionError, match='hard maximum 19 words'):
+    with pytest.raises(AssertionError, match='89-96 characters'):
         validate(
-            'Review this deliberately oversized Hero description because it contains far too many words for the canonical KAORI operational surface and exceeds the approved presentation density today.',
+            'Review this deliberately oversized Hero description because it exceeds the canonical KAORI presentation density and the approved character budget.',
             owner='oversized',
+        )
+
+    with pytest.raises(AssertionError, match='approximately 10-11 words'):
+        validate(
+            'Review cluster posture readiness evidence capacity alerts inventory forecasts reporting status.',
+            owner='word-density',
+        )
+
+    with pytest.raises(AssertionError, match='manual line break'):
+        validate(
+            'Review cluster health, capacity, alerts, inventory, recommendations, and\nreporting evidence.',
+            owner='manual-break',
         )
 
 

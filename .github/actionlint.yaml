@@ -1,4 +1,0 @@
-self-hosted-runner:
-  labels:
-    - kaori-ci
-    - platform-ci

@@ -1,1 +1,0 @@
-"""Operational notification domain."""

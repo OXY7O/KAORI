@@ -1,9 +1,0 @@
-{% import "components/table_label.html" as table_label %}
-{% for item in job_catalog %}
-    <span id="job-catalog-status-{{ item.key|replace('.', '-') |replace('/', '-') }}"
-          hx-swap-oob="outerHTML">
-        {{ table_label.status_indicator_label(item.status.label, item.status.tone, item.status.icon) }}
-    </span>
-    <span id="job-catalog-activity-{{ item.key|replace('.', '-') |replace('/', '-') }}"
-          hx-swap-oob="outerHTML">{{ 'Active' if item.active else 'Idle' }}</span>
-{% endfor %}
