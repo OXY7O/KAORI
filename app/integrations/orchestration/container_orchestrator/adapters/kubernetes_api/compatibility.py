@@ -13,7 +13,7 @@ from kubernetes.client import (
 )
 from kubernetes.client.rest import ApiException
 
-KUBERNETES_API_PROFILE = 'kubernetes-api-v1'
+KUBERNETES_API_PROFILE = 'kubernetes-core-v1'
 
 
 @dataclass(frozen=True)

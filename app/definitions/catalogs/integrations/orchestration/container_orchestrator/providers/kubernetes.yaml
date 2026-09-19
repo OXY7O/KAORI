@@ -2,7 +2,7 @@ schema_version: 1
 kind: integration_provider_contract
 provider: kubernetes
 compatibility_profiles:
-- kubernetes-v1
+- kubernetes-core-v1
 capabilities:
 - key: discovery
   label: API Discovery
