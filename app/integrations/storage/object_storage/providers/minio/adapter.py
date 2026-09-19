@@ -17,7 +17,8 @@ from app.models.minio import MinioInstance
 
 def _health_factors(instance: MinioInstance) -> tuple[HealthFactor, ...]:
     connected = instance.last_status == 'connected'
-    compatibility_ready = instance.compatibility_status == 'compatible'
+    compatibility_ready = instance.compatibility_status in {'compatible', 'compatible_with_warnings'}
+    compatibility_unverified = instance.compatibility_status in {'unverified_version', 'version_unknown', 'product_unqualified'}
     latency_observed = instance.last_response_time_ms is not None
     high_latency = (instance.last_response_time_ms or 0) > 1500
     return (
@@ -32,9 +33,9 @@ def _health_factors(instance: MinioInstance) -> tuple[HealthFactor, ...]:
         HealthFactor(
             'compatibility',
             'MinIO compatibility',
-            'success' if compatibility_ready else ('failed' if instance.compatibility_status else 'unknown'),
+            'success' if compatibility_ready else ('warning' if compatibility_unverified else ('failed' if instance.compatibility_status else 'unknown')),
             35,
-            100 if compatibility_ready else (0 if instance.compatibility_status else 50),
+            100 if compatibility_ready else (70 if compatibility_unverified else (0 if instance.compatibility_status else 50)),
             instance.validation_message or '',
         ),
         HealthFactor(
@@ -50,7 +51,8 @@ def _health_factors(instance: MinioInstance) -> tuple[HealthFactor, ...]:
 
 def _diagnostics(instance: MinioInstance) -> tuple[DiagnosticResult, ...]:
     connected = instance.last_status == 'connected'
-    compatibility_ready = instance.compatibility_status == 'compatible'
+    compatibility_ready = instance.compatibility_status in {'compatible', 'compatible_with_warnings'}
+    compatibility_unverified = instance.compatibility_status in {'unverified_version', 'version_unknown', 'product_unqualified'}
     api_detail = (
         f'{instance.detected_product or "S3-compatible endpoint"} runtime endpoint is reachable.'
         if connected
@@ -75,9 +77,9 @@ def _diagnostics(instance: MinioInstance) -> tuple[DiagnosticResult, ...]:
             key='compatibility',
             label='Compatibility Profile',
             category='compatibility',
-            status='success' if compatibility_ready else ('failed' if instance.compatibility_status else 'unknown'),
+            status='success' if compatibility_ready else ('warning' if compatibility_unverified else ('failed' if instance.compatibility_status else 'unknown')),
             detail=instance.validation_message or 'Run Full Validation to resolve the MinIO compatibility profile.',
-            severity='critical' if instance.compatibility_status and not compatibility_ready else 'info',
+            severity='warning' if compatibility_unverified else ('critical' if instance.compatibility_status and not compatibility_ready else 'info'),
         ),
     )
 
@@ -137,7 +139,15 @@ class MinioRuntimeAdapter:
             instance.object_storage_system.status = 'blocked'
         elif compatibility.readiness == 'ready':
             instance.readiness_status = 'ready'
-            instance.validation_message = f'MinIO S3 access and bucket discovery are validated against the KAORI-qualified release. {compatibility.message}'
+            instance.validation_message = (
+                f'MinIO S3 access and bucket discovery satisfy {CAPABILITY_PROFILE}. {compatibility.message}'
+            )
+            instance.object_storage_system.status = 'connected'
+        elif compatibility.readiness == 'degraded':
+            instance.readiness_status = 'degraded'
+            instance.validation_message = (
+                f'MinIO S3 access and bucket discovery satisfy {CAPABILITY_PROFILE}. {compatibility.message}'
+            )
             instance.object_storage_system.status = 'connected'
         else:
             instance.readiness_status = 'blocked'
@@ -164,7 +174,7 @@ class MinioRuntimeAdapter:
         db.session.flush()
 
         return {
-            'success': instance.readiness_status == 'ready',
+            'success': instance.readiness_status != 'blocked',
             'connected': True,
             'readiness_status': instance.readiness_status,
             'compatibility_status': instance.compatibility_status,
