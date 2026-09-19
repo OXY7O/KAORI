@@ -32,6 +32,13 @@ class CompatibilityLifecyclePolicy:
 
 
 @dataclass(frozen=True)
+class CompatibilitySupportPosture:
+    key: str
+    result_status: str
+    readiness: str
+
+
+@dataclass(frozen=True)
 class CompatibilityProfile:
     key: str
     products: tuple[str, ...]
@@ -68,12 +75,19 @@ class CompatibilityProductPolicy:
     label: str
     icon: str
     version_scheme: str
+    selection_mode: str
+    version_source: str
     contract_profile: str
     qualification_floor: str
     qualification_ceiling_exclusive: str
     minimum_label: str
     recommended_label: str
     qualified_version_label: str
+    current_version_label: str
+    upstream_supported_version_label: str
+    supported_version_label: str
+    anchor_release_label: str
+    upper_release_label: str
     upstream_lifecycle_label: str
     support_label: str
     support_tone: str
@@ -96,12 +110,13 @@ class CompatibilityResult:
 
 def _load_compatibility_contract() -> tuple[
     CompatibilityLifecyclePolicy,
-    dict[str, str],
+    dict[str, CompatibilitySupportPosture],
     dict[str, CompatibilityProfile],
     dict[str, CompatibilityProductPolicy],
     dict[str, tuple[CompatibilityQualification, ...]],
 ]:
     document = integration_compatibility_document()
+
     raw_lifecycle = require_mapping(document.get('lifecycle_policy'), 'lifecycle_policy')
     lifecycle = CompatibilityLifecyclePolicy(
         key=require_str(raw_lifecycle, 'key', 'lifecycle_policy'),
@@ -118,21 +133,15 @@ def _load_compatibility_contract() -> tuple[
         core_contract_versioning=require_str(raw_lifecycle, 'core_contract_versioning', 'lifecycle_policy'),
     )
 
-    raw_policy = require_mapping(document.get('kubernetes_lifecycle_policy'), 'kubernetes_lifecycle_policy')
-    policy = {
-        key: require_str(raw_policy, key, 'kubernetes_lifecycle_policy')
-        for key in (
-            'supported_version_constraint',
-            'extended_min_version',
-            'current_min_version',
-            'current_max_version_exclusive',
-            'current_version_label',
-            'upstream_supported_version_label',
-            'supported_version_label',
-            'anchor_release_label',
-            'upper_release_label',
+    postures: dict[str, CompatibilitySupportPosture] = {}
+    for index, raw in enumerate(require_list(document.get('support_postures'), 'support_postures')):
+        item = require_mapping(raw, f'support_postures[{index}]')
+        posture = CompatibilitySupportPosture(
+            key=require_str(item, 'key', f'support_postures[{index}]'),
+            result_status=require_str(item, 'result_status', f'support_postures[{index}]'),
+            readiness=require_str(item, 'readiness', f'support_postures[{index}]'),
         )
-    }
+        postures[posture.key] = posture
 
     contracts: dict[str, CompatibilityProfile] = {}
     for index, raw in enumerate(require_list(document.get('contract_profiles'), 'contract_profiles')):
@@ -153,11 +162,13 @@ def _load_compatibility_contract() -> tuple[
     products: dict[str, CompatibilityProductPolicy] = {}
     for index, raw in enumerate(require_list(document.get('products'), 'products')):
         item = require_mapping(raw, f'products[{index}]')
-        policy_item = CompatibilityProductPolicy(
+        product = CompatibilityProductPolicy(
             key=require_str(item, 'key', f'products[{index}]').lower(),
             label=require_str(item, 'label', f'products[{index}]'),
             icon=require_str(item, 'icon', f'products[{index}]'),
             version_scheme=require_str(item, 'version_scheme', f'products[{index}]'),
+            selection_mode=require_str(item, 'selection_mode', f'products[{index}]'),
+            version_source=require_str(item, 'version_source', f'products[{index}]'),
             contract_profile=require_str(item, 'contract_profile', f'products[{index}]'),
             qualification_floor=require_str(item, 'qualification_floor', f'products[{index}]'),
             qualification_ceiling_exclusive=require_str(
@@ -168,13 +179,22 @@ def _load_compatibility_contract() -> tuple[
             minimum_label=require_str(item, 'minimum_label', f'products[{index}]'),
             recommended_label=require_str(item, 'recommended_label', f'products[{index}]'),
             qualified_version_label=require_str(item, 'qualified_version_label', f'products[{index}]'),
+            current_version_label=require_str(item, 'current_version_label', f'products[{index}]'),
+            upstream_supported_version_label=require_str(
+                item,
+                'upstream_supported_version_label',
+                f'products[{index}]',
+            ),
+            supported_version_label=require_str(item, 'supported_version_label', f'products[{index}]'),
+            anchor_release_label=require_str(item, 'anchor_release_label', f'products[{index}]'),
+            upper_release_label=require_str(item, 'upper_release_label', f'products[{index}]'),
             upstream_lifecycle_label=require_str(item, 'upstream_lifecycle_label', f'products[{index}]'),
             support_label=require_str(item, 'support_label', f'products[{index}]'),
             support_tone=require_str(item, 'support_tone', f'products[{index}]'),
             capability_summary=require_str(item, 'capability_summary', f'products[{index}]'),
             validation_basis=require_str(item, 'validation_basis', f'products[{index}]'),
         )
-        products[policy_item.key] = policy_item
+        products[product.key] = product
 
     grouped: dict[str, list[CompatibilityQualification]] = {}
     for index, raw in enumerate(require_list(document.get('qualifications'), 'qualifications')):
@@ -195,66 +215,60 @@ def _load_compatibility_contract() -> tuple[
         )
         grouped.setdefault(product, []).append(qualification)
 
-    return lifecycle, policy, contracts, products, {product: tuple(items) for product, items in grouped.items()}
+    return lifecycle, postures, contracts, products, {product: tuple(items) for product, items in grouped.items()}
 
 
 (
     COMPATIBILITY_LIFECYCLE_POLICY,
-    _KUBERNETES_POLICY,
+    SUPPORT_POSTURES,
     CONTRACT_PROFILES,
     PRODUCT_POLICIES,
     QUALIFICATIONS,
 ) = _load_compatibility_contract()
-# Backward-compatible import name: these are now version qualification rows, not runtime contract profiles.
+
+# Backward-compatible import name: these are version qualification rows, not runtime contract profiles.
 PROFILES = QUALIFICATIONS
 QUALIFICATIONS_BY_KEY = {
     qualification.key: qualification for qualifications in QUALIFICATIONS.values() for qualification in qualifications
 }
-KUBERNETES_SUPPORTED_VERSION_CONSTRAINT = _KUBERNETES_POLICY['supported_version_constraint']
-KUBERNETES_EXTENDED_MIN_VERSION = Version(_KUBERNETES_POLICY['extended_min_version'])
-# Backward-compatible alias for callers that still use the former lifecycle name.
-KUBERNETES_LEGACY_MIN_VERSION = KUBERNETES_EXTENDED_MIN_VERSION
-KUBERNETES_CURRENT_MIN_VERSION = Version(_KUBERNETES_POLICY['current_min_version'])
-KUBERNETES_CURRENT_MAX_VERSION_EXCLUSIVE = Version(_KUBERNETES_POLICY['current_max_version_exclusive'])
-KUBERNETES_CURRENT_VERSION_LABEL = _KUBERNETES_POLICY['current_version_label']
-KUBERNETES_UPSTREAM_SUPPORTED_VERSION_LABEL = _KUBERNETES_POLICY['upstream_supported_version_label']
-KUBERNETES_SUPPORTED_VERSION_LABEL = _KUBERNETES_POLICY['supported_version_label']
 
 
-def kubernetes_lifecycle(version: str | None) -> str:
-    normalized = normalize_runtime_version(version or '')
+def resolve_qualification(product: str, version: str | None) -> CompatibilityQualification | None:
+    product_key = str(product or '').strip().lower()
+    if product_key not in PRODUCT_POLICIES or not version:
+        return None
+    normalized = normalize_runtime_version(version)
     try:
-        parsed = Version(normalized)
+        Version(normalized)
     except InvalidVersion:
-        return 'unknown'
-    if KUBERNETES_CURRENT_MIN_VERSION <= parsed < KUBERNETES_CURRENT_MAX_VERSION_EXCLUSIVE:
-        return 'current'
-    if KUBERNETES_EXTENDED_MIN_VERSION <= parsed < KUBERNETES_CURRENT_MIN_VERSION:
-        return 'extended'
-    if parsed < KUBERNETES_EXTENDED_MIN_VERSION:
-        return 'end_of_life'
-    return 'unknown'
+        return None
+    return next(
+        (item for item in QUALIFICATIONS.get(product_key, ()) if item.matches(normalized)),
+        None,
+    )
 
 
-def kubernetes_lifecycle_policy(version: str | None) -> dict[str, str]:
-    """Return the source-controlled KAORI Kubernetes lifecycle contract."""
-    detected = normalize_runtime_version(version or '') or 'unknown'
-    lifecycle = kubernetes_lifecycle(detected)
+def resolve_contract_profile(product: str, version: str | None) -> CompatibilityProfile | None:
+    product_key = str(product or '').strip().lower()
+    policy = PRODUCT_POLICIES.get(product_key)
+    if policy is None:
+        return None
+    qualification = resolve_qualification(product_key, version)
+    profile_key = qualification.contract_profile if qualification else policy.contract_profile
+    profile = CONTRACT_PROFILES.get(profile_key)
+    if profile is None or not profile.supports_product(product_key):
+        return None
+    return profile
+
+
+def compatibility_selection_policy(product: str) -> dict[str, str]:
+    policy = PRODUCT_POLICIES[str(product or '').strip().lower()]
     return {
-        'detected_version': f'v{detected}' if detected != 'unknown' else 'Unknown',
-        'lifecycle_status': lifecycle,
-        'current_version_band': KUBERNETES_CURRENT_VERSION_LABEL,
-        'upstream_supported_version_band': KUBERNETES_UPSTREAM_SUPPORTED_VERSION_LABEL,
-        'supported_version_band': KUBERNETES_SUPPORTED_VERSION_LABEL,
-        'supported_constraint': KUBERNETES_SUPPORTED_VERSION_CONSTRAINT,
-        'policy_label': 'KAORI Kubernetes lifecycle policy',
-        'policy_key': COMPATIBILITY_LIFECYCLE_POLICY.key,
-        'policy_version': f'v{COMPATIBILITY_LIFECYCLE_POLICY.version}',
-        'policy_year': str(COMPATIBILITY_LIFECYCLE_POLICY.policy_year),
-        'anchor_year': str(COMPATIBILITY_LIFECYCLE_POLICY.anchor_year),
-        'lookback_years': str(COMPATIBILITY_LIFECYCLE_POLICY.lookback_years),
-        'window_label': COMPATIBILITY_LIFECYCLE_POLICY.window_label,
-        'snapshot_date': COMPATIBILITY_LIFECYCLE_POLICY.snapshot_date,
+        'selection_mode': policy.selection_mode,
+        'version_source': policy.version_source,
+        'default_contract_profile': policy.contract_profile,
+        'qualification_floor': policy.qualification_floor,
+        'qualification_ceiling_exclusive': policy.qualification_ceiling_exclusive,
     }
 
 
@@ -275,40 +289,42 @@ def evaluate_compatibility(
             detected_version=normalize_runtime_version(version or '') or None,
         )
 
-    contract = CONTRACT_PROFILES[policy.contract_profile]
     raw = (version or '').strip() or None
     detected = normalize_runtime_version(raw) if raw else None
     if not detected or detected.lower() == 'unknown':
         return CompatibilityResult(
             status='version_unknown',
             readiness='blocked',
-            profile_key=contract.key,
+            profile_key=policy.contract_profile,
             support_level='unknown',
             message=(
                 f'{policy.label} responded, but KAORI could not determine a usable runtime version. '
-                'Version identity is required before qualification can be evaluated.'
+                'Automatic version identity is required before qualification can be evaluated.'
             ),
             detected_version=detected,
         )
+
     try:
         parsed_version = Version(detected)
     except InvalidVersion:
         return CompatibilityResult(
             status='version_unknown',
             readiness='blocked',
-            profile_key=contract.key,
+            profile_key=policy.contract_profile,
             support_level='unknown',
             message=f'{policy.label} returned an unparseable runtime version: {detected}.',
             detected_version=detected,
         )
 
+    qualification = resolve_qualification(product_key, detected)
     qualification_floor = Version(policy.qualification_floor)
     if parsed_version < qualification_floor:
+        posture = SUPPORT_POSTURES[COMPATIBILITY_LIFECYCLE_POLICY.pre_window_posture]
         return CompatibilityResult(
-            status='end_of_life',
-            readiness='blocked',
-            profile_key=contract.key,
-            support_level='end_of_life',
+            status=posture.result_status,
+            readiness=posture.readiness,
+            profile_key=policy.contract_profile,
+            support_level=posture.key,
             message=(
                 f'{policy.label} {detected} is older than the KAORI '
                 f'{COMPATIBILITY_LIFECYCLE_POLICY.lookback_years}-year lifecycle anchor '
@@ -320,16 +336,24 @@ def evaluate_compatibility(
             upstream_lifecycle='kaori_end_of_life',
         )
 
-    qualification = next(
-        (item for item in QUALIFICATIONS.get(product_key, ()) if item.matches(detected)),
-        None,
-    )
+    contract = resolve_contract_profile(product_key, detected)
+    if contract is None:
+        return CompatibilityResult(
+            status='contract_unavailable',
+            readiness='blocked',
+            profile_key=None,
+            support_level='blocked',
+            message=f'{policy.label} {detected} resolved to an unavailable compatibility contract.',
+            detected_version=detected,
+            qualification_key=qualification.key if qualification else None,
+        )
+
     required = _ordered_unique(
         (*contract.required_capabilities, *((qualification.required_capabilities) if qualification else ()))
     )
     observed = set(capabilities)
     missing = tuple(item for item in required if item not in observed)
-    support_level = qualification.support_level if qualification else 'unverified'
+    support_level = qualification.support_level if qualification else COMPATIBILITY_LIFECYCLE_POLICY.future_posture
     lifecycle = qualification.upstream_lifecycle if qualification else 'unverified'
     qualification_key = qualification.key if qualification else None
 
@@ -347,25 +371,26 @@ def evaluate_compatibility(
         )
 
     if qualification is None:
+        posture = SUPPORT_POSTURES[COMPATIBILITY_LIFECYCLE_POLICY.future_posture]
         return CompatibilityResult(
-            status='unverified_version',
-            readiness='degraded',
+            status=posture.result_status,
+            readiness=posture.readiness,
             profile_key=contract.key,
-            support_level='unverified',
+            support_level=posture.key,
             message=(
                 f'{policy.label} {detected} satisfies the observed {contract.key} capability contract, '
-                'but this version is not yet in the KAORI qualification matrix. Treat it as unverified '
-                'until qualification evidence is promoted.'
+                'but no definition band currently qualifies this version. Treat it as unverified until '
+                'annual qualification evidence is promoted.'
             ),
             detected_version=detected,
             qualification_key=None,
             upstream_lifecycle='unverified',
         )
 
-    warning = qualification.support_level in {'legacy', 'deprecated', 'legacy_supported', 'extended_supported'}
+    posture = SUPPORT_POSTURES[qualification.support_level]
     return CompatibilityResult(
-        status='compatible_with_warnings' if warning else 'compatible',
-        readiness='degraded' if warning else 'ready',
+        status=posture.result_status,
+        readiness=posture.readiness,
         profile_key=contract.key,
         support_level=qualification.support_level,
         message=qualification.notes,
@@ -381,6 +406,72 @@ def normalize_runtime_version(value: str) -> str:
     if match:
         return match.group(1)
     return raw.lower().lstrip('v').split('+', 1)[0].split('-', 1)[0]
+
+
+def kubernetes_lifecycle(version: str | None) -> str:
+    policy = PRODUCT_POLICIES['kubernetes']
+    normalized = normalize_runtime_version(version or '')
+    try:
+        parsed = Version(normalized)
+    except InvalidVersion:
+        return 'unknown'
+    if parsed < Version(policy.qualification_floor):
+        return 'end_of_life'
+    qualification = resolve_qualification('kubernetes', normalized)
+    if qualification is None:
+        return 'unknown'
+    if qualification.support_level == 'current':
+        return 'current'
+    if qualification.support_level == 'extended_supported':
+        return 'extended'
+    return qualification.support_level
+
+
+def kubernetes_lifecycle_policy(version: str | None) -> dict[str, str]:
+    """Return the definition-driven KAORI Kubernetes lifecycle contract."""
+    policy = PRODUCT_POLICIES['kubernetes']
+    detected = normalize_runtime_version(version or '') or 'unknown'
+    return {
+        'detected_version': f'v{detected}' if detected != 'unknown' else 'Unknown',
+        'lifecycle_status': kubernetes_lifecycle(detected),
+        'current_version_band': policy.current_version_label,
+        'upstream_supported_version_band': policy.upstream_supported_version_label,
+        'supported_version_band': policy.supported_version_label,
+        'supported_constraint': f'>={policy.qualification_floor},<{policy.qualification_ceiling_exclusive}',
+        'policy_label': 'KAORI Kubernetes lifecycle policy',
+        'policy_key': COMPATIBILITY_LIFECYCLE_POLICY.key,
+        'policy_version': f'v{COMPATIBILITY_LIFECYCLE_POLICY.version}',
+        'policy_year': str(COMPATIBILITY_LIFECYCLE_POLICY.policy_year),
+        'anchor_year': str(COMPATIBILITY_LIFECYCLE_POLICY.anchor_year),
+        'lookback_years': str(COMPATIBILITY_LIFECYCLE_POLICY.lookback_years),
+        'window_label': COMPATIBILITY_LIFECYCLE_POLICY.window_label,
+        'snapshot_date': COMPATIBILITY_LIFECYCLE_POLICY.snapshot_date,
+        'selection_mode': policy.selection_mode,
+        'version_source': policy.version_source,
+    }
+
+
+def _constraint_bound(constraint: str, prefix: str) -> Version:
+    for token in (item.strip() for item in constraint.split(',')):
+        if token.startswith(prefix):
+            return Version(token[len(prefix) :])
+    raise ValueError(f'Constraint {constraint!r} has no {prefix!r} bound.')
+
+
+_KUBERNETES_POLICY = PRODUCT_POLICIES['kubernetes']
+_KUBERNETES_CURRENT = next(
+    item for item in QUALIFICATIONS['kubernetes'] if item.support_level == 'current'
+)
+KUBERNETES_SUPPORTED_VERSION_CONSTRAINT = (
+    f'>={_KUBERNETES_POLICY.qualification_floor},<{_KUBERNETES_POLICY.qualification_ceiling_exclusive}'
+)
+KUBERNETES_EXTENDED_MIN_VERSION = Version(_KUBERNETES_POLICY.qualification_floor)
+KUBERNETES_LEGACY_MIN_VERSION = KUBERNETES_EXTENDED_MIN_VERSION
+KUBERNETES_CURRENT_MIN_VERSION = _constraint_bound(_KUBERNETES_CURRENT.version_constraint, '>=')
+KUBERNETES_CURRENT_MAX_VERSION_EXCLUSIVE = _constraint_bound(_KUBERNETES_CURRENT.version_constraint, '<')
+KUBERNETES_CURRENT_VERSION_LABEL = _KUBERNETES_POLICY.current_version_label
+KUBERNETES_UPSTREAM_SUPPORTED_VERSION_LABEL = _KUBERNETES_POLICY.upstream_supported_version_label
+KUBERNETES_SUPPORTED_VERSION_LABEL = _KUBERNETES_POLICY.supported_version_label
 
 
 def get_profile(product: str, key: str | None) -> CompatibilityProfile | None:
