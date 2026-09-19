@@ -697,7 +697,7 @@
                                 <div class="flex flex-wrap items-center gap-2 rounded-xl border border-outline-subtle bg-surface-card p-4"
                                      aria-label="Request readiness">
                                     <span id="preview-eligibility-status"
-                                          class="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold leading-4 {% if initial_request_ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
+                                          class="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold leading-4 {% if initial_request_ready %}{{ operational_callout.semantic_border_classes('normal') }} bg-status-normal-soft text-status-normal-text{% else %}{{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft text-status-warning-text{% endif %}">
                                         <i id="preview-eligibility-icon"
                                            data-lucide="{{ 'circle-check' if initial_request_ready else 'triangle-alert' }}"
                                            class="h-3 w-3 shrink-0 {% if initial_request_ready %}text-status-normal{% else %}text-status-warning{% endif %}"
@@ -705,7 +705,7 @@
                                         <span id="preview-eligibility-label">{{ 'Ready to Queue' if initial_request_ready else 'Action Required' }}</span>
                                     </span>
                                     <span id="readiness-scope-status"
-                                          class="inline-flex min-h-6 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold leading-4 {% if initial_scope_ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
+                                          class="inline-flex min-h-6 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold leading-4 {% if initial_scope_ready %}{{ operational_callout.semantic_border_classes('normal') }} bg-status-normal-soft text-status-normal-text{% else %}{{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft text-status-warning-text{% endif %}">
                                         <i data-readiness-status-icon
                                            data-lucide="{{ 'check' if initial_scope_ready else 'triangle-alert' }}"
                                            class="h-3 w-3 shrink-0"
@@ -713,7 +713,7 @@
                                         <span data-readiness-status-label>{{ 'Scope Ready' if initial_scope_ready else ('Select Object Storage System' if payload.selected_report_type.scope_asset_type == 'object_storage_system' else 'Select Cluster') }}</span>
                                     </span>
                                     <span id="readiness-sections-status"
-                                          class="inline-flex min-h-6 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold leading-4 {% if initial_sections_ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
+                                          class="inline-flex min-h-6 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold leading-4 {% if initial_sections_ready %}{{ operational_callout.semantic_border_classes('normal') }} bg-status-normal-soft text-status-normal-text{% else %}{{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft text-status-warning-text{% endif %}">
                                         <i data-readiness-status-icon
                                            data-lucide="{{ 'check' if initial_sections_ready else 'triangle-alert' }}"
                                            class="h-3 w-3 shrink-0"
