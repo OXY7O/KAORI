@@ -127,7 +127,7 @@ def test_governance_and_operations_blocked_copy_remains_domain_specific() -> Non
     assert 'Governance Controls' in governance
     assert "meta_label('server-cog', 'Kubernetes Operations')" not in governance
     assert (
-        'Review certificate validity, host coverage, issuer posture, renewal windows, and rotation readiness.'
+        'Review certificate validity, host coverage, issuer posture, and rotation readiness in KAORI.'
         in tls_hero
     )
     assert (

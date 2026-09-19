@@ -64,9 +64,9 @@ def test_inventory_heroes_follow_copy_budget_and_shared_hero_contract() -> None:
     systems = read('app/templates/storage/object_storage/inventory/systems/partials/_hero.html')
     buckets = read('app/templates/storage/object_storage/inventory/buckets/partials/_hero.html')
 
-    expected = 'Review committed inventory coverage, readiness, and system scope across registered Object Storage environments.'
+    expected = 'Review committed inventory coverage and system scope across registered Object Storage systems.'
     assert expected in overview
-    assert 11 <= len(expected.rstrip('.').split()) <= 19
+    assert 89 <= len(expected) <= 96
 
     for hero in (overview, systems, buckets):
         assert '{% import "components/page_hero.html" as page_hero %}' in hero

@@ -7,15 +7,15 @@ ROOT = Path(__file__).resolve().parents[3]
 
 HERO_EXPECTATIONS = {
     'overview': (
-        'Review committed Kubernetes assets, fleet coverage, and inventory signals across registered clusters.',
+        'Review committed Kubernetes assets, fleet coverage, and inventory signals across KAORI systems.',
         'Fleet Posture',
     ),
     'nodes': (
-        'Review committed node readiness, capacity, runtime, scheduling posture, and platform characteristics.',
+        'Review committed node readiness, capacity, scheduling posture, and platform characteristics.',
         'Node Readiness',
     ),
     'namespaces': (
-        'Review committed namespaces, lifecycle controls, security posture, resource policies, and composition.',
+        'Review committed namespaces, lifecycle controls, security posture, and composition in KAORI.',
         'Lifecycle Posture',
     ),
     'workloads': (
@@ -23,11 +23,11 @@ HERO_EXPECTATIONS = {
         'Runtime Posture',
     ),
     'pods': (
-        'Review committed Pods, readiness, placement, ownership, runtime conditions, and container images.',
+        'Review committed Pods, readiness, placement, ownership, conditions, and images within KAORI.',
         'Runtime Posture',
     ),
     'services': (
-        'Review committed Services, exposure models, ports, selectors, endpoint readiness, and backend registration.',
+        'Review committed Services, exposure models, ports, selectors, and endpoint readiness in KAORI.',
         'Backend Registration',
     ),
     'ingresses': (
@@ -43,7 +43,7 @@ HERO_EXPECTATIONS = {
         'Protected Metadata',
     ),
     'topology': (
-        'Explore committed Kubernetes ownership, placement, relationships, and dependencies across inventory resources.',
+        'Explore Kubernetes ownership, placement, relationships, and dependencies across inventory.',
         'Graph Coverage',
     ),
 }
@@ -63,7 +63,7 @@ def test_inventory_hero_descriptions_follow_the_compact_copy_budget() -> None:
     for resource, (description, _context_title) in HERO_EXPECTATIONS.items():
         source = _normalized(_read(resource))
         assert description in source, resource
-        assert 11 <= len(description.rstrip('.').split()) <= 19, resource
+        assert 89 <= len(description) <= 96, resource
         assert 'from committed Kubernetes inventory snapshots' not in source, resource
 
 
@@ -89,6 +89,6 @@ def test_inventory_hero_copy_budget_is_documented() -> None:
     hero_contract = (ROOT / 'docs/design/components/HERO.md').read_text(encoding='utf-8')
 
     assert '# KAORI Hero Component Standard v1.7' in hero_contract
-    assert '11–19 word envelope' in hero_contract
+    assert '89–96 character target' in hero_contract
     assert 'right-panel title' in hero_contract
     assert 'metric helper: optional' in hero_contract

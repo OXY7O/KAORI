@@ -25,7 +25,7 @@ def test_reports_overview_identity_and_hero_copy_are_explicit() -> None:
     assert "'page_title': 'Reports Overview'" in service
     assert "normalized.setdefault('page_title', 'Reports Overview')" in presentation
     assert '{% block title %}Reports Overview{% endblock title %}' in page
-    assert 'report coverage across managed infrastructure' in service
+    assert 'coverage across KAORI infrastructure' in service
 
 
 def test_report_workspace_hero_descriptions_keep_consistent_operational_depth() -> None:
@@ -40,12 +40,12 @@ def test_report_workspace_hero_descriptions_keep_consistent_operational_depth() 
     }
 
     expected_fragments = {
-        'overview': 'report coverage across managed infrastructure',
-        'generate': 'connected data and approved formats',
+        'overview': 'coverage across KAORI infrastructure',
+        'generate': 'connected data and approved Analytics or Inventory output formats',
         'generated': 'report execution, artifact readiness, storage availability, and retained lifecycle state',
-        'generated_detail': 'report scope, artifact evidence, execution state, retained history, and delivery readiness',
-        'templates': 'protected system templates and reusable custom report structures',
-        'schedules': 'timezone-aware schedules and retained run evidence',
+        'generated_detail': 'report scope, artifact evidence, execution state, history, and delivery readiness',
+        'templates': 'system templates and custom report structures',
+        'schedules': 'timezone-aware schedules and retained evidence',
         'storage': 'storage readiness, integrity, and lifecycle ownership',
     }
     for key, fragment in expected_fragments.items():
