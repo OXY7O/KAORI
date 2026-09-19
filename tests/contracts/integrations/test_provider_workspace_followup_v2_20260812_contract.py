@@ -58,7 +58,7 @@ def test_observability_authority_boundary_has_right_side_metadata() -> None:
     assert 'Alertmanager API v2' in alertmanager
 
 
-def test_kubernetes_legacy_summary_compacts_existing_persisted_copy() -> None:
+def test_kubernetes_summary_compacts_persisted_legacy_copy_and_emits_extended_policy_copy() -> None:
     messages = read('app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/messages.py')
     adapter = read('app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/adapter.py')
     service = read('app/integrations/service.py')
@@ -69,7 +69,8 @@ def test_kubernetes_legacy_summary_compacts_existing_persisted_copy() -> None:
     assert 'compact_readiness_reasons(' in adapter
     assert 'compact_readiness_reasons(' in service
     assert 'compact_readiness_reason(detail)' in runtime_presentation
-    assert "f'Kubernetes {git_version} is in a legacy lifecycle band. Plan an upgrade.'" in validation
+    assert "f'Kubernetes {git_version} is in KAORI Extended lifecycle support. '" in validation
+    assert 'Plan an upgrade into the current lifecycle band.' in validation
     assert 'Stable APIs remain usable, but upgrade planning is required' not in validation
 
 
