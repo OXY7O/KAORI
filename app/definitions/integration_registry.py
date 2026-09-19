@@ -130,9 +130,7 @@ def integration_compatibility_document() -> dict[str, Any]:
     if lookback_years < 1:
         raise DefinitionError('lifecycle_policy.lookback_years must be >= 1.')
     if anchor_year != policy_year - lookback_years:
-        raise DefinitionError(
-            'lifecycle_policy.anchor_year must equal policy_year - lookback_years.'
-        )
+        raise DefinitionError('lifecycle_policy.anchor_year must equal policy_year - lookback_years.')
 
     policy = require_mapping(document.get('kubernetes_lifecycle_policy'), 'kubernetes_lifecycle_policy')
     for key in (
