@@ -217,15 +217,35 @@ def evaluate_minio_release(value: str | None, *, product: str | None = 'minio') 
 
     profile = next((item for item in profiles if item.matches(release)), None)
     if profile is None:
+        parsed_release = _parse_release(release)
+        minimum_release = min(
+            (_parse_release(item.minimum_release) for item in profiles),
+            default=None,
+        )
+        if parsed_release is not None and minimum_release is not None and parsed_release < minimum_release:
+            return MinioCompatibilityResult(
+                status='end_of_life',
+                readiness='blocked',
+                profile_key=CONTRACT_PROFILE,
+                support_level='end_of_life',
+                message=(
+                    f'{PRODUCT_LABELS[product_key]} {release} is older than the KAORI lifecycle floor '
+                    f'({profiles[0].minimum_release}). Upgrade into the current five-year qualification window.'
+                ),
+                declared_release=release,
+                product=product_key,
+                supported_range=supported_range,
+                upstream_lifecycle='kaori_end_of_life',
+            )
         return MinioCompatibilityResult(
             status='unverified_version',
             readiness='degraded',
             profile_key=CONTRACT_PROFILE,
             support_level='unverified',
             message=(
-                f'{PRODUCT_LABELS[product_key]} {release} is outside the currently qualified release range. '
-                f'Core S3 readiness may proceed through {CONTRACT_PROFILE}; treat product-version qualification '
-                'as unverified until evidence is promoted.'
+                f'{PRODUCT_LABELS[product_key]} {release} is newer than or outside the currently qualified '
+                f'lifecycle window. Core S3 readiness may proceed through {CONTRACT_PROFILE}; treat product-version '
+                'qualification as unverified until annual policy evidence is promoted.'
             ),
             declared_release=release,
             product=product_key,
