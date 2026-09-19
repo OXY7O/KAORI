@@ -121,7 +121,7 @@ The right-side panel uses two semantic metric roles in this order:
 
 `Data Authority` describes the request-time evidence boundary, not whether a particular observation exists. For the current paired dashboards the authority is `Committed Snapshots`.
 
-The Dashboard Hero action role is **operational source/readiness management**. Domain labels and URLs may differ, but the action must remain in that semantic role. Generic navigation that does not manage readiness/source configuration must not replace it.
+The Dashboard Hero action role is **operational source/readiness management**. Kubernetes Dashboard uses the canonical label `Open Cluster Integrations` and destination `integrations.kubernetes`; generic `Add Cluster` wording is prohibited. Other domains may use an equivalent source-management label and route without changing the semantic role. Generic navigation that does not manage readiness/source configuration must not replace it.
 
 The dashboard renderer exposes `data-kaori-hero-profile="operational-dashboard"` and `data-kaori-hero-state="..."` for contract and rendering verification. Its metadata surface exposes `data-kaori-hero-metadata` and `data-kaori-hero-metadata-policy="persistent"` for state-level regression verification.
 

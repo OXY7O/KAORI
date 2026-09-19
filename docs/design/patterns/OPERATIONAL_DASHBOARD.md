@@ -31,7 +31,7 @@ The right-side Dashboard context has exactly two semantic metrics in this order:
 1. **Active Scope** — selected cluster/system or aggregate scope;
 2. **Data Authority** — request-time evidence authority. Current paired dashboards use `Committed Snapshots`.
 
-The profile action role is **operational source/readiness management**. Domain labels and routes may vary, but the action role does not. A generic inventory/navigation shortcut must not replace the readiness/source-management action.
+The profile action role is **operational source/readiness management**. Kubernetes Dashboard uses `Open Cluster Integrations` routed to `integrations.kubernetes`; `Add Cluster` is not an approved Dashboard Hero action label. Other domains may use an equivalent source-management label and route, but the action role does not change. A generic inventory/navigation shortcut must not replace the readiness/source-management action.
 
 Blocked Dashboard state retains the same profile geometry, changes the right-side context to readiness semantics, and does not fabricate normal operational evidence.
 

@@ -31,10 +31,7 @@ def test_minio_copy_is_balanced_between_registration_detail_and_boundary_density
         'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html'
     )
 
-    assert (
-        'Register and govern MinIO connections with consumer bindings and lifecycle evidence in KAORI.'
-        in index
-    )
+    assert 'Register and govern MinIO connections with consumer bindings and lifecycle evidence in KAORI.' in index
     assert (
         'MinIO owns S3 storage state; observability sources stay independent. KAORI governs registration and asset-scoped binding evidence.'
         in index

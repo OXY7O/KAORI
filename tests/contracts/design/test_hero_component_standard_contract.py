@@ -91,6 +91,17 @@ def test_operational_dashboard_uses_one_canonical_hero_profile() -> None:
         assert 'page_hero.context_panel_classes()' not in source
 
 
+def test_kubernetes_dashboard_uses_canonical_cluster_integration_action() -> None:
+    source = (ROOT / 'app' / 'templates' / 'kubernetes' / 'dashboard' / 'partials' / '_hero.html').read_text(
+        encoding='utf-8'
+    )
+
+    assert "'Open Cluster Integrations'" in source
+    assert "url_for('integrations.kubernetes')" in source
+    assert "'Add Cluster'" not in source
+    assert "'Kubernetes Integrations'" not in source
+
+
 def test_blocked_hero_context_has_one_shared_renderer() -> None:
     component = (ROOT / 'app' / 'templates' / 'components' / 'page_hero.html').read_text(encoding='utf-8')
     kubernetes = (ROOT / 'app' / 'templates' / 'components' / 'cluster' / '_hero_blocked_context.html').read_text(
