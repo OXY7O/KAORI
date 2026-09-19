@@ -217,9 +217,7 @@ def main() -> int:
                     f'integration compatibility contract {contract_key} does not declare product {product_key}'
                 )
             if product.get('selection_mode') != 'automatic_detected_version':
-                raise ValueError(
-                    f'integration compatibility product {product_key} must use automatic_detected_version'
-                )
+                raise ValueError(f'integration compatibility product {product_key} must use automatic_detected_version')
             if not str(product.get('version_source') or '').strip():
                 raise ValueError(f'integration compatibility product {product_key} must declare version_source')
 
@@ -298,14 +296,10 @@ def main() -> int:
 
         alertmanager = docs['integrations/observability/alert_source/providers/alertmanager.yaml']
         alert_capability_keys = {str(item['key']) for item in alertmanager['capabilities']}
-        expected_alert_contracts = {
-            str(item['contract_profile']) for item in qualifications_by_product['alertmanager']
-        }
+        expected_alert_contracts = {str(item['contract_profile']) for item in qualifications_by_product['alertmanager']}
         if set(alertmanager.get('compatibility_profiles') or ()) != expected_alert_contracts:
             raise ValueError('Alertmanager compatibility profiles must match central contract mappings')
-        expected_alert_qualifications = {
-            str(item['key']) for item in qualifications_by_product['alertmanager']
-        }
+        expected_alert_qualifications = {str(item['key']) for item in qualifications_by_product['alertmanager']}
         profile_keys = unique(alertmanager['profiles'], 'key', 'Alertmanager provider qualification profiles')
         if profile_keys != expected_alert_qualifications:
             raise ValueError('Alertmanager provider qualification keys must match central qualification definitions')
@@ -313,7 +307,9 @@ def main() -> int:
             profile_key = str(profile['key'])
             canonical = qualification_by_key[profile_key]
             if profile.get('version_constraint') != canonical.get('version_constraint'):
-                raise ValueError(f'Alertmanager profile {profile_key} version constraint drifted from central definition')
+                raise ValueError(
+                    f'Alertmanager profile {profile_key} version constraint drifted from central definition'
+                )
             if profile.get('support_level') != canonical.get('support_level'):
                 raise ValueError(f'Alertmanager profile {profile_key} support level drifted from central definition')
             missing = set(profile.get('required_capabilities') or ()) - alert_capability_keys
@@ -336,9 +332,7 @@ def main() -> int:
         object_products = object_storage.get('products') or []
         unique(object_products, 'key', 'object-storage product families')
         object_profiles = [
-            profile
-            for product in object_products
-            for profile in product.get('compatibility_profiles') or ()
+            profile for product in object_products for profile in product.get('compatibility_profiles') or ()
         ]
         object_profile_keys = unique(
             object_profiles,

@@ -152,11 +152,7 @@ class KubernetesRuntimeAdapter:
                     + f'accepted compatibility contract: {lifecycle_policy["supported_constraint"]}.'
                 ),
                 severity=(
-                    'critical'
-                    if lifecycle == 'end_of_life'
-                    else 'warning'
-                    if lifecycle == 'extended'
-                    else 'info'
+                    'critical' if lifecycle == 'end_of_life' else 'warning' if lifecycle == 'extended' else 'info'
                 ),
                 recommendation=(
                     'Plan an upgrade into the KAORI current lifecycle band '
