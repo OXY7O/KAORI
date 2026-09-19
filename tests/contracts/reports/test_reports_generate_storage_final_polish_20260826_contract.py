@@ -62,8 +62,7 @@ def test_requested_report_copy_is_shortened_without_losing_contract_meaning() ->
     storage_template = read(STORAGE_TEMPLATE)
 
     assert (
-        'Manage system templates and custom report structures for Analytics and Inventory formats.'
-        in templates_service
+        'Manage system templates and custom report structures for Analytics and Inventory formats.' in templates_service
     )
     assert (
         'Review report storage readiness, integrity, and lifecycle ownership for PDF/XLSX/CSV artifacts.'
