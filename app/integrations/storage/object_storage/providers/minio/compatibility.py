@@ -145,7 +145,9 @@ def compatibility_policy_view(product: str | None, release: str | None = None) -
     product_key = _normalize_product(product)
     profiles = PRODUCT_PROFILE_CATALOG.get(product_key, ())
     profile = next((item for item in profiles if release and item.matches(release)), None)
-    supported_range = '; '.join(item.supported_range_label for item in profiles) or 'Product-Specific Qualification Required'
+    supported_range = (
+        '; '.join(item.supported_range_label for item in profiles) or 'Product-Specific Qualification Required'
+    )
     return {
         'product_key': product_key,
         'product_label': PRODUCT_LABELS.get(product_key, product_key.replace('_', ' ').title()),
@@ -179,7 +181,9 @@ def evaluate_minio_release(value: str | None, *, product: str | None = 'minio') 
             supported_range='Product-Specific Qualification Required',
         )
 
-    supported_range = '; '.join(item.supported_range_label for item in profiles) or 'Product-Specific Qualification Required'
+    supported_range = (
+        '; '.join(item.supported_range_label for item in profiles) or 'Product-Specific Qualification Required'
+    )
 
     if not profiles:
         return MinioCompatibilityResult(
