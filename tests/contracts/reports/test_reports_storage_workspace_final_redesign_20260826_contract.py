@@ -77,8 +77,7 @@ def test_reports_requested_copy_is_compact() -> None:
         in storage_service
     )
     assert (
-        'Manage system templates and custom report structures for Analytics and Inventory formats.'
-        in templates_service
+        'Manage system templates and custom report structures for Analytics and Inventory formats.' in templates_service
     )
 
 
