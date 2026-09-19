@@ -69,6 +69,63 @@ For example, the latest Kubernetes stable release in 2022 was v1.26. Therefore t
 
 The annual refresh must be evidence-driven. It must not advance a product upper bound to an unreleased, release-candidate, or unvalidated build.
 
+## Definition-driven version awareness
+
+Runtime compatibility knowledge belongs in source-controlled definitions, not product/version branches in Python.
+
+Each product definition declares:
+
+- `selection_mode: automatic_detected_version`;
+- the runtime `version_source`;
+- the policy floor and upper qualification boundary;
+- the default general contract used for future-unverified probing;
+- presentation labels for the annual policy window.
+
+Each qualification band declares:
+
+- a version constraint;
+- the general `contract_profile` for that band;
+- a support posture;
+- upstream lifecycle context;
+- any additional mandatory capabilities introduced by that version band.
+
+The generic resolver performs:
+
+```text
+detected runtime version
+        ↓
+match definition version band
+        ↓
+select band contract_profile
+        ↓
+merge core + band capability requirements
+        ↓
+evaluate live evidence
+        ↓
+derive Current / Extended / EOL / Future Unverified readiness
+```
+
+There is no operator-selected compatibility profile in the normal flow. Provider-specific version discovery supplies the detected version, and the resolver selects the matching definition band automatically.
+
+A future breaking API generation therefore requires definition work first:
+
+```yaml
+contract_profiles:
+- key: provider-core-v2
+  required_capabilities:
+  - new_required_api
+
+qualifications:
+- key: provider-current-v2
+  version_constraint: '>=X,<Y'
+  contract_profile: provider-core-v2
+  support_level: current
+```
+
+The evaluator does not add `if product_version ...` branches for that transition. This is the architecture test for maintainability.
+
+Non-semver products may use a provider-specific release comparator, but they follow the same definition → automatic match → contract → capability-evidence model. MinIO is the current date-release example.
+
 ## General contract profile
 
 A general profile names the stable API/protocol/capability generation KAORI implements.
@@ -155,4 +212,4 @@ MinIO release identity is lifecycle/qualification evidence. A release older than
 
 Provider compatibility logic belongs in source-controlled definitions and profile resolvers. Routes, pages, analytics, reports, and consumers must not scatter hard-coded version comparisons.
 
-Annual policy rollover should be primarily a definition/test/document update. A rollover must not require runtime branching unless the underlying core capability contract itself changes.
+Annual policy rollover should be a definition/evidence-test/document update. A rollover must not require product-version branches in runtime code. Even when the underlying core capability contract changes, the generic evaluator remains unchanged; the new core contract and its version-band mapping are added to definitions.
