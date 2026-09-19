@@ -118,7 +118,8 @@ def test_minio_compatibility_is_product_specific_and_range_aware() -> None:
     assert 'compatibility_profiles: []' in provider_catalog
 
     assert 'COMPATIBILITY_PROFILES' in capabilities
-    assert 'key: minio-release-2024-08-03' in provider_catalog
+    assert 'key: minio-community-policy-v1' in provider_catalog
+    assert 'minimum_release: RELEASE.2021-12-29T06-49-06Z' in provider_catalog
     assert "if 'astor' in normalized_header" in client
     assert 'evaluate_minio_release(instance.declared_release, product=result.product)' in adapter
     assert 'Supported Range · ' in configuration
