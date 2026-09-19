@@ -81,6 +81,7 @@ Authoritative shell standards include the locked application-shell navigation co
 - `patterns/KUBERNETES_TOPOLOGY.md`
 - `patterns/KUBERNETES_STORAGE_CONFIGURATION_INVENTORY.md`
 - `patterns/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS.md`
+- `patterns/KUBERNETES_TENANT_MANAGEMENT.md` — pre-implementation Tenant Management information architecture, provider-neutral capability states, authorization boundary, and responsive/accessibility contract for #125.
 
 - `components/ANALYTICS_VISUAL_ROLE_SYSTEM.md` — canonical DRY color-role system for Brand, Insight, Evidence, and Status across every Kubernetes Analytics workspace.
 - `components/ANALYTICS_OVERVIEW_GUIDANCE_STANDARD.md` — reusable How To Read, What To Do, Operational Reading, and Recommended Action composition built on the shared visual roles.
