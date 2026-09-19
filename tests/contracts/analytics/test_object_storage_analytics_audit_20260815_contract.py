@@ -13,14 +13,14 @@ def test_object_storage_hero_copy_is_specific_without_becoming_verbose() -> None
     pages = read('app/storage/object_storage/analytics/pages.py')
 
     expected = (
-        'Review usable capacity, consumption trends, bucket pressure, quota posture, and growth across the selected system.',
-        'Review S3 request activity, error pressure, queue depth, in-flight demand, and traffic across the selected system.',
-        'Project storage growth, future utilization, and capacity exhaustion from committed operational metric history.',
-        'Rank buckets by storage consumption, objects, request activity, error pressure, and concentration within the selected system.',
+        'Review capacity, consumption trends, bucket pressure, quota posture, and growth within KAORI.',
+        'Review S3 request activity, error pressure, queue depth, in-flight demand, and traffic in KAORI.',
+        'Project storage growth, utilization, and exhaustion risk from committed metric history in KAORI.',
+        'Rank buckets by storage, objects, request activity, errors, and concentration within KAORI.',
     )
     for copy in expected:
         assert copy in pages
-        assert len(copy.split()) <= 16
+        assert 89 <= len(copy) <= 96
 
 
 def test_object_storage_blocker_reuses_kubernetes_analytics_dependency_surface() -> None:
