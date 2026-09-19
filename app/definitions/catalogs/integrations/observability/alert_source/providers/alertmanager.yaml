@@ -2,8 +2,7 @@ schema_version: 1
 kind: integration_provider_contract
 provider: alertmanager
 compatibility_profiles:
-- alertmanager-v0-25
-- alertmanager-v0-33
+- alertmanager-api-v2-contract-v1
 binding_capability_keys:
 - alerts
 - alerts_v2
@@ -212,7 +211,7 @@ profiles:
   known_limitations:
   - Legacy runtime line; validate observed payload metadata before enabling advanced analytics.
 - key: alertmanager-v0-33
-  version_constraint: '>=0.27,<0.34'
+  version_constraint: '>=0.27,<0.35'
   support_level: current
   required_capabilities:
   - status_v2
