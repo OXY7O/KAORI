@@ -4,7 +4,7 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('waypoints', 'Kubernetes Service Inventory', 'network') %}
                 <h1 class="{{ page_hero.title_classes() }}">Service Inventory</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review committed Services, exposure models, ports, selectors, endpoint readiness, and backend registration.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review committed Services, exposure models, ports, selectors, and endpoint readiness in KAORI.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {% if cluster_onboarding.is_blocked %}
                         {{ page_hero.meta_label('database', 'Committed Inventory') }}

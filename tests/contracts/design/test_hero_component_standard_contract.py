@@ -55,7 +55,8 @@ def test_hero_documentation_has_one_global_contract_and_one_domain_extension() -
     assert 'same Profile + same State' in global_standard
     assert 'exactly three metadata' in global_standard
     assert 'normal, blocked, and degraded' in global_standard
-    assert '11–19 word' in global_standard
+    assert '89–96 character' in global_standard
+    assert '10–11 words' in global_standard
     assert '16 px, regular, 28 px line height' in global_standard
     assert 'Action Icon Box' in global_standard
     assert 'Context Icon Box' in global_standard
@@ -88,6 +89,17 @@ def test_operational_dashboard_uses_one_canonical_hero_profile() -> None:
         assert 'page_hero.shell_classes()' not in source
         assert 'page_hero.layout_classes()' not in source
         assert 'page_hero.context_panel_classes()' not in source
+
+
+def test_kubernetes_dashboard_uses_canonical_cluster_integration_action() -> None:
+    source = (ROOT / 'app' / 'templates' / 'kubernetes' / 'dashboard' / 'partials' / '_hero.html').read_text(
+        encoding='utf-8'
+    )
+
+    assert "'Open Cluster Integrations'" in source
+    assert "url_for('integrations.kubernetes')" in source
+    assert "'Add Cluster'" not in source
+    assert "'Kubernetes Integrations'" not in source
 
 
 def test_blocked_hero_context_has_one_shared_renderer() -> None:

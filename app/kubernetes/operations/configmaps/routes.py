@@ -232,7 +232,7 @@ def _unexpected_failure(
 @cluster_required(
     'ConfigMap Management',
     page_title='ConfigMap Management',
-    page_description='Manage live ConfigMaps through validated, auditable, target-aware workflows.',
+    page_description='Manage ConfigMaps through validated, auditable, target-aware workflows with governed context.',
 )
 def configmap_management_index():
     return render_template('kubernetes/operations/configmaps/index.html', **get_context())
@@ -262,7 +262,7 @@ def configmap_namespace_options():
 @cluster_required(
     'ConfigMap Management',
     page_title='Create Kubernetes ConfigMap',
-    page_description='Validate and create one ConfigMap against the live Kubernetes API.',
+    page_description='Validate and create one ConfigMap against the Kubernetes API under governed KAORI controls.',
 )
 def create_configmap_page():
     if request.method == 'GET':
@@ -410,7 +410,7 @@ def configmap_delete_target():
 @cluster_required(
     'ConfigMap Management',
     page_title='Update ConfigMap',
-    page_description='Preview and validate one live ConfigMap update before applying.',
+    page_description='Preview and validate one ConfigMap update before applying under governed KAORI controls safely.',
 )
 def update_configmap_page():
     if request.method == 'POST':
@@ -508,7 +508,7 @@ def update_configmap_page():
 @cluster_required(
     'ConfigMap Management',
     page_title='Delete ConfigMap',
-    page_description='Validate the live target before explicitly confirming ConfigMap removal.',
+    page_description='Validate the live ConfigMap target before explicitly confirming governed removal.',
 )
 def delete_configmap_page():
     if request.method == 'POST':

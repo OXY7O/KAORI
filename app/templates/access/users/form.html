@@ -12,7 +12,7 @@
                     {% call page_hero.intro('user-cog', 'Access Administration', 'user-plus' if mode == 'create' else 'pencil-line') %}
                         <h1 class="{{ page_hero.title_classes() }}">{{ 'Add User' if mode == 'create' else 'Edit User' }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">
-                            {{ 'Create one Local Database identity, assign KAORI access, and define its initial lifecycle state.' if mode == 'create' else 'Update profile, lifecycle state, role assignment, and administrative tier without changing the authoritative identity provider.' }}
+                            {{ 'Create one Local Database identity, assign KAORI access, and define its initial lifecycle state.' if mode == 'create' else 'Update profile, lifecycle state, and administrative tier without changing the identity provider.' }}
                         </p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {% if mode == 'edit' and user %}
