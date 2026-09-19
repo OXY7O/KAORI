@@ -398,4 +398,18 @@ def test_generate_report_bounded_callouts_use_shared_semantic_authority() -> Non
     assert 'aria-label="Unable to create report request"' in bounded
     assert 'Unable to Create Report Request' in bounded
 
-    assert baseline['files'][relative] == {'semantic_border_utilities': 6}
+    assert relative not in baseline['files']
+
+
+def test_generate_report_readiness_badges_use_shared_semantic_border_authority() -> None:
+    source = read(TEMPLATE)
+    runtime = read(RUNTIME)
+
+    readiness = source.split('aria-label="Request readiness"', 1)[1].split('<div id="readiness-summary"', 1)[0]
+
+    assert readiness.count("operational_callout.semantic_border_classes('normal')") == 3
+    assert readiness.count("operational_callout.semantic_border_classes('warning')") == 3
+    assert 'border-status-normal-border' not in readiness
+    assert 'border-status-warning-border' not in readiness
+    assert 'function setReadinessItemTone' in runtime
+    assert 'function syncOverallReadiness' in runtime
