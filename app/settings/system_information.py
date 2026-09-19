@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from app.integrations.compatibility import PRODUCT_POLICIES, QUALIFICATIONS
+from app.integrations.compatibility import COMPATIBILITY_LIFECYCLE_POLICY, PRODUCT_POLICIES, QUALIFICATIONS
 from app.integrations.storage.object_storage.providers.minio.capabilities import CAPABILITY_PROFILE
 from app.integrations.storage.object_storage.providers.minio.compatibility import MINIO_COMPATIBILITY_PROFILES
 from app.kubernetes.cluster.constants import get_environment_label
@@ -131,8 +131,11 @@ def _object_storage_compatibility_presentation() -> dict[str, Any] | None:
         'recommended_label': profiles[-1].maximum_release,
         'qualified_versions': '; '.join(item.supported_range_label for item in profiles),
         'upstream_lifecycle': 'Community repository archived; qualified release evidence remains explicit.',
-        'support_label': 'S3 Contract + Qualified Release',
-        'support_tone': 'info',
+        'support_label': 'Extended · Upstream Archived',
+        'support_tone': 'warning',
+        'policy_version': f'v{COMPATIBILITY_LIFECYCLE_POLICY.version}',
+        'policy_year': COMPATIBILITY_LIFECYCLE_POLICY.policy_year,
+        'policy_window': COMPATIBILITY_LIFECYCLE_POLICY.window_label,
         'capability_summary': (
             'S3 API reachability, bucket discovery, and optional object-storage governance capabilities.'
         ),
@@ -172,6 +175,9 @@ def _compatibility_catalog() -> tuple[dict[str, Any], ...]:
                 'upstream_lifecycle': policy.upstream_lifecycle_label,
                 'support_label': policy.support_label,
                 'support_tone': policy.support_tone,
+                'policy_version': f'v{COMPATIBILITY_LIFECYCLE_POLICY.version}',
+                'policy_year': COMPATIBILITY_LIFECYCLE_POLICY.policy_year,
+                'policy_window': COMPATIBILITY_LIFECYCLE_POLICY.window_label,
                 'capability_summary': policy.capability_summary,
                 'validation_basis': policy.validation_basis,
                 'profiles': tuple(
@@ -222,6 +228,13 @@ def build_system_information(config: Mapping[str, Any]) -> dict[str, Any]:
         'feature_groups': _RELEASE_FEATURES,
         'feature_group_count': len(_RELEASE_FEATURES),
         'feature_count': sum(len(group['features']) for group in _RELEASE_FEATURES),
+        'compatibility_policy_key': COMPATIBILITY_LIFECYCLE_POLICY.key,
+        'compatibility_policy_version': COMPATIBILITY_LIFECYCLE_POLICY.version,
+        'compatibility_policy_year': COMPATIBILITY_LIFECYCLE_POLICY.policy_year,
+        'compatibility_policy_snapshot_date': COMPATIBILITY_LIFECYCLE_POLICY.snapshot_date,
+        'compatibility_lookback_years': COMPATIBILITY_LIFECYCLE_POLICY.lookback_years,
+        'compatibility_anchor_year': COMPATIBILITY_LIFECYCLE_POLICY.anchor_year,
+        'compatibility_window_label': COMPATIBILITY_LIFECYCLE_POLICY.window_label,
         'compatibility_products': compatibility_products,
         'compatibility_product_count': len(compatibility_products),
         'compatibility_profile_count': sum(item['profile_count'] for item in compatibility_products),
