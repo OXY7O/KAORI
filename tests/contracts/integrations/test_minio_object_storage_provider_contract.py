@@ -46,8 +46,10 @@ def test_minio_registry_contract_is_storage_object_storage() -> None:
     assert "integration_provider_document('object_storage')" in compatibility
     assert "integration_provider_document('object_storage')" in capabilities
     assert 'minimum_release: RELEASE.2024-08-03T04-33-23Z' in provider_catalog
-    assert 'key: minio-release-2024-08-03' in provider_catalog
-    assert 'capability_profile: minio-object-storage-api-v1' in provider_catalog
+    assert 'maximum_release: RELEASE.2025-10-15T17-29-55Z' in provider_catalog
+    assert 'key: minio-community-qualified' in provider_catalog
+    assert 'contract_profile: s3-object-storage-v1' in provider_catalog
+    assert 'capability_profile: s3-object-storage-v1' in provider_catalog
 
 
 def test_minio_api_plane_uses_s3_sdk_and_encrypted_credentials() -> None:
