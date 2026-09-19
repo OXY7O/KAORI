@@ -219,9 +219,7 @@ def evaluate_minio_release(value: str | None, *, product: str | None = 'minio') 
     if profile is None:
         parsed_release = _parse_release(release)
         parsed_minimum_releases = [
-            parsed_minimum
-            for item in profiles
-            if (parsed_minimum := _parse_release(item.minimum_release)) is not None
+            parsed_minimum for item in profiles if (parsed_minimum := _parse_release(item.minimum_release)) is not None
         ]
         minimum_release = min(parsed_minimum_releases, default=None)
         if parsed_release is not None and minimum_release is not None and parsed_release < minimum_release:
