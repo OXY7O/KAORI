@@ -12,15 +12,16 @@
                 <div class="min-w-0">
                     <h2 class="text-base font-bold text-content-primary">Integration Compatibility</h2>
                     <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">
-                        Separate stable capability contracts, qualified versions, upstream lifecycle, and live readiness evidence.
+                        Annual five-year lifecycle policy with stable capability contracts, qualified versions, upstream lifecycle, and live readiness evidence.
                     </p>
                 </div>
             </div>
             {{ table_label.special_label('Capability Evidence Required', 'info', 'scan-search') }}
         </div>
-        <dl class="mt-5 grid divide-y divide-outline-subtle border-y border-outline-subtle sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        <dl class="mt-5 grid divide-y divide-outline-subtle border-y border-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
             {% for icon, label, value, supporting in [
-                ('unplug', 'Integration Products', system_information.compatibility_product_count, 'Registered provider families'),
+                ('calendar-range', 'Lifecycle Policy', 'v' ~ system_information.compatibility_policy_version ~ ' · ' ~ system_information.compatibility_policy_year, 'Annual compatibility policy generation'),
+                ('history', 'Support Window', system_information.compatibility_window_label, system_information.compatibility_lookback_years ~ '-year calendar lookback'),
                 ('layers-3', 'General Contracts', system_information.compatibility_contract_count, 'Stable API and capability generations'),
                 ('git-branch', 'Qualification Rows', system_information.compatibility_qualification_count, 'Version-to-contract evidence mappings'),
                 ] %}
@@ -51,11 +52,12 @@
                 <p class="mt-1 text-xs leading-5 text-content-muted">Read compatibility as contract, qualification evidence, then observed runtime readiness.</p>
             </div>
         </div>
-        <ol class="mt-4 grid gap-4 sm:grid-cols-3">
+        <ol class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {% for step, icon, title, text in [
-                ('01', 'layers-3', 'General Contract', 'The stable API or capability generation KAORI knows how to validate and consume.'),
-                ('02', 'badge-check', 'Version Qualification', 'Concrete upstream versions mapped to that contract with an explicit KAORI support posture.'),
-                ('03', 'scan-search', 'Live Readiness', 'Mandatory APIs, permissions, metrics, labels, and binding evidence still decide whether the integration is usable.'),
+                ('01', 'calendar-range', 'Annual Lifecycle', 'Policy version advances once per year and shifts the five-year compatibility anchor forward.'),
+                ('02', 'layers-3', 'General Contract', 'Core-vN changes only when the stable API or capability contract itself changes.'),
+                ('03', 'badge-check', 'Version Qualification', 'Stable releases inside the annual window map to the general contract with Current or Extended support.'),
+                ('04', 'scan-search', 'Live Readiness', 'Mandatory APIs, permissions, metrics, labels, and binding evidence still decide whether the integration is usable.'),
                 ] %}
                 <li class="relative border-l-2 border-kaori-primary/25 pl-4">
                     <div class="flex items-center gap-2">
@@ -117,6 +119,7 @@
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 <p class="text-sm font-semibold text-content-primary">{{ item.qualified_versions }}</p>
+                                <p class="mt-0.5 text-xs text-content-muted">Policy {{ item.policy_version }} · {{ item.policy_window }}</p>
                                 <p class="mt-0.5 text-xs text-content-muted">Preferred: {{ item.recommended_label }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
@@ -150,21 +153,27 @@
             </div>
             <dl class="mt-4 divide-y divide-outline-subtle border-l-2 border-kaori-primary/25 pl-4">
                 <div class="pb-3">
-                    <dt class="text-xs font-semibold text-content-primary">General Contract</dt>
+                    <dt class="text-xs font-semibold text-content-primary">Annual Rollover</dt>
                     <dd class="mt-1 text-xs leading-5 text-content-muted">
-                        Stable API/protocol generation; this is the runtime compatibility identity persisted by KAORI.
+                        Policy v{{ system_information.compatibility_policy_version }} uses {{ system_information.compatibility_anchor_year }} as the anchor year and {{ system_information.compatibility_policy_year }} as the current policy year.
                     </dd>
                 </div>
                 <div class="py-3">
-                    <dt class="text-xs font-semibold text-content-primary">Unverified Future Version</dt>
+                    <dt class="text-xs font-semibold text-content-primary">General Contract Version</dt>
                     <dd class="mt-1 text-xs leading-5 text-content-muted">
-                        If mandatory contract probes pass, KAORI reports Degraded / Unverified instead of blocking solely on the version number.
+                        Core-vN does not advance every year; it changes only when the stable API or capability contract has a breaking semantic change.
+                    </dd>
+                </div>
+                <div class="py-3">
+                    <dt class="text-xs font-semibold text-content-primary">Lifecycle Boundary</dt>
+                    <dd class="mt-1 text-xs leading-5 text-content-muted">
+                        Pre-window releases are End of Life. Future versions remain Unverified until the next qualification update, even when core capability probes succeed.
                     </dd>
                 </div>
                 <div class="pt-3">
                     <dt class="text-xs font-semibold text-content-primary">Blocking Rule</dt>
                     <dd class="mt-1 text-xs leading-5 text-content-muted">
-                        Missing mandatory capabilities, invalid provider identity, or failed live validation remain blocking conditions.
+                        End-of-life releases, missing mandatory capabilities, invalid provider identity, or failed live validation remain blocking conditions.
                     </dd>
                 </div>
             </dl>
