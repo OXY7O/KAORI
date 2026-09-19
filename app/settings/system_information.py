@@ -3,15 +3,9 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from app.integrations.compatibility import (
-    KUBERNETES_CURRENT_VERSION_LABEL,
-    KUBERNETES_SUPPORTED_VERSION_LABEL,
-    PROFILES,
-)
-from app.integrations.observability.metrics_source.providers import provider_definitions
-from app.integrations.storage.object_storage.providers.minio.compatibility import (
-    MINIO_COMPATIBILITY_PROFILES,
-)
+from app.integrations.compatibility import COMPATIBILITY_LIFECYCLE_POLICY, PRODUCT_POLICIES, QUALIFICATIONS
+from app.integrations.storage.object_storage.providers.minio.capabilities import CAPABILITY_PROFILE
+from app.integrations.storage.object_storage.providers.minio.compatibility import MINIO_COMPATIBILITY_PROFILES
 from app.kubernetes.cluster.constants import get_environment_label
 
 _RELEASE_HIGHLIGHTS: tuple[dict[str, str], ...] = (
@@ -121,133 +115,93 @@ _RELEASE_FEATURES: tuple[dict[str, Any], ...] = (
     },
 )
 
-_STATIC_COMPATIBILITY_PRESENTATION: tuple[dict[str, Any], ...] = (
-    {
-        'key': 'kubernetes',
-        'product': 'Kubernetes',
-        'version_scheme': 'Semantic version',
-        'icon': 'ship-wheel',
-        'minimum_version': '1.20',
-        'minimum_label': 'v1.20',
-        'recommended_version': '1.36',
-        'recommended_label': 'v1.36.x',
-        'support_band': KUBERNETES_SUPPORTED_VERSION_LABEL,
-        'current_band': KUBERNETES_CURRENT_VERSION_LABEL,
-        'support_label': 'Current and Legacy Supported',
-        'support_tone': 'info',
-        'capability_summary': 'API discovery, inventory, governed operations, and TLS governance.',
-        'validation_basis': 'Live API discovery and feature-level Kubernetes RBAC remain authoritative.',
-    },
-    {
-        'key': 'alertmanager',
-        'product': 'Alertmanager',
-        'version_scheme': 'Semantic version',
-        'icon': 'bell-ring',
-        'minimum_version': '0.25',
-        'minimum_label': 'v0.25',
-        'recommended_version': '0.33',
-        'recommended_label': 'v0.33.x',
-        'support_band': 'v0.25–v0.33',
-        'current_band': 'v0.27–v0.33',
-        'support_label': 'API v2 Qualified',
-        'support_tone': 'normal',
-        'capability_summary': 'Alertmanager API v2 status, alerts, and silences contracts.',
-        'validation_basis': 'Observed API metadata and binding scope must pass before alert analytics are considered ready.',
-    },
-)
-
-
-def _metrics_compatibility_presentation() -> tuple[dict[str, Any], ...]:
-    rows: list[dict[str, Any]] = []
-    for provider in provider_definitions():
-        support = provider.support_presentation
-        if support is None:
-            continue
-        rows.append(
-            {
-                'key': provider.key,
-                'product': provider.label,
-                'version_scheme': 'Semantic version',
-                'icon': provider.icon,
-                'minimum_version': support.minimum_version,
-                'minimum_label': support.minimum_label,
-                'recommended_version': support.recommended_version,
-                'recommended_label': support.recommended_label,
-                'support_band': support.support_band,
-                'current_band': support.current_band,
-                'support_label': support.support_label,
-                'support_tone': support.support_tone,
-                'capability_summary': support.capability_summary,
-                'validation_basis': support.validation_basis,
-            }
-        )
-    return tuple(rows)
-
 
 def _object_storage_compatibility_presentation() -> dict[str, Any] | None:
     if not MINIO_COMPATIBILITY_PROFILES:
         return None
-    profile = MINIO_COMPATIBILITY_PROFILES[0]
+    profiles = MINIO_COMPATIBILITY_PROFILES
+    first = profiles[0]
     return {
         'key': 'minio',
         'product': 'MinIO',
         'version_scheme': 'Release identifier',
-        'minimum_version': profile.minimum_release,
-        'minimum_label': profile.minimum_release,
-        'recommended_version': profile.maximum_release,
-        'recommended_label': profile.maximum_release,
-        'support_band': profile.supported_range_label,
-        'current_band': profile.label,
-        'support_label': 'Qualified Release',
-        'support_tone': 'normal',
-        'capability_summary': 'S3 API reachability, product identity, bucket discovery, and optional object-storage governance capabilities.',
-        'validation_basis': 'The declared MinIO release must match a qualified provider profile; live S3/API validation and observability consumer bindings remain independently authoritative.',
+        'icon': 'database',
+        'contract_profile': CAPABILITY_PROFILE,
+        'minimum_label': first.minimum_release,
+        'recommended_label': profiles[-1].maximum_release,
+        'qualified_versions': '; '.join(item.supported_range_label for item in profiles),
+        'upstream_lifecycle': 'Community repository archived; qualified release evidence remains explicit.',
+        'support_label': 'Extended · Upstream Archived',
+        'support_tone': 'warning',
+        'policy_version': f'v{COMPATIBILITY_LIFECYCLE_POLICY.version}',
+        'policy_year': COMPATIBILITY_LIFECYCLE_POLICY.policy_year,
+        'policy_window': COMPATIBILITY_LIFECYCLE_POLICY.window_label,
+        'capability_summary': (
+            'S3 API reachability, bucket discovery, and optional object-storage governance capabilities.'
+        ),
+        'validation_basis': (
+            'Live S3 capability evidence decides readiness. MinIO release qualification is supporting evidence; '
+            'an unqualified release is degraded rather than blocked by version alone.'
+        ),
         'profiles': tuple(
             {
                 'key': item.key,
                 'version_constraint': item.supported_range_label,
                 'support_level': item.support_level,
+                'upstream_lifecycle': item.upstream_lifecycle,
+                'contract_profile': item.contract_profile,
             }
-            for item in MINIO_COMPATIBILITY_PROFILES
+            for item in profiles
         ),
+        'profile_count': len(profiles),
     }
+
+
+def _compatibility_catalog() -> tuple[dict[str, Any], ...]:
+    catalog: list[dict[str, Any]] = []
+    for key in ('kubernetes', 'prometheus', 'thanos', 'alertmanager'):
+        policy = PRODUCT_POLICIES[key]
+        qualifications = QUALIFICATIONS.get(key, ())
+        catalog.append(
+            {
+                'key': policy.key,
+                'product': policy.label,
+                'version_scheme': policy.version_scheme,
+                'icon': policy.icon,
+                'contract_profile': policy.contract_profile,
+                'minimum_label': policy.minimum_label,
+                'recommended_label': policy.recommended_label,
+                'qualified_versions': policy.qualified_version_label,
+                'upstream_lifecycle': policy.upstream_lifecycle_label,
+                'support_label': policy.support_label,
+                'support_tone': policy.support_tone,
+                'policy_version': f'v{COMPATIBILITY_LIFECYCLE_POLICY.version}',
+                'policy_year': COMPATIBILITY_LIFECYCLE_POLICY.policy_year,
+                'policy_window': COMPATIBILITY_LIFECYCLE_POLICY.window_label,
+                'capability_summary': policy.capability_summary,
+                'validation_basis': policy.validation_basis,
+                'profiles': tuple(
+                    {
+                        'key': item.key,
+                        'version_constraint': item.version_constraint,
+                        'support_level': item.support_level,
+                        'upstream_lifecycle': item.upstream_lifecycle,
+                        'contract_profile': item.contract_profile,
+                    }
+                    for item in qualifications
+                ),
+                'profile_count': len(qualifications),
+            }
+        )
+    minio = _object_storage_compatibility_presentation()
+    if minio:
+        catalog.append(minio)
+    return tuple(catalog)
 
 
 def _clean_config_value(value: Any, fallback: str = 'Not provided') -> str:
     normalized = str(value or '').strip()
     return normalized or fallback
-
-
-def _compatibility_catalog() -> tuple[dict[str, Any], ...]:
-    catalog: list[dict[str, Any]] = []
-    minio = _object_storage_compatibility_presentation()
-    presentations = (
-        _STATIC_COMPATIBILITY_PRESENTATION[0],
-        *_metrics_compatibility_presentation(),
-        *_STATIC_COMPATIBILITY_PRESENTATION[1:],
-        *((minio,) if minio else ()),
-    )
-    for presentation in presentations:
-        explicit_profiles = presentation.get('profiles')
-        if explicit_profiles is not None:
-            profiles = tuple(explicit_profiles)
-        else:
-            profiles = tuple(
-                {
-                    'key': profile.key,
-                    'version_constraint': profile.version_constraint,
-                    'support_level': profile.support_level,
-                }
-                for profile in PROFILES.get(presentation['key'], ())
-            )
-        catalog.append(
-            {
-                **presentation,
-                'profiles': profiles,
-                'profile_count': len(profiles),
-            }
-        )
-    return tuple(catalog)
 
 
 def build_system_information(config: Mapping[str, Any]) -> dict[str, Any]:
@@ -274,7 +228,16 @@ def build_system_information(config: Mapping[str, Any]) -> dict[str, Any]:
         'feature_groups': _RELEASE_FEATURES,
         'feature_group_count': len(_RELEASE_FEATURES),
         'feature_count': sum(len(group['features']) for group in _RELEASE_FEATURES),
+        'compatibility_policy_key': COMPATIBILITY_LIFECYCLE_POLICY.key,
+        'compatibility_policy_version': COMPATIBILITY_LIFECYCLE_POLICY.version,
+        'compatibility_policy_year': COMPATIBILITY_LIFECYCLE_POLICY.policy_year,
+        'compatibility_policy_snapshot_date': COMPATIBILITY_LIFECYCLE_POLICY.snapshot_date,
+        'compatibility_lookback_years': COMPATIBILITY_LIFECYCLE_POLICY.lookback_years,
+        'compatibility_anchor_year': COMPATIBILITY_LIFECYCLE_POLICY.anchor_year,
+        'compatibility_window_label': COMPATIBILITY_LIFECYCLE_POLICY.window_label,
         'compatibility_products': compatibility_products,
         'compatibility_product_count': len(compatibility_products),
         'compatibility_profile_count': sum(item['profile_count'] for item in compatibility_products),
+        'compatibility_contract_count': len({item['contract_profile'] for item in compatibility_products}),
+        'compatibility_qualification_count': sum(item['profile_count'] for item in compatibility_products),
     }

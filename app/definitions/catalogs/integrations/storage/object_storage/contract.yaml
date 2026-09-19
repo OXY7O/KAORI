@@ -1,7 +1,7 @@
 schema_version: 1
 kind: integration_provider_contract
 provider: object_storage
-capability_profile: minio-object-storage-api-v1
+capability_profile: s3-object-storage-v1
 object_storage_system_scope: object_storage_system
 metrics_source_capability_scope:
 - object_storage.metrics.version
@@ -41,13 +41,15 @@ products:
 - key: minio
   label: MinIO
   compatibility_profiles:
-  - key: minio-release-2024-08-03
+  - key: minio-community-policy-v1
     product: minio
-    label: MinIO RELEASE.2024-08-03
-    minimum_release: RELEASE.2024-08-03T04-33-23Z
-    maximum_release: RELEASE.2024-08-03T04-33-23Z
-    support_level: current
-    notes: Qualified MinIO S3 API provider contract. Observability bindings remain independently validated.
+    label: MinIO Community · KAORI Lifecycle Policy v1
+    contract_profile: s3-object-storage-v1
+    minimum_release: RELEASE.2021-12-29T06-49-06Z
+    maximum_release: RELEASE.2025-10-15T17-29-55Z
+    support_level: extended_supported
+    upstream_lifecycle: archived_community
+    notes: MinIO community releases inside the 2026 KAORI five-year lifecycle window; live S3 capability evidence remains authoritative.
 - key: astor
   label: AStor
   compatibility_profiles: []

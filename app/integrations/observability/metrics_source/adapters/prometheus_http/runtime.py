@@ -225,7 +225,7 @@ class PrometheusHttpRuntimeService:
         api_profile: CompatibilityProfile | None = endpoint_profile
         if definition.version_detection_mode == 'manual' and config.compatibility_profile_override:
             api_profile = get_profile_by_key(config.compatibility_profile_override)
-            if api_profile is None or api_profile.product != definition.key:
+            if api_profile is None or not api_profile.supports_product(definition.key):
                 raise MetricsSourceError(
                     'Configured provider compatibility profile is not supported for this metrics provider.'
                 )
