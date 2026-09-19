@@ -125,22 +125,40 @@ without making either product the global metrics abstraction.
 
 ## Compatibility authority layers
 
-KAORI compatibility is intentionally split into four independent authorities:
+KAORI compatibility is intentionally split into five independent authorities:
 
-1. **General contract profile** — a stable API/protocol/capability generation such as `kubernetes-core-v1`, `prometheus-http-core-v1`, `alertmanager-api-v2-contract-v1`, or `s3-object-storage-v1`.
-2. **Version qualification mapping** — concrete upstream versions that KAORI has explicitly mapped to a general contract with a support posture.
-3. **Upstream lifecycle** — current, maintained, legacy, or archived upstream status. This is evidence, not KAORI readiness.
-4. **Observed runtime evidence** — actual API probes, RBAC, query behavior, S3 operations, payload metadata, and binding-specific consumer evidence.
+1. **Annual lifecycle policy** — yearly KAORI support governance with a five-year calendar lookback.
+2. **General contract profile** — a stable API/protocol/capability generation such as `kubernetes-core-v1`, `prometheus-http-core-v1`, `alertmanager-api-v2-contract-v1`, or `s3-object-storage-v1`.
+3. **Version qualification mapping** — concrete upstream versions mapped to the general contract with Current or Extended KAORI support posture.
+4. **Upstream lifecycle** — current, maintained, legacy, EOL, or archived upstream status; this is independent evidence.
+5. **Observed runtime evidence** — actual API probes, RBAC, query behavior, S3 operations, payload metadata, and binding-specific consumer evidence.
 
-A general contract is the runtime compatibility identity. Adding another upstream version should normally add or extend a qualification row, not introduce another runtime branch.
+### Annual policy governance
+
+The first annual generation is `kaori-compatibility-policy-v1` for 2026.
+
+```text
+policy_year = 2026
+lookback_years = 5
+anchor_year = 2021
+```
+
+For each product, the lower-bound candidate is the latest stable release in the anchor year. The upper-bound candidate is the latest stable release already available at the annual policy snapshot. This makes annual rollover deterministic instead of selecting arbitrary historical versions.
+
+Annual policy version and general core contract version are independent:
+
+- `compatibility-policy-v1` becomes `v2` on the 2027 annual lifecycle refresh;
+- `kubernetes-core-v1`, `prometheus-http-core-v1`, and other `core-vN` identities remain unchanged until their API/capability semantics require a breaking contract generation.
+
+### Lifecycle states
+
+- **Current** — inside the annual window and current upstream-qualified line; live evidence may make the integration Ready.
+- **Extended** — inside the KAORI five-year window but outside the current upstream line; supported with Degraded posture and upgrade guidance.
+- **End of Life** — older than the annual policy floor; blocked.
+- **Future Unverified** — newer than the annual upper bound; Degraded when all mandatory core probes still pass, but never automatically qualified.
+- **Capability Mismatch** — mandatory live capability is missing; blocked regardless of version.
 
 A matching qualification never makes an integration Ready by itself. Live provider validation and required consumer binding evidence remain authoritative.
-
-### Future and unknown releases
-
-A syntactically valid future release that is outside the qualification matrix is not automatically declared compatible. When the stable general contract can still be proven through all mandatory live probes, KAORI reports the version as **Unverified / Degraded**. This permits evidence collection without pretending the release has been qualified.
-
-Missing mandatory capabilities, invalid provider identity, failed authentication/TLS, or failed consumer evidence remain blocking conditions.
 
 ## Alertmanager and Object Storage boundaries
 
@@ -160,17 +178,19 @@ Deleting an asset owner removes its asset bindings; reusable source instances re
 
 ## Qualified compatibility baseline
 
-The System Information matrix is a **KAORI qualification policy**, not a mirror of upstream lifecycle pages. The matrix shows the stable contract, qualified version evidence, upstream lifecycle context, and the separate live-readiness authority.
+Policy v1 / 2026 uses anchor year 2021 and a five-year annual lookback.
 
-| Integration | General contract | Qualified versions | Current / recommended baseline | Readiness authority |
+| Integration | General contract | Policy v1 qualified versions | Current / recommended baseline | Readiness authority |
 |---|---|---|---|---|
-| Kubernetes | `kubernetes-core-v1` | v1.20–v1.37 | v1.37.x; upstream-supported minors v1.35–v1.37 | live API discovery and feature-level RBAC |
-| Prometheus | `prometheus-http-core-v1` | v2.40–v3.x | v3.13 LTS | provider-neutral Prometheus HTTP API probes plus asset binding evidence |
-| Alertmanager | `alertmanager-api-v2-contract-v1` | v0.25–v0.34.x | v0.34.1 | API v2 status/alerts/silences probes plus binding-scoped alert evidence |
-| Thanos Query | `prometheus-http-core-v1` | v0.39–v0.42.x | v0.42.4 | shared Prometheus HTTP API probes plus provider identity and asset binding evidence |
-| MinIO | `s3-object-storage-v1` | community range through `RELEASE.2025-10-15T17-29-55Z` | latest retained qualified community release | S3 reachability and bucket-discovery capability; release qualification is supporting evidence |
+| Kubernetes | `kubernetes-core-v1` | v1.23–v1.37 | v1.37.x; upstream-supported minors v1.35–v1.37 | live API discovery and feature-level RBAC |
+| Prometheus | `prometheus-http-core-v1` | v2.32–v3.13.x | v3.13.3 LTS | provider-neutral Prometheus HTTP API probes plus asset binding evidence |
+| Alertmanager | `alertmanager-api-v2-contract-v1` | v0.23–v0.34.x | v0.34.1 | API v2 status/alerts/silences probes plus binding-scoped alert evidence |
+| Thanos Query | `prometheus-http-core-v1` | v0.24–v0.42.x | v0.42.4 | shared Prometheus HTTP API probes plus provider identity and asset binding evidence |
+| MinIO | `s3-object-storage-v1` | `RELEASE.2021-12-29T06-49-06Z` through `RELEASE.2025-10-15T17-29-55Z` | latest retained community release; upstream archived | S3 reachability and bucket-discovery capability; release qualification is supporting evidence |
 
-As of September 2026, Kubernetes upstream maintains v1.35, v1.36, and v1.37 release branches. Alertmanager v0.34.1 is within the API v2 qualified line. Thanos v0.42.4 remains on the qualified shared Prometheus HTTP contract. The community `minio/minio` repository is archived; KAORI therefore treats MinIO release identity as qualification evidence while the S3 capability contract remains the operational compatibility authority.
+For Kubernetes specifically, v1.23 is the final stable minor released in 2021, while v1.37 is the latest stable minor at the 2026 policy snapshot. Upstream currently maintains only v1.35–v1.37, so v1.23–v1.34 are KAORI Extended rather than Current.
+
+During the 2027 annual refresh, the policy generation becomes `kaori-compatibility-policy-v2`, the anchor year becomes 2022, and each product floor is recalculated from the latest stable release in 2022. General `core-vN` contracts do not change unless their capability semantics change.
 
 ## Canonical navigation and route ownership
 
