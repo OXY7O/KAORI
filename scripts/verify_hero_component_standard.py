@@ -173,12 +173,12 @@ def _validate_description_budget(text: str, *, owner: str) -> None:
     if not DESCRIPTION_TARGET_MIN_CHARS <= character_count <= DESCRIPTION_TARGET_MAX_CHARS:
         raise AssertionError(
             f'{owner}: Hero description has {character_count} characters; expected '
-            f'{DESCRIPTION_TARGET_MIN_CHARS}-{DESCRIPTION_TARGET_MAX_CHARS} characters'
+            f'{DESCRIPTION_TARGET_MIN_CHARS}-{DESCRIPTION_TARGET_MAX_CHARS} characters; value={description!r}'
         )
     if not DESCRIPTION_TARGET_MIN_WORDS <= word_count <= DESCRIPTION_TARGET_MAX_WORDS:
         raise AssertionError(
             f'{owner}: Hero description has {word_count} words; expected approximately '
-            f'{DESCRIPTION_TARGET_MIN_WORDS}-{DESCRIPTION_TARGET_MAX_WORDS} words'
+            f'{DESCRIPTION_TARGET_MIN_WORDS}-{DESCRIPTION_TARGET_MAX_WORDS} words; value={description!r}'
         )
 
 
