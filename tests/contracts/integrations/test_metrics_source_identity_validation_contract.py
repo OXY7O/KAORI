@@ -111,14 +111,17 @@ def test_forecast_binding_validation_uses_declared_90_day_history_independent_of
     assert 'technical_history_check(required_history, retention)' in feature_contracts
     # Product versions are qualification rows; the runtime query identity stays on one shared HTTP core contract.
     assert 'key: prometheus-http-core-v1' in compatibility
-    assert 'key: prometheus-v2-legacy' in compatibility
-    assert 'key: prometheus-v3-current' in compatibility
+    assert 'key: prometheus-extended' in compatibility
+    assert 'key: prometheus-current' in compatibility
     assert 'contract_profile: prometheus-http-core-v1' in compatibility
-    assert 'key: thanos-supported' in compatibility
+    assert 'key: thanos-extended' in compatibility
     assert 'key: thanos-current' in compatibility
     assert 'thanos-query-v0-39' not in compatibility
     assert 'thanos-query-v0-42' not in compatibility
     assert 'version_detection_mode: automatic' in provider_contract
+    assert 'selection_mode: automatic_detected_version' in compatibility
+    assert 'version_source: prometheus_buildinfo' in compatibility
+    assert 'version_source: thanos_buildinfo' in compatibility
     thanos = provider_contract.split('- key: thanos', 1)[1].split('compatibility_profiles:', 1)[0]
     assert 'compatibility_profile_options: []' in thanos
     assert 'Prometheus HTTP API v2' not in thanos
