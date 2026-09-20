@@ -280,6 +280,7 @@ generate_release_manifest() {
   local output="${6:-kaori-release-manifest.json}"
   local sbom_verification_sha="${7:?SBOM verification SHA256 required}"
   local provenance_verification_sha="${8:?provenance verification SHA256 required}"
+  local signature_verification_sha="${9:?signature verification SHA256 required}"
   local short_sha="${sha:0:12}"
   local minor="${version%.*}"
 
@@ -289,6 +290,10 @@ generate_release_manifest() {
   }
   [[ "$provenance_verification_sha" =~ ^sha256:[0-9a-f]{64}$ ]] || {
     printf 'Invalid provenance verification SHA256: %s\n' "$provenance_verification_sha" >&2
+    return 1
+  }
+  [[ "$signature_verification_sha" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+    printf 'Invalid signature verification SHA256: %s\n' "$signature_verification_sha" >&2
     return 1
   }
 
@@ -306,6 +311,7 @@ generate_release_manifest() {
     --arg sha_tag "sha-$short_sha" \
     --arg sbom_verification_sha "$sbom_verification_sha" \
     --arg provenance_verification_sha "$provenance_verification_sha" \
+    --arg signature_verification_sha "$signature_verification_sha" \
     '{
       schema_version: 2,
       version: $version,
@@ -328,6 +334,10 @@ generate_release_manifest() {
           predicate_type: "https://slsa.dev/provenance/v1",
           verified: true,
           verification_sha256: $provenance_verification_sha
+        },
+        signature: {
+          verified: true,
+          verification_sha256: $signature_verification_sha
         }
       }
     }' > "$output"
