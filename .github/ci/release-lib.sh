@@ -126,8 +126,9 @@ verify_image_labels() {
   docker pull "$ref" >/dev/null
 
   local labels actual_source actual_version actual_sha actual_created
-  local actual_title actual_description actual_documentation actual_licenses
+  local actual_title actual_description actual_documentation actual_licenses actual_platform
   labels="$(docker image inspect "$ref" --format '{{json .Config.Labels}}')"
+  actual_platform="$(docker image inspect "$ref" --format '{{.Os}}/{{.Architecture}}')"
 
   actual_source="$(jq -r '."org.opencontainers.image.source" // empty' <<<"$labels")"
   actual_version="$(jq -r '."org.opencontainers.image.version" // empty' <<<"$labels")"
@@ -168,6 +169,10 @@ verify_image_labels() {
   }
   [[ "$actual_licenses" == "$OCI_LICENSES_EXPECTED" ]] || {
     printf 'Candidate licenses label mismatch: %s\n' "$actual_licenses" >&2
+    return 1
+  }
+  [[ "$actual_platform" == 'linux/amd64' ]] || {
+    printf 'Candidate platform mismatch: %s\n' "$actual_platform" >&2
     return 1
   }
 }
