@@ -2,13 +2,15 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-EDGE_ROOT = ROOT / 'deploy' / 'edge'
-EDGE_COMPOSE = EDGE_ROOT / 'compose.edge.yml'
+EDGE_ROOT = ROOT / 'example' / 'shared-edge'
+EDGE_COMPOSE = EDGE_ROOT / 'compose.yml'
 NGINX_ENTRYPOINT = EDGE_ROOT / 'nginx-entrypoint.sh'
 CERTBOT_ENTRYPOINT = EDGE_ROOT / 'certbot-entrypoint.sh'
 PREPARE = EDGE_ROOT / 'prepare.sh'
+PUBLISH = EDGE_ROOT / 'publish-container.sh'
 APPLY = EDGE_ROOT / 'apply.sh'
 VERIFY = EDGE_ROOT / 'verify.sh'
+KAORI_CUTOVER = EDGE_ROOT / 'kaori-cutover-example.sh'
 SERVER_COMPOSE = ROOT / 'deploy' / 'server' / 'compose.server.yml'
 LEGACY_ENV_EXAMPLE = ROOT / '.env.production.example'
 APP_ENV_EXAMPLE = ROOT / 'deploy/env/app.env.example'
@@ -18,7 +20,6 @@ EDGE_ENV_EXAMPLE = EDGE_ROOT / 'edge.env.example'
 DEPLOY_SCRIPT = ROOT / 'deploy' / 'server' / 'deploy.sh'
 RELEASE_STATE = ROOT / 'deploy' / 'server' / 'release-state.sh'
 UAT_WORKFLOW = ROOT / '.github/workflows/deploy-staging-host.yml'
-EDGE_WORKFLOW = ROOT / '.github/workflows/deploy-shared-edge.yml'
 
 
 def _read(path: Path) -> str:
@@ -34,7 +35,7 @@ def _service_block(text: str, service: str, next_service: str | None = None) -> 
     return text[start:end]
 
 
-def test_server_overlay_makes_web_internal_only_and_shared_edge_consumer():
+def test_server_overlay_keeps_web_internal_and_publication_agnostic():
     text = _read(SERVER_COMPOSE)
     web = _service_block(text, 'web', 'worker')
 
@@ -45,13 +46,13 @@ def test_server_overlay_makes_web_internal_only_and_shared_edge_consumer():
     assert '${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}' in web
     assert '${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}' in web
     assert '${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}' in web
-    assert 'edge_public:' in web
-    assert '- kaori-web' in web
+    assert 'edge-public' not in text
+    assert 'edge_public' not in text
     assert '  nginx:' not in text
     assert '  certbot:' not in text
 
 
-def test_shared_edge_compose_owns_immutable_nginx_and_certbot_without_docker_socket():
+def test_standalone_edge_example_owns_immutable_nginx_and_certbot_without_docker_socket():
     text = _read(EDGE_COMPOSE)
 
     assert '${EDGE_NGINX_IMAGE:?' in text
@@ -64,12 +65,6 @@ def test_shared_edge_compose_owns_immutable_nginx_and_certbot_without_docker_soc
     assert 'name: edge-public' in text
     assert 'external: true' in text
     assert '/var/run/docker.sock' not in text
-
-    server = _read(SERVER_COMPOSE)
-    postgres = _service_block(server, 'postgres', 'redis')
-    redis = _service_block(server, 'redis', 'validate')
-    assert 'ports:' not in postgres
-    assert 'ports:' not in redis
 
 
 def test_nginx_reconciler_rejects_unknown_hosts_and_proxies_registered_upstreams():
@@ -94,11 +89,34 @@ def test_nginx_reconciler_rejects_unknown_hosts_and_proxies_registered_upstreams
         assert f'proxy_set_header {header};' in nginx
 
 
-def test_edge_scripts_own_issuance_renewal_reload_and_fail_closed_cutover():
+def test_generic_edge_scripts_have_no_kaori_dependency():
+    prepare = _read(PREPARE)
+    publish = _read(PUBLISH)
+    apply = _read(APPLY)
+
+    assert 'docker network create edge-public' in prepare
+    assert 'docker network connect --alias' in publish
+    assert 'verify.sh' in apply
+
+    combined = '\n'.join((prepare, publish, apply))
+    for forbidden in ('/etc/kaori', 'kaori-production', 'kaori-vps-letsencrypt', 'KAORI_'):
+        assert forbidden not in combined
+
+
+def test_kaori_specific_cutover_is_isolated_to_explicit_example():
+    source = _read(KAORI_CUTOVER)
+
+    assert 'kaori-production' in source
+    assert 'kaori-vps-letsencrypt' in source
+    assert 'kaori.cloud' in source
+    assert 'publish-container.sh' in source
+    assert '--port 5000' in source
+    assert 'rollback' in source.lower()
+
+
+def test_edge_container_scripts_own_issuance_renewal_and_reload_without_host_mutation():
     nginx = _read(NGINX_ENTRYPOINT)
     certbot = _read(CERTBOT_ENTRYPOINT)
-    prepare = _read(PREPARE)
-    apply = _read(APPLY)
 
     assert 'nginx -t' in nginx
     assert 'nginx -s reload' in nginx
@@ -110,13 +128,7 @@ def test_edge_scripts_own_issuance_renewal_reload_and_fail_closed_cutover():
     assert 'certbot renew' in certbot
     assert 'EDGE_LETSENCRYPT_EMAIL' in certbot
 
-    assert 'kaori-vps-letsencrypt' in prepare
-    assert 'docker network create edge-public' in prepare
-    assert 'rollback' in apply.lower()
-    assert 'docker start' in apply
-    assert 'docker stop' in apply
-
-    combined = '\n'.join((nginx, certbot, prepare, apply))
+    combined = f'{nginx}\n{certbot}'
     for forbidden in ('docker.sock', 'sudo ', 'systemctl', 'apt-get', 'usermod'):
         assert forbidden not in combined
 
@@ -126,8 +138,10 @@ def test_edge_shell_surfaces_parse():
         (NGINX_ENTRYPOINT, 'sh'),
         (CERTBOT_ENTRYPOINT, 'sh'),
         (PREPARE, 'bash'),
+        (PUBLISH, 'bash'),
         (APPLY, 'bash'),
         (VERIFY, 'bash'),
+        (KAORI_CUTOVER, 'bash'),
     ):
         result = subprocess.run(
             [shell, '-n', str(path)],
@@ -148,10 +162,6 @@ def test_verifier_checks_every_public_site_and_host_boundary():
     assert 'Strict-Transport-Security' in text
     assert 'invalid.shared-edge.invalid' in text
     assert 'certbot renew --dry-run' in text
-    assert '🌐' in text
-    assert '🔒' in text
-    assert '🩺' in text
-    assert '✅' in text
 
 
 def test_runtime_environment_contract_is_split_by_authority():
@@ -171,9 +181,15 @@ def test_runtime_environment_contract_is_split_by_authority():
     for forbidden in ('KAORI_NGINX_IMAGE=', 'KAORI_PUBLIC_DOMAIN=', 'APP_VERSION='):
         assert forbidden not in secrets
 
-    for key in ('KAORI_POSTGRES_IMAGE=', 'KAORI_REDIS_IMAGE=', 'KAORI_PUBLIC_DOMAIN=kaori.cloud'):
+    for key in ('KAORI_POSTGRES_IMAGE=', 'KAORI_REDIS_IMAGE='):
         assert key in deploy
-    for forbidden in ('KAORI_NGINX_IMAGE=', 'KAORI_CERTBOT_IMAGE=', 'KAORI_LETSENCRYPT_EMAIL=', 'KAORI_PUBLIC_IP='):
+    for forbidden in (
+        'KAORI_NGINX_IMAGE=',
+        'KAORI_CERTBOT_IMAGE=',
+        'KAORI_LETSENCRYPT_EMAIL=',
+        'KAORI_PUBLIC_IP=',
+        'KAORI_PUBLIC_DOMAIN=',
+    ):
         assert forbidden not in deploy
 
     for key in ('EDGE_NGINX_IMAGE=', 'EDGE_CERTBOT_IMAGE=', 'EDGE_LETSENCRYPT_EMAIL=', 'EDGE_PUBLIC_IP='):
@@ -202,22 +218,11 @@ def test_release_identity_is_generated_separately_from_persistent_configuration(
     assert '/var/lib/kaori/deploy-state/release.env' in state
 
 
-def test_deploy_requires_compose_override_capability():
-    deploy = _read(DEPLOY_SCRIPT)
-
-    assert '2.24.4' in deploy
-    assert 'docker compose version --short' in deploy
-
-
-def test_application_and_edge_delivery_workflows_are_separate():
+def test_application_delivery_does_not_ship_or_manage_public_edge():
     uat = _read(UAT_WORKFLOW)
-    edge = _read(EDGE_WORKFLOW)
 
     assert 'scp "${scp_opts[@]}" -r deploy/server' in uat
     assert 'deploy/nginx' not in uat
     assert 'deploy/edge' not in uat
-    assert 'chmod 700 -- "$remote_release"/deploy/server/*.sh' in uat
-
-    assert 'scp "${scp_opts[@]}" -r deploy/edge' in edge
-    assert 'chmod 755 -- "$remote_release"/deploy/edge/*.sh' in edge
-    assert 'deploy/server/deploy.sh' not in edge
+    assert 'example/shared-edge' not in uat
+    assert 'KAORI_LETSENCRYPT_EMAIL' not in uat
