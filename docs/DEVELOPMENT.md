@@ -63,6 +63,14 @@ Useful VS Code tasks:
 
 ## Dependency updates
 
+### Toolchain version authority
+
+KAORI development, CI, and frontend-image builds are aligned on **Node 22.23.2** with **npm 10.9.9**. The Dev Container uses the current Node feature major with both versions pinned, while the frontend and CI Docker stages install the same npm version explicitly. Root `package.json` declares `npm@10.9.9` as the package-manager authority.
+
+npm 12.0.2 was reviewed but is deliberately **deferred**. Its Node 22 engine floor is satisfied by Node 22.23.2, but adopting npm 12 would introduce a separate package-manager major lifecycle across Dev Container, CI, and frontend builds. KAORI stays on the latest reviewed npm 10 patch for this maintenance line instead.
+
+Frontend audit also identified Tailwind 4.3.3 and Prettier 3.9.8 as available patch updates. They are **deferred** until their `package-lock.json` changes can be regenerated through the **normal package-manager workflow** inside the aligned Dev Container and verified against generated CSS, formatting, vendor assets, and visual/frontend gates. The lockfile must never be edited manually to force those versions.
+
 Edit `requirements/base.in` for runtime dependencies and `requirements/dev.in`
 for development-only tools. Then run inside the Dev Container:
 
@@ -72,6 +80,17 @@ pip-compile requirements/dev.in --output-file requirements/dev.txt
 ```
 
 Rebuild the Dev Container after regenerating either lock file.
+
+For npm dependency changes, update `package.json` and regenerate `package-lock.json` with the pinned package manager:
+
+```bash
+npm --version
+npm install --package-lock-only
+npm ci
+npm run prepare-frontend
+```
+
+The expected npm version is `10.9.9`; stop if a different package-manager version would rewrite the lockfile.
 
 ## Removing the host virtual environment
 
