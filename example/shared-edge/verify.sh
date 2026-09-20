@@ -95,13 +95,27 @@ verify_dns() {
 
 verify_http_redirect() {
   local domain="$1" health_path="$2"
-  local headers status_code location
-  headers="$(curl --silent --show-error --max-time 10 --dump-header - --output /dev/null "http://$domain$health_path")" ||     fail "HTTP request to $domain failed"
-  status_code="$(printf '%s\n' "$headers" | awk 'toupper($1) ~ /^HTTP\// {code=$2} END {print code}')"
-  location="$(printf '%s\n' "$headers" | awk 'BEGIN {IGNORECASE=1} /^Location:/ {sub(/^[^:]+:[[:space:]]*/, ""); sub(/\r$/, ""); print; exit}')"
-  [[ "$status_code" == '301' || "$status_code" == '308' ]] || fail "$domain HTTP did not redirect to HTTPS (status=${status_code:-missing})"
-  [[ "$location" == "https://$domain$health_path" ]] || fail "$domain HTTP redirect target is unexpected: ${location:-missing}"
-  status '➡️' "HTTP redirect PASS · http://$domain → https://$domain"
+  local deadline headers status_code location
+  local last_observation='connection failed'
+  deadline=$(( $(date +%s) + wait_seconds ))
+
+  while (( $(date +%s) < deadline )); do
+    headers=''
+    if headers="$(curl --silent --max-time 10 --dump-header - --output /dev/null "http://$domain$health_path" 2>/dev/null)"; then
+      status_code="$(printf '%s\n' "$headers" | awk 'toupper($1) ~ /^HTTP\\// {code=$2} END {print code}')"
+      location="$(printf '%s\n' "$headers" | awk 'BEGIN {IGNORECASE=1} /^Location:/ {sub(/^[^:]+:[[:space:]]*/, ""); sub(/\\r$/, ""); print; exit}')"
+      last_observation="status=${status_code:-missing} location=${location:-missing}"
+
+      if [[ "$status_code" == '301' || "$status_code" == '308' ]] &&
+        [[ "$location" == "https://$domain$health_path" ]]; then
+        status '➡️' "HTTP redirect PASS · http://$domain → https://$domain"
+        return 0
+      fi
+    fi
+    sleep 5
+  done
+
+  fail "$domain HTTP redirect did not become ready before timeout ($last_observation)"
 }
 
 capture_leaf_certificate() {

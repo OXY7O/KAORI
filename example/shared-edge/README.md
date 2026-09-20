@@ -77,6 +77,43 @@ bash ./prepare.sh
 
 `prepare.sh` validates the standalone edge configuration and creates `edge-public`. It does not inspect, start, stop, or modify KAORI.
 
+## DNS authority and application onboarding
+
+The standalone edge does **not** own authoritative DNS. Public records remain managed by the selected DNS provider or registrar.
+
+The authority split is:
+
+```text
+DNS provider
+    └── app.example.com → VPS public IPv4
+
+standalone shared edge
+    ├── domain registration → edge alias + upstream port
+    ├── HTTP → HTTPS redirect
+    ├── ACME HTTP-01 and certificate lifecycle
+    ├── TLS termination
+    └── reverse proxy / readiness verification
+
+application
+    └── owns only its internal service, health, data, and lifecycle
+```
+
+To publish a new application:
+
+1. deploy the application independently and confirm its frontend container is healthy;
+2. create or update the public DNS record so the domain resolves to `EDGE_PUBLIC_IP`;
+3. run `publish-container.sh` to attach only the frontend container to `edge-public`, assign a stable alias, and write the site registration;
+4. run `apply.sh` to reconcile Nginx/Certbot and verify DNS, redirect, trusted TLS, readiness, Host/SNI rejection, and certificate renewal;
+5. after any frontend-container replacement, rerun `publish-container.sh` against the new healthy container because the host-side `edge-public` attachment is intentionally outside the application Compose lifecycle.
+
+Active domain-to-upstream registrations are the files under:
+
+```text
+/opt/shared-edge/config/sites/*.env
+```
+
+Use those registrations as the operator-visible inventory of applications currently published through the edge. Do not hand-edit generated Nginx virtual-host files inside the edge container.
+
 ## 2. Publish any healthy application
 
 The application must already be running and healthy independently.

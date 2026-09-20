@@ -169,6 +169,9 @@ def test_verifier_checks_every_public_site_and_host_boundary():
     assert 'Strict-Transport-Security' in text
     assert 'invalid.shared-edge.invalid' in text
     assert 'certbot renew --dry-run' in text
+    assert 'deadline=$(( $(date +%s) + wait_seconds ))' in text
+    assert 'while (( $(date +%s) < deadline )); do' in text
+    assert 'HTTP redirect did not become ready' in text
 
 
 def test_runtime_environment_contract_is_split_by_authority():
