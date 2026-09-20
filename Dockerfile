@@ -100,10 +100,20 @@ FROM base AS production
 ARG OCI_SOURCE=""
 ARG OCI_REVISION=""
 ARG OCI_VERSION=""
+ARG OCI_CREATED=""
+ARG OCI_TITLE=""
+ARG OCI_DESCRIPTION=""
+ARG OCI_DOCUMENTATION=""
+ARG OCI_LICENSES=""
 
 LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.revision="${OCI_REVISION}" \
-      org.opencontainers.image.version="${OCI_VERSION}"
+      org.opencontainers.image.version="${OCI_VERSION}" \
+      org.opencontainers.image.created="${OCI_CREATED}" \
+      org.opencontainers.image.title="${OCI_TITLE}" \
+      org.opencontainers.image.description="${OCI_DESCRIPTION}" \
+      org.opencontainers.image.documentation="${OCI_DOCUMENTATION}" \
+      org.opencontainers.image.licenses="${OCI_LICENSES}"
 
 RUN groupadd --system kaori \
     && useradd --system --gid kaori --create-home --home-dir /app kaori
