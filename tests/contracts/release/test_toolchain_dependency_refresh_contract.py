@@ -17,7 +17,7 @@ def test_node_and_npm_toolchain_is_exact_and_aligned() -> None:
     devcontainer = json.loads(read('.devcontainer/devcontainer.json'))
     package = json.loads(read('package.json'))
 
-    node_feature = devcontainer['features']['ghcr.io/devcontainers/features/node:1']
+    node_feature = devcontainer['features']['ghcr.io/devcontainers/features/node:2']
 
     assert f'FROM node:{NODE_VERSION}-alpine AS frontend-build' in dockerfile
     assert f'FROM node:{NODE_VERSION}-bookworm-slim AS node-runtime' in ci_dockerfile
