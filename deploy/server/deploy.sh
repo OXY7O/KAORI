@@ -40,12 +40,10 @@ for command_name in docker curl stat mktemp sort sed head; do
 done
 
 [[ -r "$KAORI_DEPLOY_ENV_FILE" ]] || fail "deployment environment is not readable: $KAORI_DEPLOY_ENV_FILE"
-external_letsencrypt_email="${KAORI_LETSENCRYPT_EMAIL:-}"
 set -a
 # shellcheck source=/dev/null
 source "$KAORI_DEPLOY_ENV_FILE"
 set +a
-[[ -z "$external_letsencrypt_email" ]] || export KAORI_LETSENCRYPT_EMAIL="$external_letsencrypt_email"
 
 KAORI_APP_ENV_FILE="${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}"
 KAORI_SECRETS_ENV_FILE="${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}"
@@ -73,17 +71,14 @@ oldest="$(printf '%s\n%s\n' "$minimum_compose" "$compose_version" | sort -V | he
 status '✅' "Compose capability PASS · $compose_version ≥ 2.24.4"
 
 : "${KAORI_PUBLIC_DOMAIN:?Set KAORI_PUBLIC_DOMAIN in /etc/kaori/deploy.env}"
-: "${KAORI_PUBLIC_IP:?Set KAORI_PUBLIC_IP in /etc/kaori/deploy.env}"
-: "${KAORI_LETSENCRYPT_EMAIL:?Set KAORI_LETSENCRYPT_EMAIL in deploy.env or deployment environment}"
 [[ "$KAORI_PUBLIC_DOMAIN" =~ ^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$ ]] || fail 'KAORI_PUBLIC_DOMAIN is invalid'
-[[ "$KAORI_PUBLIC_IP" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] || fail 'KAORI_PUBLIC_IP must be an IPv4 address'
 
 validate_image_pin() {
   local name="$1"
   local value="${!name:-}"
   [[ "$value" =~ @sha256:[0-9a-f]{64}$ ]] || fail "$name must be an immutable digest-qualified image"
 }
-for image_var in KAORI_POSTGRES_IMAGE KAORI_REDIS_IMAGE KAORI_NGINX_IMAGE KAORI_CERTBOT_IMAGE; do
+for image_var in KAORI_POSTGRES_IMAGE KAORI_REDIS_IMAGE; do
   validate_image_pin "$image_var"
 done
 
@@ -137,8 +132,8 @@ compose=(docker compose --env-file "$KAORI_DEPLOY_ENV_FILE" -f "$BASE_COMPOSE" -
 "${compose[@]}" config --quiet || fail 'Compose configuration validation failed'
 status '✅' 'Compose render PASS'
 
-status '🐳' 'Pulling immutable infrastructure and edge images'
-"${compose[@]}" pull postgres redis nginx certbot >/dev/null
+status '🐳' 'Pulling immutable infrastructure images'
+"${compose[@]}" pull postgres redis >/dev/null
 
 wait_healthy() {
   local service="$1"
@@ -190,27 +185,21 @@ application_services=(
   reports-worker forecasting-worker resolver-execution-worker resolver-maintenance-worker beat
 )
 status '🚀' 'Starting KAORI application services'
-"${compose[@]}" up -d --remove-orphans --pull never "${application_services[@]}"
+"${compose[@]}" up -d --pull never "${application_services[@]}"
 KAORI_EXPECTED_IMAGE="$image" bash "$SCRIPT_DIR/verify.sh" --restart-check
 status '✅' 'Internal runtime PASS'
 
-status '🌐' 'Starting Compose-managed Nginx and Certbot edge'
-"${compose[@]}" up -d --pull never nginx certbot
-
-status '🩺' "Waiting for trusted HTTPS · https://$KAORI_PUBLIC_DOMAIN/health/ready"
-https_deadline=$(( $(date +%s) + 360 ))
+status '🌐' 'Verifying public HTTPS readiness through shared edge'
+https_deadline=$(( $(date +%s) + 180 ))
 while (( $(date +%s) < https_deadline )); do
   if curl --fail --silent --show-error --max-time 10 "https://$KAORI_PUBLIC_DOMAIN/health/ready" >/dev/null 2>&1; then
     break
   fi
   sleep 5
 done
-curl --fail --silent --show-error --max-time 10 "https://$KAORI_PUBLIC_DOMAIN/health/ready" >/dev/null || fail 'public HTTPS readiness did not become healthy before timeout'
-
-bash "$ROOT_DIR/deploy/nginx/verify-ingress.sh" \
-  --domain "$KAORI_PUBLIC_DOMAIN" \
-  --expected-ip "$KAORI_PUBLIC_IP" \
-  --renewal-dry-run
+curl --fail --silent --show-error --max-time 10 "https://$KAORI_PUBLIC_DOMAIN/health/ready" >/dev/null || \
+  fail 'public HTTPS readiness through shared edge did not become healthy before timeout'
+status '✅' 'Public HTTPS readiness through shared edge PASS'
 
 if [[ -f "$KAORI_STATE_DIR/current-image" ]]; then
   cp -- "$KAORI_STATE_DIR/current-image" "$KAORI_STATE_DIR/previous-image"
