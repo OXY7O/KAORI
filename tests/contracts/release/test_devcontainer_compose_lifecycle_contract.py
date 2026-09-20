@@ -99,9 +99,7 @@ def test_development_image_keeps_recursive_dev_requirements_available() -> None:
 
     assert '-r base.txt' in dev_requirements
 
-    development = dockerfile.split('FROM base AS development', 1)[1].split('FROM node:22-alpine AS frontend-build', 1)[
-        0
-    ]
+    development = dockerfile.split('FROM base AS development', 1)[1].split('\nFROM node:', 1)[0]
     assert 'COPY requirements/base.txt requirements/dev.txt /tmp/requirements/' in development
     assert 'python -m pip install -r /tmp/requirements/dev.txt' in development
 
