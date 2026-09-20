@@ -43,10 +43,72 @@ PROVIDER_DYNAMIC_DESCRIPTION_OWNERS = {
     (TEMPLATES / 'kubernetes' / 'operations' / 'cluster_required.html', 'requested_page_description'),
 }
 
-DESCRIPTION_TARGET_MIN_WORDS = 10
-DESCRIPTION_TARGET_MAX_WORDS = 11
-DESCRIPTION_TARGET_MIN_CHARS = 89
-DESCRIPTION_TARGET_MAX_CHARS = 96
+DESCRIPTION_MIN_WORDS = 7
+DESCRIPTION_MAX_WORDS = 15
+DESCRIPTION_PREFERRED_MIN_WORDS = 8
+DESCRIPTION_PREFERRED_MAX_WORDS = 12
+DESCRIPTION_MAX_CHARS = 110
+DESCRIPTION_ACTION_STARTERS = frozenset(
+    {
+        'access',
+        'add',
+        'analyze',
+        'assess',
+        'audit',
+        'browse',
+        'build',
+        'check',
+        'compare',
+        'configure',
+        'connect',
+        'control',
+        'create',
+        'define',
+        'delete',
+        'discover',
+        'edit',
+        'evaluate',
+        'examine',
+        'explore',
+        'generate',
+        'govern',
+        'identify',
+        'inspect',
+        'investigate',
+        'keep',
+        'maintain',
+        'manage',
+        'monitor',
+        'observe',
+        'open',
+        'operate',
+        'optimize',
+        'plan',
+        'prepare',
+        'protect',
+        'publish',
+        'reconcile',
+        'register',
+        'replace',
+        'resolve',
+        'restore',
+        'review',
+        'rotate',
+        'run',
+        'schedule',
+        'see',
+        'select',
+        'set',
+        'surface',
+        'track',
+        'understand',
+        'update',
+        'use',
+        'validate',
+        'verify',
+        'view',
+    }
+)
 CLUSTER_REQUIRED_CONTEXT_SUFFIX = 'in KAORI.'
 PROVIDER_EDIT_SHORT_DESCRIPTION_SUFFIX = 'Maintain governed validation and consumer-binding context.'
 REPORTS_UNAVAILABLE_SHORT_DESCRIPTION_SUFFIX = 'Maintain governed recovery and retained evidence context.'
@@ -157,7 +219,7 @@ def _description_words(text: str) -> list[str]:
 
 
 def _effective_short_description(description: str, suffix: str) -> str:
-    if len(_description_words(description)) >= DESCRIPTION_TARGET_MIN_WORDS:
+    if len(_description_words(description)) >= DESCRIPTION_MIN_WORDS:
         return description
     return f'{description} {suffix}'
 
@@ -165,19 +227,28 @@ def _effective_short_description(description: str, suffix: str) -> str:
 def _validate_description_budget(text: str, *, owner: str) -> None:
     description = text.strip()
     character_count = len(description)
-    word_count = len(_description_words(description))
+    words = _description_words(description)
+    word_count = len(words)
     if '\n' in description or '\r' in description:
         raise AssertionError(f'{owner}: Hero description must not contain a manual line break')
     if not description.endswith(('.', '!', '?')):
         raise AssertionError(f'{owner}: Hero description must be one complete short sentence')
-    if not DESCRIPTION_TARGET_MIN_CHARS <= character_count <= DESCRIPTION_TARGET_MAX_CHARS:
+    if not DESCRIPTION_MIN_WORDS <= word_count <= DESCRIPTION_MAX_WORDS:
         raise AssertionError(
-            f'{owner}: Hero description has {character_count} characters; expected '
-            f'{DESCRIPTION_TARGET_MIN_CHARS}-{DESCRIPTION_TARGET_MAX_CHARS} characters; value={description!r}'
+            f'{owner}: Hero description has {word_count} words; expected '
+            f'{DESCRIPTION_MIN_WORDS}-{DESCRIPTION_MAX_WORDS} words; value={description!r}'
         )
-    # Word density remains an editorial target because technical compounds,
-    # product names, and format tokens make strict token counts misleading.
-    _ = word_count
+    if character_count > DESCRIPTION_MAX_CHARS:
+        raise AssertionError(
+            f'{owner}: Hero description has {character_count} characters; maximum '
+            f'{DESCRIPTION_MAX_CHARS} characters; value={description!r}'
+        )
+    first_word = words[0].lower()
+    if first_word not in DESCRIPTION_ACTION_STARTERS:
+        raise AssertionError(
+            f'{owner}: Hero description must be action-oriented and start with an approved action verb; '
+            f'found {words[0]!r}; value={description!r}'
+        )
 
 
 def _has_unmanaged_hero_shell(source: str) -> bool:
@@ -602,7 +673,7 @@ def _materialization_route_descriptions() -> dict[str, str]:
 
 def _effective_cluster_required_description(description: str) -> str:
     description = description.strip()
-    if len(description) >= DESCRIPTION_TARGET_MIN_CHARS:
+    if len(_description_words(description)) >= DESCRIPTION_MIN_WORDS:
         return description
     return f'{description.rstrip(".")} {CLUSTER_REQUIRED_CONTEXT_SUFFIX}'
 
@@ -846,8 +917,10 @@ def verify() -> None:
             'components/ANALYTICS_HERO.md',
             '## Theme and surface contract',
             'components/DARK_MODE.md',
-            'The canonical verifier enforces the 89–96 character target',
-            '10–11 words',
+            'The canonical verifier enforces the 7–15 word boundary',
+            'preferably 8–12 words',
+            'maximum 110 characters',
+            'action-oriented',
             'Integration domain descriptions are audited from',
             '## Change procedure',
         ),
@@ -913,7 +986,7 @@ def verify() -> None:
         f'{len(primitive_shells)} compatibility shells, '
         f'{len(profile_templates)} profile consumers, '
         f'{audited} audited descriptions; v1.7 persistent metadata, '
-        '89-96 character density with an editorial 10-11 word target, blocked/degraded state ownership, dynamic Jinja resolution, '
+        '7-15 word density with a preferred 8-12 word range, maximum 110 characters, action-oriented copy, blocked/degraded state ownership, dynamic Jinja resolution, '
         'dark-mode ownership, and unmanaged-shell detection are synchronized.'
     )
 
