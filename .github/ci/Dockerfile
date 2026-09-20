@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:22-bookworm-slim AS node-runtime
+FROM node:22.23.2-bookworm-slim AS node-runtime
+
+RUN npm install --global npm@10.9.9
 
 FROM python:3.12-slim-bookworm AS ci
 
