@@ -5,6 +5,9 @@ cd /workspace/kaori
 
 git config --global --add safe.directory /workspace/kaori
 
+sudo npm install --global npm@10.9.9
+npm --version
+
 bash .devcontainer/ensure-frontend.sh --install-always
 
 python --version
