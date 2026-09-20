@@ -184,6 +184,17 @@ def test_standalone_edge_verifier_preserves_public_security_checks() -> None:
         assert marker in verify
 
 
+def test_certbot_rescans_new_tls_registrations_without_waiting_for_renewal_window() -> None:
+    certbot = _read(EDGE_CERTBOT_ENTRYPOINT)
+
+    assert 'next_renewal_epoch=0' in certbot
+    assert 'now_epoch="$(date +%s)"' in certbot
+    assert 'if [ "$now_epoch" -ge "$next_renewal_epoch" ]; then' in certbot
+    assert 'next_renewal_epoch=$((now_epoch + renew_interval))' in certbot
+    assert 'sleep "$renew_interval"' not in certbot
+    assert 'sleep "$issue_retry_interval"' in certbot
+
+
 def test_standalone_edge_runtime_reconciles_sites_without_docker_socket() -> None:
     nginx = _read(EDGE_NGINX_ENTRYPOINT)
     certbot = _read(EDGE_CERTBOT_ENTRYPOINT)

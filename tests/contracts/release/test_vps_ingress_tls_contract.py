@@ -132,8 +132,11 @@ def test_edge_container_scripts_own_issuance_renewal_and_reload_without_host_mut
     assert 'EDGE_LETSENCRYPT_EMAIL' in certbot
     assert 'EDGE_CERTBOT_ISSUE_RETRY_SECONDS' in certbot
     assert 'certificate issuance remains incomplete' in certbot
+    assert 'next_renewal_epoch=0' in certbot
+    assert 'if [ "$now_epoch" -ge "$next_renewal_epoch" ]; then' in certbot
+    assert 'next_renewal_epoch=$((now_epoch + renew_interval))' in certbot
     assert 'sleep "$issue_retry_interval"' in certbot
-    assert 'sleep "$renew_interval"' in certbot
+    assert 'sleep "$renew_interval"' not in certbot
 
     combined = f'{nginx}\n{certbot}'
     for forbidden in ('docker.sock', 'sudo ', 'systemctl', 'apt-get', 'usermod'):
