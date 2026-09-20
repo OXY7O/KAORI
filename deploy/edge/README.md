@@ -52,13 +52,13 @@ EDGE_CLIENT_MAX_BODY_SIZE=25m
 
 Do not add placeholder registrations to the active directory. Every active registration is expected to have real DNS and a reachable upstream.
 
-The repository contains reviewed examples for KAORI and n8n under `deploy/edge/sites/`.
+The repository contains reviewed examples for KAORI and n8n under `deploy/edge/sites/`. The canonical n8n public endpoint for this host is `https://auto.kaori.cloud`.
 
 ## Adding n8n
 
-The n8n application Compose project remains independent. Attach only the n8n frontend service to `edge-public` with a stable alias such as `n8n`; do not publish host port 5678. Configure n8n's externally visible host/protocol/webhook settings for the HTTPS domain, then create the DNS A record and copy the reviewed n8n site registration with the real domain.
+The n8n application Compose project remains independent. Attach only the n8n frontend service to `edge-public` with stable alias `n8n`; do not publish host port 5678. For the canonical `https://auto.kaori.cloud` endpoint, configure n8n with `N8N_HOST=auto.kaori.cloud`, `N8N_PROTOCOL=https`, `N8N_PORT=5678`, `N8N_EDITOR_BASE_URL=https://auto.kaori.cloud`, `N8N_WEBHOOK_URL=https://auto.kaori.cloud/`, and `N8N_PROXY_HOPS=1`. The shared edge forwards the required `X-Forwarded-*` headers. Use `/healthz` as the initial edge health path.
 
-After DNS resolves to the VPS, run the shared-edge apply workflow. Certbot issues the domain certificate, Nginx detects the certificate state change, validates the complete configuration with `nginx -t`, and reloads without restarting KAORI or n8n.
+After the `auto.kaori.cloud` A record resolves to the VPS and n8n is healthy on `edge-public`, copy `deploy/edge/sites/n8n.env.example` to `/opt/shared-edge/config/sites/n8n.env`, then run the shared-edge apply workflow. Certbot issues the domain certificate, Nginx detects the certificate state change, validates the complete configuration with `nginx -t`, and reloads without restarting KAORI or n8n.
 
 ## Initial KAORI migration
 
