@@ -36,7 +36,7 @@ _ALERT_TABS = {
 _PAGE = {
     'dataset_key': 'analytics.alerts',
     'title': 'Alerts & Anomalies',
-    'description': 'Alertmanager and Metrics Source signals are collected by analytics workers for shared KAORI use.',
+    'description': 'Review alert signals while analytics workers prepare shared KAORI evidence.',
     'icon': 'siren',
     'page_id': 'alerts-page-content',
 }
