@@ -16,6 +16,22 @@ KAORI uses Semantic Versioning: `MAJOR.MINOR.PATCH`.
 
 Pre-release audit work stays under `[Unreleased]` until the release candidate is approved. Do not bump `APP_VERSION` for every incremental review patch.
 
+### Product version line versus exact release identity
+
+The repository root `VERSION` file is the machine-readable **product version line** authority. It contains stable SemVer only, for example `0.2.0`, and is synchronized with the root README Version badge, the development `.env.example` `APP_VERSION`, and the application fallback used when no governed release metadata is injected.
+
+`VERSION` is **not** the exact deployed release identity. Governed prerelease and stable identities remain release/deployment managed:
+
+- product version line: `VERSION=0.2.0`;
+- governed prerelease tag: `v0.2.0-rc.N`;
+- governed prerelease runtime: `APP_VERSION=0.2.0-rc.N`;
+- governed stable tag: `v0.2.0`;
+- governed stable runtime: `APP_VERSION=0.2.0`.
+
+The release workflow, Git tag, GitHub Release, accepted source SHA, OCI version/revision labels, immutable image digest, signature/provenance, and deployment receipt remain the authority for an exact candidate or stable release. A README badge or development default must never be used to infer which RC is deployed.
+
+When the next product version line is approved, update `VERSION`, the README badge, development `APP_VERSION`, and application fallback together. Historical changelog sections and `docs/releases/KAORI_*.md` records remain immutable.
+
 ## Immutable Release Identity
 
 Every production build must provide:
@@ -50,7 +66,7 @@ Before a release, move approved entries from `[Unreleased]` to `## [X.Y.Z] - YYY
 2. Run `python scripts/verify_final_release.py --all --runtime` in the supported KAORI Dev Container/CI environment; this is the canonical final approval entry point and delegates to the underlying quality gates.
 3. Confirm the Alembic migration graph has one head and retain an executable previous-supported-release upgrade-path check for release CI.
 4. Select the Semantic Versioning increment from the approved changelog.
-5. Update `APP_VERSION` defaults and development/source examples together. Do not add release-specific values to the persistent production host environment.
+5. Update the root `VERSION` product version line, README badge, `APP_VERSION` development default, and application fallback together. Do not add release-specific values to the persistent production host environment.
 6. Move `[Unreleased]` changelog entries into the dated release section.
 7. Create or update `docs/releases/KAORI_X_Y_Z.md` with the approved release scope, deferred work, verification command, and Git tag.
 8. Commit and merge the reviewed release metadata change to `main`.
@@ -67,7 +83,7 @@ The release pipeline follows **build once → verify → promote the same immuta
 
 ## Release Gate
 
-The static quality gate runs `scripts/verify_release_governance.py`. The verifier rejects malformed source/default version metadata, active release identity accidentally persisted in `.env.production.example`, missing deployment-managed release injection in production Compose/VPS deployment, missing dated changelog/release-note structure, missing build-traceability variables, or a release process that is no longer documented. The master `python scripts/verify_final_release.py --all --runtime` gate additionally owns layered behavioral/security/rendering evidence, explicit E2E smoke, frontend reproducibility, migration integrity, endpoint registration, and production worker readiness; it delegates static/test/frontend work to `scripts/quality_gate.sh --all`. CI must provision the PostgreSQL/Redis services and required Reports worker rather than skipping those release tests.
+The static quality gate runs `scripts/verify_release_governance.py`. The verifier locks `VERSION` to the README badge and development/application fallback, preserves deployment-managed exact RC/stable identity, and rejects malformed source/default version metadata, active release identity accidentally persisted in `.env.production.example`, missing deployment-managed release injection in production Compose/VPS deployment, missing dated changelog/release-note structure, missing build-traceability variables, or a release process that is no longer documented. The master `python scripts/verify_final_release.py --all --runtime` gate additionally owns layered behavioral/security/rendering evidence, explicit E2E smoke, frontend reproducibility, migration integrity, endpoint registration, and production worker readiness; it delegates static/test/frontend work to `scripts/quality_gate.sh --all`. CI must provision the PostgreSQL/Redis services and required Reports worker rather than skipping those release tests.
 
 Release publication adds evidence that is outside the source-only final verifier: immutable registry digest, candidate container scan, candidate runtime and migration validation, release DAST, SBOM/provenance, signature verification, digest-preserving promotion, release manifest, and GitHub Release publication.
 

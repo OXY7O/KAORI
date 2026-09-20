@@ -8,7 +8,7 @@
 
 <p align="center">
   <img alt="CI" src="https://github.com/OXY7O/KAORI/actions/workflows/quality.yml/badge.svg?branch=main" />
-  <img alt="Version" src="https://img.shields.io/badge/Version-governed%20release-7C3AED" />
+  <img alt="Version" src="https://img.shields.io/badge/Version-0.2.0-7C3AED" />
   <img alt="Python" src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white" />
   <img alt="License" src="https://img.shields.io/badge/License-internal%20use-64748B" />
 </p>
@@ -83,6 +83,8 @@ Use `--runtime` when release services are running and live readiness must also b
 
 ## Deployment & Release
 
+[`VERSION`](VERSION) defines the source-controlled **current product version line**. It is synchronized with the README badge and development fallback, but it is not the exact deployed release identity. Governed prereleases use `vX.Y.Z-rc.N`; deployment strips the leading `v` and injects the exact `APP_VERSION`, source SHA, build date, and immutable image digest. A stable release uses `vX.Y.Z` only after the accepted candidate is promoted without rebuilding application bits.
+
 KAORI uses a governed immutable promotion path:
 
 ```text
@@ -94,7 +96,7 @@ A stable release reuses the exact accepted OCI digest; the application image is 
 
 - [`CHANGELOG.md`](CHANGELOG.md) — product change history and current work.
 - [`docs/deployment/RELEASE_GOVERNANCE.md`](docs/deployment/RELEASE_GOVERNANCE.md) — immutable release authority and promotion rules.
-- [`docs/releases/KAORI_2_3_0.md`](docs/releases/KAORI_2_3_0.md) — current application-version release notes retained for the existing `APP_VERSION` baseline.
+- [`docs/releases/KAORI_2_3_0.md`](docs/releases/KAORI_2_3_0.md) — immutable historical 2.3.0 release record; it does not define the current product line.
 - [`docs/releases/README.md`](docs/releases/README.md) — canonical release lifecycle and artifact boundaries.
 - [`deploy/server/README.md`](deploy/server/README.md) — governed server deployment adapter.
 

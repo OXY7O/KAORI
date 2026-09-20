@@ -1,6 +1,10 @@
 # KAORI Release Lifecycle
 
-KAORI uses one **Stable Semantic Version** as the public release identity. The release workflow input is the release authority for the stable version; development example defaults are not release authority.
+KAORI separates the source-controlled **product version line** from the exact governed release identity.
+
+The root `VERSION` file contains the current stable SemVer line, for example `0.2.0`. README and development defaults synchronize to that value so source presentation cannot silently drift. `VERSION` does not select or identify a deployed release candidate.
+
+Exact prerelease identity is governed by `vX.Y.Z-rc.N`, and exact stable identity is governed by `vX.Y.Z`. The release/deployment workflow supplies the matching `APP_VERSION` plus source SHA, build date, OCI identity, and immutable digest. Development example defaults are never evidence that a specific RC or stable artifact is deployed.
 
 ## Stable release identity
 
