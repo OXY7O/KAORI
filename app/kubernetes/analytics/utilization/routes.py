@@ -28,7 +28,7 @@ from app.kubernetes.analytics.utilization.service import get_utilization_cluster
 _PAGE = {
     'dataset_key': 'analytics.utilization.summary',
     'title': 'Resource Utilization',
-    'description': 'Utilization summaries are prepared by the analytics worker and served from committed snapshots.',
+    'description': 'Review committed utilization summaries while analytics workers prepare current evidence.',
     'icon': 'chart-no-axes-combined',
     'page_id': 'utilization-page',
 }
