@@ -55,6 +55,7 @@ def test_server_host_bootstrap_prepares_split_environment_without_overwriting_ex
     assert 'install_env_if_missing "$secrets_env_template" "$secrets_env_file" 0600' in source
     assert 'install_env_if_missing "$deploy_env_template" "$deploy_env_file" 0640' in source
     assert '/etc/kaori/.env.production' not in source
+    assert '/opt/shared-edge' not in source
 
 
 def test_server_host_bootstrap_installs_and_verifies_docker_compose() -> None:
