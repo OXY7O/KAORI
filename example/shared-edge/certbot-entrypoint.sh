@@ -4,6 +4,7 @@ set -eu
 sites_dir="${EDGE_SITES_DIR:-/etc/shared-edge/sites}"
 email="${EDGE_LETSENCRYPT_EMAIL:?EDGE_LETSENCRYPT_EMAIL is required}"
 renew_interval="${EDGE_CERTBOT_RENEW_INTERVAL_SECONDS:-43200}"
+issue_retry_interval="${EDGE_CERTBOT_ISSUE_RETRY_SECONDS:-30}"
 webroot=/var/www/certbot
 
 case "$renew_interval" in
@@ -11,6 +12,13 @@ case "$renew_interval" in
 esac
 [ "$renew_interval" -ge 3600 ] || {
   printf '❌ EDGE_CERTBOT_RENEW_INTERVAL_SECONDS must be at least 3600\n' >&2
+  exit 1
+}
+case "$issue_retry_interval" in
+  ''|*[!0-9]*) printf '❌ invalid EDGE_CERTBOT_ISSUE_RETRY_SECONDS\n' >&2; exit 1 ;;
+esac
+[ "$issue_retry_interval" -ge 10 ] || {
+  printf '❌ EDGE_CERTBOT_ISSUE_RETRY_SECONDS must be at least 10\n' >&2
   exit 1
 }
 [ -d "$sites_dir" ] || {
@@ -50,16 +58,21 @@ issue_site() {
 
 ensure_site_certificates() {
   found_tls=false
+  incomplete=false
   for site_file in "$sites_dir"/*.env; do
     [ -f "$site_file" ] || continue
     load_site "$site_file"
     [ "$EDGE_TLS" = 'true' ] || continue
     found_tls=true
     if ! certificate_ready "$EDGE_DOMAIN"; then
-      issue_site "$EDGE_DOMAIN" || true
+      if ! issue_site "$EDGE_DOMAIN"; then
+        incomplete=true
+      fi
     fi
+    certificate_ready "$EDGE_DOMAIN" || incomplete=true
   done
   [ "$found_tls" = 'true' ] || printf 'ℹ️ No TLS-enabled shared-edge registrations require Certbot\n'
+  [ "$incomplete" = 'false' ]
 }
 
 renew_certificates() {
@@ -69,8 +82,12 @@ renew_certificates() {
 }
 
 while :; do
-  ensure_site_certificates
-  renew_certificates
-  sleep "$renew_interval" &
+  if ensure_site_certificates; then
+    renew_certificates
+    sleep "$renew_interval" &
+  else
+    printf '⚠️ Shared-edge certificate issuance remains incomplete; retrying in %ss\n' "$issue_retry_interval" >&2
+    sleep "$issue_retry_interval" &
+  fi
   wait $! || true
 done
