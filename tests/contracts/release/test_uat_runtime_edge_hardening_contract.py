@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-EDGE_COMPOSE = ROOT / 'deploy' / 'edge' / 'compose.edge.yml'
+EDGE_COMPOSE = ROOT / 'example' / 'shared-edge' / 'compose.yml'
 PRODUCTION_COMPOSE = ROOT / 'compose.production.yml'
 GUNICORN_CONFIG = ROOT / 'gunicorn.conf.py'
 
@@ -19,7 +19,7 @@ def _service_block(text: str, service: str, next_service: str | None = None) -> 
     return text[start:end]
 
 
-def test_shared_nginx_edge_uses_only_minimum_runtime_capabilities() -> None:
+def test_standalone_reference_nginx_uses_only_minimum_runtime_capabilities() -> None:
     nginx = _service_block(_read(EDGE_COMPOSE), 'nginx', 'certbot')
 
     assert 'read_only: true' in nginx
@@ -37,7 +37,6 @@ def test_shared_nginx_edge_uses_only_minimum_runtime_capabilities() -> None:
 
 def test_production_gunicorn_disables_unused_control_socket() -> None:
     gunicorn = _read(GUNICORN_CONFIG)
-
     assert 'control_socket_disable = True' in gunicorn
 
 
