@@ -135,7 +135,7 @@ def test_site_registry_is_explicit_and_supports_kaori_and_n8n() -> None:
     assert 'EDGE_UPSTREAM=n8n' in n8n
     assert 'EDGE_UPSTREAM_PORT=5678' in n8n
     assert 'EDGE_WEBSOCKET=true' in n8n
-    assert 'example.com' in n8n
+    assert 'EDGE_DOMAIN=auto.kaori.cloud' in n8n
 
 
 def test_shared_edge_prepare_preserves_legacy_certificate_lineage_without_binding_ports() -> None:
