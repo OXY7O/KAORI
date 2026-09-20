@@ -583,21 +583,49 @@ jobs:
               --type slsaprovenance1 \
               "$KAORI_IMAGE_REF" > provenance-attestation-verification.json
 
-          jq -e '
-            .predicate.SPDXID == "SPDXRef-DOCUMENT"
-            and (.predicate.packages | type == "array")
-          ' sbom-attestation-verification.json >/dev/null
+          decode_attestation_statements() {
+            local verification_file="${1:?verification file required}"
+            local statement_file="${2:?statement file required}"
 
-          jq -e \
+            : > "$statement_file"
+            while IFS= read -r payload; do
+              [[ -n "$payload" ]] || continue
+              printf '%s' "$payload" | base64 -d
+              printf '\n'
+            done < <(jq -r '.payload // empty' "$verification_file") > "$statement_file"
+            [[ -s "$statement_file" ]]
+          }
+
+          decode_attestation_statements \
+            sbom-attestation-verification.json \
+            sbom-attestation-statements.jsonl
+          decode_attestation_statements \
+            provenance-attestation-verification.json \
+            provenance-attestation-statements.jsonl
+
+          jq -s -e '
+            any(
+              .[];
+              .predicateType == "https://spdx.dev/Document"
+              and .predicate.SPDXID == "SPDXRef-DOCUMENT"
+              and (.predicate.packages | type == "array")
+            )
+          ' sbom-attestation-statements.jsonl >/dev/null
+
+          jq -s -e \
             --arg source_sha "$ACCEPTED_SHA" \
             --arg candidate_tag "$CANDIDATE_TAG" \
             '
-              .predicate.buildDefinition.externalParameters.candidateTag == $candidate_tag
-              and any(
-                .predicate.buildDefinition.resolvedDependencies[]?;
-                .digest.gitCommit == $source_sha
+              any(
+                .[];
+                .predicateType == "https://slsa.dev/provenance/v1"
+                and .predicate.buildDefinition.externalParameters.candidateTag == $candidate_tag
+                and any(
+                  .predicate.buildDefinition.resolvedDependencies[]?;
+                  .digest.gitCommit == $source_sha
+                )
               )
-            ' provenance-attestation-verification.json >/dev/null
+            ' provenance-attestation-statements.jsonl >/dev/null
 
       - name: Upload Staging Image Evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -608,7 +636,9 @@ jobs:
             kaori-sbom.spdx.json
             kaori-provenance.json
             sbom-attestation-verification.json
+            sbom-attestation-statements.jsonl
             provenance-attestation-verification.json
+            provenance-attestation-statements.jsonl
           if-no-files-found: error
           retention-days: 30
 
