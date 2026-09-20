@@ -510,8 +510,12 @@ jobs:
 
           sbom_sha="sha256:$(sha256sum kaori-sbom.spdx.json | awk '{print $1}')"
           provenance_sha="sha256:$(sha256sum kaori-provenance.json | awk '{print $1}')"
+          sbom_predicate_type="https://spdx.dev/Document"
+          provenance_predicate_type="https://slsa.dev/provenance/v1"
           {
+            printf 'KAORI_SBOM_PREDICATE_TYPE=%s\n' "$sbom_predicate_type"
             printf 'KAORI_SBOM_SHA256=%s\n' "$sbom_sha"
+            printf 'KAORI_PROVENANCE_PREDICATE_TYPE=%s\n' "$provenance_predicate_type"
             printf 'KAORI_PROVENANCE_SHA256=%s\n' "$provenance_sha"
           } >> staging-image.env
           {
