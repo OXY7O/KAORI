@@ -10,14 +10,20 @@ id = "generic-api-key"
 description = "KAORI RBAC module keys are contract identifiers, not credentials"
 condition = "AND"
 regexTarget = "line"
-paths = ['''^app/definitions/catalogs/rbac/access\.yaml$''']
+paths = [
+  '''^app/definitions/catalogs/rbac/access\.yaml$''',
+  '''^app/definitions/catalogs/access/rbac/access\.yaml$''',
+]
 regexes = ['''^\s*-\s*key:\s*(?:k8s_inventory|k8s_operations)\s*$''']
 
 [[rules.allowlists]]
 description = "KAORI integration provider/profile keys are contract identifiers"
 condition = "AND"
 regexTarget = "line"
-paths = ['''^app/definitions/catalogs/integrations/(?:compatibility|object_storage)\.yaml$''']
+paths = [
+  '''^app/definitions/catalogs/integrations/(?:compatibility|object_storage)\.yaml$''',
+  '''^app/definitions/catalogs/integrations/storage/object_storage/contract\.yaml$''',
+]
 regexes = ['''^\s*-\s*key:\s*(?:kubernetes-api-v1|s3_compatible)\s*$''']
 
 [[rules.allowlists]]
@@ -70,14 +76,20 @@ regexes = ['''kubernetes-api-v1''']
 description = "KAORI PromQL profile identifiers are public query contracts"
 condition = "AND"
 regexTarget = "line"
-paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+paths = [
+  '''^app/prometheus/query_profiles/kubernetes_v1\.py$''',
+  '''^app/integrations/observability/metrics_source/query_profiles/kubernetes_v1\.py$''',
+]
 regexes = ['''^PROFILE_KEY\s*=\s*['"]promql-kubernetes-v1['"]\s*$''']
 
 [[rules.allowlists]]
 description = "Historical PromQL profile key is a public query contract"
 condition = "AND"
 regexTarget = "secret"
-paths = ['''^app/prometheus/query_profiles/kubernetes_v1\.py$''']
+paths = [
+  '''^app/prometheus/query_profiles/kubernetes_v1\.py$''',
+  '''^app/integrations/observability/metrics_source/query_profiles/kubernetes_v1\.py$''',
+]
 regexes = ['''^prometheus-kubernetes-v1$''']
 
 [[rules.allowlists]]
