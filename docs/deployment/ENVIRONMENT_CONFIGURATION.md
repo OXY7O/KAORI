@@ -1,6 +1,20 @@
 # KAORI Environment Configuration
 
-KAORI uses one canonical environment-variable contract across environments. Copy `.env.example` to `.env` for development and `.env.production.example` to `.env.production` on the production host. Real environment files and credentials must never be committed.
+KAORI uses one canonical variable inventory with explicit ownership by runtime. The templates are intentionally not identical: development is comprehensive for the Dev Container, the disposable RC-image example is minimal, and production separates application configuration, runtime secrets, deployment-adapter configuration, and generated immutable release identity. Real environment files and credentials must never be committed.
+
+## Environment authorities
+
+Use the template that owns the runtime you are configuring:
+
+- `.env.example` is the comprehensive **development / Dev Container** contract. Copy it to `.env` before opening the Dev Container.
+- `example/kaori/.env.example` is the intentionally minimal **disposable RC-image** example. It may omit optional settings and relies on safe application defaults baked into the image where appropriate; it is not a production template.
+- `deploy/env/app.env.example` owns portable **production application configuration**.
+- `deploy/env/secrets.env.example` owns **production runtime secrets**. Example values must remain placeholders; real credentials must not be committed.
+- `deploy/env/deploy.env.example` owns **deployment-adapter configuration** used by the production deployment machinery.
+- `KAORI_IMAGE`, `APP_VERSION`, `APP_BUILD_SHA`, and `APP_BUILD_DATE` are **generated immutable release identity**. They are supplied by the release process and intentionally do not belong in persistent production templates.
+- Optional feature and provider configuration belongs to its documented application authority when enabled; minimal examples may omit it intentionally.
+
+`.env.production.example` is deprecated and inactive. Do not copy it to create a production environment. Production configuration must use the split authorities under `deploy/env/` plus generated release identity.
 
 ## Naming contract
 
@@ -31,11 +45,11 @@ Scheduled Reports use reusable Notification Channels configured under Integratio
 
 ## Production validation
 
-Before deploying production configuration, run:
+Before deploying production configuration, populate the split production authorities under `deploy/env/`, supply release identity through the release process, and run:
 
 ```bash
 python scripts/verify_environment_contract.py
 python scripts/validate_production_env.py
 ```
 
-`verify_environment_contract.py` prevents application/deployment settings from drifting out of `.env.example` or `.env.production.example`. `validate_production_env.py` validates security-sensitive and operational production values such as URLs, credentials, queue names, worker limits, notification delivery controls, and TLS governance windows.
+`verify_environment_contract.py` protects the one-owner split production contract, development contract, sensitive-key placement, deployment-adapter ownership, generated release identity, and the requirement that `.env.production.example` remain deprecated and inactive. `validate_production_env.py` validates security-sensitive and operational production values such as URLs, credentials, queue names, worker limits, notification delivery controls, and TLS governance windows.
