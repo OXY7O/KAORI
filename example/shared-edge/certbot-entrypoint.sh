@@ -81,13 +81,20 @@ renew_certificates() {
   printf '✅ Shared-edge certificate renewal check complete\n'
 }
 
+next_renewal_epoch=0
+
 while :; do
+  now_epoch="$(date +%s)"
+
   if ensure_site_certificates; then
-    renew_certificates
-    sleep "$renew_interval" &
+    if [ "$now_epoch" -ge "$next_renewal_epoch" ]; then
+      renew_certificates
+      next_renewal_epoch=$((now_epoch + renew_interval))
+    fi
   else
     printf '⚠️ Shared-edge certificate issuance remains incomplete; retrying in %ss\n' "$issue_retry_interval" >&2
-    sleep "$issue_retry_interval" &
   fi
+
+  sleep "$issue_retry_interval" &
   wait $! || true
 done
