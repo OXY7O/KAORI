@@ -65,7 +65,7 @@ Useful VS Code tasks:
 
 ### Toolchain version authority
 
-KAORI development, CI, and frontend-image builds are aligned on **Node 22.23.2** with **npm 10.9.9**. The Dev Container uses the current Node feature major with both versions pinned, while the frontend and CI Docker stages install the same npm version explicitly. Root `package.json` declares `npm@10.9.9` as the package-manager authority.
+KAORI development, CI, and frontend-image builds are aligned on **Node 22.23.2** with **npm 10.9.9**. The Dev Container intentionally preserves its existing locked `ghcr.io/devcontainers/features/node:1` feature digest and pins only the Node version through that feature; `post-create.sh` then installs npm 10.9.9 before any frontend bootstrap. The frontend and CI Docker stages install the same npm version explicitly. Root `package.json` declares `npm@10.9.9` as the package-manager authority. Changing the Dev Container feature major requires regeneration of `.devcontainer/devcontainer-lock.json` through the normal Dev Container tooling and must not be done by hand.
 
 npm 12.0.2 was reviewed but is deliberately **deferred**. Its Node 22 engine floor is satisfied by Node 22.23.2, but adopting npm 12 would introduce a separate package-manager major lifecycle across Dev Container, CI, and frontend builds. KAORI stays on the latest reviewed npm 10 patch for this maintenance line instead.
 
