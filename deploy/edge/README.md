@@ -109,7 +109,7 @@ After cutover:
 - Nginx runs read-only with only its required runtime capabilities.
 - certificate state is writable by Certbot and read-only to Nginx.
 
-The delivery authority is `.github/workflows/deploy-shared-edge.yml`. Push-based runs use `kaori/edge-request`, which must point to the exact admitted `kaori/staging` SHA. Manual runs must be dispatched from `kaori/staging`.
+The delivery authority is `.github/workflows/deploy-shared-edge.yml`. Push-based preparation uses `kaori/edge-prepare-request`; push-based cutover/apply uses `kaori/edge-request`. Both refs must point to the exact admitted `kaori/staging` SHA. Manual runs may also be dispatched from `kaori/staging`.
 
 ## Operator flow for another application
 
