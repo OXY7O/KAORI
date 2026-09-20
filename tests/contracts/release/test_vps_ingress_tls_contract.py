@@ -130,6 +130,10 @@ def test_edge_container_scripts_own_issuance_renewal_and_reload_without_host_mut
     assert '--webroot' in certbot
     assert 'certbot renew' in certbot
     assert 'EDGE_LETSENCRYPT_EMAIL' in certbot
+    assert 'EDGE_CERTBOT_ISSUE_RETRY_SECONDS' in certbot
+    assert 'certificate issuance remains incomplete' in certbot
+    assert 'sleep "$issue_retry_interval"' in certbot
+    assert 'sleep "$renew_interval"' in certbot
 
     combined = f'{nginx}\n{certbot}'
     for forbidden in ('docker.sock', 'sudo ', 'systemctl', 'apt-get', 'usermod'):
