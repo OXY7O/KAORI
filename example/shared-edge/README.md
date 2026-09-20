@@ -99,6 +99,8 @@ bash ./publish-container.sh \
 
 This publication step does not restart the application.
 
+Because the application does not declare `edge-public`, recreating its frontend container removes the host-side edge attachment. After any frontend-container replacement, rerun `publish-container.sh` against the new healthy container before relying on the public route. This rebinding remains an edge/publication operation and must not be hidden inside the application deployment.
+
 After DNS points at the VPS:
 
 ```bash
@@ -144,7 +146,7 @@ bash ./publish-container.sh \
   --client-max-body-size 25m
 ```
 
-The repository file `sites/kaori.env.example` documents the resulting registration.
+The repository file `sites/kaori.env.example` documents the resulting registration. After a future KAORI web-container recreation, locate the new healthy web container and rerun the same `publish-container.sh` command; KAORI deployment itself remains unaware of the public edge.
 
 ## One-time migration from the current KAORI-owned edge
 
