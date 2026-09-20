@@ -7,7 +7,6 @@ ROOT_DIR="$(cd -- "$SCRIPT_DIR/../.." 2>/dev/null && pwd || true)"
 
 deploy_user='kaori-deploy'
 deploy_root='/opt/kaori'
-shared_edge_root='/opt/shared-edge'
 ssh_public_key_file=''
 ssh_port='22'
 app_env_template="${ROOT_DIR:+$ROOT_DIR/deploy/env/app.env.example}"
@@ -152,9 +151,7 @@ install_env_if_missing() {
 prepare_paths_and_environment() {
   install -d -m 0755 /etc/kaori
   install -d -m 0755 -o "$deploy_user" -g "$deploy_group" "$deploy_root" "$deploy_root/releases"
-  install -d -m 0755 -o "$deploy_user" -g "$deploy_group"     "$shared_edge_root" "$shared_edge_root/releases" "$shared_edge_root/config" "$shared_edge_root/config/sites"
-  install -d -m 0700 -o "$deploy_user" -g "$deploy_group"     "$state_dir" "$backup_dir" "$shared_edge_root/state"
-  printf 'shared edge root prepared independently: %s\n' "$shared_edge_root"
+  install -d -m 0700 -o "$deploy_user" -g "$deploy_group" "$state_dir" "$backup_dir"
   install_env_if_missing "$app_env_template" "$app_env_file" 0640
   install_env_if_missing "$secrets_env_template" "$secrets_env_file" 0600
   install_env_if_missing "$deploy_env_template" "$deploy_env_file" 0640
@@ -179,7 +176,6 @@ KAORI SERVER HOST PREPARATION PASS
 
 Deploy user : $deploy_user
 Deploy root : $deploy_root
-Edge root   : $shared_edge_root
 App env     : $app_env_file
 Secrets env : $secrets_env_file
 Deploy env  : $deploy_env_file
