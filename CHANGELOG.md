@@ -30,6 +30,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Cleaned remaining Ruff and djLint formatting drift discovered by the final release gate.
 
 ### Security
+- Tightened HTML CSP/site-isolation headers and documented evidence-backed ZAP DAST warning dispositions without weakening the baseline failure gate.
 - Removed Bandit suppression parser noise and refreshed the reviewed Semgrep CI toolchain while preserving existing SAST rules and severity gates.
 - Demo/example configuration excludes real KAORI Host values, private keys, production credentials, and private integration secrets.
 - Runtime artifacts explicitly exclude demo, CI, test, documentation, and local-development surfaces.
