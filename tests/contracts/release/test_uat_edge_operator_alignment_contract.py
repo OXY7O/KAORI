@@ -1,36 +1,36 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-WORKFLOW = ROOT / '.github' / 'workflows' / 'deploy-staging-host.yml'
-NGINX_README = ROOT / 'deploy' / 'nginx' / 'README.md'
+UAT_WORKFLOW = ROOT / '.github' / 'workflows' / 'deploy-staging-host.yml'
+EDGE_README = ROOT / 'example' / 'shared-edge' / 'README.md'
 
 
-def test_uat_workflow_forwards_letsencrypt_email_from_reviewed_repository_variable() -> None:
-    workflow = WORKFLOW.read_text(encoding='utf-8')
+def test_letsencrypt_configuration_is_not_part_of_kaori_uat_delivery() -> None:
+    uat = UAT_WORKFLOW.read_text(encoding='utf-8')
 
-    assert 'KAORI_LETSENCRYPT_EMAIL: ${{ vars.KAORI_LETSENCRYPT_EMAIL }}' in workflow
-    assert ': "${KAORI_LETSENCRYPT_EMAIL:?Missing KAORI_LETSENCRYPT_EMAIL variable}"' in workflow
-    assert 'letsencrypt_email=' in workflow
-    assert 'export KAORI_LETSENCRYPT_EMAIL="$letsencrypt_email"' in workflow
+    assert 'KAORI_LETSENCRYPT_EMAIL' not in uat
+    assert 'EDGE_LETSENCRYPT_EMAIL' not in uat
+    assert 'deploy/nginx' not in uat
+    assert 'example/shared-edge' not in uat
 
 
-def test_nginx_runbook_describes_compose_managed_edge_not_retired_host_ingress() -> None:
-    readme = NGINX_README.read_text(encoding='utf-8')
+def test_standalone_edge_runbook_documents_independent_multi_application_publication() -> None:
+    readme = EDGE_README.read_text(encoding='utf-8')
 
     required = (
-        'Compose-managed Nginx',
+        'optional reference implementation',
+        'edge-public',
+        '/opt/shared-edge',
+        'publish-container.sh',
+        'kaori-cutover-example.sh',
+        'kaori.cloud',
+        'auto.kaori.cloud',
+        'n8n is **not part of KAORI**',
+        'unknown Host/SNI',
         'Certbot',
-        'web:5000',
-        '/etc/kaori/deploy.env',
-        'KAORI_NGINX_IMAGE',
-        'KAORI_CERTBOT_IMAGE',
-        'https://kaori.cloud',
-        'verify-ingress.sh',
+        'Docker socket',
+        'recreating its frontend container removes the host-side edge attachment',
+        'rerun `publish-container.sh`',
     )
     for marker in required:
         assert marker in readme
-
-    assert 'Host Nginx' not in readme
-    assert 'certbot.timer' not in readme
-    assert 'bootstrap-ingress.sh' not in readme
-    assert '127.0.0.1:5000' not in readme
