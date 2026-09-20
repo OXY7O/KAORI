@@ -44,9 +44,30 @@ Git release tags use `v${APP_VERSION}` for stable releases and `v${APP_VERSION}`
 
 `APP_BUILD_SHA` and `APP_BUILD_DATE` must describe the exact immutable image selected by release evidence. System Information may display these safe values but must never expose credentials, connection strings, provider secrets, or internal service endpoints.
 
-The container image must additionally preserve the equivalent OCI identity labels for version, revision, and creation time so a release candidate can be verified independently from mutable registry tags.
+The container image must additionally preserve the governed OCI identity annotations for source, revision, version, creation time, title, description, documentation, and license identity so a release candidate can be verified independently from mutable registry tags. KAORI's proprietary internal-use license is represented as the SPDX-compatible custom identifier `LicenseRef-KAORI-Internal-Use`, with the repository `LICENSE` file remaining the authoritative license text.
 
 Production host configuration and release identity are separate authorities. `/etc/kaori/.env.production` contains long-lived secrets and runtime configuration and is not rewritten for ordinary application releases. Governed deployment resolves the immutable application image and Git release tag, normalizes that tag to `APP_VERSION` by removing its leading `v`, supplies `APP_BUILD_SHA`/`APP_BUILD_DATE`, and injects those values into the production Compose transaction.
+
+## OCI image and supply-chain evidence contract
+
+The immutable image digest remains the release authority. Mutable tags, README badges, SBOM filenames, provenance filenames, and GitHub Release assets are evidence or navigation surfaces; none may replace the accepted digest.
+
+Each governed RC image must carry these OCI annotations:
+
+- `org.opencontainers.image.source`
+- `org.opencontainers.image.revision`
+- `org.opencontainers.image.version`
+- `org.opencontainers.image.created`
+- `org.opencontainers.image.title`
+- `org.opencontainers.image.description`
+- `org.opencontainers.image.documentation`
+- `org.opencontainers.image.licenses`
+
+After the candidate is pushed and its immutable digest is captured, the RC workflow generates an SPDX JSON SBOM from that digest and a SLSA Provenance v1 predicate describing the accepted source SHA, candidate tag, workflow build type, builder identity, invocation, and build timestamps. Cosign v3.1.3 keyless GitHub OIDC attestations bind both predicates to the immutable digest. Cosign's v3 bundle format stores those attestations as OCI 1.1 artifacts whose manifest `subject` points to the image digest.
+
+The RC workflow must verify both attestations immediately using the exact workflow certificate identity and GitHub OIDC issuer. Stable promotion must independently verify the accepted RC SBOM/provenance attestations before signing/promoting the same digest. Stable promotion must not regenerate SBOM or provenance because that would describe a different evidence event rather than the build that produced the accepted RC.
+
+The stable release manifest records the accepted image digest, build date, and verification-evidence SHA256 values. Those hashes support auditability but do not supersede the registry digest.
 
 ## Changelog Contract
 
@@ -71,8 +92,8 @@ Before a release, move approved entries from `[Unreleased]` to `## [X.Y.Z] - YYY
 7. Create or update `docs/releases/KAORI_X_Y_Z.md` with the approved release scope, deferred work, verification command, and Git tag.
 8. Commit and merge the reviewed release metadata change to `main`.
 9. Start the manual release workflow for `X.Y.Z`; lock the exact approved `main` SHA and rerun the full KAORI CI and release preflight.
-10. **Build the release candidate once** from that locked SHA, publish it first under the commit tag, and capture the immutable registry digest plus SBOM/provenance evidence.
-11. Verify the exact candidate by digest with container vulnerability scanning, fresh-install migration, previous-supported-release upgrade migration, production runtime/worker readiness, full release DAST, and image signing.
+10. **Build the release candidate once** from that locked SHA with the complete OCI annotation set, publish it under the governed RC tag, capture the immutable registry digest, then generate and attest SPDX SBOM plus SLSA Provenance v1 evidence against that digest.
+11. Verify the exact candidate by digest with complete OCI metadata checks, SBOM/provenance attestation verification, container vulnerability scanning, fresh-install migration, previous-supported-release upgrade migration, production runtime/worker readiness, full release DAST, and image signing.
 12. Create or verify the annotated Git tag `vX.Y.Z` at the same approved SHA only after candidate verification succeeds.
 13. **Promote the same immutable digest** to the governed `vX.Y.Z` and `vX.Y` registry aliases without rebuilding the image.
 14. Verify every promoted tag resolves to the captured digest, generate `kaori-release-manifest.json`, and publish the GitHub Release from the approved release evidence.
