@@ -63,7 +63,10 @@ append_proxy_location() {
   out="$1"
   cat >> "$out" <<EOF
     location / {
-        proxy_pass http://$EDGE_UPSTREAM:$EDGE_UPSTREAM_PORT;
+        resolver 127.0.0.11 valid=30s ipv6=off;
+        resolver_timeout 5s;
+        set \$edge_upstream "http://$EDGE_UPSTREAM:$EDGE_UPSTREAM_PORT";
+        proxy_pass \$edge_upstream;
         proxy_http_version 1.1;
 
         proxy_set_header Host \$host;
