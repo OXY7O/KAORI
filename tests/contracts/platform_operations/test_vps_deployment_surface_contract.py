@@ -39,12 +39,11 @@ def test_production_compose_accepts_server_side_environment_file() -> None:
     assert '127.0.0.1' in source
 
 
-def test_server_overlay_keeps_state_private_persistent_and_edge_explicit() -> None:
+def test_server_overlay_keeps_state_private_and_consumes_shared_edge_explicitly() -> None:
     source = _read(COMPOSE_OVERLAY)
     postgres = _service_block(source, 'postgres', 'redis')
     redis = _service_block(source, 'redis', 'validate')
     web = _service_block(source, 'web', 'worker')
-    nginx = _service_block(source, 'nginx', 'certbot')
 
     assert '${KAORI_POSTGRES_IMAGE:?' in postgres
     assert '${KAORI_REDIS_IMAGE:?' in redis
@@ -57,8 +56,12 @@ def test_server_overlay_keeps_state_private_persistent_and_edge_explicit() -> No
     assert 'ports:' not in redis
     assert 'ports: !reset []' in web
     assert 'expose:' in web and '- "5000"' in web
-    assert '"80:8080"' in nginx
-    assert '"443:8443"' in nginx
+    assert 'edge_public:' in web
+    assert '- kaori-web' in web
+    assert '  nginx:' not in source
+    assert '  certbot:' not in source
+    assert 'name: edge-public' in source
+    assert 'external: true' in source
     assert '/var/run/docker.sock' not in source
 
 
@@ -123,6 +126,9 @@ def test_verify_checks_internal_readiness_and_full_runtime_shape() -> None:
     assert 'beat' in source
     assert 'active_queues' in source
     assert 'web unexpectedly publishes a host port' in source
+    assert 'edge-public' in source
+    assert 'kaori-web' in source
+    assert 'must not join shared edge network' in source
 
 
 def test_manual_server_workflow_uses_encrypted_ssh_and_pinned_host_key() -> None:
