@@ -57,8 +57,8 @@ def test_kaori_server_compose_is_only_an_edge_consumer() -> None:
     assert 'kaori_vps_acme_webroot' not in source
 
     assert 'ports: !reset []' in web
-    assert '- kaori_production' in web
-    assert '- edge_public' in web
+    assert 'kaori_production: {}' in web
+    assert 'edge_public:' in web
     assert 'aliases:' in web
     assert '- kaori-web' in web
 
