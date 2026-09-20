@@ -73,7 +73,10 @@ def test_nginx_reconciler_rejects_unknown_hosts_and_proxies_registered_upstreams
     assert 'listen 8080 default_server' in nginx
     assert 'listen 8443 ssl default_server' in nginx
     assert 'ssl_reject_handshake on' in nginx
-    assert 'proxy_pass http://$EDGE_UPSTREAM:$EDGE_UPSTREAM_PORT' in nginx
+    assert 'resolver 127.0.0.11' in nginx
+    assert 'set \\$edge_upstream "http://$EDGE_UPSTREAM:$EDGE_UPSTREAM_PORT";' in nginx
+    assert 'proxy_pass \\$edge_upstream;' in nginx
+    assert 'proxy_pass http://$EDGE_UPSTREAM:$EDGE_UPSTREAM_PORT' not in nginx
     assert 'ssl_protocols TLSv1.2 TLSv1.3' in nginx
     assert 'Strict-Transport-Security' in nginx
     assert 'Content-Security-Policy' not in nginx
