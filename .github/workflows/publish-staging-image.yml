@@ -577,6 +577,22 @@ jobs:
               --type slsaprovenance1 \
               "$KAORI_IMAGE_REF" > provenance-attestation-verification.json
 
+          jq -e '
+            .predicate.SPDXID == "SPDXRef-DOCUMENT"
+            and (.predicate.packages | type == "array")
+          ' sbom-attestation-verification.json >/dev/null
+
+          jq -e \
+            --arg source_sha "$ACCEPTED_SHA" \
+            --arg candidate_tag "$CANDIDATE_TAG" \
+            '
+              .predicate.buildDefinition.externalParameters.candidateTag == $candidate_tag
+              and any(
+                .predicate.buildDefinition.resolvedDependencies[]?;
+                .digest.gitCommit == $source_sha
+              )
+            ' provenance-attestation-verification.json >/dev/null
+
       - name: Upload Staging Image Evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
