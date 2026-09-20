@@ -72,6 +72,20 @@ web_ports="$(docker inspect --format '{{json .NetworkSettings.Ports}}' "$web_cid
 [[ "$web_ports" != *'HostPort'* ]] || fail 'web unexpectedly publishes a host port'
 printf '✅ KAORI web is Docker-network only\n'
 
+docker network inspect edge-public >/dev/null 2>&1 || fail 'shared edge network edge-public is missing'
+web_networks="$(docker inspect --format '{{json .NetworkSettings.Networks}}' "$web_cid")"
+[[ "$web_networks" == *'"edge-public"'* ]] || fail 'web is not attached to shared edge network edge-public'
+web_edge_aliases="$(docker inspect --format '{{json (index .NetworkSettings.Networks "edge-public").Aliases}}' "$web_cid")"
+[[ "$web_edge_aliases" == *'"kaori-web"'* ]] || fail 'web is missing stable shared-edge alias kaori-web'
+
+private_services=(postgres redis worker maintenance-worker runtime-worker validation-worker analytics-worker reports-worker forecasting-worker resolver-execution-worker resolver-maintenance-worker beat)
+for service in "${private_services[@]}"; do
+  cid="$("${compose[@]}" ps -q "$service")"
+  service_networks="$(docker inspect --format '{{json .NetworkSettings.Networks}}' "$cid")"
+  [[ "$service_networks" != *'"edge-public"'* ]] || fail "$service must not join shared edge network edge-public"
+done
+printf '✅ Shared edge network isolation PASS\n'
+
 if [[ -n "$KAORI_EXPECTED_IMAGE" ]]; then
   [[ "$KAORI_EXPECTED_IMAGE" =~ @sha256:[0-9a-f]{64}$ ]] || fail 'KAORI_EXPECTED_IMAGE must be immutable'
   for service in "${application_services[@]}"; do
