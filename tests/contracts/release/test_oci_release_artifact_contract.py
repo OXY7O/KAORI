@@ -95,7 +95,7 @@ def test_release_verification_checks_full_oci_metadata_and_attestations() -> Non
     assert 'SPDXRef-DOCUMENT' in stable
     assert 'RC_SOURCE_SHA' in stable
     assert 'candidateTag' in stable
-    assert 'platform: "linux/amd64"' in stable
+    assert 'verify-labels "$source_ref" "$CANDIDATE_TAG" "$RC_SOURCE_SHA"' in stable
     assert 'Verify Stable Promotion Signature' in stable
     assert 'stable-signature-verification.json' in stable
     assert 'RC_SIGNATURE_VERIFICATION_SHA256' in stable
