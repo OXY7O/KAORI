@@ -278,8 +278,19 @@ generate_release_manifest() {
   local digest="${4:?digest required}"
   local build_date="${5:?build date required}"
   local output="${6:-kaori-release-manifest.json}"
+  local sbom_verification_sha="${7:?SBOM verification SHA256 required}"
+  local provenance_verification_sha="${8:?provenance verification SHA256 required}"
   local short_sha="${sha:0:12}"
   local minor="${version%.*}"
+
+  [[ "$sbom_verification_sha" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+    printf 'Invalid SBOM verification SHA256: %s\n' "$sbom_verification_sha" >&2
+    return 1
+  }
+  [[ "$provenance_verification_sha" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+    printf 'Invalid provenance verification SHA256: %s\n' "$provenance_verification_sha" >&2
+    return 1
+  }
 
   mkdir -p "$(dirname "$output")"
   jq -n \
@@ -293,7 +304,10 @@ generate_release_manifest() {
     --arg version_tag "v$version" \
     --arg minor_tag "v$minor" \
     --arg sha_tag "sha-$short_sha" \
+    --arg sbom_verification_sha "$sbom_verification_sha" \
+    --arg provenance_verification_sha "$provenance_verification_sha" \
     '{
+      schema_version: 2,
       version: $version,
       git_tag: $tag,
       git_sha: $sha,
@@ -302,9 +316,20 @@ generate_release_manifest() {
       digest: $digest,
       promoted_tags: [$version_tag, $minor_tag, $sha_tag],
       build_date: $build_date,
-      sbom: true,
-      provenance: true,
-      signed: true
+      rebuild: false,
+      signed: true,
+      supply_chain: {
+        sbom: {
+          predicate_type: "https://spdx.dev/Document",
+          verified: true,
+          verification_sha256: $sbom_verification_sha
+        },
+        provenance: {
+          predicate_type: "https://slsa.dev/provenance/v1",
+          verified: true,
+          verification_sha256: $provenance_verification_sha
+        }
+      }
     }' > "$output"
 }
 
