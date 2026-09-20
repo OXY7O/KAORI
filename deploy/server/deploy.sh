@@ -70,9 +70,6 @@ oldest="$(printf '%s\n%s\n' "$minimum_compose" "$compose_version" | sort -V | he
 [[ "$oldest" == "$minimum_compose" ]] || fail "Docker Compose $minimum_compose or newer is required for !reset/!override; found $compose_version"
 status '✅' "Compose capability PASS · $compose_version ≥ 2.24.4"
 
-: "${KAORI_PUBLIC_DOMAIN:?Set KAORI_PUBLIC_DOMAIN in /etc/kaori/deploy.env}"
-[[ "$KAORI_PUBLIC_DOMAIN" =~ ^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$ ]] || fail 'KAORI_PUBLIC_DOMAIN is invalid'
-
 validate_image_pin() {
   local name="$1"
   local value="${!name:-}"
@@ -189,17 +186,7 @@ status '🚀' 'Starting KAORI application services'
 KAORI_EXPECTED_IMAGE="$image" bash "$SCRIPT_DIR/verify.sh" --restart-check
 status '✅' 'Internal runtime PASS'
 
-status '🌐' 'Verifying public HTTPS readiness through shared edge'
-https_deadline=$(( $(date +%s) + 180 ))
-while (( $(date +%s) < https_deadline )); do
-  if curl --fail --silent --show-error --max-time 10 "https://$KAORI_PUBLIC_DOMAIN/health/ready" >/dev/null 2>&1; then
-    break
-  fi
-  sleep 5
-done
-curl --fail --silent --show-error --max-time 10 "https://$KAORI_PUBLIC_DOMAIN/health/ready" >/dev/null || \
-  fail 'public HTTPS readiness through shared edge did not become healthy before timeout'
-status '✅' 'Public HTTPS readiness through shared edge PASS'
+status '✅' 'KAORI application runtime healthy · public publication is an independent operation'
 
 if [[ -f "$KAORI_STATE_DIR/current-image" ]]; then
   cp -- "$KAORI_STATE_DIR/current-image" "$KAORI_STATE_DIR/previous-image"
