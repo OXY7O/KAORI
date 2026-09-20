@@ -226,6 +226,5 @@ printf '\n✅ KAORI UAT deployment PASS\n'
 printf '📦 Release  %s\n' "$release_version"
 printf '🔎 SHA      %s\n' "$source_sha"
 printf '🐳 Image    %s\n' "$image"
-printf '🌐 URL      https://%s\n' "$KAORI_PUBLIC_DOMAIN"
-printf '🔒 TLS      PASS\n'
+printf '🩺 Runtime  PASS · internal application health\n'
 printf '💾 Backup   %s\n' "$backup_path"
