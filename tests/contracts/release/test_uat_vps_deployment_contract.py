@@ -116,12 +116,12 @@ def test_server_dependencies_are_private_persistent_and_immutable() -> None:
     assert 'ports:' not in postgres
     assert 'ports:' not in redis
     assert 'ports: !reset []' in web
-    assert 'edge_public:' in web
-    assert '- kaori-web' in web
+    assert 'expose:' in web
+    assert '- "5000"' in web
+    assert 'edge-public' not in source
+    assert 'edge_public' not in source
     assert '  nginx:' not in source
     assert '  certbot:' not in source
-    assert 'name: edge-public' in source
-    assert 'external: true' in source
 
 
 def test_uat_workflow_requires_intentional_rc_and_pinned_ssh_trust() -> None:
@@ -180,7 +180,7 @@ def test_uat_workflow_resolves_evidence_before_opening_ssh() -> None:
     assert 'KAORI_CANDIDATE_TAG' in source
 
 
-def test_deploy_orders_data_safety_before_public_promotion() -> None:
+def test_deploy_orders_data_safety_before_committing_application_release() -> None:
     source = _read(DEPLOY)
     ordered_markers = (
         'Starting PostgreSQL and Redis',
@@ -189,7 +189,7 @@ def test_deploy_orders_data_safety_before_public_promotion() -> None:
         'Running database migrations',
         'Starting KAORI application services',
         'Internal runtime PASS',
-        'Public HTTPS readiness through shared edge PASS',
+        'KAORI application runtime healthy',
         'mv -- "$candidate_release_env" "$active_release_env"',
     )
 
@@ -198,6 +198,8 @@ def test_deploy_orders_data_safety_before_public_promotion() -> None:
     assert 'docker build' not in source
     assert '--pull never' in source
     assert '--remove-orphans' not in source
+    assert 'public HTTPS readiness' not in source
+    assert 'edge-public' not in source
 
 
 def test_database_recovery_surfaces_are_fail_closed() -> None:
