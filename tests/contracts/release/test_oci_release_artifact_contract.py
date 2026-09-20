@@ -51,10 +51,10 @@ def test_rc_publication_attaches_real_sbom_and_provenance_to_immutable_digest() 
     assert '--type spdxjson' in workflow
     assert '--type slsaprovenance1' in workflow
     assert workflow.count('verify-attestation') >= 2
-    assert ".payload // empty" in workflow
-    assert "base64 -d" in workflow
-    assert "sbom-attestation-statements.jsonl" in workflow
-    assert "provenance-attestation-statements.jsonl" in workflow
+    assert '.payload // empty' in workflow
+    assert 'base64 -d' in workflow
+    assert 'sbom-attestation-statements.jsonl' in workflow
+    assert 'provenance-attestation-statements.jsonl' in workflow
     assert 'SPDXRef-DOCUMENT' in workflow
     assert 'resolvedDependencies' in workflow
     assert 'internalParameters' in workflow
@@ -86,10 +86,10 @@ def test_release_verification_checks_full_oci_metadata_and_attestations() -> Non
     assert '[[ "$actual_platform" == \'linux/amd64\' ]]' in release_lib
     assert 'Verify Accepted RC Attestations' in stable
     assert stable.count('verify-attestation') >= 2
-    assert ".payload // empty" in stable
-    assert "base64 -d" in stable
-    assert "accepted-rc-sbom-statement.jsonl" in stable
-    assert "accepted-rc-provenance-statement.jsonl" in stable
+    assert '.payload // empty' in stable
+    assert 'base64 -d' in stable
+    assert 'accepted-rc-sbom-statement.jsonl' in stable
+    assert 'accepted-rc-provenance-statement.jsonl' in stable
     assert '--type spdxjson' in stable
     assert '--type slsaprovenance1' in stable
     assert 'SPDXRef-DOCUMENT' in stable
