@@ -17,27 +17,39 @@ def test_hero_description_budget_enforces_target_and_hard_boundary() -> None:
     validate = namespace['_validate_description_budget']
 
     validate(
-        'Review cluster health, capacity, alerts, inventory, recommendations, and reporting evidence.',
+        'Review cluster health and respond to operational risks quickly.',
         owner='compliant',
     )
 
-    with pytest.raises(AssertionError, match='89-96 characters'):
-        validate('Too short.', owner='short')
+    with pytest.raises(AssertionError, match='7-15 words'):
+        validate('Review cluster health and respond quickly.', owner='too-few-words')
 
-    with pytest.raises(AssertionError, match='89-96 characters'):
+    with pytest.raises(AssertionError, match='7-15 words'):
         validate(
-            'Review this deliberately oversized Hero description because it exceeds the canonical KAORI presentation density and the approved character budget.',
+            'Review cluster health, capacity, alerts, inventory, recommendations, reporting, ownership, readiness, risks, actions, evidence, and daily trends.',
+            owner='too-many-words',
+        )
+
+    with pytest.raises(AssertionError, match='110 characters'):
+        validate(
+            'Review extraordinarily comprehensive observability configurations, interoperability characteristics, and telecommunications dependencies.',
             owner='oversized',
         )
 
+    with pytest.raises(AssertionError, match='action-oriented'):
+        validate(
+            'Current cluster health and operational risks remain visible for review.',
+            owner='not-action-oriented',
+        )
+
     validate(
-        'Review node health, CPU, memory, alerts, configuration, risks, actions, reports, and scope.',
-        owner='word-density-advisory',
+        'Review node health, memory, alerts, configuration, risks, actions, and scope.',
+        owner='preferred-density',
     )
 
     with pytest.raises(AssertionError, match='manual line break'):
         validate(
-            'Review cluster health, capacity, alerts, inventory, recommendations, and\nreporting evidence.',
+            'Review cluster health, capacity, alerts, inventory, and\nreporting evidence.',
             owner='manual-break',
         )
 

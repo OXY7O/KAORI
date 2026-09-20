@@ -55,8 +55,10 @@ def test_hero_documentation_has_one_global_contract_and_one_domain_extension() -
     assert 'same Profile + same State' in global_standard
     assert 'exactly three metadata' in global_standard
     assert 'normal, blocked, and degraded' in global_standard
-    assert '89–96 character' in global_standard
-    assert '10–11 words' in global_standard
+    assert '7–15 words' in global_standard
+    assert '8–12 words' in global_standard
+    assert 'maximum 110 characters' in global_standard
+    assert 'action-oriented' in global_standard
     assert '16 px, regular, 28 px line height' in global_standard
     assert 'Action Icon Box' in global_standard
     assert 'Context Icon Box' in global_standard
