@@ -40,6 +40,7 @@ def verify() -> None:
 
     changelog = read('CHANGELOG.md')
     governance = read('docs/deployment/RELEASE_GOVERNANCE.md')
+    release_lifecycle = read('docs/releases/README.md')
     readme = read('README.md')
     settings_readme = read('app/settings/README.md')
     system_information = read('app/settings/system_information.py')
@@ -120,7 +121,62 @@ def verify() -> None:
     if '## [Unreleased]' not in changelog:
         raise AssertionError('CHANGELOG.md is missing required release structure: ## [Unreleased]')
     stable_heading = re.search(
-        rf'(?m)^## \\[{re.escape(version_line)}\\] - (\\d{{4}}-\\d{{2}}-\\d{{2}})$',
+        rf'(?m)^## \[{re.escape(version_line)}\] - (\d{{4}}-\d{{2}}-\d{{2}})
+        changelog,
+    )
+    stable_notes_path = ROOT / 'docs/releases' / f'KAORI_{version_line.replace(".", "_")}.md'
+    if stable_heading and not stable_notes_path.exists():
+        raise AssertionError(
+            'A stable changelog heading for VERSION requires matching immutable release notes'
+        )
+    allowed_sections = {'Added', 'Changed', 'Fixed', 'Security', 'Removed'}
+    sections = set(re.findall(r'(?m)^### ([A-Za-z]+)$', changelog))
+    if not sections or not sections <= allowed_sections:
+        raise AssertionError('CHANGELOG.md contains missing or unsupported change-section headings')
+
+    for token in (
+        'Semantic Versioning',
+        'APP_VERSION',
+        'APP_BUILD_SHA',
+        'APP_BUILD_DATE',
+        'vX.Y.Z',
+        'quality_gate.sh --all',
+        'verify_final_release.py --all --runtime',
+        'docs/releases/KAORI_X_Y_Z.md',
+        'VERSION',
+        'product version line',
+    ):
+        if token not in governance:
+            raise AssertionError(f'Release governance is missing contract token: {token}')
+
+    for token in ('VERSION', 'product version line', 'vX.Y.Z-rc.N', 'APP_VERSION', 'immutable digest'):
+        if token not in release_lifecycle:
+            raise AssertionError(f'Release lifecycle is missing authority token: {token}')
+
+    if 'docs/deployment/RELEASE_GOVERNANCE.md' not in readme or 'CHANGELOG.md' not in readme:
+        raise AssertionError('Root README must link release governance and changelog')
+    if 'VERSION' not in readme or 'current product version line' not in readme:
+        raise AssertionError('Root README must document VERSION as the current product version line')
+    if 'CHANGELOG.md' not in settings_readme or 'RELEASE_GOVERNANCE.md' not in settings_readme:
+        raise AssertionError('Settings documentation must reference canonical release governance')
+    if 'VERSION' not in settings_readme or 'current product version line' not in settings_readme:
+        raise AssertionError('Settings documentation must distinguish VERSION from deployed APP_VERSION')
+
+    for token in ('APP_VERSION', 'APP_BUILD_SHA', 'APP_BUILD_DATE'):
+        if token not in system_information and token != 'APP_VERSION':
+            raise AssertionError(f'System Information builder must retain {token} support')
+        if token not in system_information_template:
+            raise AssertionError(f'System Information release-governance workspace must mention {token}')
+
+    if 'python scripts/verify_release_governance.py' not in quality_gate:
+        raise AssertionError('quality_gate.sh must execute verify_release_governance.py')
+
+    print('PASS — KAORI Release Governance')
+
+
+if __name__ == '__main__':
+    verify()
+,
         changelog,
     )
     stable_notes_path = ROOT / 'docs/releases' / f'KAORI_{version_line.replace(".", "_")}.md'
