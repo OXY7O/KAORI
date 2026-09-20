@@ -8,6 +8,7 @@ from flask import flash, redirect, render_template, request, url_for
 
 from app.kubernetes.cluster.onboarding import has_registered_clusters
 
+
 def _blocked_page_description(operation_label: str, page_description: str | None) -> str:
     if page_description:
         return page_description.strip()
