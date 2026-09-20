@@ -79,7 +79,7 @@ def test_release_verification_checks_full_oci_metadata_and_attestations() -> Non
     assert 'sbom: true' not in release_lib
     assert 'provenance: true' not in release_lib
     assert 'verification_sha256' in release_lib
-    assert "[[ \"$actual_platform\" == 'linux/amd64' ]]" in release_lib
+    assert '[[ "$actual_platform" == \'linux/amd64\' ]]' in release_lib
     assert 'Verify Accepted RC Attestations' in stable
     assert stable.count('verify-attestation') >= 2
     assert '--type spdxjson' in stable
