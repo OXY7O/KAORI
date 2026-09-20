@@ -13,6 +13,7 @@ on:
           - apply
   push:
     branches:
+      - kaori/edge-prepare-request
       - kaori/edge-request
 
 permissions:
@@ -55,8 +56,14 @@ jobs:
           }
 
           if [[ "$GITHUB_EVENT_NAME" == 'push' ]]; then
-            [[ "$GITHUB_REF" == 'refs/heads/kaori/edge-request' ]] || exit 1
-            mode='apply'
+            if [[ "$GITHUB_REF" == 'refs/heads/kaori/edge-prepare-request' ]]; then
+              mode='prepare'
+            elif [[ "$GITHUB_REF" == 'refs/heads/kaori/edge-request' ]]; then
+              mode='apply'
+            else
+              printf 'Unsupported shared-edge request ref: %s\n' "$GITHUB_REF" >&2
+              exit 1
+            fi
           elif [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
             [[ "$GITHUB_REF" == 'refs/heads/kaori/staging' ]] || {
               printf 'Manual shared-edge deployment must be dispatched from kaori/staging.\n' >&2
