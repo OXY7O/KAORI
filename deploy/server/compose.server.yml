@@ -66,11 +66,6 @@ services:
     ports: !reset []
     expose:
       - "5000"
-    networks: !override
-      kaori_production: {}
-      edge_public:
-        aliases:
-          - kaori-web
 
   worker:
     env_file: !override
@@ -132,11 +127,6 @@ services:
       - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
       - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
 
-
-networks:
-  edge_public:
-    name: edge-public
-    external: true
 
 volumes:
   kaori_vps_postgres_data:
