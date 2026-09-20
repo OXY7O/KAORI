@@ -90,7 +90,7 @@ paths = [
   '''^app/prometheus/query_profiles/kubernetes_v1\.py$''',
   '''^app/integrations/observability/metrics_source/query_profiles/kubernetes_v1\.py$''',
 ]
-regexes = ['''^prometheus-kubernetes-v1$''']
+regexes = ['''^(?:prometheus-kubernetes-v1|promql-kubernetes-v1)$''']
 
 [[rules.allowlists]]
 description = "Historical Prometheus compatibility selector is a profile identifier"
