@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-SERVER_COMPOSE = ROOT / 'deploy' / 'server' / 'compose.server.yml'
+EDGE_COMPOSE = ROOT / 'deploy' / 'edge' / 'compose.edge.yml'
 PRODUCTION_COMPOSE = ROOT / 'compose.production.yml'
 GUNICORN_CONFIG = ROOT / 'gunicorn.conf.py'
 
@@ -19,8 +19,8 @@ def _service_block(text: str, service: str, next_service: str | None = None) -> 
     return text[start:end]
 
 
-def test_nginx_edge_uses_only_minimum_runtime_capabilities() -> None:
-    nginx = _service_block(_read(SERVER_COMPOSE), 'nginx', 'certbot')
+def test_shared_nginx_edge_uses_only_minimum_runtime_capabilities() -> None:
+    nginx = _service_block(_read(EDGE_COMPOSE), 'nginx', 'certbot')
 
     assert 'read_only: true' in nginx
     assert 'no-new-privileges:true' in nginx
@@ -29,7 +29,7 @@ def test_nginx_edge_uses_only_minimum_runtime_capabilities() -> None:
     assert 'cap_add:' in nginx
     for capability in ('CHOWN', 'SETGID', 'SETUID'):
         assert f'- {capability}' in nginx
-    for forbidden in ('NET_ADMIN', 'NET_BIND_SERVICE', 'SYS_ADMIN'):
+    for forbidden in ('NET_ADMIN', 'NET_BIND_SERVICE', 'SYS_ADMIN', '/var/run/docker.sock'):
         assert forbidden not in nginx
     assert '"80:8080"' in nginx
     assert '"443:8443"' in nginx
