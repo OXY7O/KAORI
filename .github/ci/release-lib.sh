@@ -4,6 +4,12 @@ set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 
+OCI_SOURCE_EXPECTED='https://github.com/OXY7O/KAORI'
+OCI_TITLE_EXPECTED='KAORI'
+OCI_DESCRIPTION_EXPECTED='Knowledge, Automation, Operations, Resilience & Intelligence'
+OCI_DOCUMENTATION_EXPECTED='https://github.com/OXY7O/KAORI#readme'
+OCI_LICENSES_EXPECTED='LicenseRef-KAORI-Internal-Use'
+
 strict_semver() {
   local version="${1:?version required}"
   [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
@@ -118,15 +124,50 @@ verify_image_labels() {
   local sha="${3:?sha required}"
 
   docker pull "$ref" >/dev/null
-  local actual_version actual_sha
-  actual_version="$(docker image inspect "$ref" --format '{{ index .Config.Labels "org.opencontainers.image.version" }}')"
-  actual_sha="$(docker image inspect "$ref" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
+
+  local labels actual_source actual_version actual_sha actual_created
+  local actual_title actual_description actual_documentation actual_licenses
+  labels="$(docker image inspect "$ref" --format '{{json .Config.Labels}}')"
+
+  actual_source="$(jq -r '."org.opencontainers.image.source" // empty' <<<"$labels")"
+  actual_version="$(jq -r '."org.opencontainers.image.version" // empty' <<<"$labels")"
+  actual_sha="$(jq -r '."org.opencontainers.image.revision" // empty' <<<"$labels")"
+  actual_created="$(jq -r '."org.opencontainers.image.created" // empty' <<<"$labels")"
+  actual_title="$(jq -r '."org.opencontainers.image.title" // empty' <<<"$labels")"
+  actual_description="$(jq -r '."org.opencontainers.image.description" // empty' <<<"$labels")"
+  actual_documentation="$(jq -r '."org.opencontainers.image.documentation" // empty' <<<"$labels")"
+  actual_licenses="$(jq -r '."org.opencontainers.image.licenses" // empty' <<<"$labels")"
+
+  [[ "$actual_source" == "$OCI_SOURCE_EXPECTED" ]] || {
+    printf 'Candidate source label mismatch: %s\n' "$actual_source" >&2
+    return 1
+  }
   [[ "$actual_version" == "$version" ]] || {
     printf 'Candidate version label mismatch: %s\n' "$actual_version" >&2
     return 1
   }
   [[ "$actual_sha" == "$sha" ]] || {
     printf 'Candidate revision label mismatch: %s\n' "$actual_sha" >&2
+    return 1
+  }
+  [[ "$actual_created" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]] || {
+    printf 'Candidate created label is not RFC3339 UTC: %s\n' "$actual_created" >&2
+    return 1
+  }
+  [[ "$actual_title" == "$OCI_TITLE_EXPECTED" ]] || {
+    printf 'Candidate title label mismatch: %s\n' "$actual_title" >&2
+    return 1
+  }
+  [[ "$actual_description" == "$OCI_DESCRIPTION_EXPECTED" ]] || {
+    printf 'Candidate description label mismatch: %s\n' "$actual_description" >&2
+    return 1
+  }
+  [[ "$actual_documentation" == "$OCI_DOCUMENTATION_EXPECTED" ]] || {
+    printf 'Candidate documentation label mismatch: %s\n' "$actual_documentation" >&2
+    return 1
+  }
+  [[ "$actual_licenses" == "$OCI_LICENSES_EXPECTED" ]] || {
+    printf 'Candidate licenses label mismatch: %s\n' "$actual_licenses" >&2
     return 1
   }
 }
