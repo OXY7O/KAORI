@@ -72,7 +72,9 @@ USER vscode
 CMD ["sleep", "infinity"]
 
 
-FROM node:22-alpine AS frontend-build
+FROM node:22.23.2-alpine AS frontend-build
+
+RUN npm install --global npm@10.9.9
 
 WORKDIR /build
 
