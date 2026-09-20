@@ -126,9 +126,7 @@ def verify() -> None:
     )
     stable_notes_path = ROOT / 'docs/releases' / f'KAORI_{version_line.replace(".", "_")}.md'
     if stable_heading and not stable_notes_path.exists():
-        raise AssertionError(
-            'A stable changelog heading for VERSION requires matching immutable release notes'
-        )
+        raise AssertionError('A stable changelog heading for VERSION requires matching immutable release notes')
     allowed_sections = {'Added', 'Changed', 'Fixed', 'Security', 'Removed'}
     sections = set(re.findall(r'(?m)^### ([A-Za-z]+)$', changelog))
     if not sections or not sections <= allowed_sections:
