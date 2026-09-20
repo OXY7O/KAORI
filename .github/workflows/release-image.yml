@@ -318,21 +318,49 @@ jobs:
               --type slsaprovenance1 \
               "$source_ref" > tmp/ci-artifacts/release/accepted-rc-provenance-attestation.json
 
-          jq -e '
-            .predicate.SPDXID == "SPDXRef-DOCUMENT"
-            and (.predicate.packages | type == "array")
-          ' tmp/ci-artifacts/release/accepted-rc-sbom-attestation.json >/dev/null
+          decode_attestation_statements() {
+            local verification_file="${1:?verification file required}"
+            local statement_file="${2:?statement file required}"
 
-          jq -e \
+            : > "$statement_file"
+            while IFS= read -r payload; do
+              [[ -n "$payload" ]] || continue
+              printf '%s' "$payload" | base64 -d
+              printf '\n'
+            done < <(jq -r '.payload // empty' "$verification_file") > "$statement_file"
+            [[ -s "$statement_file" ]]
+          }
+
+          decode_attestation_statements \
+            tmp/ci-artifacts/release/accepted-rc-sbom-attestation.json \
+            tmp/ci-artifacts/release/accepted-rc-sbom-statement.jsonl
+          decode_attestation_statements \
+            tmp/ci-artifacts/release/accepted-rc-provenance-attestation.json \
+            tmp/ci-artifacts/release/accepted-rc-provenance-statement.jsonl
+
+          jq -s -e '
+            any(
+              .[];
+              .predicateType == "https://spdx.dev/Document"
+              and .predicate.SPDXID == "SPDXRef-DOCUMENT"
+              and (.predicate.packages | type == "array")
+            )
+          ' tmp/ci-artifacts/release/accepted-rc-sbom-statement.jsonl >/dev/null
+
+          jq -s -e \
             --arg source_sha "$RC_SOURCE_SHA" \
             --arg candidate_tag "$CANDIDATE_TAG" \
             '
-              .predicate.buildDefinition.externalParameters.candidateTag == $candidate_tag
-              and any(
-                .predicate.buildDefinition.resolvedDependencies[]?;
-                .digest.gitCommit == $source_sha
+              any(
+                .[];
+                .predicateType == "https://slsa.dev/provenance/v1"
+                and .predicate.buildDefinition.externalParameters.candidateTag == $candidate_tag
+                and any(
+                  .predicate.buildDefinition.resolvedDependencies[]?;
+                  .digest.gitCommit == $source_sha
+                )
               )
-            ' tmp/ci-artifacts/release/accepted-rc-provenance-attestation.json >/dev/null
+            ' tmp/ci-artifacts/release/accepted-rc-provenance-statement.jsonl >/dev/null
 
           {
             printf 'RC_SBOM_VERIFICATION_SHA256=sha256:%s\n' \
