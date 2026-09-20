@@ -384,6 +384,8 @@ jobs:
       - name: Verify Stable Promotion Signature
         shell: bash
         run: |
+          set -Eeuo pipefail
+          mkdir -p tmp/ci-artifacts/release
           source_ref="${REGISTRY_IMAGE}@${RC_IMAGE_DIGEST}"
           docker run --rm \
             --user 0:0 \
@@ -393,7 +395,11 @@ jobs:
             verify \
               --certificate-identity "https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release-image.yml@refs/heads/main" \
               --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-              "$source_ref"
+              "$source_ref" > tmp/ci-artifacts/release/stable-signature-verification.json
+
+          printf 'RC_SIGNATURE_VERIFICATION_SHA256=sha256:%s\n' \
+            "$(sha256sum tmp/ci-artifacts/release/stable-signature-verification.json | awk '{print $1}')" \
+            >> "$GITHUB_ENV"
 
       - name: Create or Verify Stable Git Tag
         env:
@@ -445,6 +451,7 @@ jobs:
             --arg build_date "$RC_BUILD_DATE" \
             --arg sbom_verification_sha "$RC_SBOM_VERIFICATION_SHA256" \
             --arg provenance_verification_sha "$RC_PROVENANCE_VERIFICATION_SHA256" \
+            --arg signature_verification_sha "$RC_SIGNATURE_VERIFICATION_SHA256" \
             '{
               schema_version: 2,
               version: $version,
@@ -465,6 +472,10 @@ jobs:
                   predicate_type: "https://slsa.dev/provenance/v1",
                   verified: true,
                   verification_sha256: $provenance_verification_sha
+                },
+                signature: {
+                  verified: true,
+                  verification_sha256: $signature_verification_sha
                 }
               }
             }' \
@@ -493,6 +504,7 @@ jobs:
           - Runtime, migration, Reports worker, and baseline DAST: **PASS**
           - Accepted RC SPDX SBOM attestation: **PASS**
           - Accepted RC SLSA provenance v1 attestation: **PASS**
+          - Stable digest signature verification: **PASS**
           - Stable tag digest identity: **PASS**
 
           ### Promotion invariant
