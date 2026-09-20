@@ -1,36 +1,38 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-WORKFLOW = ROOT / '.github' / 'workflows' / 'deploy-staging-host.yml'
-NGINX_README = ROOT / 'deploy' / 'nginx' / 'README.md'
+UAT_WORKFLOW = ROOT / '.github' / 'workflows' / 'deploy-staging-host.yml'
+EDGE_WORKFLOW = ROOT / '.github' / 'workflows' / 'deploy-shared-edge.yml'
+EDGE_README = ROOT / 'deploy' / 'edge' / 'README.md'
 
 
-def test_uat_workflow_forwards_letsencrypt_email_from_reviewed_repository_variable() -> None:
-    workflow = WORKFLOW.read_text(encoding='utf-8')
+def test_letsencrypt_bootstrap_belongs_only_to_shared_edge_delivery() -> None:
+    uat = UAT_WORKFLOW.read_text(encoding='utf-8')
+    edge = EDGE_WORKFLOW.read_text(encoding='utf-8')
 
-    assert 'KAORI_LETSENCRYPT_EMAIL: ${{ vars.KAORI_LETSENCRYPT_EMAIL }}' in workflow
-    assert ': "${KAORI_LETSENCRYPT_EMAIL:?Missing KAORI_LETSENCRYPT_EMAIL variable}"' in workflow
-    assert 'letsencrypt_email=' in workflow
-    assert 'export KAORI_LETSENCRYPT_EMAIL="$letsencrypt_email"' in workflow
+    assert 'KAORI_LETSENCRYPT_EMAIL' not in uat
+    assert 'EDGE_LETSENCRYPT_EMAIL_BOOTSTRAP: ${{ vars.KAORI_LETSENCRYPT_EMAIL }}' in edge
+    assert ': "${EDGE_LETSENCRYPT_EMAIL_BOOTSTRAP:?Missing KAORI_LETSENCRYPT_EMAIL bootstrap variable}"' in edge
+    assert 'export EDGE_LETSENCRYPT_EMAIL_BOOTSTRAP="$letsencrypt_email"' in edge
 
 
-def test_nginx_runbook_describes_compose_managed_edge_not_retired_host_ingress() -> None:
-    readme = NGINX_README.read_text(encoding='utf-8')
+def test_shared_edge_runbook_documents_independent_multi_application_ingress() -> None:
+    readme = EDGE_README.read_text(encoding='utf-8')
 
     required = (
-        'Compose-managed Nginx',
+        'Shared Server Edge Gateway',
+        'edge-public',
+        '/opt/shared-edge',
+        'kaori-web',
+        'n8n',
+        'prepare.sh',
+        'apply.sh',
+        'cutover-complete',
+        'unknown Host/SNI',
         'Certbot',
-        'web:5000',
-        '/etc/kaori/deploy.env',
-        'KAORI_NGINX_IMAGE',
-        'KAORI_CERTBOT_IMAGE',
-        'https://kaori.cloud',
-        'verify-ingress.sh',
+        'Docker socket',
     )
     for marker in required:
         assert marker in readme
 
-    assert 'Host Nginx' not in readme
-    assert 'certbot.timer' not in readme
-    assert 'bootstrap-ingress.sh' not in readme
-    assert '127.0.0.1:5000' not in readme
+    assert 'KAORI application redeploy must not interrupt other registered applications' in readme
