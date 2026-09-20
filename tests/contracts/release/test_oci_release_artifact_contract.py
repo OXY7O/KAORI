@@ -51,6 +51,8 @@ def test_rc_publication_attaches_real_sbom_and_provenance_to_immutable_digest() 
     assert workflow.count('verify-attestation') >= 2
     assert 'SPDXRef-DOCUMENT' in workflow
     assert 'resolvedDependencies' in workflow
+    assert 'internalParameters' in workflow
+    assert 'systemParameters' not in workflow
     assert 'candidateTag' in workflow
     assert 'KAORI_IMAGE_REF' in workflow
 
