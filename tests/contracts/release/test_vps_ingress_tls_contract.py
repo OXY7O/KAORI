@@ -73,7 +73,10 @@ def test_nginx_reconciler_rejects_unknown_hosts_and_proxies_registered_upstreams
     assert 'listen 8080 default_server' in nginx
     assert 'listen 8443 ssl default_server' in nginx
     assert 'ssl_reject_handshake on' in nginx
-    assert 'proxy_pass http://$EDGE_UPSTREAM:$EDGE_UPSTREAM_PORT' in nginx
+    assert 'resolver 127.0.0.11' in nginx
+    assert 'set \\$edge_upstream "http://$EDGE_UPSTREAM:$EDGE_UPSTREAM_PORT";' in nginx
+    assert 'proxy_pass \\$edge_upstream;' in nginx
+    assert 'proxy_pass http://$EDGE_UPSTREAM:$EDGE_UPSTREAM_PORT' not in nginx
     assert 'ssl_protocols TLSv1.2 TLSv1.3' in nginx
     assert 'Strict-Transport-Security' in nginx
     assert 'Content-Security-Policy' not in nginx
@@ -127,6 +130,10 @@ def test_edge_container_scripts_own_issuance_renewal_and_reload_without_host_mut
     assert '--webroot' in certbot
     assert 'certbot renew' in certbot
     assert 'EDGE_LETSENCRYPT_EMAIL' in certbot
+    assert 'EDGE_CERTBOT_ISSUE_RETRY_SECONDS' in certbot
+    assert 'certificate issuance remains incomplete' in certbot
+    assert 'sleep "$issue_retry_interval"' in certbot
+    assert 'sleep "$renew_interval"' in certbot
 
     combined = f'{nginx}\n{certbot}'
     for forbidden in ('docker.sock', 'sudo ', 'systemctl', 'apt-get', 'usermod'):

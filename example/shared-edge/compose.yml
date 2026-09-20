@@ -42,6 +42,7 @@ services:
       EDGE_LETSENCRYPT_EMAIL: ${EDGE_LETSENCRYPT_EMAIL:?Set EDGE_LETSENCRYPT_EMAIL in the standalone edge environment}
       EDGE_SITES_DIR: /etc/shared-edge/sites
       EDGE_CERTBOT_RENEW_INTERVAL_SECONDS: ${EDGE_CERTBOT_RENEW_INTERVAL_SECONDS:-43200}
+      EDGE_CERTBOT_ISSUE_RETRY_SECONDS: ${EDGE_CERTBOT_ISSUE_RETRY_SECONDS:-30}
     entrypoint:
       - /bin/sh
       - /usr/local/bin/shared-edge-certbot-entrypoint
