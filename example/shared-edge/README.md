@@ -220,6 +220,7 @@ The reference keeps the important ingress controls from the previous KAORI-owned
 - no Docker socket mounted into Nginx or Certbot;
 - read-only Nginx root filesystem;
 - dropped Linux capabilities with only required runtime capabilities restored;
+- unknown Host/SNI rejection;
 - unknown HTTP Host rejection;
 - unknown TLS SNI rejection;
 - TLS 1.2/1.3;
