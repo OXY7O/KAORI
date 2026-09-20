@@ -1,6 +1,7 @@
 {
   "name": "kaori",
   "private": true,
+  "packageManager": "npm@10.9.9",
   "scripts": {
     "watch-css": "tailwindcss -i ./frontend/styles.css -o ./app/static/css/output.css --minify --watch=always",
     "build-css": "tailwindcss -i ./frontend/styles.css -o ./app/static/css/output.css --minify && node ./scripts/verify_css_build.mjs",

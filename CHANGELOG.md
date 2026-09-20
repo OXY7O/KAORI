@@ -11,6 +11,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Added a canonical KAORI terminal/output readability standard.
 
 ### Changed
+- Aligned Node.js 22.23.2, npm 10.9.9, and Pyright 1.1.414 across development, CI, and frontend build authorities; documented deferred npm 12 and output-sensitive frontend patch updates.
 - Professionalized the KAORI repository front with the canonical logo, restrained badges, clearer product/release/security navigation, and a standalone integration-example entry point.
 - Clarified release-version authority: stable SemVer is bound to the governed release workflow, Git tag, GitHub Release, Docker Hub tag, OCI labels, source lineage, and immutable digest rather than development example defaults.
 - Established root `VERSION` as the current product version line synchronized with the README badge and development fallback while exact RC/stable `APP_VERSION` remains deployment-managed.
