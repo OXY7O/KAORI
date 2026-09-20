@@ -319,8 +319,10 @@ jobs:
               "$source_ref" > tmp/ci-artifacts/release/accepted-rc-provenance-attestation.json
 
           {
-            printf 'RC_SBOM_VERIFICATION_SHA256=sha256:%s\n'               "$(sha256sum tmp/ci-artifacts/release/accepted-rc-sbom-attestation.json | awk '{print $1}')"
-            printf 'RC_PROVENANCE_VERIFICATION_SHA256=sha256:%s\n'               "$(sha256sum tmp/ci-artifacts/release/accepted-rc-provenance-attestation.json | awk '{print $1}')"
+            printf 'RC_SBOM_VERIFICATION_SHA256=sha256:%s\n' \
+              "$(sha256sum tmp/ci-artifacts/release/accepted-rc-sbom-attestation.json | awk '{print $1}')"
+            printf 'RC_PROVENANCE_VERIFICATION_SHA256=sha256:%s\n' \
+              "$(sha256sum tmp/ci-artifacts/release/accepted-rc-provenance-attestation.json | awk '{print $1}')"
           } >> "$GITHUB_ENV"
 
       - name: Scan Exact Accepted Digest
