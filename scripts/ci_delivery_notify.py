@@ -395,7 +395,8 @@ def send_message(
         method='POST',
     )
     try:
-        with urlopen(  # noqa: S310  # nosec B310 - fixed Telegram HTTPS authority
+        # B310 is reviewed here because the request is fixed to Telegram's HTTPS API authority.
+        with urlopen(  # noqa: S310  # nosec B310
             request,
             timeout=max(int(timeout_seconds), 1),
         ) as response:
