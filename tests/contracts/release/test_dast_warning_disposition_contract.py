@@ -35,3 +35,14 @@ def test_zap_fail_new_gate_remains_authoritative() -> None:
     assert 'baseline.json' in baseline
     assert '  -I \\' in baseline
     assert 'PASS — KAORI ZAP Baseline' in baseline
+
+
+def test_corp_is_global_while_document_isolation_remains_html_only() -> None:
+    security = read('app/bootstrap/security.py')
+    before_html, html_branch = security.split("        if response.mimetype == 'text/html':", 1)
+
+    assert "response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'" in before_html
+    assert "response.headers['Cross-Origin-Opener-Policy'] = 'same-origin'" not in before_html
+    assert "response.headers['Cross-Origin-Embedder-Policy'] = 'require-corp'" not in before_html
+    assert "response.headers['Cross-Origin-Opener-Policy'] = 'same-origin'" in html_branch
+    assert "response.headers['Cross-Origin-Embedder-Policy'] = 'require-corp'" in html_branch
