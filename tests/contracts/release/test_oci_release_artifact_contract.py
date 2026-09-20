@@ -34,6 +34,8 @@ def test_rc_publication_attaches_real_sbom_and_provenance_to_immutable_digest() 
 
     assert 'id-token: write' in workflow
     assert 'OCI_CREATED=' in workflow
+    assert '--platform linux/amd64' in workflow
+    assert 'KAORI_IMAGE_PLATFORM=' in workflow
     assert '--build-arg OCI_CREATED="$OCI_CREATED"' in workflow
     assert '--build-arg OCI_TITLE="KAORI"' in workflow
     assert '--build-arg OCI_LICENSES="LicenseRef-KAORI-Internal-Use"' in workflow
@@ -77,6 +79,7 @@ def test_release_verification_checks_full_oci_metadata_and_attestations() -> Non
     assert 'sbom: true' not in release_lib
     assert 'provenance: true' not in release_lib
     assert 'verification_sha256' in release_lib
+    assert "actual_platform == 'linux/amd64'" in release_lib
     assert 'Verify Accepted RC Attestations' in stable
     assert stable.count('verify-attestation') >= 2
     assert '--type spdxjson' in stable
@@ -84,6 +87,7 @@ def test_release_verification_checks_full_oci_metadata_and_attestations() -> Non
     assert 'SPDXRef-DOCUMENT' in stable
     assert 'RC_SOURCE_SHA' in stable
     assert 'candidateTag' in stable
+    assert 'platform: "linux/amd64"' in stable
 
 
 def test_stable_promotion_remains_digest_preserving() -> None:
