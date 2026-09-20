@@ -76,10 +76,7 @@ document.addEventListener('alpine:init', () => {
             if (!this.searchOpen) return
             const input = document.querySelector?.('[data-global-search-input]')
             const isFocusable =
-                input &&
-                typeof input.focus === 'function' &&
-                input.getClientRects().length > 0 &&
-                !input.disabled
+                input && typeof input.focus === 'function' && input.getClientRects().length > 0 && !input.disabled
 
             if (isFocusable) {
                 input.focus({ preventScroll: true })
