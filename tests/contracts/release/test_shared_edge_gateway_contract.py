@@ -157,8 +157,7 @@ def test_kaori_specific_legacy_migration_is_explicitly_an_example() -> None:
 def test_n8n_is_documentation_only_and_not_a_kaori_runtime_dependency() -> None:
     readme = _read(EDGE_README)
     n8n = _read(EDGE_ROOT / 'sites' / 'n8n.env.example')
-    kaori_runtime = '
-'.join((_read(SERVER_COMPOSE), _read(SERVER_DEPLOY), _read(SERVER_VERIFY), _read(UAT_WORKFLOW)))
+    kaori_runtime = '\n'.join((_read(SERVER_COMPOSE), _read(SERVER_DEPLOY), _read(SERVER_VERIFY), _read(UAT_WORKFLOW)))
 
     assert 'auto.kaori.cloud' in readme
     assert 'n8n is **not part of KAORI**' in readme
