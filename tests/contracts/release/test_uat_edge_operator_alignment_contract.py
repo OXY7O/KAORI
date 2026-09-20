@@ -29,6 +29,8 @@ def test_standalone_edge_runbook_documents_independent_multi_application_publica
         'unknown Host/SNI',
         'Certbot',
         'Docker socket',
+        'recreating its frontend container removes the host-side edge attachment',
+        'rerun `publish-container.sh`',
     )
     for marker in required:
         assert marker in readme
