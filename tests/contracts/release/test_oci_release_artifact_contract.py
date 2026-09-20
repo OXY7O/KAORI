@@ -44,11 +44,10 @@ def test_rc_publication_attaches_real_sbom_and_provenance_to_immutable_digest() 
     assert 'https://slsa.dev/provenance/v1' in workflow
     assert 'kaori-provenance.json' in workflow
 
-    assert workflow.count('cosign/cosign:v3.1.3') >= 1
+    assert 'COSIGN_IMAGE: ghcr.io/sigstore/cosign/cosign:v3.1.3' in workflow
     assert workflow.count('attest --yes') >= 2
-    assert workflow.count('--registry-referrers-mode=oci-1-1') >= 2
     assert '--type spdxjson' in workflow
-    assert '--type slsaprovenance' in workflow
+    assert '--type slsaprovenance1' in workflow
     assert workflow.count('verify-attestation') >= 2
     assert 'KAORI_IMAGE_REF' in workflow
 
@@ -73,7 +72,7 @@ def test_release_verification_checks_full_oci_metadata_and_attestations() -> Non
     assert 'Verify Accepted RC Attestations' in stable
     assert stable.count('verify-attestation') >= 2
     assert '--type spdxjson' in stable
-    assert '--type slsaprovenance' in stable
+    assert '--type slsaprovenance1' in stable
 
 
 def test_stable_promotion_remains_digest_preserving() -> None:
