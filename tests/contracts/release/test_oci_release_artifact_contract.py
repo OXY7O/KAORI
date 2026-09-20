@@ -49,6 +49,9 @@ def test_rc_publication_attaches_real_sbom_and_provenance_to_immutable_digest() 
     assert '--type spdxjson' in workflow
     assert '--type slsaprovenance1' in workflow
     assert workflow.count('verify-attestation') >= 2
+    assert 'SPDXRef-DOCUMENT' in workflow
+    assert 'resolvedDependencies' in workflow
+    assert 'candidateTag' in workflow
     assert 'KAORI_IMAGE_REF' in workflow
 
 
@@ -76,6 +79,9 @@ def test_release_verification_checks_full_oci_metadata_and_attestations() -> Non
     assert stable.count('verify-attestation') >= 2
     assert '--type spdxjson' in stable
     assert '--type slsaprovenance1' in stable
+    assert 'SPDXRef-DOCUMENT' in stable
+    assert 'RC_SOURCE_SHA' in stable
+    assert 'candidateTag' in stable
 
 
 def test_stable_promotion_remains_digest_preserving() -> None:
