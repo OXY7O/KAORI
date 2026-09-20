@@ -63,7 +63,8 @@ def test_inventory_hero_descriptions_follow_the_compact_copy_budget() -> None:
     for resource, (description, _context_title) in HERO_EXPECTATIONS.items():
         source = _normalized(_read(resource))
         assert description in source, resource
-        assert 89 <= len(description) <= 96, resource
+        assert 7 <= len(re.findall(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*", description)) <= 15, resource
+        assert len(description) <= 110, resource
         assert 'from committed Kubernetes inventory snapshots' not in source, resource
 
 
@@ -89,6 +90,9 @@ def test_inventory_hero_copy_budget_is_documented() -> None:
     hero_contract = (ROOT / 'docs/design/components/HERO.md').read_text(encoding='utf-8')
 
     assert '# KAORI Hero Component Standard v1.7' in hero_contract
-    assert '89–96 character target' in hero_contract
+    assert '7–15 words' in hero_contract
+    assert '8–12 words' in hero_contract
+    assert 'maximum 110 characters' in hero_contract
+    assert 'action-oriented' in hero_contract
     assert 'right-panel title' in hero_contract
     assert 'metric helper: optional' in hero_contract

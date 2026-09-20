@@ -8,17 +8,11 @@ from flask import flash, redirect, render_template, request, url_for
 
 from app.kubernetes.cluster.onboarding import has_registered_clusters
 
-MINIMUM_HERO_DESCRIPTION_CHARACTERS = 89
-
 
 def _blocked_page_description(operation_label: str, page_description: str | None) -> str:
-    description = (
-        page_description or f'{operation_label} requires a registered Kubernetes cluster and canonical connection.'
-    )
-    description = description.strip()
-    if len(description) >= MINIMUM_HERO_DESCRIPTION_CHARACTERS:
-        return description
-    return f'{description.rstrip(".")} in KAORI.'
+    if page_description:
+        return page_description.strip()
+    return f'Review {operation_label} prerequisites by registering a Kubernetes cluster and canonical connection.'
 
 
 def cluster_required[ViewT: Callable[..., Any]](
