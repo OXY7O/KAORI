@@ -73,12 +73,21 @@ def test_runtime_artifact_boundary_is_application_only() -> None:
 
 
 def test_release_authority_and_changelog_are_explicit() -> None:
+    version_line = _read('VERSION').strip()
     release_doc = _read('docs/releases/README.md')
-    assert 'Stable Semantic Version' in release_doc
+    readme = _read('README.md')
+    env_example = _read('.env.example')
+
+    assert version_line == '0.2.0'
+    assert 'product version line' in release_doc
+    assert 'vX.Y.Z-rc.N' in release_doc
+    assert 'APP_VERSION' in release_doc
     assert 'Docker Hub' in release_doc
     assert 'immutable OCI digest' in release_doc
     assert 'without rebuilding application bits' in release_doc
     assert 'kaori-runtime-vX.Y.Z.zip' in release_doc
+    assert f'Version-{version_line}-7C3AED' in readme
+    assert f'APP_VERSION={version_line}' in env_example
 
     changelog = _read('CHANGELOG.md')
     assert '## [Unreleased]' in changelog
