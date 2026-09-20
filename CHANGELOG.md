@@ -13,6 +13,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 ### Changed
 - Professionalized the KAORI repository front with the canonical logo, restrained badges, clearer product/release/security navigation, and a standalone integration-example entry point.
 - Clarified release-version authority: stable SemVer is bound to the governed release workflow, Git tag, GitHub Release, Docker Hub tag, OCI labels, source lineage, and immutable digest rather than development example defaults.
+- Established root `VERSION` as the current product version line synchronized with the README badge and development fallback while exact RC/stable `APP_VERSION` remains deployment-managed.
 - Standardized Kubernetes and Object Storage operational dashboards as the KAORI dashboard-family reference, including aligned layout, concise operational copy, and a governed Reporting Control block.
 - Refined Intelligence work-inbox, accepted-risk, Rule Catalog, and posture-summary presentation while preserving canonical evidence and governance boundaries.
 - Simplified Object Storage Analytics PDF output into a management-oriented overview and strengthened analytics PDF readability/canvas-safety rules.
