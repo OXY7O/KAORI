@@ -6,8 +6,8 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-MINIMUM_HERO_DESCRIPTION = 'Review cluster health, capacity, alerts, inventory, recommendations, and report evidence.'
-MAXIMUM_HERO_DESCRIPTION = (
+MINIMUM_HERO_DESCRIPTION = 'Review cluster health, capacity, alerts, and readiness.'
+PREFERRED_HERO_DESCRIPTION = (
     'Review report execution, artifact readiness, storage availability, and retained lifecycle state.'
 )
 
@@ -54,15 +54,15 @@ def test_repository_front_uses_stable_professional_badges_and_global_architectur
     assert 'Platform Capabilities' in readme
 
 
-def test_hero_v17_accepts_approved_reference_density_and_rejects_shorter_copy() -> None:
+def test_hero_v17_accepts_uat_description_contract_and_rejects_shorter_copy() -> None:
     namespace = runpy.run_path(str(ROOT / 'scripts' / 'verify_hero_component_standard.py'))
     validate = namespace['_validate_description_budget']
 
     validate(MINIMUM_HERO_DESCRIPTION, owner='minimum-reference')
-    validate(MAXIMUM_HERO_DESCRIPTION, owner='maximum-reference')
+    validate(PREFERRED_HERO_DESCRIPTION, owner='preferred-reference')
 
-    with pytest.raises(AssertionError, match='89-96 characters'):
-        validate('One two three four five six seven eight nine ten.', owner='too-short')
+    with pytest.raises(AssertionError, match='7-15 words'):
+        validate('Review cluster health, capacity, and readiness.', owner='too-short')
 
 
 def test_hero_v17_operational_metadata_state_contract_is_executable() -> None:
