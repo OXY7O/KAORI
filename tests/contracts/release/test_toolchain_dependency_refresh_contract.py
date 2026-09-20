@@ -38,25 +38,20 @@ def test_pyright_is_reproducibly_pinned() -> None:
     assert 'pyright>=1.1.400,<2' not in dev_lock
 
 
-def test_low_risk_frontend_patch_refresh_is_locked() -> None:
+def test_frontend_dependency_lock_remains_package_manager_owned() -> None:
     package = json.loads(read('package.json'))
     package_lock = json.loads(read('package-lock.json'))
 
-    expected = {
-        '@tailwindcss/cli': '4.3.3',
-        'tailwindcss': '4.3.3',
-        'prettier': '3.9.8',
-    }
-
-    for name, version in expected.items():
-        assert package['devDependencies'][name] == version
-        assert package_lock['packages']['']['devDependencies'][name] == version
+    assert package['devDependencies'] == package_lock['packages']['']['devDependencies']
 
 
 def test_npm_12_major_upgrade_is_deliberately_deferred() -> None:
     development = read('docs/DEVELOPMENT.md')
 
     assert 'npm 12.0.2' in development
+    assert 'Tailwind 4.3.3' in development
+    assert 'Prettier 3.9.8' in development
     assert 'deferred' in development.lower()
     assert 'Node 22.23.2' in development
     assert 'npm 10.9.9' in development
+    assert 'normal package-manager workflow' in development
