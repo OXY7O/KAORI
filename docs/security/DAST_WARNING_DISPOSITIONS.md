@@ -12,7 +12,7 @@ Current evidence source: KAORI staging Runtime & DAST, ZAP 2.17.0.
 | 10109 — Modern Web Application | Informational discovery | ZAP identifies the application as modern/dynamic. Retain as scanner evidence; it is not a defect by itself. |
 | 10111 — Authentication Request Identified | Informational authentication-helper evidence | ZAP has identified the login request. Retain as useful authentication-discovery evidence rather than suppressing it as a vulnerability. |
 | 10112 — Session Management Response Identified | Informational authentication-helper evidence | ZAP has identified KAORI session handling from responses. Retain as useful discovery evidence. |
-| 90004-2 — Cross-Origin-Embedder-Policy Header Missing or Invalid | Hardened | KAORI's core browser assets are self-hosted and SSO uses top-level navigation rather than popup/iframe flows. HTML responses now emit `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Embedder-Policy: require-corp`, and `Cross-Origin-Resource-Policy: same-origin`. Runtime regression tests lock these headers. |
+| 90004-2 — Cross-origin isolation headers | Hardened with staged evidence | KAORI's core browser assets are self-hosted and SSO uses top-level navigation rather than popup/iframe flows. CI #843 proved HTML COEP/COOP removed the prior COEP finding, then exposed CORP-missing on resource responses. `Cross-Origin-Resource-Policy: same-origin` is therefore applied to all responses, while `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` remain HTML/document-only. Runtime regression tests lock this boundary. |
 
 ## Centralized response-security contract
 
@@ -28,9 +28,9 @@ The HTML baseline is:
 - `object-src 'none'`;
 - `Cross-Origin-Opener-Policy: same-origin`;
 - `Cross-Origin-Embedder-Policy: require-corp`;
-- `Cross-Origin-Resource-Policy: same-origin`.
+- `Cross-Origin-Resource-Policy: same-origin` on all responses.
 
-Static files do not need document-level COEP/COOP headers; they continue to receive MIME-sniffing protection.
+Static/resource responses receive CORP plus MIME-sniffing protection, but do not receive document-level COEP/COOP headers.
 
 ## Scanner authority
 
