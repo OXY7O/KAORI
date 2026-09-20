@@ -79,7 +79,7 @@ def test_release_verification_checks_full_oci_metadata_and_attestations() -> Non
     assert 'sbom: true' not in release_lib
     assert 'provenance: true' not in release_lib
     assert 'verification_sha256' in release_lib
-    assert "actual_platform == 'linux/amd64'" in release_lib
+    assert "[[ \"$actual_platform\" == 'linux/amd64' ]]" in release_lib
     assert 'Verify Accepted RC Attestations' in stable
     assert stable.count('verify-attestation') >= 2
     assert '--type spdxjson' in stable
@@ -88,6 +88,10 @@ def test_release_verification_checks_full_oci_metadata_and_attestations() -> Non
     assert 'RC_SOURCE_SHA' in stable
     assert 'candidateTag' in stable
     assert 'platform: "linux/amd64"' in stable
+    assert 'Verify Stable Promotion Signature' in stable
+    assert 'stable-signature-verification.json' in stable
+    assert 'RC_SIGNATURE_VERIFICATION_SHA256' in stable
+    assert 'signature_verification_sha' in stable
 
 
 def test_stable_promotion_remains_digest_preserving() -> None:
