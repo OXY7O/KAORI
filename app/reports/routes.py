@@ -63,7 +63,7 @@ def handle_reports_exception(exc: Exception) -> ResponseReturnValue:
     )
     return render_reports_unavailable(
         page_title='Reports Temporarily Unavailable',
-        description='KAORI could not complete reporting while preserving report records and error boundaries safely.',
+        description='Review reporting failure details while preserving report records and error boundaries.',
         reason='A reporting dependency did not respond. The technical exception was recorded in server logs and is not exposed to the user.',
         retry_url=url_for('reports.overview'),
     )
