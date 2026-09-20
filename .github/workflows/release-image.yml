@@ -318,6 +318,22 @@ jobs:
               --type slsaprovenance1 \
               "$source_ref" > tmp/ci-artifacts/release/accepted-rc-provenance-attestation.json
 
+          jq -e '
+            .predicate.SPDXID == "SPDXRef-DOCUMENT"
+            and (.predicate.packages | type == "array")
+          ' tmp/ci-artifacts/release/accepted-rc-sbom-attestation.json >/dev/null
+
+          jq -e \
+            --arg source_sha "$RC_SOURCE_SHA" \
+            --arg candidate_tag "$CANDIDATE_TAG" \
+            '
+              .predicate.buildDefinition.externalParameters.candidateTag == $candidate_tag
+              and any(
+                .predicate.buildDefinition.resolvedDependencies[]?;
+                .digest.gitCommit == $source_sha
+              )
+            ' tmp/ci-artifacts/release/accepted-rc-provenance-attestation.json >/dev/null
+
           {
             printf 'RC_SBOM_VERIFICATION_SHA256=sha256:%s\n' \
               "$(sha256sum tmp/ci-artifacts/release/accepted-rc-sbom-attestation.json | awk '{print $1}')"
