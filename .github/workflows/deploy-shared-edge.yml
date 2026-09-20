@@ -1,0 +1,213 @@
+name: KAORI Shared Edge Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Shared-edge operation
+        required: true
+        default: apply
+        type: choice
+        options:
+          - prepare
+          - apply
+  push:
+    branches:
+      - kaori/edge-request
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: kaori-shared-edge-deploy
+  cancel-in-progress: false
+
+jobs:
+  admission:
+    name: Edge Source Admission
+    runs-on: [self-hosted, linux, x64, platform-ci]
+    timeout-minutes: 10
+    outputs:
+      accepted_sha: ${{ steps.source.outputs.accepted_sha }}
+      mode: ${{ steps.source.outputs.mode }}
+    steps:
+      - name: Resolve Exact Admitted Staging Source
+        id: source
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_MODE: ${{ inputs.mode }}
+        run: |
+          set -Eeuo pipefail
+          api_root="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          headers=(
+            --header "Authorization: Bearer ${GH_TOKEN}"
+            --header 'Accept: application/vnd.github+json'
+            --header 'X-GitHub-Api-Version: 2022-11-28'
+          )
+
+          staging_json="$(curl --fail-with-body --silent --show-error "${headers[@]}"             "${api_root}/git/ref/heads/kaori/staging")"
+          accepted_sha="$(jq -r '.object.sha' <<<"$staging_json")"
+          [[ "$accepted_sha" =~ ^[0-9a-f]{40}$ ]] || {
+            printf 'Unable to resolve current kaori/staging SHA.\n' >&2
+            exit 1
+          }
+
+          if [[ "$GITHUB_EVENT_NAME" == 'push' ]]; then
+            [[ "$GITHUB_REF" == 'refs/heads/kaori/edge-request' ]] || exit 1
+            mode='apply'
+          elif [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
+            [[ "$GITHUB_REF" == 'refs/heads/kaori/staging' ]] || {
+              printf 'Manual shared-edge deployment must be dispatched from kaori/staging.\n' >&2
+              exit 1
+            }
+            mode="$REQUESTED_MODE"
+          else
+            printf 'Unsupported shared-edge deployment event: %s\n' "$GITHUB_EVENT_NAME" >&2
+            exit 1
+          fi
+
+          [[ "$mode" == 'prepare' || "$mode" == 'apply' ]] || {
+            printf 'Unsupported shared-edge operation: %s\n' "$mode" >&2
+            exit 1
+          }
+          [[ "$GITHUB_SHA" == "$accepted_sha" ]] || {
+            printf 'Shared-edge request SHA %s is stale; current staging is %s.\n' "$GITHUB_SHA" "$accepted_sha" >&2
+            exit 1
+          }
+
+          quality_json="$(curl --fail-with-body --silent --show-error "${headers[@]}"             "${api_root}/actions/workflows/quality.yml/runs?branch=kaori%2Fstaging&event=push&per_page=100")"
+          quality="$(jq -c --arg sha "$accepted_sha"             '[.workflow_runs[] | select(.head_sha == $sha and .status == "completed" and .conclusion == "success")] | sort_by(.run_number) | last // empty'             <<<"$quality_json")"
+          [[ -n "$quality" ]] || {
+            printf 'Exact successful KAORI CI evidence is missing for shared-edge source %s.\n' "$accepted_sha" >&2
+            exit 1
+          }
+
+          {
+            printf 'accepted_sha=%s\n' "$accepted_sha"
+            printf 'mode=%s\n' "$mode"
+          } >> "$GITHUB_OUTPUT"
+          printf 'Shared-edge source admitted: %s mode=%s\n' "$accepted_sha" "$mode"
+
+  deploy:
+    name: Deploy Shared Edge
+    needs: admission
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    environment: uat
+    timeout-minutes: 30
+    env:
+      KAORI_HOST: ${{ vars.KAORI_HOST }}
+      KAORI_HOST_USER: ${{ vars.KAORI_HOST_USER }}
+      KAORI_HOST_PORT: ${{ vars.KAORI_HOST_PORT }}
+      SHARED_EDGE_HOST_ROOT: ${{ vars.KAORI_SHARED_EDGE_HOST_ROOT }}
+      EDGE_LETSENCRYPT_EMAIL_BOOTSTRAP: ${{ vars.KAORI_LETSENCRYPT_EMAIL }}
+      KAORI_HOST_SSH_PRIVATE_KEY: ${{ secrets.KAORI_HOST_SSH_PRIVATE_KEY }}
+      KAORI_HOST_SSH_PASSPHRASE: ${{ secrets.KAORI_HOST_SSH_PASSPHRASE }}
+      KAORI_HOST_KNOWN_HOSTS: ${{ secrets.KAORI_HOST_KNOWN_HOSTS }}
+      ACCEPTED_SHA: ${{ needs.admission.outputs.accepted_sha }}
+      EDGE_MODE: ${{ needs.admission.outputs.mode }}
+    steps:
+      - name: Check Out Admitted Edge Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.admission.outputs.accepted_sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Validate Edge Deployment Inputs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          : "${KAORI_HOST:?Missing KAORI_HOST variable}"
+          : "${KAORI_HOST_USER:?Missing KAORI_HOST_USER variable}"
+          : "${KAORI_HOST_SSH_PRIVATE_KEY:?Missing KAORI_HOST_SSH_PRIVATE_KEY secret}"
+          : "${KAORI_HOST_SSH_PASSPHRASE:?Missing KAORI_HOST_SSH_PASSPHRASE secret}"
+          : "${KAORI_HOST_KNOWN_HOSTS:?Missing KAORI_HOST_KNOWN_HOSTS secret}"
+          : "${EDGE_LETSENCRYPT_EMAIL_BOOTSTRAP:?Missing KAORI_LETSENCRYPT_EMAIL bootstrap variable}"
+          [[ "$KAORI_HOST_USER" =~ ^[A-Za-z0-9._-]+$ ]] || exit 1
+          port="${KAORI_HOST_PORT:-22}"
+          [[ "$port" =~ ^[0-9]{1,5}$ ]] && (( port >= 1 && port <= 65535 )) || exit 1
+          edge_root="${SHARED_EDGE_HOST_ROOT:-/opt/shared-edge}"
+          [[ "$edge_root" =~ ^/[A-Za-z0-9._/-]+$ && "$edge_root" != '/' ]] || exit 1
+          [[ "$EDGE_MODE" == 'prepare' || "$EDGE_MODE" == 'apply' ]] || exit 1
+
+      - name: Deploy via Pinned SSH Trust
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          key_file="$(mktemp)"
+          known_hosts_file="$(mktemp)"
+          askpass_file="$(mktemp)"
+          agent_started=false
+          cleanup() {
+            [[ "$agent_started" == 'false' ]] || ssh-agent -k >/dev/null 2>&1 || true
+            rm -f -- "$key_file" "$known_hosts_file" "$askpass_file"
+          }
+          trap cleanup EXIT INT TERM HUP
+
+          printf '%s\n' "$KAORI_HOST_SSH_PRIVATE_KEY" > "$key_file"
+          printf '%s\n' "$KAORI_HOST_KNOWN_HOSTS" > "$known_hosts_file"
+          chmod 600 "$key_file" "$known_hosts_file"
+          cat > "$askpass_file" <<'ASKPASS'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          printf '%s\n' "$KAORI_HOST_SSH_PASSPHRASE"
+          ASKPASS
+          chmod 700 "$askpass_file"
+
+          eval "$(ssh-agent -s)" >/dev/null
+          agent_started=true
+          export SSH_ASKPASS="$askpass_file"
+          export SSH_ASKPASS_REQUIRE=force
+          export DISPLAY=:0
+          setsid -w ssh-add "$key_file" </dev/null >/dev/null
+
+          port="${KAORI_HOST_PORT:-22}"
+          edge_root="${SHARED_EDGE_HOST_ROOT:-/opt/shared-edge}"
+          remote_release="$edge_root/releases/$ACCEPTED_SHA"
+          target="$KAORI_HOST_USER@$KAORI_HOST"
+          ssh_opts=(-p "$port" -i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$known_hosts_file")
+          scp_opts=(-P "$port" -i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$known_hosts_file")
+
+          run_remote_script() {
+            ssh "${ssh_opts[@]}" "$target" 'bash -s'
+          }
+
+          {
+            printf 'set -Eeuo pipefail\n'
+            printf 'remote_release=%q\n' "$remote_release"
+            printf 'edge_root=%q\n' "$edge_root"
+            cat <<'REMOTE_PREPARE'
+          mkdir -p -- "$remote_release/deploy" "$edge_root/releases" "$edge_root/config/sites" "$edge_root/state"
+          REMOTE_PREPARE
+          } | run_remote_script
+
+          scp "${scp_opts[@]}" -r deploy/edge "$target:$remote_release/deploy/"
+
+          {
+            printf 'set -Eeuo pipefail\n'
+            printf 'remote_release=%q\n' "$remote_release"
+            cat <<'REMOTE_PERMISSIONS'
+          chmod 755 -- "$remote_release"/deploy/edge/*.sh
+          REMOTE_PERMISSIONS
+          } | run_remote_script
+
+          {
+            printf 'set -Eeuo pipefail\n'
+            printf 'remote_release=%q\n' "$remote_release"
+            printf 'edge_root=%q\n' "$edge_root"
+            printf 'edge_mode=%q\n' "$EDGE_MODE"
+            printf 'letsencrypt_email=%q\n' "$EDGE_LETSENCRYPT_EMAIL_BOOTSTRAP"
+            cat <<'REMOTE_DEPLOY'
+          export EDGE_ROOT="$edge_root"
+          export EDGE_LETSENCRYPT_EMAIL_BOOTSTRAP="$letsencrypt_email"
+          edge_script_root="$remote_release/deploy/edge"
+          if [[ "$edge_mode" == 'prepare' ]]; then
+            bash "$edge_script_root/prepare.sh"
+          else
+            bash "$edge_script_root/apply.sh"
+          fi
+          REMOTE_DEPLOY
+          } | run_remote_script
