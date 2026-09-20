@@ -15,14 +15,22 @@ def test_node_and_npm_toolchain_is_exact_and_aligned() -> None:
     dockerfile = read('Dockerfile')
     ci_dockerfile = read('.github/ci/Dockerfile')
     devcontainer = json.loads(read('.devcontainer/devcontainer.json'))
+    devcontainer_lock = json.loads(read('.devcontainer/devcontainer-lock.json'))
+    post_create = read('.devcontainer/post-create.sh')
     package = json.loads(read('package.json'))
 
-    node_feature = devcontainer['features']['ghcr.io/devcontainers/features/node:2']
+    node_feature = devcontainer['features']['ghcr.io/devcontainers/features/node:1']
 
     assert f'FROM node:{NODE_VERSION}-alpine AS frontend-build' in dockerfile
     assert f'FROM node:{NODE_VERSION}-bookworm-slim AS node-runtime' in ci_dockerfile
     assert node_feature['version'] == NODE_VERSION
-    assert node_feature['npmVersion'] == NPM_VERSION
+    assert 'npmVersion' not in node_feature
+    assert 'ghcr.io/devcontainers/features/node:1' in devcontainer_lock['features']
+    assert 'ghcr.io/devcontainers/features/node:2' not in devcontainer_lock['features']
+    assert f'sudo npm install --global npm@{NPM_VERSION}' in post_create
+    assert post_create.index(f'sudo npm install --global npm@{NPM_VERSION}') < post_create.index(
+        'bash .devcontainer/ensure-frontend.sh --install-always'
+    )
     assert package['packageManager'] == f'npm@{NPM_VERSION}'
     assert f'npm@{NPM_VERSION}' in dockerfile
     assert f'npm@{NPM_VERSION}' in ci_dockerfile
