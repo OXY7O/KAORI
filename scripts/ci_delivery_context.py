@@ -41,7 +41,8 @@ def github_api_get(*, path: str, token: str) -> Any:
         method='GET',
     )
     try:
-        with urlopen(  # noqa: S310  # nosec B310 - fixed GitHub HTTPS authority
+        # B310 is reviewed here because the request is fixed to GitHub's HTTPS API authority.
+        with urlopen(  # noqa: S310  # nosec B310
             request,
             timeout=10,
         ) as response:
