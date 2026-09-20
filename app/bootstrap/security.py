@@ -64,6 +64,7 @@ def register_security_headers(app: Flask) -> None:
         response.headers['X-Frame-Options'] = 'DENY'
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['Permissions-Policy'] = _PERMISSIONS_POLICY
+        response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
 
         if response.mimetype == 'text/html':
             nonce = g.csp_nonce
@@ -71,6 +72,5 @@ def register_security_headers(app: Flask) -> None:
             response.headers['Content-Security-Policy'] = _content_security_policy(nonce)
             response.headers['Cross-Origin-Opener-Policy'] = 'same-origin'
             response.headers['Cross-Origin-Embedder-Policy'] = 'require-corp'
-            response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
 
         return response
