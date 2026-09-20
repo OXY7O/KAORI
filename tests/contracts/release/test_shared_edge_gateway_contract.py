@@ -203,10 +203,13 @@ def test_shared_edge_has_a_dedicated_delivery_workflow() -> None:
 
     assert 'name: KAORI Shared Edge Deployment' in workflow
     assert 'workflow_dispatch:' in workflow
+    assert 'kaori/edge-prepare-request' in workflow
     assert 'kaori/edge-request' in workflow
     assert 'StrictHostKeyChecking=yes' in workflow
     assert 'deploy/edge' in workflow
     assert '/opt/shared-edge' in workflow
+    assert "mode='prepare'" in workflow
+    assert "mode='apply'" in workflow
     assert 'prepare.sh' in workflow
     assert 'apply.sh' in workflow
     assert 'deploy/server/deploy.sh' not in workflow
