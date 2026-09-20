@@ -202,7 +202,6 @@ jobs:
       KAORI_HOST_USER: ${{ vars.KAORI_HOST_USER }}
       KAORI_HOST_PORT: ${{ vars.KAORI_HOST_PORT }}
       KAORI_HOST_DEPLOY_ROOT: ${{ vars.KAORI_HOST_DEPLOY_ROOT }}
-      KAORI_LETSENCRYPT_EMAIL: ${{ vars.KAORI_LETSENCRYPT_EMAIL }}
       KAORI_HOST_SSH_PRIVATE_KEY: ${{ secrets.KAORI_HOST_SSH_PRIVATE_KEY }}
       KAORI_HOST_SSH_PASSPHRASE: ${{ secrets.KAORI_HOST_SSH_PASSPHRASE }}
       KAORI_HOST_KNOWN_HOSTS: ${{ secrets.KAORI_HOST_KNOWN_HOSTS }}
@@ -225,7 +224,6 @@ jobs:
           set -Eeuo pipefail
           : "${KAORI_HOST:?Missing KAORI_HOST variable}"
           : "${KAORI_HOST_USER:?Missing KAORI_HOST_USER variable}"
-          : "${KAORI_LETSENCRYPT_EMAIL:?Missing KAORI_LETSENCRYPT_EMAIL variable}"
           : "${KAORI_HOST_SSH_PRIVATE_KEY:?Missing KAORI_HOST_SSH_PRIVATE_KEY secret}"
           : "${KAORI_HOST_SSH_PASSPHRASE:?Missing KAORI_HOST_SSH_PASSPHRASE secret}"
           : "${KAORI_HOST_KNOWN_HOSTS:?Missing KAORI_HOST_KNOWN_HOSTS secret}"
@@ -298,14 +296,12 @@ jobs:
 
           scp "${scp_opts[@]}" compose.production.yml "$target:$remote_release/compose.production.yml"
           scp "${scp_opts[@]}" -r deploy/server "$target:$remote_release/deploy/"
-          scp "${scp_opts[@]}" -r deploy/nginx "$target:$remote_release/deploy/"
 
           {
             printf 'set -Eeuo pipefail\n'
             printf 'remote_release=%q\n' "$remote_release"
             cat <<'REMOTE_PERMISSIONS'
           chmod 700 -- "$remote_release"/deploy/server/*.sh
-          chmod 755 -- "$remote_release"/deploy/nginx/*.sh
           REMOTE_PERMISSIONS
           } | run_remote_script
 
@@ -318,9 +314,7 @@ jobs:
             printf 'requested_version=%q\n' "$REQUESTED_VERSION"
             printf 'registry_user=%q\n' "$KAORI_DOCKER_REGISTRY_USERNAME"
             printf 'registry_password=%q\n' "$KAORI_DOCKER_REGISTRY_PASSWORD"
-            printf 'letsencrypt_email=%q\n' "$KAORI_LETSENCRYPT_EMAIL"
             cat <<'REMOTE_DEPLOY'
-          export KAORI_LETSENCRYPT_EMAIL="$letsencrypt_email"
           {
             printf '%s\n' "$registry_user"
             printf '%s\n' "$registry_password"
