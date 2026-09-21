@@ -24,17 +24,16 @@ def load_notifier() -> ModuleType:
     return module
 
 
-def test_notification_workflow_is_trusted_branch_only_and_repository_scoped() -> None:
+def test_notification_workflow_is_completed_quality_run_only_and_repository_scoped() -> None:
     source = read(NOTIFY_WORKFLOW)
     quality = read(QUALITY_WORKFLOW)
 
     assert 'name: KAORI Telegram Notify' in source
     assert 'name: Notify' in source
-    assert 'push:' in source
-    assert '- kaori/staging' in source
-    assert '- main' in source
+    assert 'workflow_run:' in source
+    assert '- KAORI CI' in source
+    assert '- completed' in source
     assert 'workflow_call:' not in source
-    assert 'workflow_run:' not in source
     assert 'pull_request:' not in source
     assert 'pull_request_target:' not in source
     assert 'workflow_dispatch:' not in source
@@ -44,27 +43,34 @@ def test_notification_workflow_is_trusted_branch_only_and_repository_scoped() ->
     assert 'contents: read' in source
     assert 'actions: read' in source
     assert "github.repository == 'OXY7O/KAORI'" in source
-    assert "github.event_name == 'push'" in source
-    assert "github.ref == 'refs/heads/kaori/staging'" in source
-    assert "github.ref == 'refs/heads/main'" in source
-    assert 'ref: ${{ github.sha }}' in source
+    assert "github.event_name == 'workflow_run'" in source
+    assert "github.event.workflow_run.name == 'KAORI CI'" in source
+    assert "github.event.workflow_run.event == 'push'" in source
+    assert "github.event.workflow_run.status == 'completed'" in source
+    assert "github.event.workflow_run.head_repository.full_name == 'OXY7O/KAORI'" in source
+    assert "github.event.workflow_run.head_branch == 'kaori/staging'" in source
+    assert "github.event.workflow_run.head_branch == 'main'" in source
+    assert 'ref: ${{ github.event.workflow_run.head_sha }}' in source
     assert 'persist-credentials: false' in source
     assert 'TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}' in source
     assert 'TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}' in source
     assert 'TELEGRAM_GITHUB_ACTIONS_TOPIC_ID: ${{ vars.TELEGRAM_GITHUB_ACTIONS_TOPIC_ID }}' in source
     assert 'TELEGRAM_NOTIFICATIONS_ENABLED: ${{ vars.TELEGRAM_NOTIFICATIONS_ENABLED }}' in source
-    assert '--discover-workflow-run' in source
+    assert '--workflow-run-id "$WORKFLOW_RUN_ID"' in source
+    assert '--discover-workflow-run' not in source
     assert 'KAORI_UAT_URL' not in source
     assert 'telegram-notification:' not in quality
     assert 'TELEGRAM_BOT_TOKEN' not in quality
 
 
-def test_push_metadata_flows_through_environment_before_shell_use() -> None:
+def test_completed_run_metadata_flows_through_environment_before_shell_use() -> None:
     source = read(NOTIFY_WORKFLOW)
 
-    assert 'WORKFLOW_EVENT: ${{ github.event_name }}' in source
-    assert 'WORKFLOW_HEAD_BRANCH: ${{ github.ref_name }}' in source
-    assert 'WORKFLOW_SOURCE_SHA: ${{ github.sha }}' in source
+    assert 'WORKFLOW_EVENT: ${{ github.event.workflow_run.event }}' in source
+    assert 'WORKFLOW_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}' in source
+    assert 'WORKFLOW_SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}' in source
+    assert 'WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}' in source
+    assert '--workflow-run-id "$WORKFLOW_RUN_ID"' in source
     assert '--workflow-event "$WORKFLOW_EVENT"' in source
     assert '--head-branch "$WORKFLOW_HEAD_BRANCH"' in source
     assert '--source-sha "$WORKFLOW_SOURCE_SHA"' in source
@@ -137,42 +143,47 @@ def test_profile_resolution_supports_governed_delivery_boundaries() -> None:
     )
 
 
-def test_matching_kaori_ci_run_requires_exact_push_sha_and_branch() -> None:
+def test_completed_kaori_ci_run_requires_exact_trusted_push_identity() -> None:
     notifier = load_notifier()
-    runs = [
-        {
-            'id': 10,
-            'event': 'push',
-            'head_branch': 'kaori/staging',
-            'head_sha': 'other',
-            'status': 'completed',
-        },
-        {
-            'id': 11,
-            'event': 'pull_request',
-            'head_branch': 'kaori/staging',
-            'head_sha': 'abc123',
-            'status': 'completed',
-        },
-        {
-            'id': 12,
-            'event': 'push',
-            'head_branch': 'kaori/staging',
-            'head_sha': 'abc123',
-            'status': 'completed',
-            'conclusion': 'success',
-            'html_url': 'https://github.com/OXY7O/KAORI/actions/runs/12',
-        },
-    ]
+    run = {
+        'id': 12,
+        'name': 'KAORI CI',
+        'path': '.github/workflows/quality.yml',
+        'event': 'push',
+        'head_branch': 'kaori/staging',
+        'head_sha': 'abc123',
+        'status': 'completed',
+        'conclusion': 'success',
+        'head_repository': {'full_name': 'OXY7O/KAORI'},
+    }
 
-    assert (
-        notifier.select_matching_workflow_run(
-            runs=runs,
+    notifier.validate_trusted_quality_workflow_run(
+        workflow_run=run,
+        source_sha='abc123',
+        head_branch='kaori/staging',
+    )
+
+    rejected = dict(run, head_sha='other')
+    try:
+        notifier.validate_trusted_quality_workflow_run(
+            workflow_run=rejected,
             source_sha='abc123',
             head_branch='kaori/staging',
         )
-        == runs[2]
-    )
+    except RuntimeError as exc:
+        assert 'source SHA' in str(exc)
+    else:
+        raise AssertionError('mismatched workflow-run source SHA must be rejected')
+
+
+def test_notifier_has_no_trusted_push_polling_loop() -> None:
+    source = read(NOTIFIER)
+
+    assert '_WORKFLOW_WAIT_ATTEMPTS' not in source
+    assert '_WORKFLOW_WAIT_SECONDS' not in source
+    assert 'wait_for_quality_workflow_run' not in source
+    assert 'time.sleep(' not in source
+    assert '--discover-workflow-run' not in source
 
 
 def test_notifier_understands_concise_and_legacy_ci_job_names() -> None:
