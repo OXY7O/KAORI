@@ -124,6 +124,11 @@ def test_mobile_navigation_closes_after_destination_selection(
     assert open_box['width'] > 250
     expect(sidebar.get_by_role('link', name='Welcome')).to_be_visible()
 
+    parent_menu = sidebar.locator('summary[aria-label]').first
+    expect(parent_menu).to_be_visible()
+    parent_menu.click()
+    assert page.evaluate("localStorage.getItem('kaori.sidebarExpanded')") == 'false'
+
     page.locator('[data-mobile-navigation-close]').click()
     expect(page.locator('[data-mobile-navigation-backdrop]')).to_be_hidden()
     closed_box = sidebar.bounding_box()
