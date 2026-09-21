@@ -52,6 +52,7 @@ OBSOLETE_PATHS = (
     'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_history.html',
     'app/templates/integrations/partials/_binding_validation_posture.html',
     'app/templates/integrations/partials/_status_badge.html',
+    'app/templates/platform_operations/kubernetes/_tabs.html',
     'app/templates/platform_operations/jobs/executions/partials/_hero_context_metrics.html',
     'app/templates/platform_operations/jobs/executions/partials/_hero_metadata.html',
     'app/templates/integrations/observability/metrics_source/partials/_validation_response.html',
