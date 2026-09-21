@@ -23,10 +23,14 @@ def test_quality_does_not_call_or_receive_telegram_delivery_configuration() -> N
     assert 'TELEGRAM_NOTIFICATIONS_ENABLED' not in source
 
 
-def test_telegram_workflow_is_not_a_privileged_pr_trigger() -> None:
+def test_telegram_workflow_run_trigger_is_not_a_privileged_pr_path() -> None:
     source = read(NOTIFY_WORKFLOW)
 
     assert 'pull_request:' not in source
     assert 'pull_request_target:' not in source
-    assert 'workflow_run:' not in source
     assert 'workflow_call:' not in source
+    assert 'workflow_run:' in source
+    assert "github.event.workflow_run.event == 'push'" in source
+    assert "github.event.workflow_run.head_repository.full_name == 'OXY7O/KAORI'" in source
+    assert "github.event.workflow_run.head_branch == 'kaori/staging'" in source
+    assert "github.event.workflow_run.head_branch == 'main'" in source
