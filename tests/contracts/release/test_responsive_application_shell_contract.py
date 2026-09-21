@@ -71,7 +71,8 @@ def test_shared_hero_keeps_phone_density_compact_without_forking_authority() -> 
     assert 'min-h-[15.5rem] overflow-hidden' not in hero
     assert 'grid min-w-0 grid-cols-1 gap-y-3' in hero
     assert 'sm:grid-cols-[56px_minmax(0,1fr)]' in hero
-    assert 'hidden sm:flex' in hero
+    assert 'hidden h-12 w-12' in hero
+    assert 'sm:flex' in hero
     assert 'text-2xl font-bold leading-8' in hero
     assert 'sm:text-4xl sm:leading-10' in hero
     assert 'max-w-[44rem] text-sm font-normal leading-6' in hero
