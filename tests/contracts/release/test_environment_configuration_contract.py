@@ -146,3 +146,25 @@ def test_environment_documentation_explains_split_and_minimal_rc_authorities() -
     assert 'safe application defaults' in documentation
     assert '.env.production.example' in documentation
     assert 'deprecated and inactive' in documentation
+
+
+def test_testing_environment_overrides_remain_test_harness_only() -> None:
+    testing = read('app/config/testing.py')
+    persistent = '\n'.join(
+        read(relative)
+        for relative in ('.env.example', RC_ENV, APP_ENV, SECRETS_ENV, DEPLOY_ENV)
+    )
+
+    for token in (
+        'TEST_DATABASE_URL',
+        'TEST_SECRET_KEY',
+        'TEST_REPORT_STORAGE_BACKEND',
+        'TEST_REPORT_LOCAL_STORAGE_DIR',
+        'TEST_REPORT_RENDER_STAGING_DIR',
+        'TEST_REPORT_DOWNLOAD_CACHE_DIR',
+        'TEST_ARCHIVE_LOCAL_STORAGE_DIR',
+        'TEST_ARCHIVE_DOWNLOAD_CACHE_DIR',
+        'TEST_ARCHIVE_STAGING_DIR',
+    ):
+        assert token in testing
+        assert f'{token}=' not in persistent

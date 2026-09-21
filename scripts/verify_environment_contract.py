@@ -71,6 +71,7 @@ RUNTIME_ENV_ENTRYPOINTS = (
     'run.py',
     'scripts/wait_for_db.py',
 )
+TEST_ONLY_ENV_SOURCE = 'app/config/testing.py'
 
 COMMON_EXTRA_KEYS = {
     'ADMIN_EMAIL',
@@ -170,7 +171,11 @@ def accessed_env_keys(*relatives: str) -> set[str]:
 
 
 def runtime_python_sources() -> tuple[str, ...]:
-    app_sources = tuple(str(path.relative_to(ROOT)) for path in sorted((ROOT / 'app').rglob('*.py')))
+    app_sources = tuple(
+        str(path.relative_to(ROOT))
+        for path in sorted((ROOT / 'app').rglob('*.py'))
+        if str(path.relative_to(ROOT)) != TEST_ONLY_ENV_SOURCE
+    )
     entrypoints = tuple(relative for relative in RUNTIME_ENV_ENTRYPOINTS if (ROOT / relative).is_file())
     return app_sources + entrypoints
 
@@ -225,6 +230,11 @@ def verify() -> None:
     undocumented_rc_compose = sorted(rc_compose_keys - rc_keys)
     if undocumented_rc_compose:
         raise AssertionError('RC example Compose references undocumented keys: ' + ', '.join(undocumented_rc_compose))
+
+    test_only_keys = accessed_env_keys(TEST_ONLY_ENV_SOURCE)
+    non_test_overrides = sorted(key for key in test_only_keys if not key.startswith('TEST_'))
+    if non_test_overrides:
+        raise AssertionError('Testing config must use TEST_* overrides only: ' + ', '.join(non_test_overrides))
 
     runtime_keys = accessed_env_keys(*runtime_python_sources())
     documented_runtime_inventory = development_keys | persistent_union | rc_keys | RELEASE_KEYS | COMPOSE_COMPAT_KEYS
