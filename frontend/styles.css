@@ -497,6 +497,10 @@ span.inline-flex[class*='bg-kaori-soft'] {
 }
 
 @media (min-width: 64rem) {
+    [data-mobile-navigation][x-cloak] {
+        display: flex !important;
+    }
+
     .sidebar-collapsed .sidebar-expanded-only,
     .sidebar-collapsed .sidebar-menu-chevron,
     .sidebar-collapsed .sidebar-submenu {
