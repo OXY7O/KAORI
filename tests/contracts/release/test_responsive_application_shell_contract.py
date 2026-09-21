@@ -71,9 +71,12 @@ def test_shared_hero_keeps_phone_density_compact_without_forking_authority() -> 
     assert 'sm:text-4xl sm:leading-10' in hero
     assert 'max-w-[44rem] text-sm font-normal leading-6' in hero
     assert 'sm:text-base sm:leading-7' in hero
-    assert "responsive_display='hidden sm:inline-flex'" in hero
-    assert "responsive_display='hidden sm:block'" in hero
-    assert 'grid grid-cols-1 gap-2 sm:grid-cols-2 sm:auto-rows-fr' in hero
+    assert '[&>*:nth-child(n+2)]:hidden' in hero
+    assert 'sm:[&>*:nth-child(n+2)]:inline-flex' in hero
+    assert 'grid grid-cols-1 gap-2' in hero
+    assert 'sm:grid-cols-2 sm:auto-rows-fr' in hero
+    assert 'sm:[&>*:nth-child(n+2)]:block' in hero
+    assert 'hidden sm:block' in hero
     assert 'min-h-[13rem] flex-col gap-3' not in hero
 
 
