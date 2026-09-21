@@ -57,8 +57,8 @@ PARENT_TOKENS = (
     'text-base',
     'font-semibold',
     'leading-6',
-    '[.sidebar-collapsed_&]:justify-center',
-    '[.sidebar-collapsed_&]:px-2',
+    'lg:[.sidebar-collapsed_&]:justify-center',
+    'lg:[.sidebar-collapsed_&]:px-2',
     'sidebar-parent-active',
     'sidebar-item-idle',
 )
@@ -136,7 +136,7 @@ def verify() -> None:
         sidebar,
         (
             'w-[250px]',
-            '[.sidebar-collapsed_&]:w-[78px]',
+            'lg:[.sidebar-collapsed_&]:w-[78px]',
             'rounded-2xl',
             'bg-surface-sidebar',
             'overflow-y-auto',
@@ -146,6 +146,28 @@ def verify() -> None:
         ),
         'sidebar frame and brand',
     )
+
+    mobile_marker = sidebar.find('\n           data-mobile-navigation\n')
+    mobile_aside_start = sidebar.rfind('<aside', 0, mobile_marker)
+    mobile_aside_end = sidebar.find('>', mobile_marker)
+    if mobile_aside_start == -1 or mobile_aside_end == -1:
+        raise AssertionError('sidebar.html: missing canonical mobile navigation aside')
+    mobile_aside_tag = sidebar[mobile_aside_start:mobile_aside_end]
+    _require_tokens(
+        mobile_aside_tag,
+        (
+            'x-cloak',
+            'data-mobile-navigation',
+            'lg:[.sidebar-collapsed_&]:w-[78px]',
+        ),
+        'mobile navigation hydration and desktop-collapse boundary',
+    )
+    if ' [.sidebar-collapsed_&]:w-[78px]' in mobile_aside_tag:
+        raise AssertionError('sidebar.html: desktop collapse width must not own mobile drawer geometry')
+    if 'sidebarExpanded = false; openMobileNavigation($event)' in sidebar:
+        raise AssertionError('sidebar.html: mobile open must not mutate desktop collapse state')
+    if 'restoreDesktopSidebarState()' in sidebar:
+        raise AssertionError('sidebar.html: mobile close must not restore desktop collapse state into drawer geometry')
 
     section_pattern = re.compile(
         r'<div class="sidebar-expanded-only mb-1\.5 px-3 sidebar-section-label '
@@ -218,6 +240,7 @@ def verify() -> None:
                         'justify-between',
                         'sidebar-menu-chevron',
                         '@click=',
+                        'window.innerWidth >= 1024',
                         'toggleSidebar()',
                     ),
                     f'{filename} expandable parent',
