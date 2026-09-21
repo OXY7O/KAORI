@@ -47,8 +47,8 @@ def test_reconciliation_reuses_existing_shared_edge_authorities() -> None:
 def test_reconciliation_requires_current_healthy_frontend_only() -> None:
     source = _read(WORKFLOW)
 
-    assert "{{.State.Status}}" in source
-    assert "{{if .State.Health}}{{.State.Health.Status}}{{end}}" in source
+    assert '{{.State.Status}}' in source
+    assert '{{if .State.Health}}{{.State.Health.Status}}{{end}}' in source
     assert '"$status" != \'running\'' in source
     assert '"$health" != \'healthy\'' in source
     assert 'worker' not in source
@@ -75,7 +75,7 @@ def test_publish_authority_is_safe_to_repeat_for_current_binding() -> None:
     publish = _read(EDGE_PUBLISH)
     apply = _read(EDGE_APPLY)
 
-    assert "if [[ \"$networks\" == *'\"edge-public\"'* ]]" in publish
+    assert 'if [[ "$networks" == *\'"edge-public"\'* ]]' in publish
     assert 'required alias' in publish
     assert 'docker network connect --alias "$alias_name" edge-public "$container"' in publish
     assert 'bash "$SCRIPT_DIR/verify.sh" --wait-seconds 360 --renewal-dry-run' in apply
