@@ -8,11 +8,16 @@ def read(path):
     return (ROOT / path).read_text()
 
 
-def test_provider_overview_tabs_use_v2_framed_geometry():
-    content = read('app/templates/components/integration_workspace_tabs.html')
-    assert 'data-kaori-tab-variant="framed-workspace-v2"' in content
-    assert '@keydown.arrow-right.prevent' in content
-    assert 'x-on:popstate.window="syncTab()"' in content
+def test_provider_overview_tabs_delegate_v2_framed_geometry():
+    adapter = read('app/templates/components/integration_workspace_tabs.html')
+    framed_tabs = read('app/templates/components/framed_workspace_tabs.html')
+
+    assert 'components/framed_workspace_tabs.html' in adapter
+    assert 'framed_workspace_tabs.render(' in adapter
+    assert 'x-on:popstate.window="syncTab()"' in adapter
+    assert 'data-kaori-tab-variant="framed-workspace-v2"' in framed_tabs
+    assert '@keydown.arrow-right.prevent' in framed_tabs
+    assert 'role="tablist"' in framed_tabs
 
 
 def test_metrics_source_registry_uses_one_line_filters_and_kaori_table():
