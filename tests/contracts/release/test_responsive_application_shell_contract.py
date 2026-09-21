@@ -94,3 +94,34 @@ def test_welcome_uses_the_shared_page_hero_without_custom_mobile_title() -> None
     assert 'page_hero.description_classes()' in welcome
     assert 'data-mobile-page-intro' not in welcome
     assert '<h1 class="text-2xl' not in welcome
+
+
+def test_shared_mobile_overlay_surfaces_recompose_without_page_local_forks() -> None:
+    deck = _read('app/templates/components/navigation/_notification_center.html')
+    drawer = _read('app/templates/components/side_drawer.html')
+    side_drawer_standard = _read('docs/design/components/SIDE_DRAWER.md')
+    responsive_standard = _read('docs/design/components/RESPONSIVE_AND_HTMX.md')
+
+    assert 'h-dvh max-h-dvh' in deck
+    assert 'sm:h-full sm:max-h-none sm:max-w-lg' in deck
+    assert 'w-full max-w-none' in deck
+    assert 'data-notification-deck-tabs' in deck
+    assert 'px-3 py-2 sm:px-4 sm:py-3' in deck
+    assert 'gap-1 rounded-lg px-2 text-center text-xs font-semibold leading-4' in deck
+    assert 'data-notification-deck-footer' in deck
+    assert 'flex shrink-0 flex-col items-stretch gap-2' in deck
+    assert 'sm:flex-row sm:items-center sm:justify-between' in deck
+    assert 'mt-0.5 hidden truncate sm:block' in deck
+
+    assert 'h-dvh max-h-dvh' in drawer
+    assert 'sm:h-full sm:max-h-none' in drawer
+    assert 'data-side-drawer-footer' in drawer
+    assert 'flex flex-col gap-2 border-t' in drawer
+    assert 'sm:flex-row sm:items-center sm:justify-end' in drawer
+    assert "action_button.classes('secondary') }} w-full sm:w-auto" in drawer
+    assert "action_button.classes('primary') }} w-full sm:w-auto" in drawer
+
+    assert '## Mobile Contract' in side_drawer_standard
+    assert 'full-width controls below `sm`' in side_drawer_standard
+    assert '## Mobile Overlay Composition' in responsive_standard
+    assert 'Consumers must extend the shared overlay owner' in responsive_standard

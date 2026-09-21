@@ -40,12 +40,13 @@ def test_dashboard_response_guidance_explains_alert_provenance() -> None:
         assert 'Raw source alerts remain in Analytics' not in content
 
 
-def test_topology_details_matches_notification_deck_width() -> None:
+def test_topology_details_matches_notification_deck_desktop_width() -> None:
     visualization = read('app/templates/components/visualization_workspace.html')
     notification_deck = read('app/templates/components/navigation/_notification_center.html')
 
     assert "'right-0 border-l max-w-lg'" in visualization
-    assert 'max-w-lg flex-col' in notification_deck
+    assert 'w-full max-w-none flex-col' in notification_deck
+    assert 'sm:max-w-lg' in notification_deck
 
 
 def test_inventory_authority_copy_is_compact_and_object_storage_hero_has_more_context() -> None:
