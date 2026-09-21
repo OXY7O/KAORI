@@ -103,7 +103,8 @@ def test_shared_mobile_overlay_surfaces_recompose_without_page_local_forks() -> 
     responsive_standard = _read('docs/design/components/RESPONSIVE_AND_HTMX.md')
 
     assert 'h-dvh max-h-dvh' in deck
-    assert 'sm:h-full sm:max-h-none' in deck
+    assert 'sm:h-full sm:max-h-none sm:max-w-lg' in deck
+    assert 'w-full max-w-none' in deck
     assert 'data-notification-deck-tabs' in deck
     assert 'px-3 py-2 sm:px-4 sm:py-3' in deck
     assert 'gap-1 rounded-lg px-2 text-center text-xs font-semibold leading-4' in deck
