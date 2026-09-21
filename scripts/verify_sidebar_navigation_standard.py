@@ -147,8 +147,9 @@ def verify() -> None:
         'sidebar frame and brand',
     )
 
-    mobile_aside_start = sidebar.find('<aside id="app-sidebar"')
-    mobile_aside_end = sidebar.find('>', mobile_aside_start)
+    mobile_marker = sidebar.find('data-mobile-navigation')
+    mobile_aside_start = sidebar.rfind('<aside', 0, mobile_marker)
+    mobile_aside_end = sidebar.find('>', mobile_marker)
     if mobile_aside_start == -1 or mobile_aside_end == -1:
         raise AssertionError('sidebar.html: missing canonical mobile navigation aside')
     mobile_aside_tag = sidebar[mobile_aside_start:mobile_aside_end]
@@ -239,6 +240,7 @@ def verify() -> None:
                         'justify-between',
                         'sidebar-menu-chevron',
                         '@click=',
+                        'window.innerWidth >= 1024',
                         'toggleSidebar()',
                     ),
                     f'{filename} expandable parent',
