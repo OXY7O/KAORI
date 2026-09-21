@@ -72,7 +72,7 @@ def test_hero_v17_operational_metadata_state_contract_is_executable() -> None:
     verify_state_contract()
 
     standard = (ROOT / 'docs' / 'design' / 'components' / 'HERO.md').read_text(encoding='utf-8')
-    assert '# KAORI Hero Component Standard v1.7' in standard
+    assert '# KAORI Hero Component Standard v1.8' in standard
     assert 'normal, blocked, and degraded' in standard
     assert 'Blocked may use reduced readiness metadata' not in standard
 
