@@ -43,6 +43,7 @@ It owns:
 
 - the fixed provider landing views `Integration Coverage` and `Connection Registry`;
 - provider-specific prefix and accessible label construction;
+- outer workspace card geometry through `operational_section_card.shell_classes()`;
 - URL-backed selected state through the shared `integrationWorkspaceTabs(...)` controller;
 - the two tab panels and their domain caller content.
 
