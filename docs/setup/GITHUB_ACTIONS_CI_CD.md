@@ -252,7 +252,7 @@ Boolean placeholders such as `"sbom": true` are not sufficient release evidence.
 
 Issue #440 tracks CDEvents delivery-lineage standardization.
 
-CDEvents are an **observability** representation of CI, publication, deployment, acceptance, promotion, rollback, and roll-forward transitions. They are **not authorization** and cannot replace workflow/verifier evidence.
+CDEvents are an **observability** representation of CI, publication, deployment, acceptance, promotion, rollback, and roll-forward transitions. They are **not authorization** and cannot replace workflow/verifier evidence. The pinned vocabulary, identity, retry/idempotency, producer-trust, sensitive-data, and failure contract is `docs/architecture/cdevents-delivery-lineage.md`.
 
 ## Canonical workflows
 
