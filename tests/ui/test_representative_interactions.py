@@ -142,7 +142,7 @@ def test_notification_deck_escape_restores_trigger_focus(
 
             dimensions = page.evaluate(
                 '() => ({ scrollWidth: document.documentElement.scrollWidth, '
-                "'clientWidth: document.documentElement.clientWidth })'"
+                'clientWidth: document.documentElement.clientWidth })'
             )
             assert dimensions['scrollWidth'] <= dimensions['clientWidth']
 
