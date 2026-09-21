@@ -108,7 +108,7 @@ def test_job_registry_filters_are_htmx_owned_without_inline_handlers() -> None:
 def test_obsolete_page_local_platform_tabs_remain_deleted() -> None:
     obsolete = 'app/templates/platform_operations/kubernetes/_tabs.html'
     assert not (ROOT / obsolete).exists()
-    assert obsolete in read('scripts/cleanup_obsolete_files.sh')
+    assert f"'{obsolete}'" in read('scripts/verify_obsolete_files.py')
 
 
 def test_platform_operations_has_no_accepted_ui_style_debt() -> None:
