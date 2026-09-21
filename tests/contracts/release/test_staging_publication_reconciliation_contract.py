@@ -16,11 +16,16 @@ def test_staging_publication_is_a_separate_post_deploy_operation() -> None:
     assert WORKFLOW.is_file()
     source = _read(WORKFLOW)
 
-    assert 'workflow_run:' in source
-    assert 'KAORI Staging Deployment' in source
-    assert 'types: [completed]' in source
-    assert "github.event.workflow_run.conclusion == 'success'" in source
+    assert 'push:' in source
+    assert '- kaori/uat-request' in source
+    assert 'workflow_dispatch:' in source
+    assert 'actions: read' in source
+    assert 'Wait for Exact Staging Deployment' in source
+    assert 'deploy-staging-host.yml' in source
+    assert '.head_sha == $sha' in source
+    assert "deployment_conclusion\" == 'success'" in source
     assert 'environment: uat' in source
+    assert 'workflow_run:' not in source
 
     # Publication is deliberately outside the application deployment transaction.
     assert 'example/shared-edge' not in _read(UAT_WORKFLOW)
@@ -79,3 +84,19 @@ def test_publish_authority_is_safe_to_repeat_for_current_binding() -> None:
     assert 'required alias' in publish
     assert 'docker network connect --alias "$alias_name" edge-public "$container"' in publish
     assert 'bash "$SCRIPT_DIR/verify.sh" --wait-seconds 360 --renewal-dry-run' in apply
+
+
+def test_reconciliation_waits_for_exact_successful_uat_deployment_before_edge_mutation() -> None:
+    source = _read(WORKFLOW)
+
+    wait_index = source.index('Wait for Exact Staging Deployment')
+    reconcile_index = source.index('Reconcile via Pinned SSH Trust')
+    assert wait_index < reconcile_index
+    assert 'actions/workflows/deploy-staging-host.yml/runs' in source
+    assert 'branch=kaori%2Fuat-request' in source
+    assert 'event=push' in source
+    assert 'GITHUB_SHA' in source
+    assert 'deployment_status' in source
+    assert 'deployment_conclusion' in source
+    assert 'Publication reconciliation blocked because exact staging deployment did not pass.' in source
+    assert 'Timed out waiting for exact-SHA KAORI Staging Deployment.' in source
