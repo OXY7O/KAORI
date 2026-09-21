@@ -22,6 +22,7 @@ def test_sidebar_owns_independent_mobile_navigation_state() -> None:
     styles = _read('frontend/styles.css')
     assert '@keydown.escape.window="if (window.innerWidth < 1024 && sidebarExpanded) { toggleSidebar() }"' not in app_layout
     assert '@media (min-width: 64rem)' in styles
+    assert '[data-mobile-navigation][x-cloak]' in styles
 
 
 def test_sidebar_is_off_canvas_on_mobile_and_preserves_desktop_collapse_authority() -> None:
