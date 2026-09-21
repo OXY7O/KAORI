@@ -150,10 +150,7 @@ def test_environment_documentation_explains_split_and_minimal_rc_authorities() -
 
 def test_testing_environment_overrides_remain_test_harness_only() -> None:
     testing = read('app/config/testing.py')
-    persistent = '\n'.join(
-        read(relative)
-        for relative in ('.env.example', RC_ENV, APP_ENV, SECRETS_ENV, DEPLOY_ENV)
-    )
+    persistent = '\n'.join(read(relative) for relative in ('.env.example', RC_ENV, APP_ENV, SECRETS_ENV, DEPLOY_ENV))
 
     for token in (
         'TEST_DATABASE_URL',
