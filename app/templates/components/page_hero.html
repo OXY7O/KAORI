@@ -210,7 +210,8 @@
     grid grid-cols-1 gap-2 [&>*:nth-child(n+2)]:hidden sm:grid-cols-2 sm:auto-rows-fr sm:[&>*:nth-child(n+2)]:block
 {%- endmacro %}
 {% macro context_metric(icon, label, value, description=None, value_classes=None) -%}
-    <div class="{{ context_metric_card_classes() }}" data-kaori-hero-context-metric>
+    <div class="{{ context_metric_card_classes() }}"
+         data-kaori-hero-context-metric>
         <div class="flex items-center gap-2 text-brand-foreground">
             <i data-lucide="{{ icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
             <p class="{{ context_metric_label_classes() }}">{{ label }}</p>
