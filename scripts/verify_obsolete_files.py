@@ -40,6 +40,8 @@ OBSOLETE_PATHS = (
     'app/templates/platform_operations/jobs/executions/partials/_hero_metadata.html',
     'app/templates/integrations/observability/metrics_source/partials/_validation_response.html',
     'app/templates/reports/overview/partials/_recommended_actions.html',
+    'app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot.html',
+    'app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html',
     'app/templates/settings/reports/index.html',
     'app/templates/settings/reports/partials/_placeholder.html',
     'docs/design/components/ANALYTICS_OVERVIEW_SURFACES.md',
