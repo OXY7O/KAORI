@@ -254,3 +254,33 @@ def test_production_image_keeps_deployment_tooling_outside_runtime() -> None:
     assert 'deploy/server' not in production
     assert 'deploy/vps' not in production
     assert 'COPY deploy' not in production
+
+
+def test_rollback_requires_complete_previous_release_lineage_and_reviewed_backup() -> None:
+    rollback = _read(ROLLBACK)
+
+    for marker in (
+        'previous-image',
+        'previous-source-sha',
+        'previous-version',
+        'previous-backup',
+        'recorded previous image is not immutable',
+        'recorded previous source SHA is invalid',
+        'recorded previous release version is invalid',
+        'recorded rollback backup does not exist',
+        'restore.sh" "$backup_file"',
+        'deploy.sh" "$previous_image_ref" "$previous_source_sha" "$previous_version"',
+    ):
+        assert marker in rollback
+
+
+def test_deployment_commits_release_state_only_after_runtime_verification() -> None:
+    deploy = _read(DEPLOY)
+
+    runtime_verified = deploy.index("status '✅' 'Internal runtime PASS'")
+    current_image = deploy.index('printf \'%s\\n\' "$image" > "$KAORI_STATE_DIR/current-image"')
+    active_release = deploy.index('mv -- "$candidate_release_env" "$active_release_env"')
+
+    assert runtime_verified < current_image < active_release
+    assert 'committed=false' in deploy
+    assert '[[ "$committed" == \'true\' ]] || rm -f -- "$candidate_release_env"' in deploy
