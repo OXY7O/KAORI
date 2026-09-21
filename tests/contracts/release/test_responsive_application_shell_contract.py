@@ -82,7 +82,8 @@ def test_shared_hero_keeps_phone_density_compact_without_forking_authority() -> 
     assert 'grid grid-cols-1 gap-2' in hero
     assert 'sm:grid-cols-2 sm:auto-rows-fr' in hero
     assert 'sm:[&>*:nth-child(n+2)]:block' in hero
-    assert 'hidden sm:block' in hero
+    assert 'hidden break-words text-xs' in hero
+    assert 'sm:block' in hero
     assert 'min-h-[13rem] flex-col gap-3' not in hero
 
 
