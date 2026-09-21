@@ -11,6 +11,8 @@ cp .env.example .env
 
 Edit `.env` and set `KAORI_IMAGE`, `APP_VERSION`, `APP_BUILD_SHA`, and `APP_BUILD_DATE` from the exact admitted RC evidence. Do not use a mutable `:staging` image.
 
+This example is intentionally smaller than the Dev Container and production environment contracts. It overrides only release identity, disposable local credentials/bootstrap values, localhost publication, and proxy trust. Safe application behavior—such as local report/archive paths, rate limiting, Secret reveal default-deny, report timezone, and automation/custom-runbook default-deny—comes from the reviewed production-image defaults instead of being duplicated here.
+
 Then run:
 
 ```bash

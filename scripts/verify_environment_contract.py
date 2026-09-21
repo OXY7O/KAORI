@@ -16,6 +16,8 @@ COMPOSE_ENV = re.compile(r'\$\$?\{([A-Z][A-Z0-9_]*)(?::[-+?][^}]*)?\}')
 APP_TEMPLATE = 'deploy/env/app.env.example'
 SECRETS_TEMPLATE = 'deploy/env/secrets.env.example'
 DEPLOY_TEMPLATE = 'deploy/env/deploy.env.example'
+RC_EXAMPLE_TEMPLATE = 'example/kaori/.env.example'
+RC_EXAMPLE_COMPOSE = 'example/kaori/compose.yml'
 DEPRECATED_PRODUCTION_TEMPLATE = '.env.production.example'
 PERSISTENT_PRODUCTION_TEMPLATES = (APP_TEMPLATE, SECRETS_TEMPLATE, DEPLOY_TEMPLATE)
 RELEASE_KEYS = {'KAORI_IMAGE', 'APP_VERSION', 'APP_BUILD_SHA', 'APP_BUILD_DATE'}
@@ -29,6 +31,47 @@ INHERITED_OPTIONAL_KEYS = {
     'ARCHIVE_S3_FORCE_PATH_STYLE',
 }
 COMPOSE_COMPAT_KEYS = {'KAORI_ENV_FILE', 'KAORI_BIND_ADDRESS', 'KAORI_PORT', 'KAORI_RELEASE_ENV_FILE'}
+
+RC_REQUIRED_KEYS = {
+    'KAORI_IMAGE',
+    'APP_VERSION',
+    'APP_BUILD_SHA',
+    'APP_BUILD_DATE',
+    'KAORI_PORT',
+    'SECRET_KEY',
+    'INTEGRATION_CREDENTIAL_KEY',
+    'POSTGRES_PASSWORD',
+    'REDIS_PASSWORD',
+    'ADMIN_USERNAME',
+    'ADMIN_EMAIL',
+    'ADMIN_PASSWORD',
+    'KAORI_PUBLIC_BASE_URL',
+    'TRUSTED_HOSTS',
+    'PROXY_FIX_ENABLED',
+}
+
+RC_INHERITED_SAFE_DEFAULT_KEYS = {
+    'RATELIMIT_ENABLED',
+    'AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME',
+    'KUBERNETES_SECRET_REVEAL_ENABLED',
+    'REPORT_STORAGE_BACKEND',
+    'REPORT_LOCAL_STORAGE_DIR',
+    'REPORT_RENDER_STAGING_DIR',
+    'REPORT_DOWNLOAD_CACHE_DIR',
+    'ARCHIVE_DOWNLOAD_CACHE_DIR',
+    'ARCHIVE_STAGING_DIR',
+    'REPORT_SCHEDULE_TIMEZONE',
+    'AUTOMATION_EXECUTION_ENABLED',
+    'CUSTOM_RUNBOOK_AUTHORING_ENABLED',
+}
+
+RUNTIME_ENV_ENTRYPOINTS = (
+    'gunicorn.conf.py',
+    'celery_worker.py',
+    'run.py',
+    'scripts/wait_for_db.py',
+)
+TEST_ONLY_ENV_SOURCE = 'app/config/testing.py'
 
 COMMON_EXTRA_KEYS = {
     'ADMIN_EMAIL',
@@ -127,6 +170,16 @@ def accessed_env_keys(*relatives: str) -> set[str]:
     return keys
 
 
+def runtime_python_sources() -> tuple[str, ...]:
+    app_sources = tuple(
+        str(path.relative_to(ROOT))
+        for path in sorted((ROOT / 'app').rglob('*.py'))
+        if str(path.relative_to(ROOT)) != TEST_ONLY_ENV_SOURCE
+    )
+    entrypoints = tuple(relative for relative in RUNTIME_ENV_ENTRYPOINTS if (ROOT / relative).is_file())
+    return app_sources + entrypoints
+
+
 def compose_env_keys(*relatives: str) -> set[str]:
     keys: set[str] = set()
     for relative in relatives:
@@ -149,6 +202,7 @@ def verify() -> None:
     production_config_keys = accessed_env_keys('app/config/production.py', 'gunicorn.conf.py')
 
     assert_no_duplicates('.env.example')
+    assert_no_duplicates(RC_EXAMPLE_TEMPLATE)
     for relative in PERSISTENT_PRODUCTION_TEMPLATES:
         assert_no_duplicates(relative)
 
@@ -159,6 +213,34 @@ def verify() -> None:
 
     persistent_sets = {relative: documented_env_keys(relative) for relative in PERSISTENT_PRODUCTION_TEMPLATES}
     persistent_union = set().union(*persistent_sets.values())
+    rc_keys = documented_env_keys(RC_EXAMPLE_TEMPLATE)
+
+    missing_rc = sorted(RC_REQUIRED_KEYS - rc_keys)
+    if missing_rc:
+        raise AssertionError('RC example is missing required operator inputs: ' + ', '.join(missing_rc))
+
+    duplicated_safe_defaults = sorted(RC_INHERITED_SAFE_DEFAULT_KEYS & rc_keys)
+    if duplicated_safe_defaults:
+        raise AssertionError(
+            'RC example must inherit safe application defaults instead of duplicating: '
+            + ', '.join(duplicated_safe_defaults)
+        )
+
+    rc_compose_keys = compose_env_keys(RC_EXAMPLE_COMPOSE)
+    undocumented_rc_compose = sorted(rc_compose_keys - rc_keys)
+    if undocumented_rc_compose:
+        raise AssertionError('RC example Compose references undocumented keys: ' + ', '.join(undocumented_rc_compose))
+
+    test_only_keys = accessed_env_keys(TEST_ONLY_ENV_SOURCE)
+    non_test_overrides = sorted(key for key in test_only_keys if not key.startswith('TEST_'))
+    if non_test_overrides:
+        raise AssertionError('Testing config must use TEST_* overrides only: ' + ', '.join(non_test_overrides))
+
+    runtime_keys = accessed_env_keys(*runtime_python_sources())
+    documented_runtime_inventory = development_keys | persistent_union | rc_keys | RELEASE_KEYS | COMPOSE_COMPAT_KEYS
+    undocumented_runtime = sorted(runtime_keys - documented_runtime_inventory)
+    if undocumented_runtime:
+        raise AssertionError('Runtime reads undocumented environment keys: ' + ', '.join(undocumented_runtime))
     required_runtime = (common_keys | production_config_keys) - RELEASE_KEYS - INHERITED_OPTIONAL_KEYS
     missing_runtime = sorted(required_runtime - persistent_union)
     if missing_runtime:
@@ -235,7 +317,8 @@ def verify() -> None:
     print(
         'PASS — KAORI Environment Contract · '
         f'{len(development_keys)} development keys / '
-        f'{len(app_keys)} app + {len(secret_keys)} secret + {len(deploy_keys)} deploy keys'
+        f'{len(app_keys)} app + {len(secret_keys)} secret + {len(deploy_keys)} deploy + '
+        f'{len(rc_keys)} RC example keys'
     )
 
 

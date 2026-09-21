@@ -16,6 +16,14 @@ Use the template that owns the runtime you are configuring:
 
 `.env.production.example` is deprecated and inactive. Do not copy it to create a production environment. Production configuration must use the split authorities under `deploy/env/` plus generated release identity.
 
+## Why the templates have different sizes
+
+The Dev Container contract is intentionally comprehensive because engineering needs supported settings to be discoverable and directly overridable during development.
+
+The disposable RC-image example is intentionally minimal because it runs an already-admitted production image. It overrides only release identity, disposable local credentials/bootstrap values, localhost publication, and proxy trust; reviewed safe application defaults remain owned by application source and the image.
+
+Production is intentionally split by responsibility so portable application policy, runtime secrets, deployment-adapter settings, and generated immutable release identity can change independently without recreating a monolithic environment file.
+
 ## Naming contract
 
 Environment-specific prefixes are not used for application settings. The same canonical keys configure report and archive storage in development and production:
