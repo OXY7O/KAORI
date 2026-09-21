@@ -1,6 +1,6 @@
 # KAORI Unused File Audit — 2026-08-01
 
-Status: cleanup approved for the uploaded `CS.zip` source snapshot.
+Status: historical cleanup evidence for the uploaded `CS.zip` source snapshot. Current repository-hygiene authority is `docs/architecture/REPOSITORY_HYGIENE_AUDIT_20260921.md`.
 
 ## Scope
 
@@ -99,9 +99,10 @@ These are local/generated artifacts and must not be included in source ZIP deliv
 
 ## Prevention
 
-- `.gitignore` now ignores every ZIP at repository root via `/*.zip`;
-- `scripts/verify_obsolete_files.py` fails when deleted files, root `OX.zip`, Python caches, or compiled Python files return;
-- `scripts/cleanup_obsolete_files.sh` performs the approved cleanup idempotently.
+- `.gitignore` ignores every ZIP at repository root via `/*.zip`;
+- `scripts/verify_obsolete_files.py` is the canonical fail-closed obsolete-file registry and fails when retired files, root `OX.zip`, Python caches, or compiled Python files return;
+- `scripts/verify_module_reachability.py`, source-hygiene, architecture, domain final-lock, and release-governance checks protect the remaining structure;
+- `scripts/cleanup_obsolete_files.sh` was retired by post-UAT repository-hygiene issue #475 and must not be treated as a current authority.
 
 ## Analytics Overview follow-up — 2026-08-05
 
