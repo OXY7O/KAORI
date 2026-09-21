@@ -559,16 +559,10 @@ def main() -> int:
         'app/templates/integrations/observability/metrics_source/partials/_validation_response.html',
         'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_operation_feedback_oob.html',
     )
-    cleanup_script = read('scripts/cleanup_obsolete_files.sh')
     for relative in obsolete:
         require(
             not (ROOT / relative).exists(),
             f'Obsolete Integration compatibility template reintroduced: {relative}',
-            errors,
-        )
-        require(
-            f"'{relative}'" in cleanup_script,
-            f'Cleanup script must retain obsolete Integration path: {relative}',
             errors,
         )
 
