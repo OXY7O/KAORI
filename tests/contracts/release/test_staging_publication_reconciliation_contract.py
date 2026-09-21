@@ -49,8 +49,8 @@ def test_reconciliation_requires_current_healthy_frontend_only() -> None:
 
     assert "{{.State.Status}}" in source
     assert "{{if .State.Health}}{{.State.Health.Status}}{{end}}" in source
-    assert "status != 'running'" in source
-    assert "health != 'healthy'" in source
+    assert '"$status" != \'running\'' in source
+    assert '"$health" != \'healthy\'' in source
     assert 'worker' not in source
     assert 'beat' not in source.lower()
     assert 'postgres' not in source.lower()
