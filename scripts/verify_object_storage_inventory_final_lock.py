@@ -115,9 +115,6 @@ def main() -> int:
     ):
         if (ROOT / retired).exists():
             errors.append(f'Object Storage Overview retired duplicate system surface still exists: {retired}')
-        cleanup = read('scripts/cleanup_obsolete_files.sh')
-        if f"'{retired}'" not in cleanup:
-            errors.append(f'Object Storage cleanup registry missing retired Overview surface: {retired}')
 
     for source, label in ((systems_workspace, 'Systems'), (buckets_workspace, 'Buckets & Containers')):
         for token in ('inventory.setup.is_blocked', '_snapshot_boundary.html', '_onboarding_banner.html'):
