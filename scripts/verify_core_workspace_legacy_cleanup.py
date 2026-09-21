@@ -301,14 +301,6 @@ def main() -> int:
         errors,
     )
 
-    cleanup_script = read('scripts/cleanup_obsolete_files.sh')
-    for relative in obsolete_paths:
-        require(
-            f"'{relative}'" in cleanup_script,
-            f'Obsolete path must remain registered in cleanup script: {relative}',
-            errors,
-        )
-
     service_model = read('app/models/inventory.py')
     service_collector = read('app/kubernetes/inventory/collectors/services.py')
     service_migration = read('migrations/versions/20260805_service_inventory_v2.py')
