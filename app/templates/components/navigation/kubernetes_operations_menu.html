@@ -17,7 +17,7 @@ or current_user.has_permission('kubernetes_secrets.bulk_rotate_tls') %}
         <summary class="{{ 'sidebar-parent-active' if operations_active else 'sidebar-item-idle' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition lg:[.sidebar-collapsed_&]:justify-center lg:[.sidebar-collapsed_&]:px-2"
                  title="Kubernetes Operations"
                  aria-label="Kubernetes Operations"
-                 @click="if (!sidebarExpanded) { $event.preventDefault(); toggleSidebar(); $el.parentElement.open = true }">
+                 @click="if (window.innerWidth >= 1024 && !sidebarExpanded) { $event.preventDefault(); toggleSidebar(); $el.parentElement.open = true }">
             <div class="flex min-w-0 items-center gap-2.5">
                 <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if operations_active else 'sidebar-item-idle-icon' }} transition"><i data-lucide="wrench" class="h-4 w-4"></i></span>
                 <span class="sidebar-expanded-only truncate whitespace-nowrap">Kubernetes Operations</span>
