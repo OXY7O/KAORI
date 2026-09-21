@@ -57,8 +57,8 @@ PARENT_TOKENS = (
     'text-base',
     'font-semibold',
     'leading-6',
-    '[.sidebar-collapsed_&]:justify-center',
-    '[.sidebar-collapsed_&]:px-2',
+    'lg:[.sidebar-collapsed_&]:justify-center',
+    'lg:[.sidebar-collapsed_&]:px-2',
     'sidebar-parent-active',
     'sidebar-item-idle',
 )
