@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[3]
 APP_ENV = 'deploy/env/app.env.example'
 SECRETS_ENV = 'deploy/env/secrets.env.example'
 DEPLOY_ENV = 'deploy/env/deploy.env.example'
+RC_ENV = 'example/kaori/.env.example'
 
 
 def read(relative: str) -> str:
@@ -94,3 +95,53 @@ def test_environment_contract_verifier_is_a_release_gate() -> None:
     assert "('Environment Contract', (PYTHON, 'scripts/verify_environment_contract.py'))" in read(
         'scripts/verify_final_release.py'
     )
+
+
+def test_rc_example_keeps_only_required_operator_overrides() -> None:
+    source = read(RC_ENV)
+
+    for token in (
+        'KAORI_IMAGE=',
+        'APP_VERSION=',
+        'APP_BUILD_SHA=',
+        'APP_BUILD_DATE=',
+        'KAORI_PORT=',
+        'SECRET_KEY=',
+        'INTEGRATION_CREDENTIAL_KEY=',
+        'POSTGRES_PASSWORD=',
+        'REDIS_PASSWORD=',
+        'ADMIN_USERNAME=',
+        'ADMIN_EMAIL=',
+        'ADMIN_PASSWORD=',
+        'KAORI_PUBLIC_BASE_URL=',
+        'TRUSTED_HOSTS=',
+        'PROXY_FIX_ENABLED=false',
+    ):
+        assert token in source
+
+    for inherited_default in (
+        'RATELIMIT_ENABLED=',
+        'AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME=',
+        'KUBERNETES_SECRET_REVEAL_ENABLED=',
+        'REPORT_STORAGE_BACKEND=',
+        'REPORT_LOCAL_STORAGE_DIR=',
+        'REPORT_RENDER_STAGING_DIR=',
+        'REPORT_DOWNLOAD_CACHE_DIR=',
+        'ARCHIVE_DOWNLOAD_CACHE_DIR=',
+        'ARCHIVE_STAGING_DIR=',
+        'REPORT_SCHEDULE_TIMEZONE=',
+        'AUTOMATION_EXECUTION_ENABLED=',
+        'CUSTOM_RUNBOOK_AUTHORING_ENABLED=',
+    ):
+        assert inherited_default not in source
+
+
+def test_environment_documentation_explains_split_and_minimal_rc_authorities() -> None:
+    documentation = read('docs/deployment/ENVIRONMENT_CONFIGURATION.md').lower()
+
+    for authority in (APP_ENV, SECRETS_ENV, DEPLOY_ENV, RC_ENV):
+        assert authority.lower() in documentation
+
+    assert 'intentionally minimal' in documentation
+    assert 'safe application defaults' in documentation
+    assert '.env.production.example is deprecated and inactive' in documentation
