@@ -112,14 +112,41 @@ def test_mobile_navigation_closes_after_destination_selection(
         return
 
     _login(page, kaori_authenticated_base_url)
-    page.locator('[data-mobile-menu-trigger]').click()
+    page.evaluate("localStorage.setItem('kaori.sidebarExpanded', 'false')")
+    page.reload(wait_until='networkidle')
+
+    mobile_trigger = page.locator('[data-mobile-menu-trigger]')
     sidebar = page.locator('[data-mobile-navigation]')
+    mobile_trigger.click()
+
+    open_box = sidebar.bounding_box()
+    assert open_box is not None
+    assert open_box['width'] > 250
+    expect(sidebar.get_by_role('link', name='Welcome')).to_be_visible()
+
+    page.locator('[data-mobile-navigation-close]').click()
+    expect(page.locator('[data-mobile-navigation-backdrop]')).to_be_hidden()
+    closed_box = sidebar.bounding_box()
+    assert closed_box is not None
+    assert closed_box['width'] > 250
+    assert page.evaluate("localStorage.getItem('kaori.sidebarExpanded')") == 'false'
+
+    mobile_trigger.click()
     destination = sidebar.get_by_role('link', name='Welcome')
     expect(destination).to_be_visible()
     destination.click()
     page.wait_for_load_state('networkidle')
 
-    resting_box = page.locator('[data-mobile-navigation]').bounding_box()
+    resting_sidebar = page.locator('[data-mobile-navigation]')
+    resting_box = resting_sidebar.bounding_box()
     assert resting_box is not None
     assert resting_box['x'] + resting_box['width'] <= 1
+    assert resting_box['width'] > 250
+    assert page.evaluate("localStorage.getItem('kaori.sidebarExpanded')") == 'false'
+
+    page.locator('[data-mobile-menu-trigger]').click()
+    reopened_box = page.locator('[data-mobile-navigation]').bounding_box()
+    assert reopened_box is not None
+    assert reopened_box['width'] > 250
+    expect(page.locator('[data-mobile-navigation-close]')).to_be_focused()
     _assert_no_document_overflow(page)
