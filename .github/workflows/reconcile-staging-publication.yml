@@ -86,12 +86,14 @@ jobs:
           set -Eeuo pipefail
 
           edge_runtime=/opt/shared-edge/runtime
-          [[ -x "$edge_runtime/publish-container.sh" ]] || {
-            printf 'Shared-edge publication authority is unavailable: %s\n' "$edge_runtime/publish-container.sh" >&2
+          edge_publish=/opt/shared-edge/runtime/publish-container.sh
+          edge_apply=/opt/shared-edge/runtime/apply.sh
+          [[ -x "$edge_publish" ]] || {
+            printf 'Shared-edge publication authority is unavailable: %s\n' "$edge_publish" >&2
             exit 1
           }
-          [[ -x "$edge_runtime/apply.sh" ]] || {
-            printf 'Shared-edge apply authority is unavailable: %s\n' "$edge_runtime/apply.sh" >&2
+          [[ -x "$edge_apply" ]] || {
+            printf 'Shared-edge apply authority is unavailable: %s\n' "$edge_apply" >&2
             exit 1
           }
 
@@ -112,7 +114,7 @@ jobs:
           fi
 
           cd "$edge_runtime"
-          bash ./publish-container.sh \
+          bash "$edge_publish" \
             --site-id kaori \
             --domain kaori.cloud \
             --container "$KAORI_WEB" \
@@ -123,6 +125,6 @@ jobs:
             --websocket false \
             --client-max-body-size 25m
 
-          bash ./apply.sh
+          bash "$edge_apply"
           printf 'KAORI public publication reconciliation PASS · container=%s\n' "$KAORI_WEB"
           REMOTE
