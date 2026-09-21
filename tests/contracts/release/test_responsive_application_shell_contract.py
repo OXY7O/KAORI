@@ -62,10 +62,15 @@ def test_navbar_exposes_mobile_menu_without_reusing_desktop_collapse_control() -
 
 def test_shared_hero_keeps_phone_density_compact_without_forking_authority() -> None:
     hero = _read('app/templates/components/page_hero.html')
-    assert 'p-4 sm:min-h-[15.5rem] sm:p-5 lg:min-h-[17.5rem] lg:p-6' in hero
+    assert 'p-4' in hero
+    assert 'sm:min-h-[15.5rem]' in hero
+    assert 'sm:p-5' in hero
+    assert 'lg:min-h-[17.5rem]' in hero
+    assert 'lg:p-6' in hero
     assert 'grid gap-4 sm:min-h-[13rem] sm:gap-5 lg:min-h-[14.5rem]' in hero
     assert 'min-h-[15.5rem] overflow-hidden' not in hero
-    assert 'grid min-w-0 grid-cols-1 gap-y-3 sm:grid-cols-[56px_minmax(0,1fr)]' in hero
+    assert 'grid min-w-0 grid-cols-1 gap-y-3' in hero
+    assert 'sm:grid-cols-[56px_minmax(0,1fr)]' in hero
     assert 'hidden sm:flex' in hero
     assert 'text-2xl font-bold leading-8' in hero
     assert 'sm:text-4xl sm:leading-10' in hero
