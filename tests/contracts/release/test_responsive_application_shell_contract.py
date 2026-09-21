@@ -60,14 +60,31 @@ def test_navbar_exposes_mobile_menu_without_reusing_desktop_collapse_control() -
     assert 'class="{{ surface_ui.block_classes() }} inline-flex h-10 min-w-0' in navbar
 
 
-def test_shared_hero_keeps_canonical_authority_for_every_viewport() -> None:
+def test_shared_hero_keeps_phone_density_compact_without_forking_authority() -> None:
     hero = _read('app/templates/components/page_hero.html')
-    assert 'min-h-[15.5rem]' in hero
+    assert 'p-4' in hero
+    assert 'sm:min-h-[15.5rem]' in hero
+    assert 'sm:p-5' in hero
     assert 'lg:min-h-[17.5rem]' in hero
-    assert 'flex h-full min-h-[13rem] flex-col gap-3' in hero
-    assert 'grid grid-cols-2 auto-rows-fr gap-2' in hero
-    assert 'text-3xl font-bold leading-10' in hero
-    assert 'max-w-[44rem] text-base font-normal leading-7' in hero
+    assert 'lg:p-6' in hero
+    assert 'grid gap-4 sm:min-h-[13rem] sm:gap-5 lg:min-h-[14.5rem]' in hero
+    assert 'min-h-[15.5rem] overflow-hidden' not in hero
+    assert 'grid min-w-0 grid-cols-1 gap-y-3' in hero
+    assert 'sm:grid-cols-[56px_minmax(0,1fr)]' in hero
+    assert 'hidden h-12 w-12' in hero
+    assert 'sm:flex' in hero
+    assert 'text-2xl font-bold leading-8' in hero
+    assert 'sm:text-4xl sm:leading-10' in hero
+    assert 'max-w-[44rem] text-sm font-normal leading-6' in hero
+    assert 'sm:text-base sm:leading-7' in hero
+    assert '[&>*:nth-child(n+2)]:hidden' in hero
+    assert 'sm:[&>*:nth-child(n+2)]:inline-flex' in hero
+    assert 'grid grid-cols-1 gap-2' in hero
+    assert 'sm:grid-cols-2 sm:auto-rows-fr' in hero
+    assert 'sm:[&>*:nth-child(n+2)]:block' in hero
+    assert 'hidden break-words text-xs' in hero
+    assert 'sm:block' in hero
+    assert 'min-h-[13rem] flex-col gap-3' not in hero
 
 
 def test_welcome_uses_the_shared_page_hero_without_custom_mobile_title() -> None:

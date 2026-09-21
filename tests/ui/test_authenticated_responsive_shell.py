@@ -64,6 +64,22 @@ def test_authenticated_shell_adapts_across_canonical_viewports(
     expect(welcome_hero).to_be_visible()
     expect(page.get_by_role('heading', name='Welcome to KAORI')).to_be_visible()
 
+    if viewport_name in {'mobile', 'small-mobile'}:
+        hero_box = welcome_hero.bounding_box()
+        assert hero_box is not None
+        assert page.viewport_size is not None
+        assert hero_box['height'] < page.viewport_size['height'] * 0.8
+        expect(welcome_hero.locator('[data-kaori-hero-leading-icon]')).to_be_hidden()
+        metadata_items = welcome_hero.locator('[data-kaori-hero-metadata-item]')
+        assert metadata_items.count() >= 2
+        expect(metadata_items.nth(0)).to_be_visible()
+        expect(metadata_items.nth(1)).to_be_hidden()
+        context_metrics = welcome_hero.locator('[data-kaori-hero-context-metric]')
+        assert context_metrics.count() >= 2
+        expect(context_metrics.nth(0)).to_be_visible()
+        expect(context_metrics.nth(1)).to_be_hidden()
+        _assert_no_document_overflow(page)
+
     if viewport_name in ADAPTIVE_VIEWPORTS:
         expect(mobile_trigger).to_be_visible()
         expect(desktop_toggle).to_be_hidden()

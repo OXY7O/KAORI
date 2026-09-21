@@ -89,7 +89,7 @@ def test_inventory_hero_context_panels_use_short_titles_and_concise_helpers() ->
 def test_inventory_hero_copy_budget_is_documented() -> None:
     hero_contract = (ROOT / 'docs/design/components/HERO.md').read_text(encoding='utf-8')
 
-    assert '# KAORI Hero Component Standard v1.7' in hero_contract
+    assert '# KAORI Hero Component Standard v1.8' in hero_contract
     assert '7–15 words' in hero_contract
     assert '8–12 words' in hero_contract
     assert 'maximum 110 characters' in hero_contract

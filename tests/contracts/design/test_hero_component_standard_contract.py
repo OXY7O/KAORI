@@ -49,7 +49,7 @@ def test_hero_documentation_has_one_global_contract_and_one_domain_extension() -
     global_standard = (components / 'HERO.md').read_text(encoding='utf-8')
     analytics_extension = (components / 'ANALYTICS_HERO.md').read_text(encoding='utf-8')
 
-    assert 'KAORI Hero Component Standard v1.7' in global_standard
+    assert 'KAORI Hero Component Standard v1.8' in global_standard
     assert 'Hero Profile' in global_standard
     assert 'Hero State' in global_standard
     assert 'same Profile + same State' in global_standard
@@ -59,7 +59,9 @@ def test_hero_documentation_has_one_global_contract_and_one_domain_extension() -
     assert '8–12 words' in global_standard
     assert 'maximum 110 characters' in global_standard
     assert 'action-oriented' in global_standard
-    assert '16 px, regular, 28 px line height' in global_standard
+    assert 'phone-native compact composition' in global_standard
+    assert '14 px / 24 px on phone' in global_standard
+    assert '16 px / 28 px from `sm`' in global_standard
     assert 'Action Icon Box' in global_standard
     assert 'Context Icon Box' in global_standard
     assert 'Status Badge Box' in global_standard
@@ -206,8 +208,11 @@ def test_hero_right_header_accessories_have_three_canonical_variants() -> None:
 def test_hero_context_panel_footer_variants_share_one_precise_row_rhythm() -> None:
     source = (ROOT / 'app' / 'templates' / 'components' / 'page_hero.html').read_text(encoding='utf-8')
 
-    assert 'flex h-full min-h-[13rem] flex-col gap-3' in source
-    assert 'grid grid-cols-2 auto-rows-fr gap-2' in source
+    assert 'flex h-full flex-col gap-2.5' in source
+    assert 'sm:min-h-[13rem] sm:gap-3 sm:p-4' in source
+    assert 'grid grid-cols-1 gap-2' in source
+    assert 'sm:grid-cols-2 sm:auto-rows-fr' in source
+    assert 'sm:[&>*:nth-child(n+2)]:block' in source
     assert 'kaori-hero-tile mt-auto flex min-h-10 items-center gap-2' in source
     assert "mt-auto grid min-h-10 gap-2 {{ 'grid-cols-2' if columns == 2 else 'grid-cols-1' }}" in source
     assert 'mt-3 grid grid-cols-2 gap-2' not in source
