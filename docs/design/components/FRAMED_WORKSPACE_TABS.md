@@ -38,6 +38,7 @@ The Integration provider landing adapter `components/integration_workspace_tabs.
 
 - it owns the fixed `Integration Coverage` and `Connection Registry` view semantics;
 - it owns provider prefix/label construction and panel composition;
+- its outer card uses `operational_section_card.shell_classes()` so standard surface-shell geometry remains canonical;
 - selected state is provided through the shared `integrationWorkspaceTabs(...)` controller;
 - it calls `framed_workspace_tabs.render(...)` for the complete tab bar;
 - it must not duplicate `role="tablist"`, tab-button markup, badge geometry, or keyboard bindings.
