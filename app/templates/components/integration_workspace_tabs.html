@@ -7,6 +7,7 @@
   components/framed_workspace_tabs.html.
 #}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "components/operational_section_card.html" as operational_section_card %}
 {% macro render(provider_key, active_tab='coverage', coverage_count=0, registry_count=0) -%}
     {% set workspace_prefix = provider_key ~ '-overview' %}
     {% set workspace_label = provider_key|title ~ ' integration views' %}
@@ -16,7 +17,7 @@
         ] %}
     <section x-data="integrationWorkspaceTabs(['coverage', 'registry'], '{{ active_tab }}')"
              x-on:popstate.window="syncTab()"
-             class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+             class="{{ operational_section_card.shell_classes() }}"
              aria-label="{{ provider_key|title }} integration workspace"
              data-kaori-integration-workspace-tabs>
         {{ framed_workspace_tabs.render(workspace_tabs, workspace_prefix, workspace_label) }}
