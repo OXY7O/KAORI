@@ -129,7 +129,6 @@ def scan(root: Path) -> dict[str, dict[str, int]]:
     return result
 
 
-
 def _validate_component_ownership(root: Path) -> list[str]:
     errors: list[str] = []
     ownership_path = root / 'docs' / 'design' / 'components' / 'REUSABLE_COMPONENT_OWNERSHIP.md'
