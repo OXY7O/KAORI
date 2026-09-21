@@ -117,6 +117,35 @@ def test_notification_deck_escape_restores_trigger_focus(
 
         dialog = page.get_by_role('dialog', name='Notification deck')
         expect(dialog).to_be_visible()
+
+        if viewport_name in {'mobile', 'small-mobile'}:
+            deck = page.locator('#notification-deck')
+            deck_box = deck.bounding_box()
+            assert deck_box is not None
+            assert page.viewport_size is not None
+            assert deck_box['width'] <= page.viewport_size['width']
+            assert deck_box['width'] >= page.viewport_size['width'] - 2
+
+            tabs = dialog.locator('[data-notification-deck-tabs]')
+            expect(tabs).to_be_visible()
+            for label in ('Active Work', 'Inbox', 'Notifications'):
+                expect(tabs.get_by_role('tab', name=re.compile(label, re.I))).to_be_visible()
+
+            footer = dialog.locator('[data-notification-deck-footer]')
+            expect(footer).to_be_visible()
+            footer_box = footer.bounding_box()
+            action = footer.get_by_role('link', name='View All')
+            action_box = action.bounding_box()
+            assert footer_box is not None
+            assert action_box is not None
+            assert action_box['width'] >= footer_box['width'] * 0.8
+
+            dimensions = page.evaluate(
+                '() => ({ scrollWidth: document.documentElement.scrollWidth, '
+                "'clientWidth: document.documentElement.clientWidth })'"
+            )
+            assert dimensions['scrollWidth'] <= dimensions['clientWidth']
+
         page.keyboard.press('Escape')
         expect(dialog).to_be_hidden()
         expect(trigger).to_be_focused()
