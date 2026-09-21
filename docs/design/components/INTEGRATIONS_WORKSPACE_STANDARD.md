@@ -129,7 +129,8 @@ app/templates/integrations/components/_provider_frontpage.html
   └── Integration Overview
 
 app/templates/components/integration_workspace_tabs.html
-  └── Integration Coverage / Connection Registry tabs
+  ├── Integration Coverage / Connection Registry semantics and panels
+  └── delegates Tab Style 2 geometry to components/framed_workspace_tabs.html
 
 app/templates/integrations/components/_provider_registry.html
   ├── canonical Connection Registry geometry
@@ -166,6 +167,7 @@ Rules:
 - the Integrations landing-page Provider Catalog shows registered count, ready count, real readiness percentage, and provider posture from persisted evidence;
 - `Integration Contract`, `Consumer Resolution`, and `Authority Boundary` retain the same three-column geometry;
 - every provider front page exposes `Integration Coverage` and `Connection Registry` through the shared framed workspace tabs;
+- `integration_workspace_tabs.html` is a semantic adapter only; framed tablist/button/badge/keyboard geometry remains owned by `framed_workspace_tabs.html`;
 - provider-specific evidence belongs inside those two tabs rather than replacing the front-page hierarchy;
 - Kubernetes and MinIO use the same direct-provider asset coverage table contract; their API labels and consumer evidence may differ, but their geometry may not;
 - Metrics Source and Alertmanager use the same observability scope coverage component and only supply provider-specific semantics;
