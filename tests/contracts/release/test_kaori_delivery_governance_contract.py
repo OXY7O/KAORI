@@ -301,6 +301,8 @@ def test_ci_cd_recovery_contract_keeps_cdevents_observability_non_authoritative(
         'fresh Full Admission',
         '#440',
         'observability',
-        'not authorization',
+        'authorization',
     ):
         assert token.lower() in source.lower()
+
+    assert 'do not become an authorization plane' in source.lower()
