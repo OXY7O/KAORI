@@ -31,7 +31,7 @@ def test_core_kubernetes_final_lock_is_documented_and_quality_gated() -> None:
 
 
 def test_core_kubernetes_final_lock_keeps_obsolete_paths_removed() -> None:
-    cleanup = read('scripts/cleanup_obsolete_files.sh')
+    obsolete_registry = read('scripts/verify_obsolete_files.py')
     obsolete = (
         'app/kubernetes/dashboard/snapshot_builder.py',
         'app/static/js/analytics_capacity.js',
@@ -42,4 +42,4 @@ def test_core_kubernetes_final_lock_keeps_obsolete_paths_removed() -> None:
     )
     for relative in obsolete:
         assert not (ROOT / relative).exists()
-        assert f"'{relative}'" in cleanup
+        assert f"'{relative}'" in obsolete_registry
