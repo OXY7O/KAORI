@@ -1,13 +1,14 @@
 name: KAORI Staging Publication Reconciliation
 
 on:
-  workflow_run:
-    workflows: [KAORI Staging Deployment]
-    types: [completed]
+  push:
+    branches:
+      - kaori/uat-request
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: kaori-staging-publication-reconciliation
@@ -16,12 +17,9 @@ concurrency:
 jobs:
   reconcile:
     name: Reconcile Public Publication
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
     runs-on: [self-hosted, linux, x64, kaori-ci]
     environment: uat
-    timeout-minutes: 15
+    timeout-minutes: 30
     env:
       KAORI_HOST: ${{ vars.KAORI_HOST }}
       KAORI_HOST_USER: ${{ vars.KAORI_HOST_USER }}
@@ -45,6 +43,71 @@ jobs:
             printf 'KAORI_HOST_PORT is invalid.\n' >&2
             exit 1
           fi
+
+      - name: Wait for Exact Staging Deployment
+        if: ${{ github.event_name == 'push' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          repo_api="https://api.github.com/repos/$GITHUB_REPOSITORY"
+          current_run="$(
+            curl --fail-with-body --silent --show-error \
+              --header "Authorization: Bearer $GH_TOKEN" \
+              --header 'Accept: application/vnd.github+json' \
+              --header 'X-GitHub-Api-Version: 2022-11-28' \
+              "$repo_api/actions/runs/$GITHUB_RUN_ID"
+          )"
+          current_created_at="$(jq -r '.created_at' <<<"$current_run")"
+          [[ "$current_created_at" != 'null' && -n "$current_created_at" ]] || {
+            printf 'Unable to resolve reconciliation run creation time.\n' >&2
+            exit 1
+          }
+          lower_bound="$(
+            date -u -d "$current_created_at - 2 minutes" +'%Y-%m-%dT%H:%M:%SZ'
+          )"
+          deadline=$(( $(date +%s) + 1500 ))
+
+          while (( $(date +%s) < deadline )); do
+            runs="$(
+              curl --fail-with-body --silent --show-error \
+                --header "Authorization: Bearer $GH_TOKEN" \
+                --header 'Accept: application/vnd.github+json' \
+                --header 'X-GitHub-Api-Version: 2022-11-28' \
+                "$repo_api/actions/workflows/deploy-staging-host.yml/runs?branch=kaori%2Fuat-request&event=push&per_page=20"
+            )"
+            deployment="$(
+              jq -c \
+                --arg sha "$GITHUB_SHA" \
+                --arg lower "$lower_bound" \
+                '[.workflow_runs[]
+                  | select(.head_sha == $sha and .created_at >= $lower)]
+                 | sort_by(.run_number)
+                 | last // empty' <<<"$runs"
+            )"
+
+            if [[ -n "$deployment" ]]; then
+              deployment_id="$(jq -r '.id' <<<"$deployment")"
+              deployment_status="$(jq -r '.status' <<<"$deployment")"
+              deployment_conclusion="$(jq -r '.conclusion // empty' <<<"$deployment")"
+              printf 'Exact staging deployment · run=%s status=%s conclusion=%s\n' \
+                "$deployment_id" "$deployment_status" "${deployment_conclusion:-pending}"
+
+              if [[ "$deployment_status" == 'completed' ]]; then
+                [[ "$deployment_conclusion" == 'success' ]] || {
+                  printf 'Publication reconciliation blocked because exact staging deployment did not pass.\n' >&2
+                  exit 1
+                }
+                printf 'Exact staging deployment PASS · run=%s sha=%s\n' "$deployment_id" "$GITHUB_SHA"
+                exit 0
+              fi
+            fi
+            sleep 15
+          done
+
+          printf 'Timed out waiting for exact-SHA KAORI Staging Deployment.\n' >&2
+          exit 1
 
       - name: Reconcile via Pinned SSH Trust
         shell: bash
