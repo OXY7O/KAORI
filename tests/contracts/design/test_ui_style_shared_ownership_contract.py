@@ -60,3 +60,32 @@ def test_operational_callout_owns_semantic_action_and_supporting_content() -> No
     assert 'action_label=None' in source
     assert 'caller is defined' in source
     assert 'focus-visible:ring-outline-focus' in source
+
+
+def test_reusable_component_ownership_registry_and_framed_tab_delegation() -> None:
+    ownership = read('docs/design/components/REUSABLE_COMPONENT_OWNERSHIP.md')
+    design_readme = read('docs/design/README.md')
+    design_system = read('docs/design/DESIGN_SYSTEM.md')
+    adapter = read('app/templates/components/integration_workspace_tabs.html')
+
+    for marker in (
+        'Hero and context',
+        'Readiness and operational callouts',
+        'Tables, filters, loading, empty/error, and pagination',
+        'Forms, action bars, and destructive confirmation',
+        'Modal, drawer, and sheet surfaces',
+        'Navigation and mobile action surfaces',
+        'Operational toast and notification surfaces',
+        'Framed Workspace Tabs',
+        'Adapter rule',
+    ):
+        assert marker in ownership
+
+    assert 'components/REUSABLE_COMPONENT_OWNERSHIP.md' in design_readme
+    assert 'components/REUSABLE_COMPONENT_OWNERSHIP.md' in design_system
+    assert 'components/framed_workspace_tabs.html' in adapter
+    assert 'components/operational_section_card.html' in adapter
+    assert 'framed_workspace_tabs.render(' in adapter
+    assert 'operational_section_card.shell_classes()' in adapter
+    assert 'role="tablist"' not in adapter
+    assert '<button type="button"' not in adapter

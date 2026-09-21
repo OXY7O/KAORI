@@ -24,6 +24,7 @@ Authoritative shell standards include the locked application-shell navigation co
 - `components/CONTENT_TABS.md`
 - `components/WORKSPACE_TABS.md`
 - `components/FRAMED_WORKSPACE_TABS.md`
+- `components/REUSABLE_COMPONENT_OWNERSHIP.md` — canonical semantic ownership and adapter-extension registry for shared KAORI presentation.
 - `components/SEGMENTED_TABS.md`
 - `components/VISUALIZATION_WORKSPACE.md`
 - `components/TOPOLOGY_PALETTE.md`

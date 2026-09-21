@@ -129,12 +129,64 @@ def scan(root: Path) -> dict[str, dict[str, int]]:
     return result
 
 
+def _validate_component_ownership(root: Path) -> list[str]:
+    errors: list[str] = []
+    ownership_path = root / 'docs' / 'design' / 'components' / 'REUSABLE_COMPONENT_OWNERSHIP.md'
+    if not ownership_path.exists():
+        errors.append('reusable component ownership registry is missing')
+        ownership = ''
+    else:
+        ownership = ownership_path.read_text(encoding='utf-8')
+
+    required_ownership_tokens = (
+        'Hero and context',
+        'Readiness and operational callouts',
+        'Tables, filters, loading, empty/error, and pagination',
+        'Forms, action bars, and destructive confirmation',
+        'Modal, drawer, and sheet surfaces',
+        'Navigation and mobile action surfaces',
+        'Operational toast and notification surfaces',
+        'Framed Workspace Tabs',
+        'Adapter rule',
+    )
+    for token in required_ownership_tokens:
+        if token not in ownership:
+            errors.append(f'reusable component ownership registry missing contract: {token}')
+
+    for relative in ('docs/design/README.md', 'docs/design/DESIGN_SYSTEM.md'):
+        path = root / relative
+        source = path.read_text(encoding='utf-8')
+        if 'components/REUSABLE_COMPONENT_OWNERSHIP.md' not in source:
+            errors.append(f'{relative}: reusable component ownership registry is not registered')
+
+    integration_tabs_path = root / 'app' / 'templates' / 'components' / 'integration_workspace_tabs.html'
+    integration_tabs = integration_tabs_path.read_text(encoding='utf-8')
+    if 'components/framed_workspace_tabs.html' not in integration_tabs:
+        errors.append('integration workspace tabs must import canonical framed workspace tabs')
+    if 'components/operational_section_card.html' not in integration_tabs:
+        errors.append('integration workspace tabs must import canonical operational section shell')
+    if 'operational_section_card.shell_classes()' not in integration_tabs:
+        errors.append('integration workspace tabs must delegate outer shell geometry to operational_section_card')
+    if 'framed_workspace_tabs.render(' not in integration_tabs:
+        errors.append('integration workspace tabs must delegate tab geometry to framed_workspace_tabs.render()')
+    for forbidden in (
+        'role="tablist"',
+        '<button type="button"',
+        'rounded-t-xl border px-4 py-2.5 text-sm font-semibold',
+    ):
+        if forbidden in integration_tabs:
+            errors.append(f'integration workspace tabs duplicates framed tab ownership: {forbidden}')
+
+    return errors
+
+
 def validate(root: Path, baseline_path: Path) -> list[str]:
     payload = json.loads(baseline_path.read_text(encoding='utf-8'))
     baseline = payload.get('files', {})
     current = scan(root)
     errors: list[str] = []
     environment = Environment(autoescape=select_autoescape(default=True, default_for_string=True))
+    errors.extend(_validate_component_ownership(root))
 
     for path in sorted(set(current) | set(baseline)):
         current_metrics = current.get(path, {metric: 0 for metric in _METRICS})

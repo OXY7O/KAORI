@@ -30,6 +30,21 @@ Typical uses:
 - optional compact badges may show environment, readiness, runtime posture, target count, or scope count;
 - badge IDs follow `<prefix>-<key>-tab-badge` so HTMX OOB updates remain provider-neutral.
 
+## Adapter ownership
+
+Domain adapters may provide a stable semantic API around this component, but they must delegate the tab bar itself to this owner.
+
+The Integration provider landing adapter `components/integration_workspace_tabs.html` is the reference adapter contract:
+
+- it owns the fixed `Integration Coverage` and `Connection Registry` view semantics;
+- it owns provider prefix/label construction and panel composition;
+- its outer card uses `operational_section_card.shell_classes()` so standard surface-shell geometry remains canonical;
+- selected state is provided through the shared `integrationWorkspaceTabs(...)` controller;
+- it calls `framed_workspace_tabs.render(...)` for the complete tab bar;
+- it must not duplicate `role="tablist"`, tab-button markup, badge geometry, or keyboard bindings.
+
+See `REUSABLE_COMPONENT_OWNERSHIP.md` for the global adapter rule.
+
 ## Usage Boundary
 
 Use Tab Style 2 when a visible parent workspace shell is part of the information architecture. Use Tab Style 1 when peer navigation should attach through only a divider without a framed parent card.
