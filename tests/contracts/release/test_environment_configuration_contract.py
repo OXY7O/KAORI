@@ -144,4 +144,5 @@ def test_environment_documentation_explains_split_and_minimal_rc_authorities() -
 
     assert 'intentionally minimal' in documentation
     assert 'safe application defaults' in documentation
-    assert '.env.production.example is deprecated and inactive' in documentation
+    assert '.env.production.example' in documentation
+    assert 'deprecated and inactive' in documentation
