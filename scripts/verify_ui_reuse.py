@@ -163,6 +163,10 @@ def _validate_component_ownership(root: Path) -> list[str]:
     integration_tabs = integration_tabs_path.read_text(encoding='utf-8')
     if 'components/framed_workspace_tabs.html' not in integration_tabs:
         errors.append('integration workspace tabs must import canonical framed workspace tabs')
+    if 'components/operational_section_card.html' not in integration_tabs:
+        errors.append('integration workspace tabs must import canonical operational section shell')
+    if 'operational_section_card.shell_classes()' not in integration_tabs:
+        errors.append('integration workspace tabs must delegate outer shell geometry to operational_section_card')
     if 'framed_workspace_tabs.render(' not in integration_tabs:
         errors.append('integration workspace tabs must delegate tab geometry to framed_workspace_tabs.render()')
     for forbidden in (
