@@ -170,10 +170,7 @@ def accessed_env_keys(*relatives: str) -> set[str]:
 
 
 def runtime_python_sources() -> tuple[str, ...]:
-    app_sources = tuple(
-        str(path.relative_to(ROOT))
-        for path in sorted((ROOT / 'app').rglob('*.py'))
-    )
+    app_sources = tuple(str(path.relative_to(ROOT)) for path in sorted((ROOT / 'app').rglob('*.py')))
     entrypoints = tuple(relative for relative in RUNTIME_ENV_ENTRYPOINTS if (ROOT / relative).is_file())
     return app_sources + entrypoints
 
