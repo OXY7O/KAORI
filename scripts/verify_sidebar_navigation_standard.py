@@ -147,7 +147,7 @@ def verify() -> None:
         'sidebar frame and brand',
     )
 
-    mobile_marker = sidebar.find('data-mobile-navigation')
+    mobile_marker = sidebar.find('\n           data-mobile-navigation\n')
     mobile_aside_start = sidebar.rfind('<aside', 0, mobile_marker)
     mobile_aside_end = sidebar.find('>', mobile_marker)
     if mobile_aside_start == -1 or mobile_aside_end == -1:
