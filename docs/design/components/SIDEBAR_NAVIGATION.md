@@ -364,6 +364,16 @@ Rules for adding navigation:
 5. Every expandable parent requires `title`, `aria-label`, collapsed-sidebar expansion behavior, one stable Lucide icon, and an owned endpoint set.
 6. Every submenu link uses the standard dot, 14 px icon, single-line truncated label, and subordinate active state.
 
+## Mobile drawer ownership
+
+Desktop collapse preference and mobile drawer visibility are separate shell states.
+
+- `kaori.sidebarExpanded` owns the desktop 250 px / 78 px presentation only.
+- Mobile navigation always keeps full drawer geometry and readable labels, even when the persisted desktop preference is collapsed.
+- The mobile drawer is concealed with `x-cloak` before Alpine hydration to prevent first-paint flash.
+- Opening, closing, Escape, backdrop dismissal, and destination navigation must not rewrite the persisted desktop collapse preference.
+- Desktop-only collapse utilities and CSS behavior begin at the `lg` breakpoint.
+
 ## Enforcement and Change Control
 
 The sidebar is considered locked only when documentation, implementation, dark-mode tokens, and enforcement agree:
