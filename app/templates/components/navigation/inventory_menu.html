@@ -2,7 +2,7 @@
 <details class="sidebar-menu space-y-1"
          {% if inventory_active %}open{% endif %}>
     <!-- Inventory Parent -->
-    <summary class="{{ 'sidebar-parent-active' if inventory_active else 'sidebar-item-idle' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
+    <summary class="{{ 'sidebar-parent-active' if inventory_active else 'sidebar-item-idle' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition lg:[.sidebar-collapsed_&]:justify-center lg:[.sidebar-collapsed_&]:px-2"
              title="Kubernetes Inventory"
              aria-label="Kubernetes Inventory"
              @click="if (!sidebarExpanded) { $event.preventDefault(); toggleSidebar(); $el.parentElement.open = true }">
