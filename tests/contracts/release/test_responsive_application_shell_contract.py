@@ -18,6 +18,10 @@ def test_sidebar_owns_independent_mobile_navigation_state() -> None:
     assert 'this.$refs.mobileNavClose?.focus()' in sidebar
     assert 'this.mobileNavTrigger?.focus()' in sidebar
     assert 'data-mobile-navigation-backdrop' in sidebar
+    app_layout = _read('app/templates/layouts/app.html')
+    styles = _read('frontend/styles.css')
+    assert '@keydown.escape.window="if (window.innerWidth < 1024 && sidebarExpanded) { toggleSidebar() }"' not in app_layout
+    assert '@media (min-width: 64rem)' in styles
 
 
 def test_sidebar_is_off_canvas_on_mobile_and_preserves_desktop_collapse_authority() -> None:
