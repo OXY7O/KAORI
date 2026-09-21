@@ -84,6 +84,8 @@ def test_reusable_component_ownership_registry_and_framed_tab_delegation() -> No
     assert 'components/REUSABLE_COMPONENT_OWNERSHIP.md' in design_readme
     assert 'components/REUSABLE_COMPONENT_OWNERSHIP.md' in design_system
     assert 'components/framed_workspace_tabs.html' in adapter
+    assert 'components/operational_section_card.html' in adapter
     assert 'framed_workspace_tabs.render(' in adapter
+    assert 'operational_section_card.shell_classes()' in adapter
     assert 'role="tablist"' not in adapter
     assert '<button type="button"' not in adapter
