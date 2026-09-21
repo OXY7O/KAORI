@@ -328,11 +328,7 @@ def validate_trusted_quality_workflow_run(
     head_branch: str,
 ) -> None:
     head_repository = workflow_run.get('head_repository')
-    repository_name = (
-        str(head_repository.get('full_name') or '')
-        if isinstance(head_repository, dict)
-        else ''
-    )
+    repository_name = str(head_repository.get('full_name') or '') if isinstance(head_repository, dict) else ''
     if str(workflow_run.get('name') or '') != 'KAORI CI':
         raise RuntimeError('Workflow run is not KAORI CI.')
     if str(workflow_run.get('path') or '') != '.github/workflows/quality.yml':
