@@ -97,7 +97,7 @@ When uncertain, do not perform an image-only rollback. Preserve the current evid
 
 ## CDEvents relationship
 
-Issue #440 tracks CDEvents standardization for delivery-event observability. CDEvents are an observability representation of delivery transitions; they do not become an authorization plane. An emitted event may describe CI admission, candidate publication, deployment, UAT acceptance, promotion, rollback, or roll-forward, but it cannot replace the workflow/verifier evidence that authorizes those transitions.
+Issue #440 tracks CDEvents standardization for delivery-event observability. CDEvents are an observability representation of delivery transitions; they do not become an authorization plane. An emitted event may describe CI admission, candidate publication, deployment, UAT acceptance, promotion, rollback, or roll-forward, but it cannot replace the workflow/verifier evidence that authorizes those transitions. `docs/architecture/cdevents-delivery-lineage.md` is the pinned CDEvents vocabulary, identity, trust, retry/idempotency, sensitive-data, and failure-semantics authority.
 
 ## Operational drill
 
@@ -111,4 +111,5 @@ A recovery drill should prove, without weakening production controls, that opera
 - `deploy/server/rollback.sh`
 - `docs/deployment/RELEASE_GOVERNANCE.md`
 - `docs/setup/GITHUB_ACTIONS_CI_CD.md`
+- `docs/architecture/cdevents-delivery-lineage.md`
 - existing release-governance, delivery, and final-release verifiers under `scripts/`
