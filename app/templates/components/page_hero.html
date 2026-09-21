@@ -210,7 +210,7 @@
     grid grid-cols-1 gap-2 [&>*:nth-child(n+2)]:hidden sm:grid-cols-2 sm:auto-rows-fr sm:[&>*:nth-child(n+2)]:block
 {%- endmacro %}
 {% macro context_metric(icon, label, value, description=None, value_classes=None) -%}
-    <div class="{{ context_metric_card_classes() }}">
+    <div class="{{ context_metric_card_classes() }}" data-kaori-hero-context-metric>
         <div class="flex items-center gap-2 text-brand-foreground">
             <i data-lucide="{{ icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
             <p class="{{ context_metric_label_classes() }}">{{ label }}</p>
@@ -261,6 +261,7 @@
     <div class="grid min-w-0 grid-cols-1 gap-y-3 sm:grid-cols-[56px_minmax(0,1fr)] sm:gap-x-4 sm:gap-y-4">
         <div class="col-start-1 row-start-1 sm:col-start-2">{{ eyebrow(eyebrow_icon, eyebrow_label) }}</div>
         <span class="hidden h-12 w-12 shrink-0 items-center justify-center kaori-hero-tile rounded-xl border text-brand-foreground shadow-lg shadow-black/10 backdrop-blur sm:col-start-1 sm:row-start-2 sm:flex sm:h-14 sm:w-14"
+              data-kaori-hero-leading-icon
               aria-hidden="true">
             <i data-lucide="{{ leading_icon }}" class="h-6 w-6 sm:h-7 sm:w-7"></i>
         </span>
@@ -268,7 +269,8 @@
     </div>
 {%- endmacro %}
 {% macro meta_label(icon, label, value_id=None, suffix='') -%}
-    <span class="kaori-context-label kaori-hero-chip inline-flex min-h-8 items-center gap-2 rounded-md px-3 py-1.5 text-xs font-semibold text-brand-foreground backdrop-blur">
+    <span class="kaori-context-label kaori-hero-chip inline-flex min-h-8 items-center gap-2 rounded-md px-3 py-1.5 text-xs font-semibold text-brand-foreground backdrop-blur"
+          data-kaori-hero-metadata-item>
         <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0" aria-hidden="true"></i>
         <span>
             {% if value_id %}
