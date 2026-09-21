@@ -185,6 +185,53 @@ bash ./publish-container.sh \
 
 The repository file `sites/kaori.env.example` documents the resulting registration. After a future KAORI web-container recreation, locate the new healthy web container and rerun the same `publish-container.sh` command; KAORI deployment itself remains unaware of the public edge.
 
+## Governed staging publication reconciliation
+
+The repository keeps KAORI application deployment and public publication as separate operations.
+
+For staging/UAT, `.github/workflows/reconcile-staging-publication.yml` is the publication authority. It is triggered by the same governed `kaori/uat-request` source update used for staging deployment, but it does **not** participate in the KAORI application deployment transaction.
+
+The reconciliation workflow:
+
+1. waits for the exact-SHA `KAORI Staging Deployment` run to complete successfully;
+2. opens the existing pinned-SSH trust boundary only after that deployment is GREEN;
+3. locates the current `kaori-production` / `web` container;
+4. requires that container to be both `running` and `healthy`;
+5. invokes the existing `/opt/shared-edge/runtime/publish-container.sh` authority;
+6. invokes `/opt/shared-edge/runtime/apply.sh`, which performs the existing shared-edge verification;
+7. reports public publication success separately from KAORI application release-state success.
+
+This separation is intentional. A successful application deployment remains valid even if independent public publication fails. Publication failure must be visible and repairable, but it must not rewrite KAORI release state or trigger an image/database rollback by itself.
+
+The workflow also supports a manual `workflow_dispatch` rerun. Use that only to reconcile the currently healthy KAORI web container after an edge/publication failure; it does not redeploy KAORI.
+
+### Manual recovery remains valid
+
+If an operator needs to recover publication directly on the VPS, use the same documented commands:
+
+```bash
+cd /opt/shared-edge/runtime
+
+KAORI_WEB="$(docker ps -q \
+  --filter label=com.docker.compose.project=kaori-production \
+  --filter label=com.docker.compose.service=web | head -n1)"
+
+bash ./publish-container.sh \
+  --site-id kaori \
+  --domain kaori.cloud \
+  --container "$KAORI_WEB" \
+  --alias kaori-web \
+  --port 5000 \
+  --health-path /health/ready \
+  --tls true \
+  --websocket false \
+  --client-max-body-size 25m
+
+bash ./apply.sh
+```
+
+The automated and manual paths deliberately call the same shared-edge authorities. Do not add `edge-public` to KAORI Compose to avoid this reconciliation step.
+
 ## One-time migration from the current KAORI-owned edge
 
 The current VPS already has KAORI-owned Nginx/Certbot and an existing trusted certificate lineage.
