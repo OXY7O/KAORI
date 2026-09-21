@@ -879,7 +879,7 @@ def verify() -> None:
     dashboard_standard = _read(DASHBOARD_STANDARD)
 
     implementation_tokens = (
-        'min-h-[15.5rem]',
+        'sm:min-h-[15.5rem]',
         'lg:min-h-[17.5rem]',
         'xl:grid-cols-12',
         'xl:col-span-7',
@@ -892,9 +892,17 @@ def verify() -> None:
         'data-kaori-hero-state="{{ state }}"',
         'data-kaori-hero-metadata-policy="persistent"',
         'data-kaori-analytics-metadata',
-        'text-3xl font-bold leading-10',
-        'max-w-[44rem] text-base font-normal leading-7',
-        'grid grid-cols-2 auto-rows-fr gap-2',
+        'text-2xl font-bold leading-8',
+        'sm:text-4xl sm:leading-10',
+        'max-w-[44rem] text-sm font-normal leading-6',
+        'sm:text-base sm:leading-7',
+        'grid grid-cols-1 gap-2',
+        'sm:grid-cols-2 sm:auto-rows-fr',
+        'sm:[&>*:nth-child(n+2)]:block',
+        'sm:[&>*:nth-child(n+2)]:inline-flex',
+        'data-kaori-hero-leading-icon',
+        'data-kaori-hero-context-metric',
+        'data-kaori-hero-metadata-item',
     )
     _require_tokens(hero, implementation_tokens, 'page_hero implementation')
 
@@ -909,14 +917,16 @@ def verify() -> None:
     _require_tokens(
         standard,
         (
-            '# KAORI Hero Component Standard v1.7',
+            '# KAORI Hero Component Standard v1.8',
             'Hero Profile',
             'Hero State',
             'same Profile + same State',
             'exactly three metadata',
             'normal, blocked, and degraded',
-            '248 px / 280 px minimum',
-            '16 px, regular, 28 px line height',
+            'phone-native compact composition',
+            '248 px / 280 px minimum from `sm`',
+            '14 px / 24 px on phone',
+            '16 px / 28 px from `sm`',
             'Action Icon Box',
             'Context Icon Box',
             'Status Badge Box',
@@ -995,7 +1005,7 @@ def verify() -> None:
         'KAORI Hero component standard passed: '
         f'{len(primitive_shells)} compatibility shells, '
         f'{len(profile_templates)} profile consumers, '
-        f'{audited} audited descriptions; v1.7 persistent metadata, '
+        f'{audited} audited descriptions; v1.8 phone-native compact composition and persistent metadata, '
         '7-15 word density with a preferred 8-12 word range, maximum 110 characters, action-oriented copy, blocked/degraded state ownership, dynamic Jinja resolution, '
         'dark-mode ownership, and unmanaged-shell detection are synchronized.'
     )
