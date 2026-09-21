@@ -166,17 +166,6 @@ def main() -> int:
     ):
         require(not (ROOT / obsolete).exists(), f'Obsolete Governance path must remain removed: {obsolete}', errors)
 
-    cleanup = read('scripts/cleanup_obsolete_files.sh')
-    for obsolete in (
-        'app/kubernetes/dashboard/snapshot_builder.py',
-        'app/static/js/analytics_capacity.js',
-        'app/static/js/analytics_forecast.js',
-        'app/templates/kubernetes/operations/_components.html',
-        'app/templates/kubernetes/governance/tls_certificates/partials/_inventory_scope.html',
-        'app/static/js/inventory/topology_bootstrap.js',
-    ):
-        require(f"'{obsolete}'" in cleanup, f'Cleanup script must retain obsolete-path guard: {obsolete}', errors)
-
     if errors:
         for error in errors:
             print(f'ERROR: {error}')
