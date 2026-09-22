@@ -141,16 +141,16 @@ def test_reports_hero_copy_is_compact_and_operational() -> None:
         'generated': read('app/reports/generated/service.py'),
         'templates': read('app/reports/report_templates/service.py'),
         'schedules': read('app/reports/schedules/service.py'),
-        'storage': read('app/reports/storage/service.py'),
+        'storage': read('app/reports/overview/service.py'),
     }
     expected = {
-        'overview': 'Review reporting readiness, artifacts, automation, and coverage across KAORI infrastructure.',
+        'overview': 'Review reporting readiness, artifacts, automation, and coverage.',
         'generate': 'Build governed reports from connected data and approved Analytics or Inventory output formats.',
         'generated': (
             'Review PDF publications, XLSX analytical workbooks, and CSV exports across worker execution, artifact '
             'readiness, storage availability, and lifecycle state from generation through retention.'
         ),
-        'templates': ('Manage system templates and custom report structures for Analytics and Inventory formats.'),
+        'templates': ('Manage report templates for Analytics and Inventory output formats.'),
         'schedules': 'Automate Analytics and Inventory reports with timezone-aware schedules and retained evidence.',
         'storage': ('Review report storage readiness, integrity, and lifecycle ownership for PDF/XLSX/CSV artifacts.'),
     }
