@@ -14,37 +14,37 @@ class PageDefinition:
 PAGES: dict[str, PageDefinition] = {
     'overview': PageDefinition(
         'Analytics Overview',
-        'Review capacity, request health, consumer concentration, forecast, and posture within KAORI.',
+        'Review capacity, requests, concentration, forecasts, and posture.',
         'layout-dashboard',
         'Object Storage Analytics',
     ),
     'capacity': PageDefinition(
         'Object Storage Capacity & Usage',
-        'Review capacity, consumption trends, bucket pressure, quota posture, and growth within KAORI.',
+        'Review capacity, bucket pressure, quotas, trends, and growth.',
         'database',
         'Object Storage Analytics',
     ),
     'performance': PageDefinition(
         'Object Storage Performance',
-        'Review S3 request activity, error pressure, queue depth, in-flight demand, and traffic in KAORI.',
+        'Review S3 activity, errors, queue depth, demand, and traffic.',
         'activity',
         'Object Storage Analytics',
     ),
     'forecast': PageDefinition(
         'Forecast',
-        'Project storage growth, utilization, and exhaustion risk from committed metric history in KAORI.',
+        'Project storage growth and exhaustion risk from committed history.',
         'line-chart',
         'Object Storage Analytics',
     ),
     'top_consumers': PageDefinition(
         'Top Consumers',
-        'Rank buckets by storage, objects, request activity, errors, and concentration within KAORI.',
+        'Rank buckets by storage, objects, requests, and concentration.',
         'users',
         'Object Storage Analytics',
     ),
     'alerts': PageDefinition(
         'Alerts & Anomalies',
-        'Review active alerts from Alertmanager or Metrics Source with metric-derived operating signals.',
+        'Review active alerts and metric-derived operating signals.',
         'triangle-alert',
         'Object Storage Analytics',
     ),
