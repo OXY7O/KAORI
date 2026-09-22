@@ -65,7 +65,7 @@ def test_storage_integrity_uses_posture_actions_latest_verification_and_referenc
 
 def test_reports_requested_copy_is_compact() -> None:
     generate_service = read('app/reports/generate/service.py')
-    storage_service = read('app/reports/storage/service.py')
+    storage_service = read('app/reports/overview/service.py')
     templates_service = read('app/reports/report_templates/service.py')
 
     assert (
@@ -77,7 +77,7 @@ def test_reports_requested_copy_is_compact() -> None:
         in storage_service
     )
     assert (
-        'Manage system templates and custom report structures for Analytics and Inventory formats.' in templates_service
+        'Manage report templates for Analytics and Inventory output formats.' in templates_service
     )
 
 
