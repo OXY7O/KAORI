@@ -12,7 +12,7 @@ def read(path: str) -> str:
 def test_kubernetes_analytics_hero_copy_follows_canonical_concise_operational_context() -> None:
     expected = {
         'app/templates/kubernetes/analytics/capacity/partials/_hero.html': 'Review worker headroom, capacity, scheduling, and scaling risks.',
-        'app/templates/kubernetes/analytics/workload/partials/_hero.html': 'Review workload utilization, governance, QoS, and efficiency signals.',
+        'app/templates/kubernetes/analytics/workload/partials/_hero.html': 'Review workload utilization, governance, QoS, and efficiency.',
         'app/templates/kubernetes/analytics/forecast/partials/_hero.html': 'Review demand, growth trends, thresholds, and capacity risks.',
         'app/templates/kubernetes/analytics/top_consumers/partials/_hero.html': 'Identify leading consumers, concentration, and resource pressure.',
         'app/templates/kubernetes/analytics/alerts/partials/_hero.html': 'Review alerts, anomalies, routing, ownership, and readiness.',
