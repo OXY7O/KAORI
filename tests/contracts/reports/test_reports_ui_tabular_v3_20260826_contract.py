@@ -19,12 +19,12 @@ def has_python_string(source: str, expected: str) -> bool:
 
 def test_reports_operational_copy_is_compact_and_consistent() -> None:
     templates_service = read('app/reports/report_templates/service.py')
-    storage_service = read('app/reports/storage/service.py')
+    storage_service = read('app/reports/overview/service.py')
     storage = read('app/templates/reports/storage/index.html')
 
     assert has_python_string(
         templates_service,
-        'Manage system templates and custom report structures for Analytics and Inventory formats.',
+        'Manage report templates for Analytics and Inventory output formats.',
     )
     assert has_python_string(
         storage_service,
