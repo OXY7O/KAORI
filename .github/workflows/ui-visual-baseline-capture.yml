@@ -66,6 +66,19 @@ jobs:
             "$CI_TOOLCHAIN_IMAGE" \
             bash -lc 'pytest -q tests/ui/test_visual_regression.py --tracing retain-on-failure --screenshot only-on-failure --output tests/ui/artifacts/login'
 
+      - name: Build Authenticated Visual Test Assets
+        if: ${{ inputs.capture_scope != 'login' }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --env HOME=/tmp \
+            --volume "$PWD:/workspace" \
+            --workdir /workspace \
+            "$CI_TOOLCHAIN_IMAGE" \
+            bash -lc 'npm ci --no-audit --no-fund && npm run build-css'
+
       - name: Capture Authenticated Visual Baseline Candidate
         if: ${{ inputs.capture_scope != 'login' }}
         shell: bash
