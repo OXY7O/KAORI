@@ -63,6 +63,27 @@ def test_notification_workflow_is_completed_quality_run_only_and_repository_scop
     assert 'TELEGRAM_BOT_TOKEN' not in quality
 
 
+def test_workflow_run_security_exception_is_scoped_to_trusted_push_lineage() -> None:
+    source = read(NOTIFY_WORKFLOW)
+
+    assert (
+        'workflow_run: # zizmor: ignore[dangerous-triggers] trusted KAORI CI push lineage is validated below' in source
+    )
+    for predicate in (
+        "github.repository == 'OXY7O/KAORI'",
+        "github.event.workflow_run.name == 'KAORI CI'",
+        "github.event.workflow_run.path == '.github/workflows/quality.yml'",
+        "github.event.workflow_run.event == 'push'",
+        "github.event.workflow_run.status == 'completed'",
+        "github.event.workflow_run.head_repository.full_name == 'OXY7O/KAORI'",
+        "github.event.workflow_run.head_branch == 'kaori/staging'",
+        "github.event.workflow_run.head_branch == 'main'",
+    ):
+        assert predicate in source
+    assert 'pull_request_target:' not in source
+    assert 'pull_request:' not in source
+
+
 def test_completed_run_metadata_flows_through_environment_before_shell_use() -> None:
     source = read(NOTIFY_WORKFLOW)
 
