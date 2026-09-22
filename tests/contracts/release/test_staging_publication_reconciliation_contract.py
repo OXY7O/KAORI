@@ -32,6 +32,19 @@ def test_staging_publication_is_a_separate_post_deploy_operation() -> None:
     assert 'edge-public' not in _read(SERVER_COMPOSE)
 
 
+def test_deployment_wait_does_not_occupy_the_reconciliation_runner() -> None:
+    source = _read(WORKFLOW)
+
+    wait_job = source.split('  wait-for-deployment:', 1)[1].split('  reconcile:', 1)[0]
+    reconcile_job = source.split('  reconcile:', 1)[1]
+
+    assert 'runs-on: [self-hosted, linux, x64, platform-ci]' in wait_job
+    assert 'Wait for Exact Staging Deployment' in wait_job
+    assert 'runs-on: [self-hosted, linux, x64, kaori-ci]' in reconcile_job
+    assert 'needs: wait-for-deployment' in reconcile_job
+    assert 'Wait for Exact Staging Deployment' not in reconcile_job
+
+
 def test_reconciliation_reuses_existing_shared_edge_authorities() -> None:
     source = _read(WORKFLOW)
 
