@@ -91,7 +91,7 @@ def test_operational_dashboard_uses_one_canonical_hero_profile() -> None:
     assert 'page_hero.operational_dashboard(' in kubernetes
     assert 'page_hero.operational_dashboard(' in object_storage
     assert 'kaori-hero-description' in component
-    assert 'sm:whitespace-nowrap' in component
+    assert 'whitespace-nowrap' not in component
     for source in (kubernetes, object_storage):
         assert 'page_hero.shell_classes()' not in source
         assert 'page_hero.layout_classes()' not in source
