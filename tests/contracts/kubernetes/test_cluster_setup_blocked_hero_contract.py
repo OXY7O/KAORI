@@ -127,9 +127,7 @@ def test_governance_and_operations_blocked_copy_remains_domain_specific() -> Non
     assert 'Governance Controls' in governance
     assert "meta_label('server-cog', 'Kubernetes Operations')" not in governance
     assert 'Review certificate validity, host coverage, and rotation readiness.' in tls_hero
-    assert (
-        'Review certificate validity, coverage, issuer, and evidence.' in tls_detail
-    )
+    assert 'Review certificate validity, coverage, issuer, and evidence.' in tls_detail
     assert '{{ requested_page_title }}' in operations
     assert '{{ requested_page_description }}' in operations
     assert '>Kubernetes Cluster Setup Required</h1>' not in operations
