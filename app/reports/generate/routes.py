@@ -110,7 +110,7 @@ def generate_report() -> ResponseReturnValue:
         logger.exception('Generate Report workspace could not be loaded.')
         return render_reports_unavailable(
             page_title='Generate Report',
-            description='Build a governed report from connected KAORI data sources with retained recovery evidence.',
+            description='Build governed reports from connected KAORI data sources safely.',
             reason='KAORI could not prepare the report builder. Verify database, integration, and report storage readiness before retrying.',
             retry_url=url_for('reports.generate_report'),
         )
