@@ -70,7 +70,6 @@ def test_workflow_exposes_progressive_profiles_before_expensive_full_jobs() -> N
     assert first_profile < first_expensive
 
 
-
 def test_admission_publishes_non_authoritative_exact_sha_commit_status() -> None:
     source = read(WORKFLOW)
     admission = source.split('\n  admission:', 1)[1]
