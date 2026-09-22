@@ -67,9 +67,7 @@ def test_workflow_run_security_exception_is_scoped_to_trusted_push_lineage() -> 
     source = read(NOTIFY_WORKFLOW)
 
     assert (
-        'workflow_run: # zizmor: ignore[dangerous-triggers] '
-        'trusted KAORI CI push lineage is validated below'
-        in source
+        'workflow_run: # zizmor: ignore[dangerous-triggers] trusted KAORI CI push lineage is validated below' in source
     )
     for predicate in (
         "github.repository == 'OXY7O/KAORI'",
