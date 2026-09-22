@@ -15,35 +15,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  reconcile:
-    name: Reconcile Public Publication
-    runs-on: [self-hosted, linux, x64, kaori-ci]
-    environment: uat
+  wait-for-deployment:
+    name: Publication Deployment Gate
+    runs-on: [self-hosted, linux, x64, platform-ci]
     timeout-minutes: 30
-    env:
-      KAORI_HOST: ${{ vars.KAORI_HOST }}
-      KAORI_HOST_USER: ${{ vars.KAORI_HOST_USER }}
-      KAORI_HOST_PORT: ${{ vars.KAORI_HOST_PORT }}
-      KAORI_HOST_SSH_PRIVATE_KEY: ${{ secrets.KAORI_HOST_SSH_PRIVATE_KEY }}
-      KAORI_HOST_SSH_PASSPHRASE: ${{ secrets.KAORI_HOST_SSH_PASSPHRASE }}
-      KAORI_HOST_KNOWN_HOSTS: ${{ secrets.KAORI_HOST_KNOWN_HOSTS }}
     steps:
-      - name: Validate Publication Inputs
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          : "${KAORI_HOST:?Missing KAORI_HOST variable}"
-          : "${KAORI_HOST_USER:?Missing KAORI_HOST_USER variable}"
-          : "${KAORI_HOST_SSH_PRIVATE_KEY:?Missing KAORI_HOST_SSH_PRIVATE_KEY secret}"
-          : "${KAORI_HOST_SSH_PASSPHRASE:?Missing KAORI_HOST_SSH_PASSPHRASE secret}"
-          : "${KAORI_HOST_KNOWN_HOSTS:?Missing KAORI_HOST_KNOWN_HOSTS secret}"
-          [[ "$KAORI_HOST_USER" =~ ^[A-Za-z0-9._-]+$ ]] || exit 1
-          port="${KAORI_HOST_PORT:-22}"
-          if ! [[ "$port" =~ ^[0-9]{1,5}$ ]] || (( port < 1 || port > 65535 )); then
-            printf 'KAORI_HOST_PORT is invalid.\n' >&2
-            exit 1
-          fi
-
       - name: Wait for Exact Staging Deployment
         if: ${{ github.event_name == 'push' }}
         shell: bash
@@ -108,6 +84,36 @@ jobs:
 
           printf 'Timed out waiting for exact-SHA KAORI Staging Deployment.\n' >&2
           exit 1
+
+  reconcile:
+    name: Reconcile Public Publication
+    needs: wait-for-deployment
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    environment: uat
+    timeout-minutes: 30
+    env:
+      KAORI_HOST: ${{ vars.KAORI_HOST }}
+      KAORI_HOST_USER: ${{ vars.KAORI_HOST_USER }}
+      KAORI_HOST_PORT: ${{ vars.KAORI_HOST_PORT }}
+      KAORI_HOST_SSH_PRIVATE_KEY: ${{ secrets.KAORI_HOST_SSH_PRIVATE_KEY }}
+      KAORI_HOST_SSH_PASSPHRASE: ${{ secrets.KAORI_HOST_SSH_PASSPHRASE }}
+      KAORI_HOST_KNOWN_HOSTS: ${{ secrets.KAORI_HOST_KNOWN_HOSTS }}
+    steps:
+      - name: Validate Publication Inputs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          : "${KAORI_HOST:?Missing KAORI_HOST variable}"
+          : "${KAORI_HOST_USER:?Missing KAORI_HOST_USER variable}"
+          : "${KAORI_HOST_SSH_PRIVATE_KEY:?Missing KAORI_HOST_SSH_PRIVATE_KEY secret}"
+          : "${KAORI_HOST_SSH_PASSPHRASE:?Missing KAORI_HOST_SSH_PASSPHRASE secret}"
+          : "${KAORI_HOST_KNOWN_HOSTS:?Missing KAORI_HOST_KNOWN_HOSTS secret}"
+          [[ "$KAORI_HOST_USER" =~ ^[A-Za-z0-9._-]+$ ]] || exit 1
+          port="${KAORI_HOST_PORT:-22}"
+          if ! [[ "$port" =~ ^[0-9]{1,5}$ ]] || (( port < 1 || port > 65535 )); then
+            printf 'KAORI_HOST_PORT is invalid.\n' >&2
+            exit 1
+          fi
 
       - name: Reconcile via Pinned SSH Trust
         shell: bash
