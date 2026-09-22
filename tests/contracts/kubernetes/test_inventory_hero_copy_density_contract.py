@@ -7,43 +7,43 @@ ROOT = Path(__file__).resolve().parents[3]
 
 HERO_EXPECTATIONS = {
     'overview': (
-        'Review committed Kubernetes assets, fleet coverage, and inventory signals across KAORI systems.',
+        'Review Kubernetes inventory coverage, assets, and fleet signals.',
         'Fleet Posture',
     ),
     'nodes': (
-        'Review committed node readiness, capacity, scheduling posture, and platform characteristics.',
+        'Review node readiness, capacity, scheduling, and platform posture.',
         'Node Readiness',
     ),
     'namespaces': (
-        'Review committed namespaces, lifecycle controls, security posture, and composition in KAORI.',
+        'Review namespaces, lifecycle, security, and workload composition.',
         'Lifecycle Posture',
     ),
     'workloads': (
-        'Review committed workloads, runtime state, delivery strategy, replica posture, and placement.',
+        'Review workloads, runtime state, replicas, strategy, and placement.',
         'Runtime Posture',
     ),
     'pods': (
-        'Review committed Pods, readiness, placement, ownership, conditions, and images within KAORI.',
+        'Review Pods, readiness, placement, ownership, and conditions.',
         'Runtime Posture',
     ),
     'services': (
-        'Review committed Services, exposure models, ports, selectors, and endpoint readiness in KAORI.',
+        'Review Services, exposure, ports, selectors, and endpoints.',
         'Backend Registration',
     ),
     'ingresses': (
-        'Review committed Ingress routes, hosts, TLS coverage, backend mappings, and routing posture.',
+        'Review Ingress routes, hosts, TLS, backends, and routing posture.',
         'Routing Posture',
     ),
     'storage': (
-        'Review committed storage assets, capacity, binding, access, provisioning, and lifecycle posture.',
+        'Review storage assets, capacity, bindings, access, and lifecycle.',
         'Storage Lifecycle',
     ),
     'configuration': (
-        'Review committed ConfigMaps and Secrets, key metadata, references, and mutation evidence.',
+        'Review ConfigMaps, Secrets, references, and mutation evidence.',
         'Protected Metadata',
     ),
     'topology': (
-        'Explore Kubernetes ownership, placement, relationships, and dependencies across inventory.',
+        'Explore Kubernetes ownership, placement, links, and dependencies.',
         'Graph Coverage',
     ),
 }
@@ -64,7 +64,7 @@ def test_inventory_hero_descriptions_follow_the_compact_copy_budget() -> None:
         source = _normalized(_read(resource))
         assert description in source, resource
         assert 7 <= len(re.findall(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*", description)) <= 15, resource
-        assert len(description) <= 110, resource
+        assert len(description) <= 68, resource
         assert 'from committed Kubernetes inventory snapshots' not in source, resource
 
 
