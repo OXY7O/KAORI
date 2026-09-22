@@ -68,14 +68,8 @@ def test_reports_requested_copy_is_compact() -> None:
     storage_service = read('app/reports/storage/service.py')
     templates_service = read('app/reports/report_templates/service.py')
 
-    assert (
-        'Build governed reports from approved Analytics or Inventory data.'
-        in generate_service
-    )
-    assert (
-        'Review report storage readiness, integrity, and artifact lifecycle.'
-        in storage_service
-    )
+    assert 'Build governed reports from approved Analytics or Inventory data.' in generate_service
+    assert 'Review report storage readiness, integrity, and artifact lifecycle.' in storage_service
     assert 'Manage report templates for Analytics and Inventory output formats.' in templates_service
 
 
