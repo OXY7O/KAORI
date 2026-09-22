@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Literal
 
 from flask import Flask
-from PIL import Image
+from PIL import Image, ImageFilter
 from playwright.sync_api import Locator, Page
 
 from app.common.navigation import build_navigation_breadcrumb
@@ -21,7 +21,8 @@ VISUAL_BASELINE_MANIFEST = Path('tests/ui/baselines/authenticated-visual.json')
 VISUAL_EVIDENCE_ROOT = Path('tmp/ci-artifacts/test-output/ui-browser')
 VISUAL_BASELINE_UPDATE_ENV = 'KAORI_UPDATE_VISUAL_BASELINES'
 VISUAL_THUMBNAIL_WIDTH = 128
-VISUAL_CHANNEL_QUANTUM = 8
+VISUAL_CHANNEL_QUANTUM = 24
+VISUAL_BLUR_RADIUS = 0.75
 
 DETERMINISTIC_VISUAL_SURFACES: dict[str, tuple[str, str]] = {
     'welcome.index': ('Welcome', '/welcome'),
@@ -158,7 +159,7 @@ def assert_hero_description_contract(page: Page, viewport_name: str) -> None:
 
 
 def build_visual_thumbnail(image: Image.Image) -> Image.Image:
-    rgb = image.convert('RGB')
+    rgb = image.convert('RGB').filter(ImageFilter.GaussianBlur(VISUAL_BLUR_RADIUS))
     thumbnail_height = max(1, round(rgb.height * VISUAL_THUMBNAIL_WIDTH / rgb.width))
     thumbnail = rgb.resize(
         (VISUAL_THUMBNAIL_WIDTH, thumbnail_height),
