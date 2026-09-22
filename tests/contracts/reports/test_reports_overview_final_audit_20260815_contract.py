@@ -25,7 +25,7 @@ def test_reports_overview_identity_and_hero_copy_are_explicit() -> None:
     assert "'page_title': 'Reports Overview'" in service
     assert "normalized.setdefault('page_title', 'Reports Overview')" in presentation
     assert '{% block title %}Reports Overview{% endblock title %}' in page
-    assert 'coverage across KAORI infrastructure' in service
+    assert 'Review reporting readiness, artifacts, automation, and coverage.' in service
 
 
 def test_report_workspace_hero_descriptions_keep_consistent_operational_depth() -> None:
@@ -36,17 +36,17 @@ def test_report_workspace_hero_descriptions_keep_consistent_operational_depth() 
         'generated_detail': read('app/templates/reports/generated/detail.html'),
         'templates': read('app/reports/report_templates/service.py'),
         'schedules': read('app/reports/schedules/service.py'),
-        'storage': read('app/reports/overview/service.py'),
+        'storage': read('app/reports/storage/service.py'),
     }
 
     expected_fragments = {
-        'overview': 'coverage across KAORI infrastructure',
-        'generate': 'connected data and approved Analytics or Inventory output formats',
-        'generated': 'report execution, artifact readiness, storage availability, and retained lifecycle state',
-        'generated_detail': 'report scope, artifact evidence, execution state, history, and delivery readiness',
-        'templates': 'system templates and custom report structures',
-        'schedules': 'timezone-aware schedules and retained evidence',
-        'storage': 'storage readiness, integrity, and lifecycle ownership',
+        'overview': 'Review reporting readiness, artifacts, automation, and coverage.',
+        'generate': 'Build governed reports from approved Analytics or Inventory data.',
+        'generated': 'Review report execution, artifacts, storage, and lifecycle state.',
+        'generated_detail': 'Review report scope, artifacts, execution, and delivery readiness.',
+        'templates': 'Manage report templates for Analytics and Inventory output formats.',
+        'schedules': 'Automate Analytics and Inventory reports with governed schedules.',
+        'storage': 'Review report storage readiness, integrity, and artifact lifecycle.',
     }
     for key, fragment in expected_fragments.items():
         if key in {'templates', 'storage'}:
