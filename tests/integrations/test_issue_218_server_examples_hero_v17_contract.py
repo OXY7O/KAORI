@@ -7,9 +7,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 MINIMUM_HERO_DESCRIPTION = 'Review cluster health, capacity, alerts, and readiness.'
-PREFERRED_HERO_DESCRIPTION = (
-    'Review report execution, artifact readiness, storage, and lifecycle.'
-)
+PREFERRED_HERO_DESCRIPTION = 'Review report execution, artifact readiness, storage, and lifecycle.'
 
 
 def test_server_deployment_boundary_is_repository_canonical() -> None:
