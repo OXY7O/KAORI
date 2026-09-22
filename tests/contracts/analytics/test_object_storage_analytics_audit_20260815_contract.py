@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -13,14 +14,16 @@ def test_object_storage_hero_copy_is_specific_without_becoming_verbose() -> None
     pages = read('app/storage/object_storage/analytics/pages.py')
 
     expected = (
-        'Review capacity, consumption trends, bucket pressure, quota posture, and growth within KAORI.',
-        'Review S3 request activity, error pressure, queue depth, in-flight demand, and traffic in KAORI.',
-        'Project storage growth, utilization, and exhaustion risk from committed metric history in KAORI.',
-        'Rank buckets by storage, objects, request activity, errors, and concentration within KAORI.',
+        'Review capacity, bucket pressure, quotas, trends, and growth.',
+        'Review S3 activity, errors, queue depth, demand, and traffic.',
+        'Project storage growth and exhaustion risk from committed history.',
+        'Rank buckets by storage, objects, requests, and concentration.',
     )
     for copy in expected:
         assert copy in pages
-        assert 89 <= len(copy) <= 96
+        words = re.findall(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*", copy)
+        assert 7 <= len(words) <= 15
+        assert len(copy) <= 68
 
 
 def test_object_storage_blocker_reuses_kubernetes_analytics_dependency_surface() -> None:

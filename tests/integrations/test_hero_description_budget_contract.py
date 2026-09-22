@@ -30,7 +30,7 @@ def test_hero_description_budget_enforces_target_and_hard_boundary() -> None:
             owner='too-many-words',
         )
 
-    with pytest.raises(AssertionError, match='110 characters'):
+    with pytest.raises(AssertionError, match='68 characters'):
         validate(
             'Review extraordinarily comprehensive observability configurations, interoperability characteristics, and telecommunications dependencies.',
             owner='oversized',
@@ -43,7 +43,7 @@ def test_hero_description_budget_enforces_target_and_hard_boundary() -> None:
         )
 
     validate(
-        'Review node health, memory, alerts, configuration, risks, actions, and scope.',
+        'Review node health, memory, alerts, risks, actions, and scope.',
         owner='preferred-density',
     )
 
@@ -60,7 +60,7 @@ def test_integration_domain_hero_descriptions_are_registered_with_global_budget_
 
     assert (
         descriptions['Integration domain Orchestration']
-        == 'Connect cluster providers through discovery, connectivity, and governed orchestration workflows.'
+        == 'Connect cluster providers through governed orchestration contracts.'
     )
     assert set(descriptions) == {
         'Integration domain Orchestration',
@@ -74,8 +74,8 @@ def test_cluster_required_blocked_hero_descriptions_are_registered_with_global_b
     descriptions = namespace['_cluster_required_descriptions']()
     values = set(descriptions.values())
 
-    assert 'Validate replacement certificate pairing and coverage before rotating one live TLS Secret.' in values
-    assert 'Validate one certificate pair against selected TLS Secrets before controlled rotation in KAORI.' in values
+    assert 'Validate certificate pairing and coverage before Secret rotation.' in values
+    assert 'Validate a certificate pair before controlled TLS Secret rotation.' in values
     assert (
         'Validate replacement certificate material, key matching, and target coverage before rotating one live TLS Secret.'
         not in values

@@ -11,7 +11,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('history', 'Access', 'shield-check') %}
                         <h1 class="{{ page_hero.title_classes() }}">Activity Audit</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Review administrative, authentication, and operational evidence recorded by KAORI for audit.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review auth events, admin actions, and operational audit evidence.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('list-checks', summary.events_24h ~ ' Events · 24H') }}
                             {{ page_hero.meta_label('users-round', summary.actors_24h ~ ' Actors · 24H') }}

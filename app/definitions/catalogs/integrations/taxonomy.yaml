@@ -3,19 +3,19 @@ kind: integration_taxonomy
 domains:
 - key: orchestration
   label: Orchestration
-  description: Connect cluster providers through discovery, connectivity, and governed orchestration workflows.
+  description: Connect cluster providers through governed orchestration contracts.
   icon: boxes
   workspace_endpoint: integrations.orchestration
   order: 10
 - key: observability
   label: Observability
-  description: Connect metrics and alerting providers through validation and governed observability workflows.
+  description: Connect metrics and alerting providers through governed contracts.
   icon: activity
   workspace_endpoint: integrations.observability
   order: 20
 - key: storage
   label: Storage
-  description: Connect object, file, and block storage providers for governed capacity and data services.
+  description: Connect storage providers through governed capacity services.
   icon: database
   workspace_endpoint: integrations.storage
   order: 30

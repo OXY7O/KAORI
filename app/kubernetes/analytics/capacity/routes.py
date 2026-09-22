@@ -22,7 +22,7 @@ def _initial_tab() -> str:
 _PAGE = {
     'dataset_key': 'analytics.capacity',
     'title': 'Capacity Analysis',
-    'description': 'Review capacity, allocation, and headroom while KAORI prepares long-range analysis.',
+    'description': 'Review capacity and headroom while KAORI prepares analysis.',
     'icon': 'server-cog',
     'page_id': 'capacity-page',
 }

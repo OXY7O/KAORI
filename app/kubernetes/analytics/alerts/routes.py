@@ -36,7 +36,7 @@ _ALERT_TABS = {
 _PAGE = {
     'dataset_key': 'analytics.alerts',
     'title': 'Alerts & Anomalies',
-    'description': 'Review alert signals while analytics workers prepare shared KAORI evidence.',
+    'description': 'Review alert signals while workers prepare analytics evidence.',
     'icon': 'siren',
     'page_id': 'alerts-page-content',
 }

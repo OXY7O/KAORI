@@ -164,7 +164,7 @@ def _record_validation_activity(
 @cluster_required(
     'TLS Secret Rotation',
     page_title='Rotate TLS Secret',
-    page_description='Validate replacement certificate pairing and coverage before rotating one live TLS Secret.',
+    page_description='Validate certificate pairing and coverage before Secret rotation.',
 )
 def tls_secret_rotate(certificate_id: int):
     record = get_tls_certificate_detail(certificate_id)
@@ -286,7 +286,7 @@ def tls_secret_rotate_apply(certificate_id: int):
 @cluster_required(
     'TLS Secret Rotation',
     page_title='Bulk TLS Secret Rotation',
-    page_description='Validate one certificate pair against selected TLS Secrets before controlled rotation in KAORI.',
+    page_description='Validate a certificate pair before controlled TLS Secret rotation.',
 )
 def tls_secret_bulk_rotation_page():
     payload = get_tls_certificate_page(request.args)

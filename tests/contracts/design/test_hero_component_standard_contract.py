@@ -57,7 +57,8 @@ def test_hero_documentation_has_one_global_contract_and_one_domain_extension() -
     assert 'normal, blocked, and degraded' in global_standard
     assert '7–15 words' in global_standard
     assert '8–12 words' in global_standard
-    assert 'maximum 110 characters' in global_standard
+    assert 'maximum 68 characters' in global_standard
+    assert 'one visual line at canonical non-phone widths' in global_standard
     assert 'action-oriented' in global_standard
     assert 'phone-native compact composition' in global_standard
     assert '14 px / 24 px on phone' in global_standard
@@ -89,6 +90,8 @@ def test_operational_dashboard_uses_one_canonical_hero_profile() -> None:
     assert 'data-kaori-hero-metadata-policy="persistent"' in component
     assert 'page_hero.operational_dashboard(' in kubernetes
     assert 'page_hero.operational_dashboard(' in object_storage
+    assert 'kaori-hero-description' in component
+    assert 'whitespace-nowrap' not in component
     for source in (kubernetes, object_storage):
         assert 'page_hero.shell_classes()' not in source
         assert 'page_hero.layout_classes()' not in source

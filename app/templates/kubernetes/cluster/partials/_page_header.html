@@ -4,7 +4,7 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('server-cog', page_eyebrow or 'Kubernetes Integration', page_icon) %}
                 <h1 class="{{ page_hero.title_classes() }}">{{ page_title }}</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Update KAORI identity and Kubernetes API policy without replacing the saved connection record.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Update KAORI identity and Kubernetes API policy safely.</p>
                 {% if page_badges %}
                     <div class="{{ page_hero.metadata_row_classes() }}">
                         {% for badge in page_badges %}{{ page_hero.meta_label(badge.icon or 'tag', badge.label) }}{% endfor %}

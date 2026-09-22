@@ -24,11 +24,11 @@ def test_reports_operational_copy_is_compact_and_consistent() -> None:
 
     assert has_python_string(
         templates_service,
-        'Manage system templates and custom report structures for Analytics and Inventory formats.',
+        'Manage report templates for Analytics and Inventory output formats.',
     )
     assert has_python_string(
         storage_service,
-        'Review report storage readiness, integrity, and lifecycle ownership for PDF/XLSX/CSV artifacts.',
+        'Review report storage readiness, integrity, and artifact lifecycle.',
     )
     assert 'S3-compatible target for generated reports and verification evidence.' in storage
 

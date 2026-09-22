@@ -74,7 +74,7 @@ def get_report_templates_payload(
 
     return {
         'page_title': 'Report Templates',
-        'page_subtitle': ('Manage system templates and custom report structures for Analytics and Inventory formats.'),
+        'page_subtitle': ('Manage report templates for Analytics and Inventory output formats.'),
         'summary_cards': get_summary_cards(all_templates),
         'posture': get_template_posture(all_templates),
         'filter_options': get_filter_options(),

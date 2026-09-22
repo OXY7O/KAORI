@@ -13,7 +13,7 @@
     <div class="kaori-integration-semantic space-y-6">
         {{ provider_front.hero("activity", "chart-no-axes-combined",
                 "Metrics Sources",
-                "Register metrics providers, bind consumers, and route queries through neutral source contracts.",
+                "Register metrics providers and bind consumers through contracts.",
                 stats.total, stats.ready, stats.bindings, posture_status, url_for('integrations.select_metrics_source_provider') ,
         ready_total=stats.configured,
         register_label='Register Metrics Source') }}

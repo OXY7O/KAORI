@@ -72,9 +72,9 @@ def test_reports_pages_publish_analytics_excel_as_analysis_artifact() -> None:
     assert 'PDF publications, XLSX analytical workbooks, and CSV exports' in generated_service
     assert 'PDF · XLSX · CSV Artifacts' in generated_page
     assert 'Analytics XLSX is a drill-down analysis artifact' in generated_detail
-    assert 'Analytics and Inventory reports with timezone-aware schedules and retained evidence' in schedules_service
+    assert 'Automate Analytics and Inventory reports with governed schedules.' in schedules_service
     assert 'Analytics schedules may publish PDF, XLSX, or CSV' in schedules_page
-    assert 'PDF/XLSX/CSV artifacts' in storage_service
+    assert 'Review report storage readiness, integrity, and artifact lifecycle.' in storage_service
     assert 'PDF · XLSX · CSV Artifacts' in storage_page
 
 

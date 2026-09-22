@@ -98,6 +98,39 @@ def test_authenticated_navigation_and_light_dark_theme(
         assert (before_class, before_theme) != (after_class, after_theme)
 
 
+def test_hero_description_is_one_untruncated_line_on_non_phone_viewports(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Keep the shared Hero description to one visible line on every canonical non-phone viewport."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+
+    if viewport_name not in {'large-desktop', 'laptop', 'compact-laptop', 'tablet'}:
+        return
+
+    with _browser_evidence(page, 'hero-description-single-line', viewport_name):
+        _login(page, kaori_authenticated_base_url)
+
+        description = page.locator('.kaori-hero-description').first
+        expect(description).to_be_visible()
+        metrics = description.evaluate(
+            """element => {
+                const style = window.getComputedStyle(element);
+                const rect = element.getBoundingClientRect();
+                return {
+                    clientWidth: element.clientWidth,
+                    scrollWidth: element.scrollWidth,
+                    height: rect.height,
+                    lineHeight: Number.parseFloat(style.lineHeight),
+                };
+            }"""
+        )
+        assert metrics['scrollWidth'] <= metrics['clientWidth'] + 1
+        assert metrics['height'] <= metrics['lineHeight'] + 1
+
+
 def test_notification_deck_escape_restores_trigger_focus(
     configured_page: Page,
     kaori_viewport: tuple[str, tuple[int, int]],

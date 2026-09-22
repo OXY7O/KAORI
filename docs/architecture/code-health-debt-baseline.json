@@ -93,8 +93,8 @@
     "app/kubernetes/analytics/overview/service.py": 1712,
     "app/kubernetes/analytics/utilization/service.py": 1103,
     "app/reports/generated/service.py": 1665,
-    "app/reports/overview/service.py": 1028,
-    "app/reports/schedules/service.py": 940,
-    "app/reports/storage/service.py": 951
+    "app/reports/overview/service.py": 1026,
+    "app/reports/schedules/service.py": 938,
+    "app/reports/storage/service.py": 949
   }
 }
