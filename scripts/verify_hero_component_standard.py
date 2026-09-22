@@ -895,7 +895,7 @@ def verify() -> None:
         'max-w-[44rem] text-sm font-normal leading-6',
         'sm:text-base sm:leading-7',
         'kaori-hero-description',
-        'xl:whitespace-nowrap',
+        'sm:whitespace-nowrap',
         'grid grid-cols-1 gap-2',
         'sm:grid-cols-2 sm:auto-rows-fr',
         'sm:[&>*:nth-child(n+2)]:block',
@@ -940,7 +940,7 @@ def verify() -> None:
             'The canonical verifier enforces the 7–15 word boundary',
             'preferably 8–12 words',
             'maximum 68 characters',
-            'one visual line at canonical desktop/laptop widths',
+            'one visual line at canonical non-phone widths',
             'action-oriented',
             'Integration domain descriptions are audited from',
             '## Change procedure',
@@ -1007,7 +1007,7 @@ def verify() -> None:
         f'{len(primitive_shells)} compatibility shells, '
         f'{len(profile_templates)} profile consumers, '
         f'{audited} audited descriptions; v1.8 phone-native compact composition and persistent metadata, '
-        '7-15 word density with a preferred 8-12 word range, maximum 68 characters, desktop/laptop single-line ownership, action-oriented copy, blocked/degraded state ownership, dynamic Jinja resolution, '
+        '7-15 word density with a preferred 8-12 word range, maximum 68 characters, non-phone single-line ownership, action-oriented copy, blocked/degraded state ownership, dynamic Jinja resolution, '
         'dark-mode ownership, and unmanaged-shell detection are synchronized.'
     )
 
