@@ -76,9 +76,7 @@ def test_reports_requested_copy_is_compact() -> None:
         'Review report storage readiness, integrity, and lifecycle ownership for PDF/XLSX/CSV artifacts.'
         in storage_service
     )
-    assert (
-        'Manage report templates for Analytics and Inventory output formats.' in templates_service
-    )
+    assert 'Manage report templates for Analytics and Inventory output formats.' in templates_service
 
 
 def test_reports_section_headings_use_canonical_icons() -> None:
