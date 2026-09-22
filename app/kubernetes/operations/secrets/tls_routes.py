@@ -164,7 +164,7 @@ def _record_validation_activity(
 @cluster_required(
     'TLS Secret Rotation',
     page_title='Rotate TLS Secret',
-    page_description='Validate replacement certificate pairing and coverage before rotating one live TLS Secret.',
+    page_description='Validate certificate pairing and coverage before Secret rotation.',
 )
 def tls_secret_rotate(certificate_id: int):
     record = get_tls_certificate_detail(certificate_id)
