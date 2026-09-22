@@ -85,7 +85,6 @@ jobs:
           printf 'Timed out waiting for exact-SHA KAORI Staging Deployment.\n' >&2
           exit 1
 
-
   reconcile:
     name: Reconcile Public Publication
     needs: wait-for-deployment
