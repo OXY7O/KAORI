@@ -119,7 +119,8 @@ def test_authenticated_visual_baseline_manifest_is_complete_and_reviewable() -> 
     assert 'KAORI_UPDATE_VISUAL_BASELINES' in source
     assert 'build_visual_thumbnail' in source
     assert 'VISUAL_THUMBNAIL_WIDTH = 128' in source
-    assert 'VISUAL_CHANNEL_QUANTUM = 8' in source
+    assert 'VISUAL_CHANNEL_QUANTUM = 24' in source
+    assert 'VISUAL_BLUR_RADIUS = 0.75' in source
     assert 'actual_path.write_bytes(actual_png)' in source
     assert "os.environ.get(VISUAL_BASELINE_UPDATE_ENV) == '1'" in source
 
