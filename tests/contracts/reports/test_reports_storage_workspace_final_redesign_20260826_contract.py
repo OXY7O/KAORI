@@ -65,15 +65,15 @@ def test_storage_integrity_uses_posture_actions_latest_verification_and_referenc
 
 def test_reports_requested_copy_is_compact() -> None:
     generate_service = read('app/reports/generate/service.py')
-    storage_service = read('app/reports/overview/service.py')
+    storage_service = read('app/reports/storage/service.py')
     templates_service = read('app/reports/report_templates/service.py')
 
     assert (
-        'Build governed reports from connected data and approved Analytics or Inventory output formats.'
+        'Build governed reports from approved Analytics or Inventory data.'
         in generate_service
     )
     assert (
-        'Review report storage readiness, integrity, and lifecycle ownership for PDF/XLSX/CSV artifacts.'
+        'Review report storage readiness, integrity, and artifact lifecycle.'
         in storage_service
     )
     assert 'Manage report templates for Analytics and Inventory output formats.' in templates_service
