@@ -8,7 +8,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 MINIMUM_HERO_DESCRIPTION = 'Review cluster health, capacity, alerts, and readiness.'
 PREFERRED_HERO_DESCRIPTION = (
-    'Review report execution, artifact readiness, storage availability, and retained lifecycle state.'
+    'Review report execution, artifact readiness, storage, and lifecycle.'
 )
 
 
