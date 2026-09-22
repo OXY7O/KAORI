@@ -53,7 +53,7 @@ def test_reports_pages_publish_analytics_excel_as_analysis_artifact() -> None:
     generated_detail = read('app/templates/reports/generated/detail.html')
     schedules_service = read('app/reports/schedules/service.py')
     schedules_page = read('app/templates/reports/schedules/index.html')
-    storage_service = read('app/reports/storage/service.py')
+    storage_service = read('app/reports/overview/service.py')
     storage_page = read('app/templates/reports/storage/index.html')
 
     assert 'Analytics: PDF, XLSX, or CSV; PDF is the default.' in readme
