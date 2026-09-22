@@ -15,7 +15,7 @@ scripts/verify_hero_component_standard.py
 tests/contracts/design/test_hero_component_standard_contract.py
 ```
 
-The v1.8 change preserves the accepted Violet identity, dark-mode ownership, accessibility, HTMX stability, context semantics, and tablet/desktop Hero grammar while adding a **phone-native compact composition** below `sm` (640 px). The phone contract removes desktop minimum-height floors, reduces padding/gaps and typography, omits the decorative leading icon, and prioritizes primary metadata/context evidence. From `sm` upward, the established v1.7 geometry and typography remain authoritative. UAT clarification under #470 makes the description intent executable: 7–15 words, preferably 8–12 words, one action-oriented sentence, maximum 68 characters, and **one visual line at canonical desktop/laptop widths (1280 px and above)** without ellipsis, clipping, or hidden overflow. Tablet/mobile may wrap naturally for readability.
+The v1.8 change preserves the accepted Violet identity, dark-mode ownership, accessibility, HTMX stability, context semantics, and tablet/desktop Hero grammar while adding a **phone-native compact composition** below `sm` (640 px). The phone contract removes desktop minimum-height floors, reduces padding/gaps and typography, omits the decorative leading icon, and prioritizes primary metadata/context evidence. From `sm` upward, the established v1.7 geometry and typography remain authoritative. UAT clarification under #470 makes the description intent executable: 7–15 words, preferably 8–12 words, one action-oriented sentence, maximum 68 characters, and **one visual line at canonical non-phone widths (768 px and above)** without ellipsis, clipping, or hidden overflow. Phone viewports below 640 px may wrap naturally for readability.
 
 ## Purpose
 
@@ -202,7 +202,7 @@ The right panel retains the same 12 px row rhythm. Do not add page-local height,
 |---|---|---|
 | Eyebrow | `intro()` / `eyebrow()` | 12 px, semibold, uppercase |
 | Title | `title_classes()` | 24 px / 32 px line height on phone; 36 px / 40 px from `sm`, bold |
-| Description | `description_classes()` | 14 px / 24 px on phone; 16 px / 28 px from `sm`; natural wrapping below `xl`; one untruncated visual line from `xl` (1280 px) |
+| Description | `description_classes()` | 14 px / 24 px on phone; 16 px / 28 px from `sm`; natural wrapping below `sm`; one untruncated visual line from `sm` (640 px) |
 | Metadata label | `meta_label()` | 12 px semibold, 32 px minimum height |
 | Context eyebrow | `context_panel_eyebrow_classes()` | 12 px semibold, uppercase |
 | Context title | `context_panel_title_classes()` | 16 px semibold, 24 px line height |
@@ -230,7 +230,7 @@ Copy budget is canonical and executable:
 
 - description boundary: 7–15 words, preferably 8–12 words, maximum 68 characters;
 - description form: one action-oriented complete sentence with no manual line break;
-- desktop/laptop rendering: exactly one visual line from the canonical 1280 px laptop viewport upward, with no ellipsis, clipping, hidden overflow, or page-local typography shrink;
+- non-phone rendering: exactly one visual line from the canonical non-phone viewport matrix upward, with no ellipsis, clipping, hidden overflow, or page-local typography shrink;
 - right-panel title: 2–4 words;
 - status label: 1–3 words;
 - metric label: 1–3 words;
@@ -238,7 +238,7 @@ Copy budget is canonical and executable:
 
 Reference examples are `Review health, capacity, alerts, inventory, and prioritized actions.` and `Review report execution, artifact readiness, storage, and lifecycle state.`
 
-Word count and the maximum 68 characters are executable copy-density boundaries. The rendered desktop/laptop single-line invariant is the visual authority: fitting the character budget alone is not sufficient if the text still overflows or wraps at the canonical 1280 px laptop viewport. The 8–12 word range is preferred for scanability. Descriptions remain action-oriented and start with an imperative-style action verb; semantic clarity remains mandatory. Long evidence explanations belong below the Hero.
+Word count and the maximum 68 characters are executable copy-density boundaries. The rendered non-phone single-line invariant is the visual authority: fitting the character budget alone is not sufficient if the text still overflows or wraps at the canonical non-phone viewport matrix. The 8–12 word range is preferred for scanability. Descriptions remain action-oriented and start with an imperative-style action verb; semantic clarity remains mandatory. Long evidence explanations belong below the Hero.
 
 ## Dynamic and HTMX behavior
 
@@ -329,7 +329,7 @@ The verifier must:
 - reject unmanaged Hero-like local surfaces that bypass the component;
 - report compatibility-shell, profile-consumer, and description-audit counts separately.
 
-The canonical verifier enforces the 7–15 word boundary, maximum 68 characters, one complete sentence, action-oriented wording, no manual line break, shared description-marker ownership, and desktop single-line presentation ownership. Browser evidence remains responsible for proving that the rendered line fits without overflow at canonical desktop/laptop widths. The preferably 8–12 words range is an editorial target for scanability within that executable boundary.
+The canonical verifier enforces the 7–15 word boundary, maximum 68 characters, one complete sentence, action-oriented wording, no manual line break, shared description-marker ownership, and desktop single-line presentation ownership. Browser evidence remains responsible for proving that the rendered line fits without overflow at canonical non-phone widths. The preferably 8–12 words range is an editorial target for scanability within that executable boundary.
 
 Integration domain descriptions are audited from `app/definitions/catalogs/integrations/taxonomy.yaml` because `app/templates/integrations/domain.html` renders those descriptions dynamically. Other source-controlled dynamic Hero copy must gain an equally explicit audit path when introduced.
 
@@ -360,7 +360,7 @@ python -m pytest -q \
 
 - profile and state are explicit for a profile-managed family;
 - same Profile + same State has one composition;
-- one `h1` and one concise 7–15 word description, preferably 8–12 words, action-oriented, no more than 68 characters, and one visual line at canonical desktop/laptop widths;
+- one `h1` and one concise 7–15 word description, preferably 8–12 words, action-oriented, no more than 68 characters, and one visual line at canonical non-phone widths;
 - operational profile metadata is persistent in normal, blocked, and degraded states;
 - phone presentation keeps primary metadata/context evidence visible while secondary detail is restored from `sm`;
 - context panel has no more than two metrics;
