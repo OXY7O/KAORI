@@ -47,7 +47,7 @@ DESCRIPTION_MIN_WORDS = 7
 DESCRIPTION_MAX_WORDS = 15
 DESCRIPTION_PREFERRED_MIN_WORDS = 8
 DESCRIPTION_PREFERRED_MAX_WORDS = 12
-DESCRIPTION_MAX_CHARS = 110
+DESCRIPTION_MAX_CHARS = 68
 DESCRIPTION_ACTION_STARTERS = frozenset(
     {
         'access',
@@ -896,6 +896,8 @@ def verify() -> None:
         'sm:text-4xl sm:leading-10',
         'max-w-[44rem] text-sm font-normal leading-6',
         'sm:text-base sm:leading-7',
+        'kaori-hero-description',
+        'xl:whitespace-nowrap',
         'grid grid-cols-1 gap-2',
         'sm:grid-cols-2 sm:auto-rows-fr',
         'sm:[&>*:nth-child(n+2)]:block',
@@ -939,7 +941,8 @@ def verify() -> None:
             'components/DARK_MODE.md',
             'The canonical verifier enforces the 7–15 word boundary',
             'preferably 8–12 words',
-            'maximum 110 characters',
+            'maximum 68 characters',
+            'one visual line at canonical desktop/laptop widths',
             'action-oriented',
             'Integration domain descriptions are audited from',
             '## Change procedure',
@@ -1006,7 +1009,7 @@ def verify() -> None:
         f'{len(primitive_shells)} compatibility shells, '
         f'{len(profile_templates)} profile consumers, '
         f'{audited} audited descriptions; v1.8 phone-native compact composition and persistent metadata, '
-        '7-15 word density with a preferred 8-12 word range, maximum 110 characters, action-oriented copy, blocked/degraded state ownership, dynamic Jinja resolution, '
+        '7-15 word density with a preferred 8-12 word range, maximum 68 characters, desktop/laptop single-line ownership, action-oriented copy, blocked/degraded state ownership, dynamic Jinja resolution, '
         'dark-mode ownership, and unmanaged-shell detection are synchronized.'
     )
 
