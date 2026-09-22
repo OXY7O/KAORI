@@ -4,7 +4,7 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('layout-grid', 'Kubernetes Workload Inventory', 'boxes') %}
                 <h1 class="{{ page_hero.title_classes() }}">Workload Inventory</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review committed workloads, runtime state, delivery strategy, replica posture, and placement.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review workloads, runtime state, replicas, strategy, and placement.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {% if cluster_onboarding.is_blocked %}
                         {{ page_hero.meta_label('database', 'Committed Inventory') }}
