@@ -150,6 +150,7 @@ def kaori_authenticated_base_url() -> Iterator[str]:
         deleted_at=None,
     )
     app = create_app('testing')
+    app.config['AUTH_LOGIN_RATE_LIMIT'] = '1000 per minute'
     auth_result = AuthResult(True, 'success', source='database', user=user)
 
     with (
