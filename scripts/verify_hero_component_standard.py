@@ -719,7 +719,7 @@ def _cluster_required_descriptions() -> dict[str, str]:
             if description_node is None or (
                 isinstance(description_node, ast.Constant) and description_node.value is None
             ):
-                description = f'Review {operation} prerequisites through the selected cluster.'
+                description = f'Review {operation} readiness for the selected cluster.'
             else:
                 description = _static_string(description_node, owner=owner)
             descriptions[f'cluster_required {owner}'] = _effective_cluster_required_description(description)
