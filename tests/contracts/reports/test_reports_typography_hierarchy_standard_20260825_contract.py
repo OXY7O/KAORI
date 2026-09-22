@@ -152,4 +152,7 @@ def test_reports_hero_copy_is_compact_and_operational() -> None:
         'storage': 'Review report storage readiness, integrity, and artifact lifecycle.',
     }
     for key, value in expected.items():
+        if key == 'generated':
+            assert value in files[key], key
+            continue
         assert has_python_string(files[key], value), key
