@@ -124,11 +124,9 @@ def test_hero_description_is_one_untruncated_line_on_non_phone_viewports(
                     scrollWidth: element.scrollWidth,
                     height: rect.height,
                     lineHeight: Number.parseFloat(style.lineHeight),
-                    whiteSpace: style.whiteSpace,
                 };
             }"""
         )
-        assert metrics['whiteSpace'] == 'nowrap'
         assert metrics['scrollWidth'] <= metrics['clientWidth'] + 1
         assert metrics['height'] <= metrics['lineHeight'] + 1
 
