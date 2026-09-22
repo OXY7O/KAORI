@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -20,7 +21,9 @@ def test_object_storage_hero_copy_is_specific_without_becoming_verbose() -> None
     )
     for copy in expected:
         assert copy in pages
-        assert 89 <= len(copy) <= 96
+        words = re.findall(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*", copy)
+        assert 7 <= len(words) <= 15
+        assert len(copy) <= 68
 
 
 def test_object_storage_blocker_reuses_kubernetes_analytics_dependency_surface() -> None:
