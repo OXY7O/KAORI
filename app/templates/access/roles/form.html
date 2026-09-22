@@ -71,13 +71,13 @@
                         </h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">
                             {% if page_mode == 'clone' %}
-                                Create an editable role from the protected {{ clone_source.display_name }} permission baseline with access evidence.
+                                Create roles from protected {{ clone_source.display_name }} permissions with evidence.
                             {% elif page_mode in ['edit', 'create'] %}
-                                Define role identity, assignment availability, and permission scope using least privilege.
+                                Define role identity, assignments, and least-privilege permissions.
                             {% elif is_system_role %}
-                                Review the code-owned KAORI default role baseline. Default roles cannot be changed or deleted.
+                                Review protected default roles and immutable permission rules.
                             {% else %}
-                                Review custom role identity, status, permission scope, and current assignments within KAORI.
+                                Review custom role identity, permissions, status, and assignments.
                             {% endif %}
                         </p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
