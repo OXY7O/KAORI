@@ -286,7 +286,7 @@ def tls_secret_rotate_apply(certificate_id: int):
 @cluster_required(
     'TLS Secret Rotation',
     page_title='Bulk TLS Secret Rotation',
-    page_description='Validate one certificate pair against selected TLS Secrets before controlled rotation in KAORI.',
+    page_description='Validate a certificate pair before controlled TLS Secret rotation.',
 )
 def tls_secret_bulk_rotation_page():
     payload = get_tls_certificate_page(request.args)
