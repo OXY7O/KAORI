@@ -81,7 +81,7 @@ jobs:
             --volume "$PWD:/workspace" \
             --workdir /workspace \
             "$CI_TOOLCHAIN_IMAGE" \
-            bash -lc 'pytest -q tests/ui/test_representative_interactions.py -k "welcome_visual_qa_light_and_dark or deterministic_visual_surface_catalog_light_and_dark" --tracing retain-on-failure --screenshot only-on-failure --output tests/ui/artifacts/authenticated'
+            bash -lc 'pytest -q tests/ui/test_representative_interactions.py -k "welcome_visual_qa_light_and_dark or deterministic_visual_surface_catalog_light_and_dark" --output tests/ui/artifacts/authenticated'
 
       - name: Upload Baseline Review Evidence
         if: ${{ always() }}
