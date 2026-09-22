@@ -126,7 +126,7 @@ def get_generate_report_payload(
     return {
         'page_title': 'Generate Report',
         'page_subtitle': (
-            'Build governed reports from connected data and approved Analytics or Inventory output formats.'
+            'Build governed reports from approved Analytics or Inventory data.'
         ),
         'clusters': cluster_options,
         'has_clusters': bool(cluster_options),
