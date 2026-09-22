@@ -12,7 +12,7 @@ from app.kubernetes.cluster.onboarding import has_registered_clusters
 def _blocked_page_description(operation_label: str, page_description: str | None) -> str:
     if page_description:
         return page_description.strip()
-    return f'Review {operation_label} prerequisites through the selected cluster.'
+    return f'Review {operation_label} readiness for the selected cluster.'
 
 
 def cluster_required[ViewT: Callable[..., Any]](
