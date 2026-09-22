@@ -95,6 +95,6 @@
     "app/reports/generated/service.py": 1665,
     "app/reports/overview/service.py": 1026,
     "app/reports/schedules/service.py": 938,
-    "app/reports/storage/service.py": 951
+    "app/reports/storage/service.py": 949
   }
 }
