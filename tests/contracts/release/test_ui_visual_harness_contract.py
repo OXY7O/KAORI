@@ -51,11 +51,15 @@ def test_visual_baseline_capture_is_governed_and_reviewable() -> None:
     workflow_text = workflow.read_text()
     assert 'workflow_dispatch:' in workflow_text
     assert 'KAORI_UI_BASE_URL' in workflow_text
+    assert 'capture_scope:' in workflow_text
+    assert '- authenticated' in workflow_text
     assert 'KAORI_UPDATE_VISUAL_BASELINES: "1"' in workflow_text
     assert 'pytest -q tests/ui/test_visual_regression.py' in workflow_text
+    assert 'welcome_visual_qa_light_and_dark or deterministic_visual_surface_catalog_light_and_dark' in workflow_text
     assert 'actions/upload-artifact@' in workflow_text
     assert 'tests/ui/baselines' in workflow_text
     assert 'tests/ui/artifacts' in workflow_text
+    assert 'tmp/ci-artifacts/test-output/ui-browser' in workflow_text
 
 
 def test_representative_browser_interactions_use_deterministic_authenticated_authority() -> None:
