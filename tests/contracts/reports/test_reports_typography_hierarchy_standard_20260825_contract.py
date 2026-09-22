@@ -138,21 +138,18 @@ def test_reports_hero_copy_is_compact_and_operational() -> None:
     files = {
         'overview': read('app/reports/overview/service.py'),
         'generate': read('app/reports/generate/service.py'),
-        'generated': read('app/reports/generated/service.py'),
+        'generated': read('app/templates/reports/generated/index.html'),
         'templates': read('app/reports/report_templates/service.py'),
         'schedules': read('app/reports/schedules/service.py'),
-        'storage': read('app/reports/overview/service.py'),
+        'storage': read('app/reports/storage/service.py'),
     }
     expected = {
         'overview': 'Review reporting readiness, artifacts, automation, and coverage.',
-        'generate': 'Build governed reports from connected data and approved Analytics or Inventory output formats.',
-        'generated': (
-            'Review PDF publications, XLSX analytical workbooks, and CSV exports across worker execution, artifact '
-            'readiness, storage availability, and lifecycle state from generation through retention.'
-        ),
+        'generate': 'Build governed reports from approved Analytics or Inventory data.',
+        'generated': 'Review report execution, artifacts, storage, and lifecycle state.',
         'templates': ('Manage report templates for Analytics and Inventory output formats.'),
-        'schedules': 'Automate Analytics and Inventory reports with timezone-aware schedules and retained evidence.',
-        'storage': ('Review report storage readiness, integrity, and lifecycle ownership for PDF/XLSX/CSV artifacts.'),
+        'schedules': 'Automate Analytics and Inventory reports with governed schedules.',
+        'storage': 'Review report storage readiness, integrity, and artifact lifecycle.',
     }
     for key, value in expected.items():
         assert has_python_string(files[key], value), key
