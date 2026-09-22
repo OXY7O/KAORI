@@ -61,6 +61,13 @@ def test_visual_baseline_capture_is_governed_and_reviewable() -> None:
     assert 'tests/ui/artifacts' in workflow_text
     assert 'tmp/ci-artifacts/test-output/ui-browser' in workflow_text
 
+    authenticated_capture = workflow_text.split(
+        'Capture Authenticated Visual Baseline Candidate', 1
+    )[1].split('Upload Baseline Review Evidence', 1)[0]
+    assert '--output tests/ui/artifacts/authenticated' in authenticated_capture
+    assert '--tracing' not in authenticated_capture
+    assert '--screenshot' not in authenticated_capture
+
 
 def test_representative_browser_interactions_use_deterministic_authenticated_authority() -> None:
     conftest = (ROOT / 'tests' / 'ui' / 'conftest.py').read_text()
