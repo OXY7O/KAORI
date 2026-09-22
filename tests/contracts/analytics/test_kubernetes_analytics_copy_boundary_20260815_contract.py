@@ -17,10 +17,10 @@ def test_kubernetes_analytics_copy_refinement_is_concise_and_domain_specific() -
     forecast = read('app/kubernetes/analytics/forecast/routes.py')
 
     assert 'Review utilization, workload posture, capacity forecasts, leading consumers, and alert signals.' in overview
-    assert 'Review capacity, allocation, and headroom while KAORI prepares long-range analysis.' in capacity
-    assert 'Review committed storage snapshots while KAORI prepares reusable analytics evidence.' in storage
-    assert 'Review committed workload snapshots while workers prepare quota and runtime evidence.' in workload
-    assert 'Review committed history while forecasting workers prepare cluster and namespace analysis.' in forecast
+    assert 'Review capacity and headroom while KAORI prepares analysis.' in capacity
+    assert 'Review storage snapshots while KAORI prepares analytics evidence.' in storage
+    assert 'Review workloads while workers prepare quota and runtime evidence.' in workload
+    assert 'Review committed history while workers prepare forecast analysis.' in forecast
     assert 'Keep only provider-query dimensions in the forecast snapshot identity.' in forecast
 
 
