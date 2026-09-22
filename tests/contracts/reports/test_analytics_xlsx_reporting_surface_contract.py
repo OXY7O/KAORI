@@ -53,7 +53,7 @@ def test_reports_pages_publish_analytics_excel_as_analysis_artifact() -> None:
     generated_detail = read('app/templates/reports/generated/detail.html')
     schedules_service = read('app/reports/schedules/service.py')
     schedules_page = read('app/templates/reports/schedules/index.html')
-    storage_service = read('app/reports/overview/service.py')
+    storage_service = read('app/reports/storage/service.py')
     storage_page = read('app/templates/reports/storage/index.html')
 
     assert 'Analytics: PDF, XLSX, or CSV; PDF is the default.' in readme
@@ -74,7 +74,7 @@ def test_reports_pages_publish_analytics_excel_as_analysis_artifact() -> None:
     assert 'Analytics XLSX is a drill-down analysis artifact' in generated_detail
     assert 'Automate Analytics and Inventory reports with governed schedules.' in schedules_service
     assert 'Analytics schedules may publish PDF, XLSX, or CSV' in schedules_page
-    assert 'PDF/XLSX/CSV artifacts' in storage_service
+    assert 'Review report storage readiness, integrity, and artifact lifecycle.' in storage_service
     assert 'PDF · XLSX · CSV Artifacts' in storage_page
 
 
