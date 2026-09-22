@@ -19,7 +19,7 @@ def has_python_string(source: str, expected: str) -> bool:
 
 def test_reports_operational_copy_is_compact_and_consistent() -> None:
     templates_service = read('app/reports/report_templates/service.py')
-    storage_service = read('app/reports/overview/service.py')
+    storage_service = read('app/reports/storage/service.py')
     storage = read('app/templates/reports/storage/index.html')
 
     assert has_python_string(
@@ -28,7 +28,7 @@ def test_reports_operational_copy_is_compact_and_consistent() -> None:
     )
     assert has_python_string(
         storage_service,
-        'Review report storage readiness, integrity, and lifecycle ownership for PDF/XLSX/CSV artifacts.',
+        'Review report storage readiness, integrity, and artifact lifecycle.',
     )
     assert 'S3-compatible target for generated reports and verification evidence.' in storage
 
