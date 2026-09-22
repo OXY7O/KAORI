@@ -4,10 +4,19 @@ on:
   workflow_dispatch:
     inputs:
       base_url:
-        description: KAORI staging URL to capture
+        description: KAORI staging URL to capture for external login baseline
         required: true
         default: https://kaori.cloud
         type: string
+      capture_scope:
+        description: Visual baseline candidate scope
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - login
+          - authenticated
 
 permissions:
   contents: read
@@ -38,14 +47,15 @@ jobs:
           docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
           printf 'CI_TOOLCHAIN_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
 
-      - name: Capture Visual Baseline Candidate
+      - name: Capture Login Visual Baseline Candidate
+        if: ${{ inputs.capture_scope != 'authenticated' }}
         shell: bash
         env:
           KAORI_UI_BASE_URL: ${{ inputs.base_url }}
           KAORI_UPDATE_VISUAL_BASELINES: "1"
         run: |
           set -Eeuo pipefail
-          mkdir -p tests/ui/artifacts
+          mkdir -p tests/ui/artifacts/login
           docker run --rm \
             --user "$(id -u):$(id -g)" \
             --env HOME=/tmp \
@@ -54,7 +64,24 @@ jobs:
             --volume "$PWD:/workspace" \
             --workdir /workspace \
             "$CI_TOOLCHAIN_IMAGE" \
-            bash -lc 'pytest -q tests/ui/test_visual_regression.py --tracing retain-on-failure --screenshot only-on-failure --output tests/ui/artifacts'
+            bash -lc 'pytest -q tests/ui/test_visual_regression.py --tracing retain-on-failure --screenshot only-on-failure --output tests/ui/artifacts/login'
+
+      - name: Capture Authenticated Visual Baseline Candidate
+        if: ${{ inputs.capture_scope != 'login' }}
+        shell: bash
+        env:
+          KAORI_UPDATE_VISUAL_BASELINES: "1"
+        run: |
+          set -Eeuo pipefail
+          mkdir -p tests/ui/artifacts/authenticated tmp/ci-artifacts/test-output/ui-browser
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --env HOME=/tmp \
+            --env KAORI_UPDATE_VISUAL_BASELINES \
+            --volume "$PWD:/workspace" \
+            --workdir /workspace \
+            "$CI_TOOLCHAIN_IMAGE" \
+            bash -lc 'pytest -q tests/ui/test_representative_interactions.py -k "welcome_visual_qa_light_and_dark or deterministic_visual_surface_catalog_light_and_dark" --tracing retain-on-failure --screenshot only-on-failure --output tests/ui/artifacts/authenticated'
 
       - name: Upload Baseline Review Evidence
         if: ${{ always() }}
@@ -64,5 +91,6 @@ jobs:
           path: |
             tests/ui/baselines
             tests/ui/artifacts
+            tmp/ci-artifacts/test-output/ui-browser
           if-no-files-found: warn
           retention-days: 14
