@@ -36,7 +36,7 @@ def test_report_workspace_hero_descriptions_keep_consistent_operational_depth() 
         'generated_detail': read('app/templates/reports/generated/detail.html'),
         'templates': read('app/reports/report_templates/service.py'),
         'schedules': read('app/reports/schedules/service.py'),
-        'storage': read('app/reports/storage/service.py'),
+        'storage': read('app/reports/overview/service.py'),
     }
 
     expected_fragments = {
