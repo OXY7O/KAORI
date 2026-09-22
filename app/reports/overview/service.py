@@ -67,7 +67,7 @@ def get_reports_overview_payload() -> dict[str, Any]:
     return {
         'page_title': 'Reports Overview',
         'page_subtitle': (
-            'Review reporting readiness, artifacts, automation, and coverage across KAORI infrastructure.'
+            'Review reporting readiness, artifacts, automation, and coverage.'
         ),
         'selected_cluster_label': 'All Infrastructure Scopes',
         'report_engine_status': worker_context['label'],
