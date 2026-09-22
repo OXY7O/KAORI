@@ -16,7 +16,7 @@ def test_kubernetes_analytics_copy_refinement_is_concise_and_domain_specific() -
     workload = read('app/kubernetes/analytics/workload/routes.py')
     forecast = read('app/kubernetes/analytics/forecast/routes.py')
 
-    assert 'Review utilization, workload posture, capacity forecasts, leading consumers, and alert signals.' in overview
+    assert 'Review utilization, capacity, workloads, consumers, and alerts.' in overview
     assert 'Review capacity and headroom while KAORI prepares analysis.' in capacity
     assert 'Review storage snapshots while KAORI prepares analytics evidence.' in storage
     assert 'Review workloads while workers prepare quota and runtime evidence.' in workload
@@ -30,7 +30,7 @@ def test_object_storage_inventory_blocker_copy_stays_compact() -> None:
 
     assert 'Register a Storage integration to collect system inventory.' in systems
     assert 'Register a Storage integration to collect bucket and container inventory.' in buckets
-    assert 'Review object-storage namespaces and relationships from committed inventory snapshots in KAORI.' in buckets
+    assert 'Review object-storage namespaces, links, and inventory snapshots.' in buckets
 
 
 def test_kubernetes_analytics_routes_remain_materialized_readers() -> None:
