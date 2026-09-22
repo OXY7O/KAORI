@@ -14,7 +14,7 @@ from app.kubernetes.analytics.materialization.requests import resolve_materializ
 _PAGE = {
     'dataset_key': 'analytics.forecast',
     'title': 'Resource Forecast',
-    'description': 'Review committed history while forecasting workers prepare cluster and namespace analysis.',
+    'description': 'Review committed history while workers prepare forecast analysis.',
     'icon': 'chart-spline',
     'page_id': 'forecast-page',
 }
