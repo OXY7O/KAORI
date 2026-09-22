@@ -7,7 +7,7 @@ GENERATE_TEMPLATE = ROOT / 'app/templates/reports/generate/index.html'
 TEMPLATES_TEMPLATE = ROOT / 'app/templates/reports/report_templates/index.html'
 TEMPLATES_SERVICE = ROOT / 'app/reports/report_templates/service.py'
 STORAGE_TEMPLATE = ROOT / 'app/templates/reports/storage/index.html'
-STORAGE_SERVICE = ROOT / 'app/reports/storage/service.py'
+STORAGE_SERVICE = ROOT / 'app/reports/overview/service.py'
 
 
 def read(path: Path) -> str:
@@ -62,7 +62,7 @@ def test_requested_report_copy_is_shortened_without_losing_contract_meaning() ->
     storage_template = read(STORAGE_TEMPLATE)
 
     assert (
-        'Manage system templates and custom report structures for Analytics and Inventory formats.' in templates_service
+        'Manage report templates for Analytics and Inventory output formats.' in templates_service
     )
     assert (
         'Review report storage readiness, integrity, and lifecycle ownership for PDF/XLSX/CSV artifacts.'
