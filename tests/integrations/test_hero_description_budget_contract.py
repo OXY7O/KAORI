@@ -74,7 +74,7 @@ def test_cluster_required_blocked_hero_descriptions_are_registered_with_global_b
     descriptions = namespace['_cluster_required_descriptions']()
     values = set(descriptions.values())
 
-    assert 'Validate replacement certificate pairing and coverage before rotating one live TLS Secret.' in values
+    assert 'Validate certificate pairing and coverage before Secret rotation.' in values
     assert 'Validate a certificate pair before controlled TLS Secret rotation.' in values
     assert (
         'Validate replacement certificate material, key matching, and target coverage before rotating one live TLS Secret.'
