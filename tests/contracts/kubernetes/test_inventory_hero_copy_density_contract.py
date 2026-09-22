@@ -92,7 +92,7 @@ def test_inventory_hero_copy_budget_is_documented() -> None:
     assert '# KAORI Hero Component Standard v1.8' in hero_contract
     assert '7–15 words' in hero_contract
     assert '8–12 words' in hero_contract
-    assert 'maximum 110 characters' in hero_contract
+    assert 'maximum 68 characters' in hero_contract
     assert 'action-oriented' in hero_contract
     assert 'right-panel title' in hero_contract
     assert 'metric helper: optional' in hero_contract
