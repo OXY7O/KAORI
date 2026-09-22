@@ -7,6 +7,16 @@ from pathlib import Path
 
 from playwright.sync_api import Page, expect
 
+from tests.ui.visual_audit import (
+    DETERMINISTIC_VISUAL_SURFACES,
+    VisualAuditFinding,
+    assert_document_fits_viewport,
+    assert_hero_description_contract,
+    assert_primary_actions_visible,
+    assert_visual_baseline,
+    record_visual_audit_finding,
+)
+
 EVIDENCE_ROOT = Path('tmp/ci-artifacts/test-output/ui-browser')
 TEST_USERNAME = 'browser-admin'
 TEST_PASSWORD = 'browser-password'
@@ -129,6 +139,133 @@ def test_hero_description_is_one_untruncated_line_on_non_phone_viewports(
         )
         assert metrics['scrollWidth'] <= metrics['clientWidth'] + 1
         assert metrics['height'] <= metrics['lineHeight'] + 1
+
+
+def test_welcome_visual_qa_light_and_dark(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Capture deterministic Welcome visual evidence in both supported themes."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+
+    _login(page, kaori_authenticated_base_url)
+    html = page.locator('html')
+    toggle = page.locator('#theme-toggle')
+    expect(toggle).to_be_visible()
+
+    for visual_theme in ('light', 'dark'):
+        with _browser_evidence(page, f'welcome-{visual_theme}', viewport_name):
+            is_dark = 'dark' in (html.get_attribute('class') or '').split()
+            if (visual_theme == 'dark') != is_dark:
+                toggle.click()
+
+            class_tokens = (html.get_attribute('class') or '').split()
+            assert ('dark' in class_tokens) == (visual_theme == 'dark')
+
+            evidence_name = f'welcome-{visual_theme}-{viewport_name}.png'
+            try:
+                assert_document_fits_viewport(page)
+                assert_hero_description_contract(page, viewport_name)
+                assert_primary_actions_visible(page)
+                assert_visual_baseline(
+                    page,
+                    surface='welcome',
+                    theme=visual_theme,
+                    viewport_name=viewport_name,
+                )
+            except AssertionError as exc:
+                record_visual_audit_finding(
+                    VisualAuditFinding(
+                        status='Broken',
+                        surface='Welcome',
+                        viewport=viewport_name,
+                        theme=visual_theme,
+                        component='Shared visual surface',
+                        invariant='Geometry and visual baseline',
+                        evidence=str(exc),
+                    )
+                )
+                raise
+            else:
+                record_visual_audit_finding(
+                    VisualAuditFinding(
+                        status='PASS',
+                        surface='Welcome',
+                        viewport=viewport_name,
+                        theme=visual_theme,
+                        component='Shared visual surface',
+                        invariant='Geometry and visual baseline',
+                        evidence=evidence_name,
+                    )
+                )
+
+
+def test_deterministic_visual_surface_catalog_light_and_dark(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Audit every currently deterministic visual surface across canonical themes and viewports."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+
+    _login(page, kaori_authenticated_base_url)
+
+    for endpoint, (surface_label, path) in DETERMINISTIC_VISUAL_SURFACES.items():
+        response = page.goto(f'{kaori_authenticated_base_url}{path}', wait_until='networkidle')
+        assert response is not None, endpoint
+        assert response.ok, endpoint
+        expect(page.locator('body')).to_be_visible()
+
+        html = page.locator('html')
+        toggle = page.locator('#theme-toggle')
+        expect(toggle).to_be_visible()
+
+        for visual_theme in ('light', 'dark'):
+            with _browser_evidence(
+                page,
+                f'visual-{endpoint.replace(".", "-")}-{visual_theme}',
+                viewport_name,
+            ):
+                is_dark = 'dark' in (html.get_attribute('class') or '').split()
+                if (visual_theme == 'dark') != is_dark:
+                    toggle.click()
+
+                class_tokens = (html.get_attribute('class') or '').split()
+                assert ('dark' in class_tokens) == (visual_theme == 'dark')
+
+                evidence_name = f'visual-{endpoint.replace(".", "-")}-{visual_theme}-{viewport_name}.png'
+                try:
+                    assert_document_fits_viewport(page)
+                    assert_hero_description_contract(page, viewport_name)
+                    assert_primary_actions_visible(page)
+                except AssertionError as exc:
+                    record_visual_audit_finding(
+                        VisualAuditFinding(
+                            status='Broken',
+                            surface=surface_label,
+                            viewport=viewport_name,
+                            theme=visual_theme,
+                            component='Deterministic visual surface',
+                            invariant='Shared geometry',
+                            evidence=str(exc),
+                        )
+                    )
+                    raise
+                else:
+                    record_visual_audit_finding(
+                        VisualAuditFinding(
+                            status='PASS',
+                            surface=surface_label,
+                            viewport=viewport_name,
+                            theme=visual_theme,
+                            component='Deterministic visual surface',
+                            invariant='Shared geometry',
+                            evidence=evidence_name,
+                        )
+                    )
 
 
 def test_notification_deck_escape_restores_trigger_focus(
