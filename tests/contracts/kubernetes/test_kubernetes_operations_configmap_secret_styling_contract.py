@@ -161,28 +161,14 @@ def test_operation_hero_copy_keeps_explicit_live_validation_boundaries() -> None
     reveal_routes = read('app/kubernetes/operations/secrets/reveal_routes.py')
     tls_routes = read('app/kubernetes/operations/secrets/tls_routes.py')
 
-    assert (
-        'Manage ConfigMaps through validated, auditable workflows in KAORI.'
-        in configmap_routes
-    )
-    assert (
-        'Preview and validate one ConfigMap update before applying safely.'
-        in configmap_routes
-    )
+    assert 'Manage ConfigMaps through validated, auditable workflows in KAORI.' in configmap_routes
+    assert 'Preview and validate one ConfigMap update before applying safely.' in configmap_routes
     assert 'Validate the live ConfigMap target before governed removal.' in configmap_routes
     assert 'Create one validated Secret without persisting sensitive values.' in secret_routes
-    assert (
-        'Replace selected Secret keys without reading current values.'
-        in secret_routes
-    )
+    assert 'Replace selected Secret keys without reading current values.' in secret_routes
     assert 'Validate the exact Secret target before confirming governed removal.' in secret_routes
-    assert (
-        'Reveal one Secret key through protected, audited access in KAORI.'
-        in reveal_routes
-    )
-    assert (
-        'Validate a certificate pair before controlled TLS Secret rotation.' in tls_routes
-    )
+    assert 'Reveal one Secret key through protected, audited access in KAORI.' in reveal_routes
+    assert 'Validate a certificate pair before controlled TLS Secret rotation.' in tls_routes
 
 
 def test_secret_operation_surface_debt_uses_shared_style_authorities() -> None:
