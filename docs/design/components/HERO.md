@@ -230,7 +230,7 @@ Copy budget is canonical and executable:
 
 - description boundary: 7–15 words, preferably 8–12 words, maximum 68 characters;
 - description form: one action-oriented complete sentence with no manual line break;
-- non-phone rendering: exactly one visual line from the canonical non-phone viewport matrix upward, with no ellipsis, clipping, hidden overflow, or page-local typography shrink;
+- non-phone rendering: exactly one natural visual line from the canonical non-phone viewport matrix upward, with no `nowrap`, ellipsis, clipping, hidden overflow, or page-local typography shrink;
 - right-panel title: 2–4 words;
 - status label: 1–3 words;
 - metric label: 1–3 words;
@@ -324,12 +324,12 @@ The verifier must:
 - verify shared blocked-context wrappers do not rebuild context-panel geometry locally;
 - verify Analytics metadata uses the persistent shared renderer and remains outside blocker branches;
 - enforce the description target and hard boundary for every Hero description that can be resolved deterministically from source;
-- require the shared `kaori-hero-description` marker and desktop `xl:whitespace-nowrap` ownership so browser tests can verify one-line rendering and overflow without page-local selectors;
+- require the shared `kaori-hero-description` marker so browser tests can verify natural one-line rendering and overflow without page-local selectors;
 - audit shared profile-renderer descriptions at their call sites instead of bypassing copy checks because composition is centralized;
 - reject unmanaged Hero-like local surfaces that bypass the component;
 - report compatibility-shell, profile-consumer, and description-audit counts separately.
 
-The canonical verifier enforces the 7–15 word boundary, maximum 68 characters, one complete sentence, action-oriented wording, no manual line break, shared description-marker ownership, and desktop single-line presentation ownership. Browser evidence remains responsible for proving that the rendered line fits without overflow at canonical non-phone widths. The preferably 8–12 words range is an editorial target for scanability within that executable boundary.
+The canonical verifier enforces the 7–15 word boundary, maximum 68 characters, one complete sentence, action-oriented wording, no manual line break, shared description-marker ownership, with browser-proven natural single-line rendering. Browser evidence remains responsible for proving that the rendered line fits without overflow at canonical non-phone widths. The preferably 8–12 words range is an editorial target for scanability within that executable boundary.
 
 Integration domain descriptions are audited from `app/definitions/catalogs/integrations/taxonomy.yaml` because `app/templates/integrations/domain.html` renders those descriptions dynamically. Other source-controlled dynamic Hero copy must gain an equally explicit audit path when introduced.
 
