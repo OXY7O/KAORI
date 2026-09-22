@@ -1,7 +1,7 @@
 name: KAORI Telegram Notify
 
 on:
-  workflow_run:
+  workflow_run: # zizmor: ignore[dangerous-triggers] trusted KAORI CI push lineage is validated below
     workflows:
       - KAORI CI
     types:
@@ -27,6 +27,7 @@ jobs:
         github.repository == 'OXY7O/KAORI' &&
         github.event_name == 'workflow_run' &&
         github.event.workflow_run.name == 'KAORI CI' &&
+        github.event.workflow_run.path == '.github/workflows/quality.yml' &&
         github.event.workflow_run.event == 'push' &&
         github.event.workflow_run.status == 'completed' &&
         github.event.workflow_run.head_repository.full_name == 'OXY7O/KAORI' &&
