@@ -119,7 +119,7 @@
             {% endif %}
             {% if can_kubernetes_analytics or can_object_storage_analytics or can_intelligence or can_reports %}
                 <div class="sidebar-nav-section">
-                    <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Insights &amp; Reporting</div>
+                    <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Insights</div>
                     <div class="space-y-1">
                         {% if can_kubernetes_analytics or can_object_storage_analytics %}
                             {% include "components/navigation/analytics_menu.html" %}
@@ -135,7 +135,7 @@
             {% endif %}
             {% if can_platform_operations %}
                 <div class="sidebar-nav-section">
-                    <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Platform Operations</div>
+                    <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Platform</div>
                     <div class="space-y-1">
                         {% if can_operations_center %}
                             {% include "components/navigation/platform_operations_menu.html" %}

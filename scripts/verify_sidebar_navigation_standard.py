@@ -8,6 +8,7 @@ NAVIGATION_DIR = ROOT / 'app' / 'templates' / 'components' / 'navigation'
 SIDEBAR = NAVIGATION_DIR / 'sidebar.html'
 STANDARD = ROOT / 'docs' / 'design' / 'components' / 'SIDEBAR_NAVIGATION.md'
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
+BREADCRUMB = ROOT / 'app' / 'common' / 'navigation.py'
 
 MENU_TEMPLATES = (
     'access_management_menu.html',
@@ -28,8 +29,8 @@ EXPECTED_SECTION_ORDER = (
     'Main',
     'Kubernetes',
     'Storage',
-    'Insights &amp; Reporting',
-    'Platform Operations',
+    'Insights',
+    'Platform',
     'Administration',
 )
 
@@ -191,6 +192,60 @@ def verify() -> None:
 
     sources = {filename: _read(NAVIGATION_DIR / filename) for filename in MENU_TEMPLATES}
     sources['sidebar.html'] = sidebar
+    breadcrumb = _read(BREADCRUMB)
+
+    expected_copy = {
+        'sidebar.html': ('>Insights</div>', '>Platform</div>'),
+        'inventory_menu.html': ('title="Inventory"', 'aria-label="Inventory"', '>Inventory</span>'),
+        'kubernetes_operations_menu.html': (
+            'title="Operations"',
+            'aria-label="Operations"',
+            '>Operations</span>',
+            '>ConfigMaps</span>',
+            '>Secrets</span>',
+        ),
+        'governance_menu.html': ('title="Governance"', 'aria-label="Governance"', '>Governance</span>'),
+        'analytics_menu.html': (
+            '>Kubernetes Analytics</span>',
+            '>Utilization</span>',
+            '>Capacity</span>',
+            '>Storage</span>',
+            '>Workloads</span>',
+            '>Forecast</span>',
+        ),
+        'access_management_menu.html': ('>Users</span>', '>Roles</span>', '>Permissions</span>'),
+        'platform_operations_menu.html': (
+            '>Operations Center</span>',
+            '>Jobs</span>',
+            '>Data Lifecycle</span>',
+            '>Kubernetes Admin</span>',
+        ),
+    }
+    for filename, tokens in expected_copy.items():
+        _require_tokens(sources[filename], tokens, f'{filename} navigation copy')
+
+    _require_tokens(
+        breadcrumb,
+        (
+            "'analytics.utilization': 'Utilization'",
+            "'analytics.capacity': 'Capacity'",
+            "'analytics.storage': 'Storage'",
+            "'analytics.workload': 'Workloads'",
+            "'analytics.forecast': 'Forecast'",
+            "'kubernetes_operations.configmap_management': 'ConfigMaps'",
+            "'kubernetes_operations.secret_management': 'Secrets'",
+            "'jobs.executions': 'Jobs'",
+            "'users.index': 'Users'",
+            "'access.roles.index': 'Roles'",
+            "'access.permissions.index': 'Permissions'",
+            "BreadcrumbItem('Inventory', 'boxes')",
+            "BreadcrumbItem('Operations', 'terminal-square')",
+            "BreadcrumbItem('Governance', 'shield-check')",
+            "BreadcrumbItem('Operations Center', 'workflow')",
+            "BreadcrumbItem('Kubernetes Admin')",
+        ),
+        'navigation breadcrumb copy',
+    )
 
     for token in (
         "has_permission('inventory.view')",
@@ -264,7 +319,7 @@ def verify() -> None:
                 raise AssertionError(f'{filename} submenu #{index}: submenu typography must remain text-sm')
 
     doc_tokens = (
-        '# KAORI Sidebar Navigation Standard v1.3',
+        '# KAORI Sidebar Navigation Standard v1.4',
         'Status:** Locked application-shell and dark-mode contract',
         'Parent menu label | 16 px',
         'Submenu label | 14 px',
@@ -272,6 +327,7 @@ def verify() -> None:
         'Child:   rounded-lg px-2.5 py-1.5 text-sm leading-5',
         'sidebar-parent-active',
         'dark mode keeps the active Violet surface without a separate left-edge accent',
+        '## Navigation Naming Contract',
         '## Canonical Information Architecture',
         '## Enforcement and Change Control',
         'scripts/verify_sidebar_navigation_standard.py',
@@ -285,7 +341,7 @@ def verify() -> None:
 
     print(
         'KAORI sidebar navigation standard passed: '
-        f'{parent_count} parent blocks and {submenu_count} submenu links conform to v1.3; '
+        f'{parent_count} parent blocks and {submenu_count} submenu links conform to v1.4; '
         'section order, collapse behavior, accessibility, typography, and documentation are locked.'
     )
 

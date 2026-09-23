@@ -1,4 +1,4 @@
-# KAORI Sidebar Navigation Standard v1.3
+# KAORI Sidebar Navigation Standard v1.4
 
 **Status:** Locked application-shell and dark-mode contract. The source templates, this document, and `scripts/verify_sidebar_navigation_standard.py` must change together.
 
@@ -75,8 +75,9 @@ The sidebar may use deliberate uppercase and tracking for short section labels s
 ```text
 MAIN
 KUBERNETES
-INSIGHTS & REPORTING
-PLATFORM OPERATIONS
+STORAGE
+INSIGHTS
+PLATFORM
 ADMINISTRATION
 ```
 
@@ -283,6 +284,28 @@ Do not reduce parent row height to match submenu rows. The height difference is 
 - fix clipping by adjusting width, gap, padding, or owned label wording—not by reducing the parent font below 12 px;
 - labels should be concise and recognizable.
 
+## Navigation Naming Contract
+
+Visible navigation language follows a domain-aware ownership rule:
+
+```text
+Section provides domain context
+  -> parent names the capability
+      -> child names the resource or action
+```
+
+Rules:
+
+1. Prefer concise noun-first navigation labels.
+2. Do not repeat the section/domain name in a parent when section context is unambiguous.
+3. Avoid administrative suffixes such as `Management`, `Analysis`, `Catalog`, `Center`, or `Administration` unless they materially distinguish the capability.
+4. Sidebar labels may be shorter than page Hero titles.
+5. Breadcrumb owner labels remain consistent with the visible sidebar owner; workflow/detail leaves may remain more descriptive.
+6. Never shorten a label when doing so creates ambiguity between active KAORI domains or shared concepts.
+7. Do not reduce sidebar typography to accommodate long labels; fix owned wording first.
+
+Ambiguity-sensitive labels remain explicit, including `Kubernetes Analytics`, `Object Storage Analytics`, `Operations Center`, and `Notification Channels`.
+
 ## Color and Effects
 
 The sidebar uses inverse shell colors rather than ordinary content-surface colors.
@@ -323,11 +346,26 @@ The top-level order is locked. New modules must be placed in the existing domain
 MAIN
 ├── Welcome
 └── Dashboards
+    ├── Kubernetes
+    └── Object Storage
 
 KUBERNETES
-├── Kubernetes Inventory
-├── Kubernetes Operations
-└── Kubernetes Governance
+├── Inventory
+│   ├── Overview
+│   ├── Topology
+│   ├── Nodes
+│   ├── Namespaces
+│   ├── Workloads
+│   ├── Pods
+│   ├── Services
+│   ├── Ingresses
+│   ├── Storage
+│   └── Configuration
+├── Operations
+│   ├── ConfigMaps
+│   └── Secrets
+└── Governance
+    └── TLS Certificates
 
 STORAGE
 └── Object Storage
@@ -335,23 +373,53 @@ STORAGE
     ├── Systems
     └── Buckets & Containers
 
-INSIGHTS & REPORTING
+INSIGHTS
 ├── Kubernetes Analytics
+│   ├── Overview
+│   ├── Utilization
+│   ├── Capacity
+│   ├── Storage
+│   ├── Workloads
+│   ├── Forecast
+│   ├── Top Consumers
+│   └── Alerts & Anomalies
+├── Object Storage Analytics
+│   ├── Overview
+│   ├── Capacity & Usage
+│   ├── Performance
+│   ├── Forecast
+│   ├── Top Consumers
+│   └── Alerts & Anomalies
 ├── Intelligence
 └── Reports
 
-PLATFORM EXTENSIONS
+PLATFORM
+├── Operations Center
+│   ├── Overview
+│   ├── Jobs
+│   ├── Data Lifecycle
+│   └── Kubernetes Admin
 └── Integrations
-
-PLATFORM OPERATIONS
-└── Platform Operations
+    ├── Overview
+    ├── Orchestration
+    ├── Observability
+    ├── Storage
+    └── Notification Channels
 
 ADMINISTRATION
 ├── Access
+│   ├── Overview
+│   ├── Users
+│   ├── Identity Providers
+│   ├── Roles
+│   ├── Permissions
+│   └── Activity Audit
 └── Settings
+    ├── General
+    └── Account
 ```
 
-v1.3 adds the approved **Storage** section. `Object Storage` is a provider-neutral inventory parent; vendor connectors such as MinIO remain under Integrations and must not become sidebar inventory parents. The first locked children are Overview, Systems, and Buckets & Containers.
+v1.4 retains the approved v1.3 **Storage** section and locks concise domain-aware navigation language without changing destination order, route ownership, permissions, icons, or disclosure behavior. `Object Storage` remains a provider-neutral inventory parent; vendor connectors such as MinIO remain under Integrations and must not become sidebar inventory parents.
 
 `Buckets & Containers` is intentionally provider-neutral: the list surface uses canonical object-storage fields, while provider-native attributes remain in the detail drawer. This prevents MinIO, AWS S3, Azure Blob, Ceph RGW, or future providers from creating vendor-specific sidebar branches.
 
@@ -451,9 +519,9 @@ Before accepting a sidebar change, verify:
 - no global content typography migration has altered sidebar hierarchy.
 
 
-## Platform Operations ownership
+## Platform ownership
 
-Integrations is grouped under the **Platform Operations** sidebar section rather than a standalone `Platform Extensions` section. It remains an independent root menu alongside **Operations Center**; `Notification Channels` and provider/domain-specific destinations remain children of the Integrations root. The section therefore expresses shared platform ownership without merging the two workspaces or expanding provider-specific roots across the application shell.
+Integrations is grouped under the **Platform** sidebar section. It remains an independent root menu alongside **Operations Center**; `Notification Channels` and provider/domain-specific destinations remain children of the Integrations root. The section therefore expresses shared platform ownership without merging the two workspaces or expanding provider-specific roots across the application shell.
 
 ## Asset-domain authorization ownership
 
@@ -466,4 +534,4 @@ Kubernetes Analytics      analytics.view
 Object Storage Analytics  object_storage_analytics.view
 ```
 
-`analytics_menu.html` may render both analytics parents inside the same `Insights & Reporting` section, but each parent is independently permission-gated. The `Storage` section is rendered only when `object_storage_inventory.view` is granted. Template visibility remains secondary to the server-side route decorator.
+`analytics_menu.html` may render both analytics parents inside the same `Insights` section, but each parent is independently permission-gated. The `Storage` section is rendered only when `object_storage_inventory.view` is granted. Template visibility remains secondary to the server-side route decorator.

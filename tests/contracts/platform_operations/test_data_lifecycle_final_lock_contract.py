@@ -62,10 +62,10 @@ def test_data_lifecycle_navigation_and_breadcrumb_are_platform_owned() -> None:
     sidebar = read('app/templates/components/navigation/sidebar.html')
     breadcrumb = read('app/common/navigation.py')
 
-    assert 'Jobs &amp; Executions' in menu
+    assert '>Jobs</span>' in menu
     assert 'Data Lifecycle' in menu
-    assert 'Kubernetes Administration' in menu
-    assert menu.index('Jobs &amp; Executions') < menu.index('Data Lifecycle') < menu.index('Kubernetes Administration')
+    assert '>Kubernetes Admin</span>' in menu
+    assert menu.index('>Jobs</span>') < menu.index('Data Lifecycle') < menu.index('>Kubernetes Admin</span>')
     assert "url_for('platform_operations.data_lifecycle.index')" in menu
     assert "has_permission('platform_operations.view_data_lifecycle')" in sidebar
     assert 'Data Lifecycle' not in settings_menu

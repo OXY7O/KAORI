@@ -29,31 +29,31 @@
                class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'analytics.utilization' else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'analytics.utilization' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
                 <i data-lucide="activity" class="h-3.5 w-3.5"></i>
-                <span class="truncate whitespace-nowrap">Resource Utilization</span>
+                <span class="truncate whitespace-nowrap">Utilization</span>
             </a>
             <a href="{{ url_for('analytics.capacity') }}"
                class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'analytics.capacity' else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'analytics.capacity' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
                 <i data-lucide="database" class="h-3.5 w-3.5"></i>
-                <span class="truncate whitespace-nowrap">Capacity Analysis</span>
+                <span class="truncate whitespace-nowrap">Capacity</span>
             </a>
             <a href="{{ url_for('analytics.storage') }}"
                class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint in ['analytics.storage', 'analytics.storage_filesystem_summary', 'analytics.storage_persistent_summary'] else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint in ['analytics.storage', 'analytics.storage_filesystem_summary', 'analytics.storage_persistent_summary'] else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
                 <i data-lucide="hard-drive" class="h-3.5 w-3.5"></i>
-                <span class="truncate whitespace-nowrap">Storage Analysis</span>
+                <span class="truncate whitespace-nowrap">Storage</span>
             </a>
             <a href="{{ url_for('analytics.workload') }}"
                class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint in ['analytics.workload', 'analytics.workload_tenant_quota', 'analytics.workload_resource_mapping'] else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint in ['analytics.workload', 'analytics.workload_tenant_quota', 'analytics.workload_resource_mapping'] else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
                 <i data-lucide="boxes" class="h-3.5 w-3.5"></i>
-                <span class="truncate whitespace-nowrap">Workload Analysis</span>
+                <span class="truncate whitespace-nowrap">Workloads</span>
             </a>
             <a href="{{ url_for('analytics.forecast') }}"
                class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint in ['analytics.forecast'] else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint in ['analytics.forecast'] else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
                 <i data-lucide="line-chart" class="h-3.5 w-3.5"></i>
-                <span class="truncate whitespace-nowrap">Resource Forecast</span>
+                <span class="truncate whitespace-nowrap">Forecast</span>
             </a>
             <a href="{{ url_for('analytics.top_consumers') }}"
                class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint in ['analytics.top_consumers', 'analytics.top_consumers_table'] else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
