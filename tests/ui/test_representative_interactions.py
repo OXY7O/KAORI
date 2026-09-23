@@ -7,6 +7,16 @@ from pathlib import Path
 
 from playwright.sync_api import Page, expect
 
+from tests.ui.visual_audit import (
+    DETERMINISTIC_VISUAL_SURFACES,
+    VisualAuditFinding,
+    assert_document_fits_viewport,
+    assert_hero_description_contract,
+    assert_primary_actions_visible,
+    assert_visual_baseline,
+    record_visual_audit_finding,
+)
+
 EVIDENCE_ROOT = Path('tmp/ci-artifacts/test-output/ui-browser')
 TEST_USERNAME = 'browser-admin'
 TEST_PASSWORD = 'browser-password'
@@ -98,6 +108,166 @@ def test_authenticated_navigation_and_light_dark_theme(
         assert (before_class, before_theme) != (after_class, after_theme)
 
 
+def test_hero_description_is_one_untruncated_line_on_non_phone_viewports(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Keep the shared Hero description to one visible line on every canonical non-phone viewport."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+
+    if viewport_name not in {'large-desktop', 'laptop', 'compact-laptop', 'tablet'}:
+        return
+
+    with _browser_evidence(page, 'hero-description-single-line', viewport_name):
+        _login(page, kaori_authenticated_base_url)
+
+        description = page.locator('.kaori-hero-description').first
+        expect(description).to_be_visible()
+        metrics = description.evaluate(
+            """element => {
+                const style = window.getComputedStyle(element);
+                const rect = element.getBoundingClientRect();
+                return {
+                    clientWidth: element.clientWidth,
+                    scrollWidth: element.scrollWidth,
+                    height: rect.height,
+                    lineHeight: Number.parseFloat(style.lineHeight),
+                };
+            }"""
+        )
+        assert metrics['scrollWidth'] <= metrics['clientWidth'] + 1
+        assert metrics['height'] <= metrics['lineHeight'] + 1
+
+
+def test_welcome_visual_qa_light_and_dark(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Capture deterministic Welcome visual evidence in both supported themes."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+
+    _login(page, kaori_authenticated_base_url)
+    html = page.locator('html')
+    toggle = page.locator('#theme-toggle')
+    expect(toggle).to_be_visible()
+
+    for visual_theme in ('light', 'dark'):
+        with _browser_evidence(page, f'welcome-{visual_theme}', viewport_name):
+            is_dark = 'dark' in (html.get_attribute('class') or '').split()
+            if (visual_theme == 'dark') != is_dark:
+                toggle.click()
+
+            class_tokens = (html.get_attribute('class') or '').split()
+            assert ('dark' in class_tokens) == (visual_theme == 'dark')
+
+            evidence_name = f'welcome-{visual_theme}-{viewport_name}.png'
+            try:
+                assert_document_fits_viewport(page)
+                assert_hero_description_contract(page, viewport_name)
+                assert_primary_actions_visible(page)
+                assert_visual_baseline(
+                    page,
+                    surface='welcome',
+                    theme=visual_theme,
+                    viewport_name=viewport_name,
+                )
+            except AssertionError as exc:
+                record_visual_audit_finding(
+                    VisualAuditFinding(
+                        status='Broken',
+                        surface='Welcome',
+                        viewport=viewport_name,
+                        theme=visual_theme,
+                        component='Shared visual surface',
+                        invariant='Geometry and visual baseline',
+                        evidence=str(exc),
+                    )
+                )
+                raise
+            else:
+                record_visual_audit_finding(
+                    VisualAuditFinding(
+                        status='PASS',
+                        surface='Welcome',
+                        viewport=viewport_name,
+                        theme=visual_theme,
+                        component='Shared visual surface',
+                        invariant='Geometry and visual baseline',
+                        evidence=evidence_name,
+                    )
+                )
+
+
+def test_deterministic_visual_surface_catalog_light_and_dark(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Audit every currently deterministic visual surface across canonical themes and viewports."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+
+    _login(page, kaori_authenticated_base_url)
+
+    for endpoint, (surface_label, path) in DETERMINISTIC_VISUAL_SURFACES.items():
+        response = page.goto(f'{kaori_authenticated_base_url}{path}', wait_until='networkidle')
+        assert response is not None, endpoint
+        assert response.ok, endpoint
+        expect(page.locator('body')).to_be_visible()
+
+        html = page.locator('html')
+        toggle = page.locator('#theme-toggle')
+        expect(toggle).to_be_visible()
+
+        for visual_theme in ('light', 'dark'):
+            with _browser_evidence(
+                page,
+                f'visual-{endpoint.replace(".", "-")}-{visual_theme}',
+                viewport_name,
+            ):
+                is_dark = 'dark' in (html.get_attribute('class') or '').split()
+                if (visual_theme == 'dark') != is_dark:
+                    toggle.click()
+
+                class_tokens = (html.get_attribute('class') or '').split()
+                assert ('dark' in class_tokens) == (visual_theme == 'dark')
+
+                evidence_name = f'visual-{endpoint.replace(".", "-")}-{visual_theme}-{viewport_name}.png'
+                try:
+                    assert_document_fits_viewport(page)
+                    assert_hero_description_contract(page, viewport_name)
+                    assert_primary_actions_visible(page)
+                except AssertionError as exc:
+                    record_visual_audit_finding(
+                        VisualAuditFinding(
+                            status='Broken',
+                            surface=surface_label,
+                            viewport=viewport_name,
+                            theme=visual_theme,
+                            component='Deterministic visual surface',
+                            invariant='Shared geometry',
+                            evidence=str(exc),
+                        )
+                    )
+                    raise
+                else:
+                    record_visual_audit_finding(
+                        VisualAuditFinding(
+                            status='PASS',
+                            surface=surface_label,
+                            viewport=viewport_name,
+                            theme=visual_theme,
+                            component='Deterministic visual surface',
+                            invariant='Shared geometry',
+                            evidence=evidence_name,
+                        )
+                    )
+
+
 def test_notification_deck_escape_restores_trigger_focus(
     configured_page: Page,
     kaori_viewport: tuple[str, tuple[int, int]],
@@ -117,6 +287,35 @@ def test_notification_deck_escape_restores_trigger_focus(
 
         dialog = page.get_by_role('dialog', name='Notification deck')
         expect(dialog).to_be_visible()
+
+        if viewport_name in {'mobile', 'small-mobile'}:
+            deck = page.locator('#notification-deck')
+            deck_box = deck.bounding_box()
+            assert deck_box is not None
+            assert page.viewport_size is not None
+            assert deck_box['width'] <= page.viewport_size['width']
+            assert deck_box['width'] >= page.viewport_size['width'] - 2
+
+            tabs = dialog.locator('[data-notification-deck-tabs]')
+            expect(tabs).to_be_visible()
+            for label in ('Active Work', 'Inbox', 'Notifications'):
+                expect(tabs.get_by_role('tab', name=re.compile(label, re.I))).to_be_visible()
+
+            footer = dialog.locator('[data-notification-deck-footer]')
+            expect(footer).to_be_visible()
+            footer_box = footer.bounding_box()
+            action = footer.get_by_role('link', name='View All')
+            action_box = action.bounding_box()
+            assert footer_box is not None
+            assert action_box is not None
+            assert action_box['width'] >= footer_box['width'] * 0.8
+
+            dimensions = page.evaluate(
+                '() => ({ scrollWidth: document.documentElement.scrollWidth, '
+                'clientWidth: document.documentElement.clientWidth })'
+            )
+            assert dimensions['scrollWidth'] <= dimensions['clientWidth']
+
         page.keyboard.press('Escape')
         expect(dialog).to_be_hidden()
         expect(trigger).to_be_focused()

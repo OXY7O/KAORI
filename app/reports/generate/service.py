@@ -125,9 +125,7 @@ def get_generate_report_payload(
 
     return {
         'page_title': 'Generate Report',
-        'page_subtitle': (
-            'Build governed reports from connected data and approved formats. Analytics: PDF/XLSX/CSV · Inventory: XLSX/CSV.'
-        ),
+        'page_subtitle': ('Build governed reports from approved Analytics or Inventory data.'),
         'clusters': cluster_options,
         'has_clusters': bool(cluster_options),
         'object_storage_systems': object_storage_system_options,

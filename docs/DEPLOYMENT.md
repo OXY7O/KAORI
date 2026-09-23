@@ -43,6 +43,8 @@ The canonical development and production runbook is `docs/RUNNING.md`.
 - Bootstrap the first administrator only during initial installation.
 - Place Gunicorn behind a trusted HTTPS reverse proxy.
 
+Standalone public-edge publication is an independent infrastructure lifecycle. Use `docs/deployment/SHARED_EDGE_OPERATIONS.md` for post-deploy publication, recovery, host-port/permission diagnosis, ACME HTTP-01 verification, and publication-only reruns. Do not redeploy KAORI solely to repair an edge-only failure.
+
 ## Metrics Source Hard-Cut Deployment
 
 Revision `20260817_metrics_source_v2` is an atomic namespace/schema cutover from the retired product-owned metrics integration to the provider-neutral **Metrics Source** contract. It renames the metrics table to `metrics_sources`, rewrites canonical integration/runtime/job/event identities to `metrics_source`, and persists concrete product identity only in `provider_key`. Active runtime code intentionally provides no dual-read path, route alias, compatibility redirect, or model wrapper for the retired namespace.

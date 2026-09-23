@@ -13,7 +13,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('list-checks', 'Infrastructure Intelligence', 'book-open-check') %}
                         <h1 class="{{ page_hero.title_classes() }}">Rule Catalog</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Review canonical detection logic, evidence requirements, ownership, severity, and governed response definitions.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review detection logic, evidence, ownership, severity, and response.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('list-checks', payload.catalog|length ~ ' Rules') }}
                             {{ page_hero.meta_label('boxes', payload.summary.domains ~ ' Asset Domains') }}

@@ -9,5 +9,5 @@ pytest-cov>=6,<8
 pytest-flask==1.3.0
 pytest-playwright==0.9.0
 pypdf==6.16.2
-pyright>=1.1.400,<2
+pyright==1.1.414
 ruff>=0.12,<1

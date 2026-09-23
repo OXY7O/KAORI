@@ -77,7 +77,9 @@ def test_dark_mode_brand_identity_uses_dark_accent() -> None:
     assert 'dark:text-kaori-accent' in workspace
     assert 'dark:border-brand-outline' in workspace
     assert 'dark:text-kaori-accent' in framed_tabs
-    assert 'dark:text-kaori-accent' in provider_tabs
+    assert 'components/framed_workspace_tabs.html' in provider_tabs
+    assert 'framed_workspace_tabs.render(' in provider_tabs
+    assert 'dark:text-kaori-accent' not in provider_tabs
 
 
 def test_operational_toast_countdown_has_visible_htmx_safe_animation() -> None:

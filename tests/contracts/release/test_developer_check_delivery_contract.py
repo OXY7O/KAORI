@@ -143,7 +143,11 @@ def test_telegram_workflow_name_is_concise_without_changing_trust_boundary() -> 
     source = read(TELEGRAM)
     assert 'pull_request:' not in source
     assert 'pull_request_target:' not in source
-    assert 'workflow_run:' not in source
+    assert 'workflow_run:' in source
+    assert '- KAORI CI' in source
+    assert '- completed' in source
+    assert "github.event.workflow_run.event == 'push'" in source
+    assert "github.event.workflow_run.head_repository.full_name == 'OXY7O/KAORI'" in source
     assert 'workflow_call:' not in source
     assert 'workflow_dispatch:' not in source
 

@@ -88,11 +88,12 @@ def test_kubernetes_inventory_lifecycle_exposes_binding_ownership() -> None:
     assert 'asset-owner workspace remains read-only for binding mutation' in lifecycle
 
 
-def test_kubernetes_legacy_primary_finding_is_compact() -> None:
+def test_kubernetes_extended_primary_finding_is_compact() -> None:
     validation = read('app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/validation.py')
 
-    assert 'is in a legacy lifecycle band.' in validation
-    assert 'Plan an upgrade.' in validation
+    assert 'is in KAORI Extended lifecycle support.' in validation
+    assert 'Plan an upgrade into the current lifecycle band.' in validation
+    assert 'is in a legacy lifecycle band.' not in validation
     assert (
         'Stable APIs remain usable, but upgrade planning is required before readiness can return to Ready.'
         not in validation

@@ -63,7 +63,7 @@ def handle_reports_exception(exc: Exception) -> ResponseReturnValue:
     )
     return render_reports_unavailable(
         page_title='Reports Temporarily Unavailable',
-        description='KAORI could not complete the requested reporting operation while preserving report records and internal error boundaries.',
+        description='Review reporting failures while preserving records and boundaries.',
         reason='A reporting dependency did not respond. The technical exception was recorded in server logs and is not exposed to the user.',
         retry_url=url_for('reports.overview'),
     )
@@ -80,7 +80,7 @@ def overview() -> ResponseReturnValue:
         logger.exception('Reports Overview could not be loaded.')
         return render_reports_unavailable(
             page_title='Reports Overview',
-            description='Review reporting readiness, generated activity, artifact storage, and connected data coverage while reporting dependencies recover.',
+            description='Review reporting readiness, activity, artifacts, and data coverage.',
             reason='KAORI could not load the reporting overview. Report records remain protected while storage or database connectivity is reviewed.',
             retry_url=url_for('reports.overview'),
         )

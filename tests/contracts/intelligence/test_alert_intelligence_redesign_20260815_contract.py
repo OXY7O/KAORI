@@ -14,9 +14,7 @@ def test_alert_intelligence_is_alert_operations_workspace() -> None:
     service = read('app/intelligence/alert_intelligence/service.py')
 
     assert 'Alert Operations' in page
-    assert (
-        'Manage alert routing, silences, recovery verification, and incident history from committed evidence.' in page
-    )
+    assert 'Manage alert routing, silences, recovery, and incident evidence.' in page
     assert page.count('page_hero.meta_label(') == 3
     assert '_alert_intelligence_summary.html' in page
     assert '_alert_intelligence_workspace.html' in page

@@ -1,0 +1,133 @@
+name: KAORI Staging Publication Reconciliation
+
+on:
+  workflow_call:
+    secrets:
+      KAORI_HOST_SSH_PRIVATE_KEY:
+        required: true
+      KAORI_HOST_SSH_PASSPHRASE:
+        required: true
+      KAORI_HOST_KNOWN_HOSTS:
+        required: true
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: kaori-staging-publication-reconciliation
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    name: Reconcile Public Publication
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    environment: uat
+    timeout-minutes: 30
+    env:
+      KAORI_HOST: ${{ vars.KAORI_HOST }}
+      KAORI_HOST_USER: ${{ vars.KAORI_HOST_USER }}
+      KAORI_HOST_PORT: ${{ vars.KAORI_HOST_PORT }}
+      KAORI_HOST_SSH_PRIVATE_KEY: ${{ secrets.KAORI_HOST_SSH_PRIVATE_KEY }}
+      KAORI_HOST_SSH_PASSPHRASE: ${{ secrets.KAORI_HOST_SSH_PASSPHRASE }}
+      KAORI_HOST_KNOWN_HOSTS: ${{ secrets.KAORI_HOST_KNOWN_HOSTS }}
+    steps:
+      - name: Validate Publication Inputs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          : "${KAORI_HOST:?Missing KAORI_HOST variable}"
+          : "${KAORI_HOST_USER:?Missing KAORI_HOST_USER variable}"
+          : "${KAORI_HOST_SSH_PRIVATE_KEY:?Missing KAORI_HOST_SSH_PRIVATE_KEY secret}"
+          : "${KAORI_HOST_SSH_PASSPHRASE:?Missing KAORI_HOST_SSH_PASSPHRASE secret}"
+          : "${KAORI_HOST_KNOWN_HOSTS:?Missing KAORI_HOST_KNOWN_HOSTS secret}"
+          [[ "$KAORI_HOST_USER" =~ ^[A-Za-z0-9._-]+$ ]] || exit 1
+          port="${KAORI_HOST_PORT:-22}"
+          if ! [[ "$port" =~ ^[0-9]{1,5}$ ]] || (( port < 1 || port > 65535 )); then
+            printf 'KAORI_HOST_PORT is invalid.\n' >&2
+            exit 1
+          fi
+
+      - name: Reconcile via Pinned SSH Trust
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          key_file="$(mktemp)"
+          known_hosts_file="$(mktemp)"
+          askpass_file="$(mktemp)"
+          agent_started=false
+          cleanup() {
+            [[ "$agent_started" == 'false' ]] || ssh-agent -k >/dev/null 2>&1 || true
+            rm -f -- "$key_file" "$known_hosts_file" "$askpass_file"
+          }
+          trap cleanup EXIT INT TERM HUP
+
+          printf '%s\n' "$KAORI_HOST_SSH_PRIVATE_KEY" > "$key_file"
+          printf '%s\n' "$KAORI_HOST_KNOWN_HOSTS" > "$known_hosts_file"
+          chmod 600 "$key_file" "$known_hosts_file"
+          cat > "$askpass_file" <<'ASKPASS'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          printf '%s\n' "$KAORI_HOST_SSH_PASSPHRASE"
+          ASKPASS
+          chmod 700 "$askpass_file"
+
+          eval "$(ssh-agent -s)" >/dev/null
+          agent_started=true
+          export SSH_ASKPASS="$askpass_file"
+          export SSH_ASKPASS_REQUIRE=force
+          export DISPLAY=:0
+          setsid -w ssh-add "$key_file" </dev/null >/dev/null
+
+          port="${KAORI_HOST_PORT:-22}"
+          target="$KAORI_HOST_USER@$KAORI_HOST"
+          ssh_opts=(-p "$port" -i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$known_hosts_file")
+
+          ssh "${ssh_opts[@]}" "$target" 'bash -s' <<'REMOTE'
+          set -Eeuo pipefail
+
+          edge_runtime=/opt/shared-edge/runtime
+          edge_publish=/opt/shared-edge/runtime/publish-container.sh
+          edge_apply=/opt/shared-edge/runtime/apply.sh
+          [[ -x "$edge_publish" ]] || {
+            printf 'Shared-edge publication authority is unavailable: %s\n' "$edge_publish" >&2
+            exit 1
+          }
+          [[ -x "$edge_apply" ]] || {
+            printf 'Shared-edge apply authority is unavailable: %s\n' "$edge_apply" >&2
+            exit 1
+          }
+
+          KAORI_WEB="$(docker ps -q \
+            --filter label=com.docker.compose.project=kaori-production \
+            --filter label=com.docker.compose.service=web | head -n1)"
+          [[ -n "$KAORI_WEB" ]] || {
+            printf 'No current KAORI web container is running.\n' >&2
+            exit 1
+          }
+
+          status="$(docker inspect --format '{{.State.Status}}' "$KAORI_WEB")"
+          health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$KAORI_WEB")"
+          if [[ "$status" != 'running' || "$health" != 'healthy' ]]; then
+            printf 'Current KAORI web container is not publication-ready: status=%s health=%s\n' \
+              "$status" "$health" >&2
+            exit 1
+          fi
+
+          cd "$edge_runtime"
+          bash "$edge_publish" \
+            --site-id kaori \
+            --domain kaori.cloud \
+            --container "$KAORI_WEB" \
+            --alias kaori-web \
+            --port 5000 \
+            --health-path /health/ready \
+            --tls true \
+            --websocket false \
+            --client-max-body-size 25m
+
+          bash "$edge_apply"
+          printf 'KAORI public publication reconciliation PASS · container=%s\n' "$KAORI_WEB"
+          REMOTE

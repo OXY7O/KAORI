@@ -64,6 +64,22 @@ def test_authenticated_shell_adapts_across_canonical_viewports(
     expect(welcome_hero).to_be_visible()
     expect(page.get_by_role('heading', name='Welcome to KAORI')).to_be_visible()
 
+    if viewport_name in {'mobile', 'small-mobile'}:
+        hero_box = welcome_hero.bounding_box()
+        assert hero_box is not None
+        assert page.viewport_size is not None
+        assert hero_box['height'] < page.viewport_size['height'] * 0.8
+        expect(welcome_hero.locator('[data-kaori-hero-leading-icon]')).to_be_hidden()
+        metadata_items = welcome_hero.locator('[data-kaori-hero-metadata-item]')
+        assert metadata_items.count() >= 2
+        expect(metadata_items.nth(0)).to_be_visible()
+        expect(metadata_items.nth(1)).to_be_hidden()
+        context_metrics = welcome_hero.locator('[data-kaori-hero-context-metric]')
+        assert context_metrics.count() >= 2
+        expect(context_metrics.nth(0)).to_be_visible()
+        expect(context_metrics.nth(1)).to_be_hidden()
+        _assert_no_document_overflow(page)
+
     if viewport_name in ADAPTIVE_VIEWPORTS:
         expect(mobile_trigger).to_be_visible()
         expect(desktop_toggle).to_be_hidden()
@@ -112,14 +128,48 @@ def test_mobile_navigation_closes_after_destination_selection(
         return
 
     _login(page, kaori_authenticated_base_url)
-    page.locator('[data-mobile-menu-trigger]').click()
+    page.evaluate("localStorage.setItem('kaori.sidebarExpanded', 'false')")
+    page.reload(wait_until='networkidle')
+
+    mobile_trigger = page.locator('[data-mobile-menu-trigger]')
     sidebar = page.locator('[data-mobile-navigation]')
+    mobile_trigger.click()
+
+    open_box = sidebar.bounding_box()
+    assert open_box is not None
+    assert open_box['width'] > 200
+    expect(sidebar.get_by_role('link', name='Welcome')).to_be_visible()
+
+    parent_menu = sidebar.locator('summary[aria-label]').first
+    expect(parent_menu).to_be_visible()
+    parent_menu.click()
+    assert page.evaluate("localStorage.getItem('kaori.sidebarExpanded')") == 'false'
+
+    page.locator('[data-mobile-navigation-close]').click()
+    expect(page.locator('[data-mobile-navigation-backdrop]')).to_be_hidden()
+    closed_box = sidebar.bounding_box()
+    assert closed_box is not None
+    assert closed_box['width'] > 200
+    assert abs(closed_box['width'] - open_box['width']) < 1
+    assert page.evaluate("localStorage.getItem('kaori.sidebarExpanded')") == 'false'
+
+    mobile_trigger.click()
     destination = sidebar.get_by_role('link', name='Welcome')
     expect(destination).to_be_visible()
     destination.click()
     page.wait_for_load_state('networkidle')
 
-    resting_box = page.locator('[data-mobile-navigation]').bounding_box()
+    resting_sidebar = page.locator('[data-mobile-navigation]')
+    resting_box = resting_sidebar.bounding_box()
     assert resting_box is not None
     assert resting_box['x'] + resting_box['width'] <= 1
+    assert resting_box['width'] > 200
+    assert page.evaluate("localStorage.getItem('kaori.sidebarExpanded')") == 'false'
+
+    page.locator('[data-mobile-menu-trigger]').click()
+    reopened_box = page.locator('[data-mobile-navigation]').bounding_box()
+    assert reopened_box is not None
+    assert reopened_box['width'] > 200
+    assert abs(reopened_box['width'] - resting_box['width']) < 1
+    expect(page.locator('[data-mobile-navigation-close]')).to_be_focused()
     _assert_no_document_overflow(page)

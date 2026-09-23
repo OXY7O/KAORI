@@ -24,9 +24,7 @@ from app.kubernetes.analytics.top_consumers.presentation import present_material
 _PAGE = {
     'dataset_key': 'analytics.top_consumers',
     'title': 'Top Consumers',
-    'description': (
-        'Consumer rankings use committed cluster or namespace snapshots; record filters remain presentation-only.'
-    ),
+    'description': 'Review consumer rankings while filters remain presentation-only.',
     'icon': 'list-ordered',
     'page_id': 'top-consumers-page',
 }

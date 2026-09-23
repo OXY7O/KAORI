@@ -4,7 +4,7 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('package-search', 'Kubernetes Pod Inventory', 'package') %}
                 <h1 class="{{ page_hero.title_classes() }}">Pod Inventory</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review committed Pods, readiness, placement, ownership, runtime conditions, and container images.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review Pods, readiness, placement, ownership, and conditions.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {% if cluster_onboarding.is_blocked %}
                         {{ page_hero.meta_label('database', 'Committed Inventory') }}

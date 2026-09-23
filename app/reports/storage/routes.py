@@ -34,7 +34,7 @@ def storage() -> ResponseReturnValue:
         logger.exception('Reports Storage could not be loaded.')
         return render_reports_unavailable(
             page_title='Reports Storage',
-            description='Review artifact backend, integrity, and lifecycle governance.',
+            description='Review artifact storage, integrity, lifecycle, and recovery.',
             reason='KAORI could not inspect the active report storage backend. Configuration remains unchanged while connectivity is restored.',
             retry_url=url_for('reports.storage'),
         )
@@ -116,7 +116,7 @@ def scan_storage_integrity() -> ResponseReturnValue:
         logger.exception('Report storage integrity scan failed.')
         return render_reports_unavailable(
             page_title='Reports Storage',
-            description='Review artifact backend, integrity, and lifecycle governance.',
+            description='Review artifact storage, integrity, lifecycle, and recovery.',
             reason='KAORI could not complete the artifact integrity scan. No report artifacts were changed.',
             retry_url=url_for('reports.storage', workspace='integrity'),
         )

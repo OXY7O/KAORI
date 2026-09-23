@@ -51,11 +51,31 @@ def test_visual_baseline_capture_is_governed_and_reviewable() -> None:
     workflow_text = workflow.read_text()
     assert 'workflow_dispatch:' in workflow_text
     assert 'KAORI_UI_BASE_URL' in workflow_text
+    assert 'capture_scope:' in workflow_text
+    assert '- authenticated' in workflow_text
     assert 'KAORI_UPDATE_VISUAL_BASELINES: "1"' in workflow_text
     assert 'pytest -q tests/ui/test_visual_regression.py' in workflow_text
+    assert 'welcome_visual_qa_light_and_dark or deterministic_visual_surface_catalog_light_and_dark' in workflow_text
     assert 'actions/upload-artifact@' in workflow_text
     assert 'tests/ui/baselines' in workflow_text
     assert 'tests/ui/artifacts' in workflow_text
+    assert 'tmp/ci-artifacts/test-output/ui-browser' in workflow_text
+
+    frontend_build = workflow_text.split('Build Authenticated Visual Test Assets', 1)[1].split(
+        'Capture Authenticated Visual Baseline Candidate', 1
+    )[0]
+    assert 'npm ci --no-audit --no-fund' in frontend_build
+    assert 'npm run build-css' in frontend_build
+    assert workflow_text.index('Build Authenticated Visual Test Assets') < workflow_text.index(
+        'Capture Authenticated Visual Baseline Candidate'
+    )
+
+    authenticated_capture = workflow_text.split('Capture Authenticated Visual Baseline Candidate', 1)[1].split(
+        'Upload Baseline Review Evidence', 1
+    )[0]
+    assert '--output tests/ui/artifacts/authenticated' in authenticated_capture
+    assert '--tracing' not in authenticated_capture
+    assert '--screenshot' not in authenticated_capture
 
 
 def test_representative_browser_interactions_use_deterministic_authenticated_authority() -> None:

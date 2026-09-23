@@ -60,10 +60,11 @@ The former standalone `/settings/time-locale` and `/settings/system-info` pages 
 
 ## System Information contract
 
-- `APP_VERSION` is the canonical deployed application version and should match the immutable image tag.
+- `VERSION` is the source-controlled current product version line used by README/development defaults; it is not runtime evidence for a specific RC.
+- `APP_VERSION` is the canonical deployed application version and is injected from the governed release identity; prereleases therefore retain the exact `-rc.N` suffix.
 - `APP_BUILD_SHA` and `APP_BUILD_DATE` are optional immutable build metadata.
 - `CHANGELOG.md` is the canonical operator-facing release-history source; System Information remains a safe runtime summary rather than a duplicate changelog.
-- `docs/releases/KAORI_2_3_0.md` records the 2.3.0 release scope, publication boundary, and final verification command.
+- `docs/releases/KAORI_2_3_0.md` is an immutable historical release record and does not define the current product version line.
 - Follow `docs/deployment/RELEASE_GOVERNANCE.md` for version bumps, tags, immutable image identity, and release approval.
 - System Information and Compatibility Versions require `system.view` and expose only safe product metadata.
 - Never expose credentials, secret environment-variable values, database URLs, provider endpoints, Redis details, Kubernetes credentials, or internal service addresses.

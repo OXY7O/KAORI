@@ -112,16 +112,23 @@ def test_cluster_connection(
 
         compatibility_status = discovery['compatibility_status']
         readiness_status = discovery['readiness_status']
-        if compatibility.status == 'unsupported_version':
+        if compatibility.readiness == 'blocked':
             compatibility_status = compatibility.status
-            readiness_status = compatibility.readiness
-        elif lifecycle == 'legacy' and compatibility_status == 'compatible':
-            compatibility_status = 'compatible_with_warnings'
+            readiness_status = 'blocked'
+        elif compatibility.readiness == 'degraded' and readiness_status == 'ready':
+            compatibility_status = compatibility.status
             readiness_status = 'degraded'
 
         readiness_reasons: list[str] = []
-        if lifecycle == 'legacy':
-            readiness_reasons.append(f'Kubernetes {git_version} is in a legacy lifecycle band. Plan an upgrade.')
+        if lifecycle == 'extended':
+            readiness_reasons.append(
+                f'Kubernetes {git_version} is in KAORI Extended lifecycle support. '
+                'Plan an upgrade into the current lifecycle band.'
+            )
+        elif lifecycle == 'end_of_life':
+            readiness_reasons.append(compatibility.message)
+        elif lifecycle == 'unknown' and compatibility.readiness == 'degraded':
+            readiness_reasons.append(compatibility.message)
         if discovery['legacy_features']:
             readiness_reasons.append(
                 'Legacy API adapters are selected for: ' + ', '.join(discovery['legacy_features']) + '.'
@@ -136,15 +143,17 @@ def test_cluster_connection(
                 + ', '.join(discovery['optional_blocked_features'])
                 + '. Core Kubernetes readiness is unaffected until that optional workflow is enabled.'
             )
-        if compatibility.readiness == 'blocked':
+        if compatibility.readiness == 'blocked' and compatibility.message not in readiness_reasons:
             readiness_reasons.append(compatibility.message)
 
         discovery['lifecycle_status'] = lifecycle
         discovery['detected_version'] = git_version
         discovery['readiness_reasons'] = readiness_reasons
 
-        messages = [compatibility.message]
-        messages.extend(readiness_reasons)
+        messages: list[str] = []
+        for message in (compatibility.message, *readiness_reasons):
+            if message and message not in messages:
+                messages.append(message)
 
         return {
             'success': True,

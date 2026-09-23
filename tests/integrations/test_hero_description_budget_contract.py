@@ -17,17 +17,40 @@ def test_hero_description_budget_enforces_target_and_hard_boundary() -> None:
     validate = namespace['_validate_description_budget']
 
     validate(
-        'Review cluster posture, readiness, evidence, capacity, alerts, recommendations, and operational context.',
+        'Review cluster health and respond to operational risks quickly.',
         owner='compliant',
     )
 
-    with pytest.raises(AssertionError, match='11-19 words'):
-        validate('Too short.', owner='short')
+    with pytest.raises(AssertionError, match='7-15 words'):
+        validate('Review cluster health and respond quickly.', owner='too-few-words')
 
-    with pytest.raises(AssertionError, match='hard maximum 19 words'):
+    with pytest.raises(AssertionError, match='7-15 words'):
         validate(
-            'Review this deliberately oversized Hero description because it contains far too many words for the canonical KAORI operational surface and exceeds the approved presentation density today.',
+            'Review cluster health, capacity, alerts, inventory, recommendations, reporting, ownership, readiness, risks, actions, evidence, and daily trends.',
+            owner='too-many-words',
+        )
+
+    with pytest.raises(AssertionError, match='68 characters'):
+        validate(
+            'Review extraordinarily comprehensive observability configurations, interoperability characteristics, and telecommunications dependencies.',
             owner='oversized',
+        )
+
+    with pytest.raises(AssertionError, match='action-oriented'):
+        validate(
+            'Current cluster health and operational risks remain visible for review.',
+            owner='not-action-oriented',
+        )
+
+    validate(
+        'Review node health, memory, alerts, risks, actions, and scope.',
+        owner='preferred-density',
+    )
+
+    with pytest.raises(AssertionError, match='manual line break'):
+        validate(
+            'Review cluster health, capacity, alerts, inventory, and\nreporting evidence.',
+            owner='manual-break',
         )
 
 
@@ -37,7 +60,7 @@ def test_integration_domain_hero_descriptions_are_registered_with_global_budget_
 
     assert (
         descriptions['Integration domain Orchestration']
-        == 'Cluster providers, control-plane access, discovery, runtime connectivity, and governed orchestration integration workflows.'
+        == 'Connect cluster providers through governed orchestration contracts.'
     )
     assert set(descriptions) == {
         'Integration domain Orchestration',
@@ -51,8 +74,8 @@ def test_cluster_required_blocked_hero_descriptions_are_registered_with_global_b
     descriptions = namespace['_cluster_required_descriptions']()
     values = set(descriptions.values())
 
-    assert 'Validate replacement certificate pairing and coverage before rotating one live TLS Secret.' in values
-    assert 'Validate one certificate pair against selected TLS Secrets before controlled rotation.' in values
+    assert 'Validate certificate pairing and coverage before Secret rotation.' in values
+    assert 'Validate a certificate pair before controlled TLS Secret rotation.' in values
     assert (
         'Validate replacement certificate material, key matching, and target coverage before rotating one live TLS Secret.'
         not in values

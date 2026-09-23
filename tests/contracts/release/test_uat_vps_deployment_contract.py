@@ -102,7 +102,6 @@ def test_server_dependencies_are_private_persistent_and_immutable() -> None:
     postgres = _service_block(source, 'postgres', 'redis')
     redis = _service_block(source, 'redis', 'validate')
     web = _service_block(source, 'web', 'worker')
-    nginx = _service_block(source, 'nginx', 'certbot')
 
     assert '${KAORI_POSTGRES_IMAGE:?' in postgres
     assert '${KAORI_REDIS_IMAGE:?' in redis
@@ -117,8 +116,12 @@ def test_server_dependencies_are_private_persistent_and_immutable() -> None:
     assert 'ports:' not in postgres
     assert 'ports:' not in redis
     assert 'ports: !reset []' in web
-    assert '"80:8080"' in nginx
-    assert '"443:8443"' in nginx
+    assert 'expose:' in web
+    assert '- "5000"' in web
+    assert 'edge-public' not in source
+    assert 'edge_public' not in source
+    assert '  nginx:' not in source
+    assert '  certbot:' not in source
 
 
 def test_uat_workflow_requires_intentional_rc_and_pinned_ssh_trust() -> None:
@@ -177,7 +180,7 @@ def test_uat_workflow_resolves_evidence_before_opening_ssh() -> None:
     assert 'KAORI_CANDIDATE_TAG' in source
 
 
-def test_deploy_orders_data_safety_before_public_promotion() -> None:
+def test_deploy_orders_data_safety_before_committing_application_release() -> None:
     source = _read(DEPLOY)
     ordered_markers = (
         'Starting PostgreSQL and Redis',
@@ -186,7 +189,7 @@ def test_deploy_orders_data_safety_before_public_promotion() -> None:
         'Running database migrations',
         'Starting KAORI application services',
         'Internal runtime PASS',
-        'Starting Compose-managed Nginx and Certbot edge',
+        'KAORI application runtime healthy',
         'mv -- "$candidate_release_env" "$active_release_env"',
     )
 
@@ -194,6 +197,9 @@ def test_deploy_orders_data_safety_before_public_promotion() -> None:
     assert positions == sorted(positions)
     assert 'docker build' not in source
     assert '--pull never' in source
+    assert '--remove-orphans' not in source
+    assert 'public HTTPS readiness' not in source
+    assert 'edge-public' not in source
 
 
 def test_database_recovery_surfaces_are_fail_closed() -> None:
@@ -248,3 +254,33 @@ def test_production_image_keeps_deployment_tooling_outside_runtime() -> None:
     assert 'deploy/server' not in production
     assert 'deploy/vps' not in production
     assert 'COPY deploy' not in production
+
+
+def test_rollback_requires_complete_previous_release_lineage_and_reviewed_backup() -> None:
+    rollback = _read(ROLLBACK)
+
+    for marker in (
+        'previous-image',
+        'previous-source-sha',
+        'previous-version',
+        'previous-backup',
+        'recorded previous image is not immutable',
+        'recorded previous source SHA is invalid',
+        'recorded previous release version is invalid',
+        'recorded rollback backup does not exist',
+        'restore.sh" "$backup_file"',
+        'deploy.sh" "$previous_image_ref" "$previous_source_sha" "$previous_version"',
+    ):
+        assert marker in rollback
+
+
+def test_deployment_commits_release_state_only_after_runtime_verification() -> None:
+    deploy = _read(DEPLOY)
+
+    runtime_verified = deploy.index("status '✅' 'Internal runtime PASS'")
+    current_image = deploy.index('printf \'%s\\n\' "$image" > "$KAORI_STATE_DIR/current-image"')
+    active_release = deploy.index('mv -- "$candidate_release_env" "$active_release_env"')
+
+    assert runtime_verified < current_image < active_release
+    assert 'committed=false' in deploy
+    assert '[[ "$committed" == \'true\' ]] || rm -f -- "$candidate_release_env"' in deploy

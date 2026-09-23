@@ -43,10 +43,81 @@ PROVIDER_DYNAMIC_DESCRIPTION_OWNERS = {
     (TEMPLATES / 'kubernetes' / 'operations' / 'cluster_required.html', 'requested_page_description'),
 }
 
-DESCRIPTION_TARGET_MIN = 11
-DESCRIPTION_TARGET_MAX = 19
-DESCRIPTION_HARD_MAX = 19
-CLUSTER_REQUIRED_CONTEXT_SUFFIX = 'with governed context.'
+DESCRIPTION_MIN_WORDS = 7
+DESCRIPTION_MAX_WORDS = 15
+DESCRIPTION_PREFERRED_MIN_WORDS = 8
+DESCRIPTION_PREFERRED_MAX_WORDS = 12
+DESCRIPTION_MAX_CHARS = 68
+DESCRIPTION_ACTION_STARTERS = frozenset(
+    {
+        'access',
+        'add',
+        'analyze',
+        'assess',
+        'automate',
+        'audit',
+        'browse',
+        'build',
+        'bind',
+        'check',
+        'choose',
+        'compare',
+        'configure',
+        'connect',
+        'control',
+        'create',
+        'define',
+        'delete',
+        'discover',
+        'edit',
+        'evaluate',
+        'examine',
+        'explore',
+        'generate',
+        'govern',
+        'identify',
+        'inspect',
+        'investigate',
+        'keep',
+        'maintain',
+        'manage',
+        'monitor',
+        'observe',
+        'open',
+        'operate',
+        'optimize',
+        'plan',
+        'preview',
+        'project',
+        'prepare',
+        'protect',
+        'publish',
+        'rank',
+        'reconcile',
+        'register',
+        'request',
+        'reveal',
+        'replace',
+        'resolve',
+        'restore',
+        'review',
+        'rotate',
+        'run',
+        'schedule',
+        'see',
+        'select',
+        'set',
+        'surface',
+        'track',
+        'understand',
+        'update',
+        'use',
+        'validate',
+        'verify',
+        'view',
+    }
+)
+CLUSTER_REQUIRED_CONTEXT_SUFFIX = 'in KAORI.'
 PROVIDER_EDIT_SHORT_DESCRIPTION_SUFFIX = 'Maintain governed validation and consumer-binding context.'
 REPORTS_UNAVAILABLE_SHORT_DESCRIPTION_SUFFIX = 'Maintain governed recovery and retained evidence context.'
 DESCRIPTION_WORD_PATTERN = re.compile(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*")
@@ -156,21 +227,35 @@ def _description_words(text: str) -> list[str]:
 
 
 def _effective_short_description(description: str, suffix: str) -> str:
-    if len(_description_words(description)) >= DESCRIPTION_TARGET_MIN:
+    if len(_description_words(description)) >= DESCRIPTION_MIN_WORDS:
         return description
     return f'{description} {suffix}'
 
 
 def _validate_description_budget(text: str, *, owner: str) -> None:
-    word_count = len(_description_words(text))
-    if word_count > DESCRIPTION_HARD_MAX:
-        raise AssertionError(
-            f'{owner}: Hero description has {word_count} words; hard maximum {DESCRIPTION_HARD_MAX} words'
-        )
-    if not DESCRIPTION_TARGET_MIN <= word_count <= DESCRIPTION_TARGET_MAX:
+    description = text.strip()
+    character_count = len(description)
+    words = _description_words(description)
+    word_count = len(words)
+    if '\n' in description or '\r' in description:
+        raise AssertionError(f'{owner}: Hero description must not contain a manual line break')
+    if not description.endswith(('.', '!', '?')):
+        raise AssertionError(f'{owner}: Hero description must be one complete short sentence')
+    if not DESCRIPTION_MIN_WORDS <= word_count <= DESCRIPTION_MAX_WORDS:
         raise AssertionError(
             f'{owner}: Hero description has {word_count} words; expected '
-            f'{DESCRIPTION_TARGET_MIN}-{DESCRIPTION_TARGET_MAX} words'
+            f'{DESCRIPTION_MIN_WORDS}-{DESCRIPTION_MAX_WORDS} words; value={description!r}'
+        )
+    if character_count > DESCRIPTION_MAX_CHARS:
+        raise AssertionError(
+            f'{owner}: Hero description has {character_count} characters; maximum '
+            f'{DESCRIPTION_MAX_CHARS} characters; value={description!r}'
+        )
+    first_word = words[0].lower()
+    if first_word not in DESCRIPTION_ACTION_STARTERS:
+        raise AssertionError(
+            f'{owner}: Hero description must be action-oriented and start with an approved action verb; '
+            f'found {words[0]!r}; value={description!r}'
         )
 
 
@@ -595,7 +680,8 @@ def _materialization_route_descriptions() -> dict[str, str]:
 
 
 def _effective_cluster_required_description(description: str) -> str:
-    if len(_description_words(description)) >= DESCRIPTION_TARGET_MIN:
+    description = description.strip()
+    if len(_description_words(description)) >= DESCRIPTION_MIN_WORDS:
         return description
     return f'{description.rstrip(".")} {CLUSTER_REQUIRED_CONTEXT_SUFFIX}'
 
@@ -633,7 +719,7 @@ def _cluster_required_descriptions() -> dict[str, str]:
             if description_node is None or (
                 isinstance(description_node, ast.Constant) and description_node.value is None
             ):
-                description = f'{operation} requires a registered Kubernetes cluster and canonical connection.'
+                description = f'Review {operation} readiness for the selected cluster.'
             else:
                 description = _static_string(description_node, owner=owner)
             descriptions[f'cluster_required {owner}'] = _effective_cluster_required_description(description)
@@ -791,7 +877,7 @@ def verify() -> None:
     dashboard_standard = _read(DASHBOARD_STANDARD)
 
     implementation_tokens = (
-        'min-h-[15.5rem]',
+        'sm:min-h-[15.5rem]',
         'lg:min-h-[17.5rem]',
         'xl:grid-cols-12',
         'xl:col-span-7',
@@ -804,9 +890,18 @@ def verify() -> None:
         'data-kaori-hero-state="{{ state }}"',
         'data-kaori-hero-metadata-policy="persistent"',
         'data-kaori-analytics-metadata',
-        'text-3xl font-bold leading-10',
-        'max-w-[44rem] text-base font-normal leading-7',
-        'grid grid-cols-2 auto-rows-fr gap-2',
+        'text-2xl font-bold leading-8',
+        'sm:text-4xl sm:leading-10',
+        'max-w-[44rem] text-sm font-normal leading-6',
+        'sm:text-base sm:leading-7',
+        'kaori-hero-description',
+        'grid grid-cols-1 gap-2',
+        'sm:grid-cols-2 sm:auto-rows-fr',
+        'sm:[&>*:nth-child(n+2)]:block',
+        'sm:[&>*:nth-child(n+2)]:inline-flex',
+        'data-kaori-hero-leading-icon',
+        'data-kaori-hero-context-metric',
+        'data-kaori-hero-metadata-item',
     )
     _require_tokens(hero, implementation_tokens, 'page_hero implementation')
 
@@ -821,14 +916,16 @@ def verify() -> None:
     _require_tokens(
         standard,
         (
-            '# KAORI Hero Component Standard v1.7',
+            '# KAORI Hero Component Standard v1.8',
             'Hero Profile',
             'Hero State',
             'same Profile + same State',
             'exactly three metadata',
             'normal, blocked, and degraded',
-            '248 px / 280 px minimum',
-            '16 px, regular, 28 px line height',
+            'phone-native compact composition',
+            '248 px / 280 px minimum from `sm`',
+            '14 px / 24 px on phone',
+            '16 px / 28 px from `sm`',
             'Action Icon Box',
             'Context Icon Box',
             'Status Badge Box',
@@ -839,7 +936,11 @@ def verify() -> None:
             'components/ANALYTICS_HERO.md',
             '## Theme and surface contract',
             'components/DARK_MODE.md',
-            'The canonical verifier enforces the 11–19 word target',
+            'The canonical verifier enforces the 7–15 word boundary',
+            'preferably 8–12 words',
+            'maximum 68 characters',
+            'one visual line at canonical non-phone widths',
+            'action-oriented',
             'Integration domain descriptions are audited from',
             '## Change procedure',
         ),
@@ -904,8 +1005,8 @@ def verify() -> None:
         'KAORI Hero component standard passed: '
         f'{len(primitive_shells)} compatibility shells, '
         f'{len(profile_templates)} profile consumers, '
-        f'{audited} audited descriptions; v1.7 persistent metadata, '
-        '11-19 word density, blocked/degraded state ownership, dynamic Jinja resolution, '
+        f'{audited} audited descriptions; v1.8 phone-native compact composition and persistent metadata, '
+        '7-15 word density with a preferred 8-12 word range, maximum 68 characters, browser-proven non-phone single-line rendering, action-oriented copy, blocked/degraded state ownership, dynamic Jinja resolution, '
         'dark-mode ownership, and unmanaged-shell detection are synchronized.'
     )
 

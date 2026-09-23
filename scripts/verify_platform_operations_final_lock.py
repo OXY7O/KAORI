@@ -56,7 +56,6 @@ DATA_LIFECYCLE_AUDIT_V1_3_DOC = (
     ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_3_AUDIT_2026_08_08.md'
 )
 QUALITY_GATE = ROOT / 'scripts/quality_gate.sh'
-CLEANUP = ROOT / 'scripts/cleanup_obsolete_files.sh'
 CORE_UI_LOCK = ROOT / 'scripts/verify_core_workspace_ui_lock.py'
 
 TEMPLATE_ROOTS = (
@@ -727,8 +726,6 @@ def main() -> int:
     for relative in OBSOLETE:
         if (ROOT / relative).exists():
             errors.append(f'obsolete Platform Operations path reintroduced: {relative}')
-        if relative not in CLEANUP.read_text(encoding='utf-8'):
-            errors.append(f'obsolete Platform Operations path missing from cleanup registry: {relative}')
 
     quality_gate = QUALITY_GATE.read_text(encoding='utf-8')
     if 'python scripts/verify_platform_operations_final_lock.py' not in quality_gate:

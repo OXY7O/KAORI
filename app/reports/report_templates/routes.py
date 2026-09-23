@@ -100,7 +100,7 @@ def report_templates() -> ResponseReturnValue:
         logger.exception('Report Templates could not be loaded.')
         return render_reports_unavailable(
             page_title='Report Templates',
-            description='Manage reusable report structures and section contracts.',
+            description='Manage report structures, sections, and governed recovery evidence.',
             reason='KAORI could not load the template catalog. Existing templates remain unchanged while dependencies are reviewed.',
             retry_url=url_for('reports.report_templates'),
         )

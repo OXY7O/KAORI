@@ -279,12 +279,14 @@ jobs:
     permissions:
       contents: write
       actions: read
+      id-token: write
     env:
       ACCEPTED_SHA: ${{ needs.wait-for-quality.outputs.accepted_sha }}
       QUALITY_RUN_ID: ${{ needs.wait-for-quality.outputs.quality_run_id }}
       CANDIDATE_TAG: ${{ needs.wait-for-quality.outputs.candidate_tag }}
       CANDIDATE_IMAGE: ${{ needs.wait-for-quality.outputs.candidate_image }}
       COMPARE_BASE: ${{ needs.wait-for-quality.outputs.compare_base }}
+      COSIGN_IMAGE: ghcr.io/sigstore/cosign/cosign:v3.1.3
     steps:
       - name: Check Out Accepted Staging Candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -315,15 +317,28 @@ jobs:
             docker build --file .github/ci/Dockerfile --tag "$image" .
           printf 'CI_TOOLCHAIN_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
 
+      - name: Resolve OCI Build Metadata
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OCI_CREATED="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          printf 'OCI_CREATED=%s\n' "$OCI_CREATED" >> "$GITHUB_ENV"
+
       - name: Build Exact Candidate
         shell: bash
         run: |
           set -Eeuo pipefail
           docker build \
+            --platform linux/amd64 \
             --target production \
             --build-arg OCI_SOURCE="https://github.com/${GITHUB_REPOSITORY}" \
             --build-arg OCI_REVISION="$ACCEPTED_SHA" \
             --build-arg OCI_VERSION="$CANDIDATE_TAG" \
+            --build-arg OCI_CREATED="$OCI_CREATED" \
+            --build-arg OCI_TITLE="KAORI" \
+            --build-arg OCI_DESCRIPTION="Knowledge, Automation, Operations, Resilience & Intelligence" \
+            --build-arg OCI_DOCUMENTATION="https://github.com/${GITHUB_REPOSITORY}#readme" \
+            --build-arg OCI_LICENSES="LicenseRef-KAORI-Internal-Use" \
             --tag "$CANDIDATE_IMAGE" \
             .
 
@@ -423,6 +438,7 @@ jobs:
             printf 'KAORI_CANDIDATE_TAG=%s\n' "$CANDIDATE_TAG"
             printf 'KAORI_IMAGE_DIGEST=%s\n' "$digest"
             printf 'KAORI_IMAGE_REF=%s\n' "$image_ref"
+            printf 'KAORI_IMAGE_PLATFORM=%s\n' 'linux/amd64'
           } > staging-image.env
           {
             printf 'KAORI_IMAGE_DIGEST=%s\n' "$digest"
@@ -430,11 +446,199 @@ jobs:
           } >> "$GITHUB_ENV"
           cat staging-image.env
 
+      - name: Verify Published Candidate OCI Metadata
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          bash .github/ci/release-lib.sh verify-labels "$KAORI_IMAGE_REF" "$CANDIDATE_TAG" "$ACCEPTED_SHA"
+
+      - name: Generate RC Supply Chain Evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm \
+            --volume /var/run/docker.sock:/var/run/docker.sock \
+            --volume kaori-trivy-cache:/root/.cache/trivy \
+            --volume "$PWD:/workspace" \
+            "$CI_TOOLCHAIN_IMAGE" \
+            trivy image \
+              --cache-dir /root/.cache/trivy \
+              --format spdx-json \
+              --output /workspace/kaori-sbom.spdx.json \
+              "$KAORI_IMAGE_REF"
+
+          finished_on="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          build_type="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/publish-staging-image.yml"
+          builder_id="${build_type}@${GITHUB_REF}"
+          source_uri="git+https://github.com/${GITHUB_REPOSITORY}.git"
+          invocation_id="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/attempts/${GITHUB_RUN_ATTEMPT}"
+
+          jq -n \
+            --arg build_type "$build_type" \
+            --arg builder_id "$builder_id" \
+            --arg source_uri "$source_uri" \
+            --arg source_sha "$ACCEPTED_SHA" \
+            --arg candidate_tag "$CANDIDATE_TAG" \
+            --arg invocation_id "$invocation_id" \
+            --arg started_on "$OCI_CREATED" \
+            --arg finished_on "$finished_on" \
+            '{
+              buildDefinition: {
+                buildType: $build_type,
+                externalParameters: {
+                  candidateTag: $candidate_tag,
+                  target: "production"
+                },
+                internalParameters: {
+                  runner: "self-hosted",
+                  platform: "linux/amd64"
+                },
+                resolvedDependencies: [
+                  {
+                    uri: $source_uri,
+                    digest: {gitCommit: $source_sha}
+                  }
+                ]
+              },
+              runDetails: {
+                builder: {id: $builder_id},
+                metadata: {
+                  invocationId: $invocation_id,
+                  startedOn: $started_on,
+                  finishedOn: $finished_on
+                }
+              }
+            }' > kaori-provenance.json
+
+          sbom_sha="sha256:$(sha256sum kaori-sbom.spdx.json | awk '{print $1}')"
+          provenance_sha="sha256:$(sha256sum kaori-provenance.json | awk '{print $1}')"
+          sbom_predicate_type="https://spdx.dev/Document"
+          provenance_predicate_type="https://slsa.dev/provenance/v1"
+          {
+            printf 'KAORI_SBOM_PREDICATE_TYPE=%s\n' "$sbom_predicate_type"
+            printf 'KAORI_SBOM_SHA256=%s\n' "$sbom_sha"
+            printf 'KAORI_PROVENANCE_PREDICATE_TYPE=%s\n' "$provenance_predicate_type"
+            printf 'KAORI_PROVENANCE_SHA256=%s\n' "$provenance_sha"
+          } >> staging-image.env
+          {
+            printf 'KAORI_SBOM_SHA256=%s\n' "$sbom_sha"
+            printf 'KAORI_PROVENANCE_SHA256=%s\n' "$provenance_sha"
+          } >> "$GITHUB_ENV"
+
+      - name: Attest RC Supply Chain Evidence with GitHub OIDC
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm \
+            --user 0:0 \
+            --env ACTIONS_ID_TOKEN_REQUEST_TOKEN \
+            --env ACTIONS_ID_TOKEN_REQUEST_URL \
+            --env DOCKER_CONFIG=/root/.docker \
+            --volume "$HOME/.docker:/root/.docker:ro" \
+            --volume "$PWD:/workspace:ro" \
+            "$COSIGN_IMAGE" \
+            attest --yes \
+              --predicate /workspace/kaori-sbom.spdx.json \
+              --type spdxjson \
+              "$KAORI_IMAGE_REF"
+
+          docker run --rm \
+            --user 0:0 \
+            --env ACTIONS_ID_TOKEN_REQUEST_TOKEN \
+            --env ACTIONS_ID_TOKEN_REQUEST_URL \
+            --env DOCKER_CONFIG=/root/.docker \
+            --volume "$HOME/.docker:/root/.docker:ro" \
+            --volume "$PWD:/workspace:ro" \
+            "$COSIGN_IMAGE" \
+            attest --yes \
+              --predicate /workspace/kaori-provenance.json \
+              --type slsaprovenance1 \
+              "$KAORI_IMAGE_REF"
+
+      - name: Verify RC Supply Chain Attestations
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          identity="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/publish-staging-image.yml@${GITHUB_REF}"
+
+          docker run --rm \
+            --user 0:0 \
+            --env DOCKER_CONFIG=/root/.docker \
+            --volume "$HOME/.docker:/root/.docker:ro" \
+            "$COSIGN_IMAGE" \
+            verify-attestation \
+              --certificate-identity "$identity" \
+              --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+              --type spdxjson \
+              "$KAORI_IMAGE_REF" > sbom-attestation-verification.json
+
+          docker run --rm \
+            --user 0:0 \
+            --env DOCKER_CONFIG=/root/.docker \
+            --volume "$HOME/.docker:/root/.docker:ro" \
+            "$COSIGN_IMAGE" \
+            verify-attestation \
+              --certificate-identity "$identity" \
+              --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+              --type slsaprovenance1 \
+              "$KAORI_IMAGE_REF" > provenance-attestation-verification.json
+
+          decode_attestation_statements() {
+            local verification_file="${1:?verification file required}"
+            local statement_file="${2:?statement file required}"
+
+            : > "$statement_file"
+            while IFS= read -r payload; do
+              [[ -n "$payload" ]] || continue
+              printf '%s' "$payload" | base64 -d
+              printf '\n'
+            done < <(jq -r '.payload // empty' "$verification_file") > "$statement_file"
+            [[ -s "$statement_file" ]]
+          }
+
+          decode_attestation_statements \
+            sbom-attestation-verification.json \
+            sbom-attestation-statements.jsonl
+          decode_attestation_statements \
+            provenance-attestation-verification.json \
+            provenance-attestation-statements.jsonl
+
+          jq -s -e '
+            any(
+              .[];
+              .predicateType == "https://spdx.dev/Document"
+              and .predicate.SPDXID == "SPDXRef-DOCUMENT"
+              and (.predicate.packages | type == "array")
+            )
+          ' sbom-attestation-statements.jsonl >/dev/null
+
+          jq -s -e \
+            --arg source_sha "$ACCEPTED_SHA" \
+            --arg candidate_tag "$CANDIDATE_TAG" \
+            '
+              any(
+                .[];
+                .predicateType == "https://slsa.dev/provenance/v1"
+                and .predicate.buildDefinition.externalParameters.candidateTag == $candidate_tag
+                and any(
+                  .predicate.buildDefinition.resolvedDependencies[]?;
+                  .digest.gitCommit == $source_sha
+                )
+              )
+            ' provenance-attestation-statements.jsonl >/dev/null
+
       - name: Upload Staging Image Evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: staging-image-${{ needs.wait-for-quality.outputs.accepted_sha }}
-          path: staging-image.env
+          path: |
+            staging-image.env
+            kaori-sbom.spdx.json
+            kaori-provenance.json
+            sbom-attestation-verification.json
+            sbom-attestation-statements.jsonl
+            provenance-attestation-verification.json
+            provenance-attestation-statements.jsonl
           if-no-files-found: error
           retention-days: 30
 
@@ -480,6 +684,8 @@ jobs:
           Quality run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${QUALITY_RUN_ID}
           Trivy HIGH/CRITICAL image scan: **PASS**
           Production runtime & baseline DAST: **PASS**
+          SPDX SBOM attestation: **PASS**
+          SLSA provenance v1 attestation: **PASS**
 
           ### Immutable Evidence
           Candidate tag: \`${CANDIDATE_TAG}\`

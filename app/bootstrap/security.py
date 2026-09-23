@@ -24,6 +24,7 @@ def _content_security_policy(nonce: str) -> str:
             "frame-ancestors 'none'",
             "form-action 'self'",
             f"script-src 'self' 'nonce-{nonce}' 'unsafe-eval'",
+            "script-src-attr 'none'",
             "style-src 'self' 'unsafe-inline'",
             "img-src 'self' data: blob:",
             "font-src 'self' data:",
@@ -63,10 +64,13 @@ def register_security_headers(app: Flask) -> None:
         response.headers['X-Frame-Options'] = 'DENY'
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['Permissions-Policy'] = _PERMISSIONS_POLICY
+        response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
 
         if response.mimetype == 'text/html':
             nonce = g.csp_nonce
             _protect_inline_scripts(response, nonce)
             response.headers['Content-Security-Policy'] = _content_security_policy(nonce)
+            response.headers['Cross-Origin-Opener-Policy'] = 'same-origin'
+            response.headers['Cross-Origin-Embedder-Policy'] = 'require-corp'
 
         return response

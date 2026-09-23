@@ -75,7 +75,12 @@ def test_html_responses_apply_central_http_security_baseline(app) -> None:
     assert directives['form-action'] == "'self'"
     assert "'self'" in directives['script-src'].split()
     assert "'unsafe-inline'" not in directives['script-src'].split()
+    assert directives['script-src-attr'] == "'none'"
     assert _csp_nonce(response.headers['Content-Security-Policy'])
+
+    assert response.headers['Cross-Origin-Opener-Policy'] == 'same-origin'
+    assert response.headers['Cross-Origin-Embedder-Policy'] == 'require-corp'
+    assert response.headers['Cross-Origin-Resource-Policy'] == 'same-origin'
 
 
 def test_inline_bootstrap_scripts_are_protected_by_response_nonce(app) -> None:
@@ -124,11 +129,14 @@ def test_csp_nonce_rotates_between_html_responses(app) -> None:
     assert first != second
 
 
-def test_static_responses_receive_mime_sniffing_protection(app) -> None:
+def test_static_responses_receive_mime_sniffing_and_resource_isolation(app) -> None:
     response = app.test_client().get('/static/favicon.svg')
 
     assert response.status_code == 200
     assert response.headers['X-Content-Type-Options'] == 'nosniff'
+    assert response.headers['Cross-Origin-Resource-Policy'] == 'same-origin'
+    assert 'Cross-Origin-Embedder-Policy' not in response.headers
+    assert 'Cross-Origin-Opener-Policy' not in response.headers
 
 
 def test_hostile_next_payload_stays_data_inside_hidden_login_field(app) -> None:

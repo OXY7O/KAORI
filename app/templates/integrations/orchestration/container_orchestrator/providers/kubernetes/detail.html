@@ -16,7 +16,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('server-cog', 'Kubernetes Integration', 'network') %}
                         <h1 class="{{ page_hero.title_classes() }}">{{ cluster.name }}</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Manage the connection contract, capability evidence, runtime health, and governed Kubernetes lifecycle.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Manage connection, capabilities, runtime health, and lifecycle.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ') |title) }}
                             {{ page_hero.meta_label('layers-3', (runtime_state.capability_count|string) ~ ' Validated Capabilities') }}

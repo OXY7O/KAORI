@@ -1,95 +1,217 @@
 schema_version: 1
 kind: integration_compatibility
-kubernetes_lifecycle_policy:
-  supported_version_constraint: '>=1.20,<2.0'
-  current_min_version: '1.34'
-  current_max_version_exclusive: '1.37'
-  current_version_label: v1.34–v1.36
-  supported_version_label: v1.20–v1.x
-  legacy_min_version: '1.20'
-profiles:
-- key: kubernetes-api-v1
-  product: kubernetes
-  version_constraint: '>=1.20,<2.0'
-  support_level: supported
+
+lifecycle_policy:
+  key: kaori-compatibility-policy-v1
+  version: 1
+  policy_year: 2026
+  lookback_years: 5
+  anchor_year: 2021
+  snapshot_date: '2026-09-19'
+  renewal_cadence: annual
+  lower_bound_rule: latest_stable_release_in_anchor_year
+  upper_bound_rule: latest_stable_available_at_policy_snapshot
+  pre_window_posture: end_of_life
+  future_posture: unverified
+  core_contract_versioning: breaking_capability_change_only
+
+support_postures:
+- key: current
+  result_status: compatible
+  readiness: ready
+- key: extended_supported
+  result_status: compatible_with_warnings
+  readiness: degraded
+- key: end_of_life
+  result_status: end_of_life
+  readiness: blocked
+- key: unverified
+  result_status: unverified_version
+  readiness: degraded
+
+contract_profiles:
+- key: kubernetes-core-v1
+  products:
+  - kubernetes
+  adapter_key: kubernetes_api
   required_capabilities: []
-  notes: KAORI Kubernetes API contract v1. Live API discovery and feature-level RBAC determine readiness.
+  notes: Stable Kubernetes API discovery contract; live resource discovery and feature-level RBAC remain authoritative.
   query_profile: null
-- key: prometheus-http-v2
-  product: prometheus
-  version_constraint: '>=2.40,<3.0'
-  support_level: legacy_supported
+- key: prometheus-http-core-v1
+  products:
+  - prometheus
+  - thanos
+  adapter_key: prometheus_http
   required_capabilities:
   - instant_query
   - range_query
-  notes: Prometheus 2.x runtime profile using the stable Prometheus HTTP API v1 core contract.
+  notes: Stable Prometheus HTTP API v1 query contract shared by Prometheus and Thanos Query.
   query_profile: prometheus-http-core-v1
-- key: prometheus-http-v3
-  product: prometheus
-  version_constraint: '>=3.0,<4.0'
-  support_level: current
-  required_capabilities:
-  - instant_query
-  - range_query
-  notes: Prometheus 3.x runtime profile using the stable Prometheus HTTP API v1 core contract.
-  query_profile: prometheus-http-core-v1
-- key: alertmanager-api-v2-legacy
-  product: alertmanager
-  version_constraint: '>=0.25,<0.27'
-  support_level: legacy
+- key: alertmanager-api-v2-contract-v1
+  products:
+  - alertmanager
+  adapter_key: alertmanager_api_v2
   required_capabilities:
   - status_v2
   - alerts_v2
   - silences_v2
-  notes: Legacy runtime line using Alertmanager API v2 only.
+  notes: Stable Alertmanager API v2 provider contract; payload and consumer evidence remain binding-scoped.
   query_profile: null
-- key: alertmanager-api-v2-current
-  product: alertmanager
-  version_constraint: '>=0.27,<0.34'
+
+products:
+- key: kubernetes
+  label: Kubernetes
+  icon: ship-wheel
+  version_scheme: semver
+  selection_mode: automatic_detected_version
+  version_source: kubernetes_server_version
+  contract_profile: kubernetes-core-v1
+  qualification_floor: '1.23'
+  qualification_ceiling_exclusive: '1.38'
+  minimum_label: v1.23
+  recommended_label: v1.37.x
+  qualified_version_label: v1.23–v1.37
+  current_version_label: v1.35–v1.37
+  upstream_supported_version_label: v1.35–v1.37
+  supported_version_label: 'v1.23–v1.37 · KAORI policy v1 (2026)'
+  anchor_release_label: 'v1.23 · latest stable release in 2021'
+  upper_release_label: 'v1.37 · latest stable release at 2026 policy snapshot'
+  upstream_lifecycle_label: 'Supported upstream: v1.35–v1.37'
+  support_label: Current + Extended
+  support_tone: info
+  capability_summary: API discovery, inventory, governed operations, and TLS governance.
+  validation_basis: Live API discovery and feature-level Kubernetes RBAC decide operational readiness.
+- key: prometheus
+  label: Prometheus
+  icon: activity
+  version_scheme: semver
+  selection_mode: automatic_detected_version
+  version_source: prometheus_buildinfo
+  contract_profile: prometheus-http-core-v1
+  qualification_floor: '2.32'
+  qualification_ceiling_exclusive: '3.14'
+  minimum_label: v2.32
+  recommended_label: v3.13.3 LTS
+  qualified_version_label: v2.32–v3.13.x
+  current_version_label: v3.13.x
+  upstream_supported_version_label: v3.13.x LTS
+  supported_version_label: 'v2.32–v3.13.x · KAORI policy v1 (2026)'
+  anchor_release_label: 'v2.32 · latest stable release in 2021'
+  upper_release_label: 'v3.13.3 · latest stable release at 2026 policy snapshot'
+  upstream_lifecycle_label: 'Current LTS: v3.13 · older qualified lines are KAORI Extended'
+  support_label: Current + Extended
+  support_tone: info
+  capability_summary: Prometheus HTTP API core queries with asset-scoped metric contracts.
+  validation_basis: Provider query APIs must validate; consumer metrics remain independently binding-scoped.
+- key: thanos
+  label: Thanos Query
+  icon: database-zap
+  version_scheme: semver
+  selection_mode: automatic_detected_version
+  version_source: thanos_buildinfo
+  contract_profile: prometheus-http-core-v1
+  qualification_floor: '0.24'
+  qualification_ceiling_exclusive: '0.43'
+  minimum_label: v0.24
+  recommended_label: v0.42.4
+  qualified_version_label: v0.24–v0.42.x
+  current_version_label: v0.42.x
+  upstream_supported_version_label: v0.42.x
+  supported_version_label: 'v0.24–v0.42.x · KAORI policy v1 (2026)'
+  anchor_release_label: 'v0.24 · latest stable release in 2021'
+  upper_release_label: 'v0.42.4 · latest stable release at 2026 policy snapshot'
+  upstream_lifecycle_label: 'Current qualified line: v0.42.x · older window versions are KAORI Extended'
+  support_label: Current + Extended
+  support_tone: info
+  capability_summary: Long-retention PromQL through the shared Prometheus HTTP API v1 contract.
+  validation_basis: Provider query APIs and Thanos endpoint identity validate separately from asset metric bindings.
+- key: alertmanager
+  label: Alertmanager
+  icon: bell-ring
+  version_scheme: semver
+  selection_mode: automatic_detected_version
+  version_source: alertmanager_status_v2
+  contract_profile: alertmanager-api-v2-contract-v1
+  qualification_floor: '0.23'
+  qualification_ceiling_exclusive: '0.35'
+  minimum_label: v0.23
+  recommended_label: v0.34.1
+  qualified_version_label: v0.23–v0.34.x
+  current_version_label: v0.34.x
+  upstream_supported_version_label: v0.34.x
+  supported_version_label: 'v0.23–v0.34.x · KAORI policy v1 (2026)'
+  anchor_release_label: 'v0.23 · latest stable release in 2021'
+  upper_release_label: 'v0.34.1 · latest stable release at 2026 policy snapshot'
+  upstream_lifecycle_label: 'Current qualified line: v0.34.x · older window versions are KAORI Extended'
+  support_label: Current + Extended
+  support_tone: info
+  capability_summary: Alertmanager API v2 status, alerts, and silences provider contract.
+  validation_basis: Mandatory API probes establish provider readiness; consumer alert evidence remains binding-scoped.
+
+qualifications:
+- key: kubernetes-extended
+  product: kubernetes
+  version_constraint: '>=1.23,<1.35'
+  contract_profile: kubernetes-core-v1
+  support_level: extended_supported
+  upstream_lifecycle: upstream_eol
+  required_capabilities: []
+  notes: Kubernetes versions inside the KAORI five-year lifecycle window but outside the current upstream support branches.
+- key: kubernetes-current
+  product: kubernetes
+  version_constraint: '>=1.35,<1.38'
+  contract_profile: kubernetes-core-v1
   support_level: current
-  required_capabilities:
-  - status_v2
-  - alerts_v2
-  - silences_v2
-  notes: Current Alertmanager API v2 profile.
-  query_profile: null
-- key: thanos-query-v0-39
+  upstream_lifecycle: current
+  required_capabilities: []
+  notes: Current upstream-supported Kubernetes minors v1.35–v1.37.
+- key: prometheus-extended
+  product: prometheus
+  version_constraint: '>=2.32,<3.13'
+  contract_profile: prometheus-http-core-v1
+  support_level: extended_supported
+  upstream_lifecycle: historical
+  required_capabilities: []
+  notes: Prometheus releases inside the KAORI five-year lifecycle window, mapped to the shared HTTP core contract.
+- key: prometheus-current
+  product: prometheus
+  version_constraint: '>=3.13,<3.14'
+  contract_profile: prometheus-http-core-v1
+  support_level: current
+  upstream_lifecycle: current_lts
+  required_capabilities: []
+  notes: Prometheus 3.13 LTS current qualified line.
+- key: alertmanager-extended
+  product: alertmanager
+  version_constraint: '>=0.23,<0.34'
+  contract_profile: alertmanager-api-v2-contract-v1
+  support_level: extended_supported
+  upstream_lifecycle: historical
+  required_capabilities: []
+  notes: Alertmanager releases inside the KAORI five-year lifecycle window, validated through API v2.
+- key: alertmanager-current
+  product: alertmanager
+  version_constraint: '>=0.34,<0.35'
+  contract_profile: alertmanager-api-v2-contract-v1
+  support_level: current
+  upstream_lifecycle: current
+  required_capabilities: []
+  notes: Current Alertmanager v0.34 API v2 qualified line.
+- key: thanos-extended
   product: thanos
-  version_constraint: '>=0.39,<0.40'
-  support_level: supported
+  version_constraint: '>=0.24,<0.42'
+  contract_profile: prometheus-http-core-v1
+  support_level: extended_supported
+  upstream_lifecycle: historical
   required_capabilities:
   - prometheus_api_v1
-  - instant_query
-  - range_query
-  notes: Supported Thanos Query 0.39 profile.
-  query_profile: prometheus-http-core-v1
-- key: thanos-query-v0-40
-  product: thanos
-  version_constraint: '>=0.40,<0.41'
-  support_level: supported
-  required_capabilities:
-  - prometheus_api_v1
-  - instant_query
-  - range_query
-  notes: Supported Thanos Query 0.40 profile.
-  query_profile: prometheus-http-core-v1
-- key: thanos-query-v0-41
-  product: thanos
-  version_constraint: '>=0.41,<0.42'
-  support_level: supported
-  required_capabilities:
-  - prometheus_api_v1
-  - instant_query
-  - range_query
-  notes: Supported Thanos Query 0.41 profile.
-  query_profile: prometheus-http-core-v1
-- key: thanos-query-v0-42
+  notes: Thanos Query releases inside the KAORI five-year lifecycle window using the shared Prometheus HTTP API contract.
+- key: thanos-current
   product: thanos
   version_constraint: '>=0.42,<0.43'
+  contract_profile: prometheus-http-core-v1
   support_level: current
+  upstream_lifecycle: current
   required_capabilities:
   - prometheus_api_v1
-  - instant_query
-  - range_query
-  notes: Current Thanos Query 0.42 profile using the Prometheus HTTP API v1 query contract.
-  query_profile: prometheus-http-core-v1
+  notes: Current Thanos Query v0.42 line using the shared Prometheus HTTP API contract.

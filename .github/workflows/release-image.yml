@@ -288,6 +288,87 @@ jobs:
           } >> "$GITHUB_ENV"
           printf 'Verified accepted immutable RC: %s\n' "$source_ref"
 
+      - name: Verify Accepted RC Attestations
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p tmp/ci-artifacts/release
+          source_ref="${REGISTRY_IMAGE}@${RC_IMAGE_DIGEST}"
+          identity_regexp="^https://github\\.com/${GITHUB_REPOSITORY}/\\.github/workflows/publish-staging-image\\.yml@refs/heads/kaori/(staging|rc-request)$"
+
+          docker run --rm \
+            --user 0:0 \
+            --env DOCKER_CONFIG=/root/.docker \
+            --volume "$HOME/.docker:/root/.docker:ro" \
+            "$COSIGN_IMAGE" \
+            verify-attestation \
+              --certificate-identity-regexp "$identity_regexp" \
+              --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+              --type spdxjson \
+              "$source_ref" > tmp/ci-artifacts/release/accepted-rc-sbom-attestation.json
+
+          docker run --rm \
+            --user 0:0 \
+            --env DOCKER_CONFIG=/root/.docker \
+            --volume "$HOME/.docker:/root/.docker:ro" \
+            "$COSIGN_IMAGE" \
+            verify-attestation \
+              --certificate-identity-regexp "$identity_regexp" \
+              --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+              --type slsaprovenance1 \
+              "$source_ref" > tmp/ci-artifacts/release/accepted-rc-provenance-attestation.json
+
+          decode_attestation_statements() {
+            local verification_file="${1:?verification file required}"
+            local statement_file="${2:?statement file required}"
+
+            : > "$statement_file"
+            while IFS= read -r payload; do
+              [[ -n "$payload" ]] || continue
+              printf '%s' "$payload" | base64 -d
+              printf '\n'
+            done < <(jq -r '.payload // empty' "$verification_file") > "$statement_file"
+            [[ -s "$statement_file" ]]
+          }
+
+          decode_attestation_statements \
+            tmp/ci-artifacts/release/accepted-rc-sbom-attestation.json \
+            tmp/ci-artifacts/release/accepted-rc-sbom-statement.jsonl
+          decode_attestation_statements \
+            tmp/ci-artifacts/release/accepted-rc-provenance-attestation.json \
+            tmp/ci-artifacts/release/accepted-rc-provenance-statement.jsonl
+
+          jq -s -e '
+            any(
+              .[];
+              .predicateType == "https://spdx.dev/Document"
+              and .predicate.SPDXID == "SPDXRef-DOCUMENT"
+              and (.predicate.packages | type == "array")
+            )
+          ' tmp/ci-artifacts/release/accepted-rc-sbom-statement.jsonl >/dev/null
+
+          jq -s -e \
+            --arg source_sha "$RC_SOURCE_SHA" \
+            --arg candidate_tag "$CANDIDATE_TAG" \
+            '
+              any(
+                .[];
+                .predicateType == "https://slsa.dev/provenance/v1"
+                and .predicate.buildDefinition.externalParameters.candidateTag == $candidate_tag
+                and any(
+                  .predicate.buildDefinition.resolvedDependencies[]?;
+                  .digest.gitCommit == $source_sha
+                )
+              )
+            ' tmp/ci-artifacts/release/accepted-rc-provenance-statement.jsonl >/dev/null
+
+          {
+            printf 'RC_SBOM_VERIFICATION_SHA256=sha256:%s\n' \
+              "$(sha256sum tmp/ci-artifacts/release/accepted-rc-sbom-attestation.json | awk '{print $1}')"
+            printf 'RC_PROVENANCE_VERIFICATION_SHA256=sha256:%s\n' \
+              "$(sha256sum tmp/ci-artifacts/release/accepted-rc-provenance-attestation.json | awk '{print $1}')"
+          } >> "$GITHUB_ENV"
+
       - name: Scan Exact Accepted Digest
         shell: bash
         run: |
@@ -331,6 +412,8 @@ jobs:
       - name: Verify Stable Promotion Signature
         shell: bash
         run: |
+          set -Eeuo pipefail
+          mkdir -p tmp/ci-artifacts/release
           source_ref="${REGISTRY_IMAGE}@${RC_IMAGE_DIGEST}"
           docker run --rm \
             --user 0:0 \
@@ -340,7 +423,11 @@ jobs:
             verify \
               --certificate-identity "https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release-image.yml@refs/heads/main" \
               --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-              "$source_ref"
+              "$source_ref" > tmp/ci-artifacts/release/stable-signature-verification.json
+
+          printf 'RC_SIGNATURE_VERIFICATION_SHA256=sha256:%s\n' \
+            "$(sha256sum tmp/ci-artifacts/release/stable-signature-verification.json | awk '{print $1}')" \
+            >> "$GITHUB_ENV"
 
       - name: Create or Verify Stable Git Tag
         env:
@@ -390,7 +477,36 @@ jobs:
             --arg image "$REGISTRY_IMAGE" \
             --arg digest "$RC_IMAGE_DIGEST" \
             --arg build_date "$RC_BUILD_DATE" \
-            '{schema_version: 2, version: $version, release_sha: $release_sha, accepted_rc: $rc_tag, source_sha: $source_sha, image: $image, digest: $digest, build_date: $build_date, rebuild: false}' \
+            --arg sbom_verification_sha "$RC_SBOM_VERIFICATION_SHA256" \
+            --arg provenance_verification_sha "$RC_PROVENANCE_VERIFICATION_SHA256" \
+            --arg signature_verification_sha "$RC_SIGNATURE_VERIFICATION_SHA256" \
+            '{
+              schema_version: 2,
+              version: $version,
+              release_sha: $release_sha,
+              accepted_rc: $rc_tag,
+              source_sha: $source_sha,
+              image: $image,
+              digest: $digest,
+              build_date: $build_date,
+              rebuild: false,
+              supply_chain: {
+                sbom: {
+                  predicate_type: "https://spdx.dev/Document",
+                  verified: true,
+                  verification_sha256: $sbom_verification_sha
+                },
+                provenance: {
+                  predicate_type: "https://slsa.dev/provenance/v1",
+                  verified: true,
+                  verification_sha256: $provenance_verification_sha
+                },
+                signature: {
+                  verified: true,
+                  verification_sha256: $signature_verification_sha
+                }
+              }
+            }' \
             > tmp/ci-artifacts/release/kaori-release-manifest.json
           cat tmp/ci-artifacts/release/kaori-release-manifest.json
 
@@ -414,6 +530,9 @@ jobs:
           - Accepted RC registry identity: **PASS**
           - HIGH/CRITICAL image scan: **PASS**
           - Runtime, migration, Reports worker, and baseline DAST: **PASS**
+          - Accepted RC SPDX SBOM attestation: **PASS**
+          - Accepted RC SLSA provenance v1 attestation: **PASS**
+          - Stable digest signature verification: **PASS**
           - Stable tag digest identity: **PASS**
 
           ### Promotion invariant

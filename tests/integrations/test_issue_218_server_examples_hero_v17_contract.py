@@ -6,13 +6,8 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-MINIMUM_HERO_DESCRIPTION = (
-    'Operational visibility for cluster health, capacity, alerts, inventory, recommendations, and reporting.'
-)
-MAXIMUM_HERO_DESCRIPTION = (
-    'Automate Analytics PDF, XLSX, or CSV artifacts and Inventory XLSX/CSV exports with '
-    'timezone-aware schedules and retained run evidence.'
-)
+MINIMUM_HERO_DESCRIPTION = 'Review cluster health, capacity, alerts, and readiness.'
+PREFERRED_HERO_DESCRIPTION = 'Review report execution, artifact readiness, storage, and lifecycle.'
 
 
 def test_server_deployment_boundary_is_repository_canonical() -> None:
@@ -24,13 +19,13 @@ def test_server_deployment_boundary_is_repository_canonical() -> None:
     assert 'deploy/vps' not in workflow
     assert 'compose.server.yml' in (ROOT / 'deploy' / 'server' / 'deploy.sh').read_text(encoding='utf-8')
 
-    ingress = (ROOT / 'deploy' / 'nginx' / 'verify-ingress.sh').read_text(encoding='utf-8')
-    assert 'deploy/vps' not in ingress
-    assert 'deploy/server/release-state.sh' in ingress
-    assert 'compose.server.yml' in ingress
-    assert 'KAORI_SERVER_COMPOSE' in ingress
-    assert 'KAORI_VPS_COMPOSE' not in ingress
-    assert 'VPS_COMPOSE' not in ingress
+    edge = (ROOT / 'example' / 'shared-edge' / 'verify.sh').read_text(encoding='utf-8')
+    assert 'deploy/vps' not in edge
+    assert 'compose.yml' in edge
+    assert 'EDGE_SITES_DIR' in edge
+    assert 'edge-public' not in workflow
+    assert 'deploy/nginx' not in workflow
+    assert 'example/shared-edge' not in workflow
 
 
 def test_example_boundary_contains_kaori_laptop_runtime_not_runner() -> None:
@@ -57,15 +52,15 @@ def test_repository_front_uses_stable_professional_badges_and_global_architectur
     assert 'Platform Capabilities' in readme
 
 
-def test_hero_v17_accepts_approved_reference_density_and_rejects_shorter_copy() -> None:
+def test_hero_v17_accepts_uat_description_contract_and_rejects_shorter_copy() -> None:
     namespace = runpy.run_path(str(ROOT / 'scripts' / 'verify_hero_component_standard.py'))
     validate = namespace['_validate_description_budget']
 
     validate(MINIMUM_HERO_DESCRIPTION, owner='minimum-reference')
-    validate(MAXIMUM_HERO_DESCRIPTION, owner='maximum-reference')
+    validate(PREFERRED_HERO_DESCRIPTION, owner='preferred-reference')
 
-    with pytest.raises(AssertionError, match='11-19 words'):
-        validate('One two three four five six seven eight nine ten.', owner='too-short')
+    with pytest.raises(AssertionError, match='7-15 words'):
+        validate('Review cluster health, capacity, and readiness.', owner='too-short')
 
 
 def test_hero_v17_operational_metadata_state_contract_is_executable() -> None:
@@ -75,7 +70,7 @@ def test_hero_v17_operational_metadata_state_contract_is_executable() -> None:
     verify_state_contract()
 
     standard = (ROOT / 'docs' / 'design' / 'components' / 'HERO.md').read_text(encoding='utf-8')
-    assert '# KAORI Hero Component Standard v1.7' in standard
+    assert '# KAORI Hero Component Standard v1.8' in standard
     assert 'normal, blocked, and degraded' in standard
     assert 'Blocked may use reduced readiness metadata' not in standard
 

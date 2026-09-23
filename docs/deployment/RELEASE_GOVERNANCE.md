@@ -16,6 +16,22 @@ KAORI uses Semantic Versioning: `MAJOR.MINOR.PATCH`.
 
 Pre-release audit work stays under `[Unreleased]` until the release candidate is approved. Do not bump `APP_VERSION` for every incremental review patch.
 
+### Product version line versus exact release identity
+
+The repository root `VERSION` file is the machine-readable **product version line** authority. It contains stable SemVer only, for example `0.2.0`, and is synchronized with the root README Version badge, the development `.env.example` `APP_VERSION`, and the application fallback used when no governed release metadata is injected.
+
+`VERSION` is **not** the exact deployed release identity. Governed prerelease and stable identities remain release/deployment managed:
+
+- product version line: `VERSION=0.2.0`;
+- governed prerelease tag: `v0.2.0-rc.N`;
+- governed prerelease runtime: `APP_VERSION=0.2.0-rc.N`;
+- governed stable tag: `v0.2.0`;
+- governed stable runtime: `APP_VERSION=0.2.0`.
+
+The release workflow, Git tag, GitHub Release, accepted source SHA, OCI version/revision labels, immutable image digest, signature/provenance, and deployment receipt remain the authority for an exact candidate or stable release. A README badge or development default must never be used to infer which RC is deployed.
+
+When the next product version line is approved, update `VERSION`, the README badge, development `APP_VERSION`, and application fallback together. Historical changelog sections and `docs/releases/KAORI_*.md` records remain immutable.
+
 ## Immutable Release Identity
 
 Every production build must provide:
@@ -28,9 +44,30 @@ Git release tags use `v${APP_VERSION}` for stable releases and `v${APP_VERSION}`
 
 `APP_BUILD_SHA` and `APP_BUILD_DATE` must describe the exact immutable image selected by release evidence. System Information may display these safe values but must never expose credentials, connection strings, provider secrets, or internal service endpoints.
 
-The container image must additionally preserve the equivalent OCI identity labels for version, revision, and creation time so a release candidate can be verified independently from mutable registry tags.
+The container image must additionally preserve the governed OCI identity annotations for source, revision, version, creation time, title, description, documentation, and license identity so a release candidate can be verified independently from mutable registry tags. KAORI's proprietary internal-use license is represented as the SPDX-compatible custom identifier `LicenseRef-KAORI-Internal-Use`, with the repository `LICENSE` file remaining the authoritative license text.
 
 Production host configuration and release identity are separate authorities. `/etc/kaori/.env.production` contains long-lived secrets and runtime configuration and is not rewritten for ordinary application releases. Governed deployment resolves the immutable application image and Git release tag, normalizes that tag to `APP_VERSION` by removing its leading `v`, supplies `APP_BUILD_SHA`/`APP_BUILD_DATE`, and injects those values into the production Compose transaction.
+
+## OCI image and supply-chain evidence contract
+
+The immutable image digest remains the release authority. Mutable tags, README badges, SBOM filenames, provenance filenames, and GitHub Release assets are evidence or navigation surfaces; none may replace the accepted digest.
+
+Each governed RC image must carry these OCI annotations:
+
+- `org.opencontainers.image.source`
+- `org.opencontainers.image.revision`
+- `org.opencontainers.image.version`
+- `org.opencontainers.image.created`
+- `org.opencontainers.image.title`
+- `org.opencontainers.image.description`
+- `org.opencontainers.image.documentation`
+- `org.opencontainers.image.licenses`
+
+After the candidate is pushed and its immutable digest is captured, the RC workflow generates an SPDX JSON SBOM from that digest and a SLSA Provenance v1 predicate describing the accepted source SHA, candidate tag, workflow build type, builder identity, invocation, and build timestamps. Cosign v3.1.3 keyless GitHub OIDC attestations bind both predicates to the immutable digest. Cosign's v3 bundle format stores those attestations as OCI 1.1 artifacts whose manifest `subject` points to the image digest.
+
+The RC workflow must verify both attestations immediately using the exact workflow certificate identity and GitHub OIDC issuer. Stable promotion must independently verify the accepted RC SBOM/provenance attestations before signing/promoting the same digest. Stable promotion must not regenerate SBOM or provenance because that would describe a different evidence event rather than the build that produced the accepted RC.
+
+The stable release manifest records the accepted image digest, build date, and verification-evidence SHA256 values. Those hashes support auditability but do not supersede the registry digest.
 
 ## Changelog Contract
 
@@ -50,13 +87,13 @@ Before a release, move approved entries from `[Unreleased]` to `## [X.Y.Z] - YYY
 2. Run `python scripts/verify_final_release.py --all --runtime` in the supported KAORI Dev Container/CI environment; this is the canonical final approval entry point and delegates to the underlying quality gates.
 3. Confirm the Alembic migration graph has one head and retain an executable previous-supported-release upgrade-path check for release CI.
 4. Select the Semantic Versioning increment from the approved changelog.
-5. Update `APP_VERSION` defaults and development/source examples together. Do not add release-specific values to the persistent production host environment.
+5. Update the root `VERSION` product version line, README badge, `APP_VERSION` development default, and application fallback together. Do not add release-specific values to the persistent production host environment.
 6. Move `[Unreleased]` changelog entries into the dated release section.
 7. Create or update `docs/releases/KAORI_X_Y_Z.md` with the approved release scope, deferred work, verification command, and Git tag.
 8. Commit and merge the reviewed release metadata change to `main`.
 9. Start the manual release workflow for `X.Y.Z`; lock the exact approved `main` SHA and rerun the full KAORI CI and release preflight.
-10. **Build the release candidate once** from that locked SHA, publish it first under the commit tag, and capture the immutable registry digest plus SBOM/provenance evidence.
-11. Verify the exact candidate by digest with container vulnerability scanning, fresh-install migration, previous-supported-release upgrade migration, production runtime/worker readiness, full release DAST, and image signing.
+10. **Build the release candidate once** from that locked SHA with the complete OCI annotation set, publish it under the governed RC tag, capture the immutable registry digest, then generate and attest SPDX SBOM plus SLSA Provenance v1 evidence against that digest.
+11. Verify the exact candidate by digest with complete OCI metadata checks, SBOM/provenance attestation verification, container vulnerability scanning, fresh-install migration, previous-supported-release upgrade migration, production runtime/worker readiness, full release DAST, and image signing.
 12. Create or verify the annotated Git tag `vX.Y.Z` at the same approved SHA only after candidate verification succeeds.
 13. **Promote the same immutable digest** to the governed `vX.Y.Z` and `vX.Y` registry aliases without rebuilding the image.
 14. Verify every promoted tag resolves to the captured digest, generate `kaori-release-manifest.json`, and publish the GitHub Release from the approved release evidence.
@@ -67,7 +104,7 @@ The release pipeline follows **build once → verify → promote the same immuta
 
 ## Release Gate
 
-The static quality gate runs `scripts/verify_release_governance.py`. The verifier rejects malformed source/default version metadata, active release identity accidentally persisted in `.env.production.example`, missing deployment-managed release injection in production Compose/VPS deployment, missing dated changelog/release-note structure, missing build-traceability variables, or a release process that is no longer documented. The master `python scripts/verify_final_release.py --all --runtime` gate additionally owns layered behavioral/security/rendering evidence, explicit E2E smoke, frontend reproducibility, migration integrity, endpoint registration, and production worker readiness; it delegates static/test/frontend work to `scripts/quality_gate.sh --all`. CI must provision the PostgreSQL/Redis services and required Reports worker rather than skipping those release tests.
+The static quality gate runs `scripts/verify_release_governance.py`. The verifier locks `VERSION` to the README badge and development/application fallback, preserves deployment-managed exact RC/stable identity, and rejects malformed source/default version metadata, active release identity accidentally persisted in `.env.production.example`, missing deployment-managed release injection in production Compose/VPS deployment, missing dated changelog/release-note structure, missing build-traceability variables, or a release process that is no longer documented. The master `python scripts/verify_final_release.py --all --runtime` gate additionally owns layered behavioral/security/rendering evidence, explicit E2E smoke, frontend reproducibility, migration integrity, endpoint registration, and production worker readiness; it delegates static/test/frontend work to `scripts/quality_gate.sh --all`. CI must provision the PostgreSQL/Redis services and required Reports worker rather than skipping those release tests.
 
 Release publication adds evidence that is outside the source-only final verifier: immutable registry digest, candidate container scan, candidate runtime and migration validation, release DAST, SBOM/provenance, signature verification, digest-preserving promotion, release manifest, and GitHub Release publication.
 

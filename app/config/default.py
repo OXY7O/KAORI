@@ -574,7 +574,7 @@ class Config:
 
     APP_VERSION = _env_str(
         'APP_VERSION',
-        '2.3.0',
+        '0.2.0',
     )
     APP_BUILD_SHA = _env_optional_str('APP_BUILD_SHA')
     APP_BUILD_DATE = _env_optional_str('APP_BUILD_DATE')

@@ -70,6 +70,21 @@ def test_workflow_exposes_progressive_profiles_before_expensive_full_jobs() -> N
     assert first_profile < first_expensive
 
 
+def test_admission_publishes_non_authoritative_exact_sha_commit_status() -> None:
+    source = read(WORKFLOW)
+    admission = source.split('\n  admission:', 1)[1]
+
+    assert '  statuses: write' in source
+    assert 'name: Publish Admission Commit Status' in admission
+    assert 'continue-on-error: true' in admission
+    assert 'SOURCE_SHA: ${{ needs.validation-profile.outputs.source_sha }}' in admission
+    assert 'KAORI CI / Admission' in admission
+    assert 'statuses/$SOURCE_SHA' in admission
+    assert '$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID' in admission
+    assert 'state=success' in admission
+    assert 'state=failure' in admission
+
+
 def test_issue_branch_pushes_do_not_trigger_governed_full_admission() -> None:
     source = read(WORKFLOW)
     assert '  push:' in source

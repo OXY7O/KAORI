@@ -12,7 +12,7 @@
                     {% call page_hero.intro('shield-alert', 'Access Boundary', 'shield-x') %}
                         <h1 class="{{ page_hero.title_classes() }}">{{ 'Access Role Unavailable' if role_unavailable else 'Access Denied' }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">
-                            {{ 'KAORI cannot open protected workspaces until an access administrator assigns or reactivates an RBAC role.' if role_unavailable else 'Your active role does not include the permission required to open this workspace or perform this action.' }}
+                            {{ 'Request an active RBAC role before opening KAORI workspaces.' if role_unavailable else 'Request workspace permission through a KAORI access administrator.' }}
                         </p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('shield-user', role_label) }}

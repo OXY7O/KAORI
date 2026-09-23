@@ -109,17 +109,24 @@ def test_forecast_binding_validation_uses_declared_90_day_history_independent_of
     assert 'retention=retention' in audit
     assert 'required_histories.add(definition.required_history)' in feature_contracts
     assert 'technical_history_check(required_history, retention)' in feature_contracts
-    # Historical profile keys remain internal Prometheus runtime-major contracts.
-    assert 'prometheus-http-v2' in compatibility
-    assert 'prometheus-http-v3' in compatibility
-    assert 'Prometheus 2.x runtime profile using the stable Prometheus HTTP API v1 core contract.' in compatibility
-    assert 'Prometheus 3.x runtime profile using the stable Prometheus HTTP API v1 core contract.' in compatibility
+    # Product versions are qualification rows; the runtime query identity stays on one shared HTTP core contract.
+    assert 'key: prometheus-http-core-v1' in compatibility
+    assert 'key: prometheus-extended' in compatibility
+    assert 'key: prometheus-current' in compatibility
+    assert 'contract_profile: prometheus-http-core-v1' in compatibility
+    assert 'key: thanos-extended' in compatibility
+    assert 'key: thanos-current' in compatibility
+    assert 'thanos-query-v0-39' not in compatibility
+    assert 'thanos-query-v0-42' not in compatibility
     assert 'version_detection_mode: automatic' in provider_contract
+    assert 'selection_mode: automatic_detected_version' in compatibility
+    assert 'version_source: prometheus_buildinfo' in compatibility
+    assert 'version_source: thanos_buildinfo' in compatibility
     thanos = provider_contract.split('- key: thanos', 1)[1].split('compatibility_profiles:', 1)[0]
     assert 'compatibility_profile_options: []' in thanos
     assert 'Prometheus HTTP API v2' not in thanos
     assert 'Prometheus HTTP API v3' not in thanos
-    assert compatibility.count('query_profile: prometheus-http-core-v1') >= 6
+    assert compatibility.count('query_profile: prometheus-http-core-v1') == 1
     assert 'shared query contract is `prometheus-http-core-v1`' in docs
     assert 'does not ask the operator to choose a Prometheus "HTTP v2/v3" profile' in docs
     assert "required_history='90d'" in docs

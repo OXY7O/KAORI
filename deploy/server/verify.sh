@@ -72,6 +72,7 @@ web_ports="$(docker inspect --format '{{json .NetworkSettings.Ports}}' "$web_cid
 [[ "$web_ports" != *'HostPort'* ]] || fail 'web unexpectedly publishes a host port'
 printf '✅ KAORI web is Docker-network only\n'
 
+
 if [[ -n "$KAORI_EXPECTED_IMAGE" ]]; then
   [[ "$KAORI_EXPECTED_IMAGE" =~ @sha256:[0-9a-f]{64}$ ]] || fail 'KAORI_EXPECTED_IMAGE must be immutable'
   for service in "${application_services[@]}"; do

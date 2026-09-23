@@ -4,7 +4,6 @@ import argparse
 import json
 import os
 import sys
-import time
 from typing import Any, Final, TypedDict
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode
@@ -34,8 +33,6 @@ except ModuleNotFoundError:
 _TELEGRAM_API: Final = 'https://api.telegram.org'
 _TRUE_VALUES: Final = frozenset({'1', 'true', 'yes', 'on'})
 _FAILURE_RESULTS: Final = frozenset({'failure', 'timed_out', 'action_required'})
-_WORKFLOW_WAIT_ATTEMPTS: Final = 300
-_WORKFLOW_WAIT_SECONDS: Final = 10
 
 _EVENT_TITLES: Final = {
     'CANDIDATE_BLOCKED': '❌ KAORI · Candidate Blocked',
@@ -308,68 +305,46 @@ def fetch_workflow_jobs(
     return [job for job in jobs if isinstance(job, dict)]
 
 
-def fetch_quality_workflow_runs(
+def fetch_workflow_run(
     *,
     repository: str,
-    head_branch: str,
+    run_id: str,
     token: str,
-) -> list[dict[str, Any]]:
-    safe_branch = quote(head_branch, safe='')
+) -> dict[str, Any]:
+    safe_run_id = quote(str(run_id), safe='')
     payload = _github_api_get(
-        path=(
-            f'/repos/{safe_repository(repository)}/actions/workflows/quality.yml/'
-            f'runs?branch={safe_branch}&event=push&per_page=50'
-        ),
+        path=f'/repos/{safe_repository(repository)}/actions/runs/{safe_run_id}',
         token=token,
     )
-    runs = payload.get('workflow_runs') if isinstance(payload, dict) else None
-    if not isinstance(runs, list):
-        raise RuntimeError('GitHub Actions workflow lookup returned an invalid payload.')
-    return [run for run in runs if isinstance(run, dict)]
+    if not isinstance(payload, dict):
+        raise RuntimeError('GitHub Actions workflow run lookup returned an invalid payload.')
+    return payload
 
 
-def select_matching_workflow_run(
+def validate_trusted_quality_workflow_run(
     *,
-    runs: list[dict[str, Any]],
+    workflow_run: dict[str, Any],
     source_sha: str,
     head_branch: str,
-) -> dict[str, Any] | None:
-    matches = [
-        run
-        for run in runs
-        if str(run.get('event') or '') == 'push'
-        and str(run.get('head_sha') or '') == source_sha
-        and str(run.get('head_branch') or '') == head_branch
-    ]
-    return max(matches, key=lambda run: int(run.get('id') or 0)) if matches else None
-
-
-def wait_for_quality_workflow_run(
-    *,
-    repository: str,
-    source_sha: str,
-    head_branch: str,
-    token: str,
-    attempts: int = _WORKFLOW_WAIT_ATTEMPTS,
-    interval_seconds: int = _WORKFLOW_WAIT_SECONDS,
-) -> dict[str, Any]:
-    attempts = max(int(attempts), 1)
-    interval_seconds = max(int(interval_seconds), 0)
-    for attempt in range(attempts):
-        selected = select_matching_workflow_run(
-            runs=fetch_quality_workflow_runs(
-                repository=repository,
-                head_branch=head_branch,
-                token=token,
-            ),
-            source_sha=source_sha,
-            head_branch=head_branch,
-        )
-        if selected is not None and str(selected.get('status') or '') == 'completed':
-            return selected
-        if attempt + 1 < attempts and interval_seconds:
-            time.sleep(interval_seconds)
-    raise RuntimeError('Timed out waiting for the exact-SHA KAORI CI workflow run to complete.')
+) -> None:
+    head_repository = workflow_run.get('head_repository')
+    repository_name = str(head_repository.get('full_name') or '') if isinstance(head_repository, dict) else ''
+    if str(workflow_run.get('name') or '') != 'KAORI CI':
+        raise RuntimeError('Workflow run is not KAORI CI.')
+    if str(workflow_run.get('path') or '') != '.github/workflows/quality.yml':
+        raise RuntimeError('Workflow run does not use the canonical KAORI CI workflow path.')
+    if str(workflow_run.get('event') or '') != 'push':
+        raise RuntimeError('Workflow run is not a trusted push execution.')
+    if str(workflow_run.get('status') or '') != 'completed':
+        raise RuntimeError('Workflow run is not completed.')
+    if repository_name != 'OXY7O/KAORI':
+        raise RuntimeError('Workflow run source repository is not trusted.')
+    if str(workflow_run.get('head_sha') or '') != source_sha:
+        raise RuntimeError('Workflow run source SHA does not match the notification source SHA.')
+    if str(workflow_run.get('head_branch') or '') != head_branch:
+        raise RuntimeError('Workflow run branch does not match the notification branch.')
+    if head_branch not in {'kaori/staging', 'main'}:
+        raise RuntimeError('Workflow run branch is not a trusted notification branch.')
 
 
 def send_message(
@@ -395,7 +370,8 @@ def send_message(
         method='POST',
     )
     try:
-        with urlopen(  # noqa: S310  # nosec B310 - fixed Telegram HTTPS authority
+        # B310 is reviewed here because the request is fixed to Telegram's HTTPS API authority.
+        with urlopen(  # noqa: S310  # nosec B310
             request,
             timeout=max(int(timeout_seconds), 1),
         ) as response:
@@ -525,15 +501,19 @@ def _notify_trusted_push(
     transport: TransportConfig,
 ) -> int:
     try:
-        workflow_run = wait_for_quality_workflow_run(
+        workflow_run = fetch_workflow_run(
             repository=args.repository,
+            run_id=args.workflow_run_id,
+            token=token,
+        )
+        validate_trusted_quality_workflow_run(
+            workflow_run=workflow_run,
             source_sha=args.source_sha,
             head_branch=args.head_branch,
-            token=token,
         )
         jobs = fetch_workflow_jobs(
             repository=args.repository,
-            run_id=str(workflow_run.get('id') or ''),
+            run_id=args.workflow_run_id,
             token=token,
         )
         profile = resolve_profile(
@@ -581,7 +561,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description='Send trusted KAORI GitHub Actions delivery notifications to a Telegram topic.'
     )
-    parser.add_argument('--discover-workflow-run', action='store_true')
+    parser.add_argument('--workflow-run-id', default='')
     parser.add_argument('--scan-pr-failures', action='store_true')
     parser.add_argument('--workflow-event', default='')
     parser.add_argument('--head-branch', default='')
@@ -611,9 +591,9 @@ def main(argv: list[str] | None = None) -> int:
     token = os.environ.get('GH_TOKEN', '')
     if args.scan_pr_failures:
         return _scan_pr_failures(repository=args.repository, token=token, transport=transport)
-    if args.discover_workflow_run:
+    if args.workflow_run_id:
         return _notify_trusted_push(args=args, token=token, transport=transport)
-    print('SKIP — No Telegram delivery discovery mode was requested.')
+    print('SKIP — No Telegram delivery notification mode was requested.')
     return 0
 
 

@@ -453,6 +453,9 @@ jobs:
   admission:
     name: CI Admission
     if: ${{ always() && needs.validation-profile.result == 'success' }}
+    permissions:
+      contents: read
+      statuses: write
     needs:
       - validation-profile
       - static-quality
@@ -503,6 +506,7 @@ jobs:
           fi
 
       - name: Publish Immutable Full Admission Evidence
+        id: full-evidence
         if: ${{ needs.validation-profile.outputs.execution == 'full' }}
         shell: bash
         env:
@@ -528,6 +532,7 @@ jobs:
               --output admission-evidence.json
 
       - name: Upload Full Admission Evidence
+        id: full-evidence-upload
         if: ${{ needs.validation-profile.outputs.execution == 'full' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -537,6 +542,7 @@ jobs:
           retention-days: 14
 
       - name: Write Admission Summary
+        id: summary
         if: ${{ always() }}
         shell: bash
         env:
@@ -619,3 +625,44 @@ jobs:
           fi
           printf '📦 %s\n' "${COVERAGE:-Selected validation path did not complete.}"
           printf '➡️ %s\n' "$next"
+
+      - name: Publish Admission Commit Status
+        if: ${{ always() }}
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ needs.validation-profile.outputs.source_sha }}
+          EXECUTION: ${{ needs.validation-profile.outputs.execution }}
+          ASSERT_OUTCOME: ${{ steps.result.outcome }}
+          EVIDENCE_OUTCOME: ${{ steps.full-evidence.outcome }}
+          EVIDENCE_UPLOAD_OUTCOME: ${{ steps.full-evidence-upload.outcome }}
+          SUMMARY_OUTCOME: ${{ steps.summary.outcome }}
+        run: |
+          set -Eeuo pipefail
+
+          state=failure
+          description='KAORI CI admission failed'
+
+          if [[ "$ASSERT_OUTCOME" == "success" && "$SUMMARY_OUTCOME" == "success" ]]; then
+            if [[ "$EXECUTION" == "full" ]]; then
+              if [[ "$EVIDENCE_OUTCOME" == "success" && "$EVIDENCE_UPLOAD_OUTCOME" == "success" ]]; then
+                state=success
+                description='KAORI CI Full Admission passed'
+              fi
+            else
+              state=success
+              description='KAORI CI staging admission passed'
+            fi
+          fi
+
+          target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          payload="$(printf '{"state":"%s","target_url":"%s","description":"%s","context":"KAORI CI / Admission"}' "$state" "$target_url" "$description")"
+
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/statuses/$SOURCE_SHA" \
+            --data "$payload"

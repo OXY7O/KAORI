@@ -12,7 +12,6 @@ from app.integrations.observability.alert_source.providers.alertmanager.contract
     ValidationStep,
 )
 from app.integrations.observability.alert_source.providers.alertmanager.exceptions import AlertmanagerError
-from app.integrations.observability.alert_source.providers.alertmanager.profiles import resolve_profile
 from app.integrations.observability.alert_source.providers.alertmanager.requirements import evaluate_module_readiness
 from app.integrations.observability.alert_source.providers.alertmanager.status import mark_status
 from app.models.alertmanager import AlertmanagerInstance
@@ -65,8 +64,7 @@ def validate_source(source: AlertmanagerInstance, *, source_label: str) -> Valid
 
     version = str(connection.get('version') or 'unknown')
     compatibility = evaluate_compatibility('alertmanager', version, capabilities=capabilities)
-    profile = resolve_profile(version)
-    capability_profile = profile.key if profile else 'alertmanager-unmapped'
+    capability_profile = compatibility.profile_key or 'alertmanager-api-v2-contract-v1'
     module_readiness = evaluate_module_readiness(capabilities)
 
     message = compatibility.message

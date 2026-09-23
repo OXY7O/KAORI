@@ -1,9 +1,9 @@
 {% import "components/table_label.html" as table_label %}
 {% macro shell_classes() -%}
-    kaori-hero-shell relative min-h-[15.5rem] overflow-hidden rounded-2xl border border-brand-outline p-5 text-brand-foreground shadow-sm lg:min-h-[17.5rem] lg:p-6
+    kaori-hero-shell relative overflow-hidden rounded-2xl border border-brand-outline p-4 text-brand-foreground shadow-sm sm:min-h-[15.5rem] sm:p-5 lg:min-h-[17.5rem] lg:p-6
 {%- endmacro %}
 {% macro layout_classes() -%}
-    grid min-h-[13rem] gap-5 lg:min-h-[14.5rem] xl:grid-cols-12 xl:items-stretch
+    grid gap-4 sm:min-h-[13rem] sm:gap-5 lg:min-h-[14.5rem] xl:grid-cols-12 xl:items-stretch
 {%- endmacro %}
 {% macro content_classes() -%}
     flex min-w-0 flex-col justify-center xl:col-span-7 xl:self-stretch
@@ -12,7 +12,7 @@
     min-w-0 xl:col-span-5 xl:self-stretch xl:[&>*]:h-full
 {%- endmacro %}
 {% macro context_panel_classes() -%}
-    kaori-hero-panel flex h-full min-h-[13rem] flex-col gap-3 rounded-xl border p-4 backdrop-blur-md
+    kaori-hero-panel flex h-full flex-col gap-2.5 rounded-xl border p-3 backdrop-blur-md sm:min-h-[13rem] sm:gap-3 sm:p-4
 {%- endmacro %}
 {% macro context_status_badge(label, tone='info') -%}
     {% set status_icon = 'circle-check' if tone == 'normal' else ('triangle-alert' if tone == 'warning' else ('circle-x' if tone == 'critical' else ('circle-help' if tone == 'unknown' else 'circle-dot'))) %}
@@ -157,7 +157,7 @@
     text-lg font-semibold leading-6 text-brand-foreground
 {%- endmacro %}
 {% macro context_metric_helper_classes() -%}
-    mt-1 break-words text-xs font-medium leading-5 text-brand-foreground-muted [overflow-wrap:anywhere]
+    mt-1 hidden break-words text-xs font-medium leading-5 text-brand-foreground-muted [overflow-wrap:anywhere] sm:block
 {%- endmacro %}
 {% macro context_action_classes() -%}
     w-full {{ primary_action_classes() }} disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-white disabled:hover:text-kaori-primary-dark
@@ -207,10 +207,11 @@
     </div>
 {%- endmacro %}
 {% macro context_panel_metrics_classes() -%}
-    grid grid-cols-2 auto-rows-fr gap-2
+    grid grid-cols-1 gap-2 [&>*:nth-child(n+2)]:hidden sm:grid-cols-2 sm:auto-rows-fr sm:[&>*:nth-child(n+2)]:block
 {%- endmacro %}
 {% macro context_metric(icon, label, value, description=None, value_classes=None) -%}
-    <div class="{{ context_metric_card_classes() }}">
+    <div class="{{ context_metric_card_classes() }}"
+         data-kaori-hero-context-metric>
         <div class="flex items-center gap-2 text-brand-foreground">
             <i data-lucide="{{ icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
             <p class="{{ context_metric_label_classes() }}">{{ label }}</p>
@@ -223,13 +224,13 @@
     </div>
 {%- endmacro %}
 {% macro title_classes() -%}
-    text-3xl font-bold leading-10 tracking-tight text-brand-foreground sm:text-4xl
+    text-2xl font-bold leading-8 tracking-tight text-brand-foreground sm:text-4xl sm:leading-10
 {%- endmacro %}
 {% macro description_classes() -%}
-    max-w-[44rem] text-base font-normal leading-7 text-brand-foreground-muted
+    kaori-hero-description max-w-[44rem] text-sm font-normal leading-6 text-brand-foreground-muted sm:text-base sm:leading-7
 {%- endmacro %}
 {% macro metadata_row_classes() -%}
-    mt-4 flex flex-wrap items-center gap-2
+    mt-3 flex flex-wrap items-center gap-2 [&>*:nth-child(n+2)]:hidden sm:mt-4 sm:[&>*:nth-child(n+2)]:inline-flex
 {%- endmacro %}
 {% macro persistent_metadata(metadata) -%}
     <div class="{{ metadata_row_classes() }}"
@@ -249,7 +250,7 @@
     <div data-kaori-analytics-metadata>{{ persistent_metadata(analytics_items) }}</div>
 {%- endmacro %}
 {% macro primary_action_classes() -%}
-    inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg border border-white/80 bg-white px-4 text-sm font-semibold text-kaori-primary-dark shadow-sm transition-colors hover:border-white hover:bg-white/90 hover:text-kaori-primary-dark hover:shadow-md active:bg-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-kaori-primary
+    kaori-primary-action inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg border border-white/80 bg-white px-4 text-sm font-semibold text-kaori-primary-dark shadow-sm transition-colors hover:border-white hover:bg-white/90 hover:text-kaori-primary-dark hover:shadow-md active:bg-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-kaori-primary
 {%- endmacro %}
 {% macro eyebrow(icon, label) -%}
     <div class="kaori-context-label kaori-hero-chip inline-flex min-h-8 w-fit items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-brand-foreground backdrop-blur">
@@ -258,17 +259,19 @@
     </div>
 {%- endmacro %}
 {% macro intro(eyebrow_icon, eyebrow_label, leading_icon) -%}
-    <div class="grid min-w-0 grid-cols-[48px_minmax(0,1fr)] gap-x-4 gap-y-4 sm:grid-cols-[56px_minmax(0,1fr)]">
-        <div class="col-start-2 row-start-1">{{ eyebrow(eyebrow_icon, eyebrow_label) }}</div>
-        <span class="col-start-1 row-start-2 flex h-12 w-12 shrink-0 items-center justify-center kaori-hero-tile rounded-xl border text-brand-foreground shadow-lg shadow-black/10 backdrop-blur sm:h-14 sm:w-14"
+    <div class="grid min-w-0 grid-cols-1 gap-y-3 sm:grid-cols-[56px_minmax(0,1fr)] sm:gap-x-4 sm:gap-y-4">
+        <div class="col-start-1 row-start-1 sm:col-start-2">{{ eyebrow(eyebrow_icon, eyebrow_label) }}</div>
+        <span class="hidden h-12 w-12 shrink-0 items-center justify-center kaori-hero-tile rounded-xl border text-brand-foreground shadow-lg shadow-black/10 backdrop-blur sm:col-start-1 sm:row-start-2 sm:flex sm:h-14 sm:w-14"
+              data-kaori-hero-leading-icon
               aria-hidden="true">
             <i data-lucide="{{ leading_icon }}" class="h-6 w-6 sm:h-7 sm:w-7"></i>
         </span>
-        <div class="col-start-2 row-start-2 min-w-0">{{ caller() }}</div>
+        <div class="col-start-1 row-start-2 min-w-0 sm:col-start-2">{{ caller() }}</div>
     </div>
 {%- endmacro %}
 {% macro meta_label(icon, label, value_id=None, suffix='') -%}
-    <span class="kaori-context-label kaori-hero-chip inline-flex min-h-8 items-center gap-2 rounded-md px-3 py-1.5 text-xs font-semibold text-brand-foreground backdrop-blur">
+    <span class="kaori-context-label kaori-hero-chip inline-flex min-h-8 items-center gap-2 rounded-md px-3 py-1.5 text-xs font-semibold text-brand-foreground backdrop-blur"
+          data-kaori-hero-metadata-item>
         <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0" aria-hidden="true"></i>
         <span>
             {% if value_id %}

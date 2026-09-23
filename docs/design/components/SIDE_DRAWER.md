@@ -42,6 +42,13 @@ Domain templates provide the values and operational meaning. They must not rebui
 - footer uses shared action-button classes;
 - no page-local fixed-position drawer shell.
 
+## Mobile Contract
+
+- Below `sm`, the canonical drawer uses the available phone width and dynamic viewport height so browser chrome changes do not strand actions outside the visible surface.
+- Header and body padding compact on phone while `sm+` retains the established desktop/tablet spacing.
+- When the optional footer action is present, Close and the destination action stack as full-width controls below `sm`; `sm+` restores the horizontal right-aligned action bar.
+- Domain consumers must not patch footer direction, action width, or viewport geometry locally. Responsive behavior remains owned by `components/side_drawer.html`.
+
 ## Detail Composition
 
 A rich operational drawer should follow this order when applicable:

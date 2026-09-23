@@ -18,7 +18,7 @@ def test_dynamic_jinja_hero_descriptions_are_discovered_and_budgeted() -> None:
     descriptions = collector([account_hero])
 
     assert len(descriptions) == 3
-    assert all(11 <= _word_count(description) <= 19 for description in descriptions.values())
+    assert all(7 <= _word_count(description) <= 15 for description in descriptions.values())
 
 
 def test_generic_blocked_analytics_hero_preserves_operational_metadata() -> None:

@@ -4,6 +4,12 @@ set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 
+OCI_SOURCE_EXPECTED='https://github.com/OXY7O/KAORI'
+OCI_TITLE_EXPECTED='KAORI'
+OCI_DESCRIPTION_EXPECTED='Knowledge, Automation, Operations, Resilience & Intelligence'
+OCI_DOCUMENTATION_EXPECTED='https://github.com/OXY7O/KAORI#readme'
+OCI_LICENSES_EXPECTED='LicenseRef-KAORI-Internal-Use'
+
 strict_semver() {
   local version="${1:?version required}"
   [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
@@ -118,15 +124,55 @@ verify_image_labels() {
   local sha="${3:?sha required}"
 
   docker pull "$ref" >/dev/null
-  local actual_version actual_sha
-  actual_version="$(docker image inspect "$ref" --format '{{ index .Config.Labels "org.opencontainers.image.version" }}')"
-  actual_sha="$(docker image inspect "$ref" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
+
+  local labels actual_source actual_version actual_sha actual_created
+  local actual_title actual_description actual_documentation actual_licenses actual_platform
+  labels="$(docker image inspect "$ref" --format '{{json .Config.Labels}}')"
+  actual_platform="$(docker image inspect "$ref" --format '{{.Os}}/{{.Architecture}}')"
+
+  actual_source="$(jq -r '."org.opencontainers.image.source" // empty' <<<"$labels")"
+  actual_version="$(jq -r '."org.opencontainers.image.version" // empty' <<<"$labels")"
+  actual_sha="$(jq -r '."org.opencontainers.image.revision" // empty' <<<"$labels")"
+  actual_created="$(jq -r '."org.opencontainers.image.created" // empty' <<<"$labels")"
+  actual_title="$(jq -r '."org.opencontainers.image.title" // empty' <<<"$labels")"
+  actual_description="$(jq -r '."org.opencontainers.image.description" // empty' <<<"$labels")"
+  actual_documentation="$(jq -r '."org.opencontainers.image.documentation" // empty' <<<"$labels")"
+  actual_licenses="$(jq -r '."org.opencontainers.image.licenses" // empty' <<<"$labels")"
+
+  [[ "$actual_source" == "$OCI_SOURCE_EXPECTED" ]] || {
+    printf 'Candidate source label mismatch: %s\n' "$actual_source" >&2
+    return 1
+  }
   [[ "$actual_version" == "$version" ]] || {
     printf 'Candidate version label mismatch: %s\n' "$actual_version" >&2
     return 1
   }
   [[ "$actual_sha" == "$sha" ]] || {
     printf 'Candidate revision label mismatch: %s\n' "$actual_sha" >&2
+    return 1
+  }
+  [[ "$actual_created" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]] || {
+    printf 'Candidate created label is not RFC3339 UTC: %s\n' "$actual_created" >&2
+    return 1
+  }
+  [[ "$actual_title" == "$OCI_TITLE_EXPECTED" ]] || {
+    printf 'Candidate title label mismatch: %s\n' "$actual_title" >&2
+    return 1
+  }
+  [[ "$actual_description" == "$OCI_DESCRIPTION_EXPECTED" ]] || {
+    printf 'Candidate description label mismatch: %s\n' "$actual_description" >&2
+    return 1
+  }
+  [[ "$actual_documentation" == "$OCI_DOCUMENTATION_EXPECTED" ]] || {
+    printf 'Candidate documentation label mismatch: %s\n' "$actual_documentation" >&2
+    return 1
+  }
+  [[ "$actual_licenses" == "$OCI_LICENSES_EXPECTED" ]] || {
+    printf 'Candidate licenses label mismatch: %s\n' "$actual_licenses" >&2
+    return 1
+  }
+  [[ "$actual_platform" == 'linux/amd64' ]] || {
+    printf 'Candidate platform mismatch: %s\n' "$actual_platform" >&2
     return 1
   }
 }
@@ -237,8 +283,24 @@ generate_release_manifest() {
   local digest="${4:?digest required}"
   local build_date="${5:?build date required}"
   local output="${6:-kaori-release-manifest.json}"
+  local sbom_verification_sha="${7:?SBOM verification SHA256 required}"
+  local provenance_verification_sha="${8:?provenance verification SHA256 required}"
+  local signature_verification_sha="${9:?signature verification SHA256 required}"
   local short_sha="${sha:0:12}"
   local minor="${version%.*}"
+
+  [[ "$sbom_verification_sha" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+    printf 'Invalid SBOM verification SHA256: %s\n' "$sbom_verification_sha" >&2
+    return 1
+  }
+  [[ "$provenance_verification_sha" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+    printf 'Invalid provenance verification SHA256: %s\n' "$provenance_verification_sha" >&2
+    return 1
+  }
+  [[ "$signature_verification_sha" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+    printf 'Invalid signature verification SHA256: %s\n' "$signature_verification_sha" >&2
+    return 1
+  }
 
   mkdir -p "$(dirname "$output")"
   jq -n \
@@ -252,7 +314,11 @@ generate_release_manifest() {
     --arg version_tag "v$version" \
     --arg minor_tag "v$minor" \
     --arg sha_tag "sha-$short_sha" \
+    --arg sbom_verification_sha "$sbom_verification_sha" \
+    --arg provenance_verification_sha "$provenance_verification_sha" \
+    --arg signature_verification_sha "$signature_verification_sha" \
     '{
+      schema_version: 2,
       version: $version,
       git_tag: $tag,
       git_sha: $sha,
@@ -261,9 +327,24 @@ generate_release_manifest() {
       digest: $digest,
       promoted_tags: [$version_tag, $minor_tag, $sha_tag],
       build_date: $build_date,
-      sbom: true,
-      provenance: true,
-      signed: true
+      rebuild: false,
+      signed: true,
+      supply_chain: {
+        sbom: {
+          predicate_type: "https://spdx.dev/Document",
+          verified: true,
+          verification_sha256: $sbom_verification_sha
+        },
+        provenance: {
+          predicate_type: "https://slsa.dev/provenance/v1",
+          verified: true,
+          verification_sha256: $provenance_verification_sha
+        },
+        signature: {
+          verified: true,
+          verification_sha256: $signature_verification_sha
+        }
+      }
     }' > "$output"
 }
 

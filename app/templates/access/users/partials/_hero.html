@@ -9,9 +9,7 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('users-round', 'Access Administration', 'users-round') %}
                 <h1 class="{{ page_hero.title_classes() }}">User Management</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">
-                    Manage account lifecycle, authentication source, activation, role assignment, and access posture across governed identities.
-                </p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Manage account lifecycle, authentication, and access posture.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('users-round', summary.managed ~ (' Managed Account' if summary.managed == 1 else ' Managed Accounts') ) }}
                     {{ page_hero.meta_label('fingerprint', summary.identity_source_count ~ (' Identity Source' if summary.identity_source_count == 1 else ' Identity Sources') ) }}

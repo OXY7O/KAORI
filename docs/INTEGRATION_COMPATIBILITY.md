@@ -28,7 +28,7 @@ Prometheus and Thanos Query are current **provider implementations** of Metrics 
 2. Resolve `provider_key` from the Metrics Source provider catalog.
 3. Resolve `adapter_key`, `query_language`, default routing horizon, and compatibility policy from that provider definition.
 4. Validate network, TLS, authentication, endpoint identity, and adapter-level operations.
-5. Match a version-controlled compatibility profile where the selected adapter/provider requires one.
+5. Automatically match the detected runtime version to the source-controlled qualification band and general contract.
 6. Persist provider-level readiness evidence on the Metrics Source record.
 7. Create an asset-scoped `IntegrationBinding`.
 8. Resolve the binding profile by `adapter_key + asset_type`.
@@ -49,7 +49,7 @@ The source record is provider-neutral. The canonical persisted identity is:
 | `MetricsSource.query_language` | Query language declared by the provider definition. |
 | `MetricsSource.detected_version` | Version of the endpoint actually contacted by KAORI. |
 | `MetricsSource.compatibility_profile` | Qualified endpoint/provider compatibility evidence. |
-| `MetricsSource.compatibility_profile_override` | Explicit supported profile selection when automatic endpoint detection is insufficient. |
+| `MetricsSource.compatibility_profile_override` | Exceptional persisted override for migration/diagnostic recovery only; normal operator flow uses automatic detected-version selection. |
 
 The global resolver, runtime history, jobs, notifications, routing, analytics, reports, Intelligence, Kubernetes, and Object Storage use `metrics_source`. Product identity is presentation/adapter metadata and must not leak into the category contract.
 
@@ -123,11 +123,52 @@ historical  → Thanos Query
 
 without making either product the global metrics abstraction.
 
-## Compatibility profiles
+## Compatibility authority layers
 
-Compatibility data remains product/adapter-specific because endpoint behavior is product-specific. Current examples include Prometheus HTTP profiles and Thanos Query profiles. This is expected and is not a category-level coupling.
+KAORI compatibility is intentionally split into five independent authorities:
 
-A matching version profile alone does not make an integration Ready. Core adapter validation and required asset-binding evidence must also pass.
+1. **Annual lifecycle policy** — yearly KAORI support governance with a five-year calendar lookback.
+2. **General contract profile** — a stable API/protocol/capability generation such as `kubernetes-core-v1`, `prometheus-http-core-v1`, `alertmanager-api-v2-contract-v1`, or `s3-object-storage-v1`.
+3. **Version qualification mapping** — concrete upstream versions mapped to the general contract with Current or Extended KAORI support posture.
+4. **Upstream lifecycle** — current, maintained, legacy, EOL, or archived upstream status; this is independent evidence.
+5. **Observed runtime evidence** — actual API probes, RBAC, query behavior, S3 operations, payload metadata, and binding-specific consumer evidence.
+
+### Annual policy governance
+
+The first annual generation is `kaori-compatibility-policy-v1` for 2026.
+
+```text
+policy_year = 2026
+lookback_years = 5
+anchor_year = 2021
+```
+
+For each product, the lower-bound candidate is the latest stable release in the anchor year. The upper-bound candidate is the latest stable release already available at the annual policy snapshot. This makes annual rollover deterministic instead of selecting arbitrary historical versions.
+
+Annual policy version and general core contract version are independent:
+
+- `compatibility-policy-v1` becomes `v2` on the 2027 annual lifecycle refresh;
+- `kubernetes-core-v1`, `prometheus-http-core-v1`, and other `core-vN` identities remain unchanged until their API/capability semantics require a breaking contract generation.
+
+### Definition-driven automatic selection
+
+Compatibility ranges are data. Runtime logic must not hard-code product release branches.
+
+For semver providers, `app/definitions/catalogs/integrations/compatibility.yaml` declares the automatic version source, qualification floor/ceiling, version bands, band-to-`core-vN` mapping, support posture, and capability deltas. KAORI detects the provider version first and selects the matching band without asking the operator to choose a year, release family, or compatibility profile.
+
+This is also how API evolution is modeled. If a future product range requires a new API generation, that version band maps to a new general core contract in the definition. The evaluator continues to execute the same generic resolution algorithm.
+
+MinIO uses its Object Storage provider definition because its release identifier is date-based rather than semver, but it follows the same automatic range-matching principle.
+
+### Lifecycle states
+
+- **Current** — inside the annual window and current upstream-qualified line; live evidence may make the integration Ready.
+- **Extended** — inside the KAORI five-year window but outside the current upstream line; supported with Degraded posture and upgrade guidance.
+- **End of Life** — older than the annual policy floor; blocked.
+- **Future Unverified** — newer than the annual upper bound; Degraded when all mandatory core probes still pass, but never automatically qualified.
+- **Capability Mismatch** — mandatory live capability is missing; blocked regardless of version.
+
+A matching qualification never makes an integration Ready by itself. Live provider validation and required consumer binding evidence remain authoritative.
 
 ## Alertmanager and Object Storage boundaries
 
@@ -145,19 +186,21 @@ KAORI                     → registration, binding, validation, routing, correl
 Deleting an asset owner removes its asset bindings; reusable source instances remain independent unless explicitly deleted through their own governed lifecycle.
 
 
-## KAORI 2.3.0 qualified compatibility baseline
+## Qualified compatibility baseline
 
-The System Information matrix is a **KAORI qualification policy**, not a mirror of each upstream project's lifecycle page. A version can be current upstream and still remain blocked until KAORI has a matching compatibility profile and successful live capability evidence.
+Policy v1 / 2026 uses anchor year 2021 and a five-year annual lookback.
 
-| Integration | Minimum qualified | Recommended baseline | KAORI profile policy |
-|---|---:|---:|---|
-| Kubernetes | v1.20 | v1.36.x | `kubernetes-api-v1`, with live API/RBAC discovery authoritative |
-| Prometheus | v2.40 | v3.13 LTS | major-2 legacy-supported and major-3 current HTTP profiles |
-| Alertmanager | v0.25 | v0.33.x | API v2 profiles through `<0.34` |
-| Thanos Query | v0.39 | v0.42.x | explicit 0.39, 0.40, 0.41, and 0.42 Query profiles |
-| MinIO | `RELEASE.2024-08-03T04-33-23Z` | same qualified release | exact object-storage provider release profile; do not infer compatibility for other releases |
+| Integration | General contract | Policy v1 qualified versions | Current / recommended baseline | Readiness authority |
+|---|---|---|---|---|
+| Kubernetes | `kubernetes-core-v1` | v1.23–v1.37 | v1.37.x; upstream-supported minors v1.35–v1.37 | live API discovery and feature-level RBAC |
+| Prometheus | `prometheus-http-core-v1` | v2.32–v3.13.x | v3.13.3 LTS | provider-neutral Prometheus HTTP API probes plus asset binding evidence |
+| Alertmanager | `alertmanager-api-v2-contract-v1` | v0.23–v0.34.x | v0.34.1 | API v2 status/alerts/silences probes plus binding-scoped alert evidence |
+| Thanos Query | `prometheus-http-core-v1` | v0.24–v0.42.x | v0.42.4 | shared Prometheus HTTP API probes plus provider identity and asset binding evidence |
+| MinIO | `s3-object-storage-v1` | `RELEASE.2021-12-29T06-49-06Z` through `RELEASE.2025-10-15T17-29-55Z` | latest retained community release; upstream archived | S3 reachability and bucket-discovery capability; release qualification is supporting evidence |
 
-MinIO uses a release identifier rather than Semantic Versioning, so System Information presents its version scheme explicitly. Provider compatibility never replaces Core Validation, binding validation, runtime health, selector evidence, or asset-specific consumer readiness.
+For Kubernetes specifically, v1.23 is the final stable minor released in 2021, while v1.37 is the latest stable minor at the 2026 policy snapshot. Upstream currently maintains only v1.35–v1.37, so v1.23–v1.34 are KAORI Extended rather than Current.
+
+During the 2027 annual refresh, the policy generation becomes `kaori-compatibility-policy-v2`, the anchor year becomes 2022, and each product floor is recalculated from the latest stable release in 2022. The annual change is performed in definitions and evidence tests. General `core-vN` contracts do not change unless their capability semantics change, and even a new core generation is selected through definition mapping rather than product-version branching in evaluator code.
 
 ## Canonical navigation and route ownership
 

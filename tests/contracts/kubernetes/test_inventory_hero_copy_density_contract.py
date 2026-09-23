@@ -7,43 +7,43 @@ ROOT = Path(__file__).resolve().parents[3]
 
 HERO_EXPECTATIONS = {
     'overview': (
-        'Review committed Kubernetes assets, fleet coverage, and inventory signals across registered clusters.',
+        'Review Kubernetes inventory coverage, assets, and fleet signals.',
         'Fleet Posture',
     ),
     'nodes': (
-        'Review committed node readiness, capacity, runtime, scheduling posture, and platform characteristics.',
+        'Review node readiness, capacity, scheduling, and platform posture.',
         'Node Readiness',
     ),
     'namespaces': (
-        'Review committed namespaces, lifecycle controls, security posture, resource policies, and composition.',
+        'Review namespaces, lifecycle, security, and workload composition.',
         'Lifecycle Posture',
     ),
     'workloads': (
-        'Review committed workloads, runtime state, delivery strategy, replica posture, and placement.',
+        'Review workloads, runtime state, replicas, strategy, and placement.',
         'Runtime Posture',
     ),
     'pods': (
-        'Review committed Pods, readiness, placement, ownership, runtime conditions, and container images.',
+        'Review Pods, readiness, placement, ownership, and conditions.',
         'Runtime Posture',
     ),
     'services': (
-        'Review committed Services, exposure models, ports, selectors, endpoint readiness, and backend registration.',
+        'Review Services, exposure, ports, selectors, and endpoints.',
         'Backend Registration',
     ),
     'ingresses': (
-        'Review committed Ingress routes, hosts, TLS coverage, backend mappings, and routing posture.',
+        'Review Ingress routes, hosts, TLS, backends, and routing posture.',
         'Routing Posture',
     ),
     'storage': (
-        'Review committed storage assets, capacity, binding, access, provisioning, and lifecycle posture.',
+        'Review storage assets, capacity, bindings, access, and lifecycle.',
         'Storage Lifecycle',
     ),
     'configuration': (
-        'Review committed ConfigMaps and Secrets, key metadata, references, and mutation evidence.',
+        'Review ConfigMaps, Secrets, references, and mutation evidence.',
         'Protected Metadata',
     ),
     'topology': (
-        'Explore committed Kubernetes ownership, placement, relationships, and dependencies across inventory resources.',
+        'Explore Kubernetes ownership, placement, links, and dependencies.',
         'Graph Coverage',
     ),
 }
@@ -63,7 +63,8 @@ def test_inventory_hero_descriptions_follow_the_compact_copy_budget() -> None:
     for resource, (description, _context_title) in HERO_EXPECTATIONS.items():
         source = _normalized(_read(resource))
         assert description in source, resource
-        assert 11 <= len(description.rstrip('.').split()) <= 19, resource
+        assert 7 <= len(re.findall(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*", description)) <= 15, resource
+        assert len(description) <= 68, resource
         assert 'from committed Kubernetes inventory snapshots' not in source, resource
 
 
@@ -88,7 +89,10 @@ def test_inventory_hero_context_panels_use_short_titles_and_concise_helpers() ->
 def test_inventory_hero_copy_budget_is_documented() -> None:
     hero_contract = (ROOT / 'docs/design/components/HERO.md').read_text(encoding='utf-8')
 
-    assert '# KAORI Hero Component Standard v1.7' in hero_contract
-    assert '11–19 word envelope' in hero_contract
+    assert '# KAORI Hero Component Standard v1.8' in hero_contract
+    assert '7–15 words' in hero_contract
+    assert '8–12 words' in hero_contract
+    assert 'maximum 68 characters' in hero_contract
+    assert 'action-oriented' in hero_contract
     assert 'right-panel title' in hero_contract
     assert 'metric helper: optional' in hero_contract

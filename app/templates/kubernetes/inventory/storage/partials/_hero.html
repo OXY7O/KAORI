@@ -4,7 +4,7 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('database', 'Kubernetes Storage Inventory', 'hard-drive') %}
                 <h1 class="{{ page_hero.title_classes() }}">Storage Inventory</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review committed storage assets, capacity, binding, access, provisioning, and lifecycle posture.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review storage assets, capacity, bindings, access, and lifecycle.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {% if cluster_onboarding.is_blocked %}
                         {{ page_hero.meta_label('database', 'Committed Inventory') }}

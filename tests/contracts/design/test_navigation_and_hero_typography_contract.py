@@ -77,6 +77,8 @@ def test_page_hero_description_is_one_type_step_above_supporting_copy() -> None:
     macro_end = source.index('{%- endmacro %}', macro_start)
     description_macro = source[macro_start:macro_end]
 
-    assert 'text-base' in description_macro
-    assert 'leading-7' in description_macro
-    assert 'text-sm' not in description_macro
+    assert 'text-sm' in description_macro
+    assert 'leading-6' in description_macro
+    assert 'sm:text-base' in description_macro
+    assert 'sm:leading-7' in description_macro
+    assert 'text-xs' not in description_macro

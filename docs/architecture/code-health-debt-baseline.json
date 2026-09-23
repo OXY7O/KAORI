@@ -48,7 +48,7 @@
     "app/integrations/observability/metrics_source/application/presentation.py::_capability_row": 38,
     "app/integrations/observability/metrics_source/query_profiles/audit.py::PromQLProfileAuditor._capability_assessments": 31,
     "app/integrations/observability/metrics_source/query_profiles/audit.py::PromQLProfileAuditor.audit": 33,
-    "app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/adapter.py::KubernetesRuntimeAdapter.get_state": 57,
+    "app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/adapter.py::KubernetesRuntimeAdapter.get_state": 55,
     "app/integrations/runtime/presentation.py::runtime_history_view": 33,
     "app/integrations/service.py::build_kubernetes_detail": 39,
     "app/intelligence/recommendation_engine.py::build_alerts_actionable_recommendations": 38,
@@ -93,8 +93,8 @@
     "app/kubernetes/analytics/overview/service.py": 1712,
     "app/kubernetes/analytics/utilization/service.py": 1103,
     "app/reports/generated/service.py": 1665,
-    "app/reports/overview/service.py": 1028,
-    "app/reports/schedules/service.py": 940,
-    "app/reports/storage/service.py": 951
+    "app/reports/overview/service.py": 1026,
+    "app/reports/schedules/service.py": 938,
+    "app/reports/storage/service.py": 949
   }
 }

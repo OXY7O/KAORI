@@ -62,8 +62,15 @@ No arbitrary `text-[...]`, local font family, `font-extrabold`, or page-specific
 - Search keeps an SR-only accessible label, polite result-count announcements, `/` focus shortcut, and `Escape` clear behavior.
 - Destination cards keep descriptive accessible names and visible keyboard focus treatment.
 
-### Content and wording — PASS with one copy refinement
+### Content and wording — PASS with Hero density alignment
 
+The Welcome Hero description follows the canonical compact Hero copy-density contract introduced by #470:
+
+> Operate infrastructure through unified visibility, governance, automation, and reporting safely.
+
+This is a copy-only alignment. Hero geometry, metadata, right-side access context, workspace search, role-aware discoverability, accessibility, and security boundaries remain unchanged.
+
+The `Dashboards / Operational Overview` description remains expanded slightly so its scope is clearer to technical and managerial readers without implying request-time provider access:
 The `Dashboards / Operational Overview` description was expanded slightly so its scope is clearer to technical and managerial readers without implying request-time provider access:
 
 > Review operational posture, capacity and growth risk, active alerts, leading resource consumers, and prioritized actions across connected Kubernetes clusters.

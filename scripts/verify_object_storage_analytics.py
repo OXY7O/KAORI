@@ -307,10 +307,10 @@ def main() -> int:
         assert evidence_label in hero_blocked
     assert "'Analytics Overview'" in pages
     for copy in (
-        'Review usable capacity, consumption trends, bucket pressure, quota posture, and growth across the selected system.',
-        'Review S3 request activity, error pressure, queue depth, in-flight demand, and traffic across the selected system.',
-        'Project storage growth, future utilization, and capacity exhaustion from committed operational metric history.',
-        'Rank buckets by storage consumption, objects, request activity, error pressure, and concentration within the selected system.',
+        'Review capacity, bucket pressure, quotas, trends, and growth.',
+        'Review S3 activity, errors, queue depth, demand, and traffic.',
+        'Project storage growth and exhaustion risk from committed history.',
+        'Rank buckets by storage, objects, requests, and concentration.',
     ):
         assert copy in pages
     assert "'Operational Posture'" in hero_posture

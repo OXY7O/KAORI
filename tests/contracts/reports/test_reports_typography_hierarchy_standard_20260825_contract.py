@@ -138,23 +138,21 @@ def test_reports_hero_copy_is_compact_and_operational() -> None:
     files = {
         'overview': read('app/reports/overview/service.py'),
         'generate': read('app/reports/generate/service.py'),
-        'generated': read('app/reports/generated/service.py'),
+        'generated': read('app/templates/reports/generated/index.html'),
         'templates': read('app/reports/report_templates/service.py'),
         'schedules': read('app/reports/schedules/service.py'),
         'storage': read('app/reports/storage/service.py'),
     }
     expected = {
-        'overview': 'Review reporting readiness, artifacts, automation, and report coverage across managed infrastructure.',
-        'generate': 'Build governed reports from connected data and approved formats. Analytics: PDF/XLSX/CSV · Inventory: XLSX/CSV.',
-        'generated': (
-            'Review PDF publications, XLSX analytical workbooks, and CSV exports across worker execution, artifact '
-            'readiness, storage availability, and lifecycle state from generation through retention.'
-        ),
-        'templates': (
-            'Manage protected system templates and reusable custom report structures for Analytics PDF/XLSX/CSV and Inventory XLSX/CSV.'
-        ),
-        'schedules': 'Automate Analytics PDF, XLSX, or CSV artifacts and Inventory XLSX/CSV exports with timezone-aware schedules and retained run evidence.',
-        'storage': ('Review report storage readiness, integrity, and lifecycle ownership for PDF/XLSX/CSV artifacts.'),
+        'overview': 'Review reporting readiness, artifacts, automation, and coverage.',
+        'generate': 'Build governed reports from approved Analytics or Inventory data.',
+        'generated': 'Review report execution, artifacts, storage, and lifecycle state.',
+        'templates': ('Manage report templates for Analytics and Inventory output formats.'),
+        'schedules': 'Automate Analytics and Inventory reports with governed schedules.',
+        'storage': 'Review report storage readiness, integrity, and artifact lifecycle.',
     }
     for key, value in expected.items():
+        if key == 'generated':
+            assert value in files[key], key
+            continue
         assert has_python_string(files[key], value), key

@@ -324,6 +324,16 @@ Long Static & Governance execution emits periodic heartbeat output and names the
 
 Raw diagnostics remain artifacts. Successful pytest progress dots and repetitive verifier output do not dominate operator logs.
 
+### Telegram delivery notification authority
+
+Telegram delivery notifications are observational only. They do not participate in CI admission, UAT acceptance, promotion authorization, release authorization, or deployment authority.
+
+Trusted-branch delivery notifications must consume **completed** `KAORI CI` evidence rather than occupy a `platform-ci` runner while polling for a not-yet-started run. The notification workflow therefore uses the completed `workflow_run` identity and validates the canonical workflow path, trusted repository, source event, source repository, trusted branch, exact source SHA, and completed state before secret-bearing execution.
+
+The scheduled PR-failure observer remains a separate non-authoritative path. Pull-request or fork workflow completion must never inherit the trusted-push Telegram secret boundary.
+
+GitHub sources `workflow_run` listeners from the repository default branch. A change to this listener can be admitted through `kaori/staging` first, but the new event-driven listener becomes the active repository authority only after the same workflow definition reaches `main`. During that staging-only interval, delivery admission remains unaffected; do not reintroduce push-time polling to bridge the activation boundary.
+
 ## Representative Examples
 
 ### Vault Management feature

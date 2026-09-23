@@ -36,10 +36,7 @@ _ALERT_TABS = {
 _PAGE = {
     'dataset_key': 'analytics.alerts',
     'title': 'Alerts & Anomalies',
-    'description': (
-        'Alertmanager and Metrics Source signals are collected by the analytics worker '
-        'and shared across concurrent viewers.'
-    ),
+    'description': 'Review alert signals while workers prepare analytics evidence.',
     'icon': 'siren',
     'page_id': 'alerts-page-content',
 }

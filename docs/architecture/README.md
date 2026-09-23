@@ -18,6 +18,7 @@ Domain-specific rules live beside complex code in `app/<domain>/README.md`. Gene
 ## Quality and Refactor Governance
 
 - [Quality and Architecture Gates](quality-gates.md)
+- [CDEvents Delivery Lineage Architecture](cdevents-delivery-lineage.md) — pinned delivery-observability identity, vocabulary, trust, retry, and failure contract
 - [Operational Data Semantics](../superpowers/specs/2026-08-25-kaori-operational-data-semantics-design.md) — canonical Inventory/Dashboard/Analytics/Intelligence/Alert Intelligence authority boundaries
 - [Release Surface Coverage](RELEASE_SURFACE_COVERAGE.md)
 - [Controlled Refactor Roadmap](refactor-roadmap.md)

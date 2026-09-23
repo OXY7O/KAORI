@@ -11,11 +11,11 @@ def read(path: str) -> str:
 
 def test_kubernetes_analytics_hero_copy_follows_canonical_concise_operational_context() -> None:
     expected = {
-        'app/templates/kubernetes/analytics/capacity/partials/_hero.html': 'Review worker headroom, scheduling pressure, committed capacity, and emerging scaling risks.',
-        'app/templates/kubernetes/analytics/workload/partials/_hero.html': 'Review workload governance, utilization, QoS, right-sizing evidence, and operational efficiency signals.',
-        'app/templates/kubernetes/analytics/forecast/partials/_hero.html': 'Review projected demand, growth trends, forecast thresholds, and emerging capacity risks.',
-        'app/templates/kubernetes/analytics/top_consumers/partials/_hero.html': 'Identify leading resource consumers, concentration trends, and operational pressure across workloads.',
-        'app/templates/kubernetes/analytics/alerts/partials/_hero.html': 'Review active alerts, anomalies, routing context, ownership, readiness, and supporting operational evidence.',
+        'app/templates/kubernetes/analytics/capacity/partials/_hero.html': 'Review worker headroom, capacity, scheduling, and scaling risks.',
+        'app/templates/kubernetes/analytics/workload/partials/_hero.html': 'Review workload utilization, governance, QoS, and efficiency.',
+        'app/templates/kubernetes/analytics/forecast/partials/_hero.html': 'Review demand, growth trends, thresholds, and capacity risks.',
+        'app/templates/kubernetes/analytics/top_consumers/partials/_hero.html': 'Identify leading consumers, concentration, and resource pressure.',
+        'app/templates/kubernetes/analytics/alerts/partials/_hero.html': 'Review alerts, anomalies, routing, ownership, and readiness.',
     }
 
     for path, copy in expected.items():
@@ -31,10 +31,7 @@ def test_minio_copy_is_balanced_between_registration_detail_and_boundary_density
         'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html'
     )
 
-    assert (
-        'Register, validate, govern, and maintain reusable MinIO connections together with their consumer bindings and lifecycle state.'
-        in index
-    )
+    assert 'Register MinIO connections with bindings and lifecycle evidence.' in index
     assert (
         'MinIO owns S3 storage state; observability sources stay independent. KAORI governs registration and asset-scoped binding evidence.'
         in index

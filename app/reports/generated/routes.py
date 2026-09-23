@@ -68,7 +68,7 @@ def generated_reports() -> ResponseReturnValue:
         logger.exception('Generated Reports could not be loaded.')
         return render_reports_unavailable(
             page_title='Generated Reports',
-            description='Review generated report records and stored artifacts.',
+            description='Review generated reports, stored artifacts, and recovery evidence.',
             reason='KAORI could not load the generated report registry. The active storage backend or another reporting dependency may be unavailable.',
             retry_url=url_for('reports.generated_reports'),
         )
@@ -87,7 +87,7 @@ def generated_report_detail(report_id: int) -> ResponseReturnValue:
         logger.exception('Generated report detail could not be loaded for report_id=%s.', report_id)
         return render_reports_unavailable(
             page_title='Report Detail',
-            description='Review report metadata and artifact availability.',
+            description='Review report metadata, artifacts, and recovery evidence.',
             reason='KAORI could not load this report detail. The report record remains protected while storage connectivity is reviewed.',
             retry_url=url_for(
                 'reports.generated_report_detail',

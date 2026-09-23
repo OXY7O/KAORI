@@ -10,6 +10,10 @@ ISSUE_DIR = ROOT / '.github/ISSUE_TEMPLATE'
 QUALITY_WORKFLOW = ROOT / '.github/workflows/quality.yml'
 DEVELOPER_WORKFLOW = ROOT / '.github/workflows/developer-check.yml'
 PR_TEMPLATE = ROOT / '.github/PULL_REQUEST_TEMPLATE.md'
+CI_CD_DOC = ROOT / 'docs/setup/GITHUB_ACTIONS_CI_CD.md'
+RECOVERY_DOC = ROOT / 'docs/deployment/CI_CD_RECOVERY_CONTRACT.md'
+CDEVENTS_ARCHITECTURE = ROOT / 'docs/architecture/cdevents-delivery-lineage.md'
+ARCHITECTURE_INDEX = ROOT / 'docs/architecture/README.md'
 
 
 def read(path: Path) -> str:
@@ -254,3 +258,131 @@ def test_draft_developer_check_is_path_aware_and_non_authoritative() -> None:
     assert 'wide=true' in source
     assert 'scripts/quality_gate.sh --static' not in source
     assert 'run-runtime-validation.sh' not in source
+
+
+def test_canonical_ci_cd_document_matches_current_staged_delivery_model() -> None:
+    source = read(CI_CD_DOC)
+
+    for token in (
+        'issue branch',
+        'Developer Check',
+        'kaori/staging',
+        'Full Admission',
+        'immutable RC',
+        'UAT',
+        'human acceptance',
+        'stable promotion',
+        'same immutable digest',
+        'roll-forward',
+        'rollback',
+        'Semgrep 1.177.0',
+        'CI_CD_RECOVERY_CONTRACT.md',
+    ):
+        assert token in source
+
+    for obsolete in (
+        'kaori/working',
+        'Production CD     : not implemented yet',
+        'Application deployment is intentionally outside the current scope',
+        'Semgrep      1.174.0',
+        '# FUTURE CD',
+    ):
+        assert obsolete not in source
+
+
+def test_ci_cd_recovery_contract_keeps_cdevents_observability_non_authoritative() -> None:
+    source = read(RECOVERY_DOC)
+
+    for token in (
+        'Continuous Integration',
+        'Continuous Delivery',
+        'Continuous Deployment',
+        'failed deployment',
+        'rollback',
+        'roll-forward',
+        'fresh Full Admission',
+        '#440',
+        'observability',
+        'authorization',
+    ):
+        assert token.lower() in source.lower()
+
+    assert 'do not become an authorization plane' in source.lower()
+
+
+def test_cdevents_architecture_pins_spec_binding_and_vocabulary_versions() -> None:
+    source = read(CDEVENTS_ARCHITECTURE)
+    architecture_index = read(ARCHITECTURE_INDEX)
+
+    for token in (
+        'CDEvents v0.5.0',
+        'context.specversion',
+        '0.5.0',
+        'CloudEvents specversion',
+        '1.0',
+        'dev.cdevents.change.created.0.4.0',
+        'dev.cdevents.change.updated.0.3.0',
+        'dev.cdevents.change.reviewed.0.3.0',
+        'dev.cdevents.change.merged.0.3.0',
+        'dev.cdevents.pipelinerun.started.0.3.0',
+        'dev.cdevents.pipelinerun.finished.0.3.0',
+        'dev.cdevents.build.started.0.3.0',
+        'dev.cdevents.build.finished.0.3.0',
+        'dev.cdevents.artifact.packaged.0.3.0',
+        'dev.cdevents.artifact.published.0.3.0',
+        'dev.cdevents.artifact.signed.0.3.0',
+        'dev.cdevents.service.deployed.0.3.0',
+        'dev.cdevents.service.upgraded.0.3.0',
+        'dev.cdevents.service.rolledback.0.3.0',
+    ):
+        assert token in source
+
+    assert 'cdevents-delivery-lineage.md' in architecture_index
+
+
+def test_cdevents_architecture_defines_canonical_delivery_identity_and_retry_semantics() -> None:
+    source = read(CDEVENTS_ARCHITECTURE)
+
+    for token in (
+        'Repository identity',
+        'Change identity',
+        'Source SHA',
+        'Workflow run identity',
+        'Event ID',
+        'chainId',
+        'UUID',
+        'RC identity',
+        'OCI PURL',
+        'UAT environment',
+        'Stable release identity',
+        'retry',
+        'retransmission',
+        'deduplication',
+        'idempotency',
+    ):
+        assert token.lower() in source.lower()
+
+    assert 'commit SHA is not a chain ID' in source
+    assert 'mutable tag is never artifact authority' in source
+
+
+def test_cdevents_architecture_locks_security_trust_and_failure_boundaries() -> None:
+    source = read(CDEVENTS_ARCHITECTURE)
+
+    for token in (
+        'Producer trust',
+        'Sensitive-data exclusion',
+        'github.token',
+        'secrets',
+        'SSH private key',
+        'kubeconfig',
+        'database URL',
+        'fail closed',
+        'non-authoritative consumer',
+        'customData',
+        'version upgrade',
+    ):
+        assert token.lower() in source.lower()
+
+    assert 'CDEvents cannot authorize' in source
+    assert 'no broker' in source.lower()

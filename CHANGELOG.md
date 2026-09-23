@@ -4,15 +4,20 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-23
+
 ### Added
+- Added complete OCI image annotations plus digest-bound SPDX SBOM and SLSA provenance attestation contracts for governed release candidates and stable promotion verification.
 - Added standalone Docker Compose integration examples for Prometheus, Alertmanager, MinIO/S3-compatible storage, Thanos Query, and a disposable GitHub Actions Runner under `example/`.
 - Added an application-only runtime archive builder and explicit runtime artifact boundary.
 - Added repository `LICENSE` and `SECURITY.md` surfaces for current internal-use distribution and private vulnerability reporting.
 - Added a canonical KAORI terminal/output readability standard.
 
 ### Changed
+- Aligned Node.js 22.23.2, npm 10.9.9, and Pyright 1.1.414 across development, CI, and frontend build authorities; documented deferred npm 12 and output-sensitive frontend patch updates.
 - Professionalized the KAORI repository front with the canonical logo, restrained badges, clearer product/release/security navigation, and a standalone integration-example entry point.
 - Clarified release-version authority: stable SemVer is bound to the governed release workflow, Git tag, GitHub Release, Docker Hub tag, OCI labels, source lineage, and immutable digest rather than development example defaults.
+- Established root `VERSION` as the current product version line synchronized with the README badge and development fallback while exact RC/stable `APP_VERSION` remains deployment-managed.
 - Standardized Kubernetes and Object Storage operational dashboards as the KAORI dashboard-family reference, including aligned layout, concise operational copy, and a governed Reporting Control block.
 - Refined Intelligence work-inbox, accepted-risk, Rule Catalog, and posture-summary presentation while preserving canonical evidence and governance boundaries.
 - Simplified Object Storage Analytics PDF output into a management-oriented overview and strengthened analytics PDF readability/canvas-safety rules.
@@ -28,6 +33,8 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Cleaned remaining Ruff and djLint formatting drift discovered by the final release gate.
 
 ### Security
+- Tightened HTML CSP/site-isolation headers and documented evidence-backed ZAP DAST warning dispositions without weakening the baseline failure gate.
+- Removed Bandit suppression parser noise and refreshed the reviewed Semgrep CI toolchain while preserving existing SAST rules and severity gates.
 - Demo/example configuration excludes real KAORI Host values, private keys, production credentials, and private integration secrets.
 - Runtime artifacts explicitly exclude demo, CI, test, documentation, and local-development surfaces.
 - No migration, route-name, form-field, or execution-gate ownership changes are introduced by the repository-hardening work.

@@ -5,6 +5,7 @@
 - `../standards/KAORI_ENGINEERING_STANDARD_V1.md` — mandatory final-recheck and engineering review index.
 - `KAORI_STYLING_GUIDE.md` — practical implementation and page-review guide.
 - `KAORI_DESIGN_SYSTEM.md` — authoritative global visual and interaction contract.
+- `KAORI_VISUAL_QA.md` — governed multi-viewport visual QA, review rubric, baseline evidence, and human-UAT boundary.
 
 The Styling Guide selects the correct reusable component. The Design System and component documents define the detailed visual contract. Domain specifications may define content and behavior but may not override shared component geometry or tokens.
 
@@ -24,6 +25,7 @@ Authoritative shell standards include the locked application-shell navigation co
 - `components/CONTENT_TABS.md`
 - `components/WORKSPACE_TABS.md`
 - `components/FRAMED_WORKSPACE_TABS.md`
+- `components/REUSABLE_COMPONENT_OWNERSHIP.md` — canonical semantic ownership and adapter-extension registry for shared KAORI presentation.
 - `components/SEGMENTED_TABS.md`
 - `components/VISUALIZATION_WORKSPACE.md`
 - `components/TOPOLOGY_PALETTE.md`

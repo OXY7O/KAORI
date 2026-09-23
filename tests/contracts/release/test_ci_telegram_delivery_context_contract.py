@@ -33,27 +33,34 @@ def load_context() -> ModuleType:
     return load_module(CONTEXT, 'kaori_ci_delivery_context_contract')
 
 
-def test_trusted_notifier_observes_pr_failures_without_privileged_pr_trigger() -> None:
+def test_trusted_notifier_observes_completed_push_and_scheduled_pr_failures_without_privileged_pr_trigger() -> None:
     source = read(NOTIFY_WORKFLOW)
     quality = read(QUALITY_WORKFLOW)
 
+    assert 'workflow_run:' in source
+    assert '- KAORI CI' in source
+    assert '- completed' in source
+    assert "github.event.workflow_run.event == 'push'" in source
+    assert "github.event.workflow_run.head_repository.full_name == 'OXY7O/KAORI'" in source
     assert 'schedule:' in source
     assert '*/5 * * * *' in source
     assert 'pull-requests: read' in source
     assert 'issues: read' in source
     assert '--scan-pr-failures' in source
-    assert 'workflow_run:' not in source
     assert 'pull_request_target:' not in source
     assert 'pull_request:' not in source
     assert 'TELEGRAM_BOT_TOKEN' not in quality
 
 
-def test_trusted_notifier_wait_budget_covers_comprehensive_admission() -> None:
+def test_trusted_notifier_does_not_wait_for_comprehensive_admission() -> None:
     notifier = load_notifier()
     source = read(NOTIFY_WORKFLOW)
 
-    assert notifier._WORKFLOW_WAIT_ATTEMPTS * notifier._WORKFLOW_WAIT_SECONDS >= 45 * 60
-    assert 'timeout-minutes: 60' in source
+    assert not hasattr(notifier, '_WORKFLOW_WAIT_ATTEMPTS')
+    assert not hasattr(notifier, '_WORKFLOW_WAIT_SECONDS')
+    assert 'wait_for_quality_workflow_run' not in read(NOTIFIER)
+    assert 'time.sleep(' not in read(NOTIFIER)
+    assert source.count('timeout-minutes: 10') == 2
 
 
 def test_actionable_delivery_boundaries_have_stage_specific_events() -> None:

@@ -72,6 +72,21 @@ document.addEventListener('alpine:init', () => {
             })
         },
 
+        focusGlobalSearchInput(remainingFrames = 4) {
+            if (!this.searchOpen) return
+            const input = document.querySelector?.('[data-global-search-input]')
+            const isFocusable =
+                input && typeof input.focus === 'function' && input.getClientRects().length > 0 && !input.disabled
+
+            if (isFocusable) {
+                input.focus({ preventScroll: true })
+                if (document.activeElement === input) return
+            }
+
+            if (remainingFrames <= 0) return
+            window.requestAnimationFrame(() => this.focusGlobalSearchInput(remainingFrames - 1))
+        },
+
         closeMenus() {
             const quickActionsReturnTarget = this.quickOpen ? this.quickActionsReturnTarget : null
             const globalSearchReturnTarget = this.searchOpen ? this.globalSearchReturnTarget : null
@@ -159,7 +174,7 @@ document.addEventListener('alpine:init', () => {
             this.aboutOpen = false
             this.runGlobalSearch()
             this.$nextTick?.(() => {
-                document.querySelector?.('[data-global-search-input]')?.focus()
+                window.requestAnimationFrame(() => this.focusGlobalSearchInput())
             })
         },
 

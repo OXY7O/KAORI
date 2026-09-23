@@ -1,4 +1,4 @@
-# KAORI Hero Component Standard v1.7
+# KAORI Hero Component Standard v1.8
 
 This document is the authoritative implementation and semantic contract for authenticated KAORI page heroes.
 
@@ -15,7 +15,7 @@ scripts/verify_hero_component_standard.py
 tests/contracts/design/test_hero_component_standard_contract.py
 ```
 
-The v1.7 change does **not** redesign the Hero. It preserves the accepted Violet surface, geometry, typography, dark-mode ownership, accessibility, HTMX stability, context metric limit, and right-header accessory registry. v1.7 tightens description density to the approved 11–19 word envelope and makes operational metadata persistent across normal, blocked, and degraded states.
+The v1.8 change preserves the accepted Violet identity, dark-mode ownership, accessibility, HTMX stability, context semantics, and tablet/desktop Hero grammar while adding a **phone-native compact composition** below `sm` (640 px). The phone contract removes desktop minimum-height floors, reduces padding/gaps and typography, omits the decorative leading icon, and prioritizes primary metadata/context evidence. From `sm` upward, the established v1.7 geometry and typography remain authoritative. UAT clarification under #470 makes the description intent executable: 7–15 words, preferably 8–12 words, one action-oriented sentence, maximum 68 characters, and **one visual line at canonical non-phone widths (768 px and above)** without ellipsis, clipping, or hidden overflow. Phone viewports below 640 px may wrap naturally for readability.
 
 ## Purpose
 
@@ -88,12 +88,12 @@ Low-level macros such as `shell_classes()`, `layout_classes()`, `intro(...)`, an
 An operational Hero contains:
 
 - one eyebrow;
-- one leading icon;
+- one leading icon from `sm` upward; on phone the leading icon is decorative and omitted;
 - one authoritative `h1`;
 - one concise description;
-- **exactly three metadata** items for profiles that define the three-slot operational metadata contract;
+- **exactly three metadata** items for profiles that define the three-slot operational metadata contract; on phone only the primary item is visible while the remaining items stay present in the DOM and return at `sm`;
 - one optional right-side context panel;
-- zero to two compact context metrics;
+- zero to two compact context metrics; on phone the primary metric is visible and secondary detail returns at `sm`;
 - one primary action when the profile is interactive.
 
 Explicit exceptions:
@@ -121,7 +121,7 @@ The right-side panel uses two semantic metric roles in this order:
 
 `Data Authority` describes the request-time evidence boundary, not whether a particular observation exists. For the current paired dashboards the authority is `Committed Snapshots`.
 
-The Dashboard Hero action role is **operational source/readiness management**. Domain labels and URLs may differ, but the action must remain in that semantic role. Generic navigation that does not manage readiness/source configuration must not replace it.
+The Dashboard Hero action role is **operational source/readiness management**. Kubernetes Dashboard uses the canonical label `Open Cluster Integrations` and destination `integrations.kubernetes`; generic `Add Cluster` wording is prohibited. Other domains may use an equivalent source-management label and route without changing the semantic role. Generic navigation that does not manage readiness/source configuration must not replace it.
 
 The dashboard renderer exposes `data-kaori-hero-profile="operational-dashboard"` and `data-kaori-hero-state="..."` for contract and rendering verification. Its metadata surface exposes `data-kaori-hero-metadata` and `data-kaori-hero-metadata-policy="persistent"` for state-level regression verification.
 
@@ -177,20 +177,22 @@ Internal surfaces remain component-owned:
 
 ## Technical geometry
 
-The accepted geometry remains unchanged.
+v1.8 defines one shared responsive Hero authority with a phone-native compact composition and the established geometry from `sm` upward.
 
-| Element | Canonical implementation | Effective geometry |
-|---|---|---:|
-| Outer shell | `.kaori-hero-shell min-h-[15.5rem] lg:min-h-[17.5rem]` | theme-owned background, 248 px / 280 px minimum |
-| Outer padding | `p-5 lg:p-6` | 20 px / 24 px |
-| Outer radius | `rounded-2xl` | 16 px |
-| Internal grid | `min-h-[13rem] lg:min-h-[14.5rem]` | 208 px / 232 px minimum |
-| Grid gap | `gap-5` | 20 px |
-| Desktop layout | `xl:grid-cols-12` | content 7 / context 5 |
-| Context panel | `.kaori-hero-panel min-h-[13rem] rounded-xl p-4` | 208 px minimum |
-| Metric grid | `grid-cols-2 auto-rows-fr gap-2` | two equal-height columns |
-| Footer slot | `mt-auto min-h-10` | bottom-aligned 40 px minimum |
-| Context action | `h-10` | 40 px |
+| Element | Phone `<640 px` | `sm+` / desktop |
+|---|---|---|
+| Outer shell | `.kaori-hero-shell p-4` with no minimum-height floor | `sm:min-h-[15.5rem] sm:p-5 lg:min-h-[17.5rem] lg:p-6` — 248 px / 280 px minimum from `sm` |
+| Outer radius | `rounded-2xl` | unchanged, 16 px |
+| Internal grid | `gap-4` with no minimum-height floor | `sm:min-h-[13rem] sm:gap-5 lg:min-h-[14.5rem]` |
+| Intro composition | one content column; decorative leading icon omitted | two-column icon/content grammar restored at `sm` |
+| Desktop layout | single stacked flow | `xl:grid-cols-12`, content 7 / context 5 |
+| Context panel | compact `p-3 gap-2.5`, no minimum-height floor | `sm:min-h-[13rem] sm:p-4 sm:gap-3` |
+| Metric grid | one visible primary metric; secondary metric remains in DOM but hidden | `sm:grid-cols-2 sm:auto-rows-fr`, both metrics visible |
+| Metadata row | one visible primary item; remaining items remain in DOM but hidden | all profile metadata items visible from `sm` |
+| Footer slot | `mt-auto min-h-10` when present | unchanged |
+| Context action | `h-10` | unchanged |
+
+Phone compaction is presentation-only. It must not remove the page title, primary scope/readiness evidence, semantic status, or primary action.
 
 The right panel retains the same 12 px row rhythm. Do not add page-local height, padding, margin, radius, or breakpoint compensation.
 
@@ -199,8 +201,8 @@ The right panel retains the same 12 px row rhythm. Do not add page-local height,
 | Element | Tailwind owner | Effective typography |
 |---|---|---|
 | Eyebrow | `intro()` / `eyebrow()` | 12 px, semibold, uppercase |
-| Title | `title_classes()` | 30 px compact / 36 px from `sm`, bold |
-| Description | `description_classes()` | 16 px, regular, 28 px line height, max width 44 rem |
+| Title | `title_classes()` | 24 px / 32 px line height on phone; 36 px / 40 px from `sm`, bold |
+| Description | `description_classes()` | 14 px / 24 px on phone; 16 px / 28 px from `sm`; natural wrapping below `sm`; one untruncated visual line from `sm` (640 px) |
 | Metadata label | `meta_label()` | 12 px semibold, 32 px minimum height |
 | Context eyebrow | `context_panel_eyebrow_classes()` | 12 px semibold, uppercase |
 | Context title | `context_panel_title_classes()` | 16 px semibold, 24 px line height |
@@ -208,7 +210,7 @@ The right panel retains the same 12 px row rhythm. Do not add page-local height,
 | Metric value | `context_metric_value_classes()` | 18 px semibold, 24 px line height |
 | Context action | `context_action_classes()` | 14 px semibold, 40 px height |
 
-Page templates must not add arbitrary Hero typography overrides.
+Page templates must not add arbitrary Hero typography overrides. Phone compaction is owned only by the shared Hero macros; page-local mobile title, description, metadata, or context forks are prohibited.
 
 ## Context panel accessory registry
 
@@ -226,15 +228,17 @@ Do not invent a fourth header-accessory geometry.
 
 Copy budget is canonical and executable:
 
-- description target: 11–19 words; hard maximum 19 words;
+- description boundary: 7–15 words, preferably 8–12 words, maximum 68 characters;
+- description form: one action-oriented complete sentence with no manual line break;
+- non-phone rendering: exactly one natural visual line from the canonical non-phone viewport matrix upward, with no `nowrap`, ellipsis, clipping, hidden overflow, or page-local typography shrink;
 - right-panel title: 2–4 words;
 - status label: 1–3 words;
 - metric label: 1–3 words;
 - metric helper: optional and concise.
 
-The minimum reference is `Operational visibility for cluster health, capacity, alerts, inventory, recommendations, and reporting.` The maximum reference is `Automate Analytics PDF, XLSX, or CSV artifacts and Inventory XLSX/CSV exports with timezone-aware schedules and retained run evidence.`
+Reference examples are `Review health, capacity, alerts, inventory, and prioritized actions.` and `Review report execution, artifact readiness, storage, and lifecycle state.`
 
-Character count may be audited as an additional safety rail, but word budget and semantic clarity are authoritative. Long evidence explanations belong below the Hero.
+Word count and the maximum 68 characters are executable copy-density boundaries. The rendered non-phone single-line invariant is the visual authority: fitting the character budget alone is not sufficient if the text still overflows or wraps at the canonical non-phone viewport matrix. The 8–12 word range is preferred for scanability. Descriptions remain action-oriented and start with an imperative-style action verb; semantic clarity remains mandatory. Long evidence explanations belong below the Hero.
 
 ## Dynamic and HTMX behavior
 
@@ -320,11 +324,12 @@ The verifier must:
 - verify shared blocked-context wrappers do not rebuild context-panel geometry locally;
 - verify Analytics metadata uses the persistent shared renderer and remains outside blocker branches;
 - enforce the description target and hard boundary for every Hero description that can be resolved deterministically from source;
+- require the shared `kaori-hero-description` marker so browser tests can verify natural one-line rendering and overflow without page-local selectors;
 - audit shared profile-renderer descriptions at their call sites instead of bypassing copy checks because composition is centralized;
 - reject unmanaged Hero-like local surfaces that bypass the component;
 - report compatibility-shell, profile-consumer, and description-audit counts separately.
 
-The canonical verifier enforces the 11–19 word target, with 19 words as the absolute hard maximum. A description outside 11–19 words is a contract violation rather than an advisory warning; deterministic Hero copy must be corrected rather than silently bypassed.
+The canonical verifier enforces the 7–15 word boundary, maximum 68 characters, one complete sentence, action-oriented wording, no manual line break, shared description-marker ownership, with browser-proven natural single-line rendering. Browser evidence remains responsible for proving that the rendered line fits without overflow at canonical non-phone widths. The preferably 8–12 words range is an editorial target for scanability within that executable boundary.
 
 Integration domain descriptions are audited from `app/definitions/catalogs/integrations/taxonomy.yaml` because `app/templates/integrations/domain.html` renders those descriptions dynamically. Other source-controlled dynamic Hero copy must gain an equally explicit audit path when introduced.
 
@@ -355,8 +360,9 @@ python -m pytest -q \
 
 - profile and state are explicit for a profile-managed family;
 - same Profile + same State has one composition;
-- one `h1` and one concise 11–19 word description;
+- one `h1` and one concise 7–15 word description, preferably 8–12 words, action-oriented, no more than 68 characters, and one visual line at canonical non-phone widths;
 - operational profile metadata is persistent in normal, blocked, and degraded states;
+- phone presentation keeps primary metadata/context evidence visible while secondary detail is restored from `sm`;
 - context panel has no more than two metrics;
 - one primary action preferred and its semantic role matches the profile;
 - no page-local Hero geometry or typography fork;

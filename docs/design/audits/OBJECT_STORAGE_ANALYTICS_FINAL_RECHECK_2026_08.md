@@ -13,7 +13,7 @@ Reviewed the Object Storage Analytics release surface end to end: Overview, Capa
 5. **Alerts evidence:** Alertmanager/Prometheus provider alert records and KAORI metric-derived signals remain independent evidence families. Failure of one path must not suppress evidence from the other.
 6. **HTMX fail-closed behavior:** bucket and alert record fragments render a dependency notice when the selected system loses prerequisite eligibility rather than returning an apparently empty data table.
 7. **RBAC:** every Object Storage Analytics full-page and fragment endpoint remains guarded by `object_storage_analytics.view`; Kubernetes `analytics.view` is not reused.
-8. **Hero copy:** Capacity, Performance, Forecast, and Top Consumers descriptions were lengthened slightly to better communicate operational scope while staying within the KAORI concise Hero copy budget.
+8. **Hero copy:** Capacity, Performance, Forecast, and Top Consumers descriptions follow the canonical #470 compact Hero contract: 89–96 characters as the executable density boundary, with semantic clarity preserved for each analytics workspace.
 
 ## Reviewed workspace semantics
 

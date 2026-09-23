@@ -34,8 +34,7 @@
     <body class="h-full overflow-hidden bg-surface-page font-sans text-content-primary antialiased transition-colors duration-300">
         <div class="flex h-full min-h-0 gap-2 overflow-hidden bg-surface-page p-2"
              x-data="{ sidebarExpanded: (localStorage.getItem('kaori.sidebarExpanded') || 'true') !== 'false', toggleSidebar() { this.sidebarExpanded = !this.sidebarExpanded; localStorage.setItem('kaori.sidebarExpanded', this.sidebarExpanded ? 'true' : 'false'); document.documentElement.classList.toggle('sidebar-collapsed', !this.sidebarExpanded); } }"
-             x-init="document.documentElement.classList.toggle('sidebar-collapsed', !sidebarExpanded)"
-             @keydown.escape.window="if (window.innerWidth < 1024 && sidebarExpanded) { toggleSidebar() }">
+             x-init="document.documentElement.classList.toggle('sidebar-collapsed', !sidebarExpanded)">
             {% include "components/navigation/sidebar.html" %}
             <div class="flex min-h-0 flex-1 flex-col overflow-hidden kaori-app-shell rounded-2xl border border-outline-subtle bg-surface-shell shadow-sm">
                 {% include "components/navigation/navbar.html" %}
