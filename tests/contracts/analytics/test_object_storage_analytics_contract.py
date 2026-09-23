@@ -297,7 +297,7 @@ def test_object_storage_performance_chart_keeps_request_and_error_series_separat
     assert "label: 'Error Rate'" in javascript
 
 
-def test_kubernetes_navigation_uses_full_product_name_instead_of_k8s_abbreviation() -> None:
+def test_kubernetes_navigation_uses_canonical_labels_without_k8s_abbreviation() -> None:
     menu_paths = (
         'app/templates/components/navigation/analytics_menu.html',
         'app/templates/components/navigation/inventory_menu.html',
@@ -309,10 +309,17 @@ def test_kubernetes_navigation_uses_full_product_name_instead_of_k8s_abbreviatio
 
     assert 'K8s' not in combined
     assert 'Kubernetes Analytics' in combined
-    assert 'Kubernetes Inventory' in combined
-    assert 'Kubernetes Governance' in combined
-    assert 'Kubernetes Operations' in combined
-    assert 'Kubernetes Administration' in combined
+    assert '>Inventory</span>' in combined
+    assert '>Governance</span>' in combined
+    assert '>Operations</span>' in combined
+    assert 'Kubernetes Admin' in combined
+    for legacy_label in (
+        'Kubernetes Inventory',
+        'Kubernetes Governance',
+        'Kubernetes Operations',
+        'Kubernetes Administration',
+    ):
+        assert legacy_label not in combined
 
 
 def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() -> None:
