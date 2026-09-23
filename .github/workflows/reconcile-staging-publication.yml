@@ -2,6 +2,13 @@ name: KAORI Staging Publication Reconciliation
 
 on:
   workflow_call:
+    secrets:
+      KAORI_HOST_SSH_PRIVATE_KEY:
+        required: true
+      KAORI_HOST_SSH_PASSPHRASE:
+        required: true
+      KAORI_HOST_KNOWN_HOSTS:
+        required: true
   workflow_dispatch:
 
 permissions:
