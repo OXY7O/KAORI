@@ -225,12 +225,12 @@ def main() -> int:
         errors.append('Platform Operations navigation must expose the Overview landing page')
     if not (
         platform_menu.index('Overview')
-        < platform_menu.index('Jobs &amp; Executions')
+        < platform_menu.index('Jobs')
         < platform_menu.index('Data Lifecycle')
-        < platform_menu.index('Kubernetes Administration')
+        < platform_menu.index('Kubernetes Admin')
     ):
         errors.append(
-            'Platform Operations navigation order must be Overview → Jobs & Executions → Data Lifecycle → Kubernetes Administration'
+            'Platform Operations navigation order must be Overview → Jobs → Data Lifecycle → Kubernetes Admin'
         )
 
     k8s_index = read('app/templates/platform_operations/kubernetes/index.html')
