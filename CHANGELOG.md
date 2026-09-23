@@ -4,6 +4,8 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-23
+
 ### Added
 - Added complete OCI image annotations plus digest-bound SPDX SBOM and SLSA provenance attestation contracts for governed release candidates and stable promotion verification.
 - Added standalone Docker Compose integration examples for Prometheus, Alertmanager, MinIO/S3-compatible storage, Thanos Query, and a disposable GitHub Actions Runner under `example/`.
