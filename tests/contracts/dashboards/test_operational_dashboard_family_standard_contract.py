@@ -39,20 +39,25 @@ def test_operational_dashboards_share_the_same_outer_workspace_grammar() -> None
     assert 'class="mt-5 space-y-5"' in object_storage
 
 
-def test_kubernetes_dashboard_blocked_onboarding_uses_integration_workspace() -> None:
+def test_kubernetes_dashboard_blocked_onboarding_uses_shared_integration_contract() -> None:
     content = read('app/templates/kubernetes/dashboard/partials/_content.html')
     onboarding = read('app/templates/components/cluster/_onboarding_banner.html')
 
-    assert 'cluster_onboarding_steps = ["Open Cluster Integrations", "Register Cluster", "Run Sync"]' in content
-    assert "cluster_onboarding_action_url = url_for('integrations.kubernetes')" in content
-    assert 'cluster_onboarding_action_label = "Open Cluster Integrations"' in content
-    assert 'cluster_onboarding_action_icon = "plug-zap"' in content
-    assert "url_for('cluster.add_cluster')" not in content
+    assert '{% include "components/cluster/_onboarding_banner.html" %}' in content
+    for local_override in (
+        'cluster_onboarding_steps =',
+        'cluster_onboarding_action_url =',
+        'cluster_onboarding_action_label =',
+        'cluster_onboarding_action_icon =',
+    ):
+        assert local_override not in content
 
-    assert 'cluster_onboarding_steps|default(["Add Cluster", "Configure Integrations", "Run Sync"])' in onboarding
-    assert "cluster_onboarding_action_url|default(url_for('cluster.add_cluster'))" in onboarding
-    assert 'cluster_onboarding_action_label|default("Add Cluster")' in onboarding
-    assert 'cluster_onboarding_action_icon|default("plus")' in onboarding
+    assert 'blocked_state_steps = ["Open Cluster Integrations", "Register Cluster", "Run Sync"]' in onboarding
+    assert "blocked_state_action_url = url_for('integrations.kubernetes')" in onboarding
+    assert 'blocked_state_action_label = "Open Cluster Integrations"' in onboarding
+    assert 'blocked_state_action_icon = "plug-zap"' in onboarding
+    assert "url_for('cluster.add_cluster')" not in onboarding
+    assert 'blocked_state_action_label = "Add Cluster"' not in onboarding
 
 
 def test_operational_dashboards_share_peer_grid_and_reporting_proportions() -> None:

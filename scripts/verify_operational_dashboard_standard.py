@@ -220,24 +220,40 @@ def verify() -> None:
     _verify_dashboard_hero_profile(hero, object_hero, page_hero)
     _require(
         content,
-        (
-            'cluster_onboarding_steps = ["Open Cluster Integrations", "Register Cluster", "Run Sync"]',
-            "cluster_onboarding_action_url = url_for('integrations.kubernetes')",
-            'cluster_onboarding_action_label = "Open Cluster Integrations"',
-            'cluster_onboarding_action_icon = "plug-zap"',
-        ),
-        'Kubernetes dashboard blocked onboarding action',
+        ('{% include "components/cluster/_onboarding_banner.html" %}',),
+        'Kubernetes dashboard shared onboarding consumer',
     )
+    for local_override in (
+        'cluster_onboarding_steps =',
+        'cluster_onboarding_action_url =',
+        'cluster_onboarding_action_label =',
+        'cluster_onboarding_action_icon =',
+    ):
+        if local_override in content:
+            raise AssertionError(
+                f'Kubernetes dashboard shared onboarding consumer: local semantic override is prohibited: {local_override}'
+            )
+
     _require(
         onboarding_banner,
         (
-            'cluster_onboarding_steps|default(["Add Cluster", "Configure Integrations", "Run Sync"])',
-            "cluster_onboarding_action_url|default(url_for('cluster.add_cluster'))",
-            'cluster_onboarding_action_label|default("Add Cluster")',
-            'cluster_onboarding_action_icon|default("plus")',
+            'blocked_state_steps = ["Open Cluster Integrations", "Register Cluster", "Run Sync"]',
+            "blocked_state_action_url = url_for('integrations.kubernetes')",
+            'blocked_state_action_label = "Open Cluster Integrations"',
+            'blocked_state_action_icon = "plug-zap"',
+            'blocked_state_permission = "clusters.manage"',
         ),
-        'shared Kubernetes onboarding defaults',
+        'shared Kubernetes onboarding contract',
     )
+    for stale_action in (
+        "url_for('cluster.add_cluster')",
+        'blocked_state_action_label = "Add Cluster"',
+        '["Add Cluster", "Configure Integrations", "Run Sync"]',
+    ):
+        if stale_action in onboarding_banner:
+            raise AssertionError(
+                f'shared Kubernetes onboarding contract: stale direct-create onboarding remains: {stale_action}'
+            )
 
     _require(
         content,
