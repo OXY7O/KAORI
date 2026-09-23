@@ -1,9 +1,9 @@
-name: KAORI Telegram Notify
+name: Delivery Notifications
 
 on:
-  workflow_run: # zizmor: ignore[dangerous-triggers] trusted KAORI CI push lineage is validated below
+  workflow_run: # zizmor: ignore[dangerous-triggers] trusted Full Admission push lineage is validated below
     workflows:
-      - KAORI CI
+      - Full Admission
     types:
       - completed
   schedule:
@@ -26,7 +26,7 @@ jobs:
       ${{
         github.repository == 'OXY7O/KAORI' &&
         github.event_name == 'workflow_run' &&
-        github.event.workflow_run.name == 'KAORI CI' &&
+        github.event.workflow_run.name == 'Full Admission' &&
         github.event.workflow_run.path == '.github/workflows/quality.yml' &&
         github.event.workflow_run.event == 'push' &&
         github.event.workflow_run.status == 'completed' &&
@@ -39,13 +39,13 @@ jobs:
     runs-on: [self-hosted, linux, x64, platform-ci]
     timeout-minutes: 10
     steps:
-      - name: Check Out Trusted Completed Run Source
+      - name: Checkout Run Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
           persist-credentials: false
 
-      - name: Send Trusted Branch Telegram Notification
+      - name: Send Delivery Notification
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -71,13 +71,13 @@ jobs:
     runs-on: [self-hosted, linux, x64, platform-ci]
     timeout-minutes: 10
     steps:
-      - name: Check Out Trusted Notification Authority
+      - name: Checkout Notification Authority
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
 
-      - name: Scan Actionable PR Delivery Failures
+      - name: Scan PR Failures
         id: scan
         shell: bash
         env:
@@ -92,14 +92,14 @@ jobs:
           --source-sha "$GITHUB_SHA"
           --repository "$GITHUB_REPOSITORY"
 
-      - name: Create Notification Receipt
+      - name: Create Receipt
         if: ${{ steps.scan.outputs.quality_run_id != '' }}
         shell: bash
         env:
           QUALITY_RUN_ID: ${{ steps.scan.outputs.quality_run_id }}
         run: printf '%s\n' "$QUALITY_RUN_ID" > kaori-telegram-quality-run.txt
 
-      - name: Retain Notification Receipt
+      - name: Retain Receipt
         if: ${{ steps.scan.outputs.quality_run_id != '' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

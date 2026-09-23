@@ -1,4 +1,4 @@
-name: KAORI Branch Hygiene
+name: Branch Hygiene
 
 on:
   push:
@@ -19,14 +19,14 @@ jobs:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 20
     steps:
-      - name: Check Out Staging Authority
+      - name: Checkout Staging
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: kaori/staging
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Retire Fully Merged Temporary Branches
+      - name: Retire Merged Branches
         shell: bash
         run: |
           set -Eeuo pipefail

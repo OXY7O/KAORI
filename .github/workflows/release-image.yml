@@ -1,4 +1,4 @@
-name: Release KAORI
+name: Stable Release
 
 on:
   workflow_dispatch:
@@ -43,7 +43,7 @@ jobs:
       rc_source_sha: ${{ steps.rc.outputs.rc_source_sha }}
       rc_image_digest: ${{ steps.rc.outputs.rc_image_digest }}
     steps:
-      - name: Check Out Exact Main Dispatch Commit
+      - name: Checkout Release SHA
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
@@ -51,7 +51,7 @@ jobs:
           fetch-tags: true
           persist-credentials: false
 
-      - name: Validate Stable Release Request
+      - name: Validate Release Request
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -78,7 +78,7 @@ jobs:
             exit 1
           }
 
-      - name: Resolve Accepted RC Evidence
+      - name: Resolve RC Evidence
         id: rc
         shell: bash
         env:
@@ -167,7 +167,7 @@ jobs:
           printf 'Accepted RC authority: tag=%s source=%s digest=%s\n' \
             "$CANDIDATE_TAG" "$RC_SOURCE_SHA" "$RC_IMAGE_DIGEST"
 
-      - name: Resolve CI Toolchain
+      - name: Resolve Toolchain
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -177,7 +177,7 @@ jobs:
             docker build --file .github/ci/Dockerfile --tag "$image" .
           printf 'KAORI_CI_TOOLCHAIN_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
 
-      - name: Prepare Final Release Runtime
+      - name: Prepare Release Runtime
         shell: bash
         run: |
           {
@@ -186,10 +186,10 @@ jobs:
             echo "COMPOSE_PROJECT_NAME=kaori-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-preflight"
           } >> "$GITHUB_ENV"
 
-      - name: Start Final Release Services
+      - name: Start Release Services
         run: docker compose --file .github/ci/compose.yml up -d postgres redis ci-reports-worker
 
-      - name: Wait for Reports Worker
+      - name: Wait for Reports
         shell: bash
         run: |
           for _ in $(seq 1 30); do
@@ -204,12 +204,12 @@ jobs:
           printf 'KAORI source Reports worker did not become ready within 60 seconds\n' >&2
           exit 1
 
-      - name: Run Canonical Final Release Gate
+      - name: Run Final Release Gate
         run: >-
           docker compose --file .github/ci/compose.yml
           run --rm ci python scripts/verify_final_release.py --all --runtime
 
-      - name: Emit Locked Release Identity
+      - name: Record Release Identity
         id: identity
         shell: bash
         run: |
@@ -218,7 +218,7 @@ jobs:
             echo "release_version=$RELEASE_INPUT_VERSION"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Cleanup Preflight Services
+      - name: Cleanup Preflight
         if: ${{ always() }}
         run: docker compose --file .github/ci/compose.yml down --volumes --remove-orphans
 
@@ -240,7 +240,7 @@ jobs:
       REGISTRY_IMAGE: ${{ vars.KAORI_DOCKER_REGISTRY_IMAGE }}
       COSIGN_IMAGE: ghcr.io/sigstore/cosign/cosign:v3.1.3
     steps:
-      - name: Check Out Exact Approved Main SHA
+      - name: Checkout Release SHA
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.preflight.outputs.release_sha }}
@@ -248,7 +248,7 @@ jobs:
           fetch-tags: true
           persist-credentials: false
 
-      - name: Resolve CI Toolchain
+      - name: Resolve Toolchain
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -258,7 +258,7 @@ jobs:
             docker build --file .github/ci/Dockerfile --tag "$image" .
           printf 'CI_TOOLCHAIN_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
 
-      - name: Log In to Docker Registry
+      - name: Login to Registry
         shell: bash
         env:
           REGISTRY_USERNAME: ${{ secrets.KAORI_DOCKER_REGISTRY_USERNAME }}
@@ -270,7 +270,7 @@ jobs:
           printf '%s' "$REGISTRY_PASSWORD" | \
             docker login "$REGISTRY_HOST" --username "$REGISTRY_USERNAME" --password-stdin
 
-      - name: Verify Accepted RC Registry Identity
+      - name: Verify RC Digest
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -289,7 +289,7 @@ jobs:
           } >> "$GITHUB_ENV"
           printf 'Verified accepted immutable RC: %s\n' "$source_ref"
 
-      - name: Verify Accepted RC Attestations
+      - name: Verify RC Attestations
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -370,7 +370,7 @@ jobs:
               "$(sha256sum tmp/ci-artifacts/release/accepted-rc-provenance-attestation.json | awk '{print $1}')"
           } >> "$GITHUB_ENV"
 
-      - name: Scan Exact Accepted Digest
+      - name: Scan RC Digest
         shell: bash
         run: |
           source_ref="${REGISTRY_IMAGE}@${RC_IMAGE_DIGEST}"
@@ -386,7 +386,7 @@ jobs:
               --scanners vuln \
               "$source_ref"
 
-      - name: Validate Exact Accepted Digest Runtime and DAST
+      - name: Validate Runtime & DAST
         shell: bash
         run: |
           export KAORI_RUNTIME_APP_VERSION="$RELEASE_VERSION"
@@ -397,7 +397,7 @@ jobs:
           source_ref="${REGISTRY_IMAGE}@${RC_IMAGE_DIGEST}"
           bash .github/ci/run-runtime-validation.sh "$source_ref"
 
-      - name: Sign Exact Accepted Digest with GitHub OIDC
+      - name: Sign Stable Digest
         shell: bash
         run: |
           source_ref="${REGISTRY_IMAGE}@${RC_IMAGE_DIGEST}"
@@ -410,7 +410,7 @@ jobs:
             "$COSIGN_IMAGE" \
             sign --yes "$source_ref"
 
-      - name: Verify Stable Promotion Signature
+      - name: Verify Stable Signature
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -430,19 +430,19 @@ jobs:
             "$(sha256sum tmp/ci-artifacts/release/stable-signature-verification.json | awk '{print $1}')" \
             >> "$GITHUB_ENV"
 
-      - name: Create or Verify Stable Git Tag
+      - name: Ensure Stable Tag
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: bash .github/ci/release-lib.sh tag "$RELEASE_VERSION" "$RELEASE_SHA"
 
-      - name: Protect Existing Stable Registry Tags
+      - name: Protect Stable Tags
         shell: bash
         run: |
           major_minor="${RELEASE_VERSION%.*}"
           bash .github/ci/release-lib.sh registry-tag "${REGISTRY_IMAGE}:v${RELEASE_VERSION}" "$RC_IMAGE_DIGEST"
           bash .github/ci/release-lib.sh registry-tag "${REGISTRY_IMAGE}:v${major_minor}" "$RC_IMAGE_DIGEST"
 
-      - name: Promote Same Immutable Digest
+      - name: Promote Digest
         shell: bash
         run: |
           major_minor="${RELEASE_VERSION%.*}"
@@ -452,7 +452,7 @@ jobs:
             --tag "${REGISTRY_IMAGE}:v${major_minor}" \
             "$source_ref"
 
-      - name: Verify Promoted Digest Identity
+      - name: Verify Stable Digest
         shell: bash
         run: |
           major_minor="${RELEASE_VERSION%.*}"
@@ -466,7 +466,7 @@ jobs:
             }
           done
 
-      - name: Generate Stable Release Manifest
+      - name: Generate Release Manifest
         shell: bash
         run: |
           mkdir -p tmp/ci-artifacts/release
@@ -511,7 +511,7 @@ jobs:
             > tmp/ci-artifacts/release/kaori-release-manifest.json
           cat tmp/ci-artifacts/release/kaori-release-manifest.json
 
-      - name: Build Stable Release Notes
+      - name: Build Release Notes
         shell: bash
         run: |
           cat > tmp/ci-artifacts/release/stable-release-notes.md <<EOF
@@ -527,7 +527,7 @@ jobs:
           - Stable registry tag: \`${REGISTRY_IMAGE}:v${RELEASE_VERSION}\`
 
           ### Validation
-          - Main Full KAORI CI: **PASS**
+          - Main Full Admission: **PASS**
           - Accepted RC registry identity: **PASS**
           - HIGH/CRITICAL image scan: **PASS**
           - Runtime, migration, Reports worker, and baseline DAST: **PASS**
@@ -540,7 +540,7 @@ jobs:
           The stable tags resolve to the exact immutable digest accepted during UAT. No application image rebuild occurred during stable promotion.
           EOF
 
-      - name: Publish GitHub Stable Release
+      - name: Publish Stable Release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -590,7 +590,7 @@ jobs:
           fi
           rm -f "$release_file"
 
-      - name: Upload Stable Release Evidence
+      - name: Upload Release Evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -602,6 +602,6 @@ jobs:
           if-no-files-found: ignore
           retention-days: 30
 
-      - name: Log Out from Docker Registry
+      - name: Logout from Registry
         if: ${{ always() }}
         run: docker logout "$REGISTRY_HOST"

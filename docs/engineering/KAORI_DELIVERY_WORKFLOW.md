@@ -46,6 +46,14 @@ The essential delivery rule is:
 
 Work-branch validation is intentionally bounded. Full Admission is an integration-authority fallback, not a work-branch development or Ready-PR gate.
 
+## GitHub Actions display naming
+
+Operator-facing Actions display names use the concise delivery vocabulary: `Developer Check`, `Full Admission`, `Release Candidate`, `Staging Deploy`, `Staging Publication`, `Stable Release`, `Branch Hygiene`, `Delivery Notifications`, and `Visual Baseline`.
+
+Workflow file paths remain stable automation identities. Existing required job/check contexts are not renamed without branch-protection coordination. In particular, the legacy commit-status context `KAORI CI / Admission` remains a compatibility boundary even though the workflow display name is `Full Admission`. Delivery Notifications follows the `Full Admission` `workflow_run` name and additionally validates `.github/workflows/quality.yml`, repository, branch, event, and exact source identity.
+
+Step display names should prefer concise verb + object wording; qualifiers such as exact, accepted, trusted, canonical, and human-friendly belong in implementation/evidence unless needed to distinguish actions.
+
 ## Human-Readable GitHub Standard
 
 GitHub history is a long-lived engineering record. Titles, branches, commits, Pull Requests, comments, and CI evidence must be readable without reconstructing intent from source code.
@@ -208,7 +216,7 @@ For work entering the artifact-backed release path, completion additionally requ
 
 ## Developer Check — Work-Branch Loop
 
-`KAORI Developer Check` is the path-aware authority for Pull Requests from every `kaori/*` work branch except `kaori/staging` into `kaori/staging`. It runs in both Draft and Ready states and remains targeted/non-comprehensive.
+`Developer Check` is the path-aware authority for Pull Requests from every `kaori/*` work branch except `kaori/staging` into `kaori/staging`. It runs in both Draft and Ready states and remains targeted/non-comprehensive.
 
 It routes changed paths into the minimum safe focused checks using existing KAORI validation commands. Typical groups include:
 
@@ -410,7 +418,7 @@ Release-bound work stays in Project Status `UAT` while artifact publication, VPS
 
 ## Main Promotion
 
-Accepted increments are promoted through an explicit PR from `kaori/staging` to `main`. `KAORI CI` accepts a PR to `main` as a governed promotion only when its head is exactly `kaori/staging`. Promotion verifies exact accepted staging lineage, reuses admitted evidence, and runs fresh Fast Smoke. After merge, Post-promotion verifies the resulting main lineage with the same evidence-reuse principle.
+Accepted increments are promoted through an explicit PR from `kaori/staging` to `main`. `Full Admission` accepts a PR to `main` as a governed promotion only when its head is exactly `kaori/staging`. Promotion verifies exact accepted staging lineage, reuses admitted evidence, and runs fresh Fast Smoke. After merge, Post-promotion verifies the resulting main lineage with the same evidence-reuse principle.
 
 For artifact-backed releases, the promotion PR also records the UAT-approved OCI digest. Main source promotion and release tagging must not rebuild the accepted application image; the release must reference the same digest accepted during VPS UAT.
 

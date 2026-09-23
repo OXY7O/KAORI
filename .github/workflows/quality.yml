@@ -1,4 +1,4 @@
-name: KAORI CI
+name: Full Admission
 
 on:
   workflow_call:
@@ -59,14 +59,14 @@ jobs:
       started_epoch: ${{ steps.identity.outputs.started_epoch }}
       toolchain_image: ${{ steps.toolchain.outputs.image }}
     steps:
-      - name: Check Out Exact Source
+      - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.KAORI_SOURCE_SHA }}
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Resolve CI Toolchain
+      - name: Resolve Toolchain
         id: toolchain
         shell: bash
         run: |
@@ -76,7 +76,7 @@ jobs:
           docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
           printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
 
-      - name: Resolve Source Identity
+      - name: Resolve Source
         id: identity
         shell: bash
         env:
@@ -136,7 +136,7 @@ jobs:
               >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Locate Exact Evidence
+      - name: Locate Admission Evidence
         id: evidence
         if: ${{ steps.routing.outputs.execution == 'fast' }}
         shell: bash
@@ -237,7 +237,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 45
     steps:
-      - name: Check Out Exact Source
+      - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
@@ -278,7 +278,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 45
     steps:
-      - name: Check Out Exact Source
+      - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
@@ -286,7 +286,7 @@ jobs:
           persist-credentials: false
       - name: Reuse CI Toolchain
         run: echo "CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}" >> "$GITHUB_ENV"
-      - name: Run Security Gate
+      - name: Run Security
         run: >-
           docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp
           --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE"
@@ -307,12 +307,12 @@ jobs:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 60
     steps:
-      - name: Check Out Exact Source
+      - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
           persist-credentials: false
-      - name: Prepare Runtime Contract
+      - name: Prepare Runtime
         shell: bash
         run: |
           {
@@ -321,7 +321,7 @@ jobs:
             echo "KAORI_CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}"
             echo "COMPOSE_PROJECT_NAME=kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-tests"
           } >> "$GITHUB_ENV"
-      - name: Start Test Dependencies
+      - name: Start Test Services
         run: docker compose --file .github/ci/compose.yml up -d postgres redis
       - name: Run Functional Tests
         run: >-
@@ -335,7 +335,7 @@ jobs:
           path: tmp/ci-artifacts/test-output
           if-no-files-found: ignore
           retention-days: 1
-      - name: Cleanup Test Dependencies
+      - name: Cleanup Test Services
         if: ${{ always() }}
         run: docker compose --file .github/ci/compose.yml down --volumes --remove-orphans
 
@@ -346,14 +346,14 @@ jobs:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 30
     steps:
-      - name: Check Out Exact Source
+      - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
           persist-credentials: false
       - name: Reuse CI Toolchain
         run: echo "CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}" >> "$GITHUB_ENV"
-      - name: Build & Verify Frontend
+      - name: Validate Frontend
         run: >-
           docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp
           --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE"
@@ -366,13 +366,13 @@ jobs:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 75
     steps:
-      - name: Check Out Exact Source
+      - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Prepare Runtime Contract
+      - name: Prepare Runtime
         shell: bash
         run: |
           {
@@ -383,9 +383,9 @@ jobs:
             echo "COMPOSE_PROJECT_NAME=kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-runtime"
             echo "VALIDATION_IMAGE=kaori:ci-${{ needs.validation-profile.outputs.source_sha }}"
           } >> "$GITHUB_ENV"
-      - name: Build Production Image
+      - name: Build Runtime Image
         run: docker build --target production --tag "$VALIDATION_IMAGE" .
-      - name: Scan Production Image
+      - name: Scan Runtime Image
         run: >-
           docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock
           --volume kaori-trivy-cache:/root/.cache/trivy "$CI_TOOLCHAIN_IMAGE"
@@ -403,7 +403,7 @@ jobs:
             tmp/ci-artifacts/zap
           if-no-files-found: ignore
           retention-days: 3
-      - name: Cleanup Runtime Resources
+      - name: Cleanup Runtime
         if: ${{ always() }}
         shell: bash
         run: |
@@ -417,13 +417,13 @@ jobs:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 15
     steps:
-      - name: Check Out Exact Source
+      - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Prepare Smoke Contract
+      - name: Prepare Smoke
         shell: bash
         run: |
           {
@@ -432,7 +432,7 @@ jobs:
             echo "KAORI_CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}"
             echo "COMPOSE_PROJECT_NAME=kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-smoke"
           } >> "$GITHUB_ENV"
-      - name: Start Smoke Dependencies
+      - name: Start Smoke Services
         run: docker compose --file .github/ci/compose.yml up -d postgres redis
       - name: Run Fast Smoke
         run: >-
@@ -446,7 +446,7 @@ jobs:
           path: tmp/ci-artifacts/test-output
           if-no-files-found: ignore
           retention-days: 3
-      - name: Cleanup Smoke Dependencies
+      - name: Cleanup Smoke Services
         if: ${{ always() }}
         run: docker compose --file .github/ci/compose.yml down --volumes --remove-orphans
 
@@ -467,14 +467,14 @@ jobs:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 10
     steps:
-      - name: Check Out Exact Source
+      - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Assert Selected Path
+      - name: Verify Admission Path
         id: result
         shell: bash
         env:
@@ -505,7 +505,7 @@ jobs:
             } >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Publish Immutable Full Admission Evidence
+      - name: Publish Admission Evidence
         id: full-evidence
         if: ${{ needs.validation-profile.outputs.execution == 'full' }}
         shell: bash
@@ -531,7 +531,7 @@ jobs:
               --production-runtime "${{ needs.production-runtime.result }}" \
               --output admission-evidence.json
 
-      - name: Upload Full Admission Evidence
+      - name: Upload Admission Evidence
         id: full-evidence-upload
         if: ${{ needs.validation-profile.outputs.execution == 'full' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -541,7 +541,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Write Admission Summary
+      - name: Summarize Admission
         id: summary
         if: ${{ always() }}
         shell: bash
@@ -626,7 +626,7 @@ jobs:
           printf '📦 %s\n' "${COVERAGE:-Selected validation path did not complete.}"
           printf '➡️ %s\n' "$next"
 
-      - name: Publish Admission Commit Status
+      - name: Publish Admission Status
         if: ${{ always() }}
         continue-on-error: true
         shell: bash

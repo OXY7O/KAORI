@@ -1,4 +1,4 @@
-name: KAORI Developer Check
+name: Developer Check
 
 on:
   pull_request:
@@ -38,14 +38,14 @@ jobs:
       test_paths: ${{ steps.route.outputs.test_paths }}
       summary: ${{ steps.route.outputs.summary }}
     steps:
-      - name: Check Out Work Branch Source
+      - name: Checkout Work Branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.KAORI_SOURCE_SHA }}
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Resolve Changed Paths
+      - name: Route Changed Paths
         id: route
         shell: bash
         env:
@@ -233,14 +233,14 @@ jobs:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 20
     steps:
-      - name: Check Out Work Branch Source
+      - name: Checkout Work Branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.KAORI_SOURCE_SHA }}
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Resolve CI Toolchain
+      - name: Resolve Toolchain
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -249,7 +249,7 @@ jobs:
           docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
           printf 'CI_TOOLCHAIN_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
 
-      - name: Run Path-Aware Checks
+      - name: Run Developer Checks
         shell: bash
         env:
           CHECK_PYTHON: ${{ needs.route.outputs.python }}
@@ -338,7 +338,7 @@ jobs:
           printf '⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
           printf '➡️ Work-branch validation stays targeted in both Draft and Ready states; comprehensive validation begins only after merge to kaori/staging.\n'
 
-      - name: Upload Browser Diagnostics
+      - name: Upload Diagnostics
         if: ${{ failure() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
