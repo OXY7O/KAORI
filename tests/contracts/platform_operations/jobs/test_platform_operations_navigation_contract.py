@@ -9,7 +9,7 @@ def test_platform_operations_section_contains_operations_center_and_integrations
     integrations_menu = (ROOT / 'app/templates/components/navigation/integrations_menu.html').read_text()
     page = (ROOT / 'app/templates/platform_operations/jobs/index.html').read_text()
 
-    section = sidebar.split('>Platform Operations</div>', 1)[1].split('>Administration</div>', 1)[0]
+    section = sidebar.split('>Platform</div>', 1)[1].split('>Administration</div>', 1)[0]
     assert 'components/navigation/platform_operations_menu.html' in section
     assert 'components/navigation/integrations_menu.html' in section
     assert section.index('platform_operations_menu.html') < section.index('integrations_menu.html')
@@ -17,9 +17,9 @@ def test_platform_operations_section_contains_operations_center_and_integrations
     assert '<details' in operations_menu
     assert 'Operations Center' in operations_menu
     assert 'Overview' in operations_menu
-    assert 'Jobs &amp; Executions' in operations_menu
+    assert '>Jobs</span>' in operations_menu
     assert 'Data Lifecycle' in operations_menu
-    assert 'Kubernetes Administration' in operations_menu
+    assert '>Kubernetes Admin</span>' in operations_menu
     assert 'Integrations' not in operations_menu
     assert 'Notification Channels' not in operations_menu
     assert "url_for('platform_operations.overview.index')" in operations_menu

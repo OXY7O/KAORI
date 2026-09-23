@@ -39,11 +39,11 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'object_storage_inventory.bucket_details': 'Bucket Details',
     # Analytics
     'analytics.overview': 'Overview',
-    'analytics.utilization': 'Resource Utilization',
-    'analytics.capacity': 'Capacity Analysis',
-    'analytics.storage': 'Storage Analysis',
-    'analytics.workload': 'Workload Analysis',
-    'analytics.forecast': 'Resource Forecast',
+    'analytics.utilization': 'Utilization',
+    'analytics.capacity': 'Capacity',
+    'analytics.storage': 'Storage',
+    'analytics.workload': 'Workloads',
+    'analytics.forecast': 'Forecast',
     'analytics.top_consumers': 'Top Consumers',
     'analytics.alerts': 'Alerts & Anomalies',
     # Object Storage Analytics
@@ -67,27 +67,27 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'reports.schedules': 'Schedules',
     'reports.storage': 'Storage',
     # Kubernetes operations and governance
-    'kubernetes_operations.configmap_management': 'ConfigMap Management',
-    'kubernetes_operations.secret_management': 'Secret Management',
+    'kubernetes_operations.configmap_management': 'ConfigMaps',
+    'kubernetes_operations.secret_management': 'Secrets',
     'governance.overview': 'Overview',
     'governance.tls_certificates': 'TLS Certificates',
     # Platform operations
-    'jobs.executions': 'Executions',
+    'jobs.executions': 'Jobs',
     'jobs.configuration': 'Job Configuration',
     'platform_operations.overview.index': 'Overview',
     'platform_operations.data_lifecycle.index': 'Data Lifecycle',
-    'platform_operations.kubernetes.index': 'Kubernetes Administration',
+    'platform_operations.kubernetes.index': 'Kubernetes Admin',
     'platform_operations.kubernetes.secret_reveal.index': 'Secret Reveal',
     # Settings
     'settings.general': 'General',
     'settings.account': 'Account',
     # Access
     'access.overview.index': 'Overview',
-    'users.index': 'User Management',
+    'users.index': 'Users',
     'identity_providers.index': 'Identity Providers',
     'identity_providers.directory_provisioning': 'Directory Provisioning',
-    'access.roles.index': 'Roles & Access',
-    'access.permissions.index': 'Permission Catalog',
+    'access.roles.index': 'Roles',
+    'access.permissions.index': 'Permissions',
     'notifications.center': 'Notification Center',
     'access.activity_audit.index': 'Activity Audit',
 }
@@ -185,18 +185,18 @@ def build_navigation_breadcrumb(
         ]
     elif endpoint.startswith('inventory.'):
         items = [
-            BreadcrumbItem('Kubernetes Inventory', 'boxes'),
+            BreadcrumbItem('Inventory', 'boxes'),
             BreadcrumbItem(_leaf(endpoint, 'Overview')),
         ]
     elif endpoint.startswith('kubernetes_operations.'):
-        fallback = 'Secret Management' if 'secret' in endpoint or '/secrets' in path else 'ConfigMap Management'
+        fallback = 'Secrets' if 'secret' in endpoint or '/secrets' in path else 'ConfigMaps'
         items = [
-            BreadcrumbItem('Kubernetes Operations', 'terminal-square'),
+            BreadcrumbItem('Operations', 'terminal-square'),
             BreadcrumbItem(_leaf(endpoint, fallback)),
         ]
     elif endpoint.startswith('governance.'):
         items = [
-            BreadcrumbItem('Kubernetes Governance', 'shield-check'),
+            BreadcrumbItem('Governance', 'shield-check'),
             BreadcrumbItem(_leaf(endpoint, 'TLS Certificates')),
         ]
     elif endpoint.startswith('analytics.'):
@@ -210,23 +210,23 @@ def build_navigation_breadcrumb(
         items = [BreadcrumbItem('Reports', 'file-text'), BreadcrumbItem(_leaf(endpoint, 'Overview'))]
     elif endpoint.startswith('jobs.'):
         items = [
-            BreadcrumbItem('Platform Operations', 'workflow'),
-            BreadcrumbItem(_leaf(endpoint, 'Jobs & Executions')),
+            BreadcrumbItem('Operations Center', 'workflow'),
+            BreadcrumbItem(_leaf(endpoint, 'Jobs')),
         ]
     elif endpoint.startswith('platform_operations.overview.'):
         items = [
-            BreadcrumbItem('Platform Operations', 'workflow'),
-            BreadcrumbItem('Operations Center'),
+            BreadcrumbItem('Operations Center', 'workflow'),
+            BreadcrumbItem('Overview'),
         ]
     elif endpoint.startswith('platform_operations.data_lifecycle.'):
         items = [
-            BreadcrumbItem('Platform Operations', 'workflow'),
+            BreadcrumbItem('Operations Center', 'workflow'),
             BreadcrumbItem('Data Lifecycle'),
         ]
     elif endpoint.startswith('platform_operations.kubernetes.'):
         items = [
-            BreadcrumbItem('Platform Operations', 'workflow'),
-            BreadcrumbItem('Kubernetes Administration'),
+            BreadcrumbItem('Operations Center', 'workflow'),
+            BreadcrumbItem('Kubernetes Admin'),
         ]
         if endpoint != 'platform_operations.kubernetes.index':
             items.append(BreadcrumbItem(_leaf(endpoint, 'Secret Reveal')))
@@ -259,7 +259,7 @@ def build_navigation_breadcrumb(
             BreadcrumbItem('Directory Provisioning'),
         ]
     elif endpoint.startswith('users.'):
-        items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('User Management')]
+        items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Users')]
         items = _append_workflow(items, endpoint)
     elif endpoint == 'notifications.center':
         items = [BreadcrumbItem('Notification Center', 'bell')]
@@ -268,10 +268,10 @@ def build_navigation_breadcrumb(
     elif endpoint.startswith('notifications.'):
         items = [BreadcrumbItem('Notification Center', 'bell')]
     elif endpoint.startswith('access.roles.'):
-        items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Roles & Access')]
+        items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Roles')]
         items = _append_workflow(items, endpoint)
     elif endpoint.startswith('access.permissions.'):
-        items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Permission Catalog')]
+        items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Permissions')]
     elif endpoint.startswith('settings.'):
         items = [BreadcrumbItem('Settings', 'settings-2'), BreadcrumbItem(_leaf(endpoint, 'General'))]
     else:

@@ -15,12 +15,12 @@ or current_user.has_permission('kubernetes_secrets.bulk_rotate_tls') %}
     <details class="sidebar-menu space-y-1"
              {% if operations_active %}open{% endif %}>
         <summary class="{{ 'sidebar-parent-active' if operations_active else 'sidebar-item-idle' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition lg:[.sidebar-collapsed_&]:justify-center lg:[.sidebar-collapsed_&]:px-2"
-                 title="Kubernetes Operations"
-                 aria-label="Kubernetes Operations"
+                 title="Operations"
+                 aria-label="Operations"
                  @click="if (window.innerWidth >= 1024 && !sidebarExpanded) { $event.preventDefault(); toggleSidebar(); $el.parentElement.open = true }">
             <div class="flex min-w-0 items-center gap-2.5">
                 <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if operations_active else 'sidebar-item-idle-icon' }} transition"><i data-lucide="wrench" class="h-4 w-4"></i></span>
-                <span class="sidebar-expanded-only truncate whitespace-nowrap">Kubernetes Operations</span>
+                <span class="sidebar-expanded-only truncate whitespace-nowrap">Operations</span>
             </div>
             <i data-lucide="chevron-right"
                class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if operations_active else 'text-white/[0.35]' }}"></i>
@@ -31,7 +31,7 @@ or current_user.has_permission('kubernetes_secrets.bulk_rotate_tls') %}
                    class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint and request.endpoint.startswith('kubernetes_operations.configmap') else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
                     <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint and request.endpoint.startswith('kubernetes_operations.configmap') else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
                     <i data-lucide="file-cog" class="h-3.5 w-3.5"></i>
-                    <span class="truncate whitespace-nowrap">ConfigMap Management</span>
+                    <span class="truncate whitespace-nowrap">ConfigMaps</span>
                 </a>
             {% endif %}
             {% if secret_operations_visible %}
@@ -39,7 +39,7 @@ or current_user.has_permission('kubernetes_secrets.bulk_rotate_tls') %}
                    class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint and request.endpoint.startswith('kubernetes_operations.secret') or request.endpoint and request.endpoint.startswith('kubernetes_operations.tls_secret') else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
                     <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint and request.endpoint.startswith('kubernetes_operations.secret') or request.endpoint and request.endpoint.startswith('kubernetes_operations.tls_secret') else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
                     <i data-lucide="key-round" class="h-3.5 w-3.5"></i>
-                    <span class="truncate whitespace-nowrap">Secret Management</span>
+                    <span class="truncate whitespace-nowrap">Secrets</span>
                 </a>
             {% endif %}
         </div>

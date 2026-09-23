@@ -43,7 +43,7 @@
             {% if current_user.has_permission('users.view') %}
                 <a href="{{ url_for('users.index') }}"
                    class="{{ 'bg-white/[0.08] text-kaori-accent' if user_management_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
-                    <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if user_management_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="users-round" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">User Management</span>
+                    <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if user_management_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="users-round" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Users</span>
                 </a>
             {% endif %}
             {% if current_user.has_permission('identity_providers.view') %}
@@ -55,11 +55,11 @@
             {% if current_user.has_permission('roles.view') %}
                 <a href="{{ url_for('access.roles.index') }}"
                    class="{{ 'bg-white/[0.08] text-kaori-accent' if role_access_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
-                    <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if role_access_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="badge-check" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Roles &amp; Access</span>
+                    <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if role_access_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="badge-check" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Roles</span>
                 </a>
                 <a href="{{ url_for('access.permissions.index') }}"
                    class="{{ 'bg-white/[0.08] text-kaori-accent' if permission_catalog_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
-                    <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if permission_catalog_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="key-round" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Permission Catalog</span>
+                    <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if permission_catalog_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="key-round" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Permissions</span>
                 </a>
             {% endif %}
             {% if current_user.has_permission('activity_audit.view') %}
