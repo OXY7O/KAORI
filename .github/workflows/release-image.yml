@@ -15,6 +15,7 @@ on:
 permissions:
   contents: read
   actions: read
+  statuses: write
 
 concurrency:
   group: kaori-release
