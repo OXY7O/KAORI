@@ -5,10 +5,6 @@
 <div class="space-y-5">
     {% include "kubernetes/dashboard/partials/_hero.html" %}
     {% if cluster_onboarding.is_blocked %}
-        {% set cluster_onboarding_steps = ["Open Cluster Integrations", "Register Cluster", "Run Sync"] %}
-        {% set cluster_onboarding_action_url = url_for('integrations.kubernetes') %}
-        {% set cluster_onboarding_action_label = "Open Cluster Integrations" %}
-        {% set cluster_onboarding_action_icon = "plug-zap" %}
         {% include "components/cluster/_onboarding_banner.html" %}
     {% else %}
         <div x-data="{ activeTab: '{{ dashboard.active_tab }}', allowedTabs: ['overview', 'capacity', 'signals', 'reporting'], setTab(tab) { if (!this.allowedTabs.includes(tab)) return; this.activeTab = tab; const url = new URL(window.location.href); url.searchParams.set('tab', tab); window.history.replaceState({}, '', url); }, moveTab(currentTab, direction, prefix) { const currentIndex = this.allowedTabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.allowedTabs.length - 1; else nextIndex = (currentIndex + direction + this.allowedTabs.length) % this.allowedTabs.length; const nextTab = this.allowedTabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); } }"

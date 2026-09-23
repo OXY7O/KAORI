@@ -40,6 +40,27 @@ def test_dashboard_owns_blocked_state_through_canonical_profile_while_other_work
         assert 'Cluster Setup Required' in source, relative
 
 
+
+def test_shared_zero_cluster_onboarding_uses_one_canonical_integration_flow() -> None:
+    onboarding = _read('app/templates/components/cluster/_onboarding_banner.html')
+    dashboard = _read('app/templates/kubernetes/dashboard/partials/_content.html')
+    operations = _read('app/templates/kubernetes/operations/cluster_required.html')
+
+    assert 'blocked_state_steps = ["Open Cluster Integrations", "Register Cluster", "Run Sync"]' in onboarding
+    assert "blocked_state_action_url = url_for('integrations.kubernetes')" in onboarding
+    assert 'blocked_state_action_label = "Open Cluster Integrations"' in onboarding
+    assert 'blocked_state_action_icon = "plug-zap"' in onboarding
+    assert "url_for('cluster.add_cluster')" not in onboarding
+    assert 'blocked_state_action_label = "Add Cluster"' not in onboarding
+
+    for consumer in (dashboard, operations):
+        assert 'components/cluster/_onboarding_banner.html' in consumer
+        assert 'cluster_onboarding_steps =' not in consumer
+        assert 'cluster_onboarding_action_url =' not in consumer
+        assert 'cluster_onboarding_action_label =' not in consumer
+        assert 'cluster_onboarding_action_icon =' not in consumer
+
+
 def test_every_inventory_hero_uses_the_shared_blocked_context() -> None:
     resources = (
         'overview',
