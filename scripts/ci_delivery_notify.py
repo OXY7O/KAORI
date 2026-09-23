@@ -329,10 +329,10 @@ def validate_trusted_quality_workflow_run(
 ) -> None:
     head_repository = workflow_run.get('head_repository')
     repository_name = str(head_repository.get('full_name') or '') if isinstance(head_repository, dict) else ''
-    if str(workflow_run.get('name') or '') != 'KAORI CI':
-        raise RuntimeError('Workflow run is not KAORI CI.')
+    if str(workflow_run.get('name') or '') != 'Full Admission':
+        raise RuntimeError('Workflow run is not Full Admission.')
     if str(workflow_run.get('path') or '') != '.github/workflows/quality.yml':
-        raise RuntimeError('Workflow run does not use the canonical KAORI CI workflow path.')
+        raise RuntimeError('Workflow run does not use the canonical Full Admission workflow path.')
     if str(workflow_run.get('event') or '') != 'push':
         raise RuntimeError('Workflow run is not a trusted push execution.')
     if str(workflow_run.get('status') or '') != 'completed':
@@ -532,7 +532,7 @@ def _notify_trusted_push(
             security_result=security_result,
         )
         if event is None:
-            print('SKIP — Completed KAORI CI run has no trusted delivery Telegram notification.')
+            print('SKIP — Completed Full Admission run has no trusted delivery Telegram notification.')
             return 0
         context = resolve_delivery_context(
             repository=args.repository,
