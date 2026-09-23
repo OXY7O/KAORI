@@ -1,4 +1,4 @@
-name: KAORI Staging Deployment
+name: Staging Deploy
 
 on:
   workflow_dispatch:
@@ -211,7 +211,7 @@ jobs:
       REQUESTED_SHA: ${{ needs.admission.outputs.accepted_sha }}
       REQUESTED_VERSION: ${{ needs.admission.outputs.candidate_tag }}
     steps:
-      - name: Check Out Admitted Staging SHA
+      - name: Checkout Staging SHA
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.admission.outputs.accepted_sha }}
@@ -242,7 +242,7 @@ jobs:
           root="${KAORI_HOST_DEPLOY_ROOT:-/opt/kaori}"
           [[ "$root" =~ ^/[A-Za-z0-9._/-]+$ ]] || exit 1
 
-      - name: Deploy via Pinned SSH Trust
+      - name: Deploy to Host
         shell: bash
         run: |
           set -Eeuo pipefail
