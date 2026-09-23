@@ -27,7 +27,14 @@ def test_staging_publication_is_a_separate_post_deploy_operation() -> None:
     assert 'publication-reconciliation:' in deployment
     assert 'needs: deploy' in deployment
     assert 'uses: ./.github/workflows/reconcile-staging-publication.yml' in deployment
-    assert 'secrets: inherit' in deployment
+    assert 'secrets: inherit' not in deployment
+    for secret_name in (
+        'KAORI_HOST_SSH_PRIVATE_KEY',
+        'KAORI_HOST_SSH_PASSPHRASE',
+        'KAORI_HOST_KNOWN_HOSTS',
+    ):
+        assert f'{secret_name}: ${{{{ secrets.{secret_name} }}}}' in deployment
+        assert f'{secret_name}:' in source
 
     # Publication remains a separate governed stage and shared-edge ownership
     # does not leak into the application deployment or Compose authority.
@@ -112,4 +119,10 @@ def test_reconciliation_runs_only_after_successful_deploy_job() -> None:
     call_job = deployment[publication_index:]
     assert 'needs: deploy' in call_job
     assert 'uses: ./.github/workflows/reconcile-staging-publication.yml' in call_job
-    assert 'secrets: inherit' in call_job
+    assert 'secrets: inherit' not in call_job
+    for secret_name in (
+        'KAORI_HOST_SSH_PRIVATE_KEY',
+        'KAORI_HOST_SSH_PASSPHRASE',
+        'KAORI_HOST_KNOWN_HOSTS',
+    ):
+        assert f'{secret_name}: ${{{{ secrets.{secret_name} }}}}' in call_job

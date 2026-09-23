@@ -326,4 +326,7 @@ jobs:
     name: Reconcile Public Publication
     needs: deploy
     uses: ./.github/workflows/reconcile-staging-publication.yml
-    secrets: inherit
+    secrets:
+      KAORI_HOST_SSH_PRIVATE_KEY: ${{ secrets.KAORI_HOST_SSH_PRIVATE_KEY }}
+      KAORI_HOST_SSH_PASSPHRASE: ${{ secrets.KAORI_HOST_SSH_PASSPHRASE }}
+      KAORI_HOST_KNOWN_HOSTS: ${{ secrets.KAORI_HOST_KNOWN_HOSTS }}
