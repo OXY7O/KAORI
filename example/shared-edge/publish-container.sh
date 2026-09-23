@@ -90,7 +90,7 @@ EDGE_HEALTH_PATH=$health_path
 EDGE_WEBSOCKET=$websocket
 EDGE_CLIENT_MAX_BODY_SIZE=$client_max_body_size
 EOF
-chmod 0640 "$temporary"
+chmod 0644 "$temporary"
 mv "$temporary" "$EDGE_SITES_DIR/$site_id.env"
 
 printf '✅ Edge registration written · %s → %s:%s\n' "$domain" "$alias_name" "$upstream_port"

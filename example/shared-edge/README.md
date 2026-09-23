@@ -2,6 +2,8 @@
 
 This directory is an **optional reference implementation**, not a KAORI runtime component.
 
+Operational recovery, permission, host-port, ACME HTTP-01, and publication-rerun procedures are maintained in `docs/deployment/SHARED_EDGE_OPERATIONS.md`. Use that runbook during UAT/production-edge incidents instead of inventing one-off host changes.
+
 KAORI is complete when its own application stack is healthy. Public DNS, Nginx, Certbot, host ports 80/443, and unrelated applications belong to a separate infrastructure lifecycle.
 
 The example exists because KAORI is the first application currently published through this pattern on the VPS.
@@ -111,6 +113,8 @@ Active domain-to-upstream registrations are the files under:
 ```text
 /opt/shared-edge/config/sites/*.env
 ```
+
+These registration files contain routing metadata only (domain, upstream alias/port, TLS flag, health path, websocket flag, and body-size limit); they do not contain application or infrastructure secrets. Keep them mode `0644` so read-only Nginx/Certbot bind mounts remain readable even when Docker uses a remapped or non-root container identity. Keep `/opt/shared-edge/config/edge.env` private at mode `0600` or `0640`.
 
 Use those registrations as the operator-visible inventory of applications currently published through the edge. Do not hand-edit generated Nginx virtual-host files inside the edge container.
 

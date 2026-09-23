@@ -99,6 +99,13 @@ def test_publication_failure_cannot_rewrite_application_release_state() -> None:
         assert forbidden not in source
 
 
+def test_site_registration_mode_is_readable_by_shared_edge_containers() -> None:
+    publish = _read(EDGE_PUBLISH)
+
+    assert 'chmod 0644 "$temporary"' in publish
+    assert 'chmod 0640 "$temporary"' not in publish
+
+
 def test_publish_authority_is_safe_to_repeat_for_current_binding() -> None:
     publish = _read(EDGE_PUBLISH)
     apply = _read(EDGE_APPLY)
