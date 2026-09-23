@@ -84,7 +84,7 @@ def test_release_verification_checks_full_oci_metadata_and_attestations() -> Non
     assert 'provenance: true' not in release_lib
     assert 'verification_sha256' in release_lib
     assert '[[ "$actual_platform" == \'linux/amd64\' ]]' in release_lib
-    assert 'Verify Accepted RC Attestations' in stable
+    assert 'Verify RC Attestations' in stable
     assert stable.count('verify-attestation') >= 2
     assert '.payload // empty' in stable
     assert 'base64 -d' in stable
@@ -96,7 +96,7 @@ def test_release_verification_checks_full_oci_metadata_and_attestations() -> Non
     assert 'RC_SOURCE_SHA' in stable
     assert 'candidateTag' in stable
     assert 'verify-labels "$source_ref" "$CANDIDATE_TAG" "$RC_SOURCE_SHA"' in stable
-    assert 'Verify Stable Promotion Signature' in stable
+    assert 'Verify Stable Signature' in stable
     assert 'stable-signature-verification.json' in stable
     assert 'RC_SIGNATURE_VERIFICATION_SHA256' in stable
     assert 'signature_verification_sha' in stable
@@ -107,5 +107,5 @@ def test_stable_promotion_remains_digest_preserving() -> None:
 
     assert 'docker buildx build' not in stable
     assert 'source_ref="${REGISTRY_IMAGE}@${RC_IMAGE_DIGEST}"' in stable
-    assert 'Promote Same Immutable Digest' in stable
+    assert 'Promote Digest' in stable
     assert 'docker buildx imagetools create' in stable

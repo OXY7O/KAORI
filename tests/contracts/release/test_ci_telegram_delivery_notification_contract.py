@@ -28,10 +28,10 @@ def test_notification_workflow_is_completed_quality_run_only_and_repository_scop
     source = read(NOTIFY_WORKFLOW)
     quality = read(QUALITY_WORKFLOW)
 
-    assert 'name: KAORI Telegram Notify' in source
+    assert 'name: Delivery Notifications' in source
     assert 'name: Notify' in source
     assert 'workflow_run:' in source
-    assert '- KAORI CI' in source
+    assert '- Full Admission' in source
     assert '- completed' in source
     assert 'workflow_call:' not in source
     assert 'pull_request:' not in source
@@ -44,7 +44,7 @@ def test_notification_workflow_is_completed_quality_run_only_and_repository_scop
     assert 'actions: read' in source
     assert "github.repository == 'OXY7O/KAORI'" in source
     assert "github.event_name == 'workflow_run'" in source
-    assert "github.event.workflow_run.name == 'KAORI CI'" in source
+    assert "github.event.workflow_run.name == 'Full Admission'" in source
     assert "github.event.workflow_run.event == 'push'" in source
     assert "github.event.workflow_run.status == 'completed'" in source
     assert "github.event.workflow_run.head_repository.full_name == 'OXY7O/KAORI'" in source
@@ -67,11 +67,11 @@ def test_workflow_run_security_exception_is_scoped_to_trusted_push_lineage() -> 
     source = read(NOTIFY_WORKFLOW)
 
     assert (
-        'workflow_run: # zizmor: ignore[dangerous-triggers] trusted KAORI CI push lineage is validated below' in source
+        'workflow_run: # zizmor: ignore[dangerous-triggers] trusted Full Admission push lineage is validated below' in source
     )
     for predicate in (
         "github.repository == 'OXY7O/KAORI'",
-        "github.event.workflow_run.name == 'KAORI CI'",
+        "github.event.workflow_run.name == 'Full Admission'",
         "github.event.workflow_run.path == '.github/workflows/quality.yml'",
         "github.event.workflow_run.event == 'push'",
         "github.event.workflow_run.status == 'completed'",
@@ -168,7 +168,7 @@ def test_completed_kaori_ci_run_requires_exact_trusted_push_identity() -> None:
     notifier = load_notifier()
     run = {
         'id': 12,
-        'name': 'KAORI CI',
+        'name': 'Full Admission',
         'path': '.github/workflows/quality.yml',
         'event': 'push',
         'head_branch': 'kaori/staging',

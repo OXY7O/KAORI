@@ -16,7 +16,7 @@ def read(path: Path) -> str:
 def test_work_branch_developer_check_is_separate_from_governed_admission() -> None:
     workflow = yaml.safe_load(read(DEVELOPER_WORKFLOW))
 
-    assert workflow['name'] == 'KAORI Developer Check'
+    assert workflow['name'] == 'Developer Check'
     assert workflow[True]['pull_request']['branches'] == ['kaori/staging']
     jobs = workflow['jobs']
     assert set(jobs) == {'route', 'developer-check'}
@@ -138,13 +138,13 @@ def test_governed_ci_graph_uses_concise_job_names() -> None:
 def test_telegram_workflow_name_is_concise_without_changing_trust_boundary() -> None:
     workflow = yaml.safe_load(read(TELEGRAM))
 
-    assert workflow['name'] == 'KAORI Telegram Notify'
+    assert workflow['name'] == 'Delivery Notifications'
     assert workflow['jobs']['notify']['name'] == 'Notify'
     source = read(TELEGRAM)
     assert 'pull_request:' not in source
     assert 'pull_request_target:' not in source
     assert 'workflow_run:' in source
-    assert '- KAORI CI' in source
+    assert '- Full Admission' in source
     assert '- completed' in source
     assert "github.event.workflow_run.event == 'push'" in source
     assert "github.event.workflow_run.head_repository.full_name == 'OXY7O/KAORI'" in source
