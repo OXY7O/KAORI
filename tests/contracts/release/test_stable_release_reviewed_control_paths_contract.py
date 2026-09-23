@@ -25,4 +25,3 @@ def test_stable_release_grants_reusable_ci_status_permission() -> None:
     assert '  contents: read' in caller_header
     assert '  actions: read' in caller_header
     assert '  statuses: write' in caller_header
-
