@@ -165,7 +165,7 @@ def test_profile_resolution_supports_governed_delivery_boundaries() -> None:
     )
 
 
-def test_completed_kaori_ci_run_requires_exact_trusted_push_identity() -> None:
+def test_completed_full_admission_run_requires_exact_trusted_push_identity() -> None:
     notifier = load_notifier()
     run = {
         'id': 12,
