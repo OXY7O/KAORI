@@ -2,6 +2,8 @@
 
 This directory is an **optional reference implementation**, not a KAORI runtime component.
 
+Operational recovery, permission, host-port, ACME HTTP-01, and publication-rerun procedures are maintained in `docs/deployment/SHARED_EDGE_OPERATIONS.md`. Use that runbook during UAT/production-edge incidents instead of inventing one-off host changes.
+
 KAORI is complete when its own application stack is healthy. Public DNS, Nginx, Certbot, host ports 80/443, and unrelated applications belong to a separate infrastructure lifecycle.
 
 The example exists because KAORI is the first application currently published through this pattern on the VPS.
