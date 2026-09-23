@@ -110,6 +110,7 @@ A recovery drill should prove, without weakening production controls, that opera
 - `deploy/server/release-state.sh`
 - `deploy/server/rollback.sh`
 - `docs/deployment/RELEASE_GOVERNANCE.md`
+- `docs/deployment/SHARED_EDGE_OPERATIONS.md`
 - `docs/setup/GITHUB_ACTIONS_CI_CD.md`
 - `docs/architecture/cdevents-delivery-lineage.md`
 - existing release-governance, delivery, and final-release verifiers under `scripts/`
