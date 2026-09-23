@@ -58,9 +58,7 @@ def test_semver_uses_accepted_staging_checkout_without_persisted_git_credentials
     checkout_section = workflow.split('      - name: Checkout Staging SHA\n', 1)[1].split(
         '\n      - name: Resolve RC Version', 1
     )[0]
-    semver_section = workflow.split('      - name: Resolve RC Version\n', 1)[1].split(
-        '\n  publish:\n', 1
-    )[0]
+    semver_section = workflow.split('      - name: Resolve RC Version\n', 1)[1].split('\n  publish:\n', 1)[0]
 
     assert 'ref: ${{ steps.staging.outputs.accepted_sha }}' in checkout_section
     assert 'fetch-depth: 0' in checkout_section
@@ -71,9 +69,7 @@ def test_semver_uses_accepted_staging_checkout_without_persisted_git_credentials
 
 def test_rc_publish_does_not_consume_another_rc_for_same_source_sha() -> None:
     workflow = publish_source()
-    semver_section = workflow.split('      - name: Resolve RC Version\n', 1)[1].split(
-        '\n  publish:\n', 1
-    )[0]
+    semver_section = workflow.split('      - name: Resolve RC Version\n', 1)[1].split('\n  publish:\n', 1)[0]
 
     assert 'git tag --points-at "$ACCEPTED_SHA"' in semver_section
     assert 'existing_rc=' in semver_section
@@ -85,9 +81,7 @@ def test_rc_publish_does_not_consume_another_rc_for_same_source_sha() -> None:
 
 def test_rc_publish_reserves_tag_and_refuses_registry_tag_reuse() -> None:
     workflow = publish_source()
-    semver_section = workflow.split('      - name: Resolve RC Version\n', 1)[1].split(
-        '\n  publish:\n', 1
-    )[0]
+    semver_section = workflow.split('      - name: Resolve RC Version\n', 1)[1].split('\n  publish:\n', 1)[0]
     publish_section = workflow.split('\n  publish:\n', 1)[1]
 
     assert 'Reserved RC tag has no GitHub prerelease; its number remains consumed.' in semver_section
@@ -148,9 +142,7 @@ def test_rc_publish_records_digest_and_human_friendly_github_prerelease() -> Non
     ):
         assert heading in workflow
     assert '## What Changed' not in workflow
-    assert workflow.index('Record RC Digest') < workflow.index(
-        'Publish RC Release'
-    )
+    assert workflow.index('Record RC Digest') < workflow.index('Publish RC Release')
 
 
 def test_production_image_carries_oci_source_and_revision_labels() -> None:
