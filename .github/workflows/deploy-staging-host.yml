@@ -321,3 +321,9 @@ jobs:
           } | bash "$deploy_script" "$requested_image" "$requested_sha" "$requested_version"
           REMOTE_DEPLOY
           } | run_remote_script
+
+  publication-reconciliation:
+    name: Reconcile Public Publication
+    needs: deploy
+    uses: ./.github/workflows/reconcile-staging-publication.yml
+    secrets: inherit

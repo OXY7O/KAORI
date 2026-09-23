@@ -15,34 +15,37 @@ def _read(path: Path) -> str:
 def test_staging_publication_is_a_separate_post_deploy_operation() -> None:
     assert WORKFLOW.is_file()
     source = _read(WORKFLOW)
+    deployment = _read(UAT_WORKFLOW)
 
-    assert 'push:' in source
-    assert '- kaori/uat-request' in source
+    assert 'workflow_call:' in source
     assert 'workflow_dispatch:' in source
-    assert 'actions: read' in source
-    assert 'Wait for Exact Staging Deployment' in source
-    assert 'deploy-staging-host.yml' in source
-    assert '.head_sha == $sha' in source
-    assert "deployment_conclusion\" == 'success'" in source
+    assert 'push:' not in source
+    assert 'Wait for Exact Staging Deployment' not in source
     assert 'environment: uat' in source
     assert 'workflow_run:' not in source
 
-    # Publication is deliberately outside the application deployment transaction.
-    assert 'example/shared-edge' not in _read(UAT_WORKFLOW)
+    assert 'publication-reconciliation:' in deployment
+    assert 'needs: deploy' in deployment
+    assert 'uses: ./.github/workflows/reconcile-staging-publication.yml' in deployment
+    assert 'secrets: inherit' in deployment
+
+    # Publication remains a separate governed stage and shared-edge ownership
+    # does not leak into the application deployment or Compose authority.
+    assert 'example/shared-edge' not in deployment
     assert 'edge-public' not in _read(SERVER_COMPOSE)
 
 
-def test_deployment_wait_does_not_occupy_the_reconciliation_runner() -> None:
+def test_post_deploy_reconciliation_has_no_runner_polling_cycle() -> None:
     source = _read(WORKFLOW)
+    deployment = _read(UAT_WORKFLOW)
 
-    wait_job = source.split('  wait-for-deployment:', 1)[1].split('  reconcile:', 1)[0]
-    reconcile_job = source.split('  reconcile:', 1)[1]
+    assert 'runs-on: [self-hosted, linux, x64, kaori-ci]' in source
+    assert 'sleep 15' not in source
+    assert 'actions/workflows/deploy-staging-host.yml/runs' not in source
 
-    assert 'runs-on: [self-hosted, linux, x64, platform-ci]' in wait_job
-    assert 'Wait for Exact Staging Deployment' in wait_job
-    assert 'runs-on: [self-hosted, linux, x64, kaori-ci]' in reconcile_job
-    assert 'needs: wait-for-deployment' in reconcile_job
-    assert 'Wait for Exact Staging Deployment' not in reconcile_job
+    call_job = deployment.split('  publication-reconciliation:', 1)[1]
+    assert 'needs: deploy' in call_job
+    assert 'uses: ./.github/workflows/reconcile-staging-publication.yml' in call_job
 
 
 def test_reconciliation_reuses_existing_shared_edge_authorities() -> None:
@@ -99,17 +102,14 @@ def test_publish_authority_is_safe_to_repeat_for_current_binding() -> None:
     assert 'bash "$SCRIPT_DIR/verify.sh" --wait-seconds 360 --renewal-dry-run' in apply
 
 
-def test_reconciliation_waits_for_exact_successful_uat_deployment_before_edge_mutation() -> None:
-    source = _read(WORKFLOW)
+def test_reconciliation_runs_only_after_successful_deploy_job() -> None:
+    deployment = _read(UAT_WORKFLOW)
 
-    wait_index = source.index('Wait for Exact Staging Deployment')
-    reconcile_index = source.index('Reconcile via Pinned SSH Trust')
-    assert wait_index < reconcile_index
-    assert 'actions/workflows/deploy-staging-host.yml/runs' in source
-    assert 'branch=kaori%2Fuat-request' in source
-    assert 'event=push' in source
-    assert 'GITHUB_SHA' in source
-    assert 'deployment_status' in source
-    assert 'deployment_conclusion' in source
-    assert 'Publication reconciliation blocked because exact staging deployment did not pass.' in source
-    assert 'Timed out waiting for exact-SHA KAORI Staging Deployment.' in source
+    deploy_index = deployment.index('  deploy:')
+    publication_index = deployment.index('  publication-reconciliation:')
+    assert deploy_index < publication_index
+
+    call_job = deployment[publication_index:]
+    assert 'needs: deploy' in call_job
+    assert 'uses: ./.github/workflows/reconcile-staging-publication.yml' in call_job
+    assert 'secrets: inherit' in call_job
