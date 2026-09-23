@@ -40,7 +40,6 @@ def test_dashboard_owns_blocked_state_through_canonical_profile_while_other_work
         assert 'Cluster Setup Required' in source, relative
 
 
-
 def test_shared_zero_cluster_onboarding_uses_one_canonical_integration_flow() -> None:
     onboarding = _read('app/templates/components/cluster/_onboarding_banner.html')
     dashboard = _read('app/templates/kubernetes/dashboard/partials/_content.html')
