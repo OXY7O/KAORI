@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DASHBOARD_DIR = ROOT / 'app' / 'templates' / 'kubernetes' / 'dashboard'
 CONTENT = DASHBOARD_DIR / 'partials' / '_content.html'
 HERO = DASHBOARD_DIR / 'partials' / '_hero.html'
+ONBOARDING_BANNER = ROOT / 'app' / 'templates' / 'components' / 'cluster' / '_onboarding_banner.html'
 SIGNAL_OVERVIEW = DASHBOARD_DIR / 'partials' / '_signal_overview.html'
 REPORTING_GUIDANCE = DASHBOARD_DIR / 'partials' / '_reporting_guidance.html'
 OBJECT_DASHBOARD_DIR = ROOT / 'app' / 'templates' / 'storage' / 'object_storage' / 'dashboard'
@@ -152,6 +153,8 @@ def _verify_dashboard_hero_profile(hero: str, object_hero: str, page_hero: str) 
             "dashboard_state = 'blocked' if cluster_onboarding.is_blocked else 'normal'",
             "'Committed Snapshots'",
             'Kubernetes Operations Dashboard',
+            "'Open Cluster Integrations'",
+            "url_for('integrations.kubernetes')",
         ),
         'Kubernetes dashboard Hero profile consumer',
     )
@@ -181,6 +184,7 @@ def _verify_dashboard_hero_profile(hero: str, object_hero: str, page_hero: str) 
 def verify() -> None:
     content = _read(CONTENT)
     hero = _read(HERO)
+    onboarding_banner = _read(ONBOARDING_BANNER)
     signal_overview = _read(SIGNAL_OVERVIEW)
     reporting_guidance = _read(REPORTING_GUIDANCE)
     object_content = _read(OBJECT_CONTENT)
@@ -214,6 +218,26 @@ def verify() -> None:
     e2e_test = _read(E2E_TEST)
 
     _verify_dashboard_hero_profile(hero, object_hero, page_hero)
+    _require(
+        content,
+        (
+            'cluster_onboarding_steps = ["Open Cluster Integrations", "Register Cluster", "Run Sync"]',
+            "cluster_onboarding_action_url = url_for('integrations.kubernetes')",
+            'cluster_onboarding_action_label = "Open Cluster Integrations"',
+            'cluster_onboarding_action_icon = "plug-zap"',
+        ),
+        'Kubernetes dashboard blocked onboarding action',
+    )
+    _require(
+        onboarding_banner,
+        (
+            'cluster_onboarding_steps|default(["Add Cluster", "Configure Integrations", "Run Sync"])',
+            "cluster_onboarding_action_url|default(url_for('cluster.add_cluster'))",
+            'cluster_onboarding_action_label|default("Add Cluster")',
+            'cluster_onboarding_action_icon|default("plus")',
+        ),
+        'shared Kubernetes onboarding defaults',
+    )
 
     _require(
         content,

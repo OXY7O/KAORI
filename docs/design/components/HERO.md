@@ -146,7 +146,7 @@ The paired Kubernetes/Object Storage dashboards use:
 
 Inventory, Kubernetes Operations, Kubernetes Governance, and equivalent Object Storage operational workspaces follow the Kubernetes Operations/Governance reference pattern. The context uses the domain readiness label/title, one resource-availability metric such as `Connected Clusters` or `Registered Systems`, a `Workspace State` value of `Blocked`, and one concise information strip. The shared renderer owns the geometry; domain wrappers own nouns and setup wording.
 
-The section blocker below the Hero uses `components/states/_blocked_state.html` with setup status, concise description, ordered steps when useful, and one permission-aware primary action. Pages with the same semantics must not rebuild a local blocker card.
+The section blocker below the Hero uses `components/states/_blocked_state.html` with setup status, concise description, ordered steps when useful, and one permission-aware primary action. Pages with the same semantics must not rebuild a local blocker card. For Kubernetes Operations Dashboard, the blocker uses the same source/readiness-management action as the Hero: `Open Cluster Integrations` targeting `integrations.kubernetes`. The shared onboarding component may retain `Add Cluster` as its default for non-Dashboard consumers where direct resource creation is the accepted action role.
 
 ### Analytics blocked context
 
