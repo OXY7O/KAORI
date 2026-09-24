@@ -22,7 +22,7 @@ The Design System v2 revalidation inventory is recorded in
 
 - `components/TYPOGRAPHY.md` — type scale, hierarchy, casing, wrapping, and technical text.
 - `components/COLOR_AND_SEMANTIC.md` — brand and semantic color roles.
-- `components/DARK_MODE.md` — neutral-first dark surfaces and restrained Violet emphasis.
+- `components/DARK_MODE.md` — locked neutral-first dark surface and restrained Violet emphasis contract.
 - `components/SPACING.md` — layout rhythm and density.
 - `components/ICONS.md` — icon hierarchy and contextual use.
 - `components/ACCESSIBILITY.md` — focus, semantics, keyboard behavior, and accessible state.
@@ -50,7 +50,7 @@ Use the documented shared owner before introducing local markup or utility bundl
 - `components/RIGHT_CONTEXT_RAIL.md`
 - `components/FORM_WITH_CONTEXT_RAIL.md`
 - `components/REUSABLE_COMPONENT_OWNERSHIP.md`
-- `components/SIDEBAR_NAVIGATION.md`
+- `components/SIDEBAR_NAVIGATION.md` — locked v1.4 sidebar hierarchy, geometry, naming, and information architecture.
 - `components/NAVBAR.md`
 - `components/OPERATIONAL_ACTION_FEEDBACK.md`
 - `components/WORKSPACE_SUMMARY_CARD.md`
