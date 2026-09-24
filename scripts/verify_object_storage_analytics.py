@@ -312,7 +312,8 @@ def main() -> int:
     assert "'Analytics Readiness'" in hero_blocked
     for evidence_label in ('System Context', 'Inventory Snapshot', 'Operational Metrics', 'Analytics Snapshot'):
         assert evidence_label in hero_blocked
-    assert "'Analytics Overview'" in pages
+    assert "PageDefinition(\n        'Overview'," in pages
+    assert "'Analytics Overview'" not in pages
     for copy in (
         'Review capacity, bucket pressure, quotas, trends, and growth.',
         'Review S3 activity, errors, queue depth, demand, and traffic.',
@@ -325,8 +326,10 @@ def main() -> int:
     assert 'components/content_tabs.html' in overview_workspace
     assert 'data-analytics-tabset' in overview_workspace
     assert 'data-analytics-preserve-tab' in controls
-    assert "'Object Storage Capacity & Usage'" in pages
-    assert "'Object Storage Performance'" in pages
+    assert "PageDefinition(\n        'Capacity & Usage'," in pages
+    assert "'Object Storage Capacity & Usage'" not in pages
+    assert "PageDefinition(\n        'Performance'," in pages
+    assert "'Object Storage Performance'" not in pages
     assert "'Capacity Posture'" in hero_posture
     assert "'Capacity Status'" in hero_posture
     assert "'Performance Posture'" in hero_posture
