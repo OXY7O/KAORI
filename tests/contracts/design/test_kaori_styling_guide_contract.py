@@ -445,6 +445,7 @@ def test_page_archetype_and_navigation_registry_is_complete() -> None:
     assert 'PAGE_ARCHETYPE_AND_NAVIGATION_REGISTRY.md' in design_readme
     assert 'PAGE_ARCHETYPE_AND_NAVIGATION_REGISTRY.md' in tab_registry
 
+
 def test_design_system_v2_foundation_and_content_density_matrix_is_registered() -> None:
     matrix = _read('docs/design/FOUNDATION_AND_CONTENT_DENSITY.md')
     design_index = _read('docs/design/DESIGN_SYSTEM.md')
