@@ -245,7 +245,14 @@ def main() -> int:
     assert "label: 'Error Rate'" in javascript
     assert 'secondaryByTimestamp' in javascript
     assert 'K8s Analytics' not in menu
-    assert 'Kubernetes Analytics' in menu
+    assert 'Kubernetes Analytics' not in menu
+    assert 'Object Storage Analytics' not in menu
+    assert 'title="Kubernetes"' in menu
+    assert 'aria-label="Kubernetes"' in menu
+    assert '>Kubernetes</span>' in menu
+    assert 'title="Object Storage"' in menu
+    assert 'aria-label="Object Storage"' in menu
+    assert '>Object Storage</span>' in menu
 
     for label in (
         'Not Configured',
