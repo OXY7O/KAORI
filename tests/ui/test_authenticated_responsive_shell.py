@@ -173,3 +173,73 @@ def test_mobile_navigation_closes_after_destination_selection(
     assert abs(reopened_box['width'] - resting_box['width']) < 1
     expect(page.locator('[data-mobile-navigation-close]')).to_be_focused()
     _assert_no_document_overflow(page)
+
+
+def test_authenticated_shell_scroll_targets_preserve_top_boundary(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Programmatic/fragment-style scrolling keeps content below the shell-owned top inset."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+    _login(page, kaori_authenticated_base_url)
+
+    main = page.locator('main[data-kaori-main-scroll]')
+    hero = page.locator('section.kaori-hero-shell').first
+    expect(main).to_be_visible()
+    expect(hero).to_be_visible()
+
+    initial = page.evaluate(
+        """() => {
+            const main = document.querySelector('main[data-kaori-main-scroll]');
+            const hero = document.querySelector('section.kaori-hero-shell');
+            const mainRect = main.getBoundingClientRect();
+            const heroRect = hero.getBoundingClientRect();
+            return {
+                mainTop: mainRect.top,
+                heroTop: heroRect.top,
+                scrollPaddingTop: Number.parseFloat(getComputedStyle(main).scrollPaddingTop),
+            };
+        }"""
+    )
+    assert initial['scrollPaddingTop'] >= 20
+    assert initial['heroTop'] >= initial['mainTop'] + initial['scrollPaddingTop'] - 1
+
+    page.evaluate(
+        """() => {
+            const main = document.querySelector('main[data-kaori-main-scroll]');
+            const wrapper = main.firstElementChild;
+            const spacerBefore = document.createElement('div');
+            spacerBefore.style.height = '1200px';
+            const target = document.createElement('section');
+            target.id = 'shell-scroll-boundary-probe';
+            target.textContent = 'Scroll boundary probe';
+            target.style.minHeight = '40px';
+            const spacerAfter = document.createElement('div');
+            spacerAfter.style.height = '1200px';
+            wrapper.append(spacerBefore, target, spacerAfter);
+            target.scrollIntoView({ block: 'start' });
+        }"""
+    )
+
+    probe = page.locator('#shell-scroll-boundary-probe')
+    expect(probe).to_be_visible()
+    aligned = page.evaluate(
+        """() => {
+            const main = document.querySelector('main[data-kaori-main-scroll]');
+            const target = document.querySelector('#shell-scroll-boundary-probe');
+            const mainRect = main.getBoundingClientRect();
+            const targetRect = target.getBoundingClientRect();
+            return {
+                mainTop: mainRect.top,
+                targetTop: targetRect.top,
+                scrollPaddingTop: Number.parseFloat(getComputedStyle(main).scrollPaddingTop),
+                mainScrollTop: main.scrollTop,
+            };
+        }"""
+    )
+    assert aligned['mainScrollTop'] > 0
+    assert aligned['targetTop'] >= aligned['mainTop'] + aligned['scrollPaddingTop'] - 1
+    _assert_no_document_overflow(page)
+    _capture(page, 'authenticated-shell-top-boundary', viewport_name)

@@ -207,3 +207,16 @@ def test_canonical_side_drawer_owns_focus_containment_and_return() -> None:
     assert 'this.opener = this.currentFocusTarget()' in runtime
     assert 'this.trapFocus(event, this.dialog)' in runtime
     assert 'this.restoreFocus(returnTarget)' in runtime
+
+
+def test_application_shell_owns_scroll_target_top_boundary() -> None:
+    layout = read('app/templates/layouts/app.html')
+    standard = read('docs/design/components/NAVBAR.md')
+    responsive = read('docs/design/components/RESPONSIVE_AND_HTMX.md')
+
+    assert 'data-kaori-main-scroll' in layout
+    assert 'scroll-pt-5' in layout
+    assert 'lg:scroll-pt-6' in layout
+    assert '2xl:scroll-pt-7' in layout
+    assert 'Application-shell top boundary' in standard
+    assert 'Scroll and History Alignment' in responsive
