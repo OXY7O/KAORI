@@ -14,6 +14,21 @@ Each approved style has:
 
 A new style is justified only when the content relationship or interaction model is materially different. Color, radius, spacing, or icon changes alone do not justify another style.
 
+## Selection Decision Matrix
+
+The page-level selection authority is `../patterns/PAGE_ARCHETYPE_AND_NAVIGATION_REGISTRY.md`. Use this registry for detailed tab-family contracts; use the page registry to decide whether tabs are semantically appropriate at all.
+
+| Question | Select |
+|---|---|
+| Are there two or three mutually exclusive local views inside one component, visualization, drawer, or inspector? | **Tab Style 3 — Compact Segmented Tabs** |
+| Are there several closely related content views subordinate to an already-established workspace? | **Tab Style 4 — Content Tabs** |
+| Are these peer operational domains inside an explicit framed parent workspace? | **Tab Style 2 — Framed Workspace Tabs** |
+| Are these peer sections that define one workspace and attach through a simple divider? | **Tab Style 1 — Integrated Workspace Tabs** |
+| Does none of the above apply? | **No tabs**; prefer sections, routes, cards, or a detail surface |
+
+Selection is semantic, not aesthetic. A fifth style is not created to change color, radius, spacing, icon placement, or provider branding.
+
+
 ## Tab Style 1 — Integrated Workspace Tabs
 
 | Property | Contract |

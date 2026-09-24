@@ -399,3 +399,48 @@ def test_design_system_authority_index_has_one_global_owner() -> None:
     assert '#607' in audit
     assert '#608' in audit
     assert '#609' in audit
+
+
+def test_page_archetype_and_navigation_registry_is_complete() -> None:
+    registry = _read('docs/design/patterns/PAGE_ARCHETYPE_AND_NAVIGATION_REGISTRY.md')
+    tab_registry = _read('docs/design/components/TAB_STYLES.md')
+    authority_index = _read('docs/design/DESIGN_SYSTEM.md')
+    design_readme = _read('docs/design/README.md')
+
+    for archetype in (
+        'Landing',
+        'Overview',
+        'Dashboard',
+        'Inventory / List',
+        'Analytics',
+        'Operational Workspace',
+        'Configuration / Manage',
+        'Detail / Inspector',
+        'Workflow / Wizard',
+        'Administration',
+    ):
+        assert f'**{archetype}**' in registry
+
+    assert '## Overview vs Dashboard' in registry
+    assert 'What needs attention now?' in registry
+    assert 'What exists in this domain?' in registry
+
+    for semantic_key in (
+        'integrated-workspace',
+        'framed-workspace-v2',
+        'compact-segmented',
+        'content-tabs',
+    ):
+        assert semantic_key in registry
+        assert semantic_key in tab_registry
+
+    assert '**No Tabs**' in registry
+    assert '2–3 local mutually exclusive views?' in registry
+    assert 'new fifth tab style' in registry
+    assert 'app/templates/welcome/index.html' in registry
+    assert 'app/templates/kubernetes/dashboard/index.html' in registry
+    assert 'app/templates/reports/generate/index.html' in registry
+
+    assert 'PAGE_ARCHETYPE_AND_NAVIGATION_REGISTRY.md' in authority_index
+    assert 'PAGE_ARCHETYPE_AND_NAVIGATION_REGISTRY.md' in design_readme
+    assert 'PAGE_ARCHETYPE_AND_NAVIGATION_REGISTRY.md' in tab_registry
