@@ -464,3 +464,25 @@ def test_design_system_v2_foundation_and_content_density_matrix_is_registered() 
     assert 'FOUNDATION_AND_CONTENT_DENSITY.md' in design_index
     assert 'FOUNDATION_AND_CONTENT_DENSITY.md' in design_readme
     assert 'FOUNDATION_AND_CONTENT_DENSITY.md' in global_design
+
+
+def test_design_system_v2_responsive_accessibility_interaction_matrix_is_registered() -> None:
+    matrix = _read('docs/design/RESPONSIVE_ACCESSIBILITY_INTERACTION.md')
+    design_index = _read('docs/design/DESIGN_SYSTEM.md')
+    design_readme = _read('docs/design/README.md')
+    global_design = _read('docs/design/KAORI_DESIGN_SYSTEM.md')
+
+    assert '# KAORI Responsive, Accessibility, and Interaction Matrix' in matrix
+    assert 'Canonical Viewport Matrix' in matrix
+    assert 'Responsive Composition Matrix' in matrix
+    assert 'Accessibility Matrix' in matrix
+    assert 'HTMX Ownership Matrix' in matrix
+    assert 'Operational State Matrix' in matrix
+    assert 'Motion and Reduced-Motion Matrix' in matrix
+    assert 'tests/ui/conftest.py' in matrix
+    assert 'tests/ui/test_accessibility_disclosures.py' in matrix
+    assert '#613' in matrix
+    assert '#614' in matrix
+    assert 'RESPONSIVE_ACCESSIBILITY_INTERACTION.md' in design_index
+    assert 'RESPONSIVE_ACCESSIBILITY_INTERACTION.md' in design_readme
+    assert 'RESPONSIVE_ACCESSIBILITY_INTERACTION.md' in global_design
