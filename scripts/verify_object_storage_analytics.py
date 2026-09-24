@@ -326,8 +326,10 @@ def main() -> int:
     assert 'components/content_tabs.html' in overview_workspace
     assert 'data-analytics-tabset' in overview_workspace
     assert 'data-analytics-preserve-tab' in controls
-    assert "'Object Storage Capacity & Usage'" in pages
-    assert "'Object Storage Performance'" in pages
+    assert "'Capacity & Usage'" in pages
+    assert "'Performance'" in pages
+    assert "'Object Storage Capacity & Usage'" not in pages
+    assert "'Object Storage Performance'" not in pages
     assert "'Capacity Posture'" in hero_posture
     assert "'Capacity Status'" in hero_posture
     assert "'Performance Posture'" in hero_posture
