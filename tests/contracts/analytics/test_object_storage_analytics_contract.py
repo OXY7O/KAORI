@@ -308,7 +308,8 @@ def test_kubernetes_navigation_uses_canonical_labels_without_k8s_abbreviation() 
     combined = '\n'.join(read(path) for path in menu_paths)
 
     assert 'K8s' not in combined
-    assert 'Kubernetes Analytics' in combined
+    assert '>Kubernetes</span>' in combined
+    assert 'Kubernetes Analytics' not in combined
     assert '>Inventory</span>' in combined
     assert '>Governance</span>' in combined
     assert '>Operations</span>' in combined
@@ -411,7 +412,8 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
     workspace = read('app/templates/storage/object_storage/analytics/partials/_overview_workspace.html')
     layout = read('app/templates/layouts/app.html')
 
-    assert "'Analytics Overview'" in pages
+    assert "'Overview'" in pages
+    assert "'Analytics Overview'" not in pages
     assert 'partials/_hero_posture.html' in hero
     assert 'partials/_hero_blocked_posture.html' in hero
     assert "'Operational Posture'" in hero_posture
@@ -471,8 +473,10 @@ def test_object_storage_capacity_and_performance_match_shared_analytics_hero_and
     table_service = read('app/storage/object_storage/analytics/bucket_table.py')
     javascript = read('app/static/js/storage/object_storage/analytics.js')
 
-    assert "'Object Storage Capacity & Usage'" in pages
-    assert "'Object Storage Performance'" in pages
+    assert "'Capacity & Usage'" in pages
+    assert "'Performance'" in pages
+    assert "'Object Storage Capacity & Usage'" not in pages
+    assert "'Object Storage Performance'" not in pages
     assert "'Capacity Posture'" in hero_posture
     assert "'Capacity Status'" in hero_posture
     assert "'Performance Posture'" in hero_posture
