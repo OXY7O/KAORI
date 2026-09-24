@@ -374,3 +374,28 @@ def test_analytics_overview_snapshot_and_composite_loading_contract_are_document
     assert 'macro snapshot_shell_classes' in surfaces
     assert 'macro metric_grid_classes' in surfaces
     assert 'Capacity is the analytics snapshot-style baseline' in analytics_readme
+
+
+def test_design_system_authority_index_has_one_global_owner() -> None:
+    authority_index = _read('docs/design/DESIGN_SYSTEM.md')
+    design_readme = _read('docs/design/README.md')
+    audit = _read('docs/design/audits/KAORI_DESIGN_SYSTEM_V2_AUTHORITY_AUDIT_20260924.md')
+
+    assert '# KAORI Design System Authority Index' in authority_index
+    assert 'does **not** define a separate design-system version' in authority_index
+    assert 'KAORI_DESIGN_SYSTEM.md' in authority_index
+    assert 'KAORI_STYLING_GUIDE.md' in authority_index
+    assert 'KAORI_VISUAL_QA.md' in authority_index
+    assert 'KAORI_DESIGN_SYSTEM_V2_AUTHORITY_AUDIT_20260924.md' in authority_index
+
+    assert 'DESIGN_SYSTEM.md' in design_readme
+    assert 'compact authority index and compatibility entry point' in design_readme
+    assert 'KAORI_DESIGN_SYSTEM_V2_AUTHORITY_AUDIT_20260924.md' in design_readme
+
+    assert 'KAORI_DESIGN_SYSTEM.md' in audit
+    assert 'scripts/verify_ui_reuse.py' in audit
+    assert 'scripts/verify_ui_style.py' in audit
+    assert '#606' in audit
+    assert '#607' in audit
+    assert '#608' in audit
+    assert '#609' in audit
