@@ -8,8 +8,8 @@ WORKFLOW = ROOT / '.github/workflows/publish-staging-image.yml'
 
 def _release_notes_block() -> str:
     source = WORKFLOW.read_text(encoding='utf-8')
-    start = source.index('- name: Build Human-Friendly RC Release Notes')
-    end = source.index('- name: Create Human-Friendly GitHub Prerelease', start)
+    start = source.index('- name: Build RC Notes')
+    end = source.index('- name: Publish RC Release', start)
     return source[start:end]
 
 

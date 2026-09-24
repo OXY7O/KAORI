@@ -196,7 +196,7 @@ def test_github_metadata_hygiene_and_recovery_contract_is_documented() -> None:
         'Repository Metadata Hygiene Gate',
         'repo:OXY7O/KAORI is:pr no:label',
         'repo:OXY7O/KAORI is:pr no:assignee',
-        'Never run comprehensive KAORI CI on a work branch',
+        'Never run Full Admission on a work branch',
     ):
         assert token in workflow
 
@@ -252,7 +252,7 @@ def test_work_branches_use_targeted_developer_check_until_staging_merge() -> Non
 def test_draft_developer_check_is_path_aware_and_non_authoritative() -> None:
     source = read(DEVELOPER_WORKFLOW)
 
-    assert 'name: KAORI Developer Check' in source
+    assert 'name: Developer Check' in source
     assert 'name: Route Checks' in source
     assert 'name: Developer Check' in source
     assert 'wide=true' in source

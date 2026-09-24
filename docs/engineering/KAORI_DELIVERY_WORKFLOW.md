@@ -152,7 +152,7 @@ Expected result is **0** for governed PRs. Closed, merged, or superseded PRs rem
 
 Also verify the governing Issue/PR Project membership, lifecycle Status, Sprint, Native Issue Type, Priority, Story Points, Milestone, relationships, and Development linkage where applicable. Unsupported Project/custom-field mutations must be reported to the maintainer with exact card, field, and intended value; never copy them into a duplicate body table or invent replacement labels.
 
-**Never run comprehensive KAORI CI on a work branch.** Metadata repair, review, and implementation remain under the path-aware Developer Check until merge to exact `kaori/staging`.
+**Never run Full Admission on a work branch.** Metadata repair, review, and implementation remain under the path-aware Developer Check until merge to exact `kaori/staging`.
 
 ## Branch Authority
 
@@ -208,7 +208,7 @@ For work entering the artifact-backed release path, completion additionally requ
 
 ## Developer Check — Work-Branch Loop
 
-`KAORI Developer Check` is the path-aware authority for Pull Requests from every `kaori/*` work branch except `kaori/staging` into `kaori/staging`. It runs in both Draft and Ready states and remains targeted/non-comprehensive.
+`Developer Check` is the path-aware authority for Pull Requests from every `kaori/*` work branch except `kaori/staging` into `kaori/staging`. It runs in both Draft and Ready states and remains targeted/non-comprehensive.
 
 It routes changed paths into the minimum safe focused checks using existing KAORI validation commands. Typical groups include:
 
@@ -328,7 +328,7 @@ Raw diagnostics remain artifacts. Successful pytest progress dots and repetitive
 
 Telegram delivery notifications are observational only. They do not participate in CI admission, UAT acceptance, promotion authorization, release authorization, or deployment authority.
 
-Trusted-branch delivery notifications must consume **completed** `KAORI CI` evidence rather than occupy a `platform-ci` runner while polling for a not-yet-started run. The notification workflow therefore uses the completed `workflow_run` identity and validates the canonical workflow path, trusted repository, source event, source repository, trusted branch, exact source SHA, and completed state before secret-bearing execution.
+Trusted-branch delivery notifications must consume **completed** `Full Admission` evidence rather than occupy a `platform-ci` runner while polling for a not-yet-started run. The notification workflow therefore uses the completed `workflow_run` identity and validates the canonical workflow path, trusted repository, source event, source repository, trusted branch, exact source SHA, and completed state before secret-bearing execution.
 
 The scheduled PR-failure observer remains a separate non-authoritative path. Pull-request or fork workflow completion must never inherit the trusted-push Telegram secret boundary.
 
@@ -410,7 +410,7 @@ Release-bound work stays in Project Status `UAT` while artifact publication, VPS
 
 ## Main Promotion
 
-Accepted increments are promoted through an explicit PR from `kaori/staging` to `main`. `KAORI CI` accepts a PR to `main` as a governed promotion only when its head is exactly `kaori/staging`. Promotion verifies exact accepted staging lineage, reuses admitted evidence, and runs fresh Fast Smoke. After merge, Post-promotion verifies the resulting main lineage with the same evidence-reuse principle.
+Accepted increments are promoted through an explicit PR from `kaori/staging` to `main`. `Full Admission` accepts a PR to `main` as a governed promotion only when its head is exactly `kaori/staging`. Promotion verifies exact accepted staging lineage, reuses admitted evidence, and runs fresh Fast Smoke. After merge, Post-promotion verifies the resulting main lineage with the same evidence-reuse principle.
 
 For artifact-backed releases, the promotion PR also records the UAT-approved OCI digest. Main source promotion and release tagging must not rebuild the accepted application image; the release must reference the same digest accepted during VPS UAT.
 

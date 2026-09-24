@@ -1,4 +1,4 @@
-name: KAORI Staging Publication Reconciliation
+name: Staging Publication
 
 on:
   workflow_call:
@@ -49,7 +49,7 @@ jobs:
             exit 1
           fi
 
-      - name: Reconcile via Pinned SSH Trust
+      - name: Reconcile Publication
         shell: bash
         run: |
           set -Eeuo pipefail

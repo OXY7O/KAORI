@@ -27,8 +27,8 @@ def test_transient_diagnostics_are_failure_only_and_short_lived() -> None:
     developer = DEVELOPER_WORKFLOW.read_text(encoding='utf-8')
 
     quality_steps = (
-        ('Upload Static Diagnostics', 'Check Out Exact Source'),
-        ('Upload Security Diagnostics', 'Check Out Exact Source'),
+        ('Upload Static Diagnostics', 'Checkout Source'),
+        ('Upload Security Diagnostics', 'Checkout Source'),
         ('Upload Runtime Diagnostics', 'Cleanup Runtime Resources'),
         ('Upload Smoke Diagnostics', 'Cleanup Smoke Dependencies'),
     )
@@ -46,6 +46,6 @@ def test_transient_diagnostics_are_failure_only_and_short_lived() -> None:
 
 def test_full_admission_evidence_keeps_governed_retention() -> None:
     workflow = QUALITY_WORKFLOW.read_text(encoding='utf-8')
-    upload = _step_block(workflow, 'Upload Full Admission Evidence', 'Write Admission Summary')
+    upload = _step_block(workflow, 'Upload Admission Evidence', 'Write Admission Summary')
 
     assert 'retention-days: 14' in upload

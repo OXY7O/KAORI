@@ -8,7 +8,7 @@ WORKFLOW = (ROOT / '.github/workflows/release-image.yml').read_text(encoding='ut
 
 def test_stable_release_promotes_accepted_rc_digest_without_application_rebuild() -> None:
     assert 'candidate_tag:' in WORKFLOW
-    assert 'Resolve Accepted RC Evidence' in WORKFLOW
+    assert 'Resolve RC Evidence' in WORKFLOW
     assert 'Immutable digest:' in WORKFLOW
     assert 'Stable promotion requires an accepted RC prerelease' in WORKFLOW
     assert 'docker buildx build' not in WORKFLOW
@@ -47,5 +47,5 @@ def test_stable_release_passes_registry_auth_to_cosign_container() -> None:
 
 def test_stable_release_builds_release_evidence_from_accepted_rc_not_legacy_docs() -> None:
     assert 'Build Stable Release Notes' in WORKFLOW
-    assert 'Generate Stable Release Manifest' in WORKFLOW
+    assert 'Generate Release Manifest' in WORKFLOW
     assert '.github/ci/release-lib.sh github-release' not in WORKFLOW

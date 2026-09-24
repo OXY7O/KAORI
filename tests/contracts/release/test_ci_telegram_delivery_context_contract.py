@@ -38,7 +38,7 @@ def test_trusted_notifier_observes_completed_push_and_scheduled_pr_failures_with
     quality = read(QUALITY_WORKFLOW)
 
     assert 'workflow_run:' in source
-    assert '- KAORI CI' in source
+    assert '- Full Admission' in source
     assert '- completed' in source
     assert "github.event.workflow_run.event == 'push'" in source
     assert "github.event.workflow_run.head_repository.full_name == 'OXY7O/KAORI'" in source

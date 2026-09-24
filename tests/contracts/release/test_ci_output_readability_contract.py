@@ -152,7 +152,7 @@ def test_long_static_gate_has_periodic_heartbeat() -> None:
 def test_staging_deploy_action_uses_operator_facing_staging_host_vocabulary() -> None:
     workflow = STAGING_DEPLOY_WORKFLOW.read_text(encoding='utf-8')
 
-    assert 'name: KAORI Staging Deployment' in workflow
+    assert 'name: Staging Deploy' in workflow
     assert 'name: Release Evidence' in workflow
     assert 'name: Deploy Staging' in workflow
     assert 'description: Accepted KAORI RC tag' in workflow

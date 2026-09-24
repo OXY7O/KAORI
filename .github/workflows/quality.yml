@@ -1,4 +1,4 @@
-name: KAORI CI
+name: Full Admission
 
 on:
   workflow_call:
@@ -59,7 +59,7 @@ jobs:
       started_epoch: ${{ steps.identity.outputs.started_epoch }}
       toolchain_image: ${{ steps.toolchain.outputs.image }}
     steps:
-      - name: Check Out Exact Source
+      - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.KAORI_SOURCE_SHA }}
@@ -136,7 +136,7 @@ jobs:
               >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Locate Exact Evidence
+      - name: Locate Admission Evidence
         id: evidence
         if: ${{ steps.routing.outputs.execution == 'fast' }}
         shell: bash
@@ -237,7 +237,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 45
     steps:
-      - name: Check Out Exact Source
+      - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
@@ -278,7 +278,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 45
     steps:
-      - name: Check Out Exact Source
+      - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
@@ -307,7 +307,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 60
     steps:
-      - name: Check Out Exact Source
+      - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
@@ -346,7 +346,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 30
     steps:
-      - name: Check Out Exact Source
+      - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
@@ -366,7 +366,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 75
     steps:
-      - name: Check Out Exact Source
+      - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
@@ -417,7 +417,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 15
     steps:
-      - name: Check Out Exact Source
+      - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
@@ -467,7 +467,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 10
     steps:
-      - name: Check Out Exact Source
+      - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
@@ -505,7 +505,7 @@ jobs:
             } >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Publish Immutable Full Admission Evidence
+      - name: Publish Admission Evidence
         id: full-evidence
         if: ${{ needs.validation-profile.outputs.execution == 'full' }}
         shell: bash
@@ -531,7 +531,7 @@ jobs:
               --production-runtime "${{ needs.production-runtime.result }}" \
               --output admission-evidence.json
 
-      - name: Upload Full Admission Evidence
+      - name: Upload Admission Evidence
         id: full-evidence-upload
         if: ${{ needs.validation-profile.outputs.execution == 'full' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -642,17 +642,17 @@ jobs:
           set -Eeuo pipefail
 
           state=failure
-          description='KAORI CI admission failed'
+          description='Full Admission failed'
 
           if [[ "$ASSERT_OUTCOME" == "success" && "$SUMMARY_OUTCOME" == "success" ]]; then
             if [[ "$EXECUTION" == "full" ]]; then
               if [[ "$EVIDENCE_OUTCOME" == "success" && "$EVIDENCE_UPLOAD_OUTCOME" == "success" ]]; then
                 state=success
-                description='KAORI CI Full Admission passed'
+                description='Full Admission passed'
               fi
             else
               state=success
-              description='KAORI CI staging admission passed'
+              description='Staging admission passed'
             fi
           fi
 

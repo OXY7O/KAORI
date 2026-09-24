@@ -1,4 +1,4 @@
-name: KAORI Developer Check
+name: Developer Check
 
 on:
   pull_request:
@@ -38,7 +38,7 @@ jobs:
       test_paths: ${{ steps.route.outputs.test_paths }}
       summary: ${{ steps.route.outputs.summary }}
     steps:
-      - name: Check Out Work Branch Source
+      - name: Checkout Work Branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.KAORI_SOURCE_SHA }}
@@ -233,7 +233,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 20
     steps:
-      - name: Check Out Work Branch Source
+      - name: Checkout Work Branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.KAORI_SOURCE_SHA }}

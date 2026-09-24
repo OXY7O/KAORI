@@ -1,4 +1,4 @@
-name: KAORI Release Candidate
+name: Release Candidate
 
 on:
   workflow_dispatch:
@@ -35,7 +35,7 @@ jobs:
       candidate_image: ${{ steps.candidate.outputs.candidate_image }}
       compare_base: ${{ steps.candidate.outputs.compare_base }}
     steps:
-      - name: Resolve Exact Accepted Staging SHA
+      - name: Resolve Staging SHA
         id: staging
         shell: bash
         env:
@@ -79,7 +79,7 @@ jobs:
           printf 'ACCEPTED_SHA=%s\n' "$ACCEPTED_SHA" >> "$GITHUB_ENV"
           printf 'Accepted staging authority: %s\n' "$ACCEPTED_SHA"
 
-      - name: Require Exact Successful KAORI CI
+      - name: Require Full Admission
         id: quality
         shell: bash
         env:
@@ -117,7 +117,7 @@ jobs:
             fi
 
             [[ "$conclusion" == 'success' ]] || {
-              printf 'Exact KAORI CI did not pass for %s: %s\n' \
+              printf 'Full Admission did not pass for %s: %s\n' \
                 "$ACCEPTED_SHA" "$conclusion" >&2
               exit 1
             }
@@ -143,7 +143,7 @@ jobs:
             exit 1
           }
 
-      - name: Check Out Exact Accepted Staging SHA
+      - name: Checkout Staging SHA
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ steps.staging.outputs.accepted_sha }}
@@ -151,7 +151,7 @@ jobs:
           fetch-tags: true
           persist-credentials: false
 
-      - name: Resolve Intentional SemVer Candidate
+      - name: Resolve RC Version
         id: candidate
         shell: bash
         env:
@@ -288,7 +288,7 @@ jobs:
       COMPARE_BASE: ${{ needs.wait-for-quality.outputs.compare_base }}
       COSIGN_IMAGE: ghcr.io/sigstore/cosign/cosign:v3.1.3
     steps:
-      - name: Check Out Accepted Staging Candidate
+      - name: Checkout RC Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.wait-for-quality.outputs.accepted_sha }}
@@ -324,7 +324,7 @@ jobs:
           OCI_CREATED="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           printf 'OCI_CREATED=%s\n' "$OCI_CREATED" >> "$GITHUB_ENV"
 
-      - name: Build Exact Candidate
+      - name: Build RC Image
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -342,14 +342,14 @@ jobs:
             --tag "$CANDIDATE_IMAGE" \
             .
 
-      - name: Scan Exact Candidate
+      - name: Scan RC Image
         run: >-
           docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock
           --volume kaori-trivy-cache:/root/.cache/trivy "$CI_TOOLCHAIN_IMAGE"
           trivy image --cache-dir /root/.cache/trivy --exit-code 1 --ignore-unfixed
           --severity HIGH,CRITICAL --scanners vuln "$CANDIDATE_IMAGE"
 
-      - name: Validate Exact Candidate Runtime and DAST
+      - name: Validate Runtime & DAST
         run: bash .github/ci/run-runtime-validation.sh "$CANDIDATE_IMAGE"
 
       - name: Reserve RC Git Tag
@@ -415,13 +415,13 @@ jobs:
           printf 'Registry tag is unused and eligible for first publication: %s\n' \
             "$CANDIDATE_IMAGE"
 
-      - name: Push Exact Candidate
+      - name: Push RC Image
         run: docker push "$CANDIDATE_IMAGE"
 
-      - name: Pull Published Candidate
+      - name: Pull RC Image
         run: docker pull "$CANDIDATE_IMAGE"
 
-      - name: Record Immutable Digest Evidence
+      - name: Record RC Digest
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -446,13 +446,13 @@ jobs:
           } >> "$GITHUB_ENV"
           cat staging-image.env
 
-      - name: Verify Published Candidate OCI Metadata
+      - name: Verify RC Metadata
         shell: bash
         run: |
           set -Eeuo pipefail
           bash .github/ci/release-lib.sh verify-labels "$KAORI_IMAGE_REF" "$CANDIDATE_TAG" "$ACCEPTED_SHA"
 
-      - name: Generate RC Supply Chain Evidence
+      - name: Generate RC Evidence
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -525,7 +525,7 @@ jobs:
             printf 'KAORI_PROVENANCE_SHA256=%s\n' "$provenance_sha"
           } >> "$GITHUB_ENV"
 
-      - name: Attest RC Supply Chain Evidence with GitHub OIDC
+      - name: Attest RC Evidence
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -555,7 +555,7 @@ jobs:
               --type slsaprovenance1 \
               "$KAORI_IMAGE_REF"
 
-      - name: Verify RC Supply Chain Attestations
+      - name: Verify RC Attestations
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -627,7 +627,7 @@ jobs:
               )
             ' provenance-attestation-statements.jsonl >/dev/null
 
-      - name: Upload Staging Image Evidence
+      - name: Upload RC Evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: staging-image-${{ needs.wait-for-quality.outputs.accepted_sha }}
@@ -642,7 +642,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Build Human-Friendly RC Release Notes
+      - name: Build RC Notes
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -680,7 +680,7 @@ jobs:
           ${migration_impact}
 
           ## Validation Evidence
-          Exact \`kaori/staging\` KAORI CI: **PASS**
+          Exact \`kaori/staging\` Full Admission: **PASS**
           Quality run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${QUALITY_RUN_ID}
           Trivy HIGH/CRITICAL image scan: **PASS**
           Production runtime & baseline DAST: **PASS**
@@ -701,7 +701,7 @@ jobs:
           **Pending UAT.** Stable promotion is prohibited until explicit UAT acceptance of this exact source SHA and immutable image digest. Stable \`vX.Y.Z\` must reuse the accepted digest and must not rebuild application bits.
           EOF
 
-      - name: Create Human-Friendly GitHub Prerelease
+      - name: Publish RC Release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
