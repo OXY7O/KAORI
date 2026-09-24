@@ -312,7 +312,8 @@ def main() -> int:
     assert "'Analytics Readiness'" in hero_blocked
     for evidence_label in ('System Context', 'Inventory Snapshot', 'Operational Metrics', 'Analytics Snapshot'):
         assert evidence_label in hero_blocked
-    assert "'Analytics Overview'" in pages
+    assert "'Overview'" in pages
+    assert "'Analytics Overview'" not in pages
     for copy in (
         'Review capacity, bucket pressure, quotas, trends, and growth.',
         'Review S3 activity, errors, queue depth, demand, and traffic.',
