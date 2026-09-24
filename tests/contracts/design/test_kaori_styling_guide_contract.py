@@ -486,3 +486,28 @@ def test_design_system_v2_responsive_accessibility_interaction_matrix_is_registe
     assert 'RESPONSIVE_ACCESSIBILITY_INTERACTION.md' in design_index
     assert 'RESPONSIVE_ACCESSIBILITY_INTERACTION.md' in design_readme
     assert 'RESPONSIVE_ACCESSIBILITY_INTERACTION.md' in global_design
+
+
+def test_design_system_v2_reference_implementation_and_enforcement_map_is_registered() -> None:
+    coverage = _read('docs/design/REFERENCE_IMPLEMENTATION_AND_ENFORCEMENT.md')
+    design_index = _read('docs/design/DESIGN_SYSTEM.md')
+    design_readme = _read('docs/design/README.md')
+    global_design = _read('docs/design/KAORI_DESIGN_SYSTEM.md')
+
+    assert '# KAORI Design System v2 Reference Implementation and Enforcement Map' in coverage
+    assert 'Shared Component Family References' in coverage
+    assert 'Page Archetype Production References' in coverage
+    assert 'Enforcement Coverage Map' in coverage
+    assert 'Baseline and Debt Policy' in coverage
+    assert 'Design-System Change / Extension Policy' in coverage
+    assert 'scripts/verify_ui_reuse.py' in coverage
+    assert 'scripts/verify_ui_style.py' in coverage
+    assert 'scripts/verify_hero_component_standard.py' in coverage
+    assert 'scripts/verify_dark_mode_standard.py' in coverage
+    assert 'scripts/verify_filter_layout_standard.py' in coverage
+    assert 'scripts/verify_application_shell_standard.py' in coverage
+    assert 'docs/architecture/ui-style-debt-baseline.json' in coverage
+    assert 'docs/architecture/ui-inline-debt-baseline.json' in coverage
+    assert 'REFERENCE_IMPLEMENTATION_AND_ENFORCEMENT.md' in design_index
+    assert 'REFERENCE_IMPLEMENTATION_AND_ENFORCEMENT.md' in design_readme
+    assert 'REFERENCE_IMPLEMENTATION_AND_ENFORCEMENT.md' in global_design
