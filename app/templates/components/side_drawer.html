@@ -26,6 +26,7 @@
                 aria-label="Close {{ title }}"
                 @click="{{ close_expression }}"></button>
         <section role="dialog"
+                 data-side-drawer-dialog
                  aria-modal="true"
                  aria-labelledby="{{ id }}-title"
                  {% if description %}aria-describedby="{{ id }}-description"{% endif %}

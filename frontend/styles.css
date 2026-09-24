@@ -629,9 +629,32 @@ span.inline-flex[class*='bg-kaori-soft'] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .notification-progress-indeterminate {
+    .notification-progress-indeterminate,
+    .kaori-loading-bar-segment,
+    .animate-pulse,
+    .animate-spin {
+        animation: none !important;
+    }
+
+    .notification-progress-indeterminate,
+    .kaori-loading-bar-segment {
         width: 100%;
-        animation: none;
+        transform: none !important;
+        will-change: auto;
+    }
+
+    .htmx-indicator,
+    [data-operational-toast],
+    [data-resource-detail-dialog],
+    [data-side-drawer-dialog],
+    #notification-deck {
+        transition: none !important;
+    }
+
+    [data-resource-detail-dialog],
+    [data-side-drawer-dialog],
+    #notification-deck {
+        transform: none !important;
     }
 }
 

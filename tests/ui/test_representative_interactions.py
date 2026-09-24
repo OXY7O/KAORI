@@ -277,6 +277,58 @@ def test_deterministic_visual_surface_catalog_light_and_dark(
                     )
 
 
+def test_reduced_motion_keeps_shared_loading_and_overlay_state_without_animation(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Keep shared loading and overlay state visible without non-essential motion."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+
+    if viewport_name != 'laptop':
+        return
+
+    page.emulate_media(reduced_motion='reduce')
+
+    with _browser_evidence(page, 'reduced-motion-shared-feedback', viewport_name):
+        _login(page, kaori_authenticated_base_url)
+        _open_notification_center(page, kaori_authenticated_base_url)
+
+        assert page.evaluate("() => window.matchMedia('(prefers-reduced-motion: reduce)').matches")
+
+        segment = page.locator('#notification-center-loading .kaori-loading-bar-segment')
+        expect(segment).to_be_attached()
+        segment_motion = segment.evaluate(
+            """element => {
+                const style = window.getComputedStyle(element);
+                return {
+                    animationName: style.animationName,
+                    transform: style.transform,
+                };
+            }"""
+        )
+        assert segment_motion['animationName'] == 'none'
+        assert segment_motion['transform'] == 'none'
+
+        trigger = page.get_by_role('button', name='Open notification deck')
+        expect(trigger).to_be_visible()
+        trigger.click()
+        deck = page.locator('#notification-deck')
+        expect(deck).to_be_visible()
+        deck_motion = deck.evaluate(
+            """element => {
+                const style = window.getComputedStyle(element);
+                return {
+                    transitionDuration: style.transitionDuration,
+                    transform: style.transform,
+                };
+            }"""
+        )
+        assert deck_motion['transitionDuration'] == '0s'
+        assert deck_motion['transform'] == 'none'
+
+
 def test_notification_deck_escape_restores_trigger_focus(
     configured_page: Page,
     kaori_viewport: tuple[str, tuple[int, int]],

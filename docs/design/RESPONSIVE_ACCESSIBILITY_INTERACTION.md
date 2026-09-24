@@ -28,7 +28,7 @@ It consolidates existing KAORI authorities and production behavior. It does not 
 | Persisted action feedback | `components/OPERATIONAL_ACTION_FEEDBACK.md` | shared toast + Activity Audit ownership |
 | Forms / filters | `components/FORM.md`, table/filter shared primitives | filter layout contract tests |
 | Visual/theme parity | `KAORI_VISUAL_QA.md` | canonical viewport × light/dark evidence |
-| Reduced motion | shared CSS/JS owners | current gap bounded by #613 |
+| Reduced motion | shared CSS/JS owners | #613 locks loading, toast, and overlay reduced-motion behavior without removing state/timing semantics |
 
 Historical lock/audit documents remain evidence, not competing current authority.
 
@@ -175,7 +175,7 @@ Motion communicates state change and spatial relationship; it is not decoration.
 | Drawer/modal transition | shared overlay implementation | keep geometry stable; reduced-motion must not impair focus or close behavior |
 | Notification progress | `frontend/styles.css` | already has explicit `prefers-reduced-motion: reduce` handling |
 
-Current reduced-motion coverage is not yet complete across every shared motion owner. **#613** is the bounded implementation work; #608 does not add page-local patches.
+#613 closes the audited shared reduced-motion gap for canonical loading, toast, resource-detail drawer, side-drawer, and Notification Deck motion owners. Future shared motion owners must inherit the same preference contract rather than adding page-local patches.
 
 ## Representative Executable Evidence
 
@@ -197,8 +197,8 @@ Current acceptance evidence is intentionally reused rather than replaced:
 
 #608 found two concrete implementation gaps and split them from this documentation workstream:
 
-1. **#613 — Extend reduced-motion coverage across shared KAORI interaction feedback.**
-2. **#614 — Harden canonical side drawer focus containment and focus return.**
+1. **#613 — reduced-motion coverage is implemented through the shared CSS/JS motion owners and existing verification paths.**
+2. **#614 — canonical side-drawer focus containment and focus return remains a bounded implementation follow-up.**
 
 These issues are implementation follow-ups. They do not justify a new frontend state framework or page-local workaround.
 

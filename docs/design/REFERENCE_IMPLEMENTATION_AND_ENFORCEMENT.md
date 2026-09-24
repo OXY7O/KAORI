@@ -57,7 +57,7 @@ A production reference proves that a component or pattern is used in the real KA
 | Destructive confirmation | `destructive_confirmation_modal.html` + shared JS | ConfigMap/Secret delete flows and persisted-object detach/delete flows | interaction contracts + browser evidence |
 | Resource detail modal / drawer | `resource_detail_modal.html`; `side_drawer.html`; shared detail runtime | Node/Namespace/Workload/Pod/Service/Ingress/Storage/Configuration Inventory; Topology inspector | browser interaction tests; UI reuse/style checks; #614 for generic side-drawer focus parity |
 | Navigation / application shell | shared sidebar/navbar/navigation owners | every authenticated KAORI workspace | `verify_application_shell_standard.py`; shell contracts; responsive browser tests |
-| Operational toast / feedback | `operational_toast.html`; `operational_progress_toast.html`; `operation_feedback_oob.html` | Metrics Source, Alertmanager, and provider operational flows | application-shell/feedback contracts + browser tests; #613 for reduced-motion completion |
+| Operational toast / feedback | `operational_toast.html`; `operational_progress_toast.html`; `operation_feedback_oob.html` | Metrics Source, Alertmanager, and provider operational flows | application-shell/feedback contracts + browser tests; #613 shared reduced-motion contract |
 | Workspace tabs | `workspace_tabs.html`; `framed_workspace_tabs.html`; `segmented_tabs.html`; `content_tabs.html` | Kubernetes Operations, Integrations, Analytics, Topology | `verify_ui_style.py`; reuse ownership contracts; styling-guide contract |
 | Context / guidance / summary cards | `context_guidance_card.html`; `information_guide_card.html`; `workspace_summary_card.html`; `page_context_card.html` | Register Alertmanager Instance; Alertmanager Instance Manage | reusable ownership contracts; `verify_ui_reuse.py`; `verify_ui_style.py` |
 
@@ -191,12 +191,12 @@ Human UAT remains final authority for hierarchy preference, visual balance, and 
 
 ## Current Bounded Follow-Up Gaps
 
-#608 identified two implementation gaps that remain outside #609's documentation scope:
+#608 identified two bounded implementation gaps outside #609's documentation scope:
 
-- #613 — reduced-motion coverage across shared interaction feedback;
-- #614 — generic side-drawer focus containment and focus return.
+- #613 — reduced-motion coverage is now owned by the shared loading/toast/overlay CSS/JS paths and existing test/verifier families;
+- #614 — generic side-drawer focus containment and focus return remains open.
 
-These do not create new Design System v2 authorities. Their implementations must extend the shared owners and existing test/verifier families.
+Neither gap creates a new Design System v2 authority. Runtime fixes extend the existing shared owners and verification families.
 
 ## #609 Completion Boundary
 

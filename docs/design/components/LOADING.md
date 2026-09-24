@@ -33,5 +33,6 @@ Rules:
 - HTMX-only states use `htmx-indicator` and an explicit `hx-indicator` selector.
 - HTMX replaces only the relevant region; the loading bar must not shift the hero or unrelated content.
 - Real execution progress bars are separate from loading indicators and may be determinate or indeterminate based on worker progress evidence.
+- Under `prefers-reduced-motion: reduce`, the shared indeterminate loading segment expands to a stable full-width Violet state and pulse/spin animation is suppressed. Loading visibility and `aria` semantics remain unchanged.
 
 This contract applies to Cluster Health Summary, Jobs & Executions, Endpoint & Access, Compatibility & Capability Matrix, Runtime Health & Diagnostics, Recent Runtime Observations, and equivalent operational blocks.
