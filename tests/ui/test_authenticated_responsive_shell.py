@@ -193,18 +193,21 @@ def test_authenticated_shell_scroll_targets_preserve_top_boundary(
     initial = page.evaluate(
         """() => {
             const main = document.querySelector('main[data-kaori-main-scroll]');
+            const wrapper = main.firstElementChild;
             const hero = document.querySelector('section.kaori-hero-shell');
             const mainRect = main.getBoundingClientRect();
             const heroRect = hero.getBoundingClientRect();
             return {
                 mainTop: mainRect.top,
                 heroTop: heroRect.top,
+                contentPaddingTop: Number.parseFloat(getComputedStyle(wrapper).paddingTop),
                 scrollPaddingTop: Number.parseFloat(getComputedStyle(main).scrollPaddingTop),
             };
         }"""
     )
-    assert initial['scrollPaddingTop'] >= 20
-    assert initial['heroTop'] >= initial['mainTop'] + initial['scrollPaddingTop'] - 1
+    assert initial['contentPaddingTop'] > 0
+    assert abs(initial['scrollPaddingTop'] - initial['contentPaddingTop']) < 0.5
+    assert initial['heroTop'] >= initial['mainTop'] + initial['contentPaddingTop'] - 1
 
     page.evaluate(
         """() => {
@@ -231,15 +234,18 @@ def test_authenticated_shell_scroll_targets_preserve_top_boundary(
             const target = document.querySelector('#shell-scroll-boundary-probe');
             const mainRect = main.getBoundingClientRect();
             const targetRect = target.getBoundingClientRect();
+            const wrapper = main.firstElementChild;
             return {
                 mainTop: mainRect.top,
                 targetTop: targetRect.top,
+                contentPaddingTop: Number.parseFloat(getComputedStyle(wrapper).paddingTop),
                 scrollPaddingTop: Number.parseFloat(getComputedStyle(main).scrollPaddingTop),
                 mainScrollTop: main.scrollTop,
             };
         }"""
     )
     assert aligned['mainScrollTop'] > 0
+    assert abs(aligned['scrollPaddingTop'] - aligned['contentPaddingTop']) < 0.5
     assert aligned['targetTop'] >= aligned['mainTop'] + aligned['scrollPaddingTop'] - 1
     _assert_no_document_overflow(page)
     _capture(page, 'authenticated-shell-top-boundary', viewport_name)
