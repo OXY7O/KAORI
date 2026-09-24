@@ -34,3 +34,25 @@ def test_htmx_loading_bar_is_a_separate_thin_loading_contract() -> None:
     assert 'components/loading_bar.html' in account
     assert 'account-settings-loading' in account
     assert 'verify_notification_surface_style.py' in read('scripts/quality_gate.sh')
+
+
+def test_shared_feedback_surfaces_honor_reduced_motion_contract() -> None:
+    styles = read('frontend/styles.css')
+    toast_runtime = read('app/static/js/operational_toasts.js')
+    detail_runtime = read('app/static/js/detail_rows.js')
+    side_drawer = read('app/templates/components/side_drawer.html')
+
+    for token in (
+        '@media (prefers-reduced-motion: reduce)',
+        '.kaori-loading-bar-segment',
+        '[data-operational-toast]',
+        '[data-resource-detail-dialog]',
+        '[data-side-drawer-dialog]',
+        '#notification-deck',
+    ):
+        assert token in styles
+
+    assert 'const prefersReducedMotion' in toast_runtime
+    assert "timerBar.style.transform = 'scaleX(1)'" in toast_runtime
+    assert 'const prefersReducedMotion' in detail_runtime
+    assert 'data-side-drawer-dialog' in side_drawer

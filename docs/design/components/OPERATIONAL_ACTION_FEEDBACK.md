@@ -85,6 +85,7 @@ Cluster compatibility routes may exist only as redirect or migration boundaries.
 - Hover and keyboard focus pause the timer.
 - Self-dismissing toasts render a compact Violet countdown bar. `operational_toasts.js` owns the timer and animation; templates do not implement per-toast countdown JavaScript.
 - The countdown prefers Web Animations API and falls back to a forced-layout transform transition so HTMX/OOB-inserted toasts visibly progress before disappearing.
+- Under `prefers-reduced-motion: reduce`, the auto-dismiss timer and pause/resume semantics remain authoritative while enter/exit and countdown motion are suppressed. The toast remains fully readable and manually dismissible.
 - The global stack keeps at most four visible toasts and deduplicates the same feedback ID.
 - Both authenticated and authentication layouts load `operational_toasts.js`; domain layouts do not own close handlers.
 - Background progress remains in Activity Center unless a domain explicitly selects toast delivery for a user-initiated synchronous result.

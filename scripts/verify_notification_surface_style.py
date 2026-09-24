@@ -27,6 +27,10 @@ def main() -> int:
     loading = read('app/templates/components/loading_bar.html')
     general = read('app/templates/settings/general/partials/_page_content.html')
     account = read('app/templates/settings/account/partials/_page_content.html')
+    styles = read('frontend/styles.css')
+    toast_runtime = read('app/static/js/operational_toasts.js')
+    detail_runtime = read('app/static/js/detail_rows.js')
+    side_drawer = read('app/templates/components/side_drawer.html')
 
     require(
         '{% macro notification_track_classes()' in progress,
@@ -81,6 +85,30 @@ def main() -> int:
     require(
         'components/loading_bar.html' in account and 'account-settings-loading' in account,
         'Account Settings must use the shared HTMX loading bar',
+        errors,
+    )
+    require(
+        '@media (prefers-reduced-motion: reduce)' in styles
+        and '.kaori-loading-bar-segment' in styles
+        and '[data-operational-toast]' in styles
+        and '[data-resource-detail-dialog]' in styles
+        and '[data-side-drawer-dialog]' in styles
+        and '#notification-deck' in styles,
+        'Shared feedback/loading/overlay surfaces must have one reduced-motion CSS contract',
+        errors,
+    )
+    require(
+        'const prefersReducedMotion' in toast_runtime
+        and "timerBar.style.transform = 'scaleX(1)'" in toast_runtime
+        and 'if (prefersReducedMotion())' in toast_runtime,
+        'Operational toast runtime must preserve timing while suppressing reduced-motion visuals',
+        errors,
+    )
+    require(
+        'const prefersReducedMotion' in detail_runtime
+        and 'if (prefersReducedMotion())' in detail_runtime
+        and 'data-side-drawer-dialog' in side_drawer,
+        'Shared drawer runtime must suppress transition-only behavior under reduced motion',
         errors,
     )
 

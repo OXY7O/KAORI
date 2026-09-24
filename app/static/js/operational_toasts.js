@@ -2,7 +2,10 @@
     const toastSelector = '[data-operational-toast]'
     const stackSelector = '#operational-toast-stack'
     const maximumVisibleToasts = 4
+    const reducedMotionQuery = '(prefers-reduced-motion: reduce)'
     const state = new WeakMap()
+
+    const prefersReducedMotion = () => window.matchMedia?.(reducedMotionQuery)?.matches === true
 
     const cancelTimerVisual = (current) => {
         try {
@@ -20,6 +23,10 @@
         if (current?.timer) window.clearTimeout(current.timer)
         cancelTimerVisual(current)
         toast.classList.add('opacity-0')
+        if (prefersReducedMotion()) {
+            toast.remove()
+            return
+        }
         window.setTimeout(() => toast.remove(), 200)
     }
 
@@ -35,6 +42,11 @@
         timerBar.style.transformOrigin = 'left center'
         timerBar.style.transition = 'none'
         timerBar.style.transform = `scaleX(${ratio})`
+
+        if (prefersReducedMotion()) {
+            timerBar.style.transform = 'scaleX(1)'
+            return
+        }
 
         if (remaining <= 0) return
 
@@ -120,7 +132,8 @@
         toast.addEventListener('focusin', () => pause(toast))
         toast.addEventListener('focusout', () => resume(toast))
 
-        requestAnimationFrame(() => toast.classList.remove('opacity-0'))
+        if (prefersReducedMotion()) toast.classList.remove('opacity-0')
+        else requestAnimationFrame(() => toast.classList.remove('opacity-0'))
 
         const duration = Number(toast.dataset.autoDismissMs || 0)
         if (duration > 0) {
