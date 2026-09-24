@@ -20,6 +20,7 @@ The Design System v2 revalidation inventory is recorded in
 
 ## Foundation Authorities
 
+- `FOUNDATION_AND_CONTENT_DENSITY.md` — Design System v2 foundation and content-density decision matrix; detailed component authorities remain normative.
 - `components/TYPOGRAPHY.md` — type scale, hierarchy, casing, wrapping, and technical text.
 - `components/COLOR_AND_SEMANTIC.md` — brand and semantic color roles.
 - `components/DARK_MODE.md` — locked neutral-first dark surface and restrained Violet emphasis contract.
