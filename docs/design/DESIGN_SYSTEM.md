@@ -64,6 +64,7 @@ Use the documented shared owner before introducing local markup or utility bundl
 - `patterns/INVENTORY_AND_OPERATIONAL_PAGES.md`
 - `patterns/INVENTORY_RESOURCE_PAGE.md`
 - `patterns/OPERATIONAL_DASHBOARD.md`
+- `patterns/PAGE_ARCHETYPE_AND_NAVIGATION_REGISTRY.md` — Design System v2 page-archetype and tab/navigation selection authority.
 - `patterns/WELCOME_WORKSPACE_CATALOG.md`
 - Kubernetes inventory/operations patterns under `patterns/`
 - Object Storage inventory pattern under `patterns/`

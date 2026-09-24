@@ -79,6 +79,7 @@ Authoritative shell standards include the locked application-shell navigation co
 - `patterns/INVENTORY_AND_OPERATIONAL_PAGES.md`
 - `patterns/WELCOME_WORKSPACE_CATALOG.md`
 - `patterns/OPERATIONAL_DASHBOARD.md`
+- `patterns/PAGE_ARCHETYPE_AND_NAVIGATION_REGISTRY.md` — canonical page-archetype and tab/navigation decision registry.
 - `patterns/KUBERNETES_INVENTORY_OVERVIEW.md`
 - `patterns/INVENTORY_RESOURCE_PAGE.md`
 - `patterns/KUBERNETES_NODE_INVENTORY.md`
