@@ -38,16 +38,16 @@ def test_sidebar_standard_is_registered_as_authoritative_design_document() -> No
 
 def test_navigation_content_hierarchy_matches_design_system_v2_contract() -> None:
     sidebar = (ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'sidebar.html').read_text(encoding='utf-8')
-    analytics_menu = (
-        ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'analytics_menu.html'
-    ).read_text(encoding='utf-8')
+    analytics_menu = (ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'analytics_menu.html').read_text(
+        encoding='utf-8'
+    )
     breadcrumb = (ROOT / 'app' / 'common' / 'navigation.py').read_text(encoding='utf-8')
     kubernetes_overview = (
         ROOT / 'app' / 'templates' / 'kubernetes' / 'analytics' / 'overview' / 'partials' / '_hero.html'
     ).read_text(encoding='utf-8')
-    object_storage_pages = (
-        ROOT / 'app' / 'storage' / 'object_storage' / 'analytics' / 'pages.py'
-    ).read_text(encoding='utf-8')
+    object_storage_pages = (ROOT / 'app' / 'storage' / 'object_storage' / 'analytics' / 'pages.py').read_text(
+        encoding='utf-8'
+    )
 
     assert '>Analytics</div>' in sidebar
     assert sidebar.index('>Storage</div>') < sidebar.index('>Analytics</div>') < sidebar.index('>Insights</div>')
