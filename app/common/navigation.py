@@ -141,11 +141,13 @@ def _deduplicate(items: Iterable[BreadcrumbItem]) -> list[BreadcrumbItem]:
 def _analytics_items(endpoint: str) -> list[BreadcrumbItem]:
     if endpoint.startswith('analytics.object_storage_'):
         return [
-            BreadcrumbItem('Object Storage Analytics', 'database-zap'),
+            BreadcrumbItem('Analytics', 'chart-no-axes-combined'),
+            BreadcrumbItem('Object Storage', 'database-zap'),
             BreadcrumbItem(_leaf(endpoint, 'Overview')),
         ]
     return [
-        BreadcrumbItem('Kubernetes Analytics', 'bar-chart-3'),
+        BreadcrumbItem('Analytics', 'chart-no-axes-combined'),
+        BreadcrumbItem('Kubernetes', 'bar-chart-3'),
         BreadcrumbItem(_leaf(endpoint, 'Overview')),
     ]
 
@@ -180,7 +182,7 @@ def build_navigation_breadcrumb(
         items = _append_workflow(items, endpoint)
     elif endpoint.startswith('object_storage_inventory.'):
         items = [
-            BreadcrumbItem('Object Storage Inventory', 'database'),
+            BreadcrumbItem('Object Storage', 'database'),
             BreadcrumbItem(_leaf(endpoint, 'Overview')),
         ]
     elif endpoint.startswith('inventory.'):

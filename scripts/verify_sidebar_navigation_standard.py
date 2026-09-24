@@ -29,6 +29,7 @@ EXPECTED_SECTION_ORDER = (
     'Main',
     'Kubernetes',
     'Storage',
+    'Analytics',
     'Insights',
     'Platform',
     'Administration',
@@ -195,7 +196,7 @@ def verify() -> None:
     breadcrumb = _read(BREADCRUMB)
 
     expected_copy = {
-        'sidebar.html': ('>Insights</div>', '>Platform</div>'),
+        'sidebar.html': ('>Analytics</div>', '>Insights</div>', '>Platform</div>'),
         'inventory_menu.html': ('title="Inventory"', 'aria-label="Inventory"', '>Inventory</span>'),
         'kubernetes_operations_menu.html': (
             'title="Operations"',
@@ -206,7 +207,12 @@ def verify() -> None:
         ),
         'governance_menu.html': ('title="Governance"', 'aria-label="Governance"', '>Governance</span>'),
         'analytics_menu.html': (
-            '>Kubernetes Analytics</span>',
+            'title="Kubernetes"',
+            'aria-label="Kubernetes"',
+            '>Kubernetes</span>',
+            'title="Object Storage"',
+            'aria-label="Object Storage"',
+            '>Object Storage</span>',
             '>Utilization</span>',
             '>Capacity</span>',
             '>Storage</span>',
@@ -239,6 +245,10 @@ def verify() -> None:
             "'access.roles.index': 'Roles'",
             "'access.permissions.index': 'Permissions'",
             "BreadcrumbItem('Inventory', 'boxes')",
+            "BreadcrumbItem('Object Storage', 'database')",
+            "BreadcrumbItem('Analytics', 'chart-no-axes-combined')",
+            "BreadcrumbItem('Kubernetes', 'bar-chart-3')",
+            "BreadcrumbItem('Object Storage', 'database-zap')",
             "BreadcrumbItem('Operations', 'terminal-square')",
             "BreadcrumbItem('Governance', 'shield-check')",
             "BreadcrumbItem('Operations Center', 'workflow')",
@@ -319,7 +329,7 @@ def verify() -> None:
                 raise AssertionError(f'{filename} submenu #{index}: submenu typography must remain text-sm')
 
     doc_tokens = (
-        '# KAORI Sidebar Navigation Standard v1.4',
+        '# KAORI Sidebar Navigation Standard v1.5',
         'Status:** Locked application-shell and dark-mode contract',
         'Parent menu label | 16 px',
         'Submenu label | 14 px',
@@ -341,7 +351,7 @@ def verify() -> None:
 
     print(
         'KAORI sidebar navigation standard passed: '
-        f'{parent_count} parent blocks and {submenu_count} submenu links conform to v1.4; '
+        f'{parent_count} parent blocks and {submenu_count} submenu links conform to v1.5; '
         'section order, collapse behavior, accessibility, typography, and documentation are locked.'
     )
 

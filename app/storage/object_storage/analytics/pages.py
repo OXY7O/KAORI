@@ -13,19 +13,19 @@ class PageDefinition:
 
 PAGES: dict[str, PageDefinition] = {
     'overview': PageDefinition(
-        'Analytics Overview',
+        'Overview',
         'Review capacity, requests, concentration, forecasts, and posture.',
         'layout-dashboard',
         'Object Storage Analytics',
     ),
     'capacity': PageDefinition(
-        'Object Storage Capacity & Usage',
+        'Capacity & Usage',
         'Review capacity, bucket pressure, quotas, trends, and growth.',
         'database',
         'Object Storage Analytics',
     ),
     'performance': PageDefinition(
-        'Object Storage Performance',
+        'Performance',
         'Review S3 activity, errors, queue depth, demand, and traffic.',
         'activity',
         'Object Storage Analytics',

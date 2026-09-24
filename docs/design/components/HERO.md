@@ -104,6 +104,20 @@ Explicit exceptions:
 
 Metadata communicates identity, scope, evidence boundary, or stable operating context. Health/severity belongs in semantic status components.
 
+### Eyebrow and title ownership
+
+The eyebrow supplies domain/capability context. The `h1` supplies the exact page or workspace identity.
+
+Examples:
+
+```text
+KUBERNETES ANALYTICS → Capacity
+OBJECT STORAGE ANALYTICS → Performance
+ACCESS → Users
+```
+
+Do not repeat domain/capability wording already carried by the eyebrow merely to make the title longer. Titles remain stable across normal, blocked, degraded, and empty states. A title may be more descriptive than the sidebar label only when standalone page identity would otherwise be ambiguous.
+
 ## Operational Dashboard Hero Profile
 
 Kubernetes Operations Dashboard and Object Storage Operations Dashboard are the paired reference implementation.

@@ -24,7 +24,7 @@ from app.kubernetes.analytics.storage.presentation import get_selected_storage_t
 
 _PAGE = {
     'dataset_key': 'analytics.storage',
-    'title': 'Storage Analysis',
+    'title': 'Storage',
     'description': 'Review storage snapshots while KAORI prepares analytics evidence.',
     'icon': 'database',
     'page_id': 'storage-page',

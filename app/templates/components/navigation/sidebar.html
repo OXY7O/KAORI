@@ -117,13 +117,16 @@
                     <div class="space-y-1">{% include "components/navigation/object_storage_menu.html" %}</div>
                 </div>
             {% endif %}
-            {% if can_kubernetes_analytics or can_object_storage_analytics or can_intelligence or can_reports %}
+            {% if can_kubernetes_analytics or can_object_storage_analytics %}
+                <div class="sidebar-nav-section">
+                    <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Analytics</div>
+                    <div class="space-y-1">{% include "components/navigation/analytics_menu.html" %}</div>
+                </div>
+            {% endif %}
+            {% if can_intelligence or can_reports %}
                 <div class="sidebar-nav-section">
                     <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Insights</div>
                     <div class="space-y-1">
-                        {% if can_kubernetes_analytics or can_object_storage_analytics %}
-                            {% include "components/navigation/analytics_menu.html" %}
-                        {% endif %}
                         {% if can_intelligence %}
                             {% include "components/navigation/intelligence_menu.html" %}
                         {% endif %}

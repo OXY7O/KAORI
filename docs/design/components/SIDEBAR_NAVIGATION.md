@@ -1,4 +1,4 @@
-# KAORI Sidebar Navigation Standard v1.4
+# KAORI Sidebar Navigation Standard v1.5
 
 **Status:** Locked application-shell and dark-mode contract. The source templates, this document, and `scripts/verify_sidebar_navigation_standard.py` must change together.
 
@@ -304,7 +304,7 @@ Rules:
 6. Never shorten a label when doing so creates ambiguity between active KAORI domains or shared concepts.
 7. Do not reduce sidebar typography to accommodate long labels; fix owned wording first.
 
-Ambiguity-sensitive labels remain explicit, including `Kubernetes Analytics`, `Object Storage Analytics`, `Operations Center`, and `Notification Channels`.
+When a dedicated section already supplies capability context, parent labels omit that repeated noun. The `ANALYTICS` section therefore owns peer parents `Kubernetes` and `Object Storage`. Ambiguity-sensitive labels such as `Operations Center` and `Notification Channels` remain explicit.
 
 ## Color and Effects
 
@@ -373,8 +373,8 @@ STORAGE
     ├── Systems
     └── Buckets & Containers
 
-INSIGHTS
-├── Kubernetes Analytics
+ANALYTICS
+├── Kubernetes
 │   ├── Overview
 │   ├── Utilization
 │   ├── Capacity
@@ -383,13 +383,15 @@ INSIGHTS
 │   ├── Forecast
 │   ├── Top Consumers
 │   └── Alerts & Anomalies
-├── Object Storage Analytics
-│   ├── Overview
-│   ├── Capacity & Usage
-│   ├── Performance
-│   ├── Forecast
-│   ├── Top Consumers
-│   └── Alerts & Anomalies
+└── Object Storage
+    ├── Overview
+    ├── Capacity & Usage
+    ├── Performance
+    ├── Forecast
+    ├── Top Consumers
+    └── Alerts & Anomalies
+
+INSIGHTS
 ├── Intelligence
 └── Reports
 
@@ -419,7 +421,7 @@ ADMINISTRATION
     └── Account
 ```
 
-v1.4 retains the approved v1.3 **Storage** section and locks concise domain-aware navigation language without changing destination order, route ownership, permissions, icons, or disclosure behavior. `Object Storage` remains a provider-neutral inventory parent; vendor connectors such as MinIO remain under Integrations and must not become sidebar inventory parents.
+v1.5 retains the approved Storage and other shell groups, introduces the dedicated **Analytics** section, and removes repeated `Analytics` wording from its Kubernetes/Object Storage parent labels without changing destination order, route ownership, permissions, icons, or disclosure behavior. `Object Storage` remains a provider-neutral inventory parent; vendor connectors such as MinIO remain under Integrations and must not become sidebar inventory parents.
 
 `Buckets & Containers` is intentionally provider-neutral: the list surface uses canonical object-storage fields, while provider-native attributes remain in the detail drawer. This prevents MinIO, AWS S3, Azure Blob, Ceph RGW, or future providers from creating vendor-specific sidebar branches.
 
@@ -534,4 +536,4 @@ Kubernetes Analytics      analytics.view
 Object Storage Analytics  object_storage_analytics.view
 ```
 
-`analytics_menu.html` may render both analytics parents inside the same `Insights` section, but each parent is independently permission-gated. The `Storage` section is rendered only when `object_storage_inventory.view` is granted. Template visibility remains secondary to the server-side route decorator.
+`analytics_menu.html` renders both analytics parents inside the dedicated `Analytics` section, and each parent remains independently permission-gated. The `Storage` section is rendered only when `object_storage_inventory.view` is granted. Template visibility remains secondary to the server-side route decorator.
