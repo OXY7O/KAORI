@@ -39,6 +39,8 @@ The interface is information-first. Violet establishes KAORI identity, hierarchy
 - The practical component-selection and page-review contract is `docs/design/KAORI_STYLING_GUIDE.md`.
 - Page-local copies of hero, pagination, table, label, expandable-content, or right-context-rail utility bundles are prohibited.
 
+The consolidated foundation and content-density decision registry is `docs/design/FOUNDATION_AND_CONTENT_DENSITY.md`. It resolves foundation-selection and density questions while this document and the owning component contracts remain the normative detailed authorities.
+
 ## Brand palette
 
 | Role | Light mode | Dark mode |

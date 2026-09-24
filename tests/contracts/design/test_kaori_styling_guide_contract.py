@@ -444,3 +444,22 @@ def test_page_archetype_and_navigation_registry_is_complete() -> None:
     assert 'PAGE_ARCHETYPE_AND_NAVIGATION_REGISTRY.md' in authority_index
     assert 'PAGE_ARCHETYPE_AND_NAVIGATION_REGISTRY.md' in design_readme
     assert 'PAGE_ARCHETYPE_AND_NAVIGATION_REGISTRY.md' in tab_registry
+
+def test_design_system_v2_foundation_and_content_density_matrix_is_registered() -> None:
+    matrix = _read('docs/design/FOUNDATION_AND_CONTENT_DENSITY.md')
+    design_index = _read('docs/design/DESIGN_SYSTEM.md')
+    design_readme = _read('docs/design/README.md')
+    global_design = _read('docs/design/KAORI_DESIGN_SYSTEM.md')
+
+    assert '# KAORI Foundation and Content-Density Matrix' in matrix
+    assert '`frontend/styles.css`' in matrix
+    assert 'Typography Role Matrix' in matrix
+    assert 'Copy-Density Matrix' in matrix
+    assert 'Spacing and Density Matrix' in matrix
+    assert 'Shape and Elevation Matrix' in matrix
+    assert 'Icon Matrix' in matrix
+    assert 'Technical-Data Presentation Matrix' in matrix
+    assert 'Never fix density with page-local font shrinking' in matrix
+    assert 'FOUNDATION_AND_CONTENT_DENSITY.md' in design_index
+    assert 'FOUNDATION_AND_CONTENT_DENSITY.md' in design_readme
+    assert 'FOUNDATION_AND_CONTENT_DENSITY.md' in global_design
