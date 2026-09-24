@@ -18,7 +18,9 @@
     ) -%}
     {% set width_classes = 'max-w-5xl' if width == '3xl' else 'max-w-4xl' if width == '2xl' else 'max-w-2xl' if width == 'xl' else 'max-w-xl' if width == 'lg' else 'max-w-lg' %}
     <div x-cloak
+         x-data="kaoriSideDrawer"
          x-show="{{ x_show }}"
+         x-effect="syncOpen(Boolean({{ x_show }}), $refs.dialog)"
          class="fixed inset-0 z-50"
          @keydown.escape.window="{{ close_expression }}">
         <button type="button"
@@ -26,6 +28,8 @@
                 aria-label="Close {{ title }}"
                 @click="{{ close_expression }}"></button>
         <section role="dialog"
+                 x-ref="dialog"
+                 tabindex="-1"
                  data-side-drawer-dialog
                  aria-modal="true"
                  aria-labelledby="{{ id }}-title"

@@ -190,3 +190,20 @@ if (navbar.quickOpen || navbar.notificationDeckOpen || navbar.userOpen || navbar
     )
 
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_canonical_side_drawer_owns_focus_containment_and_return() -> None:
+    drawer = read('app/templates/components/side_drawer.html')
+    layout = read('app/templates/layouts/app.html')
+    runtime = read('app/static/js/side_drawer.js')
+
+    assert 'x-data="kaoriSideDrawer"' in drawer
+    assert 'x-effect="syncOpen(Boolean({{ x_show }}), $refs.dialog)"' in drawer
+    assert 'x-ref="dialog"' in drawer
+    assert 'tabindex="-1"' in drawer
+    assert "filename='js/side_drawer.js'" in layout
+    assert layout.index("filename='js/side_drawer.js'") < layout.index("filename='vendor/alpine/alpine.min.js'")
+    assert "window.Alpine.data('kaoriSideDrawer'" in runtime
+    assert 'this.opener = this.currentFocusTarget()' in runtime
+    assert 'this.trapFocus(event, this.dialog)' in runtime
+    assert 'this.restoreFocus(returnTarget)' in runtime
