@@ -29,6 +29,7 @@ The Design System v2 revalidation inventory is recorded in
 - `components/ACCESSIBILITY.md` — focus, semantics, keyboard behavior, and accessible state.
 - `components/RESPONSIVE_AND_HTMX.md` — responsive composition and partial-update behavior.
 - `RESPONSIVE_ACCESSIBILITY_INTERACTION.md` — Design System v2 responsive, accessibility, state, HTMX, overlay, and interaction decision matrix.
+- `REFERENCE_IMPLEMENTATION_AND_ENFORCEMENT.md` — Design System v2 production-reference, enforcement-coverage, debt, and extension-policy map.
 
 ## Shared Component Authorities
 

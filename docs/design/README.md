@@ -9,6 +9,7 @@
 - `KAORI_VISUAL_QA.md` — governed multi-viewport visual QA, review rubric, baseline evidence, and human-UAT boundary.
 - `FOUNDATION_AND_CONTENT_DENSITY.md` — current Design System v2 foundation/content-density decision matrix.
 - `RESPONSIVE_ACCESSIBILITY_INTERACTION.md` — current Design System v2 responsive/accessibility/interaction decision matrix.
+- `REFERENCE_IMPLEMENTATION_AND_ENFORCEMENT.md` — current Design System v2 production-reference and enforcement coverage map.
 - `audits/KAORI_DESIGN_SYSTEM_V2_AUTHORITY_AUDIT_20260924.md` — current Design System v2 authority/gap inventory.
 
 The Styling Guide selects the correct reusable component. The Design System and component documents define the detailed visual contract. Domain specifications may define content and behavior but may not override shared component geometry or tokens.

@@ -43,6 +43,8 @@ The consolidated foundation and content-density decision registry is `docs/desig
 
 The consolidated responsive, accessibility, state, HTMX, overlay, and interaction registry is `docs/design/RESPONSIVE_ACCESSIBILITY_INTERACTION.md`. It selects existing shared owners and executable evidence; detailed component contracts remain normative.
 
+The Design System v2 production-reference and enforcement map is `docs/design/REFERENCE_IMPLEMENTATION_AND_ENFORCEMENT.md`. It binds current authority to active references, existing executable enforcement, baseline/debt policy, and Visual QA without introducing a second validation framework.
+
 ## Brand palette
 
 | Role | Light mode | Dark mode |
