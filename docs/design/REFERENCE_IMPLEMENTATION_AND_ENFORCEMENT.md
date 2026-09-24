@@ -55,7 +55,7 @@ A production reference proves that a component or pattern is used in the real KA
 | Status labels | `table_label.html` + semantic component helpers | Inventory and registry tables | `verify_ui_style.py`; table/label contracts |
 | Forms / action bars / context rail | `form_field.html`; `form_action_bar.html`; `form_with_context_rail.html` | reviewed ConfigMap/Secret operations; Protected Reveal; Integration registration | form/context contracts; `verify_ui_reuse.py`; `verify_ui_style.py` |
 | Destructive confirmation | `destructive_confirmation_modal.html` + shared JS | ConfigMap/Secret delete flows and persisted-object detach/delete flows | interaction contracts + browser evidence |
-| Resource detail modal / drawer | `resource_detail_modal.html`; `side_drawer.html`; shared detail runtime | Node/Namespace/Workload/Pod/Service/Ingress/Storage/Configuration Inventory; Topology inspector | browser interaction tests; UI reuse/style checks; #614 for generic side-drawer focus parity |
+| Resource detail modal / drawer | `resource_detail_modal.html`; `side_drawer.html`; shared detail runtime + `side_drawer.js` | Node/Namespace/Workload/Pod/Service/Ingress/Storage/Configuration Inventory; Topology inspector | browser interaction tests; UI reuse/style checks; #614 shared generic side-drawer focus contract |
 | Navigation / application shell | shared sidebar/navbar/navigation owners | every authenticated KAORI workspace | `verify_application_shell_standard.py`; shell contracts; responsive browser tests |
 | Operational toast / feedback | `operational_toast.html`; `operational_progress_toast.html`; `operation_feedback_oob.html` | Metrics Source, Alertmanager, and provider operational flows | application-shell/feedback contracts + browser tests; #613 shared reduced-motion contract |
 | Workspace tabs | `workspace_tabs.html`; `framed_workspace_tabs.html`; `segmented_tabs.html`; `content_tabs.html` | Kubernetes Operations, Integrations, Analytics, Topology | `verify_ui_style.py`; reuse ownership contracts; styling-guide contract |
@@ -194,7 +194,7 @@ Human UAT remains final authority for hierarchy preference, visual balance, and 
 #608 identified two bounded implementation gaps outside #609's documentation scope:
 
 - #613 — reduced-motion coverage is now owned by the shared loading/toast/overlay CSS/JS paths and existing test/verifier families;
-- #614 — generic side-drawer focus containment and focus return remains open.
+- #614 — generic side-drawer opener capture, focus containment, and focus return are owned by the canonical shared drawer controller.
 
 Neither gap creates a new Design System v2 authority. Runtime fixes extend the existing shared owners and verification families.
 

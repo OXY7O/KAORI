@@ -22,7 +22,7 @@ It consolidates existing KAORI authorities and production behavior. It does not 
 | Overlay selection | `components/MODAL_DRAWER.md` | shared modal/drawer implementations + browser tests |
 | Resource detail modal/drawer | `components/resource_detail_modal.html` + `app/static/js/detail_rows.js` | representative interaction/browser evidence |
 | Destructive confirmation | `components/destructive_confirmation_modal.html` + `destructive_confirmation_modal.js` | shared interaction contract |
-| Generic side drawer | `components/side_drawer.html` | gap hardened by #614 |
+| Generic side drawer | `components/side_drawer.html` + `app/static/js/side_drawer.js` | #614 owns opener capture, focus entry/containment, and focus return |
 | Loading / refreshing | `components/LOADING.md` + shared loading components | same-region `hx-indicator` ownership |
 | Empty / blocked | `components/EMPTY_ERROR_STATE.md` + shared state components | empty-state contracts |
 | Persisted action feedback | `components/OPERATIONAL_ACTION_FEEDBACK.md` | shared toast + Activity Audit ownership |
@@ -72,8 +72,8 @@ Smaller viewports **recompose; they do not merely shrink**. Device-specific page
 | Keyboard access | Interactive behavior must be reachable without pointer input. |
 | Dialog semantics | Dialog overlays expose `role="dialog"` or native dialog semantics, an accessible name, and modal semantics where applicable. |
 | Focus entry | Opening an overlay moves focus into the interactive surface or its first meaningful control. |
-| Focus containment | Modal interactions contain Tab/Shift+Tab traversal while open. Generic side-drawer parity is bounded by #614. |
-| Focus return | Closing a modal/disclosure returns focus to the logical opener. Generic side-drawer parity is bounded by #614. |
+| Focus containment | Modal and canonical side-drawer interactions contain Tab/Shift+Tab traversal while open. |
+| Focus return | Closing a modal/disclosure/canonical side drawer returns focus to the logical opener when it remains available. |
 | Escape | Dismissible menus/dialogs/drawers use the shared Escape behavior. |
 | Dynamic feedback | Loading, search feedback, and toast state use `role` / `aria-live` / `aria-atomic` where the shared owner requires announcement. |
 | Busy state | Async regions expose `aria-busy` when the owning component can accurately represent pending work. |
@@ -198,7 +198,7 @@ Current acceptance evidence is intentionally reused rather than replaced:
 #608 found two concrete implementation gaps and split them from this documentation workstream:
 
 1. **#613 — reduced-motion coverage is implemented through the shared CSS/JS motion owners and existing verification paths.**
-2. **#614 — canonical side-drawer focus containment and focus return remains a bounded implementation follow-up.**
+2. **#614 — canonical side-drawer focus containment and focus return are implemented by the shared drawer owner and existing accessibility test families.**
 
 These issues are implementation follow-ups. They do not justify a new frontend state framework or page-local workaround.
 
