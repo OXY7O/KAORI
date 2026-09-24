@@ -3,9 +3,11 @@
 ## Start Here
 
 - `../standards/KAORI_ENGINEERING_STANDARD_V1.md` — mandatory final-recheck and engineering review index.
+- `DESIGN_SYSTEM.md` — compact authority index and compatibility entry point; it is not a separate design-system version.
 - `KAORI_STYLING_GUIDE.md` — practical implementation and page-review guide.
 - `KAORI_DESIGN_SYSTEM.md` — authoritative global visual and interaction contract.
 - `KAORI_VISUAL_QA.md` — governed multi-viewport visual QA, review rubric, baseline evidence, and human-UAT boundary.
+- `audits/KAORI_DESIGN_SYSTEM_V2_AUTHORITY_AUDIT_20260924.md` — current Design System v2 authority/gap inventory.
 
 The Styling Guide selects the correct reusable component. The Design System and component documents define the detailed visual contract. Domain specifications may define content and behavior but may not override shared component geometry or tokens.
 
