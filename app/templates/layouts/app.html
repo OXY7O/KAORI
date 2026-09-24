@@ -38,7 +38,8 @@
             {% include "components/navigation/sidebar.html" %}
             <div class="flex min-h-0 flex-1 flex-col overflow-hidden kaori-app-shell rounded-2xl border border-outline-subtle bg-surface-shell shadow-sm">
                 {% include "components/navigation/navbar.html" %}
-                <main class="min-h-0 flex-1 overflow-y-auto bg-surface-page transition-colors duration-300 [scrollbar-gutter:stable]">
+                <main data-kaori-main-scroll
+                      class="min-h-0 flex-1 overflow-y-auto scroll-pt-5 bg-surface-page transition-colors duration-300 [scrollbar-gutter:stable] lg:scroll-pt-6 2xl:scroll-pt-7">
                     <div class="p-5 lg:p-6 2xl:p-7">
                         {% include "components/states/_flash_messages.html" %}
                         {% block dashboard_content %}

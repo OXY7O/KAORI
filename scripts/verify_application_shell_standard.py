@@ -55,6 +55,15 @@ def verify() -> None:
         errors,
     )
 
+    require(
+        'data-kaori-main-scroll' in layout
+        and 'scroll-pt-5' in layout
+        and 'lg:scroll-pt-6' in layout
+        and '2xl:scroll-pt-7' in layout,
+        'Application main scroll owner must preserve the canonical top-boundary scroll inset.',
+        errors,
+    )
+
     navbar_script = "filename='js/navbar.js'"
     alpine_script = "filename='vendor/alpine/alpine.min.js'"
     require(navbar_script in layout, 'Application layout must load app/static/js/navbar.js.', errors)
