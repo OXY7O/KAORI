@@ -58,6 +58,30 @@ def _login(page: Page, kaori_authenticated_base_url: str) -> None:
     assert '/auth/login' not in page.url
 
 
+def _settle_theme_visual_state(page: Page) -> None:
+    """Wait for navbar theme transitions to reach a deterministic rendered state."""
+    page.evaluate(
+        """() =>
+        new Promise((resolve) => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(async () => {
+                    const shell = document.querySelector('header.kaori-app-shell');
+                    if (!shell || typeof shell.getAnimations !== 'function') {
+                        resolve();
+                        return;
+                    }
+                    const animations = shell.getAnimations({ subtree: true }).filter((animation) => {
+                        const timing = animation.effect?.getComputedTiming?.();
+                        return timing && Number.isFinite(timing.endTime);
+                    });
+                    await Promise.allSettled(animations.map((animation) => animation.finished));
+                    resolve();
+                });
+            });
+        })"""
+    )
+
+
 def _open_notification_center(page: Page, kaori_authenticated_base_url: str) -> None:
     response = page.goto(
         f'{kaori_authenticated_base_url}{NOTIFICATION_CENTER_PATH}',
@@ -163,6 +187,7 @@ def test_welcome_visual_qa_light_and_dark(
 
             class_tokens = (html.get_attribute('class') or '').split()
             assert ('dark' in class_tokens) == (visual_theme == 'dark')
+            _settle_theme_visual_state(page)
 
             evidence_name = f'welcome-{visual_theme}-{viewport_name}.png'
             try:
