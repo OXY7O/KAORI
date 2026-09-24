@@ -58,28 +58,21 @@ def _login(page: Page, kaori_authenticated_base_url: str) -> None:
     assert '/auth/login' not in page.url
 
 
-def _settle_theme_visual_state(page: Page) -> None:
-    """Wait for navbar theme transitions to reach a deterministic rendered state."""
-    page.evaluate(
-        """() =>
-        new Promise((resolve) => {
-            requestAnimationFrame(() => {
-                requestAnimationFrame(async () => {
-                    const shell = document.querySelector('header.kaori-app-shell');
-                    if (!shell || typeof shell.getAnimations !== 'function') {
-                        resolve();
-                        return;
-                    }
-                    const animations = shell.getAnimations({ subtree: true }).filter((animation) => {
-                        const timing = animation.effect?.getComputedTiming?.();
-                        return timing && Number.isFinite(timing.endTime);
-                    });
-                    await Promise.allSettled(animations.map((animation) => animation.finished));
-                    resolve();
-                });
-            });
-        })"""
-    )
+def _load_persisted_visual_theme(page: Page, visual_theme: str) -> None:
+    """Render a deterministic final theme through the application pre-paint bootstrap."""
+    assert visual_theme in {'light', 'dark'}
+    page.evaluate("(theme) => window.localStorage.setItem('theme', theme)", visual_theme)
+
+    response = page.reload(wait_until='networkidle')
+    assert response is not None
+    assert response.ok
+    expect(page.locator('body')).to_be_visible()
+    expect(page.locator('#theme-toggle')).to_be_visible()
+
+    html = page.locator('html')
+    class_tokens = (html.get_attribute('class') or '').split()
+    assert ('dark' in class_tokens) == (visual_theme == 'dark')
+    assert page.evaluate("() => window.localStorage.getItem('theme')") == visual_theme
 
 
 def _open_notification_center(page: Page, kaori_authenticated_base_url: str) -> None:
@@ -175,19 +168,10 @@ def test_welcome_visual_qa_light_and_dark(
     viewport_name, _ = kaori_viewport
 
     _login(page, kaori_authenticated_base_url)
-    html = page.locator('html')
-    toggle = page.locator('#theme-toggle')
-    expect(toggle).to_be_visible()
 
     for visual_theme in ('light', 'dark'):
         with _browser_evidence(page, f'welcome-{visual_theme}', viewport_name):
-            is_dark = 'dark' in (html.get_attribute('class') or '').split()
-            if (visual_theme == 'dark') != is_dark:
-                toggle.click()
-
-            class_tokens = (html.get_attribute('class') or '').split()
-            assert ('dark' in class_tokens) == (visual_theme == 'dark')
-            _settle_theme_visual_state(page)
+            _load_persisted_visual_theme(page, visual_theme)
 
             evidence_name = f'welcome-{visual_theme}-{viewport_name}.png'
             try:
