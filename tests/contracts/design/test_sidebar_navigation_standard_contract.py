@@ -35,7 +35,6 @@ def test_sidebar_standard_is_registered_as_authoritative_design_document() -> No
     assert '15/13 px visual-guide draft' in standard
 
 
-
 def test_navigation_content_hierarchy_matches_design_system_v2_contract() -> None:
     sidebar = (ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'sidebar.html').read_text(encoding='utf-8')
     analytics_menu = (ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'analytics_menu.html').read_text(
