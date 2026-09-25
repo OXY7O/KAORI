@@ -287,7 +287,7 @@
                 </div>
                 <div class="mt-5 rounded-lg border border-outline-subtle bg-surface-elevated p-4">
                     <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Apply boundary</p>
-                    <p class="mt-2 text-sm leading-6 text-content-secondary">Native Kubernetes only. Capsule remains unavailable until the Capsule provider discovery and compatibility workstream is admitted.</p>
+                    <p class="mt-2 text-sm leading-6 text-content-secondary">Native Kubernetes only. A fresh committed Capacity Analytics snapshot must pass Tenant allocation preflight before provider reconciliation. Capsule remains unavailable until capability qualification is admitted.</p>
                 </div>
                 <button type="submit"
                         {% if not can_manage or not native_available or not environment_options or not profiles %}disabled aria-disabled="true"{% endif %}
@@ -295,6 +295,88 @@
                     <i data-lucide="play" class="h-4 w-4"></i>Create &amp; Verify Namespace
                 </button>
             </form>
+        </section>
+        <section class="space-y-4" aria-label="Tenant capacity governance">
+            <div>
+                <h2 class="text-lg font-semibold text-content-primary">Tenant Capacity Governance</h2>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Govern CPU and memory request commitments against fresh committed Ready-worker allocatable evidence. ResourceQuota remains enforcement intent, not a physical reservation.</p>
+            </div>
+            <div class="grid gap-5 xl:grid-cols-2">
+                {% for row in capacity_governance_rows %}
+                    {% set capacity_tone = 'normal' if row.state == 'healthy' else ('warning' if row.state == 'near_capacity' else ('critical' if row.state in ['critical', 'exhausted', 'overcommitted'] else 'info')) %}
+                    <form method="post"
+                          action="{{ url_for('tenant.update_capacity_policy_route') }}"
+                          class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="cluster_id" value="{{ row.cluster.id }}">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <h3 class="text-base font-semibold text-content-primary">{{ row.cluster.name }}</h3>
+                                <p class="mt-1 text-xs text-content-muted">Capacity evidence: {{ row.evidence_state|replace('_', ' ')|title }}{% if row.data_cutoff %} · {{ row.data_cutoff }}{% endif %}</p>
+                            </div>
+                            {{ table_label.status_label(row.state|replace('_', ' ')|title, capacity_tone) }}
+                        </div>
+                        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                            <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Governed Budget</p>
+                                <p class="mt-1 text-sm font-semibold text-content-primary">{{ row.budget.cpu_cores or 'N/A' }} CPU · {{ row.budget.memory_gib or 'N/A' }} GiB</p>
+                            </div>
+                            <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Committed Tenant Allocation</p>
+                                <p class="mt-1 text-sm font-semibold text-content-primary">{{ row.committed.cpu_cores or 'N/A' }} CPU · {{ row.committed.memory_gib or 'N/A' }} GiB</p>
+                            </div>
+                        </div>
+                        {% if row.unbounded_dimensions %}
+                            <p class="mt-3 text-xs leading-5 text-status-warning">{{ row.unbounded_dimensions }} existing CPU/memory request dimension(s) are unbounded; positive allocation changes fail safe until resolved.</p>
+                        {% endif %}
+                        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                            <label class="block">
+                                {{ form_field.label_row('System Reserved CPU') }}
+                                <input name="system_reserved_cpu"
+                                       value="{{ row.policy.system_reserved_cpu }}"
+                                       class="{{ form_field.input_classes() }}">
+                            </label>
+                            <label class="block">
+                                {{ form_field.label_row('System Reserved Memory') }}
+                                <input name="system_reserved_memory"
+                                       value="{{ row.policy.system_reserved_memory }}"
+                                       placeholder="0Gi"
+                                       class="{{ form_field.input_classes() }}">
+                            </label>
+                            <label class="block">
+                                {{ form_field.label_row('Safety Headroom', 'Percent', 'info', 'shield') }}
+                                <input name="safety_headroom_percent"
+                                       type="number"
+                                       min="0"
+                                       max="100"
+                                       value="{{ row.policy.safety_headroom_percent }}"
+                                       class="{{ form_field.input_classes() }}">
+                            </label>
+                            <label class="block">
+                                {{ form_field.label_row('Unmanaged CPU Requests') }}
+                                <input name="unmanaged_cpu_requests"
+                                       value="{{ row.policy.unmanaged_cpu_requests }}"
+                                       class="{{ form_field.input_classes() }}">
+                            </label>
+                            <label class="block sm:col-span-2">
+                                {{ form_field.label_row('Unmanaged Memory Requests') }}
+                                <input name="unmanaged_memory_requests"
+                                       value="{{ row.policy.unmanaged_memory_requests }}"
+                                       placeholder="0Gi"
+                                       class="{{ form_field.input_classes() }}">
+                            </label>
+                        </div>
+                        <p class="mt-3 text-xs leading-5 text-content-muted">Policy source: {{ row.policy.source|replace('_', ' ')|title }} · version {{ row.policy.version }}. Admission uses request commitments only; limits and utilization are not substituted for allocation budget.</p>
+                        <button type="submit"
+                                {% if not can_manage %}disabled aria-disabled="true"{% endif %}
+                                class="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-kaori-primary px-4 py-2 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-soft disabled:cursor-not-allowed disabled:opacity-50 dark:text-kaori-accent">
+                            <i data-lucide="shield-check" class="h-4 w-4"></i>Save Capacity Policy
+                        </button>
+                    </form>
+                {% else %}
+                    <div class="rounded-xl border border-outline-subtle bg-surface-card p-5 text-sm text-content-muted xl:col-span-2">No Ready Native Kubernetes cluster is available for Tenant Capacity Governance.</div>
+                {% endfor %}
+            </div>
         </section>
         <section class="grid gap-5 xl:grid-cols-3" aria-label="Tenant committed state">
             <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
