@@ -14,19 +14,18 @@
             {% endcall %}
         </div>
         {% set tenant_context_metrics = [
-            ('server', 'Ready Clusters', ready_clusters|length, 'Native provider targets', true),
-            ('circle-check', 'Verified', ready_namespace_count, 'Ready namespaces')
-        ] %}
-        {{ page_hero.context_card(
-            'Tenant context',
-            'Provider Readiness',
-            'Native Kubernetes',
-            'Ready' if native_available else 'Blocked',
-            'normal' if native_available else 'warning',
-            tenant_context_metrics,
-            'Open Cluster Integrations',
-            url_for('integrations.kubernetes'),
-            'server-cog'
+                    ('server', 'Ready Clusters', ready_clusters|length, 'Native provider targets', true),
+                    ('circle-check', 'Verified', ready_namespace_count, 'Ready namespaces')
+                ] %}
+        {{ page_hero.context_card('Tenant context',
+                'Provider Readiness',
+                'Native Kubernetes',
+                'Ready' if native_available else 'Blocked',
+                'normal' if native_available else 'warning',
+                tenant_context_metrics,
+                'Open Cluster Integrations',
+                url_for('integrations.kubernetes') ,
+        'server-cog'
         ) }}
     </div>
 </section>
