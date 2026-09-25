@@ -30,6 +30,7 @@ _ALLOWED_ENVIRONMENTS = {item.value for item in TenantEnvironmentName}
 _ALLOWED_PROFILE_CLASSES = {item.value for item in TenantResourceProfileClass}
 _OPERATION_TABS = {'provisioning', 'runs-evidence', 'drift-reconcile', 'activity'}
 
+
 class ResourceProfilePreset(TypedDict):
     quota: dict[str, str]
     limits: dict[str, dict[str, str]]
