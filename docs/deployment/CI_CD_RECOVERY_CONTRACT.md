@@ -69,8 +69,8 @@ A roll-forward must:
 4. merge through `kaori/staging` and receive exact-evidence reuse + fresh Fast Smoke on the resulting staging SHA;
 5. publish a new immutable release candidate with a new lineage identity;
 6. deploy and verify that new candidate through the normal governed path;
-6. obtain the same human acceptance required for production promotion;
-7. preserve old tags, digests, evidence, and transition records unchanged.
+7. obtain the same human acceptance required for production promotion;
+8. preserve old tags, digests, evidence, and transition records unchanged.
 
 A roll-forward is never permission to retag an old digest, edit prior evidence, skip admission, or mutate an already published release.
 
