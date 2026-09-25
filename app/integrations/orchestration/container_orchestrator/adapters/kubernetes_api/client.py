@@ -9,6 +9,7 @@ from kubernetes.client import (
     AuthorizationV1Api,
     CoreV1Api,
     NetworkingV1Api,
+    RbacAuthorizationV1Api,
     StorageV1Api,
     VersionApi,
 )
@@ -84,6 +85,13 @@ class KubernetesClient:
         self,
     ) -> NetworkingV1Api:
         return NetworkingV1Api(
+            self._api_client(),
+        )
+
+    def rbac_authorization_api(
+        self,
+    ) -> RbacAuthorizationV1Api:
+        return RbacAuthorizationV1Api(
             self._api_client(),
         )
 

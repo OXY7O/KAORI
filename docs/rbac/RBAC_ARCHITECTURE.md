@@ -168,4 +168,4 @@ Current RBAC is global to the KAORI application. A role permission such as `clus
 - time-bound access;
 - approval-required role activation.
 
-Future scoped authorization should add a policy layer instead of encoding scope into permission key names.
+Future scoped KAORI application authorization should add a policy layer instead of encoding scope into permission key names.\n\nKubernetes Tenant Management access grants from #114 are a separate downstream authorization domain: they translate Tenant membership + scope + a versioned Tenant Access Profile into provider RBAC. They do not extend `User.has_permission()`, do not replace KAORI application RBAC, and must not be represented as additional global application roles.

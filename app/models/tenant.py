@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     JSON,
@@ -19,6 +20,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions.db import db
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class TenantLifecycleStatus(StrEnum):
@@ -55,6 +59,42 @@ class TenantNamespaceProvisioningStatus(StrEnum):
     FAILED = 'failed'
 
 
+class TenantMembershipPrincipalType(StrEnum):
+    USER = 'user'
+    GROUP = 'group'
+
+
+class TenantMembershipStatus(StrEnum):
+    ACTIVE = 'active'
+    REVOKED = 'revoked'
+
+
+class TenantAccessProfileKey(StrEnum):
+    VIEWER = 'viewer'
+    OPERATOR = 'operator'
+    TENANT_ADMIN = 'tenant_admin'
+    DEPLOYER = 'deployer'
+
+
+class TenantAccessScope(StrEnum):
+    TENANT = 'tenant'
+    ENVIRONMENT = 'environment'
+    NAMESPACE = 'namespace'
+
+
+class TenantAccessGrantStatus(StrEnum):
+    ACTIVE = 'active'
+    REVOKED = 'revoked'
+
+
+class TenantAccessReconciliationStatus(StrEnum):
+    PENDING = 'pending'
+    READY = 'ready'
+    DRIFTED = 'drifted'
+    FAILED = 'failed'
+    REVOKED = 'revoked'
+
+
 class Tenant(db.Model):
     __tablename__ = 'tenants'
 
@@ -84,6 +124,15 @@ class Tenant(db.Model):
 
     environments: Mapped[list[TenantEnvironment]] = relationship(
         'TenantEnvironment', back_populates='tenant', cascade='all, delete-orphan', passive_deletes=True
+    )
+    groups: Mapped[list[TenantGroup]] = relationship(
+        'TenantGroup', back_populates='tenant', cascade='all, delete-orphan', passive_deletes=True
+    )
+    memberships: Mapped[list[TenantMembership]] = relationship(
+        'TenantMembership', back_populates='tenant', cascade='all, delete-orphan', passive_deletes=True
+    )
+    access_grants: Mapped[list[TenantAccessGrant]] = relationship(
+        'TenantAccessGrant', back_populates='tenant', cascade='all, delete-orphan', passive_deletes=True
     )
 
     __table_args__ = (
@@ -120,6 +169,9 @@ class TenantEnvironment(db.Model):
     tenant: Mapped[Tenant] = relationship('Tenant', back_populates='environments')
     namespaces: Mapped[list[TenantNamespace]] = relationship(
         'TenantNamespace', back_populates='environment', cascade='all, delete-orphan', passive_deletes=True
+    )
+    access_grants: Mapped[list[TenantAccessGrant]] = relationship(
+        'TenantAccessGrant', back_populates='environment', passive_deletes=True
     )
 
     __table_args__ = (
@@ -276,6 +328,9 @@ class TenantNamespace(db.Model):
     resource_profile: Mapped[TenantResourceProfile | None] = relationship(
         'TenantResourceProfile', back_populates='namespaces'
     )
+    access_grants: Mapped[list[TenantAccessGrant]] = relationship(
+        'TenantAccessGrant', back_populates='namespace', passive_deletes=True
+    )
 
     __table_args__ = (
         UniqueConstraint('cluster_id', 'namespace', name='uq_tenant_namespaces_cluster_namespace'),
@@ -290,4 +345,153 @@ class TenantNamespace(db.Model):
         Index('ix_tenant_namespaces_environment', 'tenant_environment_id', 'namespace'),
         Index('ix_tenant_namespaces_capacity_decision', 'capacity_decision_id'),
         Index('ix_tenant_namespaces_provisioning', 'cluster_id', 'provisioning_status'),
+    )
+
+
+
+class TenantGroup(db.Model):
+    __tablename__ = 'tenant_groups'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    public_id: Mapped[str] = mapped_column(String(36), nullable=False, default=lambda: str(uuid.uuid4()))
+    tenant_id: Mapped[str] = mapped_column(ForeignKey('tenants.id', ondelete='CASCADE'), nullable=False)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    slug: Mapped[str] = mapped_column(String(120), nullable=False)
+    subject_name: Mapped[str] = mapped_column(String(253), nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    correlation_id: Mapped[str] = mapped_column(String(64), nullable=False, default=lambda: str(uuid.uuid4()))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
+
+    tenant: Mapped[Tenant] = relationship('Tenant', back_populates='groups')
+    memberships: Mapped[list[TenantMembership]] = relationship(
+        'TenantMembership', back_populates='group', passive_deletes=True
+    )
+
+    __table_args__ = (
+        UniqueConstraint('public_id', name='uq_tenant_groups_public_id'),
+        UniqueConstraint('correlation_id', name='uq_tenant_groups_correlation_id'),
+        UniqueConstraint('tenant_id', 'slug', name='uq_tenant_groups_tenant_slug'),
+        Index('ix_tenant_groups_tenant_enabled', 'tenant_id', 'enabled'),
+    )
+
+
+class TenantMembership(db.Model):
+    __tablename__ = 'tenant_memberships'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey('tenants.id', ondelete='CASCADE'), nullable=False)
+    principal_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey('users.id', ondelete='RESTRICT'), nullable=True)
+    group_id: Mapped[int | None] = mapped_column(ForeignKey('tenant_groups.id', ondelete='RESTRICT'), nullable=True)
+    subject_name: Mapped[str] = mapped_column(String(253), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default=TenantMembershipStatus.ACTIVE.value)
+    correlation_id: Mapped[str] = mapped_column(String(64), nullable=False, default=lambda: str(uuid.uuid4()))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
+
+    tenant: Mapped[Tenant] = relationship('Tenant', back_populates='memberships')
+    user: Mapped[User | None] = relationship('User')
+    group: Mapped[TenantGroup | None] = relationship('TenantGroup', back_populates='memberships')
+    access_grants: Mapped[list[TenantAccessGrant]] = relationship(
+        'TenantAccessGrant', back_populates='membership', cascade='all, delete-orphan', passive_deletes=True
+    )
+
+    __table_args__ = (
+        UniqueConstraint('correlation_id', name='uq_tenant_memberships_correlation_id'),
+        UniqueConstraint('tenant_id', 'user_id', name='uq_tenant_memberships_tenant_user'),
+        UniqueConstraint('tenant_id', 'group_id', name='uq_tenant_memberships_tenant_group'),
+        CheckConstraint(
+            "principal_type IN ('user', 'group')",
+            name='ck_tenant_memberships_principal_type',
+        ),
+        CheckConstraint(
+            "status IN ('active', 'revoked')",
+            name='ck_tenant_memberships_status',
+        ),
+        CheckConstraint(
+            "((principal_type = 'user' AND user_id IS NOT NULL AND group_id IS NULL) "
+            "OR (principal_type = 'group' AND group_id IS NOT NULL AND user_id IS NULL))",
+            name='ck_tenant_memberships_principal_reference',
+        ),
+        Index('ix_tenant_memberships_tenant_status', 'tenant_id', 'status'),
+    )
+
+
+class TenantAccessGrant(db.Model):
+    __tablename__ = 'tenant_access_grants'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    public_id: Mapped[str] = mapped_column(String(36), nullable=False, default=lambda: str(uuid.uuid4()))
+    tenant_id: Mapped[str] = mapped_column(ForeignKey('tenants.id', ondelete='CASCADE'), nullable=False)
+    membership_id: Mapped[int] = mapped_column(ForeignKey('tenant_memberships.id', ondelete='CASCADE'), nullable=False)
+    tenant_environment_id: Mapped[int | None] = mapped_column(
+        ForeignKey('tenant_environments.id', ondelete='CASCADE'), nullable=True
+    )
+    tenant_namespace_id: Mapped[int | None] = mapped_column(
+        ForeignKey('tenant_namespaces.id', ondelete='CASCADE'), nullable=True
+    )
+    scope_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    access_profile: Mapped[str] = mapped_column(String(30), nullable=False)
+    access_profile_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default=TenantAccessGrantStatus.ACTIVE.value)
+    reconciliation_status: Mapped[str] = mapped_column(
+        String(30), nullable=False, default=TenantAccessReconciliationStatus.PENDING.value
+    )
+    reconciliation_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    desired_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    effective_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    reconciliation_evidence_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    last_reconciled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    correlation_id: Mapped[str] = mapped_column(String(64), nullable=False, default=lambda: str(uuid.uuid4()))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
+
+    tenant: Mapped[Tenant] = relationship('Tenant', back_populates='access_grants')
+    membership: Mapped[TenantMembership] = relationship('TenantMembership', back_populates='access_grants')
+    environment: Mapped[TenantEnvironment | None] = relationship(
+        'TenantEnvironment', back_populates='access_grants'
+    )
+    namespace: Mapped[TenantNamespace | None] = relationship('TenantNamespace', back_populates='access_grants')
+
+    __table_args__ = (
+        UniqueConstraint('public_id', name='uq_tenant_access_grants_public_id'),
+        UniqueConstraint('correlation_id', name='uq_tenant_access_grants_correlation_id'),
+        CheckConstraint(
+            "scope_type IN ('tenant', 'environment', 'namespace')",
+            name='ck_tenant_access_grants_scope_type',
+        ),
+        CheckConstraint(
+            "access_profile IN ('viewer', 'operator', 'tenant_admin', 'deployer')",
+            name='ck_tenant_access_grants_profile',
+        ),
+        CheckConstraint(
+            "status IN ('active', 'revoked')",
+            name='ck_tenant_access_grants_status',
+        ),
+        CheckConstraint(
+            "reconciliation_status IN ('pending', 'ready', 'drifted', 'failed', 'revoked')",
+            name='ck_tenant_access_grants_reconciliation_status',
+        ),
+        CheckConstraint(
+            "((scope_type = 'tenant' AND tenant_environment_id IS NULL AND tenant_namespace_id IS NULL) "
+            "OR (scope_type = 'environment' AND tenant_environment_id IS NOT NULL AND tenant_namespace_id IS NULL) "
+            "OR (scope_type = 'namespace' AND tenant_environment_id IS NULL AND tenant_namespace_id IS NOT NULL))",
+            name='ck_tenant_access_grants_scope_reference',
+        ),
+        Index('ix_tenant_access_grants_tenant_status', 'tenant_id', 'status'),
+        Index('ix_tenant_access_grants_membership', 'membership_id', 'scope_type'),
+        Index('ix_tenant_access_grants_reconciliation', 'tenant_id', 'reconciliation_status'),
     )
