@@ -55,6 +55,20 @@ class TenantNamespaceProvisioningStatus(StrEnum):
     FAILED = 'failed'
 
 
+class TenantCapacityState(StrEnum):
+    HEALTHY = 'healthy'
+    NEAR_CAPACITY = 'near_capacity'
+    CRITICAL = 'critical'
+    EXHAUSTED = 'exhausted'
+    OVERCOMMITTED = 'overcommitted'
+    UNKNOWN = 'unknown'
+
+
+class TenantCapacityDecisionResult(StrEnum):
+    ALLOW = 'allow'
+    BLOCK = 'block'
+
+
 class Tenant(db.Model):
     __tablename__ = 'tenants'
 
@@ -164,6 +178,34 @@ class TenantResourceProfile(db.Model):
     )
 
 
+class TenantCapacityPolicy(db.Model):
+    __tablename__ = 'tenant_capacity_policies'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    cluster_id: Mapped[str] = mapped_column(ForeignKey('clusters.id', ondelete='CASCADE'), nullable=False)
+    system_reserved_cpu: Mapped[str] = mapped_column(String(32), nullable=False, default='0')
+    system_reserved_memory: Mapped[str] = mapped_column(String(32), nullable=False, default='0')
+    safety_headroom_percent: Mapped[int] = mapped_column(Integer, nullable=False, default=10)
+    unmanaged_cpu_requests: Mapped[str] = mapped_column(String(32), nullable=False, default='0')
+    unmanaged_memory_requests: Mapped[str] = mapped_column(String(32), nullable=False, default='0')
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
+
+    __table_args__ = (
+        UniqueConstraint('cluster_id', name='uq_tenant_capacity_policies_cluster'),
+        CheckConstraint(
+            'safety_headroom_percent >= 0 AND safety_headroom_percent <= 100',
+            name='ck_tenant_capacity_policies_headroom_percent',
+        ),
+        CheckConstraint('version >= 1', name='ck_tenant_capacity_policies_version'),
+    )
+
+
 class TenantNamespace(db.Model):
     __tablename__ = 'tenant_namespaces'
 
@@ -217,4 +259,49 @@ class TenantNamespace(db.Model):
         ),
         Index('ix_tenant_namespaces_environment', 'tenant_environment_id', 'namespace'),
         Index('ix_tenant_namespaces_provisioning', 'cluster_id', 'provisioning_status'),
+    )
+
+
+class TenantCapacityDecision(db.Model):
+    __tablename__ = 'tenant_capacity_decisions'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    correlation_id: Mapped[str] = mapped_column(String(64), nullable=False, default=lambda: str(uuid.uuid4()))
+    cluster_id: Mapped[str] = mapped_column(ForeignKey('clusters.id', ondelete='RESTRICT'), nullable=False)
+    tenant_environment_id: Mapped[int] = mapped_column(
+        ForeignKey('tenant_environments.id', ondelete='CASCADE'), nullable=False
+    )
+    tenant_namespace_id: Mapped[int | None] = mapped_column(
+        ForeignKey('tenant_namespaces.id', ondelete='SET NULL'), nullable=True
+    )
+    resource_profile_id: Mapped[int | None] = mapped_column(
+        ForeignKey('tenant_resource_profiles.id', ondelete='SET NULL'), nullable=True
+    )
+    namespace: Mapped[str] = mapped_column(String(253), nullable=False)
+    operation: Mapped[str] = mapped_column(String(20), nullable=False, default='create')
+    decision: Mapped[str] = mapped_column(String(20), nullable=False)
+    capacity_state: Mapped[str] = mapped_column(String(30), nullable=False)
+    proposal_quota_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    evidence_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    data_cutoff: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+
+    __table_args__ = (
+        UniqueConstraint('correlation_id', name='uq_tenant_capacity_decisions_correlation_id'),
+        CheckConstraint(
+            "operation IN ('create', 'increase', 'reduce')",
+            name='ck_tenant_capacity_decisions_operation',
+        ),
+        CheckConstraint(
+            "decision IN ('allow', 'block')",
+            name='ck_tenant_capacity_decisions_result',
+        ),
+        CheckConstraint(
+            "capacity_state IN ('healthy', 'near_capacity', 'critical', 'exhausted', 'overcommitted', 'unknown')",
+            name='ck_tenant_capacity_decisions_state',
+        ),
+        Index('ix_tenant_capacity_decisions_cluster_created', 'cluster_id', 'created_at'),
+        Index('ix_tenant_capacity_decisions_environment_namespace', 'tenant_environment_id', 'namespace'),
     )
