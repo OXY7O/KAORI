@@ -16,8 +16,8 @@ def test_tenant_uat_surface_uses_one_kubernetes_sidebar_destination() -> None:
     assert "url_for('tenant.index')" in tenant_menu
     assert "page_hero.intro('building-2', 'Kubernetes', 'building-2')" in template
     assert 'Native Kubernetes only.' in template
-    assert 'Capsule remains unavailable until #121' in template
-    assert "BreadcrumbItem('Tenant', 'building-2')" in navigation
+    assert 'Capsule remains unavailable until the Capsule provider discovery' in template
+    assert "'tenant': ('Tenant', 'building-2', 'Overview')" in navigation
 
 
 def test_tenant_uat_surface_separates_platform_permission_from_tenant_membership() -> None:
