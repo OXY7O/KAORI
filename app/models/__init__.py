@@ -60,7 +60,10 @@ from app.models.tenant import (
     TenantEnvironmentName,
     TenantLifecycleStatus,
     TenantNamespace,
+    TenantNamespaceProvisioningStatus,
     TenantOwnershipStatus,
+    TenantResourceProfile,
+    TenantResourceProfileClass,
 )
 from app.models.user import User
 
@@ -99,7 +102,10 @@ __all__ = [
     'TenantEnvironmentName',
     'TenantLifecycleStatus',
     'TenantNamespace',
+    'TenantNamespaceProvisioningStatus',
     'TenantOwnershipStatus',
+    'TenantResourceProfile',
+    'TenantResourceProfileClass',
     'Role',
     'Permission',
     'RolePermission',
