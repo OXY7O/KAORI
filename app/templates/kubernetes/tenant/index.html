@@ -312,9 +312,11 @@
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div>
                                 <h3 class="text-base font-semibold text-content-primary">{{ row.cluster.name }}</h3>
-                                <p class="mt-1 text-xs text-content-muted">Capacity evidence: {{ row.evidence_state|replace('_', ' ')|title }}{% if row.data_cutoff %} · {{ row.data_cutoff }}{% endif %}</p>
+                                <p class="mt-1 text-xs text-content-muted">Capacity evidence: {{ row.evidence_state|replace('_', ' ') |title }}
+                                    {% if row.data_cutoff %}· {{ row.data_cutoff }}{% endif %}
+                                </p>
                             </div>
-                            {{ table_label.status_label(row.state|replace('_', ' ')|title, capacity_tone) }}
+                            {{ table_label.status_label(row.state|replace('_', ' ') |title, capacity_tone) }}
                         </div>
                         <div class="mt-4 grid gap-3 sm:grid-cols-2">
                             <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
@@ -331,13 +333,13 @@
                         {% endif %}
                         <div class="mt-4 grid gap-4 sm:grid-cols-2">
                             <label class="block">
-                                {{ form_field.label_row('System Reserved CPU') }}
+                                {{ form_field.label_row("System Reserved CPU") }}
                                 <input name="system_reserved_cpu"
                                        value="{{ row.policy.system_reserved_cpu }}"
                                        class="{{ form_field.input_classes() }}">
                             </label>
                             <label class="block">
-                                {{ form_field.label_row('System Reserved Memory') }}
+                                {{ form_field.label_row("System Reserved Memory") }}
                                 <input name="system_reserved_memory"
                                        value="{{ row.policy.system_reserved_memory }}"
                                        placeholder="0Gi"
@@ -353,20 +355,20 @@
                                        class="{{ form_field.input_classes() }}">
                             </label>
                             <label class="block">
-                                {{ form_field.label_row('Unmanaged CPU Requests') }}
+                                {{ form_field.label_row("Unmanaged CPU Requests") }}
                                 <input name="unmanaged_cpu_requests"
                                        value="{{ row.policy.unmanaged_cpu_requests }}"
                                        class="{{ form_field.input_classes() }}">
                             </label>
                             <label class="block sm:col-span-2">
-                                {{ form_field.label_row('Unmanaged Memory Requests') }}
+                                {{ form_field.label_row("Unmanaged Memory Requests") }}
                                 <input name="unmanaged_memory_requests"
                                        value="{{ row.policy.unmanaged_memory_requests }}"
                                        placeholder="0Gi"
                                        class="{{ form_field.input_classes() }}">
                             </label>
                         </div>
-                        <p class="mt-3 text-xs leading-5 text-content-muted">Policy source: {{ row.policy.source|replace('_', ' ')|title }} · version {{ row.policy.version }}. Admission uses request commitments only; limits and utilization are not substituted for allocation budget.</p>
+                        <p class="mt-3 text-xs leading-5 text-content-muted">Policy source: {{ row.policy.source|replace('_', ' ') |title }} · version {{ row.policy.version }}. Admission uses request commitments only; limits and utilization are not substituted for allocation budget.</p>
                         <button type="submit"
                                 {% if not can_manage %}disabled aria-disabled="true"{% endif %}
                                 class="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-kaori-primary px-4 py-2 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-soft disabled:cursor-not-allowed disabled:opacity-50 dark:text-kaori-accent">
