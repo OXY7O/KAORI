@@ -17,12 +17,7 @@ def _resource_names(profile_key: str) -> set[str]:
 
 
 def _verbs_for_resource(profile_key: str, resource: str) -> set[str]:
-    return {
-        verb
-        for rule in get_access_profile(profile_key).rules
-        if resource in rule.resources
-        for verb in rule.verbs
-    }
+    return {verb for rule in get_access_profile(profile_key).rules if resource in rule.resources for verb in rule.verbs}
 
 
 def test_canonical_access_profiles_are_versioned_and_explicit() -> None:
