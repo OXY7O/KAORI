@@ -101,6 +101,18 @@ def classify_capacity_state(*, budget: CapacityVector, committed: CapacityVector
     return 'Healthy'
 
 
+def classify_allocation_change(*, current: CapacityVector, proposed: CapacityVector) -> str:
+    changes = (
+        _dimension_change(current.cpu, proposed.cpu),
+        _dimension_change(current.memory_bytes, proposed.memory_bytes),
+    )
+    if 'increase' in changes:
+        return 'increase'
+    if 'decrease' in changes:
+        return 'decrease'
+    return 'no_change'
+
+
 def evaluate_allocation_preflight(
     *,
     budget: CapacityVector,
@@ -246,6 +258,20 @@ def _budget_dimension(
     assert safety_headroom is not None
     assert unmanaged is not None
     return max(allocatable - reserve - safety_headroom - unmanaged, _ZERO)
+
+
+def _dimension_change(current: Decimal | None, proposed: Decimal | None) -> str:
+    if current is None and proposed is None:
+        return 'no_change'
+    if current is None:
+        return 'decrease'
+    if proposed is None:
+        return 'increase'
+    if proposed > current:
+        return 'increase'
+    if proposed < current:
+        return 'decrease'
+    return 'no_change'
 
 
 def _dimension_positive_change(current: Decimal | None, proposed: Decimal | None) -> bool:

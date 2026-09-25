@@ -20,8 +20,20 @@ def test_tenant_uat_surface_uses_one_kubernetes_sidebar_destination() -> None:
     assert 'Capsule remains unavailable until the Capsule provider discovery' in template
     assert "'tenant': ('Tenant', 'building-2', 'Overview')" in navigation
     assert "@any_permission_required('tenant.view', 'tenant.manage')" in routes
-    for mutation in ('/tenants', '/resource-profiles', '/capacity-policy', '/namespaces'):
+    for mutation in (
+        '/tenants',
+        '/resource-profiles',
+        '/capacity-policy',
+        '/namespaces',
+        '/namespace-allocation',
+    ):
         assert f"@tenant_bp.post('{mutation}')\n@permission_required('tenant.manage')" in routes
+
+    assert 'data-tenant-allocation-change-form' in template
+    assert 'name="tenant_namespace_id"' in template
+    assert 'name="resource_profile_id"' in template
+    assert 'Current Allocation' in template
+    assert 'Proposed Allocation' in template
 
 
 def test_tenant_uat_surface_separates_platform_permission_from_tenant_membership() -> None:

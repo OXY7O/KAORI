@@ -75,6 +75,45 @@
         applyProfileMode()
     }
 
+    const allocationChangeForm = document.querySelector('[data-tenant-allocation-change-form]')
+    if (allocationChangeForm) {
+        const profiles = readJson('tenant-namespace-allocation-profiles')
+        const namespaces = readJson('tenant-namespace-allocation-state')
+        const namespaceSelect = allocationChangeForm.querySelector('[data-tenant-allocation-change-namespace]')
+        const profileSelect = allocationChangeForm.querySelector('[data-tenant-allocation-change-profile]')
+
+        const currentProfile = allocationChangeForm.querySelector('[data-tenant-allocation-current-profile]')
+        const currentCpu = allocationChangeForm.querySelector('[data-tenant-allocation-current-cpu]')
+        const currentMemory = allocationChangeForm.querySelector('[data-tenant-allocation-current-memory]')
+        const proposedProfile = allocationChangeForm.querySelector('[data-tenant-allocation-proposed-profile]')
+        const proposedCpu = allocationChangeForm.querySelector('[data-tenant-allocation-proposed-cpu]')
+        const proposedMemory = allocationChangeForm.querySelector('[data-tenant-allocation-proposed-memory]')
+
+        const requestValue = (valueSet, resource) => valueSet?.quota?.[`requests.${resource}`] || 'Unbounded'
+
+        const renderAllocationChange = () => {
+            const current = namespaces[namespaceSelect?.value] || null
+            const proposed = profiles[profileSelect?.value] || null
+            const proposedLabel = profileSelect?.selectedOptions?.[0]?.textContent?.trim() || '—'
+
+            if (currentProfile) {
+                currentProfile.textContent = current
+                    ? `${current.profile_name} · v${current.profile_version || '—'}`
+                    : '—'
+            }
+            if (currentCpu) currentCpu.textContent = current ? requestValue(current, 'cpu') : '—'
+            if (currentMemory) currentMemory.textContent = current ? requestValue(current, 'memory') : '—'
+
+            if (proposedProfile) proposedProfile.textContent = proposed ? proposedLabel : '—'
+            if (proposedCpu) proposedCpu.textContent = proposed ? requestValue(proposed, 'cpu') : '—'
+            if (proposedMemory) proposedMemory.textContent = proposed ? requestValue(proposed, 'memory') : '—'
+        }
+
+        namespaceSelect?.addEventListener('change', renderAllocationChange)
+        profileSelect?.addEventListener('change', renderAllocationChange)
+        renderAllocationChange()
+    }
+
     const namespaceForm = document.querySelector('[data-tenant-namespace-allocation-form]')
     if (namespaceForm) {
         const profiles = readJson('tenant-namespace-allocation-profiles')

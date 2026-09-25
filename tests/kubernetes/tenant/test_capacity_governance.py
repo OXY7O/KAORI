@@ -4,11 +4,12 @@ from app.kubernetes.analytics.materialization.service import SnapshotResult
 from app.kubernetes.tenant.capacity import (
     CapacityVector,
     build_tenant_allocation_budget,
+    classify_allocation_change,
     classify_capacity_state,
     evaluate_allocation_preflight,
     quota_request_vector,
 )
-from app.kubernetes.tenant.capacity_governance import _capacity_vector
+from app.kubernetes.tenant.capacity_governance import _capacity_vector, _unknown_evidence_decision
 
 
 def test_quota_request_vector_preserves_unbounded_dimensions() -> None:
@@ -199,3 +200,57 @@ def test_stale_committed_capacity_snapshot_fails_closed() -> None:
 
     assert vector is None
     assert 'stale' in reason.lower()
+
+
+def test_allocation_change_classifies_increase_decrease_and_no_change() -> None:
+    bounded = CapacityVector(cpu=Decimal('4'), memory_bytes=Decimal('40'))
+    increased = CapacityVector(cpu=Decimal('5'), memory_bytes=Decimal('40'))
+    decreased = CapacityVector(cpu=Decimal('3'), memory_bytes=Decimal('30'))
+
+    assert classify_allocation_change(current=bounded, proposed=increased) == 'increase'
+    assert classify_allocation_change(current=bounded, proposed=decreased) == 'decrease'
+    assert classify_allocation_change(current=bounded, proposed=bounded) == 'no_change'
+
+
+def test_allocation_change_treats_unbounded_proposal_as_increase() -> None:
+    current = CapacityVector(cpu=Decimal('4'), memory_bytes=Decimal('40'))
+    proposed = CapacityVector(cpu=None, memory_bytes=Decimal('40'))
+
+    assert classify_allocation_change(current=current, proposed=proposed) == 'increase'
+
+
+def test_allocation_change_treats_bounding_an_unbounded_dimension_as_decrease() -> None:
+    current = CapacityVector(cpu=None, memory_bytes=Decimal('40'))
+    proposed = CapacityVector(cpu=Decimal('4'), memory_bytes=Decimal('40'))
+
+    assert classify_allocation_change(current=current, proposed=proposed) == 'decrease'
+
+
+def test_unknown_evidence_allows_non_increasing_existing_allocation_change() -> None:
+    decision = _unknown_evidence_decision(
+        reason='Committed capacity evidence is stale.',
+        committed=CapacityVector(cpu=Decimal('8'), memory_bytes=Decimal('80')),
+        current=CapacityVector(cpu=Decimal('4'), memory_bytes=Decimal('40')),
+        proposed=CapacityVector(cpu=Decimal('2'), memory_bytes=Decimal('20')),
+        positive_change=False,
+    )
+
+    assert decision.allowed is True
+    assert decision.decision == 'allow'
+    assert decision.state == 'Unknown'
+    assert decision.projected_committed.cpu == Decimal('6')
+    assert decision.projected_committed.memory_bytes == Decimal('60')
+
+
+def test_unknown_evidence_blocks_positive_existing_allocation_change() -> None:
+    decision = _unknown_evidence_decision(
+        reason='Committed capacity evidence is stale.',
+        committed=CapacityVector(cpu=Decimal('8'), memory_bytes=Decimal('80')),
+        current=CapacityVector(cpu=Decimal('2'), memory_bytes=Decimal('20')),
+        proposed=CapacityVector(cpu=Decimal('4'), memory_bytes=Decimal('40')),
+        positive_change=True,
+    )
+
+    assert decision.allowed is False
+    assert decision.decision == 'block'
+    assert decision.state == 'Unknown'

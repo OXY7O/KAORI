@@ -16,6 +16,7 @@ from app.kubernetes.tenant.capacity import (
     CapacityVector,
     TenantAllocationBudget,
     build_tenant_allocation_budget,
+    classify_allocation_change,
     classify_capacity_state,
     evaluate_allocation_preflight,
     quota_request_vector,
@@ -172,56 +173,96 @@ def enforce_namespace_allocation_preflight(
     namespace: str,
     quota_hard: Mapping[str, object],
 ) -> TenantCapacityDecision:
-    cluster_id = tenant_environment.tenant.cluster_id
+    return _enforce_allocation_preflight(
+        tenant_environment=tenant_environment,
+        profile=profile,
+        namespace=namespace,
+        current=CapacityVector(cpu=_ZERO, memory_bytes=_ZERO),
+        proposed=quota_request_vector(quota_hard),
+        operation='create',
+    )
+
+
+def enforce_existing_namespace_allocation_preflight(
+    *,
+    record: TenantNamespace,
+    profile: TenantResourceProfile,
+    quota_hard: Mapping[str, object],
+) -> TenantCapacityDecision:
+    current = quota_request_vector(record.allocation_quota_json or {})
     proposed = quota_request_vector(quota_hard)
-    current = CapacityVector(cpu=_ZERO, memory_bytes=_ZERO)
+    operation = classify_allocation_change(current=current, proposed=proposed)
+    return _enforce_allocation_preflight(
+        tenant_environment=record.environment,
+        profile=profile,
+        namespace=record.namespace,
+        current=current,
+        proposed=proposed,
+        operation=operation,
+    )
+
+
+def _enforce_allocation_preflight(
+    *,
+    tenant_environment: TenantEnvironment,
+    profile: TenantResourceProfile,
+    namespace: str,
+    current: CapacityVector,
+    proposed: CapacityVector,
+    operation: str,
+) -> TenantCapacityDecision:
+    cluster_id = tenant_environment.tenant.cluster_id
     committed, committed_count = _committed_tenant_allocation(cluster_id)
     policy = TenantCapacityPolicy.query.filter_by(cluster_id=cluster_id).first()
     snapshot_result = _read_capacity_snapshot(cluster_id)
     capacity, capacity_reason = _capacity_vector(snapshot_result)
+    positive_change = operation in {'create', 'increase'}
 
     budget: TenantAllocationBudget | None = None
     if policy is None:
-        pure = _blocked_decision(
+        pure = _unknown_evidence_decision(
             reason='Tenant Capacity Governance policy is not configured for the selected cluster.',
             committed=committed,
             current=current,
             proposed=proposed,
+            positive_change=positive_change,
         )
     elif capacity is None:
-        pure = _blocked_decision(
+        pure = _unknown_evidence_decision(
             reason=capacity_reason,
             committed=committed,
             current=current,
             proposed=proposed,
+            positive_change=positive_change,
         )
-    elif committed.cpu is None or committed.memory_bytes is None:
-        pure = _blocked_decision(
-            reason=(
-                'Committed Tenant allocation contains an unbounded CPU or memory request dimension; '
-                'positive allocation cannot be proven safe.'
-            ),
-            committed=committed,
-            current=current,
-            proposed=proposed,
-        )
-        budget = _budget(policy, capacity)
     else:
         budget = _budget(policy, capacity)
-        pure = evaluate_allocation_preflight(
-            budget=budget.available,
-            committed_before=committed,
-            current_allocation=current,
-            proposed_allocation=proposed,
-            capacity_evidence_available=True,
-        )
+        if committed.cpu is None or committed.memory_bytes is None:
+            pure = _unknown_evidence_decision(
+                reason=(
+                    'Committed Tenant allocation contains an unbounded CPU or memory request dimension; '
+                    'positive allocation cannot be proven safe.'
+                ),
+                committed=committed,
+                current=current,
+                proposed=proposed,
+                positive_change=positive_change,
+            )
+        else:
+            pure = evaluate_allocation_preflight(
+                budget=budget.available,
+                committed_before=committed,
+                current_allocation=current,
+                proposed_allocation=proposed,
+                capacity_evidence_available=True,
+            )
 
     decision = _persist_decision(
         cluster_id=cluster_id,
         tenant_environment=tenant_environment,
         profile=profile,
         namespace=namespace,
-        operation='create',
+        operation=operation,
         pure=pure,
         evidence=_DecisionEvidenceContext(
             policy=policy,
@@ -369,23 +410,28 @@ def _budget(policy: TenantCapacityPolicy, capacity: CapacityVector) -> TenantAll
     )
 
 
-def _blocked_decision(
+def _unknown_evidence_decision(
     *,
     reason: str,
     committed: CapacityVector,
     current: CapacityVector,
     proposed: CapacityVector,
+    positive_change: bool,
 ) -> AllocationPreflightDecision:
     projected = _project(committed, current, proposed)
     return AllocationPreflightDecision(
-        allowed=False,
-        decision='block',
+        allowed=not positive_change,
+        decision='block' if positive_change else 'allow',
         state='Unknown',
-        reason=reason,
+        reason=(
+            reason
+            if positive_change
+            else f'{reason} This non-increasing allocation change is allowed because it does not add commitment.'
+        ),
         projected_committed=projected,
         projected_headroom=CapacityVector(cpu=None, memory_bytes=None),
         shortfall=CapacityVector(cpu=None, memory_bytes=None),
-        positive_change=True,
+        positive_change=positive_change,
     )
 
 
