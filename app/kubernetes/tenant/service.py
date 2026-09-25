@@ -28,6 +28,63 @@ _TENANT_SLUG_RE = re.compile(r'[^a-z0-9-]+')
 _ALLOWED_ENVIRONMENTS = {item.value for item in TenantEnvironmentName}
 _ALLOWED_PROFILE_CLASSES = {item.value for item in TenantResourceProfileClass}
 
+RESOURCE_PROFILE_PRESETS: dict[str, dict[str, Any]] = {
+    'small': {
+        'quota_hard': {
+            'requests.cpu': '1',
+            'limits.cpu': '2',
+            'requests.memory': '2Gi',
+            'limits.memory': '4Gi',
+            'pods': '10',
+            'persistentvolumeclaims': '5',
+            'requests.storage': '50Gi',
+            'services': '5',
+            'configmaps': '25',
+            'secrets': '25',
+        },
+        'limit_defaults': {
+            'default_request': {'cpu': '100m', 'memory': '128Mi'},
+            'default': {'cpu': '250m', 'memory': '256Mi'},
+        },
+    },
+    'standard': {
+        'quota_hard': {
+            'requests.cpu': '2',
+            'limits.cpu': '4',
+            'requests.memory': '4Gi',
+            'limits.memory': '8Gi',
+            'pods': '20',
+            'persistentvolumeclaims': '10',
+            'requests.storage': '100Gi',
+            'services': '10',
+            'configmaps': '50',
+            'secrets': '50',
+        },
+        'limit_defaults': {
+            'default_request': {'cpu': '100m', 'memory': '128Mi'},
+            'default': {'cpu': '500m', 'memory': '512Mi'},
+        },
+    },
+    'large': {
+        'quota_hard': {
+            'requests.cpu': '4',
+            'limits.cpu': '8',
+            'requests.memory': '8Gi',
+            'limits.memory': '16Gi',
+            'pods': '40',
+            'persistentvolumeclaims': '20',
+            'requests.storage': '200Gi',
+            'services': '20',
+            'configmaps': '100',
+            'secrets': '100',
+        },
+        'limit_defaults': {
+            'default_request': {'cpu': '250m', 'memory': '256Mi'},
+            'default': {'cpu': '1', 'memory': '1Gi'},
+        },
+    },
+}
+
 
 class TenantStateConflictError(RuntimeError):
     """Committed Tenant state changed while a mutation transaction was applying."""
@@ -167,7 +224,11 @@ def create_resource_profile(source: Mapping[str, Any]) -> TenantResourceProfile:
     if profile_class not in _ALLOWED_PROFILE_CLASSES:
         raise ValueError('Select a supported Resource Profile class.')
 
-    quota, limits = _profile_values(source)
+    if profile_class == TenantResourceProfileClass.CUSTOM.value:
+        quota, limits = _profile_values(source)
+    else:
+        preset = RESOURCE_PROFILE_PRESETS[profile_class]
+        quota, limits = validate_profile_spec(preset['quota_hard'], preset['limit_defaults'])
     profile = TenantResourceProfile()
     profile.name = name
     profile.profile_class = profile_class
@@ -270,4 +331,5 @@ def get_tenant_context() -> dict[str, Any]:
         'namespace_count': namespace_count,
         'ready_namespace_count': TenantNamespace.query.filter_by(provisioning_status='ready').count(),
         'native_available': bool(ready_clusters),
+        'profile_presets': RESOURCE_PROFILE_PRESETS,
     }

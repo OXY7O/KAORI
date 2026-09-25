@@ -1,10 +1,36 @@
-{% set tenant_active = request.endpoint and request.endpoint.startswith('tenant.') %}
-<a href="{{ url_for('tenant.index') }}"
-   title="Tenant"
-   aria-label="Tenant"
-   class="{{ 'sidebar-parent-active' if tenant_active else 'sidebar-item-idle' }} sidebar-parent-link group flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition lg:[.sidebar-collapsed_&]:justify-center lg:[.sidebar-collapsed_&]:px-2">
-    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if tenant_active else 'sidebar-item-idle-icon' }} transition">
-        <i data-lucide="building-2" class="h-4 w-4" aria-hidden="true"></i>
-    </span>
-    <span class="sidebar-expanded-only truncate whitespace-nowrap">Tenant</span>
-</a>
+{% set endpoint = request.endpoint or '' %}
+{% set tenant_active = endpoint.startswith('tenant.') %}
+<details class="sidebar-menu space-y-1"
+         {% if tenant_active %}open{% endif %}>
+    <summary class="{{ 'sidebar-parent-active' if tenant_active else 'sidebar-item-idle' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition lg:[.sidebar-collapsed_&]:justify-center lg:[.sidebar-collapsed_&]:px-2"
+             title="Tenant"
+             aria-label="Tenant"
+             @click="if (window.innerWidth >= 1024 && !sidebarExpanded) { $event.preventDefault(); toggleSidebar(); $el.parentElement.open = true }">
+        <div class="flex min-w-0 items-center gap-2.5">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if tenant_active else 'sidebar-item-idle-icon' }} transition">
+                <i data-lucide="building-2" class="h-4 w-4"></i>
+            </span>
+            <span class="sidebar-expanded-only truncate whitespace-nowrap">Tenant</span>
+        </div>
+        <i data-lucide="chevron-right"
+           class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if tenant_active else 'text-white/[0.35]' }}"></i>
+    </summary>
+    <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
+        {% set tenant_links = [
+            ('tenant.index', 'layout-dashboard', 'Overview'),
+            ('tenant.tenants', 'users-round', 'Tenants'),
+            ('tenant.resource_profiles', 'layers-3', 'Resource Profiles'),
+            ('tenant.namespace_provisioning', 'boxes', 'Namespace Provisioning'),
+            ('tenant.operations', 'workflow', 'Operations')
+        ] %}
+        {% for target_endpoint, icon, label in tenant_links %}
+            {% set active = endpoint == target_endpoint %}
+            <a href="{{ url_for(target_endpoint) }}"
+               class="{{ 'bg-white/[0.08] text-kaori-accent' if active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+                <span class="truncate whitespace-nowrap">{{ label }}</span>
+            </a>
+        {% endfor %}
+    </div>
+</details>

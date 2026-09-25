@@ -55,7 +55,38 @@ def _record(
 @tenant_bp.get('/')
 @any_permission_required('tenant.view', 'tenant.manage')
 def index():
-    return render_template('kubernetes/tenant/index.html', **get_tenant_context())
+    return render_template('kubernetes/tenant/overview.html', **get_tenant_context())
+
+
+@tenant_bp.get('/tenants')
+@any_permission_required('tenant.view', 'tenant.manage')
+def tenants():
+    return render_template('kubernetes/tenant/tenants.html', **get_tenant_context())
+
+
+@tenant_bp.get('/resource-profiles')
+@any_permission_required('tenant.view', 'tenant.manage')
+def resource_profiles():
+    return render_template('kubernetes/tenant/resource_profiles.html', **get_tenant_context())
+
+
+@tenant_bp.get('/namespace-provisioning')
+@any_permission_required('tenant.view', 'tenant.manage')
+def namespace_provisioning():
+    return render_template('kubernetes/tenant/namespace_provisioning.html', **get_tenant_context())
+
+
+@tenant_bp.get('/operations')
+@any_permission_required('tenant.view', 'tenant.manage')
+def operations():
+    operations_tab = request.args.get('tab', 'provisioning')
+    if operations_tab not in {'provisioning', 'runs', 'drift', 'activity'}:
+        operations_tab = 'provisioning'
+    return render_template(
+        'kubernetes/tenant/operations.html',
+        operations_tab=operations_tab,
+        **get_tenant_context(),
+    )
 
 
 @tenant_bp.post('/tenants')
@@ -97,7 +128,7 @@ def create_tenant_route():
                 'operation': 'create_tenant',
             },
         )
-    return redirect(url_for('tenant.index'))
+    return redirect(url_for('tenant.tenants'))
 
 
 @tenant_bp.post('/resource-profiles')
@@ -136,7 +167,7 @@ def create_resource_profile_route():
                 'operation': 'create_resource_profile',
             },
         )
-    return redirect(url_for('tenant.index'))
+    return redirect(url_for('tenant.resource_profiles'))
 
 
 @tenant_bp.post('/namespaces')
@@ -173,4 +204,4 @@ def provision_namespace_route():
                 'operation': 'provision_namespace',
             },
         )
-    return redirect(url_for('tenant.index'))
+    return redirect(url_for('tenant.namespace_provisioning'))

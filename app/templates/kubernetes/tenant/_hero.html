@@ -1,0 +1,32 @@
+{% import "components/page_hero.html" as page_hero %}
+<section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">
+            {% call page_hero.intro('building-2', 'Kubernetes', 'building-2') %}
+                <h1 class="{{ page_hero.title_classes() }}">{{ hero_title }}</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">{{ hero_description }}</p>
+                <div class="{{ page_hero.metadata_row_classes() }}">
+                    {{ page_hero.meta_label('layers-3', tenant_count ~ ' Tenants') }}
+                    {{ page_hero.meta_label('boxes', namespace_count ~ ' Namespaces') }}
+                    {{ page_hero.meta_label('shield-check', 'Native Kubernetes Active') }}
+                    {{ page_hero.meta_label('package-open', 'Capsule Planned') }}
+                </div>
+            {% endcall %}
+        </div>
+        {% set tenant_context_metrics = [
+            ('server', 'Ready Clusters', ready_clusters|length, 'Native provider targets', true),
+            ('circle-check', 'Verified', ready_namespace_count, 'Ready namespaces')
+        ] %}
+        {{ page_hero.context_card(
+            'Tenant context',
+            'Provider Readiness',
+            'Native Kubernetes',
+            'Ready' if native_available else 'Blocked',
+            'normal' if native_available else 'warning',
+            tenant_context_metrics,
+            'Open Cluster Integrations',
+            url_for('integrations.kubernetes'),
+            'server-cog'
+        ) }}
+    </div>
+</section>
