@@ -3,11 +3,11 @@
 {% import "components/table_label.html" as table_label %}
 {% block tenant_content %}
     {% set operation_tabs = [
-                ('provisioning', 'Provisioning', 'list-checks', url_for('tenant.operations', tab='provisioning')),
-                ('runs-evidence', 'Runs & Evidence', 'file-check-2', url_for('tenant.operations', tab='runs-evidence')),
-                ('drift-reconcile', 'Drift & Reconcile', 'refresh-cw', url_for('tenant.operations', tab='drift-reconcile')),
-                ('activity', 'Activity', 'activity', url_for('tenant.operations', tab='activity'))
-            ] %}
+            ('provisioning', 'Provisioning', 'list-checks', url_for('tenant.operations', tab='provisioning')),
+            ('runs-evidence', 'Runs & Evidence', 'file-check-2', url_for('tenant.operations', tab='runs-evidence')),
+            ('drift-reconcile', 'Drift & Reconcile', 'refresh-cw', url_for('tenant.operations', tab='drift-reconcile')),
+            ('activity', 'Activity', 'activity', url_for('tenant.operations', tab='activity'))
+        ] %}
     <section class="space-y-5">
         {{ content_tabs.render_links('tenant-operations', operation_tabs, active_tab, 'Tenant Operations', nowrap=true) }}
         {% if active_tab == 'provisioning' %}

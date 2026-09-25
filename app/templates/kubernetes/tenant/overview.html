@@ -8,11 +8,11 @@
         </div>
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {% for icon, label, value, note in [
-                        ('users-round', 'Total Tenants', tenant_count, 'Committed tenant records'),
-                        ('boxes', 'Managed Namespaces', namespace_count, 'Tenant-owned namespaces'),
-                        ('server', 'Ready Clusters', ready_clusters|length, 'Native provider targets'),
-                        ('circle-check', 'Verified Ready', ready_namespace_count, 'Verified provisioning outcomes')
-                    ] %}
+                ('users-round', 'Total Tenants', tenant_count, 'Committed tenant records'),
+                ('boxes', 'Managed Namespaces', namespace_count, 'Tenant-owned namespaces'),
+                ('server', 'Ready Clusters', ready_clusters|length, 'Native provider targets'),
+                ('circle-check', 'Verified Ready', ready_namespace_count, 'Verified provisioning outcomes')
+                ] %}
                 <article class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
                     <div class="flex items-center gap-3">
                         <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
@@ -56,10 +56,10 @@
     </section>
     <section class="grid gap-5 xl:grid-cols-3" aria-label="Recent Tenant state">
         {% for title, items, kind in [
-                    ('Recent Tenants', tenants, 'tenant'),
-                    ('Recent Resource Profiles', profiles, 'profile'),
-                    ('Recent Namespaces', namespaces, 'namespace')
-                ] %}
+            ('Recent Tenants', tenants, 'tenant'),
+            ('Recent Resource Profiles', profiles, 'profile'),
+            ('Recent Namespaces', namespaces, 'namespace')
+            ] %}
             <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
                 <header class="border-b border-outline-subtle px-5 py-4">
                     <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
@@ -98,8 +98,7 @@
     <section class="grid gap-4 lg:grid-cols-2">
         <article class="rounded-xl border border-status-success/30 bg-status-success-soft p-5">
             <div class="flex items-start gap-3">
-                <i data-lucide="shield-check"
-                   class="mt-0.5 h-5 w-5 text-status-success"></i>
+                <i data-lucide="shield-check" class="mt-0.5 h-5 w-5 text-status-success"></i>
                 <div>
                     <h2 class="text-base font-semibold text-content-primary">Native Kubernetes</h2>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Active for Tenant creation, Resource Profiles, and Namespace + ResourceQuota + LimitRange provisioning.</p>

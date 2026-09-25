@@ -25,11 +25,11 @@
                 <legend class="text-sm font-semibold text-content-primary">Profile Class</legend>
                 <div class="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     {% for key, label, note, icon in [
-                                ('small', 'Small', 'Dev / Test', 'layers-2'),
-                                ('standard', 'Standard', 'General Purpose', 'layers-3'),
-                                ('large', 'Large', 'High Workload', 'layers'),
-                                ('custom', 'Custom', 'Manual Values', 'sliders-horizontal')
-                            ] %}
+                        ('small', 'Small', 'Dev / Test', 'layers-2'),
+                        ('standard', 'Standard', 'General Purpose', 'layers-3'),
+                        ('large', 'Large', 'High Workload', 'layers'),
+                        ('custom', 'Custom', 'Manual Values', 'sliders-horizontal')
+                        ] %}
                         <label class="cursor-pointer rounded-xl border border-outline-default bg-surface-card p-4 transition has-[:checked]:border-kaori-primary has-[:checked]:bg-kaori-soft">
                             <input type="radio"
                                    name="profile_class"
@@ -50,17 +50,17 @@
                     <h3 class="text-sm font-semibold text-content-primary">ResourceQuota · Namespace</h3>
                     <div class="mt-4 grid gap-4 sm:grid-cols-2">
                         {% for name, label, value in [
-                                    ('requests_cpu','CPU Requests',standard['quota']['requests.cpu']),
-                                    ('limits_cpu','CPU Limits',standard['quota']['limits.cpu']),
-                                    ('requests_memory','Memory Requests',standard['quota']['requests.memory']),
-                                    ('limits_memory','Memory Limits',standard['quota']['limits.memory']),
-                                    ('pods','Pods',standard['quota']['pods']),
-                                    ('persistentvolumeclaims','PVCs',standard['quota']['persistentvolumeclaims']),
-                                    ('requests_storage','Storage',standard['quota']['requests.storage']),
-                                    ('services','Services',standard['quota']['services']),
-                                    ('configmaps','ConfigMaps',standard['quota']['configmaps']),
-                                    ('secrets','Secrets',standard['quota']['secrets'])
-                                ] %}
+                            ('requests_cpu','CPU Requests',standard['quota']['requests.cpu']),
+                            ('limits_cpu','CPU Limits',standard['quota']['limits.cpu']),
+                            ('requests_memory','Memory Requests',standard['quota']['requests.memory']),
+                            ('limits_memory','Memory Limits',standard['quota']['limits.memory']),
+                            ('pods','Pods',standard['quota']['pods']),
+                            ('persistentvolumeclaims','PVCs',standard['quota']['persistentvolumeclaims']),
+                            ('requests_storage','Storage',standard['quota']['requests.storage']),
+                            ('services','Services',standard['quota']['services']),
+                            ('configmaps','ConfigMaps',standard['quota']['configmaps']),
+                            ('secrets','Secrets',standard['quota']['secrets'])
+                            ] %}
                             <label class="block">
                                 {{ form_field.label_row(label) }}
                                 <input name="{{ name }}"
@@ -76,11 +76,11 @@
                     <h3 class="text-sm font-semibold text-content-primary">Container LimitRange</h3>
                     <div class="mt-4 grid gap-4 sm:grid-cols-2">
                         {% for name, label, value in [
-                                    ('default_request_cpu','CPU Request',standard['limits']['default_request']['cpu']),
-                                    ('default_cpu','CPU Limit',standard['limits']['default']['cpu']),
-                                    ('default_request_memory','Memory Request',standard['limits']['default_request']['memory']),
-                                    ('default_memory','Memory Limit',standard['limits']['default']['memory'])
-                                ] %}
+                            ('default_request_cpu','CPU Request',standard['limits']['default_request']['cpu']),
+                            ('default_cpu','CPU Limit',standard['limits']['default']['cpu']),
+                            ('default_request_memory','Memory Request',standard['limits']['default_request']['memory']),
+                            ('default_memory','Memory Limit',standard['limits']['default']['memory'])
+                            ] %}
                             <label class="block">
                                 {{ form_field.label_row(label) }}
                                 <input name="{{ name }}"
