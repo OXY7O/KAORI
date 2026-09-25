@@ -6,6 +6,7 @@ from flask import Blueprint, current_app, redirect, render_template, request, ur
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
 from kubernetes.client.rest import ApiException
+from sqlalchemy.exc import IntegrityError
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import any_permission_required, permission_required
@@ -74,15 +75,15 @@ def create_tenant_route():
             message=str(exc),
             metadata={'cluster_id': request.form.get('cluster_id'), 'operation': 'create_tenant'},
         )
-    except Exception:
+    except IntegrityError:
         db.session.rollback()
-        current_app.logger.exception('Unexpected Tenant creation failure.')
+        current_app.logger.exception('Tenant creation conflicted with committed state.')
         _record(
             event_type='kubernetes_tenant_create_failed',
             status='error',
             title='Tenant Creation Failed',
-            message='KAORI could not create the Tenant because of an unexpected internal error.',
-            detail='Review Activity Audit and application logs before retrying.',
+            message='Committed Tenant state changed while this request was being applied. Refresh and retry.',
+            detail='No provider mutation was performed by this failed request.',
             metadata={'cluster_id': request.form.get('cluster_id'), 'operation': 'create_tenant'},
         )
     else:
@@ -119,14 +120,14 @@ def create_resource_profile_route():
             message=str(exc),
             metadata={'operation': 'create_resource_profile'},
         )
-    except Exception:
+    except IntegrityError:
         db.session.rollback()
-        current_app.logger.exception('Unexpected Tenant Resource Profile creation failure.')
+        current_app.logger.exception('Tenant Resource Profile creation conflicted with committed state.')
         _record(
             event_type='kubernetes_tenant_resource_profile_create_failed',
             status='error',
             title='Resource Profile Creation Failed',
-            message='KAORI could not create the Resource Profile because of an unexpected internal error.',
+            message='Committed Resource Profile state changed while this request was being applied. Refresh and retry.',
             metadata={'operation': 'create_resource_profile'},
         )
     else:
@@ -165,17 +166,6 @@ def provision_namespace_route():
                 'namespace': request.form.get('namespace'),
                 'operation': 'provision_namespace',
             },
-        )
-    except Exception:
-        db.session.rollback()
-        current_app.logger.exception('Unexpected Tenant namespace provisioning failure.')
-        _record(
-            event_type='kubernetes_tenant_namespace_provision_failed',
-            status='error',
-            title='Tenant Namespace Provisioning Failed',
-            message='KAORI could not complete namespace provisioning because of an unexpected internal error.',
-            detail='Review Activity Audit and provider state before retrying.',
-            metadata={'namespace': request.form.get('namespace'), 'operation': 'provision_namespace'},
         )
     else:
         _record(
