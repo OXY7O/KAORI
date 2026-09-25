@@ -1,17 +1,17 @@
 {
   "welcome-dark-compact-laptop": {
     "height": 768,
-    "visual_sha256": "fc5d493ccbd12c84a45ada0d473c54d2d34fe33302f3d93842489e5c0d064109",
+    "visual_sha256": "f023965efb0f6ff8b31c98901fde51474baba6bc93c49a5d9857dc02431e1def",
     "width": 1024
   },
   "welcome-dark-laptop": {
     "height": 800,
-    "visual_sha256": "371ca9c282b47fe126d543f003f6001c8b8c974cb92cb49cb10a591a6eb8ee17",
+    "visual_sha256": "1b96a318708ef561dd3c632ecbf9f2e057a0717c36b9e7f95d8c142ac94995b0",
     "width": 1280
   },
   "welcome-dark-large-desktop": {
     "height": 900,
-    "visual_sha256": "77d494656c9b4061469ee8c0144d46e1638fc4a4360f5eed6678ff600bc0f711",
+    "visual_sha256": "6de7a5d017a83b0573910ad07b3b9b98ec38529d14d6b18e5cc8d21953f3cdef",
     "width": 1440
   },
   "welcome-dark-mobile": {
@@ -31,17 +31,17 @@
   },
   "welcome-light-compact-laptop": {
     "height": 768,
-    "visual_sha256": "92f839967aceb284765089d16da5dbc97613e235b3a2bf1ec077827d0895b6d7",
+    "visual_sha256": "4ec30e7bef8c3109ae66aa00a37d79c86966dc743aadca5e1a9e5b92165b96f9",
     "width": 1024
   },
   "welcome-light-laptop": {
     "height": 800,
-    "visual_sha256": "dfc607e76f6cf431b44c19b916e1a73e9686bd9326b23a6d60d28e76f524fb19",
+    "visual_sha256": "fc58c5a9dfed2ec7cf9160f2acabacd759113e80a0f6cccdee8f4fe1aaee90cc",
     "width": 1280
   },
   "welcome-light-large-desktop": {
     "height": 900,
-    "visual_sha256": "4cc24382d7bde57fdcd1703a25894c6a6be6c7b3f60bc9d04e68df8150efd08e",
+    "visual_sha256": "85b7d9ed74dc0b387390dd50015206f9d872583949007af65e5c651c6b0ab5f5",
     "width": 1440
   },
   "welcome-light-mobile": {
