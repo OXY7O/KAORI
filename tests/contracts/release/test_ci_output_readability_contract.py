@@ -74,7 +74,8 @@ def test_release_suite_emits_junit_for_taxonomy_summary_without_duplicate_execut
     assert '--junitxml="$TEST_OUTPUT_DIR/release-suite.xml"' in source
     assert '--junitxml="$TEST_OUTPUT_DIR/e2e.xml"' in source
     assert 'ci_admission.py test-summary' in source
-    assert "-m 'not debug and not e2e'" in source
+    assert "-m 'not debug and not e2e and not contract and not migration'" in source
+    assert "'Contract & Migration Safety'" in source
     assert 'Domain Characterization Tests' not in source
 
 
