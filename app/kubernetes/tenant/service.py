@@ -6,6 +6,7 @@ from typing import Any
 
 from kubernetes.client.rest import ApiException
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 
 from app.extensions.db import db
 from app.kubernetes.tenant.provisioning import create_namespace_intent, reconcile_native_namespace
@@ -26,6 +27,10 @@ from app.models.tenant import (
 _TENANT_SLUG_RE = re.compile(r'[^a-z0-9-]+')
 _ALLOWED_ENVIRONMENTS = {item.value for item in TenantEnvironmentName}
 _ALLOWED_PROFILE_CLASSES = {item.value for item in TenantResourceProfileClass}
+
+
+class TenantStateConflictError(RuntimeError):
+    """Committed Tenant state changed while a mutation transaction was applying."""
 
 
 def _text(source: Mapping[str, Any], key: str) -> str:
@@ -104,6 +109,21 @@ def create_tenant(source: Mapping[str, Any]) -> tuple[Tenant, TenantEnvironment]
     return tenant, tenant_environment
 
 
+def create_tenant_committed(source: Mapping[str, Any]) -> tuple[Tenant, TenantEnvironment]:
+    try:
+        tenant, environment = create_tenant(source)
+        db.session.commit()
+        return tenant, environment
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise TenantStateConflictError(
+            'Committed Tenant state changed while this request was being applied. Refresh and retry.'
+        ) from exc
+    except Exception:
+        db.session.rollback()
+        raise
+
+
 def _profile_values(source: Mapping[str, Any]) -> tuple[dict[str, str], dict[str, dict[str, str]]]:
     quota_fields = {
         'requests_cpu': 'requests.cpu',
@@ -160,6 +180,21 @@ def create_resource_profile(source: Mapping[str, Any]) -> TenantResourceProfile:
     return profile
 
 
+def create_resource_profile_committed(source: Mapping[str, Any]) -> TenantResourceProfile:
+    try:
+        profile = create_resource_profile(source)
+        db.session.commit()
+        return profile
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise TenantStateConflictError(
+            'Committed Resource Profile state changed while this request was being applied. Refresh and retry.'
+        ) from exc
+    except Exception:
+        db.session.rollback()
+        raise
+
+
 def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
     try:
         environment_id = int(_text(source, 'tenant_environment_id'))
@@ -194,6 +229,22 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
         raise
     db.session.commit()
     return record
+
+
+def provision_native_namespace_committed(source: Mapping[str, Any]) -> TenantNamespace:
+    try:
+        return provision_native_namespace(source)
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise TenantStateConflictError(
+            'Committed Tenant namespace state changed while this request was being applied. Refresh and retry.'
+        ) from exc
+    except (ApiException, ValueError):
+        db.session.rollback()
+        raise
+    except Exception:
+        db.session.rollback()
+        raise
 
 
 def get_tenant_context() -> dict[str, Any]:
