@@ -8,21 +8,23 @@ Issue #113 owns the first managed Tenant mutation slice: administrator-driven na
 - Kubernetes Inventory remains observational authority for collected namespace/resource state.
 - This slice implements only the Native Kubernetes namespace/quota/limit baseline needed by #113.
 - #120 remains authority for the broader Native Kubernetes Tenant capability/enforcement contract.
+- #654 owns Tenant Allocation Budget arithmetic, aggregate commitment, capacity state, and allocation allow/block decisions.
 - Capsule-specific shared/global quota and advanced enforcement remain out of scope.
 
 ## Resource Profile contract
 
-A profile is persisted as one of `small`, `standard`, `large`, or `custom` and stores only supported Kubernetes quota keys plus Container LimitRange defaults.
+KAORI exposes four Resource Profile classes:
 
-As approved on 2026-09-25:
+- `small` — built-in, KAORI-owned, versioned, and locked in normal operator workflows.
+- `standard` — built-in, KAORI-owned, versioned, and locked in normal operator workflows.
+- `large` — built-in, KAORI-owned, versioned, and locked in normal operator workflows.
+- `custom` — operator-managed and editable within the supported validation contract.
 
-- `small`, `standard`, and `large` are KAORI-owned **initial-fill presets**, not immutable allocation locks;
-- selecting a preset fills approved starting values in the operator UI, but every supported field remains editable before commit;
-- the server validates and persists the submitted values rather than replacing caller changes with preset defaults;
-- blank/null quota or LimitRange dimensions mean **no Tenant limit configured for that dimension**; blank is distinct from zero;
-- the reusable Resource Profile keeps its own version while each namespace stores a frozen effective allocation snapshot and the source profile version used to create it;
-- later profile changes must not silently rewrite an already committed namespace allocation;
-- allocation changes that require capacity admission are governed by #654 before provider reconciliation.
+Small, Standard, and Large are canonical presets. Their ResourceQuota and Container LimitRange values are server-authoritative; caller-supplied field overrides are ignored for those classes.
+
+When different values are required, the operator must use a Custom profile. Custom may start empty or be **based on** Small, Standard, or Large. KAORI records the base preset class/version as lineage evidence while the resulting Custom values remain independently editable.
+
+Blank/null supported quota or LimitRange dimensions mean **no Tenant limit configured for that dimension**. Blank is distinct from zero.
 
 Supported baseline quota keys:
 
@@ -35,7 +37,7 @@ Supported baseline quota keys:
 - `configmaps`
 - `secrets`
 
-### Approved initial-fill preset values
+### Built-in preset values — version 1
 
 | Resource | Small | Standard | Large |
 | --- | ---: | ---: | ---: |
@@ -54,7 +56,9 @@ Supported baseline quota keys:
 | Default memory request | `128Mi` | `128Mi` | `256Mi` |
 | Default memory limit | `256Mi` | `512Mi` | `1Gi` |
 
-### Effective allocation evidence
+Changing these values is a governed product change and requires a new preset version. Existing namespace allocations do not silently inherit a later preset version.
+
+## Effective allocation evidence
 
 A managed namespace records:
 
@@ -62,10 +66,14 @@ A managed namespace records:
 - source Resource Profile version;
 - committed quota snapshot;
 - committed Container LimitRange snapshot;
-- whether the namespace allocation is customized;
+- whether the selected profile is Custom;
 - desired/effective hashes and provider read-back evidence.
 
-This snapshot is the allocation intent consumed by reconciliation and later by #654 capacity governance. Resource Profile edits remain reusable-profile changes; they do not implicitly mutate namespace allocation intent.
+For a built-in profile, namespace provisioning snapshots the canonical preset values; per-namespace inline overrides are not accepted.
+
+For a Custom profile, namespace provisioning snapshots the committed Custom profile values. If the Custom profile was based on a built-in preset, the Resource Profile also retains the base preset class/version lineage.
+
+Later Resource Profile or built-in preset changes do not implicitly mutate namespace allocation intent. Existing namespace allocations change only through an explicit governed mutation that shows current versus proposed values, passes validation and #654 capacity preflight, then reconciles provider state.
 
 ## Provisioning safety
 

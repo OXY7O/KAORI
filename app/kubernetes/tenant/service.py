@@ -28,27 +28,9 @@ _TENANT_SLUG_RE = re.compile(r'[^a-z0-9-]+')
 _ALLOWED_ENVIRONMENTS = {item.value for item in TenantEnvironmentName}
 _ALLOWED_PROFILE_CLASSES = {item.value for item in TenantResourceProfileClass}
 
-_RESOURCE_VALUE_FIELDS = frozenset(
-    {
-        'requests_cpu',
-        'limits_cpu',
-        'requests_memory',
-        'limits_memory',
-        'pods',
-        'persistentvolumeclaims',
-        'requests_storage',
-        'services',
-        'configmaps',
-        'secrets',
-        'default_cpu',
-        'default_memory',
-        'default_request_cpu',
-        'default_request_memory',
-    }
-)
-
 RESOURCE_PROFILE_PRESETS: dict[str, dict[str, Any]] = {
     'small': {
+        'version': 1,
         'quota': {
             'requests.cpu': '1',
             'limits.cpu': '2',
@@ -67,6 +49,7 @@ RESOURCE_PROFILE_PRESETS: dict[str, dict[str, Any]] = {
         },
     },
     'standard': {
+        'version': 1,
         'quota': {
             'requests.cpu': '2',
             'limits.cpu': '4',
@@ -85,6 +68,7 @@ RESOURCE_PROFILE_PRESETS: dict[str, dict[str, Any]] = {
         },
     },
     'large': {
+        'version': 1,
         'quota': {
             'requests.cpu': '4',
             'limits.cpu': '8',
@@ -230,19 +214,39 @@ def _profile_values(source: Mapping[str, Any]) -> tuple[dict[str, str], dict[str
     return validate_profile_spec(quota, limits)
 
 
+def _resource_profile_values(
+    profile_class: str,
+    source: Mapping[str, Any],
+) -> tuple[dict[str, str], dict[str, dict[str, str]], int, str | None, int | None]:
+    if profile_class in RESOURCE_PROFILE_PRESETS:
+        preset = RESOURCE_PROFILE_PRESETS[profile_class]
+        quota, limits = validate_profile_spec(preset['quota'], preset['limits'])
+        return quota, limits, int(preset['version']), None, None
+
+    base_preset_class = _text(source, 'base_preset_class').lower() or None
+    if base_preset_class is not None and base_preset_class not in RESOURCE_PROFILE_PRESETS:
+        raise ValueError('Select a supported base preset for the Custom Resource Profile.')
+
+    quota, limits = _profile_values(source)
+    base_preset_version = (
+        int(RESOURCE_PROFILE_PRESETS[base_preset_class]['version']) if base_preset_class is not None else None
+    )
+    return quota, limits, 1, base_preset_class, base_preset_version
+
+
 def _namespace_allocation_values(
     profile: TenantResourceProfile,
-    source: Mapping[str, Any],
 ) -> tuple[dict[str, str], dict[str, dict[str, str]], bool]:
-    profile_quota, profile_limits = validate_profile_spec(
+    if profile.profile_class in RESOURCE_PROFILE_PRESETS:
+        preset = RESOURCE_PROFILE_PRESETS[profile.profile_class]
+        quota, limits = validate_profile_spec(preset['quota'], preset['limits'])
+        return quota, limits, False
+
+    quota, limits = validate_profile_spec(
         profile.quota_hard_json or {},
         profile.limit_defaults_json or {},
     )
-    if not any(field in source for field in _RESOURCE_VALUE_FIELDS):
-        return profile_quota, profile_limits, False
-
-    quota, limits = _profile_values(source)
-    return quota, limits, quota != profile_quota or limits != profile_limits
+    return quota, limits, True
 
 
 def create_resource_profile(source: Mapping[str, Any]) -> TenantResourceProfile:
@@ -256,10 +260,13 @@ def create_resource_profile(source: Mapping[str, Any]) -> TenantResourceProfile:
     if profile_class not in _ALLOWED_PROFILE_CLASSES:
         raise ValueError('Select a supported Resource Profile class.')
 
-    quota, limits = _profile_values(source)
+    quota, limits, version, base_preset_class, base_preset_version = _resource_profile_values(profile_class, source)
     profile = TenantResourceProfile()
     profile.name = name
     profile.profile_class = profile_class
+    profile.version = version
+    profile.base_preset_class = base_preset_class
+    profile.base_preset_version = base_preset_version
     profile.description = _text(source, 'profile_description') or None
     profile.quota_hard_json = quota
     profile.limit_defaults_json = limits
@@ -306,7 +313,7 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
     if TenantNamespace.query.filter_by(cluster_id=tenant.cluster_id, namespace=namespace).first() is not None:
         raise ValueError('This namespace is already tracked by Tenant Management on the selected cluster.')
 
-    quota, limits, customized = _namespace_allocation_values(profile, source)
+    quota, limits, customized = _namespace_allocation_values(profile)
     record = create_namespace_intent(
         tenant_environment=environment,
         profile=profile,
@@ -366,9 +373,22 @@ def get_tenant_context() -> dict[str, Any]:
         'resource_profile_presets': RESOURCE_PROFILE_PRESETS,
         'namespace_allocation_profiles': {
             str(profile.id): {
-                'quota': profile.quota_hard_json or {},
-                'limits': profile.limit_defaults_json or {},
-                'version': profile.version,
+                'quota': (
+                    RESOURCE_PROFILE_PRESETS[profile.profile_class]['quota']
+                    if profile.profile_class in RESOURCE_PROFILE_PRESETS
+                    else profile.quota_hard_json or {}
+                ),
+                'limits': (
+                    RESOURCE_PROFILE_PRESETS[profile.profile_class]['limits']
+                    if profile.profile_class in RESOURCE_PROFILE_PRESETS
+                    else profile.limit_defaults_json or {}
+                ),
+                'version': (
+                    int(RESOURCE_PROFILE_PRESETS[profile.profile_class]['version'])
+                    if profile.profile_class in RESOURCE_PROFILE_PRESETS
+                    else profile.version
+                ),
+                'profile_class': profile.profile_class,
             }
             for profile in profiles
             if profile.enabled

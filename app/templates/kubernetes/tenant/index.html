@@ -148,7 +148,22 @@
                             <option value="large">Large</option>
                             <option value="custom">Custom</option>
                         </select>
-                        {{ form_field.help("Small, Standard, and Large fill approved starting values. Every field remains editable; leave a dimension blank for no Tenant limit on that dimension.") }}
+                        {{ form_field.help("Small, Standard, and Large are locked KAORI presets. Choose Custom when different values are required.") }}
+                    </label>
+                    <label class="block sm:col-span-2 xl:col-span-1 2xl:col-span-2"
+                           data-tenant-base-preset-wrapper
+                           hidden>
+                        {{ form_field.label_row('Base Preset', 'Optional', 'info', 'copy') }}
+                        <select name="base_preset_class"
+                                data-tenant-base-preset
+                                disabled
+                                class="{{ form_field.select_classes() }}">
+                            <option value="">Start empty</option>
+                            <option value="small">Small</option>
+                            <option value="standard">Standard</option>
+                            <option value="large">Large</option>
+                        </select>
+                        {{ form_field.help("Custom may start from a built-in preset, then be edited before commit. KAORI retains the base preset/version as lineage evidence.") }}
                     </label>
                     {% for field, label, placeholder in [
                         ('requests_cpu', 'CPU Requests', '2'),
@@ -171,6 +186,8 @@
                             <input name="{{ field }}"
                                    placeholder="{{ placeholder }}"
                                    data-tenant-resource-field="{{ field }}"
+                                   readonly
+                                   aria-readonly="true"
                                    class="{{ form_field.input_classes() }}">
                         </label>
                     {% endfor %}
@@ -237,7 +254,7 @@
                     <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
                         <div class="flex flex-col gap-1">
                             <p class="text-sm font-semibold text-content-primary">Effective Allocation</p>
-                            <p class="text-xs leading-5 text-content-muted">Selecting a Resource Profile fills these namespace values. Edit any value for this namespace only, or leave a dimension blank for no Tenant limit.</p>
+                            <p class="text-xs leading-5 text-content-muted">Selecting a Resource Profile shows the committed allocation that will be snapshotted for this namespace. Built-in and Custom profile values are not overridden inline here.</p>
                         </div>
                         <div class="mt-4 grid gap-4 sm:grid-cols-2">
                             {% for field, label, placeholder in [
@@ -258,9 +275,10 @@
                                 ] %}
                                 <label class="block">
                                     {{ form_field.label_row(label) }}
-                                    <input name="{{ field }}"
-                                           placeholder="{{ placeholder }}"
+                                    <input placeholder="{{ placeholder }}"
                                            data-tenant-namespace-resource-field="{{ field }}"
+                                           readonly
+                                           aria-readonly="true"
                                            class="{{ form_field.input_classes() }}">
                                 </label>
                             {% endfor %}
