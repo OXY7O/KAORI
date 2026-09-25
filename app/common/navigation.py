@@ -71,6 +71,7 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'kubernetes_operations.secret_management': 'Secrets',
     'governance.overview': 'Overview',
     'governance.tls_certificates': 'TLS Certificates',
+    'tenant.index': 'Overview',
     # Platform operations
     'jobs.executions': 'Jobs',
     'jobs.configuration': 'Job Configuration',
@@ -196,10 +197,15 @@ def build_navigation_breadcrumb(
             BreadcrumbItem('Operations', 'terminal-square'),
             BreadcrumbItem(_leaf(endpoint, fallback)),
         ]
-    elif endpoint.startswith('governance.'):
+    elif endpoint.startswith(('governance.', 'tenant.')):
+        domain_key = endpoint.split('.', 1)[0]
+        domain_label, domain_icon, domain_fallback = {
+            'governance': ('Governance', 'shield-check', 'TLS Certificates'),
+            'tenant': ('Tenant', 'building-2', 'Overview'),
+        }[domain_key]
         items = [
-            BreadcrumbItem('Governance', 'shield-check'),
-            BreadcrumbItem(_leaf(endpoint, 'TLS Certificates')),
+            BreadcrumbItem(domain_label, domain_icon),
+            BreadcrumbItem(_leaf(endpoint, domain_fallback)),
         ]
     elif endpoint.startswith('analytics.'):
         items = _analytics_items(endpoint)

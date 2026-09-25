@@ -26,9 +26,9 @@ def test_sidebar_standard_is_registered_as_authoritative_design_document() -> No
     standard = (ROOT / 'docs' / 'design' / 'components' / 'SIDEBAR_NAVIGATION.md').read_text(encoding='utf-8')
 
     assert 'locked application-shell navigation contract' in readme
-    assert 'locked v1.5 sidebar hierarchy' in design_system
+    assert 'locked v1.6 sidebar hierarchy' in design_system
     assert 'The earlier 12/11 px markdown baseline' in standard
-    assert 'KAORI Sidebar Navigation Standard v1.5' in standard
+    assert 'KAORI Sidebar Navigation Standard v1.6' in standard
     assert 'dark mode keeps the active Violet surface without a separate left-edge accent' in standard
     assert '## Navigation Naming Contract' in standard
     assert 'Section provides domain context' in standard
@@ -38,6 +38,9 @@ def test_sidebar_standard_is_registered_as_authoritative_design_document() -> No
 def test_navigation_content_hierarchy_matches_design_system_v2_contract() -> None:
     sidebar = (ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'sidebar.html').read_text(encoding='utf-8')
     analytics_menu = (ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'analytics_menu.html').read_text(
+        encoding='utf-8'
+    )
+    tenant_menu = (ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'tenant_menu.html').read_text(
         encoding='utf-8'
     )
     breadcrumb = (ROOT / 'app' / 'common' / 'navigation.py').read_text(encoding='utf-8')
@@ -50,6 +53,8 @@ def test_navigation_content_hierarchy_matches_design_system_v2_contract() -> Non
 
     assert '>Analytics</div>' in sidebar
     assert sidebar.index('>Storage</div>') < sidebar.index('>Analytics</div>') < sidebar.index('>Insights</div>')
+    assert '>Tenant</span>' in tenant_menu
+    assert "url_for('tenant.index')" in tenant_menu
     assert '>Kubernetes</span>' in analytics_menu
     assert '>Object Storage</span>' in analytics_menu
     assert '>Kubernetes Analytics</span>' not in analytics_menu

@@ -29,4 +29,4 @@ KAORI currently implements global application RBAC with these properties:
 - audit records for custom-role lifecycle changes;
 - identity-provider default role mapping for JIT provisioning.
 
-Cluster-, namespace-, environment-, tenant-, and resource-level authorization scopes are not implemented yet. They are future policy dimensions and must not be implied by the current UI.
+`tenant.view` and `tenant.manage` are KAORI application permissions for entering and operating the Tenant workspace. They do not represent membership inside a managed tenant. Tenant/environment/namespace-scoped membership and Kubernetes RBAC grants are separate domain contracts owned by the Tenant access workstream; until that work is admitted, the UI must not imply scoped tenant authorization from these application permissions.

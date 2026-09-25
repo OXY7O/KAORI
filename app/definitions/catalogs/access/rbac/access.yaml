@@ -13,6 +13,8 @@ control_modules:
   label: Kubernetes Operations
 - key: governance
   label: Kubernetes Governance
+- key: k8s_tenant
+  label: Kubernetes Tenant
 - key: storage_inventory
   label: Object Storage Inventory
 - key: storage_analytics
@@ -134,6 +136,14 @@ permissions:
   module: governance
   action: sync_tls_certificates
   description: Refresh TLS certificate metadata from Kubernetes TLS Secrets.
+- key: tenant.view
+  module: k8s_tenant
+  action: view
+  description: View the Kubernetes Tenant workspace and committed tenancy state.
+- key: tenant.manage
+  module: k8s_tenant
+  action: manage
+  description: Create and reconcile governed Kubernetes Tenant resources.
 - key: intelligence.view
   module: intelligence
   action: view
@@ -290,6 +300,7 @@ permission_dependencies:
   kubernetes_secrets.rotate_tls: [kubernetes_secrets.view]
   kubernetes_secrets.bulk_rotate_tls: [kubernetes_secrets.view]
   tls_certificates.sync: [tls_certificates.view]
+  tenant.manage: [tenant.view]
   reports.generate: [reports.view]
   reports.manage_templates: [reports.view]
   reports.manage_schedules: [reports.view]
@@ -340,6 +351,7 @@ system_roles:
   - reports.view
   - settings.view
   - tls_certificates.view
+  - tenant.view
 - key: operator
   display_name: Operator
   description: Daily infrastructure operations including sync, report generation, ConfigMap changes, TLS inventory refresh,
@@ -371,6 +383,7 @@ system_roles:
   - storage.sync
   - tls_certificates.sync
   - tls_certificates.view
+  - tenant.view
 - key: editor
   display_name: Editor
   description: Infrastructure configuration access for clusters, integrations, Secrets, bulk TLS rotation, report templates,
@@ -415,6 +428,8 @@ system_roles:
   - storage.sync
   - tls_certificates.sync
   - tls_certificates.view
+  - tenant.manage
+  - tenant.view
 - key: admin
   display_name: Admin
   description: Application administration across users, roles, integrations, operations, retention, and protected settings,
@@ -474,6 +489,8 @@ system_roles:
   - system.view
   - tls_certificates.sync
   - tls_certificates.view
+  - tenant.manage
+  - tenant.view
   - users.activate
   - users.delete
   - users.manage
@@ -504,4 +521,5 @@ system_roles:
   - activity_audit.view
   - system.view
   - tls_certificates.view
+  - tenant.view
   - users.view

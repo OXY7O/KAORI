@@ -1,6 +1,7 @@
 {% set can_dashboard = current_user.is_authenticated and current_user.has_permission('dashboard.view') %}
 {% set can_kubernetes_inventory = current_user.is_authenticated and current_user.has_permission('inventory.view') %}
 {% set can_object_storage_inventory = current_user.is_authenticated and current_user.has_permission('object_storage_inventory.view') %}
+{% set can_tenant = current_user.is_authenticated and (current_user.has_permission('tenant.view') or current_user.has_permission('tenant.manage')) %}
 {% set can_kubernetes_analytics = current_user.is_authenticated and current_user.has_permission('analytics.view') %}
 {% set can_object_storage_analytics = current_user.is_authenticated and current_user.has_permission('object_storage_analytics.view') %}
 {% set can_intelligence = current_user.is_authenticated and current_user.has_permission('intelligence.view') %}
@@ -95,7 +96,7 @@
                     </div>
                 </div>
             {% endif %}
-            {% if can_kubernetes_inventory or can_operations or can_governance %}
+            {% if can_kubernetes_inventory or can_operations or can_governance or can_tenant %}
                 <div class="sidebar-nav-section">
                     <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Kubernetes</div>
                     <div class="space-y-1">
@@ -107,6 +108,9 @@
                         {% endif %}
                         {% if can_governance %}
                             {% include "components/navigation/governance_menu.html" %}
+                        {% endif %}
+                        {% if can_tenant %}
+                            {% include "components/navigation/tenant_menu.html" %}
                         {% endif %}
                     </div>
                 </div>

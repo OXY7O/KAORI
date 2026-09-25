@@ -23,6 +23,7 @@ def register_blueprints(app: Flask) -> None:
     from app.kubernetes.governance.routes import governance_bp
     from app.kubernetes.inventory.routes import inventory_bp
     from app.kubernetes.operations.routes import kubernetes_operations_bp
+    from app.kubernetes.tenant.routes import tenant_bp
     from app.platform_operations import bp as platform_operations_bp
     from app.platform_operations.health import health_bp
     from app.platform_operations.jobs.routes import bp as jobs_bp
@@ -48,6 +49,7 @@ def register_blueprints(app: Flask) -> None:
         analytics_bp,
         governance_bp,
         kubernetes_operations_bp,
+        tenant_bp,
         health_bp,
         identity_providers_bp,
         intelligence_bp,
