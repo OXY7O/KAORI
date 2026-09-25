@@ -166,10 +166,7 @@ def update_capacity_policy_route():
             status='success',
             title='Tenant Capacity Policy Updated',
             message='Tenant allocation budget inputs were updated for the selected cluster.',
-            detail=(
-                f'Headroom {policy.safety_headroom_percent}% · '
-                f'Policy v{policy.version}'
-            ),
+            detail=(f'Headroom {policy.safety_headroom_percent}% · Policy v{policy.version}'),
             metadata={
                 'cluster_id': policy.cluster_id,
                 'capacity_policy_version': policy.version,
