@@ -5,8 +5,7 @@ import json
 from datetime import UTC, datetime
 from typing import Any
 
-from kubernetes.client import V1ObjectMeta, V1PolicyRule, V1Role, V1RoleBinding, V1RoleRef
-from kubernetes.client.models.v1_subject import V1Subject
+from kubernetes.client import RbacV1Subject, V1ObjectMeta, V1PolicyRule, V1Role, V1RoleBinding, V1RoleRef
 from kubernetes.client.rest import ApiException
 
 from app.extensions.db import db
@@ -153,7 +152,7 @@ def _binding_body(desired: dict[str, Any]) -> V1RoleBinding:
             name=role_ref['name'],
         ),
         subjects=[
-            V1Subject(
+            RbacV1Subject(
                 api_group=item['api_group'],
                 kind=item['kind'],
                 name=item['name'],
