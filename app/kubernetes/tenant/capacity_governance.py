@@ -292,9 +292,15 @@ def _read_capacity_snapshot(cluster_id: str) -> SnapshotResult:
 
 def _capacity_vector(result: SnapshotResult) -> tuple[CapacityVector | None, str]:
     if not result.available:
-        return None, 'Committed Capacity Analytics evidence is unavailable; refresh capacity materialization before allocation.'
+        return (
+            None,
+            'Committed Capacity Analytics evidence is unavailable; refresh capacity materialization before allocation.',
+        )
     if result.stale:
-        return None, 'Committed Capacity Analytics evidence is stale; refresh capacity materialization before allocation.'
+        return (
+            None,
+            'Committed Capacity Analytics evidence is stale; refresh capacity materialization before allocation.',
+        )
 
     context = result.context or {}
     summary = context.get('capacity_summary')
@@ -307,7 +313,10 @@ def _capacity_vector(result: SnapshotResult) -> tuple[CapacityVector | None, str
         return None, 'Committed Capacity Analytics evidence is missing CPU or memory capacity.'
 
     if cpu.get('capacity_evidence_available') is not True or memory.get('capacity_evidence_available') is not True:
-        return None, 'Committed Capacity Analytics evidence does not contain Ready-worker CPU and memory allocatable capacity.'
+        return (
+            None,
+            'Committed Capacity Analytics evidence does not contain Ready-worker CPU and memory allocatable capacity.',
+        )
 
     try:
         cpu_value = Decimal(str(cpu['capacity']))
