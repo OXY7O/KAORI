@@ -20,6 +20,7 @@ from app.models.cluster import ClusterStatus
 from app.models.kubernetes import KubernetesConnection
 from app.models.tenant import (
     Tenant,
+    TenantCapacityDecision,
     TenantEnvironment,
     TenantEnvironmentName,
     TenantLifecycleStatus,
@@ -370,6 +371,7 @@ def get_tenant_context() -> dict[str, Any]:
     )
     ready_clusters = get_ready_native_clusters()
     capacity_governance = [build_capacity_governance_summary(cluster.id) for cluster in ready_clusters]
+    capacity_decisions = TenantCapacityDecision.query.order_by(TenantCapacityDecision.created_at.desc()).limit(5).all()
     namespace_count = TenantNamespace.query.count()
     return {
         'tenants': tenants,
@@ -378,6 +380,7 @@ def get_tenant_context() -> dict[str, Any]:
         'environment_options': environment_options,
         'ready_clusters': ready_clusters,
         'capacity_governance': capacity_governance,
+        'capacity_decisions': capacity_decisions,
         'tenant_count': Tenant.query.count(),
         'profile_count': TenantResourceProfile.query.count(),
         'namespace_count': namespace_count,
