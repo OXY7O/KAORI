@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from decimal import Decimal, InvalidOperation
 
 from kubernetes.utils.quantity import parse_quantity
@@ -45,8 +46,8 @@ def _positive_quantity(value: object, *, key: str) -> str:
 
 
 def validate_profile_spec(
-    quota_hard: dict[str, object],
-    limit_defaults: dict[str, dict[str, object]] | None = None,
+    quota_hard: Mapping[str, object],
+    limit_defaults: Mapping[str, Mapping[str, object]] | None = None,
 ) -> tuple[dict[str, str], dict[str, dict[str, str]]]:
     if not quota_hard:
         raise ValueError('resource profile must define at least one quota value')
