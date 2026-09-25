@@ -43,8 +43,8 @@ def test_resource_profile_presets_are_server_authoritative_and_custom_is_manual(
     javascript = (ROOT / 'app/static/js/tenant_resource_profiles.js').read_text(encoding='utf-8')
 
     assert 'RESOURCE_PROFILE_PRESETS' in service
-    assert "if profile_class in RESOURCE_PROFILE_PRESETS" in service
-    assert "profile_class == TenantResourceProfileClass.CUSTOM.value" in service
+    assert 'if profile_class in RESOURCE_PROFILE_PRESETS' in service
+    assert 'profile_class == TenantResourceProfileClass.CUSTOM.value' in service
     assert 'Preset classes are auto-filled and server-authoritative.' in template
     assert 'data-tenant-profile-class' in template
     assert "profileClass === 'custom'" in javascript
