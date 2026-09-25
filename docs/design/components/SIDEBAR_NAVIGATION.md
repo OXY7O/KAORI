@@ -1,4 +1,4 @@
-# KAORI Sidebar Navigation Standard v1.6
+# KAORI Sidebar Navigation Standard v1.7
 
 **Status:** Locked application-shell and dark-mode contract. The source templates, this document, and `scripts/verify_sidebar_navigation_standard.py` must change together.
 
@@ -367,6 +367,11 @@ KUBERNETES
 ├── Governance
 │   └── TLS Certificates
 └── Tenant
+    ├── Overview
+    ├── Tenants
+    ├── Resource Profiles
+    ├── Namespace Provisioning
+    └── Operations
 
 STORAGE
 └── Object Storage
@@ -422,7 +427,7 @@ ADMINISTRATION
     └── Account
 ```
 
-v1.6 retains the approved section order and Analytics hierarchy, and adds **Tenant** as one direct Kubernetes-domain destination. Tenant is a capability workspace rather than a provider branch: Native Kubernetes and Capsule remain implementation providers behind the page contract. A direct parent link is allowed when one domain owns exactly one global-sidebar destination and internal workspace navigation belongs inside the page rather than the shell. `Object Storage` remains a provider-neutral inventory parent; vendor connectors such as MinIO remain under Integrations and must not become sidebar inventory parents.
+v1.7 retains the approved section order and provider-neutral Tenant domain, and promotes Tenant from a direct leaf into the established expandable parent pattern. Tenant owns five operator destinations: **Overview**, **Tenants**, **Resource Profiles**, **Namespace Provisioning**, and **Operations**. Native Kubernetes and Capsule remain providers behind this information architecture and must never become provider-specific sidebar branches. Operations owns task-level tabs inside the page rather than creating another sidebar nesting level. `Object Storage` remains a provider-neutral inventory parent; vendor connectors such as MinIO remain under Integrations and must not become sidebar inventory parents.
 
 `Buckets & Containers` is intentionally provider-neutral: the list surface uses canonical object-storage fields, while provider-native attributes remain in the detail drawer. This prevents MinIO, AWS S3, Azure Blob, Ceph RGW, or future providers from creating vendor-specific sidebar branches.
 
