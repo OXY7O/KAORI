@@ -1,4 +1,4 @@
-(() => {
+;(() => {
     const form = document.querySelector('[data-tenant-profile-form]')
     const dataNode = document.getElementById('tenant-profile-presets')
     if (!form || !dataNode) return
