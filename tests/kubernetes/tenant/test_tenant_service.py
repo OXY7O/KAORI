@@ -22,7 +22,6 @@ def test_normalize_tenant_slug_rejects_empty_or_overlong_values() -> None:
         normalize_tenant_slug('a' * 64)
 
 
-
 def test_resource_profile_presets_have_canonical_native_defaults() -> None:
     assert set(RESOURCE_PROFILE_PRESETS) == {'small', 'standard', 'large'}
     assert RESOURCE_PROFILE_PRESETS['small']['quota_hard']['requests.cpu'] == '1'
