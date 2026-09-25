@@ -189,7 +189,8 @@
             </form>
             <form method="post"
                   action="{{ url_for('tenant.provision_namespace_route') }}"
-                  class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+                  class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm"
+                  data-tenant-namespace-allocation-form>
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-5 flex items-start gap-3">
                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="boxes" class="h-5 w-5"></i></span>
@@ -214,6 +215,7 @@
                         {{ form_field.label_row("Resource Profile") }}
                         <select name="resource_profile_id"
                                 required
+                                data-tenant-namespace-profile
                                 class="{{ form_field.select_classes() }}">
                             <option value="">Select profile</option>
                             {% for profile in profiles %}
@@ -232,6 +234,38 @@
                                class="{{ form_field.input_classes() }}">
                         {{ form_field.help("KAORI refuses to overwrite resources owned by another controller.") }}
                     </label>
+                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                        <div class="flex flex-col gap-1">
+                            <p class="text-sm font-semibold text-content-primary">Effective Allocation</p>
+                            <p class="text-xs leading-5 text-content-muted">Selecting a Resource Profile fills these namespace values. Edit any value for this namespace only, or leave a dimension blank for no Tenant limit.</p>
+                        </div>
+                        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                            {% for field, label, placeholder in [
+                                ('requests_cpu', 'CPU Requests', '2'),
+                                ('limits_cpu', 'CPU Limits', '4'),
+                                ('requests_memory', 'Memory Requests', '4Gi'),
+                                ('limits_memory', 'Memory Limits', '8Gi'),
+                                ('pods', 'Pods', '20'),
+                                ('persistentvolumeclaims', 'PVCs', '10'),
+                                ('requests_storage', 'Storage', '100Gi'),
+                                ('services', 'Services', '10'),
+                                ('configmaps', 'ConfigMaps', '50'),
+                                ('secrets', 'Secrets', '50'),
+                                ('default_request_cpu', 'Container CPU Request', '100m'),
+                                ('default_cpu', 'Container CPU Limit', '500m'),
+                                ('default_request_memory', 'Container Memory Request', '128Mi'),
+                                ('default_memory', 'Container Memory Limit', '512Mi')
+                                ] %}
+                                <label class="block">
+                                    {{ form_field.label_row(label) }}
+                                    <input name="{{ field }}"
+                                           placeholder="{{ placeholder }}"
+                                           data-tenant-namespace-resource-field="{{ field }}"
+                                           class="{{ form_field.input_classes() }}">
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
                 <div class="mt-5 rounded-lg border border-outline-subtle bg-surface-elevated p-4">
                     <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Apply boundary</p>
@@ -304,6 +338,7 @@
             </div>
         </section>
         <script type="application/json" id="tenant-resource-profile-presets">{{ resource_profile_presets|tojson }}</script>
+        <script type="application/json" id="tenant-namespace-allocation-profiles">{{ namespace_allocation_profiles|tojson }}</script>
     </div>
 {% endblock dashboard_content %}
 {% block scripts %}
