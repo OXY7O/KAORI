@@ -9,6 +9,10 @@ from kubernetes.client.rest import ApiException
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import any_permission_required, permission_required
+from app.kubernetes.tenant.capacity_service import (
+    TenantCapacityPolicyConflictError,
+    update_capacity_policy_committed,
+)
 from app.kubernetes.tenant.service import (
     TenantStateConflictError,
     create_resource_profile_committed,
@@ -134,6 +138,42 @@ def create_resource_profile_route():
                 'resource_profile_id': profile.public_id,
                 'profile_class': profile.profile_class,
                 'operation': 'create_resource_profile',
+            },
+        )
+    return redirect(url_for('tenant.index'))
+
+
+@tenant_bp.post('/capacity-policy')
+@permission_required('tenant.manage')
+def update_capacity_policy_route():
+    try:
+        _csrf()
+        policy = update_capacity_policy_committed(request.form)
+    except (ValueError, TenantCapacityPolicyConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_capacity_policy_update_failed',
+            status='error',
+            title='Tenant Capacity Policy Update Failed',
+            message=str(exc),
+            metadata={
+                'cluster_id': request.form.get('cluster_id'),
+                'operation': 'update_capacity_policy',
+            },
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capacity_policy_updated',
+            status='success',
+            title='Tenant Capacity Policy Updated',
+            message='Tenant allocation budget inputs were updated for the selected cluster.',
+            detail=(
+                f'Headroom {policy.safety_headroom_percent}% · '
+                f'Policy v{policy.version}'
+            ),
+            metadata={
+                'cluster_id': policy.cluster_id,
+                'capacity_policy_version': policy.version,
+                'operation': 'update_capacity_policy',
             },
         )
     return redirect(url_for('tenant.index'))
