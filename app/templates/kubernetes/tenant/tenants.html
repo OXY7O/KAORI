@@ -4,8 +4,8 @@
 {% block title %}Tenants{% endblock title %}
 {% block dashboard_content %}
     {% set can_manage = current_user.has_permission('tenant.manage') %}
-    {% set hero_title = 'Tenant Management' %}
-    {% set hero_description = 'Create and review provider-bound Tenant records while Native Kubernetes remains the active enforcement baseline.' %}
+    {% set hero_title = "Tenant Management" %}
+    {% set hero_description = "Create and review provider-bound Tenant records while Native Kubernetes remains the active enforcement baseline." %}
     <div class="space-y-6" data-tenant-page="tenants">
         {% include "kubernetes/tenant/_hero.html" %}
         <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.65fr)]">
@@ -14,15 +14,24 @@
                     <h2 class="text-base font-semibold text-content-primary">Add Tenant</h2>
                     <p class="mt-1 text-sm text-content-secondary">Bind a Tenant and initial environment to one Ready Kubernetes cluster.</p>
                 </div>
-                <form method="post" action="{{ url_for('tenant.create_tenant_route') }}" class="grid gap-4 md:grid-cols-2">
+                <form method="post"
+                      action="{{ url_for('tenant.create_tenant_route') }}"
+                      class="grid gap-4 md:grid-cols-2">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <label class="block">
                         {{ form_field.label_row("Tenant Name") }}
-                        <input name="name" required autocomplete="off" placeholder="Payments" class="{{ form_field.input_classes() }}">
+                        <input name="name"
+                               required
+                               autocomplete="off"
+                               placeholder="Payments"
+                               class="{{ form_field.input_classes() }}">
                     </label>
                     <label class="block">
                         {{ form_field.label_row("Tenant Slug") }}
-                        <input name="slug" autocomplete="off" placeholder="payments" class="{{ form_field.input_classes() }}">
+                        <input name="slug"
+                               autocomplete="off"
+                               placeholder="payments"
+                               class="{{ form_field.input_classes() }}">
                     </label>
                     <label class="block">
                         {{ form_field.label_row("Cluster") }}
@@ -42,13 +51,18 @@
                         </select>
                     </label>
                     <label class="block">
-                        {{ form_field.label_row("Provider", "Active", "normal", "shield-check") }}
-                        <input value="Native Kubernetes" readonly class="{{ form_field.input_classes() }}">
+                        {{ form_field.label_row('Provider', 'Active', 'normal', 'shield-check') }}
+                        <input value="Native Kubernetes"
+                               readonly
+                               class="{{ form_field.input_classes() }}">
                         <input type="hidden" name="provider_key" value="native_kubernetes">
                     </label>
                     <label class="block">
                         {{ form_field.label_row("Description") }}
-                        <input name="description" autocomplete="off" placeholder="Optional operator context" class="{{ form_field.input_classes() }}">
+                        <input name="description"
+                               autocomplete="off"
+                               placeholder="Optional operator context"
+                               class="{{ form_field.input_classes() }}">
                     </label>
                     <div class="md:col-span-2">
                         <button type="submit"
@@ -92,7 +106,7 @@
                             <p class="mt-1 text-xs text-content-muted">{{ tenant.slug }} · {{ tenant.description or 'No description' }}</p>
                         </div>
                         <div>{{ table_label.status_label(tenant.lifecycle_status|title, 'normal' if tenant.lifecycle_status == 'ready' else 'warning') }}</div>
-                        <p class="text-sm text-content-secondary">{{ tenant.provider_key|replace('_', ' ')|title }}</p>
+                        <p class="text-sm text-content-secondary">{{ tenant.provider_key|replace('_', ' ') |title }}</p>
                     </div>
                 {% else %}
                     <p class="px-5 py-8 text-sm text-content-muted">No Tenant records yet.</p>
