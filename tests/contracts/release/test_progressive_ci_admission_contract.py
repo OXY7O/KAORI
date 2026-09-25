@@ -160,7 +160,7 @@ def test_primary_release_pytest_already_owns_domain_characterization_coverage() 
     taxonomy = read(ROOT / 'tests' / 'conftest.py')
 
     assert "-m 'not debug and not e2e'" in quality_gate
-    assert "marker = _MARKER_BY_BUCKET.get(bucket, pytest.mark.functional)" in taxonomy
+    assert 'marker = _MARKER_BY_BUCKET.get(bucket, pytest.mark.functional)' in taxonomy
     assert "'Domain Characterization Tests'" not in quality_gate
 
     # These characterization domains are default-purpose buckets and therefore
