@@ -45,6 +45,7 @@ _FORBIDDEN_RESOURCES = frozenset(
         'validatingwebhookconfigurations',
     }
 )
+_PLATFORM_READ_ONLY_RESOURCES = frozenset({'limitranges', 'resourcequotas', 'serviceaccounts'})
 
 
 def _rule(api_group: str, resources: tuple[str, ...], verbs: tuple[str, ...]) -> TenantRbacRule:

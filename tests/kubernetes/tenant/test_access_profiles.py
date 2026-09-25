@@ -92,6 +92,12 @@ def test_grant_scope_rejects_cross_tenant_namespace() -> None:
         validate_grant_scope(grant)
 
 
+def test_platform_managed_namespace_resources_remain_read_only() -> None:
+    for profile_key in ('viewer', 'operator', 'tenant_admin'):
+        for resource in ('resourcequotas', 'limitranges', 'serviceaccounts'):
+            assert _verbs_for_resource(profile_key, resource) == {'get', 'list', 'watch'}
+
+
 def test_unknown_access_profile_fails_closed() -> None:
     with pytest.raises(ValueError, match='supported Tenant Access Profile'):
         get_access_profile('cluster-admin')
