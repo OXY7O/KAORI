@@ -5,7 +5,8 @@ import json
 from datetime import UTC, datetime
 from typing import Any
 
-from kubernetes.client import V1ObjectMeta, V1PolicyRule, V1Role, V1RoleBinding, V1RoleRef, V1Subject
+from kubernetes.client import V1ObjectMeta, V1PolicyRule, V1Role, V1RoleBinding, V1RoleRef
+from kubernetes.client.models.v1_subject import V1Subject
 from kubernetes.client.rest import ApiException
 
 from app.extensions.db import db
