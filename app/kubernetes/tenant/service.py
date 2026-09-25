@@ -364,7 +364,9 @@ def get_namespace_provisioning_context() -> dict[str, Any]:
     return {
         **_shared_context(),
         'environment_options': environment_options,
-        'profiles': TenantResourceProfile.query.filter_by(enabled=True).order_by(TenantResourceProfile.name.asc()).all(),
+        'profiles': TenantResourceProfile.query.filter_by(enabled=True)
+        .order_by(TenantResourceProfile.name.asc())
+        .all(),
         'namespaces': TenantNamespace.query.order_by(TenantNamespace.created_at.desc()).limit(5).all(),
     }
 
