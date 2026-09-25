@@ -155,6 +155,29 @@ def test_fast_profiles_wire_transition_lineage_verification_before_reuse() -> No
     assert 'lineage_reason' in source
 
 
+def test_primary_release_pytest_already_owns_domain_characterization_coverage() -> None:
+    quality_gate = read(QUALITY_GATE)
+    taxonomy = read(ROOT / 'tests' / 'conftest.py')
+
+    assert "-m 'not debug and not e2e'" in quality_gate
+    assert "marker = _MARKER_BY_BUCKET.get(bucket, pytest.mark.functional)" in taxonomy
+    assert "'Domain Characterization Tests'" not in quality_gate
+
+    # These characterization domains are default-purpose buckets and therefore
+    # receive the canonical functional marker during the broad release collection.
+    for domain in (
+        'welcome',
+        'access',
+        'integrations',
+        'kubernetes',
+        'storage',
+        'platform_operations',
+        'reports',
+        'settings',
+    ):
+        assert f"'{domain}':" not in taxonomy
+
+
 def test_full_admission_keeps_canonical_evidence_inventory_under_concise_job_names() -> None:
     source = read(WORKFLOW)
     policy = load_policy()
