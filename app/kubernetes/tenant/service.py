@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 import re
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, TypedDict
 
 from kubernetes.client.rest import ApiException
 from sqlalchemy import func
@@ -30,7 +30,12 @@ _ALLOWED_ENVIRONMENTS = {item.value for item in TenantEnvironmentName}
 _ALLOWED_PROFILE_CLASSES = {item.value for item in TenantResourceProfileClass}
 _OPERATION_TABS = {'provisioning', 'runs-evidence', 'drift-reconcile', 'activity'}
 
-RESOURCE_PROFILE_PRESETS: dict[str, dict[str, dict[str, str]]] = {
+class ResourceProfilePreset(TypedDict):
+    quota: dict[str, str]
+    limits: dict[str, dict[str, str]]
+
+
+RESOURCE_PROFILE_PRESETS: dict[str, ResourceProfilePreset] = {
     'small': {
         'quota': {
             'requests.cpu': '1',
