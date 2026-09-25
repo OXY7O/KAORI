@@ -190,7 +190,7 @@ def create_resource_profile_committed(source: Mapping[str, Any]) -> TenantResour
         raise TenantStateConflictError(
             'Committed Resource Profile state changed while this request was being applied. Refresh and retry.'
         ) from exc
-    except Exception:
+    except SQLAlchemyError:
         db.session.rollback()
         raise
 
@@ -242,7 +242,7 @@ def provision_native_namespace_committed(source: Mapping[str, Any]) -> TenantNam
     except (ApiException, ValueError):
         db.session.rollback()
         raise
-    except Exception:
+    except SQLAlchemyError:
         db.session.rollback()
         raise
 
