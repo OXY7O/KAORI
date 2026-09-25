@@ -6,7 +6,7 @@ from typing import Any
 
 from kubernetes.client.rest import ApiException
 from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.extensions.db import db
 from app.kubernetes.tenant.provisioning import create_namespace_intent, reconcile_native_namespace
@@ -31,6 +31,10 @@ _ALLOWED_PROFILE_CLASSES = {item.value for item in TenantResourceProfileClass}
 
 class TenantStateConflictError(RuntimeError):
     """Committed Tenant state changed while a mutation transaction was applying."""
+
+
+class TenantPersistenceError(RuntimeError):
+    """Tenant committed state could not be safely persisted."""
 
 
 def _text(source: Mapping[str, Any], key: str) -> str:
@@ -119,9 +123,9 @@ def create_tenant_committed(source: Mapping[str, Any]) -> tuple[Tenant, TenantEn
         raise TenantStateConflictError(
             'Committed Tenant state changed while this request was being applied. Refresh and retry.'
         ) from exc
-    except Exception:
+    except SQLAlchemyError as exc:
         db.session.rollback()
-        raise
+        raise TenantPersistenceError('KAORI could not persist Tenant committed state.') from exc
 
 
 def _profile_values(source: Mapping[str, Any]) -> tuple[dict[str, str], dict[str, dict[str, str]]]:
@@ -190,9 +194,9 @@ def create_resource_profile_committed(source: Mapping[str, Any]) -> TenantResour
         raise TenantStateConflictError(
             'Committed Resource Profile state changed while this request was being applied. Refresh and retry.'
         ) from exc
-    except Exception:
+    except SQLAlchemyError as exc:
         db.session.rollback()
-        raise
+        raise TenantPersistenceError('KAORI could not persist Resource Profile committed state.') from exc
 
 
 def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
@@ -242,9 +246,9 @@ def provision_native_namespace_committed(source: Mapping[str, Any]) -> TenantNam
     except (ApiException, ValueError):
         db.session.rollback()
         raise
-    except Exception:
+    except SQLAlchemyError as exc:
         db.session.rollback()
-        raise
+        raise TenantPersistenceError('KAORI could not persist Tenant namespace evidence.') from exc
 
 
 def get_tenant_context() -> dict[str, Any]:
