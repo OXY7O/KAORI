@@ -8,8 +8,9 @@ KAORI separates integration, delivery, deployment, and production promotion deli
 
 | Stage | Transition | Required authority | Result |
 | --- | --- | --- | --- |
-| Continuous Integration | issue branch -> PR | Developer Check on the exact PR head | source is eligible for staging review |
-| Staging admission | PR -> `kaori/staging` | synchronized branch plus exact-head Developer Check, followed by `quality.yml` Full Admission on the exact staging SHA | staging SHA is admitted |
+| Draft / Pre-Ready integration | issue branch -> Draft PR | Developer Check on the exact Draft head | source is eligible to become a frozen candidate |
+| Frozen candidate admission | Ready PR -> `kaori/staging` | `quality.yml` PR Integration and one Full Admission when exact evidence is unavailable | frozen source tree is comprehensively admitted |
+| Staging integration | merge -> `kaori/staging` | exact Full Admission evidence + lineage reuse followed by fresh Fast Smoke; fail-closed Full Admission fallback when required | staging SHA is admitted |
 | Continuous Delivery | admitted staging SHA -> immutable release candidate | release-candidate workflow, release governance, OCI digest identity, SBOM/provenance/signature evidence | deployable release evidence exists; production has not advanced |
 | Governed deployment | immutable RC -> UAT/staging host | staging deployment workflow plus release-state and deployment evidence | exact digest is running in the governed non-production target |
 | Production promotion | accepted UAT -> production | explicit human UAT acceptance, immutable digest/transition lineage, promotion governance, smoke and post-promotion verification | production release state may advance |
@@ -20,7 +21,7 @@ KAORI separates integration, delivery, deployment, and production promotion deli
 
 CI proves the exact source under review. Required evidence includes the repository-owned static/governance checks, security checks, functional/integration tests, frontend reproducibility, production-image runtime validation/DAST, and admission aggregation already implemented by `quality.yml` and the canonical quality-gate scripts.
 
-A PR must not enter `kaori/staging` unless its branch is synchronized with current staging and the required Developer Check is green on that exact head SHA. After merge, staging Full Admission must be green on the exact resulting staging SHA before that SHA can be used as delivery evidence.
+A PR must not become the frozen Ready candidate unless its branch is synchronized with current staging and the required Developer Check is green on the exact Draft/Pre-Ready head. Ready PR Integration then admits the frozen candidate with Full Admission when exact reusable evidence is unavailable. After merge, the exact staging SHA must pass lineage/evidence reuse plus fresh Fast Smoke, or fail closed to Full Admission when reuse cannot be proven, before it can be used as delivery evidence.
 
 ## Continuous Delivery
 
@@ -63,10 +64,11 @@ Roll-forward is preferred when restoring old state is unsafe or would discard/co
 A roll-forward must:
 
 1. create the corrective change on a governed issue branch;
-2. receive fresh exact-head Developer Check evidence;
-3. merge through `kaori/staging` and receive fresh Full Admission on the resulting staging SHA;
-4. publish a new immutable release candidate with a new lineage identity;
-5. deploy and verify that new candidate through the normal governed path;
+2. receive fresh exact-head Draft/Pre-Ready Developer Check evidence;
+3. freeze the Ready candidate and receive Full Admission on that exact candidate;
+4. merge through `kaori/staging` and receive exact-evidence reuse + fresh Fast Smoke on the resulting staging SHA;
+5. publish a new immutable release candidate with a new lineage identity;
+6. deploy and verify that new candidate through the normal governed path;
 6. obtain the same human acceptance required for production promotion;
 7. preserve old tags, digests, evidence, and transition records unchanged.
 
