@@ -56,6 +56,10 @@ from app.models.runtime import IntegrationRuntimeObservation
 from app.models.secret_reveal import SecretRevealNamespacePolicy, SecretRevealRequest
 from app.models.tenant import (
     Tenant,
+    TenantCapacityDecision,
+    TenantCapacityDecisionResult,
+    TenantCapacityPolicy,
+    TenantCapacityState,
     TenantEnvironment,
     TenantEnvironmentName,
     TenantLifecycleStatus,
@@ -98,6 +102,10 @@ __all__ = [
     'Cluster',
     'User',
     'Tenant',
+    'TenantCapacityDecision',
+    'TenantCapacityDecisionResult',
+    'TenantCapacityPolicy',
+    'TenantCapacityState',
     'TenantEnvironment',
     'TenantEnvironmentName',
     'TenantLifecycleStatus',
