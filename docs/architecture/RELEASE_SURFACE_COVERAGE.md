@@ -4,7 +4,7 @@ Status: **Locked release-coverage contract**
 
 This registry answers one release question: **is every operator-visible menu, nested web domain, and non-navigation system surface explicitly owned by a release verifier or test boundary?**
 
-The current baseline contains **62 navigation links** across the authenticated application shell and **28 registered blueprints**. A new menu link, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
+The current baseline contains **66 navigation links** across the authenticated application shell and **28 registered blueprints**. A new menu link, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
 
 ## Navigation and Surface Matrix
 
@@ -106,6 +106,6 @@ The evidence contract is snapshot-first: committed Object Storage Inventory owns
 
 ## Kubernetes Tenant Expansion
 
-`Kubernetes → Tenant` is a distinct provider-neutral Kubernetes capability surface. The release registry owns the direct `tenant.index` navigation destination and `tenant_bp` Blueprint explicitly so new Tenant routes cannot enter staging without release-surface ownership.
+`Kubernetes → Tenant` is a distinct provider-neutral Kubernetes capability surface. The release registry owns **Overview**, **Tenants**, **Resource Profiles**, **Namespace Provisioning**, and **Operations** under the single `tenant_bp` Blueprint so new Tenant routes cannot enter staging without release-surface ownership.
 
-The current state is **BASELINE LOCKED** rather than final UX lock. Native Kubernetes is the admitted provider baseline for Tenant creation, Resource Profiles, and Namespace/ResourceQuota/LimitRange provisioning. Capsule discovery, qualification, access workflows, and the final integrated Tenant UX remain bounded downstream work and must not be implied as already complete.
+The current state is **BASELINE LOCKED** rather than final feature lock. Native Kubernetes is the actionable provider baseline for Tenant creation, Resource Profiles, and Namespace/ResourceQuota/LimitRange provisioning. Capsule remains visible only as Planned / Not Yet Qualified until its discovery and compatibility work is admitted. Operations uses content tabs for provisioning, runs/evidence, drift/reconcile, and activity; tabs without admitted backend contracts remain explicit non-actionable states.
