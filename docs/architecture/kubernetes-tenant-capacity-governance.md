@@ -111,6 +111,24 @@ An allowed decision is referenced by the committed Tenant namespace allocation.
 
 When cluster capacity contracts and existing commitments exceed the budget, state becomes Overcommitted without rewriting existing namespace allocations. Allocation reductions remain valid. Further positive allocation changes remain blocked until the deficit is corrected.
 
+## Existing namespace allocation changes
+
+A managed namespace changes allocation by selecting another committed Resource Profile version. Inline per-namespace quota overrides are not accepted.
+
+KAORI evaluates the frozen current namespace allocation against the proposed Resource Profile snapshot before mutating the namespace record or provider state.
+
+The operation is classified from CPU/memory request commitment:
+
+- `increase` when at least one governed request dimension increases or becomes unbounded;
+- `decrease` when no governed dimension increases and at least one decreases or becomes bounded;
+- `no_change` when both governed request dimensions are unchanged.
+
+For an increase, current committed capacity evidence and policy must be sufficient to prove the projected allocation safe. Missing/stale capacity evidence, missing policy, unbounded aggregate commitment, or projected budget shortfall blocks the mutation and commits only the capacity-decision evidence.
+
+For a decrease or no-change operation, KAORI may proceed even while capacity evidence is Unknown because the change does not add CPU/memory request commitment. The decision remains `Unknown` when budget/headroom cannot be established, preserving the evidence limitation instead of guessing.
+
+An allowed change updates the namespace source Resource Profile identity/version and frozen allocation snapshot, links the allow decision, then reconciles ResourceQuota and LimitRange through the existing Native Kubernetes provider path. Reconciliation failure remains observable as failed/drift evidence; KAORI does not claim provider state matches desired intent until read-back verifies it.
+
 ## Storage
 
 PVC/request-storage quota is retained in Resource Profile allocation evidence, but physical storage admission is not inferred from it.
