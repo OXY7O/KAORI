@@ -235,10 +235,37 @@ jobs:
 
           printf '📦 Developer Check route — %s\n' "$summary"
 
+  toolchain:
+    name: Prepare Toolchain
+    needs: route
+    if: ${{ needs.route.result == 'success' }}
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    timeout-minutes: 10
+    outputs:
+      image: ${{ steps.toolchain.outputs.image }}
+    steps:
+      - name: Checkout Work Branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.KAORI_SOURCE_SHA }}
+          persist-credentials: false
+
+      - name: Resolve CI Toolchain
+        id: toolchain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
+          image="kaori-ci-toolchain:$key"
+          docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
+          printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
+          printf '✅ Developer Check toolchain — %s\n' "$image"
+
+
   python-check:
     name: Python & Governance
-    needs: route
-    if: ${{ needs.route.result == 'success' && (needs.route.outputs.python == 'true' || needs.route.outputs.migrations == 'true' || needs.route.outputs.reports == 'true' || needs.route.outputs.wide == 'true') }}
+    needs: [route, toolchain]
+    if: ${{ needs.route.result == 'success' && needs.toolchain.result == 'success' && (needs.route.outputs.python == 'true' || needs.route.outputs.migrations == 'true' || needs.route.outputs.reports == 'true' || needs.route.outputs.wide == 'true') }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 15
     steps:
@@ -249,18 +276,10 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Resolve CI Toolchain
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
-          image="kaori-ci-toolchain:$key"
-          docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
-          printf 'CI_TOOLCHAIN_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
-
       - name: Run Python & Governance Checks
         shell: bash
         env:
+          CI_TOOLCHAIN_IMAGE: ${{ needs.toolchain.outputs.image }}
           CHECK_PYTHON: ${{ needs.route.outputs.python }}
           CHECK_MIGRATIONS: ${{ needs.route.outputs.migrations }}
           CHECK_CONTRACTS: ${{ needs.route.outputs.contracts }}
@@ -316,8 +335,8 @@ jobs:
 
   frontend-check:
     name: Frontend & Templates
-    needs: route
-    if: ${{ needs.route.result == 'success' && (needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true') }}
+    needs: [route, toolchain]
+    if: ${{ needs.route.result == 'success' && needs.toolchain.result == 'success' && (needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true') }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 10
     steps:
@@ -327,18 +346,10 @@ jobs:
           ref: ${{ env.KAORI_SOURCE_SHA }}
           persist-credentials: false
 
-      - name: Resolve CI Toolchain
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
-          image="kaori-ci-toolchain:$key"
-          docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
-          printf 'CI_TOOLCHAIN_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
-
       - name: Run Frontend & Template Checks
         shell: bash
         env:
+          CI_TOOLCHAIN_IMAGE: ${{ needs.toolchain.outputs.image }}
           CHECK_TEMPLATES: ${{ needs.route.outputs.templates }}
           CHECK_FRONTEND: ${{ needs.route.outputs.frontend }}
         run: |
@@ -377,8 +388,8 @@ jobs:
 
   focused-tests:
     name: Focused Tests
-    needs: route
-    if: ${{ needs.route.result == 'success' && (needs.route.outputs.contracts == 'true' || needs.route.outputs.test_paths != '') }}
+    needs: [route, toolchain]
+    if: ${{ needs.route.result == 'success' && needs.toolchain.result == 'success' && (needs.route.outputs.contracts == 'true' || needs.route.outputs.test_paths != '') }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 15
     steps:
@@ -388,18 +399,10 @@ jobs:
           ref: ${{ env.KAORI_SOURCE_SHA }}
           persist-credentials: false
 
-      - name: Resolve CI Toolchain
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
-          image="kaori-ci-toolchain:$key"
-          docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
-          printf 'CI_TOOLCHAIN_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
-
       - name: Run Focused Tests
         shell: bash
         env:
+          CI_TOOLCHAIN_IMAGE: ${{ needs.toolchain.outputs.image }}
           CHECK_CONTRACTS: ${{ needs.route.outputs.contracts }}
           TEST_PATHS: ${{ needs.route.outputs.test_paths }}
         run: |
@@ -437,6 +440,7 @@ jobs:
     name: Developer Check
     needs:
       - route
+      - toolchain
       - python-check
       - frontend-check
       - focused-tests
@@ -456,6 +460,7 @@ jobs:
           CHECK_FRONTEND: ${{ needs.route.outputs.frontend }}
           CHECK_CONTRACTS: ${{ needs.route.outputs.contracts }}
           TEST_PATHS: ${{ needs.route.outputs.test_paths }}
+          TOOLCHAIN_RESULT: ${{ needs.toolchain.result }}
           PYTHON_RESULT: ${{ needs.python-check.result }}
           FRONTEND_RESULT: ${{ needs.frontend-check.result }}
           TEST_RESULT: ${{ needs.focused-tests.result }}
@@ -490,6 +495,11 @@ jobs:
                 exit 1
               }
             fi
+          }
+
+          [[ "$TOOLCHAIN_RESULT" == "success" ]] || {
+            printf '❌ Prepare Toolchain — %s\n' "$TOOLCHAIN_RESULT"
+            exit 1
           }
 
           assert_lane 'Python & Governance' "$python_required" "$PYTHON_RESULT"
