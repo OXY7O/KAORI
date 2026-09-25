@@ -54,7 +54,6 @@ def test_navigation_content_hierarchy_matches_design_system_v2_contract() -> Non
     assert '>Analytics</div>' in sidebar
     assert sidebar.index('>Storage</div>') < sidebar.index('>Analytics</div>') < sidebar.index('>Insights</div>')
     assert '>Tenant</span>' in tenant_menu
-    assert 'url_for(target_endpoint)' in tenant_menu
     for endpoint in (
         'tenant.index',
         'tenant.tenants',
@@ -62,7 +61,7 @@ def test_navigation_content_hierarchy_matches_design_system_v2_contract() -> Non
         'tenant.namespace_provisioning',
         'tenant.operations',
     ):
-        assert f"'{endpoint}'" in tenant_menu
+        assert f"url_for('{endpoint}')" in tenant_menu
     assert '>Kubernetes</span>' in analytics_menu
     assert '>Object Storage</span>' in analytics_menu
     assert '>Kubernetes Analytics</span>' not in analytics_menu
