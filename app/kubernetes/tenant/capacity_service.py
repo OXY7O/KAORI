@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.extensions.db import db
 from app.kubernetes.analytics.materialization.service import read_snapshot
@@ -172,6 +172,9 @@ def update_capacity_policy_committed(source: Mapping[str, Any]) -> TenantCapacit
         raise TenantCapacityPolicyConflictError(
             'Tenant Capacity Policy changed while this request was being applied. Refresh and retry.'
         ) from exc
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
 
 
 def _fresh_capacity_snapshot(cluster_id: str) -> CapacitySnapshotEvidence:
