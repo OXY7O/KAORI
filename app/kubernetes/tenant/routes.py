@@ -9,6 +9,10 @@ from kubernetes.client.rest import ApiException
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import any_permission_required, permission_required
+from app.kubernetes.tenant.capacity_governance import (
+    TenantCapacityStateConflictError,
+    upsert_capacity_policy_committed,
+)
 from app.kubernetes.tenant.service import (
     TenantStateConflictError,
     create_resource_profile_committed,
@@ -134,6 +138,51 @@ def create_resource_profile_route():
                 'resource_profile_id': profile.public_id,
                 'profile_class': profile.profile_class,
                 'operation': 'create_resource_profile',
+            },
+        )
+    return redirect(url_for('tenant.index'))
+
+
+@tenant_bp.post('/capacity-policy')
+@permission_required('tenant.manage')
+def update_capacity_policy_route():
+    try:
+        _csrf()
+        policy = upsert_capacity_policy_committed(request.form)
+    except ValueError as exc:
+        _record(
+            event_type='kubernetes_tenant_capacity_policy_update_failed',
+            status='error',
+            title='Tenant Capacity Policy Update Failed',
+            message=str(exc),
+            metadata={
+                'cluster_id': request.form.get('capacity_cluster_id'),
+                'operation': 'update_capacity_policy',
+            },
+        )
+    except TenantCapacityStateConflictError as exc:
+        current_app.logger.exception('Tenant Capacity Governance policy update conflicted with committed state.')
+        _record(
+            event_type='kubernetes_tenant_capacity_policy_update_failed',
+            status='error',
+            title='Tenant Capacity Policy Update Failed',
+            message=str(exc),
+            metadata={
+                'cluster_id': request.form.get('capacity_cluster_id'),
+                'operation': 'update_capacity_policy',
+            },
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capacity_policy_updated',
+            status='success',
+            title='Tenant Capacity Policy Updated',
+            message='Tenant Allocation Budget inputs were committed for the selected cluster.',
+            detail=f'Safety headroom {policy.safety_headroom_percent}%',
+            metadata={
+                'cluster_id': policy.cluster_id,
+                'safety_headroom_percent': policy.safety_headroom_percent,
+                'operation': 'update_capacity_policy',
             },
         )
     return redirect(url_for('tenant.index'))
