@@ -199,9 +199,6 @@ class TenantCapacityDecision(db.Model):
     tenant_environment_id: Mapped[int | None] = mapped_column(
         ForeignKey('tenant_environments.id', ondelete='SET NULL'), nullable=True
     )
-    tenant_namespace_id: Mapped[int | None] = mapped_column(
-        ForeignKey('tenant_namespaces.id', ondelete='SET NULL'), nullable=True
-    )
     resource_profile_id: Mapped[int | None] = mapped_column(
         ForeignKey('tenant_resource_profiles.id', ondelete='SET NULL'), nullable=True
     )
@@ -248,6 +245,9 @@ class TenantNamespace(db.Model):
         ForeignKey('tenant_resource_profiles.id', ondelete='RESTRICT'), nullable=True
     )
     resource_profile_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    capacity_decision_id: Mapped[int | None] = mapped_column(
+        ForeignKey('tenant_capacity_decisions.id', ondelete='SET NULL'), nullable=True
+    )
     allocation_quota_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     allocation_limit_defaults_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     allocation_customized: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -288,5 +288,6 @@ class TenantNamespace(db.Model):
             name='ck_tenant_namespaces_provisioning_status',
         ),
         Index('ix_tenant_namespaces_environment', 'tenant_environment_id', 'namespace'),
+        Index('ix_tenant_namespaces_capacity_decision', 'capacity_decision_id'),
         Index('ix_tenant_namespaces_provisioning', 'cluster_id', 'provisioning_status'),
     )
