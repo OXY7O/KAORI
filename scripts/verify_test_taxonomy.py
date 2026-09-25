@@ -123,8 +123,12 @@ def validate(root: Path) -> list[str]:
             errors.append(f'{path.relative_to(root)} may not be marked as release functional evidence')
 
     quality_gate = (root / 'scripts' / 'quality_gate.sh').read_text(encoding='utf-8')
-    if "-m 'not debug and not e2e'" not in quality_gate and '-m "not debug and not e2e"' not in quality_gate:
-        errors.append('quality_gate.sh must exclude debug and separately gated e2e tests from the broad release run')
+    release_marker = 'not debug and not e2e and not contract and not migration'
+    if f"-m '{release_marker}'" not in quality_gate and f'-m "{release_marker}"' not in quality_gate:
+        errors.append(
+            'quality_gate.sh must exclude debug/e2e and separately owned contract/migration tests '
+            'from the broad release run'
+        )
     if 'pytest -q tests/e2e -m e2e' not in quality_gate:
         errors.append('quality_gate.sh must run the explicit end-to-end smoke gate')
 
