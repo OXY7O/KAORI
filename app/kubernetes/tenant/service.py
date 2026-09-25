@@ -6,7 +6,7 @@ from typing import Any
 
 from kubernetes.client.rest import ApiException
 from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.extensions.db import db
 from app.kubernetes.tenant.provisioning import create_namespace_intent, reconcile_native_namespace
@@ -119,7 +119,7 @@ def create_tenant_committed(source: Mapping[str, Any]) -> tuple[Tenant, TenantEn
         raise TenantStateConflictError(
             'Committed Tenant state changed while this request was being applied. Refresh and retry.'
         ) from exc
-    except Exception:
+    except SQLAlchemyError:
         db.session.rollback()
         raise
 
