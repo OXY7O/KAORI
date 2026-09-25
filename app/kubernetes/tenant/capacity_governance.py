@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
@@ -38,6 +39,17 @@ class TenantCapacityBlockedError(ValueError):
 
 class TenantCapacityStateConflictError(RuntimeError):
     """Tenant capacity policy persistence failed before provider reconciliation."""
+
+
+@dataclass(frozen=True, slots=True)
+class _DecisionEvidenceContext:
+    policy: TenantCapacityPolicy | None
+    budget: TenantAllocationBudget | None
+    committed_before: CapacityVector
+    current: CapacityVector
+    proposed: CapacityVector
+    committed_count: int
+    snapshot_result: SnapshotResult
 
 
 def upsert_capacity_policy(source: Mapping[str, Any]) -> TenantCapacityPolicy:
@@ -99,9 +111,9 @@ def build_capacity_governance_summary(cluster_id: str) -> dict[str, Any]:
             'state': 'Unknown',
             'reason': 'Tenant Capacity Governance policy is not configured.',
             'policy': None,
-            'snapshot_state': snapshot_result.state,
+            'snapshot_state': evidence.snapshot_result.state,
             'data_cutoff': _snapshot_cutoff(snapshot_result),
-            'committed_namespace_count': committed_count,
+            'committed_namespace_count': evidence.committed_count,
             'committed': _vector_json(committed),
             'budget': None,
             'headroom': None,
@@ -211,13 +223,15 @@ def enforce_namespace_allocation_preflight(
         namespace=namespace,
         operation='create',
         pure=pure,
-        policy=policy,
-        budget=budget,
-        committed_before=committed,
-        current=current,
-        proposed=proposed,
-        committed_count=committed_count,
-        snapshot_result=snapshot_result,
+        evidence=_DecisionEvidenceContext(
+            policy=policy,
+            budget=budget,
+            committed_before=committed,
+            current=current,
+            proposed=proposed,
+            committed_count=committed_count,
+            snapshot_result=snapshot_result,
+        ),
     )
     if not pure.allowed:
         db.session.commit()
@@ -233,13 +247,7 @@ def _persist_decision(
     namespace: str,
     operation: str,
     pure: AllocationPreflightDecision,
-    policy: TenantCapacityPolicy | None,
-    budget: TenantAllocationBudget | None,
-    committed_before: CapacityVector,
-    current: CapacityVector,
-    proposed: CapacityVector,
-    committed_count: int,
-    snapshot_result: SnapshotResult,
+    evidence: _DecisionEvidenceContext,
 ) -> TenantCapacityDecision:
     record = TenantCapacityDecision()
     record.cluster_id = cluster_id
@@ -250,7 +258,7 @@ def _persist_decision(
     record.operation = operation
     record.decision = pure.decision
     record.capacity_state = pure.state
-    record.data_cutoff = _snapshot_cutoff(snapshot_result)
+    record.data_cutoff = _snapshot_cutoff(evidence.snapshot_result)
     record.evidence_json = {
         'version': 1,
         'authority': 'tenant_capacity_governance',
@@ -260,22 +268,22 @@ def _persist_decision(
         'positive_change': pure.positive_change,
         'capacity_source': {
             'dataset_key': 'analytics.capacity',
-            'snapshot_id': snapshot_result.snapshot.id if snapshot_result.snapshot is not None else None,
+            'snapshot_id': evidence.snapshot_result.snapshot.id if evidence.snapshot_result.snapshot is not None else None,
             'snapshot_state': snapshot_result.state,
-            'stale': snapshot_result.stale,
-            'data_cutoff': _datetime_text(_snapshot_cutoff(snapshot_result)),
+            'stale': evidence.snapshot_result.stale,
+            'data_cutoff': _datetime_text(_snapshot_cutoff(evidence.snapshot_result)),
         },
-        'policy': _policy_json(policy) if policy is not None else None,
+        'policy': _policy_json(evidence.policy) if evidence.policy is not None else None,
         'allocation': {
             'committed_namespace_count': committed_count,
-            'committed_before': _vector_json(committed_before),
-            'current': _vector_json(current),
-            'proposed': _vector_json(proposed),
+            'committed_before': _vector_json(evidence.committed_before),
+            'current': _vector_json(evidence.current),
+            'proposed': _vector_json(evidence.proposed),
             'projected_committed': _vector_json(pure.projected_committed),
             'projected_headroom': _vector_json(pure.projected_headroom),
             'shortfall': _vector_json(pure.shortfall),
         },
-        'budget': _budget_json(budget) if budget is not None else None,
+        'budget': _budget_json(evidence.budget) if evidence.budget is not None else None,
     }
     db.session.add(record)
     db.session.flush()
