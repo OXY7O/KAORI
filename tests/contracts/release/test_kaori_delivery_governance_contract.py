@@ -230,23 +230,51 @@ def test_progressive_ci_routes_only_governed_integration_pushes_and_staging_prs(
     assert 'name: CI Admission' in source
 
 
-def test_work_branches_use_targeted_developer_check_until_staging_merge() -> None:
+def test_draft_work_branches_use_developer_check_and_ready_candidate_enters_full_admission() -> None:
     quality = read(QUALITY_WORKFLOW)
     developer = read(DEVELOPER_WORKFLOW)
     workflow = read(WORKFLOW)
 
     pull_request_block = quality.split('pull_request:', 1)[1].split('permissions:', 1)[0]
-    assert '- kaori/staging' not in pull_request_block
+    assert '- kaori/staging' in pull_request_block
     assert '- main' in pull_request_block
 
     assert 'branches:\n      - kaori/staging' in developer
     assert "startsWith(github.event.pull_request.head.ref, 'kaori/')" in developer
     assert "github.event.pull_request.head.ref != 'kaori/staging'" in developer
-    assert 'github.event.pull_request.draft == true' not in developer
+    assert 'github.event.pull_request.draft == true' in developer
+
+    assert 'github.event.pull_request.draft == false' in quality
+    assert "github.event.pull_request.base.ref == 'kaori/staging'" in quality
+    assert "startsWith(github.event.pull_request.head.ref, 'kaori/')" in quality
 
     assert 'Every `kaori/*` branch except `kaori/staging` is a work branch.' in workflow
-    assert 'Work branches use only path-aware Developer Check / targeted validation.' in workflow
-    assert 'Comprehensive validation authority begins only after merge to `kaori/staging`.' in workflow
+    assert 'Draft work branches use path-aware Developer Check / targeted validation.' in workflow
+    assert 'Ready for Review triggers Full Admission on the frozen final candidate.' in workflow
+    assert 'After merge to `kaori/staging`, exact evidence reuse + Fast Smoke is the normal staging path.' in workflow
+
+
+def test_full_admission_uses_three_balanced_parallel_runner_lanes() -> None:
+    source = read(QUALITY_WORKFLOW)
+
+    static = source.split('\n  static-quality:', 1)[1].split('\n  static-security:', 1)[0]
+    security = source.split('\n  static-security:', 1)[1].split('\n  functional-tests:', 1)[0]
+    functional = source.split('\n  functional-tests:', 1)[1].split('\n  frontend:', 1)[0]
+    frontend = source.split('\n  frontend:', 1)[1].split('\n  production-runtime:', 1)[0]
+    runtime = source.split('\n  production-runtime:', 1)[1].split('\n  integration-smoke:', 1)[0]
+
+    assert 'needs: validation-profile' in static
+    assert 'needs: validation-profile' in security
+    assert 'needs: validation-profile' in functional
+
+    assert 'needs: [validation-profile, static-quality]' in frontend
+    assert "needs.static-quality.result == 'success'" in frontend
+
+    assert 'needs: [validation-profile, static-security]' in runtime
+    assert "needs.static-security.result == 'success'" in runtime
+
+    for lane in (static, security, functional, frontend, runtime):
+        assert 'runs-on: [self-hosted, linux, x64, kaori-ci]' in lane
 
 
 def test_draft_developer_check_is_path_aware_and_non_authoritative() -> None:
