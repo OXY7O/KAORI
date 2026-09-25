@@ -15,6 +15,7 @@ from app.kubernetes.tenant.capacity_governance import (
 )
 from app.kubernetes.tenant.service import (
     TenantStateConflictError,
+    change_native_namespace_allocation_committed,
     create_resource_profile_committed,
     create_tenant_committed,
     get_tenant_context,
@@ -183,6 +184,44 @@ def update_capacity_policy_route():
                 'cluster_id': policy.cluster_id,
                 'safety_headroom_percent': policy.safety_headroom_percent,
                 'operation': 'update_capacity_policy',
+            },
+        )
+    return redirect(url_for('tenant.index'))
+
+
+@tenant_bp.post('/namespace-allocation')
+@permission_required('tenant.manage')
+def change_namespace_allocation_route():
+    try:
+        _csrf()
+        record = change_native_namespace_allocation_committed(request.form)
+    except (ValueError, ApiException, TenantStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_namespace_allocation_change_failed',
+            status='error',
+            title='Tenant Allocation Change Failed',
+            message=str(exc),
+            metadata={
+                'tenant_namespace_id': request.form.get('tenant_namespace_id'),
+                'resource_profile_id': request.form.get('resource_profile_id'),
+                'operation': 'change_namespace_allocation',
+            },
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_namespace_allocation_changed',
+            status='success' if record.provisioning_status == 'ready' else 'warning',
+            title='Tenant Allocation Changed',
+            message=f'{record.namespace} finished with {record.provisioning_status.title()} state.',
+            detail=record.provisioning_message,
+            metadata={
+                'tenant_namespace_id': record.id,
+                'cluster_id': record.cluster_id,
+                'namespace': record.namespace,
+                'resource_profile_id': record.resource_profile_id,
+                'capacity_decision_id': record.capacity_decision_id,
+                'provisioning_status': record.provisioning_status,
+                'operation': 'change_namespace_allocation',
             },
         )
     return redirect(url_for('tenant.index'))
