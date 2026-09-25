@@ -45,7 +45,7 @@
             </div>
             <div class="mt-5 rounded-lg border border-outline-subtle bg-surface-elevated p-4">
                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Provider boundary</p>
-                <p class="mt-2 text-sm leading-6 text-content-secondary">Native Kubernetes only. Capsule remains non-actionable until #121 discovery and compatibility admission.</p>
+                <p class="mt-2 text-sm leading-6 text-content-secondary">Native Kubernetes only. Capsule remains non-actionable until provider discovery and compatibility admission.</p>
             </div>
             <button type="submit"
                     {% if not can_manage or not native_available or not environment_options or not profiles %}disabled aria-disabled="true"{% endif %}
