@@ -21,13 +21,15 @@ Issue
   ↓
 issue branch
   ↓
-Draft/Ready PR → kaori/staging
+Draft PR → kaori/staging
   ↓
-Developer Check on exact PR head
+Developer Check / Pre-Ready on exact Draft head
+  ↓
+Ready for Review → frozen candidate Full Admission
   ↓
 merge commit to kaori/staging
   ↓
-Full Admission on exact staging SHA
+Staging Integration → exact evidence reuse + Fast Smoke
   ↓
 immutable RC + digest-bound supply-chain evidence
   ↓
@@ -46,20 +48,20 @@ The long-lived integration branches are `kaori/staging` and `main`. Work branche
 
 ### Work branch
 
-A `kaori/*` work branch uses the path-aware **Developer Check** workflow. It validates the exact PR head without running the comprehensive staging admission pipeline on every work-branch commit.
+A `kaori/*` work branch uses the path-aware **Developer Check** workflow while its staging PR remains Draft. It validates the exact Draft/Pre-Ready head without paying comprehensive admission on every implementation commit.
 
-A work branch is eligible for merge to `kaori/staging` only when:
+A work branch is eligible to become the frozen final candidate only when:
 
 - it is based on or synchronized with the current staging authority;
-- Developer Check is green on the exact current head;
+- Developer Check is green on the exact Draft/Pre-Ready head;
 - required review discussion is resolved;
 - the PR targets `kaori/staging`.
 
-### Staging admission
+### Frozen candidate admission
 
-After merge to `kaori/staging`, `.github/workflows/quality.yml` runs **Full Admission** on the exact resulting staging SHA.
+Changing the clean PR to **Ready for Review** freezes that exact head. `.github/workflows/quality.yml` then runs PR Integration and, when reusable exact evidence is unavailable, one authoritative **Full Admission** on that frozen candidate.
 
-Full Admission owns the integrated evidence set:
+Full Admission owns the comprehensive evidence set:
 
 - Static & Governance;
 - Security;
@@ -68,7 +70,11 @@ Full Admission owns the integrated evidence set:
 - Runtime & DAST;
 - CI Admission.
 
-A green work-branch run does not replace staging Full Admission.
+A green Developer Check does not replace Full Admission. A successful frozen-candidate Full Admission publishes immutable evidence keyed to the exact tree, validation-authority fingerprint, and profile version.
+
+### Staging integration
+
+After merge to `kaori/staging`, the exact resulting staging lineage attempts to reuse the frozen-candidate Full Admission evidence. When lineage and evidence are valid, staging runs fresh **Fast Smoke** instead of repeating comprehensive validation. Missing or invalid evidence fails closed to a fresh Full Admission on staging.
 
 ## Continuous Delivery
 
@@ -182,7 +188,7 @@ Use **roll-forward** when restoring previous data/state would be unsafe, includi
 - prior release lineage or reviewed backup cannot be proven;
 - a corrective patch is safer than state restoration.
 
-Roll-forward requires a new governed issue-branch change, fresh Developer Check, merge to staging, fresh Full Admission, a new immutable RC, deployment verification, and the same human acceptance boundary.
+Roll-forward requires a new governed issue-branch change, fresh Draft/Pre-Ready Developer Check, a frozen Ready candidate Full Admission, staging evidence reuse/Fast Smoke, a new immutable RC, deployment verification, and the same human acceptance boundary.
 
 Historical tags, digests, and evidence must remain immutable.
 
