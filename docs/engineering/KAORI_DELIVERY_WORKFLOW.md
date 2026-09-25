@@ -1,6 +1,6 @@
 # KAORI Application Delivery Workflow
 
-**Governance Version:** 2.0  
+**Governance Version:** 2.1  
 **Scope:** KAORI application repository  
 **Authority:** Application-local baseline  
 **Future Authority:** Platform Governance / Platform Workflow standards when formally adopted
@@ -19,11 +19,13 @@ Idea / Request
   -> batch repair
   -> Pre-Ready cheap gate
   -> Ready for Review + frozen final candidate
-  -> targeted Developer Check remains the work-branch authority
+  -> one governed Full Admission on the exact frozen head
+     -> exact evidence reuse when already admitted
+     -> otherwise comprehensive gates run in parallel
   -> merge commit to kaori/staging
   -> Staging Integration
-     -> reuse exact admitted evidence + Fast Smoke when reusable
-     -> otherwise FALLBACK to one fresh Full Admission on kaori/staging
+     -> reuse exact admitted evidence + Fast Smoke
+     -> FALLBACK to fresh Full Admission only when evidence/lineage cannot be proven
   -> UAT
   -> explicit Local UAT acceptance
   -> when release-bound: immutable OCI image + OCI digest
@@ -42,9 +44,9 @@ KAORI uses a closed-loop delivery model. Product ideas, operational findings, de
 
 The essential delivery rule is:
 
-> **Develop cheaply on work branches, merge only a targeted-green frozen candidate into staging, then pay comprehensive validation only at the staging authority when reusable evidence is unavailable.**
+> **Develop cheaply in Draft, freeze a targeted-green candidate at Ready, pay Full Admission once for that exact candidate, then reuse the immutable evidence through staging and promotion when lineage remains valid.**
 
-Work-branch validation is intentionally bounded. Full Admission is an integration-authority fallback, not a work-branch development or Ready-PR gate.
+Draft work-branch validation is intentionally bounded. Ready is the governed final-candidate boundary: Full Admission runs once on the exact frozen head, while later staging/promotion transitions reuse that immutable evidence when lineage remains valid.
 
 ## Human-Readable GitHub Standard
 
@@ -152,7 +154,7 @@ Expected result is **0** for governed PRs. Closed, merged, or superseded PRs rem
 
 Also verify the governing Issue/PR Project membership, lifecycle Status, Sprint, Native Issue Type, Priority, Story Points, Milestone, relationships, and Development linkage where applicable. Unsupported Project/custom-field mutations must be reported to the maintainer with exact card, field, and intended value; never copy them into a duplicate body table or invent replacement labels.
 
-**Never run Full Admission on a work branch.** Metadata repair, review, and implementation remain under the path-aware Developer Check until merge to exact `kaori/staging`.
+**Never use Full Admission as the development/debug loop.** Draft implementation, metadata repair, and review remain under path-aware Developer Check; only the exact frozen Ready candidate may enter governed Full Admission.
 
 ## Branch Authority
 
@@ -163,9 +165,9 @@ Only two branches are long-lived by default:
 
 Every `kaori/*` branch except `kaori/staging` is a work branch.
 
-Work branches use only path-aware Developer Check / targeted validation.
+Work branches use path-aware Developer Check / targeted validation while Draft. The exact frozen Ready head becomes a governed final candidate and may run Full Admission.
 
-Comprehensive validation authority begins only after merge to `kaori/staging`.
+Comprehensive validation authority begins at the Ready/frozen-candidate boundary and is then reused through `kaori/staging` and `main` when exact evidence and lineage remain valid.
 
 A Pull Request to `main` is a governed promotion only when its source is exactly `kaori/staging`. Direct work-branch-to-main PRs are outside the standard delivery path and must not become a comprehensive-validation bypass.
 
@@ -208,7 +210,7 @@ For work entering the artifact-backed release path, completion additionally requ
 
 ## Developer Check — Work-Branch Loop
 
-`Developer Check` is the path-aware authority for Pull Requests from every `kaori/*` work branch except `kaori/staging` into `kaori/staging`. It runs in both Draft and Ready states and remains targeted/non-comprehensive.
+`Developer Check` is the path-aware authority for Pull Requests from every `kaori/*` work branch except `kaori/staging` into `kaori/staging` while the PR is Draft. It remains targeted/non-comprehensive and prepares the exact head for the Ready boundary.
 
 It routes changed paths into the minimum safe focused checks using existing KAORI validation commands. Typical groups include:
 
@@ -253,17 +255,17 @@ This prevents trivial formatting, targeted-contract, or review findings from rea
 
 When Pre-Ready is clean, mark the PR **Ready for Review** and treat that exact source head as the frozen work-branch candidate.
 
-Ready does **not** trigger Full Admission. Developer Check remains the validation authority until the candidate is merged into `kaori/staging`. Do not add cleanup, wording, formatting, or opportunistic refactors after freeze; any source change creates a new work-branch candidate and must pass targeted validation again.
+Ready **does** trigger the governed Full Admission for the exact frozen candidate. Developer Check must already be green before this transition. Do not add cleanup, wording, formatting, or opportunistic refactors after freeze; any source change invalidates prior evidence and should return the PR to Draft for targeted repair before another Ready candidate is admitted.
 
 ## Full Admission and Evidence Authority
 
-KAORI uses **Full Admission + exact evidence reuse** with a **validation authority fingerprint** at governed integration branches.
+KAORI uses **Full Admission + exact evidence reuse** with a **validation authority fingerprint** beginning at the frozen Ready candidate and continuing through governed integration branches.
 
 The governing rule remains:
 
 > **Same immutable source tree + same validation authority fingerprint = never repeat comprehensive validation.**
 
-A `kaori/staging` push first attempts exact evidence reuse. If reusable Full Admission evidence and transition lineage are valid, it runs fresh Fast Smoke. If exact evidence is unavailable or invalid, the staging integration fails closed into one fresh Full Admission on `kaori/staging`. Work branches never execute this fallback.
+A Ready feature PR first attempts exact evidence reuse for its exact head. A new frozen candidate without reusable evidence fails closed into one fresh Full Admission. After merge, a `kaori/staging` push reuses that exact evidence and runs fresh Fast Smoke when transition lineage is valid. If staging cannot prove reusable evidence/lineage, it fails closed into one fresh Full Admission on `kaori/staging` rather than silently passing.
 
 Full Admission preserves authoritative coverage for source linting/formatting, Pyright/type safety, architecture/import/reachability checks, contract and migration tests, functional/integration tests, frontend reproducibility, secrets/SAST/dependency/workflow security, production image build, vulnerability scan, runtime validation, DAST, application assertions, and code-health integrity.
 
@@ -289,7 +291,7 @@ This batch-repair rule keeps expensive validation out of the development loop wh
 
 ## Validation Profiles
 
-- **Full Admission** — comprehensive validation only at a governed integration authority when exact evidence cannot be reused or an explicitly governed integration refresh is required.
+- **Full Admission** — comprehensive validation for the exact frozen Ready candidate, or a governed integration fallback when exact evidence cannot be reused.
 - **Staging Integration** — `kaori/staging` push; exact evidence lookup + lineage verification + Fast Smoke when reusable, otherwise Full Admission fallback on staging.
 - **Promotion** — `kaori/staging` -> `main` PR; exact UAT-selected staging lineage verification + evidence reuse + Fast Smoke.
 - **Post-promotion** — resulting `main` lineage verification + evidence reuse + fresh Fast Smoke.
@@ -346,22 +348,22 @@ Issue
   -> batch repair
   -> Pre-Ready PASS
   -> frozen Ready candidate
-  -> targeted Developer Check remains authoritative
+  -> one Full Admission on the frozen Ready head
   -> merge to kaori/staging
-  -> staging evidence lookup
+  -> staging evidence lookup + lineage verification
      -> Fast Smoke when reusable
-     -> Full Admission fallback on staging when required
+     -> Full Admission fallback on staging only when required
   -> human UAT
 ```
 
 ### Small issue / burn-down fix
 
-A small issue follows Issue -> work branch -> Draft -> Developer Check -> Pre-Ready -> Ready -> staging merge. Its work-branch feedback should remain seconds/minutes rather than a complete production/runtime validation cycle. If the resulting staging tree lacks reusable admission evidence, the comprehensive suite runs once on `kaori/staging`, not on the work branch.
+A small issue follows Issue -> work branch -> Draft -> Developer Check -> Pre-Ready -> Ready -> Full Admission -> staging merge. Draft feedback should remain seconds/minutes. The comprehensive suite runs once for the frozen Ready candidate; staging normally reuses that evidence and runs only Fast Smoke.
 
 ## Failure Return Paths
 
 - Work-branch Developer Check finding -> remain `In Progress`/`Review`; batch repair through targeted Developer Check.
-- Ready work-branch finding -> keep the candidate out of staging until Developer Check/review is green; do not start Full Admission on the work branch.
+- Ready Full Admission finding -> return the PR to Draft, collect all actionable findings, batch repair through Developer Check, then freeze a new Ready candidate.
 - Staging Integration / staging Full Admission FAIL -> no UAT progression; repair through an issue-linked work branch, then integrate again.
 - Artifact publication or digest-verification FAIL -> do not start VPS UAT.
 - Local UAT or VPS UAT FAIL -> return to `In Progress` with UAT evidence.
@@ -376,12 +378,14 @@ A small issue follows Issue -> work branch -> Draft -> Developer Check -> Pre-Re
 Normal staging path:
 
 ```text
-targeted-green frozen work-branch candidate
+targeted-green Draft candidate
+  -> Ready/frozen head
+  -> Full Admission PASS on exact candidate
   -> merge commit to kaori/staging
   -> Staging Integration
   -> exact evidence lookup + transition lineage
      -> reusable: Fast Smoke
-     -> unavailable/invalid: Full Admission on kaori/staging
+     -> unavailable/invalid: Full Admission fallback on kaori/staging
   -> CI Admission PASS
   -> Project Status UAT
   -> explicit Local UAT
@@ -418,7 +422,7 @@ The default merge method is **merge commit**. Synchronize `kaori/staging` back t
 
 ## Hotfix
 
-Urgent production fixes use the same quality boundaries: issue-linked `kaori/*` work branch, targeted Developer Check, Pre-Ready, frozen Ready candidate, staging integration authority, applicable UAT, and governed promotion. Expedite sequencing is allowed; validation bypass is not. Comprehensive validation, when required, runs at `kaori/staging`/`main` integration authority rather than on the hotfix work branch. If a hotfix is released through the artifact-backed path, immutable digest, applicable VPS acceptance, release identity, production RUN, and rollback evidence remain required.
+Urgent production fixes use the same quality boundaries: issue-linked `kaori/*` work branch, targeted Developer Check, Pre-Ready, frozen Ready candidate, one Full Admission, staging evidence reuse, applicable UAT, and governed promotion. Expedite sequencing is allowed; validation bypass is not. If a hotfix is released through the artifact-backed path, immutable digest, applicable VPS acceptance, release identity, production RUN, and rollback evidence remain required.
 
 ## Label Authority
 
