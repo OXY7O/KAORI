@@ -72,9 +72,7 @@ _OPERATOR_RULES = _VIEWER_RULES + (
     _rule('autoscaling', ('horizontalpodautoscalers',), _READ + _WRITE),
 )
 
-_TENANT_ADMIN_RULES = _OPERATOR_RULES + (
-    _rule('', ('secrets',), _READ + _WRITE),
-)
+_TENANT_ADMIN_RULES = _OPERATOR_RULES + (_rule('', ('secrets',), _READ + _WRITE),)
 
 _DEPLOYER_RULES = (
     _rule('', ('pods', 'services', 'configmaps', 'persistentvolumeclaims', 'secrets'), _READ),
