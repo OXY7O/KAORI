@@ -36,3 +36,10 @@ def test_resource_profile_rejects_unsupported_and_unsafe_quota_values() -> None:
         validate_profile_spec({'requests.nvidia.com/gpu': '1'})
     with pytest.raises(ValueError, match='positive integer'):
         validate_profile_spec({'pods': '0'})
+
+
+def test_resource_profile_allows_explicitly_unbounded_dimensions() -> None:
+    quota, limits = validate_profile_spec({}, {})
+
+    assert quota == {}
+    assert limits == {}
