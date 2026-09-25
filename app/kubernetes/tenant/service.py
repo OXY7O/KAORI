@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.extensions.db import db
 from app.kubernetes.tenant.capacity_governance import (
     build_capacity_governance_summary,
+    enforce_existing_namespace_allocation_preflight,
     enforce_namespace_allocation_preflight,
 )
 from app.kubernetes.tenant.provisioning import create_namespace_intent, reconcile_native_namespace
@@ -343,6 +344,66 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
     return record
 
 
+def change_native_namespace_allocation(source: Mapping[str, Any]) -> TenantNamespace:
+    try:
+        namespace_id = int(_text(source, 'tenant_namespace_id'))
+        profile_id = int(_text(source, 'resource_profile_id'))
+    except ValueError as exc:
+        raise ValueError('Select a managed Tenant namespace and Resource Profile.') from exc
+
+    record = db.session.get(TenantNamespace, namespace_id)
+    profile = db.session.get(TenantResourceProfile, profile_id)
+    if record is None:
+        raise ValueError('Selected Tenant namespace no longer exists.')
+    if profile is None or not profile.enabled:
+        raise ValueError('Selected Resource Profile is unavailable.')
+    if record.environment.tenant.provider_key != 'native_kubernetes':
+        raise ValueError('This UAT slice can change only Native Kubernetes Tenant allocations.')
+
+    quota, limits, customized = _namespace_allocation_values(profile)
+    capacity_decision = enforce_existing_namespace_allocation_preflight(
+        record=record,
+        profile=profile,
+        quota_hard=quota,
+    )
+
+    record.resource_profile = profile
+    record.resource_profile_id = profile.id
+    record.resource_profile_version = (
+        int(RESOURCE_PROFILE_PRESETS[profile.profile_class]['version'])
+        if profile.profile_class in RESOURCE_PROFILE_PRESETS
+        else profile.version
+    )
+    record.allocation_quota_json = quota
+    record.allocation_limit_defaults_json = limits
+    record.allocation_customized = customized
+    record.capacity_decision_id = capacity_decision.id
+
+    try:
+        reconcile_native_namespace(record)
+    except (ApiException, ValueError):
+        db.session.commit()
+        raise
+    db.session.commit()
+    return record
+
+
+def change_native_namespace_allocation_committed(source: Mapping[str, Any]) -> TenantNamespace:
+    try:
+        return change_native_namespace_allocation(source)
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise TenantStateConflictError(
+            'Committed Tenant namespace allocation changed while this request was being applied. Refresh and retry.'
+        ) from exc
+    except (ApiException, ValueError):
+        db.session.rollback()
+        raise
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+
+
 def provision_native_namespace_committed(source: Mapping[str, Any]) -> TenantNamespace:
     try:
         return provision_native_namespace(source)
@@ -389,6 +450,17 @@ def get_tenant_context() -> dict[str, Any]:
         'ready_namespace_count': TenantNamespace.query.filter_by(provisioning_status='ready').count(),
         'native_available': bool(ready_clusters),
         'resource_profile_presets': RESOURCE_PROFILE_PRESETS,
+        'namespace_allocation_state': {
+            str(record.id): {
+                'namespace': record.namespace,
+                'profile_id': str(record.resource_profile_id) if record.resource_profile_id is not None else None,
+                'profile_name': record.resource_profile.name if record.resource_profile is not None else 'Unknown',
+                'profile_version': record.resource_profile_version,
+                'quota': record.allocation_quota_json or {},
+                'limits': record.allocation_limit_defaults_json or {},
+            }
+            for record in namespaces
+        },
         'namespace_allocation_profiles': {
             str(profile.id): {
                 'quota': (
