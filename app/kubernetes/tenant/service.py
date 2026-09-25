@@ -28,7 +28,7 @@ _TENANT_SLUG_RE = re.compile(r'[^a-z0-9-]+')
 _ALLOWED_ENVIRONMENTS = {item.value for item in TenantEnvironmentName}
 _ALLOWED_PROFILE_CLASSES = {item.value for item in TenantResourceProfileClass}
 
-RESOURCE_PROFILE_PRESETS: dict[str, dict[str, dict]] = {
+RESOURCE_PROFILE_PRESETS: dict[str, dict[str, Any]] = {
     'small': {
         'quota': {
             'requests.cpu': '1',
