@@ -24,7 +24,7 @@ env:
 jobs:
   route:
     name: Route Checks
-    if: ${{ github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
+    if: ${{ github.event.pull_request.draft == true && github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
     runs-on: [self-hosted, linux, x64, platform-ci]
     timeout-minutes: 5
     outputs:
@@ -336,7 +336,7 @@ jobs:
           printf '\n✅ Developer Check PASS\n'
           printf '📦 %s\n' "$ROUTE_SUMMARY"
           printf '⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
-          printf '➡️ Work-branch validation stays targeted in both Draft and Ready states; comprehensive validation begins only after merge to kaori/staging.\n'
+          printf '➡️ Draft validation is complete; freeze the exact head and mark the PR Ready to start one governed Full Admission.\n'
 
       - name: Upload Browser Diagnostics
         if: ${{ failure() }}
