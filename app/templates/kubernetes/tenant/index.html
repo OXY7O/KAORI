@@ -431,7 +431,7 @@
                 </div>
                 <div class="mt-5 grid gap-4 md:grid-cols-2">
                     <label class="block">
-                        {{ form_field.label_row('Managed Namespace') }}
+                        {{ form_field.label_row("Managed Namespace") }}
                         <select name="tenant_namespace_id"
                                 required
                                 data-tenant-allocation-change-namespace
@@ -443,7 +443,7 @@
                         </select>
                     </label>
                     <label class="block">
-                        {{ form_field.label_row('Proposed Resource Profile') }}
+                        {{ form_field.label_row("Proposed Resource Profile") }}
                         <select name="resource_profile_id"
                                 required
                                 data-tenant-allocation-change-profile
@@ -464,12 +464,16 @@
                             <div>
                                 <dt class="text-xs text-content-muted">CPU requests</dt>
                                 <dd class="mt-1 font-medium text-content-primary"
-                                    data-tenant-allocation-current-cpu>—</dd>
+                                    data-tenant-allocation-current-cpu>
+                                    —
+                                </dd>
                             </div>
                             <div>
                                 <dt class="text-xs text-content-muted">Memory requests</dt>
                                 <dd class="mt-1 font-medium text-content-primary"
-                                    data-tenant-allocation-current-memory>—</dd>
+                                    data-tenant-allocation-current-memory>
+                                    —
+                                </dd>
                             </div>
                         </dl>
                     </div>
@@ -481,12 +485,16 @@
                             <div>
                                 <dt class="text-xs text-content-muted">CPU requests</dt>
                                 <dd class="mt-1 font-medium text-content-primary"
-                                    data-tenant-allocation-proposed-cpu>—</dd>
+                                    data-tenant-allocation-proposed-cpu>
+                                    —
+                                </dd>
                             </div>
                             <div>
                                 <dt class="text-xs text-content-muted">Memory requests</dt>
                                 <dd class="mt-1 font-medium text-content-primary"
-                                    data-tenant-allocation-proposed-memory>—</dd>
+                                    data-tenant-allocation-proposed-memory>
+                                    —
+                                </dd>
                             </div>
                         </dl>
                     </div>
