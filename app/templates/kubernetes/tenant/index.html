@@ -313,7 +313,7 @@
                 </div>
                 <div class="space-y-4">
                     <label class="block">
-                        {{ form_field.label_row('Cluster') }}
+                        {{ form_field.label_row("Cluster") }}
                         <select name="capacity_cluster_id"
                                 required
                                 class="{{ form_field.select_classes() }}">
@@ -325,7 +325,7 @@
                     </label>
                     <div class="grid gap-4 sm:grid-cols-2">
                         <label class="block">
-                            {{ form_field.label_row('Platform Reserve CPU') }}
+                            {{ form_field.label_row("Platform Reserve CPU") }}
                             <input name="platform_reserve_cpu"
                                    required
                                    value="0"
@@ -333,7 +333,7 @@
                                    class="{{ form_field.input_classes() }}">
                         </label>
                         <label class="block">
-                            {{ form_field.label_row('Platform Reserve Memory') }}
+                            {{ form_field.label_row("Platform Reserve Memory") }}
                             <input name="platform_reserve_memory"
                                    required
                                    value="0"
@@ -341,7 +341,7 @@
                                    class="{{ form_field.input_classes() }}">
                         </label>
                         <label class="block">
-                            {{ form_field.label_row('Safety Headroom %') }}
+                            {{ form_field.label_row("Safety Headroom %") }}
                             <input name="safety_headroom_percent"
                                    type="number"
                                    min="0"
@@ -351,7 +351,7 @@
                                    class="{{ form_field.input_classes() }}">
                         </label>
                         <label class="block">
-                            {{ form_field.label_row('Unmanaged CPU') }}
+                            {{ form_field.label_row("Unmanaged CPU") }}
                             <input name="unmanaged_commitment_cpu"
                                    required
                                    value="0"
@@ -359,7 +359,7 @@
                                    class="{{ form_field.input_classes() }}">
                         </label>
                         <label class="block sm:col-span-2">
-                            {{ form_field.label_row('Unmanaged Memory') }}
+                            {{ form_field.label_row("Unmanaged Memory") }}
                             <input name="unmanaged_commitment_memory"
                                    required
                                    value="0"
@@ -367,7 +367,7 @@
                                    class="{{ form_field.input_classes() }}">
                         </label>
                     </div>
-                    {{ form_field.help('Reserve and unmanaged values are request commitments, not observed utilization. Fresh committed Capacity Analytics evidence is required before positive allocation.') }}
+                    {{ form_field.help("Reserve and unmanaged values are request commitments, not observed utilization. Fresh committed Capacity Analytics evidence is required before positive allocation.") }}
                 </div>
                 <button type="submit"
                         {% if not can_manage or not native_available %}disabled aria-disabled="true"{% endif %}
