@@ -138,6 +138,8 @@ class TenantResourceProfile(db.Model):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     profile_class: Mapped[str] = mapped_column(String(20), nullable=False)
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    base_preset_class: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    base_preset_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     quota_hard_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     limit_defaults_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
