@@ -19,19 +19,35 @@
            class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if tenant_active else 'text-white/[0.35]' }}"></i>
     </summary>
     <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
-        {% for endpoint, label, icon, active in [
-            ('tenant.index', 'Overview', 'layout-dashboard', tenant_overview_active),
-            ('tenant.tenants', 'Tenants', 'users-round', tenant_tenants_active),
-            ('tenant.resource_profiles', 'Resource Profiles', 'layers-3', tenant_profiles_active),
-            ('tenant.namespace_provisioning', 'Namespace Provisioning', 'boxes', tenant_namespaces_active),
-            ('tenant.operations', 'Operations', 'refresh-cw', tenant_operations_active)
-            ] %}
-            <a href="{{ url_for(endpoint) }}"
-               class="{{ 'bg-white/[0.08] text-kaori-accent' if active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
-                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
-                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
-                <span class="truncate whitespace-nowrap">{{ label }}</span>
-            </a>
-        {% endfor %}
+        <a href="{{ url_for('tenant.index') }}"
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if tenant_overview_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if tenant_overview_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+            <i data-lucide="layout-dashboard" class="h-3.5 w-3.5"></i>
+            <span class="truncate whitespace-nowrap">Overview</span>
+        </a>
+        <a href="{{ url_for('tenant.tenants') }}"
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if tenant_tenants_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if tenant_tenants_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+            <i data-lucide="users-round" class="h-3.5 w-3.5"></i>
+            <span class="truncate whitespace-nowrap">Tenants</span>
+        </a>
+        <a href="{{ url_for('tenant.resource_profiles') }}"
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if tenant_profiles_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if tenant_profiles_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+            <i data-lucide="layers-3" class="h-3.5 w-3.5"></i>
+            <span class="truncate whitespace-nowrap">Resource Profiles</span>
+        </a>
+        <a href="{{ url_for('tenant.namespace_provisioning') }}"
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if tenant_namespaces_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if tenant_namespaces_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+            <i data-lucide="boxes" class="h-3.5 w-3.5"></i>
+            <span class="truncate whitespace-nowrap">Namespace Provisioning</span>
+        </a>
+        <a href="{{ url_for('tenant.operations') }}"
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if tenant_operations_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if tenant_operations_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+            <i data-lucide="refresh-cw" class="h-3.5 w-3.5"></i>
+            <span class="truncate whitespace-nowrap">Operations</span>
+        </a>
     </div>
 </details>
