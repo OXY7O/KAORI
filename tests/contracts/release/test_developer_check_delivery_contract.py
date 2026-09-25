@@ -19,7 +19,7 @@ def test_work_branch_developer_check_is_separate_from_governed_admission() -> No
     assert workflow['name'] == 'Developer Check'
     assert workflow[True]['pull_request']['branches'] == ['kaori/staging']
     jobs = workflow['jobs']
-    assert set(jobs) == {'route', 'developer-check'}
+    assert set(jobs) == {'route', 'python-check', 'frontend-check', 'focused-tests', 'developer-check'}
     assert jobs['route']['name'] == 'Route Checks'
     assert jobs['route']['if'] == (
         '${{ github.event.pull_request.draft == true && '
@@ -27,8 +27,20 @@ def test_work_branch_developer_check_is_separate_from_governed_admission() -> No
         "startsWith(github.event.pull_request.head.ref, 'kaori/') && "
         "github.event.pull_request.head.ref != 'kaori/staging' }}"
     )
+    assert jobs['python-check']['name'] == 'Python & Governance'
+    assert jobs['frontend-check']['name'] == 'Frontend & Templates'
+    assert jobs['focused-tests']['name'] == 'Focused Tests'
     assert jobs['developer-check']['name'] == 'Developer Check'
     assert jobs['developer-check']['if'].startswith('${{ always()')
+    assert jobs['python-check']['needs'] == 'route'
+    assert jobs['frontend-check']['needs'] == 'route'
+    assert jobs['focused-tests']['needs'] == 'route'
+    assert set(jobs['developer-check']['needs']) == {
+        'route',
+        'python-check',
+        'frontend-check',
+        'focused-tests',
+    }
     source = read(DEVELOPER_WORKFLOW)
     assert 'production-runtime' not in source
     assert 'run-runtime-validation.sh' not in source
@@ -36,6 +48,35 @@ def test_work_branch_developer_check_is_separate_from_governed_admission() -> No
     assert 'scripts/quality_gate.sh --static' not in source
     assert 'scripts/quality_gate.sh --tests' not in source
     assert 'run-runtime-validation.sh' not in source
+
+
+def test_developer_check_normalizes_parent_child_test_paths() -> None:
+    source = read(DEVELOPER_WORKFLOW)
+
+    assert 'Collapse child selections when their canonical parent is already selected.' in source
+    assert '[[ "$selected_path" == tests/contracts/* ]]' in source
+    assert 'unset "selected_tests[$selected_path]"' in source
+    assert 'mapfile -t sorted_test_paths' in source
+
+
+def test_developer_check_parallel_lanes_fail_closed_into_one_aggregate() -> None:
+    source = read(DEVELOPER_WORKFLOW)
+
+    for token in (
+        'python-check:',
+        'frontend-check:',
+        'focused-tests:',
+        'name: Python & Governance',
+        'name: Frontend & Templates',
+        'name: Focused Tests',
+        "PYTHON_RESULT: ${{ needs.python-check.result }}",
+        "FRONTEND_RESULT: ${{ needs.frontend-check.result }}",
+        "TEST_RESULT: ${{ needs.focused-tests.result }}",
+        "assert_lane 'Python & Governance'",
+        "assert_lane 'Frontend & Templates'",
+        "assert_lane 'Focused Tests'",
+    ):
+        assert token in source
 
 
 def test_developer_check_routes_changed_paths_and_fails_safe_for_authority_changes() -> None:
