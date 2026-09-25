@@ -19,6 +19,7 @@ on:
       - "release/**"
   pull_request:
     branches:
+      - kaori/staging
       - main
     types:
       - opened
@@ -42,7 +43,7 @@ env:
 jobs:
   validation-profile:
     name: Resolve Profile
-    if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'kaori/staging') }}
+    if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && ((github.base_ref == 'kaori/staging' && startsWith(github.head_ref, 'kaori/') && github.head_ref != 'kaori/staging') || (github.base_ref == 'main' && github.head_ref == 'kaori/staging'))) }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 10
     outputs:
@@ -272,8 +273,8 @@ jobs:
           retention-days: 3
 
   static-security:
-    if: ${{ needs.validation-profile.outputs.execution == 'full' && needs.static-quality.result == 'success' }}
-    needs: [validation-profile, static-quality]
+    if: ${{ needs.validation-profile.outputs.execution == 'full' }}
+    needs: validation-profile
     name: Security
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 45
@@ -301,8 +302,8 @@ jobs:
           retention-days: 3
 
   functional-tests:
-    if: ${{ needs.validation-profile.outputs.execution == 'full' && needs.static-security.result == 'success' }}
-    needs: [validation-profile, static-security]
+    if: ${{ needs.validation-profile.outputs.execution == 'full' }}
+    needs: validation-profile
     name: Functional Tests
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 60
@@ -340,8 +341,8 @@ jobs:
         run: docker compose --file .github/ci/compose.yml down --volumes --remove-orphans
 
   frontend:
-    if: ${{ needs.validation-profile.outputs.execution == 'full' && needs.functional-tests.result == 'success' }}
-    needs: [validation-profile, functional-tests]
+    if: ${{ needs.validation-profile.outputs.execution == 'full' }}
+    needs: validation-profile
     name: Frontend
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 30
@@ -360,8 +361,8 @@ jobs:
           bash scripts/quality_gate.sh --frontend
 
   production-runtime:
-    if: ${{ needs.validation-profile.outputs.execution == 'full' && needs.frontend.result == 'success' }}
-    needs: [validation-profile, frontend]
+    if: ${{ needs.validation-profile.outputs.execution == 'full' }}
+    needs: validation-profile
     name: Runtime & DAST
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 75

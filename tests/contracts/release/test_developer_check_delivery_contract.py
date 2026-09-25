@@ -22,7 +22,8 @@ def test_work_branch_developer_check_is_separate_from_governed_admission() -> No
     assert set(jobs) == {'route', 'developer-check'}
     assert jobs['route']['name'] == 'Route Checks'
     assert jobs['route']['if'] == (
-        '${{ github.event.pull_request.head.repo.full_name == github.repository && '
+        '${{ github.event.pull_request.draft == true && '
+        'github.event.pull_request.head.repo.full_name == github.repository && '
         "startsWith(github.event.pull_request.head.ref, 'kaori/') && "
         "github.event.pull_request.head.ref != 'kaori/staging' }}"
     )
@@ -32,7 +33,9 @@ def test_work_branch_developer_check_is_separate_from_governed_admission() -> No
     assert 'production-runtime' not in source
     assert 'run-runtime-validation.sh' not in source
     assert 'trivy image' not in source
-    assert 'Full Admission' not in source
+    assert 'scripts/quality_gate.sh --static' not in source
+    assert 'scripts/quality_gate.sh --tests' not in source
+    assert 'run-runtime-validation.sh' not in source
 
 
 def test_developer_check_routes_changed_paths_and_fails_safe_for_authority_changes() -> None:
@@ -104,8 +107,8 @@ def test_developer_check_output_is_progress_visible_and_actionable() -> None:
     for token in ('⏳', '✅', '📦', '⏱', '➡️'):
         assert token in source
     assert 'Developer Check PASS' in source
-    assert 'Work-branch validation stays targeted in both Draft and Ready states' in source
-    assert 'comprehensive validation begins only after merge to kaori/staging' in source
+    assert 'Draft validation is complete' in source
+    assert 'mark the PR Ready to start one governed Full Admission' in source
 
 
 def test_governed_ci_graph_uses_concise_job_names() -> None:
