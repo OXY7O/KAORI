@@ -5,7 +5,15 @@ import json
 from datetime import UTC, datetime
 from typing import Any
 
-from kubernetes.client import V1LimitRange, V1LimitRangeItem, V1LimitRangeSpec, V1Namespace, V1ObjectMeta, V1ResourceQuota, V1ResourceQuotaSpec
+from kubernetes.client import (
+    V1LimitRange,
+    V1LimitRangeItem,
+    V1LimitRangeSpec,
+    V1Namespace,
+    V1ObjectMeta,
+    V1ResourceQuota,
+    V1ResourceQuotaSpec,
+)
 from kubernetes.client.rest import ApiException
 
 from app.extensions.db import db
