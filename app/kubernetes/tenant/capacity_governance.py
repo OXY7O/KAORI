@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import asdict
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from kubernetes.utils.quantity import parse_quantity
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
 from app.kubernetes.analytics.materialization.service import SnapshotResult, read_snapshot
@@ -34,6 +34,10 @@ _ZERO = Decimal('0')
 
 class TenantCapacityBlockedError(ValueError):
     """Tenant allocation was denied before any provider reconciliation."""
+
+
+class TenantCapacityStateConflictError(RuntimeError):
+    """Tenant capacity policy persistence failed before provider reconciliation."""
 
 
 def upsert_capacity_policy(source: Mapping[str, Any]) -> TenantCapacityPolicy:
@@ -67,6 +71,21 @@ def upsert_capacity_policy(source: Mapping[str, Any]) -> TenantCapacityPolicy:
     policy.unmanaged_commitment_memory = unmanaged_memory
     db.session.flush()
     return policy
+
+
+def upsert_capacity_policy_committed(source: Mapping[str, Any]) -> TenantCapacityPolicy:
+    try:
+        policy = upsert_capacity_policy(source)
+        db.session.commit()
+        return policy
+    except ValueError:
+        db.session.rollback()
+        raise
+    except SQLAlchemyError as exc:
+        db.session.rollback()
+        raise TenantCapacityStateConflictError(
+            'Tenant Capacity Governance policy changed while this request was being applied. Refresh and retry.'
+        ) from exc
 
 
 def build_capacity_governance_summary(cluster_id: str) -> dict[str, Any]:
