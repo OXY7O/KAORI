@@ -105,6 +105,11 @@ def build_capacity_governance_summary(cluster_id: str) -> dict[str, Any]:
             'committed': _vector_json(committed),
             'budget': None,
             'headroom': None,
+            'display': {
+                'committed': _vector_display(committed),
+                'budget': _vector_display(CapacityVector(cpu=None, memory_bytes=None)),
+                'headroom': _vector_display(CapacityVector(cpu=None, memory_bytes=None)),
+            },
         }
 
     capacity, capacity_reason = _capacity_vector(snapshot_result)
@@ -120,6 +125,11 @@ def build_capacity_governance_summary(cluster_id: str) -> dict[str, Any]:
             'committed': _vector_json(committed),
             'budget': None,
             'headroom': None,
+            'display': {
+                'committed': _vector_display(committed),
+                'budget': _vector_display(CapacityVector(cpu=None, memory_bytes=None)),
+                'headroom': _vector_display(CapacityVector(cpu=None, memory_bytes=None)),
+            },
         }
 
     budget = _budget(policy, capacity)
@@ -135,6 +145,11 @@ def build_capacity_governance_summary(cluster_id: str) -> dict[str, Any]:
         'committed': _vector_json(committed),
         'budget': _budget_json(budget),
         'headroom': _vector_json(_headroom(budget.available, committed)),
+        'display': {
+            'committed': _vector_display(committed),
+            'budget': _vector_display(budget.available),
+            'headroom': _vector_display(_headroom(budget.available, committed)),
+        },
     }
 
 
@@ -443,6 +458,21 @@ def _vector_json(vector: CapacityVector) -> dict[str, str | None]:
         'cpu': _decimal_text(vector.cpu),
         'memory_bytes': _decimal_text(vector.memory_bytes),
     }
+
+
+def _vector_display(vector: CapacityVector) -> dict[str, str]:
+    return {
+        'cpu': _display_cpu(vector.cpu),
+        'memory': _display_memory(vector.memory_bytes),
+    }
+
+
+def _display_cpu(value: Decimal | None) -> str:
+    return 'N/A' if value is None else f'{value.quantize(Decimal("0.01"))} cores'
+
+
+def _display_memory(value: Decimal | None) -> str:
+    return 'N/A' if value is None else f'{(value / _GIB).quantize(Decimal("0.01"))} GiB'
 
 
 def _decimal_text(value: Decimal | None) -> str | None:
