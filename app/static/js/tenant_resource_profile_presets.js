@@ -21,10 +21,7 @@
 
     const collectFields = (form, attribute) =>
         Object.fromEntries(
-            Array.from(form.querySelectorAll(`[${attribute}]`)).map((input) => [
-                input.getAttribute(attribute),
-                input,
-            ])
+            Array.from(form.querySelectorAll(`[${attribute}]`)).map((input) => [input.getAttribute(attribute), input])
         )
 
     const applyValues = (fields, valueSet) => {
