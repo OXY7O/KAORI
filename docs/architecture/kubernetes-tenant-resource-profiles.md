@@ -12,7 +12,7 @@ Issue #113 owns the first managed Tenant mutation slice: administrator-driven na
 
 ## Resource Profile contract
 
-A profile is persisted as one of `small`, `standard`, `large`, or `custom` and stores only supported Kubernetes quota keys plus Container LimitRange defaults. Profile class is taxonomy, not an implicit hard-coded quota size: operational quota values are explicit persisted intent and must be supplied/approved by the operator or future policy authority.
+A profile is persisted as one of `small`, `standard`, `large`, or `custom` and stores only supported Kubernetes quota keys plus Container LimitRange defaults. `small`, `standard`, and `large` are KAORI-owned preset classes with server-side canonical values; the browser auto-fills those values but cannot override the service authority. `custom` is the only class that accepts operator-entered quota and LimitRange values.
 
 Supported baseline quota keys:
 
@@ -32,3 +32,15 @@ Namespace names use the Kubernetes DNS-label contract. Native reconciliation mat
 KAORI labels managed resources with `app.kubernetes.io/managed-by=kaori`. Existing resources that declare another manager are not silently overwritten. Provider errors and contract mismatches leave explicit failed or drifted provisioning evidence rather than a false Ready state.
 
 The committed desired contract and verified effective contract are independently hashed. Ready requires hash equality after provider read-back.
+
+
+## Preset classes
+
+Preset classes are product policy, not provider discovery. The service layer is authoritative and ignores browser-supplied resource overrides for preset classes.
+
+- **Small** — 1/2 CPU request/limit, 2/4 GiB memory request/limit, 10 pods, 5 PVCs, 50 GiB storage, and conservative per-container defaults.
+- **Standard** — 2/4 CPU, 4/8 GiB memory, 20 pods, 10 PVCs, 100 GiB storage, and general-purpose per-container defaults.
+- **Large** — 4/8 CPU, 8/16 GiB memory, 40 pods, 20 PVCs, 200 GiB storage, and higher per-container defaults.
+- **Custom** — explicit operator values validated through the same safe Kubernetes quantity contract.
+
+Changing preset values later is a governed product-policy change. Existing committed profiles retain their persisted values; they are not silently rewritten when preset defaults evolve.
