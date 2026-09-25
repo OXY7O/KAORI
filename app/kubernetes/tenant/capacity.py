@@ -155,6 +155,7 @@ def evaluate_preflight(
         budget.cpu_cores - projected.cpu_cores,
         budget.memory_bytes - projected.memory_bytes,
     )
+    assert remaining.cpu_cores is not None and remaining.memory_bytes is not None
     shortfall = CapacityVector(
         max(-remaining.cpu_cores, Decimal(0)),
         max(-remaining.memory_bytes, Decimal(0)),
