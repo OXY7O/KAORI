@@ -28,6 +28,82 @@ _TENANT_SLUG_RE = re.compile(r'[^a-z0-9-]+')
 _ALLOWED_ENVIRONMENTS = {item.value for item in TenantEnvironmentName}
 _ALLOWED_PROFILE_CLASSES = {item.value for item in TenantResourceProfileClass}
 
+_RESOURCE_VALUE_FIELDS = frozenset(
+    {
+        'requests_cpu',
+        'limits_cpu',
+        'requests_memory',
+        'limits_memory',
+        'pods',
+        'persistentvolumeclaims',
+        'requests_storage',
+        'services',
+        'configmaps',
+        'secrets',
+        'default_cpu',
+        'default_memory',
+        'default_request_cpu',
+        'default_request_memory',
+    }
+)
+
+RESOURCE_PROFILE_PRESETS: dict[str, dict[str, Any]] = {
+    'small': {
+        'quota': {
+            'requests.cpu': '1',
+            'limits.cpu': '2',
+            'requests.memory': '2Gi',
+            'limits.memory': '4Gi',
+            'pods': '10',
+            'persistentvolumeclaims': '5',
+            'requests.storage': '50Gi',
+            'services': '5',
+            'configmaps': '25',
+            'secrets': '25',
+        },
+        'limits': {
+            'default_request': {'cpu': '100m', 'memory': '128Mi'},
+            'default': {'cpu': '250m', 'memory': '256Mi'},
+        },
+    },
+    'standard': {
+        'quota': {
+            'requests.cpu': '2',
+            'limits.cpu': '4',
+            'requests.memory': '4Gi',
+            'limits.memory': '8Gi',
+            'pods': '20',
+            'persistentvolumeclaims': '10',
+            'requests.storage': '100Gi',
+            'services': '10',
+            'configmaps': '50',
+            'secrets': '50',
+        },
+        'limits': {
+            'default_request': {'cpu': '100m', 'memory': '128Mi'},
+            'default': {'cpu': '500m', 'memory': '512Mi'},
+        },
+    },
+    'large': {
+        'quota': {
+            'requests.cpu': '4',
+            'limits.cpu': '8',
+            'requests.memory': '8Gi',
+            'limits.memory': '16Gi',
+            'pods': '40',
+            'persistentvolumeclaims': '20',
+            'requests.storage': '200Gi',
+            'services': '20',
+            'configmaps': '100',
+            'secrets': '100',
+        },
+        'limits': {
+            'default_request': {'cpu': '250m', 'memory': '256Mi'},
+            'default': {'cpu': '1', 'memory': '1Gi'},
+        },
+    },
+}
+
 
 class TenantStateConflictError(RuntimeError):
     """Committed Tenant state changed while a mutation transaction was applying."""
@@ -151,9 +227,22 @@ def _profile_values(source: Mapping[str, Any]) -> tuple[dict[str, str], dict[str
         if value:
             limits.setdefault(group, {})[resource] = value
 
-    if not limits:
-        raise ValueError('Resource Profile must define at least one Container LimitRange default or request.')
     return validate_profile_spec(quota, limits)
+
+
+def _namespace_allocation_values(
+    profile: TenantResourceProfile,
+    source: Mapping[str, Any],
+) -> tuple[dict[str, str], dict[str, dict[str, str]], bool]:
+    profile_quota, profile_limits = validate_profile_spec(
+        profile.quota_hard_json or {},
+        profile.limit_defaults_json or {},
+    )
+    if not any(field in source for field in _RESOURCE_VALUE_FIELDS):
+        return profile_quota, profile_limits, False
+
+    quota, limits = _profile_values(source)
+    return quota, limits, quota != profile_quota or limits != profile_limits
 
 
 def create_resource_profile(source: Mapping[str, Any]) -> TenantResourceProfile:
@@ -217,10 +306,14 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
     if TenantNamespace.query.filter_by(cluster_id=tenant.cluster_id, namespace=namespace).first() is not None:
         raise ValueError('This namespace is already tracked by Tenant Management on the selected cluster.')
 
+    quota, limits, customized = _namespace_allocation_values(profile, source)
     record = create_namespace_intent(
         tenant_environment=environment,
         profile=profile,
         namespace=namespace,
+        quota_hard=quota,
+        limit_defaults=limits,
+        allocation_customized=customized,
     )
     try:
         reconcile_native_namespace(record)
@@ -270,4 +363,14 @@ def get_tenant_context() -> dict[str, Any]:
         'namespace_count': namespace_count,
         'ready_namespace_count': TenantNamespace.query.filter_by(provisioning_status='ready').count(),
         'native_available': bool(ready_clusters),
+        'resource_profile_presets': RESOURCE_PROFILE_PRESETS,
+        'namespace_allocation_profiles': {
+            str(profile.id): {
+                'quota': profile.quota_hard_json or {},
+                'limits': profile.limit_defaults_json or {},
+                'version': profile.version,
+            }
+            for profile in profiles
+            if profile.enabled
+        },
     }

@@ -137,6 +137,7 @@ class TenantResourceProfile(db.Model):
     public_id: Mapped[str] = mapped_column(String(36), nullable=False, default=lambda: str(uuid.uuid4()))
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     profile_class: Mapped[str] = mapped_column(String(20), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     quota_hard_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     limit_defaults_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
@@ -172,6 +173,10 @@ class TenantNamespace(db.Model):
     resource_profile_id: Mapped[int | None] = mapped_column(
         ForeignKey('tenant_resource_profiles.id', ondelete='RESTRICT'), nullable=True
     )
+    resource_profile_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    allocation_quota_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    allocation_limit_defaults_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    allocation_customized: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     namespace: Mapped[str] = mapped_column(String(253), nullable=False)
     ownership_status: Mapped[str] = mapped_column(
         String(30), nullable=False, default=TenantOwnershipStatus.MANAGED.value

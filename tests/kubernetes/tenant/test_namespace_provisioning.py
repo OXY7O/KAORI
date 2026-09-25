@@ -34,6 +34,9 @@ class FakeCoreApi:
     def patch_namespaced_resource_quota(self, name, namespace, body):
         self.quotas[(namespace, name)] = body
 
+    def delete_namespaced_resource_quota(self, name, namespace):
+        self.quotas.pop((namespace, name), None)
+
     def read_namespaced_limit_range(self, name, namespace):
         if (namespace, name) not in self.limits:
             raise ApiException(status=404)
@@ -44,6 +47,9 @@ class FakeCoreApi:
 
     def patch_namespaced_limit_range(self, name, namespace, body):
         self.limits[(namespace, name)] = body
+
+    def delete_namespaced_limit_range(self, name, namespace):
+        self.limits.pop((namespace, name), None)
 
 
 def _desired():
@@ -88,3 +94,41 @@ def test_reconciliation_refuses_foreign_resource_ownership() -> None:
 
     with pytest.raises(ValueError, match='refusing to overwrite'):
         provisioning._upsert_namespace(api, desired)
+
+
+def test_unbounded_allocation_removes_kaori_managed_quota_and_limits() -> None:
+    api = FakeCoreApi()
+    desired = _desired()
+
+    provisioning._upsert_namespace(api, desired)
+    provisioning._upsert_quota(api, desired)
+    provisioning._upsert_limit_range(api, desired)
+
+    unbounded = {**desired, 'quota': {}, 'limits': {}}
+    provisioning._upsert_quota(api, unbounded)
+    provisioning._upsert_limit_range(api, unbounded)
+
+    assert api.quotas == {}
+    assert api.limits == {}
+    assert provisioning._effective_contract(api, unbounded) == unbounded
+
+
+def test_desired_contract_can_use_frozen_allocation_snapshot() -> None:
+    tenant = SimpleNamespace(id='tenant-1', provider_key='native_kubernetes')
+    environment = SimpleNamespace(tenant=tenant, environment='development')
+    profile = SimpleNamespace(
+        public_id='profile-1',
+        quota_hard_json={'requests.cpu': '2'},
+        limit_defaults_json={'default': {'cpu': '500m'}},
+    )
+
+    desired = provisioning.desired_namespace_contract(
+        tenant_environment=environment,
+        namespace='payments-dev',
+        profile=profile,
+        quota_hard={'requests.cpu': '3'},
+        limit_defaults={},
+    )
+
+    assert desired['quota'] == {'requests.cpu': '3'}
+    assert desired['limits'] == {}

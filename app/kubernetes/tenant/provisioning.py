@@ -46,10 +46,14 @@ def desired_namespace_contract(
     tenant_environment: TenantEnvironment,
     namespace: str,
     profile: TenantResourceProfile,
+    quota_hard: dict[str, str] | None = None,
+    limit_defaults: dict[str, dict[str, str]] | None = None,
 ) -> dict[str, Any]:
     tenant = tenant_environment.tenant
     normalized_namespace = validate_namespace_name(namespace)
-    quota, limits = validate_profile_spec(profile.quota_hard_json, profile.limit_defaults_json)
+    quota_source = profile.quota_hard_json if quota_hard is None else quota_hard
+    limits_source = profile.limit_defaults_json if limit_defaults is None else limit_defaults
+    quota, limits = validate_profile_spec(quota_source or {}, limits_source or {})
     return {
         'namespace': normalized_namespace,
         'labels': {
@@ -69,6 +73,9 @@ def create_namespace_intent(
     tenant_environment: TenantEnvironment,
     profile: TenantResourceProfile,
     namespace: str,
+    quota_hard: dict[str, str] | None = None,
+    limit_defaults: dict[str, dict[str, str]] | None = None,
+    allocation_customized: bool = False,
 ) -> TenantNamespace:
     tenant = tenant_environment.tenant
     if tenant.lifecycle_status == 'decommissioned':
@@ -78,15 +85,24 @@ def create_namespace_intent(
     if not profile.enabled:
         raise ValueError('resource profile is disabled')
 
+    quota_source = profile.quota_hard_json if quota_hard is None else quota_hard
+    limits_source = profile.limit_defaults_json if limit_defaults is None else limit_defaults
+    quota, limits = validate_profile_spec(quota_source or {}, limits_source or {})
     desired = desired_namespace_contract(
         tenant_environment=tenant_environment,
         namespace=namespace,
         profile=profile,
+        quota_hard=quota,
+        limit_defaults=limits,
     )
     record = TenantNamespace()
     record.tenant_environment_id = tenant_environment.id
     record.cluster_id = tenant.cluster_id
     record.resource_profile_id = profile.id
+    record.resource_profile_version = profile.version
+    record.allocation_quota_json = quota
+    record.allocation_limit_defaults_json = limits
+    record.allocation_customized = allocation_customized
     record.namespace = desired['namespace']
     record.provisioning_status = TenantNamespaceProvisioningStatus.PENDING.value
     record.desired_hash = _canonical_hash(desired)
@@ -126,6 +142,12 @@ def _upsert_namespace(api, desired: dict[str, Any]) -> None:
 def _upsert_quota(api, desired: dict[str, Any]) -> None:
     namespace = desired['namespace']
     existing = _read_or_none(api.read_namespaced_resource_quota, _QUOTA_NAME, namespace)
+    if not desired['quota']:
+        if existing is not None:
+            _managed_or_absent(existing.metadata, kind='ResourceQuota')
+            api.delete_namespaced_resource_quota(name=_QUOTA_NAME, namespace=namespace)
+        return
+
     body = V1ResourceQuota(
         metadata=V1ObjectMeta(name=_QUOTA_NAME, namespace=namespace, labels=desired['labels']),
         spec=V1ResourceQuotaSpec(hard=desired['quota']),
@@ -153,6 +175,12 @@ def _limit_items(desired: dict[str, Any]) -> list[V1LimitRangeItem]:
 def _upsert_limit_range(api, desired: dict[str, Any]) -> None:
     namespace = desired['namespace']
     existing = _read_or_none(api.read_namespaced_limit_range, _LIMIT_RANGE_NAME, namespace)
+    if not desired['limits']:
+        if existing is not None:
+            _managed_or_absent(existing.metadata, kind='LimitRange')
+            api.delete_namespaced_limit_range(name=_LIMIT_RANGE_NAME, namespace=namespace)
+        return
+
     body = V1LimitRange(
         metadata=V1ObjectMeta(name=_LIMIT_RANGE_NAME, namespace=namespace, labels=desired['labels']),
         spec=V1LimitRangeSpec(limits=_limit_items(desired)),
@@ -167,20 +195,22 @@ def _upsert_limit_range(api, desired: dict[str, Any]) -> None:
 def _effective_contract(api, desired: dict[str, Any]) -> dict[str, Any]:
     namespace = desired['namespace']
     ns = api.read_namespace(namespace)
-    quota = api.read_namespaced_resource_quota(_QUOTA_NAME, namespace)
-    limit_range = api.read_namespaced_limit_range(_LIMIT_RANGE_NAME, namespace)
-    item = limit_range.spec.limits[0] if limit_range.spec and limit_range.spec.limits else None
+    quota = _read_or_none(api.read_namespaced_resource_quota, _QUOTA_NAME, namespace)
+    limit_range = _read_or_none(api.read_namespaced_limit_range, _LIMIT_RANGE_NAME, namespace)
+    item = (
+        limit_range.spec.limits[0] if limit_range is not None and limit_range.spec and limit_range.spec.limits else None
+    )
     return {
         'namespace': namespace,
         'labels': {key: (ns.metadata.labels or {}).get(key) for key in desired['labels']},
-        'quota': {key: str(value) for key, value in (quota.spec.hard or {}).items()},
+        'quota': {key: str(value) for key, value in ((quota.spec.hard or {}) if quota is not None else {}).items()},
         'limits': {
             'default': {key: str(value) for key, value in ((item.default or {}) if item else {}).items()},
             'default_request': {
                 key: str(value) for key, value in ((item.default_request or {}) if item else {}).items()
             },
         }
-        if desired['limits']
+        if limit_range is not None
         else {},
         'provider_key': desired['provider_key'],
     }
@@ -199,10 +229,19 @@ def reconcile_native_namespace(record: TenantNamespace) -> TenantNamespace:
     if cluster is None:
         raise ValueError('tenant namespace cluster no longer exists')
 
+    if record.allocation_quota_json is None or record.allocation_limit_defaults_json is None:
+        quota, limits = validate_profile_spec(profile.quota_hard_json or {}, profile.limit_defaults_json or {})
+        record.resource_profile_version = record.resource_profile_version or profile.version
+        record.allocation_quota_json = quota
+        record.allocation_limit_defaults_json = limits
+        record.allocation_customized = False
+
     desired = desired_namespace_contract(
         tenant_environment=environment,
         namespace=record.namespace,
         profile=profile,
+        quota_hard=record.allocation_quota_json,
+        limit_defaults=record.allocation_limit_defaults_json,
     )
     desired_hash = _canonical_hash(desired)
     record.desired_hash = desired_hash
@@ -217,7 +256,15 @@ def reconcile_native_namespace(record: TenantNamespace) -> TenantNamespace:
         effective_hash = _canonical_hash(effective)
         record.effective_hash = effective_hash
         record.last_reconciled_at = datetime.now(UTC)
-        record.provisioning_evidence_json = {'desired': desired, 'effective': effective}
+        record.provisioning_evidence_json = {
+            'allocation': {
+                'resource_profile_id': profile.public_id,
+                'resource_profile_version': record.resource_profile_version,
+                'customized': record.allocation_customized,
+            },
+            'desired': desired,
+            'effective': effective,
+        }
         if effective_hash == desired_hash:
             record.provisioning_status = TenantNamespaceProvisioningStatus.READY.value
             record.provisioning_message = 'Namespace, ResourceQuota, and LimitRange match committed Tenant intent.'
@@ -228,7 +275,15 @@ def reconcile_native_namespace(record: TenantNamespace) -> TenantNamespace:
         record.provisioning_status = TenantNamespaceProvisioningStatus.FAILED.value
         record.provisioning_message = str(exc)[:1000]
         record.last_reconciled_at = datetime.now(UTC)
-        record.provisioning_evidence_json = {'desired': desired, 'error': record.provisioning_message}
+        record.provisioning_evidence_json = {
+            'allocation': {
+                'resource_profile_id': profile.public_id,
+                'resource_profile_version': record.resource_profile_version,
+                'customized': record.allocation_customized,
+            },
+            'desired': desired,
+            'error': record.provisioning_message,
+        }
         raise
 
     return record
