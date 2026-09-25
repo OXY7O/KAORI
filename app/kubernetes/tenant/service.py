@@ -9,8 +9,13 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.extensions.db import db
+from app.kubernetes.tenant.capacity_service import (
+    TenantCapacityDeniedError,
+    capacity_governance_rows,
+    preflight_namespace_allocation,
+)
 from app.kubernetes.tenant.provisioning import create_namespace_intent, reconcile_native_namespace
-from app.kubernetes.tenant.validation import validate_profile_spec
+from app.kubernetes.tenant.validation import validate_namespace_name, validate_profile_spec
 from app.models import Cluster
 from app.models.cluster import ClusterStatus
 from app.models.kubernetes import KubernetesConnection
@@ -309,11 +314,23 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
     if tenant.provider_key != 'native_kubernetes':
         raise ValueError('This UAT slice can provision only Native Kubernetes Tenant bindings.')
 
-    namespace = _text(source, 'namespace')
+    namespace = validate_namespace_name(_text(source, 'namespace'))
     if TenantNamespace.query.filter_by(cluster_id=tenant.cluster_id, namespace=namespace).first() is not None:
         raise ValueError('This namespace is already tracked by Tenant Management on the selected cluster.')
 
     quota, limits, customized = _namespace_allocation_values(profile)
+    try:
+        capacity_decision = preflight_namespace_allocation(
+            environment=environment,
+            profile=profile,
+            namespace=namespace,
+            proposed_quota=quota,
+            operation='create',
+        )
+    except TenantCapacityDeniedError:
+        db.session.commit()
+        raise
+
     record = create_namespace_intent(
         tenant_environment=environment,
         profile=profile,
@@ -322,6 +339,7 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
         limit_defaults=limits,
         allocation_customized=customized,
     )
+    capacity_decision.tenant_namespace_id = record.id
     try:
         reconcile_native_namespace(record)
     except (ApiException, ValueError):
@@ -339,6 +357,8 @@ def provision_native_namespace_committed(source: Mapping[str, Any]) -> TenantNam
         raise TenantStateConflictError(
             'Committed Tenant namespace state changed while this request was being applied. Refresh and retry.'
         ) from exc
+    except TenantCapacityDeniedError:
+        raise
     except (ApiException, ValueError):
         db.session.rollback()
         raise
@@ -358,6 +378,7 @@ def get_tenant_context() -> dict[str, Any]:
         .all()
     )
     ready_clusters = get_ready_native_clusters()
+    capacity_rows = capacity_governance_rows(ready_clusters)
     namespace_count = TenantNamespace.query.count()
     return {
         'tenants': tenants,
@@ -365,6 +386,7 @@ def get_tenant_context() -> dict[str, Any]:
         'namespaces': namespaces,
         'environment_options': environment_options,
         'ready_clusters': ready_clusters,
+        'capacity_governance_rows': capacity_rows,
         'tenant_count': Tenant.query.count(),
         'profile_count': TenantResourceProfile.query.count(),
         'namespace_count': namespace_count,
