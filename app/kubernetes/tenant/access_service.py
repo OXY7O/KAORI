@@ -103,7 +103,9 @@ def _grant_scope(
     tenant_namespace_id: int | None,
 ) -> tuple[TenantEnvironment | None, TenantNamespace | None]:
     scope = TenantAccessScope(scope_type)
-    environment = db.session.get(TenantEnvironment, tenant_environment_id) if tenant_environment_id is not None else None
+    environment = (
+        db.session.get(TenantEnvironment, tenant_environment_id) if tenant_environment_id is not None else None
+    )
     namespace = db.session.get(TenantNamespace, tenant_namespace_id) if tenant_namespace_id is not None else None
 
     if scope is TenantAccessScope.TENANT:
