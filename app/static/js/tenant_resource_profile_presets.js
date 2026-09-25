@@ -1,17 +1,4 @@
 ;(() => {
-    const form = document.querySelector('[data-tenant-resource-profile-form]')
-    const source = document.getElementById('tenant-resource-profile-presets')
-    if (!form || !source) return
-
-    const presets = JSON.parse(source.textContent || '{}')
-    const select = form.querySelector('[data-tenant-profile-class]')
-    const fields = Object.fromEntries(
-        Array.from(form.querySelectorAll('[data-tenant-resource-field]')).map((input) => [
-            input.dataset.tenantResourceField,
-            input,
-        ])
-    )
-
     const fieldMap = {
         requests_cpu: ['quota', 'requests.cpu'],
         limits_cpu: ['quota', 'limits.cpu'],
@@ -31,16 +18,42 @@
 
     const readPath = (value, path) => path.reduce((current, key) => current?.[key], value)
 
-    const applyPreset = (profileClass) => {
-        const preset = presets[profileClass]
-        if (!preset) return
+    const bindInitialFill = ({ formSelector, sourceId, selectSelector, fieldAttribute }) => {
+        const form = document.querySelector(formSelector)
+        const source = document.getElementById(sourceId)
+        if (!form || !source) return
 
-        for (const [name, input] of Object.entries(fields)) {
-            input.value = readPath(preset, fieldMap[name]) || ''
+        const values = JSON.parse(source.textContent || '{}')
+        const select = form.querySelector(selectSelector)
+        const fields = Object.fromEntries(
+            Array.from(form.querySelectorAll(`[${fieldAttribute}]`)).map((input) => [
+                input.getAttribute(fieldAttribute),
+                input,
+            ])
+        )
+
+        const apply = (key) => {
+            const valueSet = values[key]
+            for (const [name, input] of Object.entries(fields)) {
+                input.value = valueSet ? readPath(valueSet, fieldMap[name]) || '' : ''
+            }
         }
+
+        select?.addEventListener('change', () => apply(select.value))
+        if (select?.value) apply(select.value)
     }
 
-    select?.addEventListener('change', () => applyPreset(select.value))
+    bindInitialFill({
+        formSelector: '[data-tenant-resource-profile-form]',
+        sourceId: 'tenant-resource-profile-presets',
+        selectSelector: '[data-tenant-profile-class]',
+        fieldAttribute: 'data-tenant-resource-field',
+    })
 
-    if (select?.value) applyPreset(select.value)
+    bindInitialFill({
+        formSelector: '[data-tenant-namespace-allocation-form]',
+        sourceId: 'tenant-namespace-allocation-profiles',
+        selectSelector: '[data-tenant-namespace-profile]',
+        fieldAttribute: 'data-tenant-namespace-resource-field',
+    })
 })()
