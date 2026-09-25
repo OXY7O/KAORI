@@ -83,15 +83,14 @@ def create_namespace_intent(
         namespace=namespace,
         profile=profile,
     )
-    record = TenantNamespace(
-        tenant_environment_id=tenant_environment.id,
-        cluster_id=tenant.cluster_id,
-        resource_profile_id=profile.id,
-        namespace=desired['namespace'],
-        provisioning_status=TenantNamespaceProvisioningStatus.PENDING.value,
-        desired_hash=_canonical_hash(desired),
-        provisioning_evidence_json={'desired': desired},
-    )
+    record = TenantNamespace()
+    record.tenant_environment_id = tenant_environment.id
+    record.cluster_id = tenant.cluster_id
+    record.resource_profile_id = profile.id
+    record.namespace = desired['namespace']
+    record.provisioning_status = TenantNamespaceProvisioningStatus.PENDING.value
+    record.desired_hash = _canonical_hash(desired)
+    record.provisioning_evidence_json = {'desired': desired}
     db.session.add(record)
     db.session.flush()
     return record
