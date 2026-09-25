@@ -73,6 +73,9 @@ def create_namespace_intent(
     tenant_environment: TenantEnvironment,
     profile: TenantResourceProfile,
     namespace: str,
+    quota_hard: dict[str, str] | None = None,
+    limit_defaults: dict[str, dict[str, str]] | None = None,
+    allocation_customized: bool = False,
 ) -> TenantNamespace:
     tenant = tenant_environment.tenant
     if tenant.lifecycle_status == 'decommissioned':
@@ -82,7 +85,9 @@ def create_namespace_intent(
     if not profile.enabled:
         raise ValueError('resource profile is disabled')
 
-    quota, limits = validate_profile_spec(profile.quota_hard_json or {}, profile.limit_defaults_json or {})
+    quota_source = profile.quota_hard_json if quota_hard is None else quota_hard
+    limits_source = profile.limit_defaults_json if limit_defaults is None else limit_defaults
+    quota, limits = validate_profile_spec(quota_source or {}, limits_source or {})
     desired = desired_namespace_contract(
         tenant_environment=tenant_environment,
         namespace=namespace,
@@ -97,7 +102,7 @@ def create_namespace_intent(
     record.resource_profile_version = profile.version
     record.allocation_quota_json = quota
     record.allocation_limit_defaults_json = limits
-    record.allocation_customized = False
+    record.allocation_customized = allocation_customized
     record.namespace = desired['namespace']
     record.provisioning_status = TenantNamespaceProvisioningStatus.PENDING.value
     record.desired_hash = _canonical_hash(desired)
