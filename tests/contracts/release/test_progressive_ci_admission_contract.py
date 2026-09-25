@@ -37,7 +37,7 @@ def load_policy() -> ModuleType:
 
 def test_delivery_governance_authorizes_tree_fingerprint_reuse_without_weakening_uat() -> None:
     source = read(DELIVERY)
-    assert '**Governance Version:** 2.0' in source
+    assert '**Governance Version:** 2.1' in source
     assert 'Full Admission' in source
     assert 'exact evidence reuse' in source.lower()
     assert 'authority fingerprint' in source.lower()
@@ -92,6 +92,37 @@ def test_issue_branch_pushes_do_not_trigger_governed_full_admission() -> None:
     assert '      - main' in source
     assert '      - "release/**"' in source
     assert '      - "kaori/**"' not in source
+
+
+def test_ready_feature_pr_is_a_governed_admission_boundary() -> None:
+    source = read(WORKFLOW)
+    pull_request_block = source.split('pull_request:', 1)[1].split('permissions:', 1)[0]
+
+    assert '      - kaori/staging' in pull_request_block
+    assert '      - main' in pull_request_block
+    assert 'ready_for_review' in pull_request_block
+    assert "github.base_ref == 'kaori/staging'" in source
+    assert "startsWith(github.head_ref, 'kaori/')" in source
+    assert "github.head_ref != 'kaori/staging'" in source
+
+
+def test_full_admission_expensive_gates_are_parallel_after_profile_resolution() -> None:
+    source = read(WORKFLOW)
+    blocks = {
+        'static-quality': source.split('\n  static-quality:', 1)[1].split('\n  static-security:', 1)[0],
+        'static-security': source.split('\n  static-security:', 1)[1].split('\n  functional-tests:', 1)[0],
+        'functional-tests': source.split('\n  functional-tests:', 1)[1].split('\n  frontend:', 1)[0],
+        'frontend': source.split('\n  frontend:', 1)[1].split('\n  production-runtime:', 1)[0],
+        'production-runtime': source.split('\n  production-runtime:', 1)[1].split('\n  integration-smoke:', 1)[0],
+    }
+
+    for block in blocks.values():
+        assert 'needs: validation-profile' in block
+
+    assert 'needs: [validation-profile, static-quality]' not in source
+    assert 'needs: [validation-profile, static-security]' not in source
+    assert 'needs: [validation-profile, functional-tests]' not in source
+    assert 'needs: [validation-profile, frontend]' not in source
 
 
 def test_profile_version_and_compatibility_wrapper_use_current_authority() -> None:
