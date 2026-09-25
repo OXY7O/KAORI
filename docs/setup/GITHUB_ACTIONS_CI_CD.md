@@ -52,6 +52,8 @@ The long-lived integration branches are `kaori/staging` and `main`. Work branche
 
 A `kaori/*` work branch uses the path-aware **Developer Check** workflow while the PR is Draft. It validates the exact PR head without running comprehensive admission on every implementation/fix commit.
 
+Developer Check resolves changed paths once, prepares one deterministic shared CI toolchain, and then runs the selected **Python & Governance**, **Frontend & Templates**, and **Focused Tests** lanes concurrently across the `kaori-ci` runner pool. A final lightweight aggregate fails closed across every required selected lane. Redundant parent/child focused-test paths are normalized before pytest execution.
+
 A work branch is eligible to become a Ready/frozen candidate only when:
 
 - it is based on or synchronized with the current staging authority;
