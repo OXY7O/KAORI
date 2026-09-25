@@ -8,6 +8,7 @@ def test_tenant_uat_surface_uses_one_kubernetes_sidebar_destination() -> None:
     tenant_menu = (ROOT / 'app/templates/components/navigation/tenant_menu.html').read_text(encoding='utf-8')
     template = (ROOT / 'app/templates/kubernetes/tenant/index.html').read_text(encoding='utf-8')
     navigation = (ROOT / 'app/common/navigation.py').read_text(encoding='utf-8')
+    routes = (ROOT / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
 
     assert "has_permission('tenant.view')" in sidebar
     assert "has_permission('tenant.manage')" in sidebar
@@ -18,6 +19,8 @@ def test_tenant_uat_surface_uses_one_kubernetes_sidebar_destination() -> None:
     assert 'Native Kubernetes only.' in template
     assert 'Capsule remains unavailable until the Capsule provider discovery' in template
     assert "'tenant': ('Tenant', 'building-2', 'Overview')" in navigation
+    assert "@any_permission_required('tenant.view', 'tenant.manage')" in routes
+    assert routes.count("@permission_required('tenant.manage')") == 3
 
 
 def test_tenant_uat_surface_separates_platform_permission_from_tenant_membership() -> None:

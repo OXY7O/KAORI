@@ -29,6 +29,7 @@ EXPECTED_MENU_TEMPLATES = {
     'platform_operations_menu.html',
     'reports_menu.html',
     'settings_menu.html',
+    'tenant_menu.html',
 }
 
 LEGACY_CLUSTER_TEMPLATES = (

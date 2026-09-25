@@ -106,6 +106,20 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         contract_paths=('tests/contracts/kubernetes/governance',),
     ),
     ReleaseSurface(
+        key='tenant',
+        title='Tenant',
+        lock_state='BASELINE LOCKED',
+        navigation_source='app/templates/components/navigation/tenant_menu.html',
+        navigation_endpoints=('tenant.index',),
+        blueprint_vars=('tenant_bp',),
+        verifiers=(),
+        contract_paths=('tests/contracts/kubernetes/test_tenant_uat_ui_contract.py',),
+        notes=(
+            'Provider-neutral Kubernetes Tenant workspace. Native Kubernetes is the admitted baseline provider; '
+            'Capsule readiness and provider UX remain downstream work until qualification is admitted.'
+        ),
+    ),
+    ReleaseSurface(
         key='analytics',
         title='Analytics',
         lock_state='LOCKED',
