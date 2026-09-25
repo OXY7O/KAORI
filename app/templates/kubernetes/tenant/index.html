@@ -296,6 +296,146 @@
                 </button>
             </form>
         </section>
+        <section class="grid gap-5 xl:grid-cols-3"
+                 aria-label="Tenant Capacity Governance">
+            <form method="post"
+                  action="{{ url_for('tenant.update_capacity_policy_route') }}"
+                  class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-5 flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
+                        <i data-lucide="shield-check" class="h-5 w-5"></i>
+                    </span>
+                    <div>
+                        <h2 class="text-base font-semibold text-content-primary">Tenant Capacity Policy</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Configure the request-budget inputs used before namespace allocation.</p>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <label class="block">
+                        {{ form_field.label_row('Cluster') }}
+                        <select name="capacity_cluster_id"
+                                required
+                                class="{{ form_field.select_classes() }}">
+                            <option value="">Select Ready cluster</option>
+                            {% for cluster in ready_clusters %}
+                                <option value="{{ cluster.id }}">{{ cluster.name }} · {{ cluster.environment|title }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <label class="block">
+                            {{ form_field.label_row('Platform Reserve CPU') }}
+                            <input name="platform_reserve_cpu"
+                                   required
+                                   value="0"
+                                   placeholder="500m"
+                                   class="{{ form_field.input_classes() }}">
+                        </label>
+                        <label class="block">
+                            {{ form_field.label_row('Platform Reserve Memory') }}
+                            <input name="platform_reserve_memory"
+                                   required
+                                   value="0"
+                                   placeholder="2Gi"
+                                   class="{{ form_field.input_classes() }}">
+                        </label>
+                        <label class="block">
+                            {{ form_field.label_row('Safety Headroom %') }}
+                            <input name="safety_headroom_percent"
+                                   type="number"
+                                   min="0"
+                                   max="99"
+                                   required
+                                   placeholder="10"
+                                   class="{{ form_field.input_classes() }}">
+                        </label>
+                        <label class="block">
+                            {{ form_field.label_row('Unmanaged CPU') }}
+                            <input name="unmanaged_commitment_cpu"
+                                   required
+                                   value="0"
+                                   placeholder="2"
+                                   class="{{ form_field.input_classes() }}">
+                        </label>
+                        <label class="block sm:col-span-2">
+                            {{ form_field.label_row('Unmanaged Memory') }}
+                            <input name="unmanaged_commitment_memory"
+                                   required
+                                   value="0"
+                                   placeholder="8Gi"
+                                   class="{{ form_field.input_classes() }}">
+                        </label>
+                    </div>
+                    {{ form_field.help('Reserve and unmanaged values are request commitments, not observed utilization. Fresh committed Capacity Analytics evidence is required before positive allocation.') }}
+                </div>
+                <button type="submit"
+                        {% if not can_manage or not native_available %}disabled aria-disabled="true"{% endif %}
+                        class="mt-5 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
+                    <i data-lucide="save" class="h-4 w-4"></i>Save Capacity Policy
+                </button>
+            </form>
+            <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm xl:col-span-2">
+                <header class="border-b border-outline-subtle px-5 py-4">
+                    <h2 class="text-base font-semibold text-content-primary">Allocation Budget</h2>
+                    <p class="mt-1 text-xs text-content-muted">Committed Ready-worker capacity evidence minus reserve, safety headroom, and unmanaged request commitments.</p>
+                </header>
+                <div class="divide-y divide-outline-subtle">
+                    {% for item in capacity_governance %}
+                        {% set state_tone = 'normal' if item.state == 'Healthy' else ('warning' if item.state in ['Near Capacity', 'Unknown'] else 'critical') %}
+                        <div class="px-5 py-4">
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                    <p class="font-semibold text-content-primary">{{ item.cluster.name }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ item.snapshot_state|title }} capacity evidence · {{ item.committed_namespace_count }} committed namespaces</p>
+                                </div>
+                                {{ table_label.status_label(item.state, state_tone) }}
+                            </div>
+                            <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                                <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Budget</p>
+                                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ item.display.budget.cpu }}</p>
+                                    <p class="text-xs text-content-muted">{{ item.display.budget.memory }}</p>
+                                </div>
+                                <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Committed</p>
+                                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ item.display.committed.cpu }}</p>
+                                    <p class="text-xs text-content-muted">{{ item.display.committed.memory }}</p>
+                                </div>
+                                <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Headroom</p>
+                                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ item.display.headroom.cpu }}</p>
+                                    <p class="text-xs text-content-muted">{{ item.display.headroom.memory }}</p>
+                                </div>
+                            </div>
+                            <p class="mt-3 text-xs leading-5 text-content-muted">{{ item.reason }}</p>
+                        </div>
+                    {% else %}
+                        <p class="px-5 py-6 text-sm text-content-muted">No Ready Kubernetes cluster is available for Tenant Capacity Governance.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+                 aria-label="Tenant capacity decisions">
+            <header class="border-b border-outline-subtle px-5 py-4">
+                <h2 class="text-base font-semibold text-content-primary">Capacity Decisions</h2>
+                <p class="mt-1 text-xs text-content-muted">Latest 5 committed allocation preflight decisions.</p>
+            </header>
+            <div class="divide-y divide-outline-subtle">
+                {% for decision in capacity_decisions %}
+                    <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                        <div>
+                            <p class="font-semibold text-content-primary">{{ decision.namespace }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ decision.operation|replace('_', ' ') |title }} · {{ decision.capacity_state }}</p>
+                        </div>
+                        {{ table_label.status_label(decision.decision|title, 'normal' if decision.decision == 'allow' else 'critical') }}
+                    </div>
+                {% else %}
+                    <p class="px-5 py-6 text-sm text-content-muted">No capacity preflight decision has been committed yet.</p>
+                {% endfor %}
+            </div>
+        </section>
         <section class="grid gap-5 xl:grid-cols-3" aria-label="Tenant committed state">
             <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
                 <header class="border-b border-outline-subtle px-5 py-4">
