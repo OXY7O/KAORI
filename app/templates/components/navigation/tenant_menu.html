@@ -15,15 +15,35 @@
            class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if tenant_active else 'text-white/[0.35]' }}"></i>
     </summary>
     <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
-        {% set tenant_links = [('tenant.index', 'layout-dashboard', 'Overview'), ('tenant.tenants', 'users-round', 'Tenants'), ('tenant.resource_profiles', 'layers-3', 'Resource Profiles'), ('tenant.namespace_provisioning', 'boxes', 'Namespace Provisioning'), ('tenant.operations', 'refresh-cw', 'Operations')] %}
-        {% for target_endpoint, icon, label in tenant_links %}
-            {% set active = endpoint == target_endpoint %}
-            <a href="{{ url_for(target_endpoint) }}"
-               class="{{ 'bg-white/[0.08] text-kaori-accent' if active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
-                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
-                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                <span class="truncate whitespace-nowrap">{{ label }}</span>
-            </a>
-        {% endfor %}
+        <a href="{{ url_for('tenant.index') }}"
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if endpoint == 'tenant.index' else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if endpoint == 'tenant.index' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+            <i data-lucide="layout-dashboard" class="h-3.5 w-3.5" aria-hidden="true"></i>
+            <span class="truncate whitespace-nowrap">Overview</span>
+        </a>
+        <a href="{{ url_for('tenant.tenants') }}"
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if endpoint == 'tenant.tenants' else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if endpoint == 'tenant.tenants' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+            <i data-lucide="users-round" class="h-3.5 w-3.5" aria-hidden="true"></i>
+            <span class="truncate whitespace-nowrap">Tenants</span>
+        </a>
+        <a href="{{ url_for('tenant.resource_profiles') }}"
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if endpoint == 'tenant.resource_profiles' else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if endpoint == 'tenant.resource_profiles' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+            <i data-lucide="layers-3" class="h-3.5 w-3.5" aria-hidden="true"></i>
+            <span class="truncate whitespace-nowrap">Resource Profiles</span>
+        </a>
+        <a href="{{ url_for('tenant.namespace_provisioning') }}"
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if endpoint == 'tenant.namespace_provisioning' else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if endpoint == 'tenant.namespace_provisioning' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+            <i data-lucide="boxes" class="h-3.5 w-3.5" aria-hidden="true"></i>
+            <span class="truncate whitespace-nowrap">Namespace Provisioning</span>
+        </a>
+        <a href="{{ url_for('tenant.operations') }}"
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if endpoint == 'tenant.operations' else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if endpoint == 'tenant.operations' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+            <i data-lucide="refresh-cw" class="h-3.5 w-3.5" aria-hidden="true"></i>
+            <span class="truncate whitespace-nowrap">Operations</span>
+        </a>
     </div>
 </details>
