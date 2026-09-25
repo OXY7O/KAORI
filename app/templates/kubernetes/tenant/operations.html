@@ -57,7 +57,7 @@
             <div class="rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
                 <header class="border-b border-outline-subtle px-5 py-4">
                     <h2 class="text-lg font-semibold text-content-primary">Drift &amp; Reconcile</h2>
-                    <p class="mt-1 text-sm text-content-secondary">Provider-state mismatches surfaced from the admitted #113 reconciliation contract.</p>
+                    <p class="mt-1 text-sm text-content-secondary">Provider-state mismatches surfaced from the admitted reconciliation contract.</p>
                 </header>
                 <div class="divide-y divide-outline-subtle">
                     {% for item in drift_records %}
@@ -81,7 +81,7 @@
                     <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="activity" class="h-5 w-5"></i></span>
                     <div>
                         <h2 class="text-lg font-semibold text-content-primary">Activity</h2>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Tenant mutations already emit KAORI operational activity/toast evidence. Dedicated Tenant-to-Kubernetes audit correlation is owned by #122 and is not represented as complete here.</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Tenant mutations already emit KAORI operational activity/toast evidence. Dedicated Tenant-to-Kubernetes audit correlation remains downstream work and is not represented as complete here.</p>
                         <a href="{{ url_for('access.activity_audit.index') }}"
                            class="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-kaori-primary hover:bg-kaori-soft">Open Activity Audit<i data-lucide="arrow-right" class="h-4 w-4"></i></a>
                     </div>
