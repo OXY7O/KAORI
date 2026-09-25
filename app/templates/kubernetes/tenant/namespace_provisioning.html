@@ -4,8 +4,8 @@
 {% block title %}Namespace Provisioning{% endblock title %}
 {% block dashboard_content %}
     {% set can_manage = current_user.has_permission('tenant.manage') %}
-    {% set hero_title = 'Tenant Namespace Provisioning' %}
-    {% set hero_description = 'Apply one committed Resource Profile to a Tenant environment and verify Namespace, ResourceQuota, and LimitRange effective state.' %}
+    {% set hero_title = "Tenant Namespace Provisioning" %}
+    {% set hero_description = "Apply one committed Resource Profile to a Tenant environment and verify Namespace, ResourceQuota, and LimitRange effective state." %}
     <div class="space-y-6" data-tenant-page="namespace-provisioning">
         {% include "kubernetes/tenant/_hero.html" %}
         <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -14,11 +14,15 @@
                     <h2 class="text-base font-semibold text-content-primary">Provision Namespace</h2>
                     <p class="mt-1 text-sm text-content-secondary">Native Kubernetes only in this slice. KAORI verifies effective provider state after mutation.</p>
                 </div>
-                <form method="post" action="{{ url_for('tenant.provision_namespace_route') }}" class="grid gap-4 md:grid-cols-2">
+                <form method="post"
+                      action="{{ url_for('tenant.provision_namespace_route') }}"
+                      class="grid gap-4 md:grid-cols-2">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <label class="block md:col-span-2">
                         {{ form_field.label_row("Tenant Environment") }}
-                        <select name="tenant_environment_id" required class="{{ form_field.select_classes() }}">
+                        <select name="tenant_environment_id"
+                                required
+                                class="{{ form_field.select_classes() }}">
                             <option value="">Select Tenant environment</option>
                             {% for environment in environment_options %}
                                 <option value="{{ environment.id }}">{{ environment.tenant.name }} · {{ environment.environment|title }}</option>
@@ -27,7 +31,9 @@
                     </label>
                     <label class="block md:col-span-2">
                         {{ form_field.label_row("Resource Profile") }}
-                        <select name="resource_profile_id" required class="{{ form_field.select_classes() }}">
+                        <select name="resource_profile_id"
+                                required
+                                class="{{ form_field.select_classes() }}">
                             <option value="">Select profile</option>
                             {% for profile in profiles %}
                                 {% if profile.enabled %}
@@ -38,7 +44,11 @@
                     </label>
                     <label class="block md:col-span-2">
                         {{ form_field.label_row("Namespace") }}
-                        <input name="namespace" required autocomplete="off" placeholder="payments-dev" class="{{ form_field.input_classes() }}">
+                        <input name="namespace"
+                               required
+                               autocomplete="off"
+                               placeholder="payments-dev"
+                               class="{{ form_field.input_classes() }}">
                         {{ form_field.help("KAORI refuses to overwrite resources owned by another controller.") }}
                     </label>
                     <div class="md:col-span-2">
@@ -66,7 +76,6 @@
                 </div>
             </aside>
         </div>
-
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
             <header class="border-b border-outline-subtle px-5 py-4">
                 <h2 class="text-base font-semibold text-content-primary">Recent Provisioning Results</h2>
@@ -79,7 +88,7 @@
                             <p class="font-semibold text-content-primary">{{ item.namespace }}</p>
                             <p class="mt-1 text-xs text-content-muted">{{ item.environment.tenant.name }} · {{ item.environment.environment|title }}</p>
                         </div>
-                        <div>{{ table_label.status_label(item.provisioning_status|title, 'normal' if item.provisioning_status == 'ready' else ('warning' if item.provisioning_status in ['pending', 'drifted'] else 'critical')) }}</div>
+                        <div>{{ table_label.status_label(item.provisioning_status|title, 'normal' if item.provisioning_status == 'ready' else ('warning' if item.provisioning_status in ['pending', 'drifted'] else 'critical') ) }}</div>
                         <p class="text-xs text-content-muted">{{ item.provisioning_message or 'Awaiting reconciliation evidence' }}</p>
                     </div>
                 {% else %}
