@@ -58,10 +58,10 @@ def test_resource_profile_presets_are_server_authoritative() -> None:
     script = (ROOT / 'app/static/js/kubernetes/tenant_resource_profiles.js').read_text(encoding='utf-8')
 
     assert 'RESOURCE_PROFILE_PRESETS' in service
-    assert "if profile_class == TenantResourceProfileClass.CUSTOM.value" in service
-    assert "preset = RESOURCE_PROFILE_PRESETS[profile_class]" in service
-    assert "input.readOnly = !custom" in script
-    assert "if (custom)" in script
+    assert 'if profile_class == TenantResourceProfileClass.CUSTOM.value' in service
+    assert 'preset = RESOURCE_PROFILE_PRESETS[profile_class]' in service
+    assert 'input.readOnly = !custom' in script
+    assert 'if (custom)' in script
 
 
 def test_tenant_uat_surface_separates_platform_permission_from_tenant_membership() -> None:
