@@ -4,6 +4,7 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
+from kubernetes.client.rest import ApiException
 from sqlalchemy import func
 
 from app.extensions.db import db
@@ -188,7 +189,7 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
     )
     try:
         reconcile_native_namespace(record)
-    except Exception:
+    except (ApiException, ValueError):
         db.session.commit()
         raise
     db.session.commit()
