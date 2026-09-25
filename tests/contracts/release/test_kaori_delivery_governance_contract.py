@@ -196,7 +196,7 @@ def test_github_metadata_hygiene_and_recovery_contract_is_documented() -> None:
         'Repository Metadata Hygiene Gate',
         'repo:OXY7O/KAORI is:pr no:label',
         'repo:OXY7O/KAORI is:pr no:assignee',
-        'Never run Full Admission on a work branch',
+        'Never use Full Admission as the Draft development loop',
     ):
         assert token in workflow
 
