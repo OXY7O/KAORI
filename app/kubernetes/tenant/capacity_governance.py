@@ -268,7 +268,9 @@ def _persist_decision(
         'positive_change': pure.positive_change,
         'capacity_source': {
             'dataset_key': 'analytics.capacity',
-            'snapshot_id': evidence.snapshot_result.snapshot.id if evidence.snapshot_result.snapshot is not None else None,
+            'snapshot_id': evidence.snapshot_result.snapshot.id
+            if evidence.snapshot_result.snapshot is not None
+            else None,
             'snapshot_state': evidence.snapshot_result.state,
             'stale': evidence.snapshot_result.stale,
             'data_cutoff': _datetime_text(_snapshot_cutoff(evidence.snapshot_result)),
