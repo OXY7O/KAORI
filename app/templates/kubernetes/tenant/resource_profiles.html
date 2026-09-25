@@ -4,8 +4,8 @@
 {% block title %}Resource Profiles{% endblock title %}
 {% block dashboard_content %}
     {% set can_manage = current_user.has_permission('tenant.manage') %}
-    {% set hero_title = 'Tenant Resource Profiles' %}
-    {% set hero_description = 'Define reusable Namespace quota and Container LimitRange policies with governed preset classes or explicit Custom values.' %}
+    {% set hero_title = "Tenant Resource Profiles" %}
+    {% set hero_description = "Define reusable Namespace quota and Container LimitRange policies with governed preset classes or explicit Custom values." %}
     <div class="space-y-6" data-tenant-page="resource-profiles">
         {% include "kubernetes/tenant/_hero.html" %}
         <section class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
@@ -22,7 +22,10 @@
                 <div class="grid gap-4 lg:grid-cols-[minmax(260px,0.6fr)_minmax(0,1.4fr)]">
                     <label class="block">
                         {{ form_field.label_row("Profile Name") }}
-                        <input name="profile_name" required placeholder="Standard Platform" class="{{ form_field.input_classes() }}">
+                        <input name="profile_name"
+                               required
+                               placeholder="Standard Platform"
+                               class="{{ form_field.input_classes() }}">
                     </label>
                     <fieldset>
                         <legend class="mb-2 text-sm font-semibold text-content-primary">Profile Class</legend>
@@ -32,7 +35,7 @@
                                 ('standard', 'Standard', 'General Purpose', 'layers-3'),
                                 ('large', 'Large', 'High Workload', 'blocks'),
                                 ('custom', 'Custom', 'Manual Values', 'sliders-horizontal')
-                            ] %}
+                                ] %}
                                 <label class="cursor-pointer rounded-lg border border-outline-subtle bg-surface-elevated p-3 transition has-[:checked]:border-kaori-primary has-[:checked]:ring-2 has-[:checked]:ring-kaori-primary/20">
                                     <input type="radio"
                                            name="profile_class"
@@ -48,11 +51,9 @@
                         </div>
                     </fieldset>
                 </div>
-
                 <div class="rounded-lg border border-info/30 bg-info-soft p-4 text-sm text-content-secondary">
                     Preset classes auto-fill canonical values and remain read-only. Choose Custom to edit resource values manually.
                 </div>
-
                 <div class="grid gap-5 xl:grid-cols-2">
                     <div class="rounded-xl border border-outline-subtle p-4">
                         <h3 class="text-sm font-semibold text-content-primary">ResourceQuota · Namespace Level</h3>
@@ -71,7 +72,10 @@
                             ] %}
                                 <label class="block">
                                     {{ form_field.label_row(label) }}
-                                    <input name="{{ field }}" data-profile-value required class="{{ form_field.input_classes() }}">
+                                    <input name="{{ field }}"
+                                           data-profile-value
+                                           required
+                                           class="{{ form_field.input_classes() }}">
                                 </label>
                             {% endfor %}
                         </div>
@@ -95,7 +99,9 @@
                 </div>
                 <label class="block">
                     {{ form_field.label_row("Description") }}
-                    <input name="profile_description" placeholder="Optional profile intent" class="{{ form_field.input_classes() }}">
+                    <input name="profile_description"
+                           placeholder="Optional profile intent"
+                           class="{{ form_field.input_classes() }}">
                 </label>
                 <div class="flex justify-end">
                     <button type="submit"
@@ -106,7 +112,6 @@
                 </div>
             </form>
         </section>
-
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
             <header class="border-b border-outline-subtle px-5 py-4">
                 <h2 class="text-base font-semibold text-content-primary">Resource Profiles</h2>
