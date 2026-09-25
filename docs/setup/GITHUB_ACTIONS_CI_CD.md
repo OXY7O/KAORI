@@ -76,6 +76,8 @@ Full Admission owns the integrated evidence set:
 - Runtime & DAST;
 - CI Admission.
 
+The Functional Tests gate uses one broad non-debug/non-E2E pytest collection as the canonical domain-characterization authority. Domain-purpose tests receive the canonical `functional` marker from `tests/conftest.py` and are not executed a second time solely to produce characterization evidence. E2E remains a separate explicit gate.
+
 A green Developer Check does not replace Full Admission. A green Full Admission on the exact frozen Ready head is the comprehensive authority that staging normally reuses.
 
 ## Continuous Delivery
