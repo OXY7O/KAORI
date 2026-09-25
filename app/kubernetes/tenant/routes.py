@@ -6,16 +6,15 @@ from flask import Blueprint, current_app, redirect, render_template, request, ur
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
 from kubernetes.client.rest import ApiException
-from sqlalchemy.exc import IntegrityError
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import any_permission_required, permission_required
-from app.extensions.db import db
 from app.kubernetes.tenant.service import (
-    create_resource_profile,
-    create_tenant,
+    TenantStateConflictError,
+    create_resource_profile_committed,
+    create_tenant_committed,
     get_tenant_context,
-    provision_native_namespace,
+    provision_native_namespace_committed,
 )
 from app.platform_operations.notifications.service import record_operational_activity
 
@@ -64,10 +63,8 @@ def index():
 def create_tenant_route():
     try:
         _csrf()
-        tenant, environment = create_tenant(request.form)
-        db.session.commit()
+        tenant, environment = create_tenant_committed(request.form)
     except ValueError as exc:
-        db.session.rollback()
         _record(
             event_type='kubernetes_tenant_create_failed',
             status='error',
@@ -75,14 +72,13 @@ def create_tenant_route():
             message=str(exc),
             metadata={'cluster_id': request.form.get('cluster_id'), 'operation': 'create_tenant'},
         )
-    except IntegrityError:
-        db.session.rollback()
+    except TenantStateConflictError as exc:
         current_app.logger.exception('Tenant creation conflicted with committed state.')
         _record(
             event_type='kubernetes_tenant_create_failed',
             status='error',
             title='Tenant Creation Failed',
-            message='Committed Tenant state changed while this request was being applied. Refresh and retry.',
+            message=str(exc),
             detail='No provider mutation was performed by this failed request.',
             metadata={'cluster_id': request.form.get('cluster_id'), 'operation': 'create_tenant'},
         )
@@ -109,10 +105,8 @@ def create_tenant_route():
 def create_resource_profile_route():
     try:
         _csrf()
-        profile = create_resource_profile(request.form)
-        db.session.commit()
+        profile = create_resource_profile_committed(request.form)
     except ValueError as exc:
-        db.session.rollback()
         _record(
             event_type='kubernetes_tenant_resource_profile_create_failed',
             status='error',
@@ -120,14 +114,13 @@ def create_resource_profile_route():
             message=str(exc),
             metadata={'operation': 'create_resource_profile'},
         )
-    except IntegrityError:
-        db.session.rollback()
+    except TenantStateConflictError as exc:
         current_app.logger.exception('Tenant Resource Profile creation conflicted with committed state.')
         _record(
             event_type='kubernetes_tenant_resource_profile_create_failed',
             status='error',
             title='Resource Profile Creation Failed',
-            message='Committed Resource Profile state changed while this request was being applied. Refresh and retry.',
+            message=str(exc),
             metadata={'operation': 'create_resource_profile'},
         )
     else:
@@ -151,10 +144,8 @@ def create_resource_profile_route():
 def provision_namespace_route():
     try:
         _csrf()
-        record = provision_native_namespace(request.form)
-    except (ValueError, ApiException) as exc:
-        if isinstance(exc, ValueError):
-            db.session.rollback()
+        record = provision_native_namespace_committed(request.form)
+    except (ValueError, ApiException, TenantStateConflictError) as exc:
         _record(
             event_type='kubernetes_tenant_namespace_provision_failed',
             status='error',
