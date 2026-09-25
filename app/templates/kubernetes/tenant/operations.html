@@ -2,18 +2,19 @@
 {% import "components/table_label.html" as table_label %}
 {% block title %}Tenant Operations{% endblock title %}
 {% block dashboard_content %}
-    {% set hero_title = 'Tenant Operations' %}
-    {% set hero_description = 'Review Native provisioning outcomes now, while runs, drift reconciliation, and activity expand as their committed evidence contracts are admitted.' %}
+    {% set hero_title = "Tenant Operations" %}
+    {% set hero_description = "Review Native provisioning outcomes now, while runs, drift reconciliation, and activity expand as their committed evidence contracts are admitted." %}
     <div class="space-y-6" data-tenant-page="operations">
         {% include "kubernetes/tenant/_hero.html" %}
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
-            <nav class="flex gap-1 overflow-x-auto border-b border-outline-subtle px-4 pt-3" aria-label="Tenant Operations">
+            <nav class="flex gap-1 overflow-x-auto border-b border-outline-subtle px-4 pt-3"
+                 aria-label="Tenant Operations">
                 {% for key, label, icon in [
                     ('provisioning', 'Provisioning', 'list-checks'),
                     ('runs', 'Runs & Evidence', 'file-clock'),
                     ('drift', 'Drift & Reconcile', 'refresh-cw'),
                     ('activity', 'Activity', 'activity')
-                ] %}
+                    ] %}
                     <a href="{{ url_for('tenant.operations', tab=key) }}"
                        class="inline-flex min-h-10 shrink-0 items-center gap-2 border-b-2 px-3 py-2 text-sm font-semibold {{ 'border-kaori-primary text-kaori-primary dark:text-kaori-accent' if operations_tab == key else 'border-transparent text-content-secondary hover:text-content-primary' }}">
                         <i data-lucide="{{ icon }}" class="h-4 w-4"></i>{{ label }}
@@ -33,7 +34,7 @@
                                     <p class="font-semibold text-content-primary">{{ item.namespace }}</p>
                                     <p class="mt-1 text-xs text-content-muted">{{ item.environment.tenant.name }} · {{ item.environment.environment|title }}</p>
                                 </div>
-                                <div>{{ table_label.status_label(item.provisioning_status|title, 'normal' if item.provisioning_status == 'ready' else ('warning' if item.provisioning_status in ['pending', 'drifted'] else 'critical')) }}</div>
+                                <div>{{ table_label.status_label(item.provisioning_status|title, 'normal' if item.provisioning_status == 'ready' else ('warning' if item.provisioning_status in ['pending', 'drifted'] else 'critical') ) }}</div>
                                 <p class="text-xs text-content-muted">{{ item.last_reconciled_at or 'Not reconciled yet' }}</p>
                             </div>
                         {% else %}
