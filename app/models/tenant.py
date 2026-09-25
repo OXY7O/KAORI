@@ -348,7 +348,6 @@ class TenantNamespace(db.Model):
     )
 
 
-
 class TenantGroup(db.Model):
     __tablename__ = 'tenant_groups'
 
@@ -461,9 +460,7 @@ class TenantAccessGrant(db.Model):
 
     tenant: Mapped[Tenant] = relationship('Tenant', back_populates='access_grants')
     membership: Mapped[TenantMembership] = relationship('TenantMembership', back_populates='access_grants')
-    environment: Mapped[TenantEnvironment | None] = relationship(
-        'TenantEnvironment', back_populates='access_grants'
-    )
+    environment: Mapped[TenantEnvironment | None] = relationship('TenantEnvironment', back_populates='access_grants')
     namespace: Mapped[TenantNamespace | None] = relationship('TenantNamespace', back_populates='access_grants')
 
     __table_args__ = (
