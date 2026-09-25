@@ -193,9 +193,7 @@ def _effective_contract(api, desired: dict[str, Any]) -> dict[str, Any]:
     quota = _read_or_none(api.read_namespaced_resource_quota, _QUOTA_NAME, namespace)
     limit_range = _read_or_none(api.read_namespaced_limit_range, _LIMIT_RANGE_NAME, namespace)
     item = (
-        limit_range.spec.limits[0]
-        if limit_range is not None and limit_range.spec and limit_range.spec.limits
-        else None
+        limit_range.spec.limits[0] if limit_range is not None and limit_range.spec and limit_range.spec.limits else None
     )
     return {
         'namespace': namespace,
