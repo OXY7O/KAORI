@@ -161,6 +161,15 @@ def _profile_values(source: Mapping[str, Any]) -> tuple[dict[str, str], dict[str
     return validate_profile_spec(quota, limits)
 
 
+def resolve_profile_values(
+    profile_class: str,
+    source: Mapping[str, Any],
+) -> tuple[dict[str, str], dict[str, dict[str, str]]]:
+    if profile_class == TenantResourceProfileClass.CUSTOM.value:
+        return _profile_values(source)
+    return resolve_resource_profile_spec(profile_class)
+
+
 def create_resource_profile(source: Mapping[str, Any]) -> TenantResourceProfile:
     name = _text(source, 'profile_name')
     if not name or len(name) > 120:
@@ -172,10 +181,7 @@ def create_resource_profile(source: Mapping[str, Any]) -> TenantResourceProfile:
     if profile_class not in _ALLOWED_PROFILE_CLASSES:
         raise ValueError('Select a supported Resource Profile class.')
 
-    if profile_class == TenantResourceProfileClass.CUSTOM.value:
-        quota, limits = _profile_values(source)
-    else:
-        quota, limits = resolve_resource_profile_spec(profile_class)
+    quota, limits = resolve_profile_values(profile_class, source)
 
     profile = TenantResourceProfile()
     profile.name = name
@@ -268,6 +274,13 @@ def get_tenant_context() -> dict[str, Any]:
     )
     ready_clusters = get_ready_native_clusters()
     namespace_count = TenantNamespace.query.count()
+    provisioning_counts = {
+        status: TenantNamespace.query.filter_by(provisioning_status=status).count()
+        for status in ('pending', 'ready', 'drifted', 'failed')
+    }
+    cluster_ids = {tenant.cluster_id for tenant in tenants}
+    clusters = Cluster.query.filter(Cluster.id.in_(cluster_ids)).all() if cluster_ids else []
+    cluster_lookup = {str(cluster.id): cluster.name for cluster in clusters}
     return {
         'tenants': tenants,
         'profiles': profiles,
@@ -281,4 +294,6 @@ def get_tenant_context() -> dict[str, Any]:
         'native_available': bool(ready_clusters),
         'resource_profile_presets': preset_form_values(),
         'resource_profile_preset_classes': tuple(RESOURCE_PROFILE_PRESETS),
+        'provisioning_counts': provisioning_counts,
+        'cluster_lookup': cluster_lookup,
     }

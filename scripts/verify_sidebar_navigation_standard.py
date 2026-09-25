@@ -67,7 +67,7 @@ PARENT_TOKENS = (
     'sidebar-item-idle',
 )
 
-LEAF_MENU_TEMPLATES = ('tenant_menu.html',)
+LEAF_MENU_TEMPLATES: tuple[str, ...] = ()
 
 SUBMENU_TOKENS = (
     'group',
@@ -210,7 +210,16 @@ def verify() -> None:
             '>Secrets</span>',
         ),
         'governance_menu.html': ('title="Governance"', 'aria-label="Governance"', '>Governance</span>'),
-        'tenant_menu.html': ('title="Tenant"', 'aria-label="Tenant"', '>Tenant</span>'),
+        'tenant_menu.html': (
+            'title="Tenant"',
+            'aria-label="Tenant"',
+            '>Tenant</span>',
+            '>Overview</span>',
+            '>Tenants</span>',
+            '>Resource Profiles</span>',
+            '>Namespace Provisioning</span>',
+            '>Operations</span>',
+        ),
         'analytics_menu.html': (
             'title="Kubernetes"',
             'aria-label="Kubernetes"',
@@ -335,7 +344,7 @@ def verify() -> None:
                 raise AssertionError(f'{filename} submenu #{index}: submenu typography must remain text-sm')
 
     doc_tokens = (
-        '# KAORI Sidebar Navigation Standard v1.6',
+        '# KAORI Sidebar Navigation Standard v1.7',
         'Status:** Locked application-shell and dark-mode contract',
         'Parent menu label | 16 px',
         'Submenu label | 14 px',
@@ -357,7 +366,7 @@ def verify() -> None:
 
     print(
         'KAORI sidebar navigation standard passed: '
-        f'{parent_count} parent blocks and {submenu_count} submenu links conform to v1.5; '
+        f'{parent_count} parent blocks and {submenu_count} submenu links conform to v1.7; '
         'section order, collapse behavior, accessibility, typography, and documentation are locked.'
     )
 

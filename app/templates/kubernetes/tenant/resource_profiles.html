@@ -1,0 +1,157 @@
+{% extends "layouts/app.html" %}
+{% import "components/form_field.html" as form_field %}
+{% import "components/table_label.html" as table_label %}
+{% block title %}Resource Profiles{% endblock title %}
+{% block dashboard_content %}
+    {% set can_manage = current_user.has_permission('tenant.manage') %}
+    {% set tenant_hero_title = 'Tenant Resource Profiles' %}
+    {% set tenant_hero_description = 'Use canonical Small, Standard, and Large presets or define an explicitly validated Custom profile.' %}
+    {% set tenant_hero_icon = 'layers-3' %}
+    {% set initial = resource_profile_presets['standard']['values'] %}
+    <div class="space-y-6" data-tenant-page="resource-profiles">
+        {% include "kubernetes/tenant/partials/_hero.html" %}
+        <div class="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(20rem,0.65fr)]">
+            <form method="post"
+                  action="{{ url_for('tenant.create_resource_profile_route') }}"
+                  class="rounded-xl border border-outline-default bg-surface-card shadow-sm"
+                  data-resource-profile-form>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <header class="border-b border-outline-subtle px-5 py-4">
+                    <h2 class="text-base font-semibold text-content-primary">Create Resource Profile</h2>
+                    <p class="mt-1 text-sm text-content-secondary">Preset classes are server-authoritative. Custom is the only manually editable class.</p>
+                </header>
+                <div class="space-y-6 p-5">
+                    <div class="grid gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.5fr)]">
+                        <label class="block">
+                            {{ form_field.label_row("Profile Name") }}
+                            <input name="profile_name" required placeholder="Standard Platform" class="{{ form_field.input_classes() }}">
+                        </label>
+                        <fieldset>
+                            <legend class="text-xs font-semibold text-content-primary">Profile Class</legend>
+                            <div class="mt-1 grid gap-2 sm:grid-cols-4">
+                                {% for key, label, helper, icon in [
+                                    ('small', 'Small', 'Dev / low footprint', 'layers-2'),
+                                    ('standard', 'Standard', 'General purpose', 'layers-3'),
+                                    ('large', 'Large', 'Higher capacity', 'layers'),
+                                    ('custom', 'Custom', 'Manual values', 'sliders-horizontal')
+                                ] %}
+                                    <label class="cursor-pointer rounded-xl border border-outline-default bg-surface-card p-3 transition has-[:checked]:border-kaori-primary has-[:checked]:bg-kaori-soft">
+                                        <input type="radio" name="profile_class" value="{{ key }}" class="sr-only" data-profile-class {% if key == 'standard' %}checked{% endif %}>
+                                        <i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                        <span class="mt-2 block text-sm font-semibold text-content-primary">{{ label }}</span>
+                                        <span class="mt-0.5 block text-xs leading-5 text-content-muted">{{ helper }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </fieldset>
+                    </div>
+                    <div class="rounded-lg border border-status-info/30 bg-status-info-soft px-4 py-3">
+                        <div class="flex items-start gap-2">
+                            <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-status-info" aria-hidden="true"></i>
+                            <p class="text-xs leading-5 text-content-secondary" data-profile-mode-copy>Standard preset values are auto-filled and locked. Select Custom to enter values manually.</p>
+                        </div>
+                    </div>
+                    <section>
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h3 class="text-sm font-semibold text-content-primary">Resource Configuration</h3>
+                                <p class="mt-1 text-xs text-content-muted">ResourceQuota applies at namespace level; LimitRange defaults apply per container.</p>
+                            </div>
+                            <button type="button"
+                                    data-reset-profile
+                                    class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-surface-hover">
+                                <i data-lucide="rotate-ccw" class="h-3.5 w-3.5" aria-hidden="true"></i>Reset values
+                            </button>
+                        </div>
+                        <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                            <div class="rounded-xl border border-outline-default p-4">
+                                <h4 class="text-sm font-semibold text-content-primary">Resource Quotas</h4>
+                                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                                    {% for name, label in [
+                                        ('requests_cpu', 'CPU Requests'), ('limits_cpu', 'CPU Limits'),
+                                        ('requests_memory', 'Memory Requests'), ('limits_memory', 'Memory Limits'),
+                                        ('pods', 'Pods'), ('persistentvolumeclaims', 'PVCs'),
+                                        ('requests_storage', 'Storage'), ('services', 'Services'),
+                                        ('configmaps', 'ConfigMaps'), ('secrets', 'Secrets')
+                                    ] %}
+                                        <label class="block">
+                                            {{ form_field.label_row(label) }}
+                                            <input name="{{ name }}" value="{{ initial[name] }}" data-profile-field="{{ name }}" disabled class="{{ form_field.input_classes() }} disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-content-muted">
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="rounded-xl border border-outline-default p-4">
+                                <h4 class="text-sm font-semibold text-content-primary">Container LimitRange</h4>
+                                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                                    {% for name, label in [
+                                        ('default_request_cpu', 'CPU Request'), ('default_cpu', 'CPU Limit'),
+                                        ('default_request_memory', 'Memory Request'), ('default_memory', 'Memory Limit')
+                                    ] %}
+                                        <label class="block">
+                                            {{ form_field.label_row(label) }}
+                                            <input name="{{ name }}" value="{{ initial[name] }}" data-profile-field="{{ name }}" disabled class="{{ form_field.input_classes() }} disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-content-muted">
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                                <p class="mt-4 text-xs leading-5 text-content-muted">For preset classes these values come from the canonical KAORI contract and cannot be overridden by the request.</p>
+                            </div>
+                        </div>
+                    </section>
+                    <label class="block">
+                        {{ form_field.label_row("Description") }}
+                        <input name="profile_description" placeholder="Optional profile intent" class="{{ form_field.input_classes() }}">
+                    </label>
+                    <div class="flex justify-end">
+                        <button type="submit"
+                                {% if not can_manage %}disabled aria-disabled="true"{% endif %}
+                                class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
+                            <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>Create Resource Profile
+                        </button>
+                    </div>
+                </div>
+            </form>
+            <aside class="space-y-5">
+                <section class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
+                    <h2 class="text-base font-semibold text-content-primary">Provisioning Workflow</h2>
+                    <ol class="mt-4 space-y-4">
+                        {% for index, title, text in [
+                            ('1', 'Add Tenant', 'Bind the Tenant to a Ready Native Kubernetes cluster.'),
+                            ('2', 'Create Resource Profile', 'Choose a preset or Custom resource contract.'),
+                            ('3', 'Provision Namespace', 'Apply and verify Namespace, ResourceQuota, and LimitRange.')
+                        ] %}
+                            <li class="flex gap-3">
+                                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ index }}</span>
+                                <div><p class="text-sm font-semibold text-content-primary">{{ title }}</p><p class="mt-0.5 text-xs leading-5 text-content-muted">{{ text }}</p></div>
+                            </li>
+                        {% endfor %}
+                    </ol>
+                </section>
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                    <header class="border-b border-outline-subtle px-5 py-4">
+                        <h2 class="text-base font-semibold text-content-primary">Recent Profiles</h2>
+                        <p class="mt-1 text-xs text-content-muted">Latest 5 persisted profiles.</p>
+                    </header>
+                    <div class="divide-y divide-outline-subtle">
+                        {% for profile in profiles %}
+                            <div class="px-5 py-3.5">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="truncate text-sm font-semibold text-content-primary">{{ profile.name }}</p>
+                                    {{ table_label.status_label(profile.profile_class|title, 'info') }}
+                                </div>
+                                <p class="mt-1 text-xs text-content-muted">{{ profile.quota_hard_json.get('requests.cpu', '—') }} CPU · {{ profile.quota_hard_json.get('requests.memory', '—') }} memory</p>
+                            </div>
+                        {% else %}
+                            <p class="px-5 py-6 text-sm text-content-muted">No Resource Profiles yet.</p>
+                        {% endfor %}
+                    </div>
+                </section>
+            </aside>
+        </div>
+        <script id="tenant-resource-profile-presets" type="application/json">{{ resource_profile_presets|tojson }}</script>
+    </div>
+{% endblock dashboard_content %}
+{% block scripts %}
+    {{ super() }}
+    <script defer src="{{ url_for('static', filename='js/tenant_resource_profiles.js') }}"></script>
+{% endblock scripts %}
