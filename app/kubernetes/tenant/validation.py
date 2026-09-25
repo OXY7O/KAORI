@@ -72,8 +72,6 @@ def validate_profile_spec(
         unsupported_limits = sorted(set(values) - SUPPORTED_LIMIT_KEYS)
         if unsupported_limits:
             raise ValueError(f'unsupported LimitRange resource(s): {", ".join(unsupported_limits)}')
-        normalized_limits[field] = {
-            key: _positive_quantity(raw, key=f'{field}.{key}') for key, raw in values.items()
-        }
+        normalized_limits[field] = {key: _positive_quantity(raw, key=f'{field}.{key}') for key, raw in values.items()}
 
     return normalized_quota, normalized_limits
