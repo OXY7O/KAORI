@@ -1,0 +1,10 @@
+{% set tenant_active = request.endpoint and request.endpoint.startswith('tenant.') %}
+<a href="{{ url_for('tenant.index') }}"
+   title="Tenant"
+   aria-label="Tenant"
+   class="{{ 'sidebar-parent-active' if tenant_active else 'sidebar-item-idle' }} sidebar-parent-link group flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition lg:[.sidebar-collapsed_&]:justify-center lg:[.sidebar-collapsed_&]:px-2">
+    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if tenant_active else 'sidebar-item-idle-icon' }} transition">
+        <i data-lucide="building-2" class="h-4 w-4" aria-hidden="true"></i>
+    </span>
+    <span class="sidebar-expanded-only truncate whitespace-nowrap">Tenant</span>
+</a>

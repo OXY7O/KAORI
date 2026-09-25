@@ -201,6 +201,8 @@ def build_navigation_breadcrumb(
             BreadcrumbItem('Governance', 'shield-check'),
             BreadcrumbItem(_leaf(endpoint, 'TLS Certificates')),
         ]
+    elif endpoint.startswith('tenant.'):
+        items = [BreadcrumbItem('Tenant', 'building-2')]
     elif endpoint.startswith('analytics.'):
         items = _analytics_items(endpoint)
     elif endpoint.startswith(('intelligence.', 'alert_intelligence.', 'automation_control.')):
