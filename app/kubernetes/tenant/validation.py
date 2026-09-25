@@ -49,9 +49,6 @@ def validate_profile_spec(
     quota_hard: Mapping[str, object],
     limit_defaults: Mapping[str, Mapping[str, object]] | None = None,
 ) -> tuple[dict[str, str], dict[str, dict[str, str]]]:
-    if not quota_hard:
-        raise ValueError('resource profile must define at least one quota value')
-
     unsupported = sorted(set(quota_hard) - SUPPORTED_QUOTA_KEYS)
     if unsupported:
         raise ValueError(f'unsupported quota key(s): {", ".join(unsupported)}')
