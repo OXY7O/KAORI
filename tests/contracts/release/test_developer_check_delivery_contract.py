@@ -33,7 +33,9 @@ def test_work_branch_developer_check_is_separate_from_governed_admission() -> No
     assert 'production-runtime' not in source
     assert 'run-runtime-validation.sh' not in source
     assert 'trivy image' not in source
-    assert 'Full Admission' not in source
+    assert 'scripts/quality_gate.sh --static' not in source
+    assert 'scripts/quality_gate.sh --tests' not in source
+    assert 'run-runtime-validation.sh' not in source
 
 
 def test_developer_check_routes_changed_paths_and_fails_safe_for_authority_changes() -> None:
