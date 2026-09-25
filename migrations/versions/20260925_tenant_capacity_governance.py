@@ -45,7 +45,6 @@ def upgrade() -> None:
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('cluster_id', sa.String(length=36), nullable=False),
         sa.Column('tenant_environment_id', sa.Integer(), nullable=True),
-        sa.Column('tenant_namespace_id', sa.Integer(), nullable=True),
         sa.Column('resource_profile_id', sa.Integer(), nullable=True),
         sa.Column('resource_profile_version', sa.Integer(), nullable=True),
         sa.Column('namespace', sa.String(length=253), nullable=False),
@@ -71,7 +70,6 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['cluster_id'], ['clusters.id'], ondelete='RESTRICT'),
         sa.ForeignKeyConstraint(['resource_profile_id'], ['tenant_resource_profiles.id'], ondelete='SET NULL'),
         sa.ForeignKeyConstraint(['tenant_environment_id'], ['tenant_environments.id'], ondelete='SET NULL'),
-        sa.ForeignKeyConstraint(['tenant_namespace_id'], ['tenant_namespaces.id'], ondelete='SET NULL'),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('correlation_id', name='uq_tenant_capacity_decisions_correlation_id'),
     )
@@ -85,9 +83,29 @@ def upgrade() -> None:
         'tenant_capacity_decisions',
         ['decision', 'capacity_state'],
     )
+    op.add_column(
+        'tenant_namespaces',
+        sa.Column('capacity_decision_id', sa.Integer(), nullable=True),
+    )
+    op.create_foreign_key(
+        'fk_tenant_namespaces_capacity_decision_id',
+        'tenant_namespaces',
+        'tenant_capacity_decisions',
+        ['capacity_decision_id'],
+        ['id'],
+        ondelete='SET NULL',
+    )
+    op.create_index(
+        'ix_tenant_namespaces_capacity_decision',
+        'tenant_namespaces',
+        ['capacity_decision_id'],
+    )
 
 
 def downgrade() -> None:
+    op.drop_index('ix_tenant_namespaces_capacity_decision', table_name='tenant_namespaces')
+    op.drop_constraint('fk_tenant_namespaces_capacity_decision_id', 'tenant_namespaces', type_='foreignkey')
+    op.drop_column('tenant_namespaces', 'capacity_decision_id')
     op.drop_index('ix_tenant_capacity_decisions_result', table_name='tenant_capacity_decisions')
     op.drop_index('ix_tenant_capacity_decisions_cluster_created', table_name='tenant_capacity_decisions')
     op.drop_table('tenant_capacity_decisions')
