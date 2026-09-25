@@ -54,7 +54,14 @@ from app.models.resolver import (
 )
 from app.models.runtime import IntegrationRuntimeObservation
 from app.models.secret_reveal import SecretRevealNamespacePolicy, SecretRevealRequest
-from app.models.tenant import Tenant, TenantEnvironment, TenantEnvironmentName, TenantLifecycleStatus, TenantNamespace, TenantOwnershipStatus
+from app.models.tenant import (
+    Tenant,
+    TenantEnvironment,
+    TenantEnvironmentName,
+    TenantLifecycleStatus,
+    TenantNamespace,
+    TenantOwnershipStatus,
+)
 from app.models.user import User
 
 __all__ = [
