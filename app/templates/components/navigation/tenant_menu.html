@@ -15,13 +15,7 @@
            class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if tenant_active else 'text-white/[0.35]' }}"></i>
     </summary>
     <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
-        {% set tenant_links = [
-            ('tenant.index', 'layout-dashboard', 'Overview'),
-            ('tenant.tenants', 'users-round', 'Tenants'),
-            ('tenant.resource_profiles', 'layers-3', 'Resource Profiles'),
-            ('tenant.namespace_provisioning', 'boxes', 'Namespace Provisioning'),
-            ('tenant.operations', 'refresh-cw', 'Operations')
-        ] %}
+        {% set tenant_links = [('tenant.index', 'layout-dashboard', 'Overview'), ('tenant.tenants', 'users-round', 'Tenants'), ('tenant.resource_profiles', 'layers-3', 'Resource Profiles'), ('tenant.namespace_provisioning', 'boxes', 'Namespace Provisioning'), ('tenant.operations', 'refresh-cw', 'Operations')] %}
         {% for target_endpoint, icon, label in tenant_links %}
             {% set active = endpoint == target_endpoint %}
             <a href="{{ url_for(target_endpoint) }}"

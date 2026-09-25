@@ -4,9 +4,9 @@
 {% block title %}Resource Profiles{% endblock title %}
 {% block dashboard_content %}
     {% set can_manage = current_user.has_permission('tenant.manage') %}
-    {% set tenant_hero_title = 'Tenant Resource Profiles' %}
-    {% set tenant_hero_description = 'Use canonical Small, Standard, and Large presets or define an explicitly validated Custom profile.' %}
-    {% set tenant_hero_icon = 'layers-3' %}
+    {% set tenant_hero_title = "Tenant Resource Profiles" %}
+    {% set tenant_hero_description = "Use canonical Small, Standard, and Large presets or define an explicitly validated Custom profile." %}
+    {% set tenant_hero_icon = "layers-3" %}
     {% set initial = resource_profile_presets['standard']['values'] %}
     <div class="space-y-6" data-tenant-page="resource-profiles">
         {% include "kubernetes/tenant/partials/_hero.html" %}
@@ -24,7 +24,10 @@
                     <div class="grid gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.5fr)]">
                         <label class="block">
                             {{ form_field.label_row("Profile Name") }}
-                            <input name="profile_name" required placeholder="Standard Platform" class="{{ form_field.input_classes() }}">
+                            <input name="profile_name"
+                                   required
+                                   placeholder="Standard Platform"
+                                   class="{{ form_field.input_classes() }}">
                         </label>
                         <fieldset>
                             <legend class="text-xs font-semibold text-content-primary">Profile Class</legend>
@@ -34,10 +37,17 @@
                                     ('standard', 'Standard', 'General purpose', 'layers-3'),
                                     ('large', 'Large', 'Higher capacity', 'layers'),
                                     ('custom', 'Custom', 'Manual values', 'sliders-horizontal')
-                                ] %}
+                                    ] %}
                                     <label class="cursor-pointer rounded-xl border border-outline-default bg-surface-card p-3 transition has-[:checked]:border-kaori-primary has-[:checked]:bg-kaori-soft">
-                                        <input type="radio" name="profile_class" value="{{ key }}" class="sr-only" data-profile-class {% if key == 'standard' %}checked{% endif %}>
-                                        <i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                        <input type="radio"
+                                               name="profile_class"
+                                               value="{{ key }}"
+                                               class="sr-only"
+                                               data-profile-class
+                                               {% if key == 'standard' %}checked{% endif %}>
+                                        <i data-lucide="{{ icon }}"
+                                           class="h-4 w-4 text-kaori-primary"
+                                           aria-hidden="true"></i>
                                         <span class="mt-2 block text-sm font-semibold text-content-primary">{{ label }}</span>
                                         <span class="mt-0.5 block text-xs leading-5 text-content-muted">{{ helper }}</span>
                                     </label>
@@ -47,8 +57,11 @@
                     </div>
                     <div class="rounded-lg border border-status-info/30 bg-status-info-soft px-4 py-3">
                         <div class="flex items-start gap-2">
-                            <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-status-info" aria-hidden="true"></i>
-                            <p class="text-xs leading-5 text-content-secondary" data-profile-mode-copy>Standard preset values are auto-filled and locked. Select Custom to enter values manually.</p>
+                            <i data-lucide="info"
+                               class="mt-0.5 h-4 w-4 shrink-0 text-status-info"
+                               aria-hidden="true"></i>
+                            <p class="text-xs leading-5 text-content-secondary"
+                               data-profile-mode-copy>Standard preset values are auto-filled and locked. Select Custom to enter values manually.</p>
                         </div>
                     </div>
                     <section>
@@ -76,7 +89,11 @@
                                     ] %}
                                         <label class="block">
                                             {{ form_field.label_row(label) }}
-                                            <input name="{{ name }}" value="{{ initial[name] }}" data-profile-field="{{ name }}" disabled class="{{ form_field.input_classes() }} disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-content-muted">
+                                            <input name="{{ name }}"
+                                                   value="{{ initial[name] }}"
+                                                   data-profile-field="{{ name }}"
+                                                   disabled
+                                                   class="{{ form_field.input_classes() }} disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-content-muted">
                                         </label>
                                     {% endfor %}
                                 </div>
@@ -100,7 +117,9 @@
                     </section>
                     <label class="block">
                         {{ form_field.label_row("Description") }}
-                        <input name="profile_description" placeholder="Optional profile intent" class="{{ form_field.input_classes() }}">
+                        <input name="profile_description"
+                               placeholder="Optional profile intent"
+                               class="{{ form_field.input_classes() }}">
                     </label>
                     <div class="flex justify-end">
                         <button type="submit"
@@ -122,7 +141,10 @@
                         ] %}
                             <li class="flex gap-3">
                                 <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ index }}</span>
-                                <div><p class="text-sm font-semibold text-content-primary">{{ title }}</p><p class="mt-0.5 text-xs leading-5 text-content-muted">{{ text }}</p></div>
+                                <div>
+                                    <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ text }}</p>
+                                </div>
                             </li>
                         {% endfor %}
                     </ol>
@@ -153,5 +175,6 @@
 {% endblock dashboard_content %}
 {% block scripts %}
     {{ super() }}
-    <script defer src="{{ url_for('static', filename='js/tenant_resource_profiles.js') }}"></script>
+    <script defer
+            src="{{ url_for('static', filename='js/tenant_resource_profiles.js') }}"></script>
 {% endblock scripts %}

@@ -2,18 +2,19 @@
 {% import "components/table_label.html" as table_label %}
 {% block title %}Tenant Overview{% endblock title %}
 {% block dashboard_content %}
-    {% set tenant_hero_title = 'Tenant Management, Resource Profiles & Namespace Operations' %}
-    {% set tenant_hero_description = 'Manage tenant onboarding, resource templates, namespace provisioning, and operational evidence on Kubernetes.' %}
-    {% set tenant_hero_icon = 'layout-dashboard' %}
+    {% set tenant_hero_title = "Tenant Management, Resource Profiles & Namespace Operations" %}
+    {% set tenant_hero_description = "Manage tenant onboarding, resource templates, namespace provisioning, and operational evidence on Kubernetes." %}
+    {% set tenant_hero_icon = "layout-dashboard" %}
     <div class="space-y-6" data-tenant-page="overview">
         {% include "kubernetes/tenant/partials/_hero.html" %}
-        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Tenant summary">
+        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+                 aria-label="Tenant summary">
             {% set metrics = [
-                ('users-round', 'Total Tenants', tenant_count, 'Committed Tenant records'),
-                ('boxes', 'Managed Namespaces', namespace_count, 'Tracked Tenant namespaces'),
-                ('server', 'Ready Clusters', ready_clusters|length, 'Native provider targets'),
-                ('circle-check', 'Verified Namespaces', ready_namespace_count, 'Effective state verified')
-            ] %}
+                            ('users-round', 'Total Tenants', tenant_count, 'Committed Tenant records'),
+                            ('boxes', 'Managed Namespaces', namespace_count, 'Tracked Tenant namespaces'),
+                            ('server', 'Ready Clusters', ready_clusters|length, 'Native provider targets'),
+                            ('circle-check', 'Verified Namespaces', ready_namespace_count, 'Effective state verified')
+                        ] %}
             {% for icon, label, value, helper in metrics %}
                 <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
                     <div class="flex items-start gap-3">
@@ -36,16 +37,20 @@
                     <p class="mt-1 text-sm text-content-secondary">Continue the Native Kubernetes Tenant workflow.</p>
                 </div>
                 <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                    <a href="{{ url_for('tenant.tenants') }}" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover">
+                    <a href="{{ url_for('tenant.tenants') }}"
+                       class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover">
                         <i data-lucide="user-plus" class="h-4 w-4" aria-hidden="true"></i>Add Tenant
                     </a>
-                    <a href="{{ url_for('tenant.resource_profiles') }}" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary transition hover:bg-surface-hover">
+                    <a href="{{ url_for('tenant.resource_profiles') }}"
+                       class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary transition hover:bg-surface-hover">
                         <i data-lucide="layers-3" class="h-4 w-4" aria-hidden="true"></i>Create Profile
                     </a>
-                    <a href="{{ url_for('tenant.namespace_provisioning') }}" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary transition hover:bg-surface-hover">
+                    <a href="{{ url_for('tenant.namespace_provisioning') }}"
+                       class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary transition hover:bg-surface-hover">
                         <i data-lucide="boxes" class="h-4 w-4" aria-hidden="true"></i>Provision Namespace
                     </a>
-                    <a href="{{ url_for('tenant.operations') }}" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary transition hover:bg-surface-hover">
+                    <a href="{{ url_for('tenant.operations') }}"
+                       class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary transition hover:bg-surface-hover">
                         <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>View Operations
                     </a>
                 </div>
@@ -58,7 +63,8 @@
                         <h2 class="text-base font-semibold text-content-primary">Recent Tenants</h2>
                         <p class="mt-1 text-xs text-content-muted">Latest 5 committed Tenant records.</p>
                     </div>
-                    <a href="{{ url_for('tenant.tenants') }}" class="text-xs font-semibold text-kaori-primary dark:text-kaori-accent">View all</a>
+                    <a href="{{ url_for('tenant.tenants') }}"
+                       class="text-xs font-semibold text-kaori-primary dark:text-kaori-accent">View all</a>
                 </header>
                 <div class="divide-y divide-outline-subtle">
                     {% for tenant in tenants %}
@@ -80,7 +86,8 @@
                         <h2 class="text-base font-semibold text-content-primary">Recent Resource Profiles</h2>
                         <p class="mt-1 text-xs text-content-muted">Latest 5 reusable quota contracts.</p>
                     </div>
-                    <a href="{{ url_for('tenant.resource_profiles') }}" class="text-xs font-semibold text-kaori-primary dark:text-kaori-accent">View all</a>
+                    <a href="{{ url_for('tenant.resource_profiles') }}"
+                       class="text-xs font-semibold text-kaori-primary dark:text-kaori-accent">View all</a>
                 </header>
                 <div class="divide-y divide-outline-subtle">
                     {% for profile in profiles %}
@@ -102,14 +109,15 @@
                         <h2 class="text-base font-semibold text-content-primary">Recent Namespaces</h2>
                         <p class="mt-1 text-xs text-content-muted">Latest 5 provisioning outcomes.</p>
                     </div>
-                    <a href="{{ url_for('tenant.namespace_provisioning') }}" class="text-xs font-semibold text-kaori-primary dark:text-kaori-accent">View all</a>
+                    <a href="{{ url_for('tenant.namespace_provisioning') }}"
+                       class="text-xs font-semibold text-kaori-primary dark:text-kaori-accent">View all</a>
                 </header>
                 <div class="divide-y divide-outline-subtle">
                     {% for item in namespaces %}
                         <div class="px-5 py-3.5">
                             <div class="flex items-center justify-between gap-3">
                                 <p class="truncate text-sm font-semibold text-content-primary">{{ item.namespace }}</p>
-                                {{ table_label.status_label(item.provisioning_status|title, 'normal' if item.provisioning_status == 'ready' else ('warning' if item.provisioning_status in ['pending', 'drifted'] else 'critical')) }}
+                                {{ table_label.status_label(item.provisioning_status|title, 'normal' if item.provisioning_status == 'ready' else ('warning' if item.provisioning_status in ['pending', 'drifted'] else 'critical') ) }}
                             </div>
                             <p class="mt-1 text-xs text-content-muted">{{ item.environment.tenant.name }} · {{ item.environment.environment|title }}</p>
                         </div>

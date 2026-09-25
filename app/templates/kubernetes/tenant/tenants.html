@@ -4,13 +4,15 @@
 {% block title %}Tenants{% endblock title %}
 {% block dashboard_content %}
     {% set can_manage = current_user.has_permission('tenant.manage') %}
-    {% set tenant_hero_title = 'Tenant Management' %}
-    {% set tenant_hero_description = 'Create and review provider-bound tenants and their initial environments.' %}
-    {% set tenant_hero_icon = 'users-round' %}
+    {% set tenant_hero_title = "Tenant Management" %}
+    {% set tenant_hero_description = "Create and review provider-bound tenants and their initial environments." %}
+    {% set tenant_hero_icon = "users-round" %}
     <div class="space-y-6" data-tenant-page="tenants">
         {% include "kubernetes/tenant/partials/_hero.html" %}
         <div class="grid gap-5 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.45fr)]">
-            <form method="post" action="{{ url_for('tenant.create_tenant_route') }}" class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
+            <form method="post"
+                  action="{{ url_for('tenant.create_tenant_route') }}"
+                  class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="flex items-start gap-3">
                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
@@ -24,11 +26,18 @@
                 <div class="mt-5 space-y-4">
                     <label class="block">
                         {{ form_field.label_row("Tenant Name") }}
-                        <input name="name" required autocomplete="off" placeholder="Payments" class="{{ form_field.input_classes() }}">
+                        <input name="name"
+                               required
+                               autocomplete="off"
+                               placeholder="Payments"
+                               class="{{ form_field.input_classes() }}">
                     </label>
                     <label class="block">
                         {{ form_field.label_row("Tenant Slug") }}
-                        <input name="slug" autocomplete="off" placeholder="payments" class="{{ form_field.input_classes() }}">
+                        <input name="slug"
+                               autocomplete="off"
+                               placeholder="payments"
+                               class="{{ form_field.input_classes() }}">
                         {{ form_field.help("Optional. KAORI derives a lowercase slug from the name when omitted.") }}
                     </label>
                     <label class="block">
@@ -49,7 +58,7 @@
                         </select>
                     </label>
                     <div>
-                        {{ form_field.label_row("Provider", "Native baseline", "normal", "shield-check") }}
+                        {{ form_field.label_row('Provider', 'Native baseline', 'normal', 'shield-check') }}
                         <div class="mt-1 rounded-lg border border-outline-default bg-surface-subtle px-3 py-3">
                             <div class="flex items-center justify-between gap-3">
                                 <span class="text-sm font-semibold text-content-primary">Native Kubernetes</span>
@@ -60,7 +69,10 @@
                     </div>
                     <label class="block">
                         {{ form_field.label_row("Description") }}
-                        <input name="description" autocomplete="off" placeholder="Optional operator context" class="{{ form_field.input_classes() }}">
+                        <input name="description"
+                               autocomplete="off"
+                               placeholder="Optional operator context"
+                               class="{{ form_field.input_classes() }}">
                     </label>
                 </div>
                 <button type="submit"
@@ -77,19 +89,30 @@
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm">
                         <thead class="bg-surface-subtle text-xs font-semibold uppercase tracking-wide text-content-muted">
-                            <tr><th class="px-5 py-3">Tenant</th><th class="px-5 py-3">Environment</th><th class="px-5 py-3">Cluster</th><th class="px-5 py-3">Provider</th><th class="px-5 py-3">Status</th></tr>
+                            <tr>
+                                <th class="px-5 py-3">Tenant</th>
+                                <th class="px-5 py-3">Environment</th>
+                                <th class="px-5 py-3">Cluster</th>
+                                <th class="px-5 py-3">Provider</th>
+                                <th class="px-5 py-3">Status</th>
+                            </tr>
                         </thead>
                         <tbody class="divide-y divide-outline-subtle">
                             {% for tenant in tenants %}
                                 <tr>
-                                    <td class="px-5 py-4"><p class="font-semibold text-content-primary">{{ tenant.name }}</p><p class="mt-1 text-xs text-content-muted">{{ tenant.slug }}</p></td>
+                                    <td class="px-5 py-4">
+                                        <p class="font-semibold text-content-primary">{{ tenant.name }}</p>
+                                        <p class="mt-1 text-xs text-content-muted">{{ tenant.slug }}</p>
+                                    </td>
                                     <td class="px-5 py-4 text-content-secondary">{{ tenant.environments[0].environment|title if tenant.environments else '—' }}</td>
                                     <td class="px-5 py-4 text-content-secondary">{{ cluster_lookup.get(tenant.cluster_id|string, tenant.cluster_id) }}</td>
-                                    <td class="px-5 py-4 text-content-secondary">{{ tenant.provider_key|replace('_', ' ')|title }}</td>
+                                    <td class="px-5 py-4 text-content-secondary">{{ tenant.provider_key|replace('_', ' ') |title }}</td>
                                     <td class="px-5 py-4">{{ table_label.status_label(tenant.lifecycle_status|title, 'normal' if tenant.lifecycle_status == 'ready' else 'warning') }}</td>
                                 </tr>
                             {% else %}
-                                <tr><td colspan="5" class="px-5 py-8 text-center text-sm text-content-muted">No Tenant records yet.</td></tr>
+                                <tr>
+                                    <td colspan="5" class="px-5 py-8 text-center text-sm text-content-muted">No Tenant records yet.</td>
+                                </tr>
                             {% endfor %}
                         </tbody>
                     </table>
