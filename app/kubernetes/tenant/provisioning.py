@@ -261,6 +261,7 @@ def reconcile_native_namespace(record: TenantNamespace) -> TenantNamespace:
                 'resource_profile_id': profile.public_id,
                 'resource_profile_version': record.resource_profile_version,
                 'customized': record.allocation_customized,
+                'capacity_decision_id': record.capacity_decision_id,
             },
             'desired': desired,
             'effective': effective,
