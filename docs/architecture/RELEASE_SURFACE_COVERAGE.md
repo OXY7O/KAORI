@@ -4,7 +4,7 @@ Status: **Locked release-coverage contract**
 
 This registry answers one release question: **is every operator-visible menu, nested web domain, and non-navigation system surface explicitly owned by a release verifier or test boundary?**
 
-The current baseline contains **61 navigation links** across the authenticated application shell and **27 registered blueprints**. A new menu link, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
+The current baseline contains **62 navigation links** across the authenticated application shell and **28 registered blueprints**. A new menu link, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
 
 ## Navigation and Surface Matrix
 
@@ -16,6 +16,7 @@ The current baseline contains **61 navigation links** across the authenticated a
 | Object Storage Inventory | LOCKED | Storage → Object Storage | `verify_object_storage_inventory_final_lock.py` |
 | Kubernetes Operations | LOCKED | Kubernetes → Operations | `verify_kubernetes_operations_final_lock.py` |
 | Kubernetes Governance | LOCKED | Kubernetes → Governance | `verify_governance_final_lock.py` |
+| Tenant | BASELINE LOCKED | Kubernetes → Tenant | `tests/contracts/kubernetes/test_tenant_uat_ui_contract.py` |
 | Analytics | LOCKED | Insights & Reporting → Kubernetes Analytics + Object Storage Analytics | `verify_analytics_final_lock.py` + `verify_object_storage_analytics.py` |
 | Intelligence | BASELINE LOCKED | Insights & Reporting → Intelligence | `verify_intelligence_baseline_lock.py` |
 | Reports | LOCKED | Insights & Reporting → Reports | Reports generation/job/storage/runtime verifiers + Reports contracts |
@@ -101,3 +102,10 @@ The evidence contract is snapshot-first: committed Object Storage Inventory owns
 ## Object Storage Dashboard Expansion
 
 `Dashboards → Object Storage` is owned by `object_storage_dashboard_bp` under `/dashboards/object-storage`. It mirrors the Kubernetes operational-dashboard concept with **Operations Overview**, **Capacity & Demand**, **Signals & Actions**, and **Reporting** tabs, a scope selector, lazy HTMX sections, and committed-evidence freshness. The dashboard reads Object Storage Inventory plus committed Object Storage Analytics and Forecast snapshots only; no live provider, Metrics Source, or Alertmanager query is permitted on page load.
+
+
+## Kubernetes Tenant Expansion
+
+`Kubernetes → Tenant` is a distinct provider-neutral Kubernetes capability surface. The release registry owns the direct `tenant.index` navigation destination and `tenant_bp` Blueprint explicitly so new Tenant routes cannot enter staging without release-surface ownership.
+
+The current state is **BASELINE LOCKED** rather than final UX lock. Native Kubernetes is the admitted provider baseline for Tenant creation, Resource Profiles, and Namespace/ResourceQuota/LimitRange provisioning. Capsule discovery, qualification, access workflows, and the final integrated Tenant UX remain bounded downstream work and must not be implied as already complete.

@@ -24,6 +24,7 @@ SHORT_LABELS = {
     'Object Storage Inventory': 'Object Storage',
     'Kubernetes Operations': 'Kubernetes Ops',
     'Kubernetes Governance': 'Governance',
+    'Tenant': 'Tenant',
     'Analytics': 'Analytics',
     'Intelligence': 'Intelligence',
     'Reports': 'Reports',
