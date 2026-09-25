@@ -370,7 +370,9 @@ def get_tenant_context() -> dict[str, Any]:
         .all()
     )
     ready_clusters = get_ready_native_clusters()
-    capacity_governance = [build_capacity_governance_summary(cluster.id) for cluster in ready_clusters]
+    capacity_governance = [
+        {'cluster': cluster, **build_capacity_governance_summary(cluster.id)} for cluster in ready_clusters
+    ]
     capacity_decisions = TenantCapacityDecision.query.order_by(TenantCapacityDecision.created_at.desc()).limit(5).all()
     namespace_count = TenantNamespace.query.count()
     return {
