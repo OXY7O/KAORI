@@ -10,6 +10,7 @@ from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import any_permission_required, permission_required
 from app.kubernetes.tenant.service import (
+    TenantPersistenceError,
     TenantStateConflictError,
     create_resource_profile_committed,
     create_tenant_committed,
@@ -72,8 +73,8 @@ def create_tenant_route():
             message=str(exc),
             metadata={'cluster_id': request.form.get('cluster_id'), 'operation': 'create_tenant'},
         )
-    except TenantStateConflictError as exc:
-        current_app.logger.exception('Tenant creation conflicted with committed state.')
+    except (TenantPersistenceError, TenantStateConflictError) as exc:
+        current_app.logger.exception('Tenant creation could not commit safely.')
         _record(
             event_type='kubernetes_tenant_create_failed',
             status='error',
@@ -114,8 +115,8 @@ def create_resource_profile_route():
             message=str(exc),
             metadata={'operation': 'create_resource_profile'},
         )
-    except TenantStateConflictError as exc:
-        current_app.logger.exception('Tenant Resource Profile creation conflicted with committed state.')
+    except (TenantPersistenceError, TenantStateConflictError) as exc:
+        current_app.logger.exception('Tenant Resource Profile creation could not commit safely.')
         _record(
             event_type='kubernetes_tenant_resource_profile_create_failed',
             status='error',
@@ -145,7 +146,7 @@ def provision_namespace_route():
     try:
         _csrf()
         record = provision_native_namespace_committed(request.form)
-    except (ValueError, ApiException, TenantStateConflictError) as exc:
+    except (ValueError, ApiException, TenantPersistenceError, TenantStateConflictError) as exc:
         _record(
             event_type='kubernetes_tenant_namespace_provision_failed',
             status='error',
