@@ -1,6 +1,12 @@
 import pytest
 
-from app.kubernetes.tenant.providers import ProviderAuthorityTransition, TenantCapabilityStatus, TenantProviderKey, TenantProviderState, validate_authority_transition
+from app.kubernetes.tenant.providers import (
+    ProviderAuthorityTransition,
+    TenantCapabilityStatus,
+    TenantProviderKey,
+    TenantProviderState,
+    validate_authority_transition,
+)
 
 
 def test_provider_keys_keep_native_and_capsule_behind_one_tenant_contract() -> None:
