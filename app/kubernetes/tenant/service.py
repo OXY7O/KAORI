@@ -10,6 +10,11 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.extensions.db import db
 from app.kubernetes.tenant.provisioning import create_namespace_intent, reconcile_native_namespace
+from app.kubernetes.tenant.resource_profiles import (
+    RESOURCE_PROFILE_PRESETS,
+    preset_form_values,
+    resolve_resource_profile_spec,
+)
 from app.kubernetes.tenant.validation import validate_profile_spec
 from app.models import Cluster
 from app.models.cluster import ClusterStatus
@@ -167,7 +172,11 @@ def create_resource_profile(source: Mapping[str, Any]) -> TenantResourceProfile:
     if profile_class not in _ALLOWED_PROFILE_CLASSES:
         raise ValueError('Select a supported Resource Profile class.')
 
-    quota, limits = _profile_values(source)
+    if profile_class == TenantResourceProfileClass.CUSTOM.value:
+        quota, limits = _profile_values(source)
+    else:
+        quota, limits = resolve_resource_profile_spec(profile_class)
+
     profile = TenantResourceProfile()
     profile.name = name
     profile.profile_class = profile_class
@@ -270,4 +279,6 @@ def get_tenant_context() -> dict[str, Any]:
         'namespace_count': namespace_count,
         'ready_namespace_count': TenantNamespace.query.filter_by(provisioning_status='ready').count(),
         'native_available': bool(ready_clusters),
+        'resource_profile_presets': preset_form_values(),
+        'resource_profile_preset_classes': tuple(RESOURCE_PROFILE_PRESETS),
     }

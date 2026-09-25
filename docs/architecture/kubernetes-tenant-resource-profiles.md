@@ -12,7 +12,7 @@ Issue #113 owns the first managed Tenant mutation slice: administrator-driven na
 
 ## Resource Profile contract
 
-A profile is persisted as one of `small`, `standard`, `large`, or `custom` and stores only supported Kubernetes quota keys plus Container LimitRange defaults. Profile class is taxonomy, not an implicit hard-coded quota size: operational quota values are explicit persisted intent and must be supplied/approved by the operator or future policy authority.
+A profile is persisted as one of `small`, `standard`, `large`, or `custom` and stores only supported Kubernetes quota keys plus Container LimitRange defaults. `small`, `standard`, and `large` are canonical KAORI presets: the UI auto-fills their values and the backend ignores caller-supplied resource overrides for those classes. `custom` is the only class that accepts operator-entered quota and LimitRange values. Preset values remain explicit committed KAORI intent and are changed only through a governed product update.
 
 Supported baseline quota keys:
 
@@ -32,3 +32,14 @@ Namespace names use the Kubernetes DNS-label contract. Native reconciliation mat
 KAORI labels managed resources with `app.kubernetes.io/managed-by=kaori`. Existing resources that declare another manager are not silently overwritten. Provider errors and contract mismatches leave explicit failed or drifted provisioning evidence rather than a false Ready state.
 
 The committed desired contract and verified effective contract are independently hashed. Ready requires hash equality after provider read-back.
+
+
+## Canonical preset values
+
+| Class | CPU req/limit | Memory req/limit | Pods | PVCs | Storage | Services | ConfigMaps | Secrets | Container req | Container limit |
+| --- | --- | --- | ---: | ---: | --- | ---: | ---: | ---: | --- | --- |
+| Small | 1 / 2 | 2Gi / 4Gi | 10 | 5 | 50Gi | 5 | 25 | 25 | 100m / 128Mi | 250m / 256Mi |
+| Standard | 2 / 4 | 4Gi / 8Gi | 20 | 10 | 100Gi | 10 | 50 | 50 | 100m / 128Mi | 500m / 512Mi |
+| Large | 4 / 8 | 8Gi / 16Gi | 40 | 20 | 200Gi | 20 | 100 | 100 | 250m / 256Mi | 1000m / 1Gi |
+
+The table is the human-readable representation of `app/kubernetes/tenant/resource_profiles.py`; the Python contract is the execution authority.
