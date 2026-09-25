@@ -9,6 +9,10 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.extensions.db import db
+from app.kubernetes.tenant.capacity_governance import (
+    build_capacity_governance_summary,
+    enforce_namespace_allocation_preflight,
+)
 from app.kubernetes.tenant.provisioning import create_namespace_intent, reconcile_native_namespace
 from app.kubernetes.tenant.validation import validate_profile_spec
 from app.models import Cluster
@@ -314,6 +318,12 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
         raise ValueError('This namespace is already tracked by Tenant Management on the selected cluster.')
 
     quota, limits, customized = _namespace_allocation_values(profile)
+    capacity_decision = enforce_namespace_allocation_preflight(
+        tenant_environment=environment,
+        profile=profile,
+        namespace=namespace,
+        quota_hard=quota,
+    )
     record = create_namespace_intent(
         tenant_environment=environment,
         profile=profile,
@@ -322,6 +332,7 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
         limit_defaults=limits,
         allocation_customized=customized,
     )
+    record.capacity_decision_id = capacity_decision.id
     try:
         reconcile_native_namespace(record)
     except (ApiException, ValueError):
@@ -358,6 +369,7 @@ def get_tenant_context() -> dict[str, Any]:
         .all()
     )
     ready_clusters = get_ready_native_clusters()
+    capacity_governance = [build_capacity_governance_summary(cluster.id) for cluster in ready_clusters]
     namespace_count = TenantNamespace.query.count()
     return {
         'tenants': tenants,
@@ -365,6 +377,7 @@ def get_tenant_context() -> dict[str, Any]:
         'namespaces': namespaces,
         'environment_options': environment_options,
         'ready_clusters': ready_clusters,
+        'capacity_governance': capacity_governance,
         'tenant_count': Tenant.query.count(),
         'profile_count': TenantResourceProfile.query.count(),
         'namespace_count': namespace_count,
