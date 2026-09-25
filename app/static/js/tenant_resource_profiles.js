@@ -1,4 +1,4 @@
-(() => {
+;(() => {
     const form = document.querySelector('[data-tenant-resource-profile-form]')
     const source = document.getElementById('tenant-resource-profile-presets')
     if (!form || !source) return
