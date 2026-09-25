@@ -119,7 +119,8 @@
             </form>
             <form method="post"
                   action="{{ url_for('tenant.create_resource_profile_route') }}"
-                  class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+                  class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm"
+                  data-tenant-resource-profile-form>
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-5 flex items-start gap-3">
                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="gauge" class="h-5 w-5"></i></span>
@@ -140,12 +141,14 @@
                         {{ form_field.label_row("Class") }}
                         <select name="profile_class"
                                 required
+                                data-tenant-profile-class
                                 class="{{ form_field.select_classes() }}">
                             <option value="small">Small</option>
                             <option value="standard" selected>Standard</option>
                             <option value="large">Large</option>
                             <option value="custom">Custom</option>
                         </select>
+                        {{ form_field.help("Small, Standard, and Large fill approved starting values. Every field remains editable; leave a dimension blank for no Tenant limit on that dimension.") }}
                     </label>
                     {% for field, label, placeholder in [
                         ('requests_cpu', 'CPU Requests', '2'),
@@ -167,6 +170,7 @@
                             {{ form_field.label_row(label) }}
                             <input name="{{ field }}"
                                    placeholder="{{ placeholder }}"
+                                   data-tenant-resource-field="{{ field }}"
                                    class="{{ form_field.input_classes() }}">
                         </label>
                     {% endfor %}
@@ -299,5 +303,11 @@
                 </div>
             </div>
         </section>
+        <script type="application/json" id="tenant-resource-profile-presets">{{ resource_profile_presets|tojson }}</script>
     </div>
 {% endblock dashboard_content %}
+{% block scripts %}
+    {{ super() }}
+    <script defer
+            src="{{ url_for('static', filename='js/tenant_resource_profile_presets.js') }}"></script>
+{% endblock scripts %}
