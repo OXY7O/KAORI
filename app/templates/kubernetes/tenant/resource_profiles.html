@@ -1,0 +1,86 @@
+{% extends "kubernetes/tenant/base.html" %}
+{% import "components/form_field.html" as form_field %}
+{% import "components/table_label.html" as table_label %}
+{% block tenant_content %}
+    {% set can_manage = current_user.has_permission('tenant.manage') %}
+    {% set standard = resource_profile_presets['standard'] %}
+    <section class="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)]">
+        <form method="post" action="{{ url_for('tenant.create_resource_profile_route') }}" class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm" data-tenant-resource-profile-form>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="flex flex-col gap-1">
+                <h2 class="text-lg font-semibold text-content-primary">Resource Profile</h2>
+                <p class="text-sm text-content-secondary">Preset classes are auto-filled and server-authoritative. Custom unlocks manual values.</p>
+            </div>
+            <label class="mt-5 block">{{ form_field.label_row("Profile Name") }}<input name="profile_name" required placeholder="Payments Standard" class="{{ form_field.input_classes() }}"></label>
+            <fieldset class="mt-5">
+                <legend class="text-sm font-semibold text-content-primary">Profile Class</legend>
+                <div class="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {% for key, label, note, icon in [
+                        ('small', 'Small', 'Dev / Test', 'layers-2'),
+                        ('standard', 'Standard', 'General Purpose', 'layers-3'),
+                        ('large', 'Large', 'High Workload', 'layers'),
+                        ('custom', 'Custom', 'Manual Values', 'sliders-horizontal')
+                    ] %}
+                        <label class="cursor-pointer rounded-xl border border-outline-default bg-surface-card p-4 transition has-[:checked]:border-kaori-primary has-[:checked]:bg-kaori-soft">
+                            <input type="radio" name="profile_class" value="{{ key }}" {% if key == 'standard' %}checked{% endif %} class="sr-only" data-tenant-profile-class>
+                            <i data-lucide="{{ icon }}" class="h-5 w-5 text-kaori-primary"></i>
+                            <span class="mt-2 block text-sm font-semibold text-content-primary">{{ label }}</span>
+                            <span class="mt-1 block text-xs text-content-muted">{{ note }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+                <p class="mt-3 rounded-lg border border-info/20 bg-info-soft px-4 py-3 text-sm text-content-secondary">Small, Standard, and Large always use canonical KAORI defaults. Select Custom to edit quota and LimitRange values manually.</p>
+            </fieldset>
+            <div class="mt-5 grid gap-5 lg:grid-cols-2">
+                <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                    <h3 class="text-sm font-semibold text-content-primary">ResourceQuota · Namespace</h3>
+                    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                        {% for name, label, value in [
+                            ('requests_cpu','CPU Requests',standard['quota']['requests.cpu']),
+                            ('limits_cpu','CPU Limits',standard['quota']['limits.cpu']),
+                            ('requests_memory','Memory Requests',standard['quota']['requests.memory']),
+                            ('limits_memory','Memory Limits',standard['quota']['limits.memory']),
+                            ('pods','Pods',standard['quota']['pods']),
+                            ('persistentvolumeclaims','PVCs',standard['quota']['persistentvolumeclaims']),
+                            ('requests_storage','Storage',standard['quota']['requests.storage']),
+                            ('services','Services',standard['quota']['services']),
+                            ('configmaps','ConfigMaps',standard['quota']['configmaps']),
+                            ('secrets','Secrets',standard['quota']['secrets'])
+                        ] %}
+                            <label class="block">{{ form_field.label_row(label) }}<input name="{{ name }}" value="{{ value }}" readonly data-tenant-resource-field="{{ name }}" class="{{ form_field.input_classes() }} bg-surface-hover"></label>
+                        {% endfor %}
+                    </div>
+                </section>
+                <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                    <h3 class="text-sm font-semibold text-content-primary">Container LimitRange</h3>
+                    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                        {% for name, label, value in [
+                            ('default_request_cpu','CPU Request',standard['limits']['default_request']['cpu']),
+                            ('default_cpu','CPU Limit',standard['limits']['default']['cpu']),
+                            ('default_request_memory','Memory Request',standard['limits']['default_request']['memory']),
+                            ('default_memory','Memory Limit',standard['limits']['default']['memory'])
+                        ] %}
+                            <label class="block">{{ form_field.label_row(label) }}<input name="{{ name }}" value="{{ value }}" readonly data-tenant-resource-field="{{ name }}" class="{{ form_field.input_classes() }} bg-surface-hover"></label>
+                        {% endfor %}
+                    </div>
+                    <label class="mt-4 block">{{ form_field.label_row("Description") }}<input name="profile_description" placeholder="Optional profile intent" class="{{ form_field.input_classes() }}"></label>
+                </section>
+            </div>
+            <button type="submit" {% if not can_manage %}disabled aria-disabled="true"{% endif %} class="mt-5 inline-flex min-h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary-hover disabled:opacity-50"><i data-lucide="save" class="h-4 w-4"></i>Create Resource Profile</button>
+        </form>
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+            <header class="border-b border-outline-subtle px-5 py-4"><h2 class="text-base font-semibold text-content-primary">Recent Resource Profiles</h2><p class="mt-1 text-xs text-content-muted">Latest 5 reusable contracts.</p></header>
+            <div class="divide-y divide-outline-subtle">
+                {% for profile in profiles %}
+                    <article class="px-5 py-4"><div class="flex items-center justify-between gap-3"><span class="font-semibold text-content-primary">{{ profile.name }}</span>{{ table_label.status_label(profile.profile_class|title, 'info') }}</div><p class="mt-1 text-xs text-content-muted">{{ profile.quota_hard_json.get('requests.cpu', '—') }} CPU · {{ profile.quota_hard_json.get('requests.memory', '—') }} memory · {{ 'Enabled' if profile.enabled else 'Disabled' }}</p></article>
+                {% else %}
+                    <p class="px-5 py-8 text-sm text-content-muted">No Resource Profiles yet.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </section>
+    <script type="application/json" id="tenant-resource-profile-presets">{{ resource_profile_presets|tojson }}</script>
+{% endblock tenant_content %}
+{% block tenant_scripts %}
+    <script defer src="{{ url_for('static', filename='js/tenant_resource_profiles.js') }}"></script>
+{% endblock tenant_scripts %}

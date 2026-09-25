@@ -13,7 +13,11 @@ from app.kubernetes.tenant.service import (
     TenantStateConflictError,
     create_resource_profile_committed,
     create_tenant_committed,
-    get_tenant_context,
+    get_namespace_provisioning_context,
+    get_operations_context,
+    get_overview_context,
+    get_resource_profiles_context,
+    get_tenants_context,
     provision_native_namespace_committed,
 )
 from app.platform_operations.notifications.service import record_operational_activity
@@ -55,7 +59,51 @@ def _record(
 @tenant_bp.get('/')
 @any_permission_required('tenant.view', 'tenant.manage')
 def index():
-    return render_template('kubernetes/tenant/index.html', **get_tenant_context())
+    return render_template(
+        'kubernetes/tenant/overview.html',
+        tenant_page='overview',
+        **get_overview_context(),
+    )
+
+
+@tenant_bp.get('/tenants')
+@any_permission_required('tenant.view', 'tenant.manage')
+def tenants():
+    return render_template(
+        'kubernetes/tenant/tenants.html',
+        tenant_page='tenants',
+        **get_tenants_context(),
+    )
+
+
+@tenant_bp.get('/resource-profiles')
+@any_permission_required('tenant.view', 'tenant.manage')
+def resource_profiles():
+    return render_template(
+        'kubernetes/tenant/resource_profiles.html',
+        tenant_page='resource_profiles',
+        **get_resource_profiles_context(),
+    )
+
+
+@tenant_bp.get('/namespace-provisioning')
+@any_permission_required('tenant.view', 'tenant.manage')
+def namespace_provisioning():
+    return render_template(
+        'kubernetes/tenant/namespace_provisioning.html',
+        tenant_page='namespace_provisioning',
+        **get_namespace_provisioning_context(),
+    )
+
+
+@tenant_bp.get('/operations')
+@any_permission_required('tenant.view', 'tenant.manage')
+def operations():
+    return render_template(
+        'kubernetes/tenant/operations.html',
+        tenant_page='operations',
+        **get_operations_context(request.args.get('tab', 'provisioning')),
+    )
 
 
 @tenant_bp.post('/tenants')
@@ -97,7 +145,7 @@ def create_tenant_route():
                 'operation': 'create_tenant',
             },
         )
-    return redirect(url_for('tenant.index'))
+    return redirect(url_for('tenant.tenants'))
 
 
 @tenant_bp.post('/resource-profiles')
@@ -136,7 +184,7 @@ def create_resource_profile_route():
                 'operation': 'create_resource_profile',
             },
         )
-    return redirect(url_for('tenant.index'))
+    return redirect(url_for('tenant.resource_profiles'))
 
 
 @tenant_bp.post('/namespaces')
@@ -173,4 +221,4 @@ def provision_namespace_route():
                 'operation': 'provision_namespace',
             },
         )
-    return redirect(url_for('tenant.index'))
+    return redirect(url_for('tenant.namespace_provisioning'))

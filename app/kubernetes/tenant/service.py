@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import re
 from collections.abc import Mapping
 from typing import Any
@@ -27,6 +28,64 @@ from app.models.tenant import (
 _TENANT_SLUG_RE = re.compile(r'[^a-z0-9-]+')
 _ALLOWED_ENVIRONMENTS = {item.value for item in TenantEnvironmentName}
 _ALLOWED_PROFILE_CLASSES = {item.value for item in TenantResourceProfileClass}
+_OPERATION_TABS = {'provisioning', 'runs-evidence', 'drift-reconcile', 'activity'}
+
+RESOURCE_PROFILE_PRESETS: dict[str, dict[str, dict[str, str]]] = {
+    'small': {
+        'quota': {
+            'requests.cpu': '1',
+            'limits.cpu': '2',
+            'requests.memory': '2Gi',
+            'limits.memory': '4Gi',
+            'pods': '10',
+            'persistentvolumeclaims': '5',
+            'requests.storage': '50Gi',
+            'services': '5',
+            'configmaps': '25',
+            'secrets': '25',
+        },
+        'limits': {
+            'default_request': {'cpu': '100m', 'memory': '128Mi'},
+            'default': {'cpu': '250m', 'memory': '256Mi'},
+        },
+    },
+    'standard': {
+        'quota': {
+            'requests.cpu': '2',
+            'limits.cpu': '4',
+            'requests.memory': '4Gi',
+            'limits.memory': '8Gi',
+            'pods': '20',
+            'persistentvolumeclaims': '10',
+            'requests.storage': '100Gi',
+            'services': '10',
+            'configmaps': '50',
+            'secrets': '50',
+        },
+        'limits': {
+            'default_request': {'cpu': '100m', 'memory': '128Mi'},
+            'default': {'cpu': '500m', 'memory': '512Mi'},
+        },
+    },
+    'large': {
+        'quota': {
+            'requests.cpu': '4',
+            'limits.cpu': '8',
+            'requests.memory': '8Gi',
+            'limits.memory': '16Gi',
+            'pods': '40',
+            'persistentvolumeclaims': '20',
+            'requests.storage': '200Gi',
+            'services': '20',
+            'configmaps': '100',
+            'secrets': '100',
+        },
+        'limits': {
+            'default_request': {'cpu': '250m', 'memory': '256Mi'},
+            'default': {'cpu': '1', 'memory': '1Gi'},
+        },
+    },
+}
 
 
 class TenantStateConflictError(RuntimeError):
@@ -124,7 +183,7 @@ def create_tenant_committed(source: Mapping[str, Any]) -> tuple[Tenant, TenantEn
         raise
 
 
-def _profile_values(source: Mapping[str, Any]) -> tuple[dict[str, str], dict[str, dict[str, str]]]:
+def _custom_profile_values(source: Mapping[str, Any]) -> tuple[dict[str, str], dict[str, dict[str, str]]]:
     quota_fields = {
         'requests_cpu': 'requests.cpu',
         'limits_cpu': 'limits.cpu',
@@ -152,8 +211,20 @@ def _profile_values(source: Mapping[str, Any]) -> tuple[dict[str, str], dict[str
             limits.setdefault(group, {})[resource] = value
 
     if not limits:
-        raise ValueError('Resource Profile must define at least one Container LimitRange default or request.')
+        raise ValueError('Custom Resource Profile must define at least one Container LimitRange default or request.')
     return validate_profile_spec(quota, limits)
+
+
+def profile_values(
+    profile_class: str,
+    source: Mapping[str, Any],
+) -> tuple[dict[str, str], dict[str, dict[str, str]]]:
+    if profile_class in RESOURCE_PROFILE_PRESETS:
+        preset = RESOURCE_PROFILE_PRESETS[profile_class]
+        return validate_profile_spec(copy.deepcopy(preset['quota']), copy.deepcopy(preset['limits']))
+    if profile_class == TenantResourceProfileClass.CUSTOM.value:
+        return _custom_profile_values(source)
+    raise ValueError('Select a supported Resource Profile class.')
 
 
 def create_resource_profile(source: Mapping[str, Any]) -> TenantResourceProfile:
@@ -167,7 +238,7 @@ def create_resource_profile(source: Mapping[str, Any]) -> TenantResourceProfile:
     if profile_class not in _ALLOWED_PROFILE_CLASSES:
         raise ValueError('Select a supported Resource Profile class.')
 
-    quota, limits = _profile_values(source)
+    quota, limits = profile_values(profile_class, source)
     profile = TenantResourceProfile()
     profile.name = name
     profile.profile_class = profile_class
@@ -211,7 +282,7 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
 
     tenant = environment.tenant
     if tenant.provider_key != 'native_kubernetes':
-        raise ValueError('This UAT slice can provision only Native Kubernetes Tenant bindings.')
+        raise ValueError('This integration slice can provision only Native Kubernetes Tenant bindings.')
 
     namespace = _text(source, 'namespace')
     if TenantNamespace.query.filter_by(cluster_id=tenant.cluster_id, namespace=namespace).first() is not None:
@@ -247,27 +318,71 @@ def provision_native_namespace_committed(source: Mapping[str, Any]) -> TenantNam
         raise
 
 
-def get_tenant_context() -> dict[str, Any]:
-    tenants = Tenant.query.order_by(Tenant.created_at.desc()).limit(5).all()
-    profiles = TenantResourceProfile.query.order_by(TenantResourceProfile.created_at.desc()).limit(5).all()
-    namespaces = TenantNamespace.query.order_by(TenantNamespace.created_at.desc()).limit(5).all()
+def _shared_context() -> dict[str, Any]:
+    ready_clusters = get_ready_native_clusters()
+    return {
+        'ready_clusters': ready_clusters,
+        'native_available': bool(ready_clusters),
+        'tenant_count': Tenant.query.count(),
+        'profile_count': TenantResourceProfile.query.count(),
+        'namespace_count': TenantNamespace.query.count(),
+        'ready_namespace_count': TenantNamespace.query.filter_by(provisioning_status='ready').count(),
+    }
+
+
+def get_overview_context() -> dict[str, Any]:
+    return {
+        **_shared_context(),
+        'tenants': Tenant.query.order_by(Tenant.created_at.desc()).limit(5).all(),
+        'profiles': TenantResourceProfile.query.order_by(TenantResourceProfile.created_at.desc()).limit(5).all(),
+        'namespaces': TenantNamespace.query.order_by(TenantNamespace.created_at.desc()).limit(5).all(),
+    }
+
+
+def get_tenants_context() -> dict[str, Any]:
+    return {
+        **_shared_context(),
+        'tenants': Tenant.query.order_by(Tenant.created_at.desc()).limit(5).all(),
+    }
+
+
+def get_resource_profiles_context() -> dict[str, Any]:
+    return {
+        **_shared_context(),
+        'profiles': TenantResourceProfile.query.order_by(TenantResourceProfile.created_at.desc()).limit(5).all(),
+        'resource_profile_presets': copy.deepcopy(RESOURCE_PROFILE_PRESETS),
+    }
+
+
+def get_namespace_provisioning_context() -> dict[str, Any]:
     environment_options = (
         TenantEnvironment.query.join(Tenant, Tenant.id == TenantEnvironment.tenant_id)
         .filter(Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value)
         .order_by(Tenant.name.asc(), TenantEnvironment.environment.asc())
         .all()
     )
-    ready_clusters = get_ready_native_clusters()
-    namespace_count = TenantNamespace.query.count()
     return {
-        'tenants': tenants,
-        'profiles': profiles,
-        'namespaces': namespaces,
+        **_shared_context(),
         'environment_options': environment_options,
-        'ready_clusters': ready_clusters,
-        'tenant_count': Tenant.query.count(),
-        'profile_count': TenantResourceProfile.query.count(),
-        'namespace_count': namespace_count,
-        'ready_namespace_count': TenantNamespace.query.filter_by(provisioning_status='ready').count(),
-        'native_available': bool(ready_clusters),
+        'profiles': TenantResourceProfile.query.filter_by(enabled=True).order_by(TenantResourceProfile.name.asc()).all(),
+        'namespaces': TenantNamespace.query.order_by(TenantNamespace.created_at.desc()).limit(5).all(),
     }
+
+
+def get_operations_context(tab: str) -> dict[str, Any]:
+    active_tab = tab if tab in _OPERATION_TABS else 'provisioning'
+    recent = TenantNamespace.query.order_by(TenantNamespace.created_at.desc()).limit(25).all()
+    evidence = [item for item in recent if item.last_reconciled_at is not None][:5]
+    findings = [item for item in recent if item.provisioning_status in {'drifted', 'failed'}][:5]
+    return {
+        **_shared_context(),
+        'active_tab': active_tab,
+        'recent_namespaces': recent[:5],
+        'evidence_records': evidence,
+        'drift_records': findings,
+    }
+
+
+def get_tenant_context() -> dict[str, Any]:
+    """Backward-compatible context alias for the original #113 UAT surface."""
+    return get_overview_context()

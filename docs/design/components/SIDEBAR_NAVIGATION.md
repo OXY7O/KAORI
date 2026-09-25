@@ -1,4 +1,4 @@
-# KAORI Sidebar Navigation Standard v1.6
+# KAORI Sidebar Navigation Standard v1.7
 
 **Status:** Locked application-shell and dark-mode contract. The source templates, this document, and `scripts/verify_sidebar_navigation_standard.py` must change together.
 
@@ -367,6 +367,11 @@ KUBERNETES
 ├── Governance
 │   └── TLS Certificates
 └── Tenant
+    ├── Overview
+    ├── Tenants
+    ├── Resource Profiles
+    ├── Namespace Provisioning
+    └── Operations
 
 STORAGE
 └── Object Storage
@@ -422,7 +427,7 @@ ADMINISTRATION
     └── Account
 ```
 
-v1.6 retains the approved section order and Analytics hierarchy, and adds **Tenant** as one direct Kubernetes-domain destination. Tenant is a capability workspace rather than a provider branch: Native Kubernetes and Capsule remain implementation providers behind the page contract. A direct parent link is allowed when one domain owns exactly one global-sidebar destination and internal workspace navigation belongs inside the page rather than the shell. `Object Storage` remains a provider-neutral inventory parent; vendor connectors such as MinIO remain under Integrations and must not become sidebar inventory parents.
+v1.7 retains the approved section order and expands **Tenant** using the canonical parent/submenu pattern. Tenant remains one Kubernetes capability parent; Overview, Tenants, Resource Profiles, Namespace Provisioning, and Operations are capability pages below that parent. Native Kubernetes and Capsule remain providers behind the Tenant contract and never become sibling product menus. `Object Storage` remains a provider-neutral inventory parent; vendor connectors such as MinIO remain under Integrations and must not become sidebar inventory parents.
 
 `Buckets & Containers` is intentionally provider-neutral: the list surface uses canonical object-storage fields, while provider-native attributes remain in the detail drawer. This prevents MinIO, AWS S3, Azure Blob, Ceph RGW, or future providers from creating vendor-specific sidebar branches.
 
@@ -431,7 +436,7 @@ Rules for adding navigation:
 1. Add a child route to an existing parent when it belongs to the same operational domain.
 2. Add a new parent only when the module owns a distinct domain and cannot be represented by an existing parent.
 3. Do not create a new section label for one feature. A new section requires an explicit information-architecture decision.
-4. Permission checks remain in `sidebar.html`; route ownership and active-state logic remain in the owning `*_menu.html`. Direct parent destinations such as Tenant may omit a submenu when the approved IA requires one global destination.
+4. Permission checks remain in `sidebar.html`; route ownership and active-state logic remain in the owning `*_menu.html`. Tenant uses the standard expandable parent pattern so its capability pages remain explicit without creating new global parents.
 5. Every expandable parent requires `title`, `aria-label`, collapsed-sidebar expansion behavior, one stable Lucide icon, and an owned endpoint set.
 6. Every submenu link uses the standard dot, 14 px icon, single-line truncated label, and subordinate active state.
 7. A direct parent destination uses the same 44 px parent geometry, icon surface, accessibility labels, and collapsed-rail behavior as expandable parents.

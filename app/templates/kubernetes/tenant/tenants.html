@@ -1,0 +1,40 @@
+{% extends "kubernetes/tenant/base.html" %}
+{% import "components/form_field.html" as form_field %}
+{% import "components/table_label.html" as table_label %}
+{% block tenant_content %}
+    {% set can_manage = current_user.has_permission('tenant.manage') %}
+    <section class="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <form method="post" action="{{ url_for('tenant.create_tenant_route') }}" class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <h2 class="text-lg font-semibold text-content-primary">Add Tenant</h2>
+            <p class="mt-1 text-sm text-content-secondary">Create one Native Kubernetes Tenant binding and its initial environment.</p>
+            <div class="mt-5 space-y-4">
+                <label class="block">{{ form_field.label_row("Tenant Name") }}<input name="name" required autocomplete="off" placeholder="Payments" class="{{ form_field.input_classes() }}"></label>
+                <label class="block">{{ form_field.label_row("Tenant Slug") }}<input name="slug" autocomplete="off" placeholder="payments" class="{{ form_field.input_classes() }}">{{ form_field.help("Optional. KAORI derives a lowercase slug when omitted.") }}</label>
+                <label class="block">{{ form_field.label_row("Cluster") }}<select name="cluster_id" required class="{{ form_field.select_classes() }}"><option value="">Select Ready cluster</option>{% for cluster in ready_clusters %}<option value="{{ cluster.id }}">{{ cluster.name }} · {{ cluster.environment|title }}</option>{% endfor %}</select></label>
+                <label class="block">{{ form_field.label_row("Environment") }}<select name="environment" required class="{{ form_field.select_classes() }}"><option value="development">Development</option><option value="staging">Staging</option><option value="production">Production</option></select></label>
+                <label class="block">{{ form_field.label_row('Provider', 'Active', 'normal', 'shield-check') }}<input value="Native Kubernetes" readonly class="{{ form_field.input_classes() }}"><input type="hidden" name="provider_key" value="native_kubernetes">{{ form_field.help("Capsule is not selectable until provider discovery and qualification are admitted.") }}</label>
+                <label class="block">{{ form_field.label_row("Description") }}<input name="description" autocomplete="off" placeholder="Optional operator context" class="{{ form_field.input_classes() }}"></label>
+            </div>
+            <button type="submit" {% if not can_manage or not native_available %}disabled aria-disabled="true"{% endif %} class="mt-5 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50"><i data-lucide="plus" class="h-4 w-4"></i>Add Tenant</button>
+        </form>
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+            <header class="border-b border-outline-subtle px-5 py-4">
+                <h2 class="text-lg font-semibold text-content-primary">Tenants</h2>
+                <p class="mt-1 text-sm text-content-secondary">Latest committed Tenant bindings.</p>
+            </header>
+            <div class="divide-y divide-outline-subtle">
+                {% for tenant in tenants %}
+                    <article class="px-5 py-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <div><p class="font-semibold text-content-primary">{{ tenant.name }}</p><p class="mt-1 text-xs text-content-muted">{{ tenant.slug }} · {{ tenant.provider_key|replace('_', ' ')|title }}</p></div>
+                            {{ table_label.status_label(tenant.lifecycle_status|title, 'normal' if tenant.lifecycle_status == 'ready' else 'warning') }}
+                        </div>
+                    </article>
+                {% else %}
+                    <p class="px-5 py-8 text-sm text-content-muted">No Tenant records yet.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </section>
+{% endblock tenant_content %}

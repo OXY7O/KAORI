@@ -1,10 +1,38 @@
 {% set tenant_active = request.endpoint and request.endpoint.startswith('tenant.') %}
-<a href="{{ url_for('tenant.index') }}"
-   title="Tenant"
-   aria-label="Tenant"
-   class="{{ 'sidebar-parent-active' if tenant_active else 'sidebar-item-idle' }} sidebar-parent-link group flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition lg:[.sidebar-collapsed_&]:justify-center lg:[.sidebar-collapsed_&]:px-2">
-    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if tenant_active else 'sidebar-item-idle-icon' }} transition">
-        <i data-lucide="building-2" class="h-4 w-4" aria-hidden="true"></i>
-    </span>
-    <span class="sidebar-expanded-only truncate whitespace-nowrap">Tenant</span>
-</a>
+{% set tenant_overview_active = request.endpoint == 'tenant.index' %}
+{% set tenant_tenants_active = request.endpoint == 'tenant.tenants' %}
+{% set tenant_profiles_active = request.endpoint == 'tenant.resource_profiles' %}
+{% set tenant_namespaces_active = request.endpoint == 'tenant.namespace_provisioning' %}
+{% set tenant_operations_active = request.endpoint == 'tenant.operations' %}
+<details class="sidebar-menu space-y-1"
+         {% if tenant_active %}open{% endif %}>
+    <summary class="{{ 'sidebar-parent-active' if tenant_active else 'sidebar-item-idle' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition lg:[.sidebar-collapsed_&]:justify-center lg:[.sidebar-collapsed_&]:px-2"
+             title="Tenant"
+             aria-label="Tenant"
+             @click="if (window.innerWidth >= 1024 && !sidebarExpanded) { $event.preventDefault(); toggleSidebar(); $el.parentElement.open = true }">
+        <div class="flex min-w-0 items-center gap-2.5">
+            <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if tenant_active else 'sidebar-item-idle-icon' }} transition">
+                <i data-lucide="building-2" class="h-4 w-4"></i>
+            </span>
+            <span class="sidebar-expanded-only truncate whitespace-nowrap">Tenant</span>
+        </div>
+        <i data-lucide="chevron-right"
+           class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if tenant_active else 'text-white/[0.35]' }}"></i>
+    </summary>
+    <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
+        {% for endpoint, label, icon, active in [
+            ('tenant.index', 'Overview', 'layout-dashboard', tenant_overview_active),
+            ('tenant.tenants', 'Tenants', 'users-round', tenant_tenants_active),
+            ('tenant.resource_profiles', 'Resource Profiles', 'layers-3', tenant_profiles_active),
+            ('tenant.namespace_provisioning', 'Namespace Provisioning', 'boxes', tenant_namespaces_active),
+            ('tenant.operations', 'Operations', 'refresh-cw', tenant_operations_active)
+        ] %}
+            <a href="{{ url_for(endpoint) }}"
+               class="{{ 'bg-white/[0.08] text-kaori-accent' if active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+                <span class="truncate whitespace-nowrap">{{ label }}</span>
+            </a>
+        {% endfor %}
+    </div>
+</details>

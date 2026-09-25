@@ -67,8 +67,6 @@ PARENT_TOKENS = (
     'sidebar-item-idle',
 )
 
-LEAF_MENU_TEMPLATES = ('tenant_menu.html',)
-
 SUBMENU_TOKENS = (
     'group',
     'flex',
@@ -210,7 +208,16 @@ def verify() -> None:
             '>Secrets</span>',
         ),
         'governance_menu.html': ('title="Governance"', 'aria-label="Governance"', '>Governance</span>'),
-        'tenant_menu.html': ('title="Tenant"', 'aria-label="Tenant"', '>Tenant</span>'),
+        'tenant_menu.html': (
+            'title="Tenant"',
+            'aria-label="Tenant"',
+            '>Tenant</span>',
+            '>Overview</span>',
+            '>Tenants</span>',
+            '>Resource Profiles</span>',
+            '>Namespace Provisioning</span>',
+            '>Operations</span>',
+        ),
         'analytics_menu.html': (
             'title="Kubernetes"',
             'aria-label="Kubernetes"',
@@ -317,7 +324,7 @@ def verify() -> None:
                     f'{filename} expandable parent',
                 )
 
-        if filename == 'sidebar.html' or filename in LEAF_MENU_TEMPLATES:
+        if filename == 'sidebar.html':
             continue
 
         if '<details class="sidebar-menu space-y-1"' not in source:
@@ -335,7 +342,7 @@ def verify() -> None:
                 raise AssertionError(f'{filename} submenu #{index}: submenu typography must remain text-sm')
 
     doc_tokens = (
-        '# KAORI Sidebar Navigation Standard v1.6',
+        '# KAORI Sidebar Navigation Standard v1.7',
         'Status:** Locked application-shell and dark-mode contract',
         'Parent menu label | 16 px',
         'Submenu label | 14 px',
