@@ -8,7 +8,7 @@
         Array.from(form.querySelectorAll('[data-tenant-resource-field]')).map((input) => [
             input.dataset.tenantResourceField,
             input,
-        ]),
+        ])
     )
 
     const fieldMap = {
