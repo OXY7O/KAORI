@@ -3,43 +3,89 @@
 {% import "components/table_label.html" as table_label %}
 {% block tenant_content %}
     {% set operation_tabs = [
-        ('provisioning', 'Provisioning', 'list-checks', url_for('tenant.operations', tab='provisioning')),
-        ('runs-evidence', 'Runs & Evidence', 'file-check-2', url_for('tenant.operations', tab='runs-evidence')),
-        ('drift-reconcile', 'Drift & Reconcile', 'refresh-cw', url_for('tenant.operations', tab='drift-reconcile')),
-        ('activity', 'Activity', 'activity', url_for('tenant.operations', tab='activity'))
-    ] %}
+                ('provisioning', 'Provisioning', 'list-checks', url_for('tenant.operations', tab='provisioning')),
+                ('runs-evidence', 'Runs & Evidence', 'file-check-2', url_for('tenant.operations', tab='runs-evidence')),
+                ('drift-reconcile', 'Drift & Reconcile', 'refresh-cw', url_for('tenant.operations', tab='drift-reconcile')),
+                ('activity', 'Activity', 'activity', url_for('tenant.operations', tab='activity'))
+            ] %}
     <section class="space-y-5">
         {{ content_tabs.render_links('tenant-operations', operation_tabs, active_tab, 'Tenant Operations', nowrap=true) }}
         {% if active_tab == 'provisioning' %}
             <div class="rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
-                <header class="border-b border-outline-subtle px-5 py-4"><h2 class="text-lg font-semibold text-content-primary">Provisioning</h2><p class="mt-1 text-sm text-content-secondary">Latest Native namespace provisioning states. This baseline is synchronous; queue orchestration remains downstream work.</p></header>
+                <header class="border-b border-outline-subtle px-5 py-4">
+                    <h2 class="text-lg font-semibold text-content-primary">Provisioning</h2>
+                    <p class="mt-1 text-sm text-content-secondary">Latest Native namespace provisioning states. This baseline is synchronous; queue orchestration remains downstream work.</p>
+                </header>
                 <div class="divide-y divide-outline-subtle">
                     {% for item in recent_namespaces %}
-                        <article class="grid gap-3 px-5 py-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"><div><p class="font-semibold text-content-primary">{{ item.namespace }}</p><p class="mt-1 text-xs text-content-muted">{{ item.environment.tenant.name }} · {{ item.environment.environment|title }} · Native Kubernetes</p></div>{{ table_label.status_label(item.provisioning_status|title, 'normal' if item.provisioning_status == 'ready' else ('warning' if item.provisioning_status in ['pending','drifted'] else 'critical')) }}</article>
-                    {% else %}<p class="px-5 py-8 text-sm text-content-muted">No provisioning records yet.</p>{% endfor %}
+                        <article class="grid gap-3 px-5 py-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                            <div>
+                                <p class="font-semibold text-content-primary">{{ item.namespace }}</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ item.environment.tenant.name }} · {{ item.environment.environment|title }} · Native Kubernetes</p>
+                            </div>
+                            {{ table_label.status_label(item.provisioning_status|title, 'normal' if item.provisioning_status == 'ready' else ('warning' if item.provisioning_status in ['pending','drifted'] else 'critical') ) }}
+                        </article>
+                    {% else %}
+                        <p class="px-5 py-8 text-sm text-content-muted">No provisioning records yet.</p>
+                    {% endfor %}
                 </div>
             </div>
         {% elif active_tab == 'runs-evidence' %}
             <div class="rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
-                <header class="border-b border-outline-subtle px-5 py-4"><h2 class="text-lg font-semibold text-content-primary">Runs &amp; Evidence</h2><p class="mt-1 text-sm text-content-secondary">Committed verification evidence from namespace reconciliation.</p></header>
+                <header class="border-b border-outline-subtle px-5 py-4">
+                    <h2 class="text-lg font-semibold text-content-primary">Runs &amp; Evidence</h2>
+                    <p class="mt-1 text-sm text-content-secondary">Committed verification evidence from namespace reconciliation.</p>
+                </header>
                 <div class="divide-y divide-outline-subtle">
                     {% for item in evidence_records %}
-                        <article class="px-5 py-4"><div class="flex flex-wrap items-center justify-between gap-3"><div><p class="font-semibold text-content-primary">{{ item.namespace }}</p><p class="mt-1 text-xs text-content-muted">Last reconciled {{ item.last_reconciled_at }}</p></div>{{ table_label.status_label('Evidence Ready' if item.effective_hash else 'Pending', 'normal' if item.effective_hash else 'warning') }}</div><p class="mt-2 font-mono text-xs text-content-muted">desired {{ item.desired_hash or '—' }} · effective {{ item.effective_hash or '—' }}</p></article>
-                    {% else %}<p class="px-5 py-8 text-sm text-content-muted">No reconciliation evidence yet.</p>{% endfor %}
+                        <article class="px-5 py-4">
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                    <p class="font-semibold text-content-primary">{{ item.namespace }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">Last reconciled {{ item.last_reconciled_at }}</p>
+                                </div>
+                                {{ table_label.status_label('Evidence Ready' if item.effective_hash else 'Pending', 'normal' if item.effective_hash else 'warning') }}
+                            </div>
+                            <p class="mt-2 font-mono text-xs text-content-muted">desired {{ item.desired_hash or '—' }} · effective {{ item.effective_hash or '—' }}</p>
+                        </article>
+                    {% else %}
+                        <p class="px-5 py-8 text-sm text-content-muted">No reconciliation evidence yet.</p>
+                    {% endfor %}
                 </div>
             </div>
         {% elif active_tab == 'drift-reconcile' %}
             <div class="rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
-                <header class="border-b border-outline-subtle px-5 py-4"><h2 class="text-lg font-semibold text-content-primary">Drift &amp; Reconcile</h2><p class="mt-1 text-sm text-content-secondary">Provider-state mismatches surfaced from the admitted #113 reconciliation contract.</p></header>
+                <header class="border-b border-outline-subtle px-5 py-4">
+                    <h2 class="text-lg font-semibold text-content-primary">Drift &amp; Reconcile</h2>
+                    <p class="mt-1 text-sm text-content-secondary">Provider-state mismatches surfaced from the admitted #113 reconciliation contract.</p>
+                </header>
                 <div class="divide-y divide-outline-subtle">
                     {% for item in drift_records %}
-                        <article class="px-5 py-4"><div class="flex items-center justify-between gap-3"><div><p class="font-semibold text-content-primary">{{ item.namespace }}</p><p class="mt-1 text-xs text-content-muted">{{ item.provisioning_message or 'Provider state differs from committed intent.' }}</p></div>{{ table_label.status_label(item.provisioning_status|title, 'warning' if item.provisioning_status == 'drifted' else 'critical') }}</div></article>
-                    {% else %}<p class="px-5 py-8 text-sm text-content-muted">No drift or failed namespace records in the current committed window.</p>{% endfor %}
+                        <article class="px-5 py-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <p class="font-semibold text-content-primary">{{ item.namespace }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ item.provisioning_message or 'Provider state differs from committed intent.' }}</p>
+                                </div>
+                                {{ table_label.status_label(item.provisioning_status|title, 'warning' if item.provisioning_status == 'drifted' else 'critical') }}
+                            </div>
+                        </article>
+                    {% else %}
+                        <p class="px-5 py-8 text-sm text-content-muted">No drift or failed namespace records in the current committed window.</p>
+                    {% endfor %}
                 </div>
             </div>
         {% else %}
             <div class="rounded-xl border border-outline-subtle bg-surface-card p-6 shadow-sm">
-                <div class="flex items-start gap-3"><span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="activity" class="h-5 w-5"></i></span><div><h2 class="text-lg font-semibold text-content-primary">Activity</h2><p class="mt-1 text-sm leading-6 text-content-secondary">Tenant mutations already emit KAORI operational activity/toast evidence. Dedicated Tenant-to-Kubernetes audit correlation is owned by #122 and is not represented as complete here.</p><a href="{{ url_for('access.activity_audit.index') }}" class="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-kaori-primary hover:bg-kaori-soft">Open Activity Audit<i data-lucide="arrow-right" class="h-4 w-4"></i></a></div></div>
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="activity" class="h-5 w-5"></i></span>
+                    <div>
+                        <h2 class="text-lg font-semibold text-content-primary">Activity</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Tenant mutations already emit KAORI operational activity/toast evidence. Dedicated Tenant-to-Kubernetes audit correlation is owned by #122 and is not represented as complete here.</p>
+                        <a href="{{ url_for('access.activity_audit.index') }}"
+                           class="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-kaori-primary hover:bg-kaori-soft">Open Activity Audit<i data-lucide="arrow-right" class="h-4 w-4"></i></a>
+                    </div>
+                </div>
             </div>
         {% endif %}
     </section>

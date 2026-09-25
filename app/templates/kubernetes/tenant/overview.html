@@ -8,11 +8,11 @@
         </div>
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {% for icon, label, value, note in [
-                ('users-round', 'Total Tenants', tenant_count, 'Committed tenant records'),
-                ('boxes', 'Managed Namespaces', namespace_count, 'Tenant-owned namespaces'),
-                ('server', 'Ready Clusters', ready_clusters|length, 'Native provider targets'),
-                ('circle-check', 'Verified Ready', ready_namespace_count, 'Verified provisioning outcomes')
-            ] %}
+                        ('users-round', 'Total Tenants', tenant_count, 'Committed tenant records'),
+                        ('boxes', 'Managed Namespaces', namespace_count, 'Tenant-owned namespaces'),
+                        ('server', 'Ready Clusters', ready_clusters|length, 'Native provider targets'),
+                        ('circle-check', 'Verified Ready', ready_namespace_count, 'Verified provisioning outcomes')
+                    ] %}
                 <article class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
                     <div class="flex items-center gap-3">
                         <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
@@ -35,16 +35,20 @@
                 <p class="mt-1 text-sm text-content-secondary">Continue with one focused Tenant workflow.</p>
             </div>
             <div class="flex flex-wrap gap-2">
-                <a href="{{ url_for('tenant.tenants') }}" class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary-hover">
+                <a href="{{ url_for('tenant.tenants') }}"
+                   class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary-hover">
                     <i data-lucide="user-plus" class="h-4 w-4"></i>Add Tenant
                 </a>
-                <a href="{{ url_for('tenant.resource_profiles') }}" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-primary hover:bg-surface-hover">
+                <a href="{{ url_for('tenant.resource_profiles') }}"
+                   class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-primary hover:bg-surface-hover">
                     <i data-lucide="layers-3" class="h-4 w-4"></i>Create Resource Profile
                 </a>
-                <a href="{{ url_for('tenant.namespace_provisioning') }}" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-primary hover:bg-surface-hover">
+                <a href="{{ url_for('tenant.namespace_provisioning') }}"
+                   class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-primary hover:bg-surface-hover">
                     <i data-lucide="boxes" class="h-4 w-4"></i>Provision Namespace
                 </a>
-                <a href="{{ url_for('tenant.operations') }}" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-primary hover:bg-surface-hover">
+                <a href="{{ url_for('tenant.operations') }}"
+                   class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-primary hover:bg-surface-hover">
                     <i data-lucide="refresh-cw" class="h-4 w-4"></i>View Operations
                 </a>
             </div>
@@ -52,10 +56,10 @@
     </section>
     <section class="grid gap-5 xl:grid-cols-3" aria-label="Recent Tenant state">
         {% for title, items, kind in [
-            ('Recent Tenants', tenants, 'tenant'),
-            ('Recent Resource Profiles', profiles, 'profile'),
-            ('Recent Namespaces', namespaces, 'namespace')
-        ] %}
+                    ('Recent Tenants', tenants, 'tenant'),
+                    ('Recent Resource Profiles', profiles, 'profile'),
+                    ('Recent Namespaces', namespaces, 'namespace')
+                ] %}
             <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
                 <header class="border-b border-outline-subtle px-5 py-4">
                     <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
@@ -69,7 +73,7 @@
                                     <span class="font-semibold text-content-primary">{{ item.name }}</span>
                                     {{ table_label.status_label(item.lifecycle_status|title, 'normal' if item.lifecycle_status == 'ready' else 'warning') }}
                                 </div>
-                                <p class="mt-1 text-xs text-content-muted">{{ item.slug }} · {{ item.provider_key|replace('_', ' ')|title }}</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ item.slug }} · {{ item.provider_key|replace('_', ' ') |title }}</p>
                             {% elif kind == 'profile' %}
                                 <div class="flex items-center justify-between gap-3">
                                     <span class="font-semibold text-content-primary">{{ item.name }}</span>
@@ -79,7 +83,7 @@
                             {% else %}
                                 <div class="flex items-center justify-between gap-3">
                                     <span class="font-semibold text-content-primary">{{ item.namespace }}</span>
-                                    {{ table_label.status_label(item.provisioning_status|title, 'normal' if item.provisioning_status == 'ready' else ('warning' if item.provisioning_status in ['pending', 'drifted'] else 'critical')) }}
+                                    {{ table_label.status_label(item.provisioning_status|title, 'normal' if item.provisioning_status == 'ready' else ('warning' if item.provisioning_status in ['pending', 'drifted'] else 'critical') ) }}
                                 </div>
                                 <p class="mt-1 text-xs text-content-muted">{{ item.environment.tenant.name }} · {{ item.environment.environment|title }}</p>
                             {% endif %}
@@ -94,7 +98,8 @@
     <section class="grid gap-4 lg:grid-cols-2">
         <article class="rounded-xl border border-status-success/30 bg-status-success-soft p-5">
             <div class="flex items-start gap-3">
-                <i data-lucide="shield-check" class="mt-0.5 h-5 w-5 text-status-success"></i>
+                <i data-lucide="shield-check"
+                   class="mt-0.5 h-5 w-5 text-status-success"></i>
                 <div>
                     <h2 class="text-base font-semibold text-content-primary">Native Kubernetes</h2>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Active for Tenant creation, Resource Profiles, and Namespace + ResourceQuota + LimitRange provisioning.</p>

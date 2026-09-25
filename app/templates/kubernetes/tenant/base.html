@@ -1,6 +1,8 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% block title %}Tenant · KAORI{% endblock title %}
+{% block title %}
+    Tenant · KAORI
+{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6" data-tenant-workspace="{{ tenant_page }}">
         <section class="{{ page_hero.shell_classes() }}">
@@ -16,9 +18,9 @@
                     {% endcall %}
                 </div>
                 {% set tenant_context_metrics = [
-                    ('server', 'Ready Clusters', ready_clusters|length, 'Native provider targets', true),
-                    ('circle-check', 'Verified', ready_namespace_count, 'Ready namespaces')
-                ] %}
+                                    ('server', 'Ready Clusters', ready_clusters|length, 'Native provider targets', true),
+                                    ('circle-check', 'Verified', ready_namespace_count, 'Ready namespaces')
+                                ] %}
                 {{ page_hero.context_card('Tenant context',
                                 'Provider Readiness',
                                 'Native Kubernetes',
@@ -26,8 +28,8 @@
                                 'normal' if native_available else 'warning',
                                 tenant_context_metrics,
                                 'Open Cluster Integrations',
-                                url_for('integrations.kubernetes'),
-                                'server-cog') }}
+                                url_for('integrations.kubernetes') ,
+                'server-cog') }}
             </div>
         </section>
         {% if not native_available %}
@@ -43,9 +45,11 @@
                 </div>
             </section>
         {% endif %}
-        {% block tenant_content %}{% endblock tenant_content %}
+        {% block tenant_content %}
+        {% endblock tenant_content %}
     </div>
 {% endblock dashboard_content %}
 {% block scripts %}
-    {% block tenant_scripts %}{% endblock tenant_scripts %}
+    {% block tenant_scripts %}
+    {% endblock tenant_scripts %}
 {% endblock scripts %}

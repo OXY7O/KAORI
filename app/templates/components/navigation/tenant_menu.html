@@ -4,8 +4,7 @@
 {% set tenant_profiles_active = request.endpoint == 'tenant.resource_profiles' %}
 {% set tenant_namespaces_active = request.endpoint == 'tenant.namespace_provisioning' %}
 {% set tenant_operations_active = request.endpoint == 'tenant.operations' %}
-<details class="sidebar-menu space-y-1"
-         {% if tenant_active %}open{% endif %}>
+<details class="sidebar-menu space-y-1" {% if tenant_active %}open{% endif %}>
     <summary class="{{ 'sidebar-parent-active' if tenant_active else 'sidebar-item-idle' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition lg:[.sidebar-collapsed_&]:justify-center lg:[.sidebar-collapsed_&]:px-2"
              title="Tenant"
              aria-label="Tenant"
@@ -21,12 +20,12 @@
     </summary>
     <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
         {% for endpoint, label, icon, active in [
-            ('tenant.index', 'Overview', 'layout-dashboard', tenant_overview_active),
-            ('tenant.tenants', 'Tenants', 'users-round', tenant_tenants_active),
-            ('tenant.resource_profiles', 'Resource Profiles', 'layers-3', tenant_profiles_active),
-            ('tenant.namespace_provisioning', 'Namespace Provisioning', 'boxes', tenant_namespaces_active),
-            ('tenant.operations', 'Operations', 'refresh-cw', tenant_operations_active)
-        ] %}
+                    ('tenant.index', 'Overview', 'layout-dashboard', tenant_overview_active),
+                    ('tenant.tenants', 'Tenants', 'users-round', tenant_tenants_active),
+                    ('tenant.resource_profiles', 'Resource Profiles', 'layers-3', tenant_profiles_active),
+                    ('tenant.namespace_provisioning', 'Namespace Provisioning', 'boxes', tenant_namespaces_active),
+                    ('tenant.operations', 'Operations', 'refresh-cw', tenant_operations_active)
+                ] %}
             <a href="{{ url_for(endpoint) }}"
                class="{{ 'bg-white/[0.08] text-kaori-accent' if active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
