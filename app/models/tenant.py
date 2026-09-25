@@ -69,9 +69,7 @@ class Tenant(db.Model):
             "provider_state IN ('native', 'capsule', 'capsule_degraded', 'native_recovery')",
             name='ck_tenants_provider_state',
         ),
-        CheckConstraint(
-            "ownership_status IN ('managed', 'discovered', 'adopted')", name='ck_tenants_ownership_status'
-        ),
+        CheckConstraint("ownership_status IN ('managed', 'discovered', 'adopted')", name='ck_tenants_ownership_status'),
         CheckConstraint(
             "lifecycle_status IN ('pending', 'ready', 'degraded', 'decommissioning', 'decommissioned')",
             name='ck_tenants_lifecycle_status',
