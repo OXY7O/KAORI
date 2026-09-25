@@ -499,7 +499,7 @@
                         </dl>
                     </div>
                 </div>
-                <p class="mt-4 text-xs leading-5 text-content-muted">CPU and memory requests are the #654 physical-capacity admission dimensions. Other ResourceQuota and LimitRange values still reconcile from the selected profile but are not represented as physical node reservations.</p>
+                <p class="mt-4 text-xs leading-5 text-content-muted">CPU and memory requests are the Tenant Capacity Governance physical-capacity admission dimensions. Other ResourceQuota and LimitRange values still reconcile from the selected profile but are not represented as physical node reservations.</p>
                 <button type="submit"
                         {% if not can_manage or not namespaces or not profiles %}disabled aria-disabled="true"{% endif %}
                         class="mt-5 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
