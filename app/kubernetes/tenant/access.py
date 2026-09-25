@@ -1,24 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
 from typing import TYPE_CHECKING
+
+from app.models.tenant import TenantAccessProfileKey, TenantAccessScope
 
 if TYPE_CHECKING:
     from app.models.tenant import TenantAccessGrant, TenantMembership
-
-
-class TenantAccessProfileKey(StrEnum):
-    VIEWER = 'viewer'
-    OPERATOR = 'operator'
-    TENANT_ADMIN = 'tenant_admin'
-    DEPLOYER = 'deployer'
-
-
-class TenantAccessScope(StrEnum):
-    TENANT = 'tenant'
-    ENVIRONMENT = 'environment'
-    NAMESPACE = 'namespace'
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,11 +35,9 @@ _FORBIDDEN_RESOURCES = frozenset(
         'clusterrolebindings',
         'clusterroles',
         'customresourcedefinitions',
-        'limitranges',
         'namespaces',
         'nodes',
         'persistentvolumes',
-        'resourcequotas',
         'rolebindings',
         'roles',
         'storageclasses',
@@ -141,6 +127,12 @@ def validate_access_profile(profile: TenantAccessProfile) -> None:
             raise ValueError(
                 'Tenant Access Profiles cannot grant platform or cluster-scoped resources: '
                 + ', '.join(sorted(forbidden))
+            )
+        protected = _PLATFORM_READ_ONLY_RESOURCES.intersection(rule.resources)
+        if protected and not set(rule.verbs).issubset(_READ):
+            raise ValueError(
+                'Tenant Access Profiles may only read platform-managed namespace resources: '
+                + ', '.join(sorted(protected))
             )
 
 

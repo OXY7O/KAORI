@@ -349,6 +349,7 @@ def reconcile_native_access_grant(grant: TenantAccessGrant) -> TenantAccessGrant
             grant.last_reconciled_at = now
             grant.reconciliation_evidence_json = {
                 'desired_status': 'revoked',
+                'desired_targets': [{'namespace': namespace} for namespace in sorted(target_names)],
                 'target_namespaces': sorted(target_names),
             }
             return inspect_native_access_grant(grant)
