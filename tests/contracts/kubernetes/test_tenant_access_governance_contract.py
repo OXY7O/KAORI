@@ -19,8 +19,7 @@ def test_tenant_access_governance_keeps_application_and_kubernetes_rbac_separate
 
     assert 'ClusterRoleBinding' not in reconciliation_source
     assert 'RbacAuthorizationV1Api' in (
-        ROOT
-        / 'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/client.py'
+        ROOT / 'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/client.py'
     ).read_text(encoding='utf-8')
     assert "down_revision = '20260925_tenant_capacity'" in migration
     assert 'KAORI application RBAC and Tenant Kubernetes RBAC are separate authorization layers.' in architecture
