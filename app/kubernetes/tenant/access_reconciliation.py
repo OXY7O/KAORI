@@ -70,8 +70,7 @@ def target_namespaces(grant: TenantAccessGrant) -> list[TenantNamespace]:
             namespace
             for namespace in candidates
             if namespace is not None
-            and namespace.ownership_status
-            in {TenantOwnershipStatus.MANAGED.value, TenantOwnershipStatus.ADOPTED.value}
+            and namespace.ownership_status in {TenantOwnershipStatus.MANAGED.value, TenantOwnershipStatus.ADOPTED.value}
         ),
         key=lambda item: item.namespace,
     )
@@ -227,9 +226,7 @@ def _effective_target_contract(api, desired: dict[str, Any]) -> dict[str, Any] |
         },
         'role_binding': {
             'name': binding.metadata.name,
-            'labels': {
-                key: (binding.metadata.labels or {}).get(key) for key in desired['role_binding']['labels']
-            },
+            'labels': {key: (binding.metadata.labels or {}).get(key) for key in desired['role_binding']['labels']},
             'role_ref': {
                 'api_group': binding.role_ref.api_group,
                 'kind': binding.role_ref.kind,
@@ -272,11 +269,7 @@ def _normalized_desired(desired: dict[str, Any]) -> dict[str, Any]:
 
 def _previous_target_names(grant: TenantAccessGrant) -> set[str]:
     evidence = grant.reconciliation_evidence_json or {}
-    return {
-        str(item.get('namespace'))
-        for item in (evidence.get('desired_targets') or [])
-        if item.get('namespace')
-    }
+    return {str(item.get('namespace')) for item in (evidence.get('desired_targets') or []) if item.get('namespace')}
 
 
 def _cluster_for_grant(grant: TenantAccessGrant) -> Cluster:
@@ -314,9 +307,7 @@ def inspect_native_access_grant(grant: TenantAccessGrant) -> TenantAccessGrant:
     validate_active_grant(grant)
     desired_targets = [desired_native_access_contract(grant, item.namespace) for item in target_namespaces(grant)]
     effective_targets = [
-        effective
-        for desired in desired_targets
-        if (effective := _effective_target_contract(api, desired)) is not None
+        effective for desired in desired_targets if (effective := _effective_target_contract(api, desired)) is not None
     ]
     desired_payload = [_normalized_desired(item) for item in desired_targets]
     grant.desired_hash = _canonical_hash(desired_payload)
