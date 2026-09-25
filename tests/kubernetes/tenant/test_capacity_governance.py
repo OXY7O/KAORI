@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from app.kubernetes.analytics.materialization.service import SnapshotResult
 from app.kubernetes.tenant.capacity import (
     CapacityVector,
     build_tenant_allocation_budget,
@@ -7,6 +8,7 @@ from app.kubernetes.tenant.capacity import (
     evaluate_allocation_preflight,
     quota_request_vector,
 )
+from app.kubernetes.tenant.capacity_governance import _capacity_vector
 
 
 def test_quota_request_vector_preserves_unbounded_dimensions() -> None:
@@ -157,3 +159,43 @@ def test_positive_change_is_blocked_while_cluster_is_already_overcommitted() -> 
     assert decision.allowed is False
     assert decision.state == 'Overcommitted'
     assert 'positive allocation' in decision.reason.lower()
+
+
+def test_committed_capacity_snapshot_uses_ready_worker_allocatable_units() -> None:
+    result = SnapshotResult(
+        context={
+            'capacity_summary': {
+                'cpu': {'capacity_evidence_available': True, 'capacity': 12.5},
+                'memory': {'capacity_evidence_available': True, 'capacity': 32},
+            }
+        },
+        snapshot=None,
+        state='fresh',
+        stale=False,
+    )
+
+    vector, reason = _capacity_vector(result)
+
+    assert reason == ''
+    assert vector is not None
+    assert vector.cpu == Decimal('12.5')
+    assert vector.memory_bytes == Decimal(32 * 1024**3)
+
+
+def test_stale_committed_capacity_snapshot_fails_closed() -> None:
+    result = SnapshotResult(
+        context={
+            'capacity_summary': {
+                'cpu': {'capacity_evidence_available': True, 'capacity': 12.5},
+                'memory': {'capacity_evidence_available': True, 'capacity': 32},
+            }
+        },
+        snapshot=None,
+        state='stale',
+        stale=True,
+    )
+
+    vector, reason = _capacity_vector(result)
+
+    assert vector is None
+    assert 'stale' in reason.lower()
