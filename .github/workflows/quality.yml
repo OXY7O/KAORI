@@ -586,7 +586,7 @@ jobs:
               --source-tree "${{ needs.validation-profile.outputs.source_tree }}" \
               --run-id "$GITHUB_RUN_ID" \
               --run-attempt "$GITHUB_RUN_ATTEMPT" \
-              --workflow-ref "$GITHUB_WORKFLOW_REF" \
+              --workflow-ref "$GITHUB_REPOSITORY/.github/workflows/quality.yml@$KAORI_SOURCE_SHA" \
               --static-quality "${{ needs.full-admission-gates.result }}" \
               --static-security "${{ needs.full-admission-gates.result }}" \
               --functional-tests "${{ needs.full-admission-gates.result }}" \
