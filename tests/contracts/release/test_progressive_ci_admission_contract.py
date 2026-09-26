@@ -86,6 +86,13 @@ def test_admission_publishes_non_authoritative_exact_sha_commit_status() -> None
     assert 'state=failure' in admission
 
 
+def test_full_admission_evidence_records_quality_workflow_authority() -> None:
+    workflow = read(WORKFLOW)
+
+    assert '--workflow-ref "$GITHUB_REPOSITORY/.github/workflows/quality.yml@$KAORI_SOURCE_SHA"' in workflow
+    assert '--workflow-ref "$GITHUB_WORKFLOW_REF"' not in workflow
+
+
 def test_staging_evidence_lookup_accepts_direct_and_sequenced_admission_parents() -> None:
     workflow = read(WORKFLOW)
     policy_source = read(POLICY)
