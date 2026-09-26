@@ -13,14 +13,12 @@ from app.kubernetes.tenant.domain_exposure import (
     reservations_conflict,
 )
 from app.models import AuditEvent, User
-from app.models.tenant import (
-    Tenant,
+from app.models.tenant import Tenant, TenantEnvironment, TenantNamespace
+from app.models.tenant_policy import (
     TenantDomainReservation,
     TenantDomainReservationStatus,
-    TenantEnvironment,
     TenantExposurePolicy,
     TenantExposurePolicyStatus,
-    TenantNamespace,
 )
 
 

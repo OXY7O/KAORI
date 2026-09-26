@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from app.models.tenant import (
+from app.models.tenant_policy import (
     TenantDomainMatchMode,
     TenantDomainReservationStatus,
     TenantExposurePolicyStatus,

@@ -4,7 +4,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_domain_and_exposure_policy_persistence_is_canonical() -> None:
-    model = (ROOT / 'app/models/tenant.py').read_text(encoding='utf-8')
+    model = (ROOT / 'app/models/tenant_policy.py').read_text(encoding='utf-8')
     migration = (ROOT / 'migrations/versions/20260926_tenant_domain_exposure.py').read_text(encoding='utf-8')
 
     assert 'class TenantDomainReservation(db.Model):' in model

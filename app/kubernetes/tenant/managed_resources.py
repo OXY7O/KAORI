@@ -12,7 +12,7 @@ from kubernetes.client.rest import ApiException
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
 from app.models import Cluster
-from app.models.tenant import (
+from app.models.tenant_managed_resource import (
     TenantManagedResourceIntent,
     TenantManagedResourceKind,
     TenantManagedResourceMode,
