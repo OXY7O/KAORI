@@ -336,6 +336,13 @@ jobs:
           docker compose --file .github/ci/compose.yml run --rm ci
           bash scripts/quality_gate.sh --tests
 
+      - name: Controlled Failed-Job Rerun Probe
+        if: ${{ matrix.gate == 'functional' && github.run_attempt == 1 }}
+        shell: bash
+        run: |
+          echo 'Controlled #681 rerun evidence probe: fail Full Admission attempt 1 only.'
+          exit 1
+
       - name: Build & Verify Frontend
         if: ${{ matrix.gate == 'frontend' }}
         run: >-
