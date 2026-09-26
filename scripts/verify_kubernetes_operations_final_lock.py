@@ -366,8 +366,8 @@ def main() -> int:
         errors,
     )
     require(
-        'tests/kubernetes/operations' in quality_gate,
-        'quality_gate.sh must run Kubernetes Operations functional characterization explicitly.',
+        "-m 'not debug and not e2e and not contract and not migration'" in quality_gate,
+        'quality_gate.sh must retain canonical Kubernetes Operations functional release evidence.',
         errors,
     )
 

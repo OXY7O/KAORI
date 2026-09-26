@@ -482,8 +482,10 @@ def verify() -> None:
 
     if 'python scripts/verify_operational_dashboard_standard.py' not in quality_gate:
         raise AssertionError('scripts/quality_gate.sh does not execute the dashboard standard verifier')
-    if 'tests/kubernetes/dashboard' not in quality_gate:
-        raise AssertionError('scripts/quality_gate.sh does not explicitly execute Dashboard functional tests')
+    if "-m 'not debug and not e2e and not contract and not migration'" not in quality_gate:
+        raise AssertionError(
+            'scripts/quality_gate.sh does not execute the canonical Dashboard functional release suite'
+        )
     if "'tests/kubernetes/dashboard/test_kubernetes_dashboard_characterization.py': 7" not in feature_coverage:
         raise AssertionError('Dashboard behavioral characterization is not protected by feature coverage')
     for requirement in (

@@ -69,7 +69,7 @@ def test_analytics_final_recheck_evidence_is_wired_to_release_gate() -> None:
     tracker = read('docs/reviews/2026-08-10-final-recheck.md')
 
     assert 'python scripts/verify_analytics_final_lock.py' in quality_gate
-    assert 'tests/kubernetes/analytics' in quality_gate
+    assert "-m 'not debug and not e2e and not contract and not migration'" in quality_gate
     assert 'test_analytics_final_release_contract.py' in coverage
     assert 'test_analytics_security.py' in coverage
     assert 'test_analytics_rendering.py' in coverage

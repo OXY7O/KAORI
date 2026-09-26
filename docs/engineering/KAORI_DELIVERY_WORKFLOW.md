@@ -212,14 +212,12 @@ For work entering the artifact-backed release path, completion additionally requ
 
 `Developer Check` is the path-aware authority for Pull Requests from every `kaori/*` work branch except `kaori/staging` into `kaori/staging` while the PR is Draft. It remains targeted/non-comprehensive and prepares the exact head for the Ready boundary.
 
-It routes changed paths into the minimum safe focused checks using existing KAORI validation commands. Typical groups include:
+It routes changed paths once into the minimum safe focused checks using existing KAORI validation commands. Selected checks then execute in independent Draft lanes where safe:
 
-- Python -> Ruff format/check, with Pyright where application or validation Python scope requires it;
-- Jinja/templates -> djlint;
-- frontend/tooling -> existing npm formatting checks;
-- migrations/models -> migration graph + focused migration tests;
-- domain changes -> focused tests for the affected domain;
-- validation-authority or unknown high-risk paths -> fail-safe widened targeted checks.
+- **Python & Governance** -> workflow lint when widened, Ruff format/check, code-health, Pyright/type safety, migration graph, and report verification when selected;
+- **Frontend & Focused Validation** -> djlint, existing npm/frontend checks, and only the routed domain/contract/migration pytest paths when selected.
+
+Redundant parent/child focused-test selections are normalized before execution. The final `Developer Check` aggregate fails closed if any required selected lane fails, is cancelled, or is unexpectedly skipped. Unselected lanes may skip without weakening the aggregate.
 
 Representative domain routing includes Vault Management/access, tenant/user/settings, Intelligence, Reports, Kubernetes, Object Storage/storage, Integrations, Platform Operations, and Welcome/shared application surfaces.
 
@@ -269,7 +267,11 @@ A Ready feature PR first attempts exact evidence reuse for its exact head. A new
 
 Full Admission preserves authoritative coverage for source linting/formatting, Pyright/type safety, architecture/import/reachability checks, contract and migration tests, functional/integration tests, frontend reproducibility, secrets/SAST/dependency/workflow security, production image build, vulnerability scan, runtime validation, DAST, application assertions, and code-health integrity.
 
-Successful Full Admission publishes immutable evidence containing source commit SHA, source tree SHA, validation profile version, authority fingerprint, run ID/attempt, workflow identity, required gate conclusions, and timestamp.
+The comprehensive gate set runs as one native GitHub Actions matrix with `fail-fast: true` and a current host ceiling of `max-parallel: 2`. Static & Governance, Security, Functional Tests, Frontend, and Runtime & DAST remain distinct matrix children. If any child fails, GitHub cancels queued/in-progress sibling matrix work instead of consuming the remaining comprehensive critical path. Cancellation cleanup remains mandatory for Compose/runtime resources.
+
+Release-test ownership is non-overlapping. Static & Governance owns Contract/Migration pytest execution; Functional Tests owns the remaining release taxonomy plus explicit E2E. Their JUnit artifacts are recombined by CI Admission into one complete taxonomy evidence surface before reusable Full Admission evidence is published.
+
+Successful Full Admission publishes immutable evidence containing source commit SHA, source tree SHA, validation profile version, authority fingerprint, run ID/attempt, workflow identity, required gate conclusions, and timestamp. Matrix aggregate success attests that every required comprehensive child succeeded; failed/cancelled matrices cannot publish reusable PASS evidence.
 
 Validation authority includes `.github/workflows/**`, `.github/ci/**`, `requirements/**`, Admission policy helpers, `scripts/quality_gate.sh`, `scripts/verify_*`, release validation contracts, this delivery workflow authority, Dockerfile, and compose authority.
 

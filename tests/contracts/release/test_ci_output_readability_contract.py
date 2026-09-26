@@ -71,23 +71,35 @@ def test_failed_static_verifier_remains_failure_first_and_names_the_check() -> N
 def test_release_suite_emits_junit_for_taxonomy_summary_without_duplicate_execution() -> None:
     source = QUALITY_GATE.read_text(encoding='utf-8')
 
+    assert '--junitxml="$TEST_OUTPUT_DIR/contract-migration.xml"' in source
     assert '--junitxml="$TEST_OUTPUT_DIR/release-suite.xml"' in source
     assert '--junitxml="$TEST_OUTPUT_DIR/e2e.xml"' in source
     assert 'ci_admission.py test-summary' in source
-    assert "-m 'not debug and not e2e'" in source
+    assert "-m 'not debug and not e2e and not contract and not migration'" in source
+    assert 'Domain Characterization Tests' not in source
 
 
-def test_taxonomy_summary_groups_existing_junit_by_kaori_test_purpose(tmp_path: Path) -> None:
-    junit = tmp_path / 'release-suite.xml'
-    junit.write_text(
+def test_taxonomy_summary_merges_split_junit_evidence_by_kaori_test_purpose(tmp_path: Path) -> None:
+    release_junit = tmp_path / 'release-suite.xml'
+    release_junit.write_text(
         """<?xml version="1.0" encoding="utf-8"?>
 <testsuites>
-  <testsuite name="pytest" tests="7" failures="0" errors="0" skipped="0">
+  <testsuite name="pytest" tests="5" failures="0" errors="0" skipped="0">
     <testcase classname="tests.unit.reports.test_unit" name="test_unit" />
     <testcase classname="tests.welcome.test_page" name="test_functional" />
     <testcase classname="tests.integration.kubernetes.test_repo" name="test_integration" />
     <testcase classname="tests.security.test_rbac" name="test_security" />
     <testcase classname="tests.rendering.test_template" name="test_rendering" />
+  </testsuite>
+</testsuites>
+""",
+        encoding='utf-8',
+    )
+    contract_junit = tmp_path / 'contract-migration.xml'
+    contract_junit.write_text(
+        """<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+  <testsuite name="pytest" tests="2" failures="0" errors="0" skipped="0">
     <testcase classname="tests.contracts.release.test_contract" name="test_contract" />
     <testcase classname="tests.migrations.test_upgrade" name="test_migration" />
   </testsuite>
@@ -97,7 +109,15 @@ def test_taxonomy_summary_groups_existing_junit_by_kaori_test_purpose(tmp_path: 
     )
 
     completed = subprocess.run(
-        [sys.executable, str(CI_ADMISSION), 'test-summary', '--junit', str(junit)],
+        [
+            sys.executable,
+            str(CI_ADMISSION),
+            'test-summary',
+            '--junit',
+            str(contract_junit),
+            '--junit',
+            str(release_junit),
+        ],
         cwd=ROOT,
         capture_output=True,
         text=True,
@@ -115,6 +135,24 @@ def test_taxonomy_summary_groups_existing_junit_by_kaori_test_purpose(tmp_path: 
         '✅ Migration Tests · 1 test',
     ):
         assert expected in completed.stdout
+
+
+def test_full_admission_aggregates_split_junit_artifacts_before_evidence() -> None:
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+
+    for token in (
+        'Upload Static JUnit Evidence',
+        'Upload Functional JUnit Evidence',
+        'Download Static JUnit Evidence',
+        'Download Functional JUnit Evidence',
+        'Write Full Test Taxonomy Summary',
+        'full-admission-junit-static-',
+        'full-admission-junit-functional-',
+        'admission-junit/static/contract-migration.xml',
+        'admission-junit/functional/release-suite.xml',
+        'admission-junit/functional/e2e.xml',
+    ):
+        assert token in workflow
 
 
 def test_raw_ci_diagnostics_are_uploaded_as_artifacts() -> None:
@@ -141,11 +179,16 @@ def test_admission_summary_reports_real_failure_state_instead_of_hardcoded_pass(
     assert "printf '➡️ %s\\n'" in workflow
 
 
-def test_long_static_gate_has_periodic_heartbeat() -> None:
+def test_long_static_gate_has_non_blocking_periodic_heartbeat() -> None:
     workflow = WORKFLOW.read_text(encoding='utf-8')
 
     assert 'Static & Governance still running' in workflow
     assert 'sleep 60' in workflow
+    assert 'heartbeat_pid=$!' in workflow
+    assert 'wait "$gate_pid" || gate_status=$?' in workflow
+    assert 'kill "$heartbeat_pid" >/dev/null 2>&1 || true' in workflow
+    assert 'wait "$heartbeat_pid" >/dev/null 2>&1 || true' in workflow
+    assert 'exit "$gate_status"' in workflow
     assert '⏱ %dm %02ds' in workflow
 
 

@@ -171,6 +171,7 @@ run_contract_migration_gate() {
         'Contract & Migration Safety' \
         -q \
         --tb=short \
+        --junitxml="$TEST_OUTPUT_DIR/contract-migration.xml" \
         tests/contracts \
         tests/migrations \
         -m 'contract or migration'
@@ -308,25 +309,7 @@ run_tests() {
         -q \
         --tb=short \
         --junitxml="$TEST_OUTPUT_DIR/release-suite.xml" \
-        -m 'not debug and not e2e'
-
-    run_pytest_capture \
-        'Domain Characterization Tests' \
-        -q \
-        --tb=short \
-        tests/welcome \
-        tests/access \
-        tests/integrations \
-        tests/kubernetes/dashboard \
-        tests/kubernetes/analytics \
-        tests/kubernetes/inventory \
-        tests/kubernetes/governance \
-        tests/kubernetes/operations \
-        tests/storage \
-        tests/platform_operations \
-        tests/reports \
-        tests/settings \
-        -m functional
+        -m 'not debug and not e2e and not contract and not migration'
 
     run_e2e_gate
     render_test_taxonomy_summary

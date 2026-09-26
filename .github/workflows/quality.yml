@@ -231,139 +231,26 @@ jobs:
             printf '✅ %s · execution=%s\n' "$DISPLAY_PROFILE" "$execution"
           fi
 
-  static-quality:
+  full-admission-gates:
     if: ${{ needs.validation-profile.outputs.execution == 'full' }}
     needs: validation-profile
-    name: Static & Governance
-    runs-on: [self-hosted, linux, x64, kaori-ci]
-    timeout-minutes: 45
-    steps:
-      - name: Checkout Source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.validation-profile.outputs.source_sha }}
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Reuse CI Toolchain
-        run: echo "CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}" >> "$GITHUB_ENV"
-      - name: Run Static & Governance
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          started="$(date +%s)"
-          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp \
-            --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" \
-            bash scripts/quality_gate.sh --static &
-          gate_pid=$!
-          while kill -0 "$gate_pid" >/dev/null 2>&1; do
-            sleep 60
-            if kill -0 "$gate_pid" >/dev/null 2>&1; then
-              elapsed=$(( $(date +%s) - started ))
-              printf '⏳ Static & Governance still running · ⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
-            fi
-          done
-          wait "$gate_pid"
-      - name: Upload Static Diagnostics
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: static-${{ github.run_id }}-${{ github.run_attempt }}
-          path: tmp/ci-artifacts/static-output
-          if-no-files-found: ignore
-          retention-days: 3
-
-  static-security:
-    if: ${{ needs.validation-profile.outputs.execution == 'full' }}
-    needs: validation-profile
-    name: Security
-    runs-on: [self-hosted, linux, x64, kaori-ci]
-    timeout-minutes: 45
-    steps:
-      - name: Checkout Source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.validation-profile.outputs.source_sha }}
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Reuse CI Toolchain
-        run: echo "CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}" >> "$GITHUB_ENV"
-      - name: Run Security Gate
-        run: >-
-          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp
-          --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE"
-          bash .github/ci/run-security-static.sh
-      - name: Upload Security Diagnostics
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: security-${{ github.run_id }}-${{ github.run_attempt }}
-          path: tmp/ci-artifacts/security
-          if-no-files-found: ignore
-          retention-days: 3
-
-  functional-tests:
-    if: ${{ needs.validation-profile.outputs.execution == 'full' }}
-    needs: validation-profile
-    name: Functional Tests
-    runs-on: [self-hosted, linux, x64, kaori-ci]
-    timeout-minutes: 60
-    steps:
-      - name: Checkout Source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.validation-profile.outputs.source_sha }}
-          persist-credentials: false
-      - name: Prepare Runtime Contract
-        shell: bash
-        run: |
-          {
-            echo "CI_UID=$(id -u)"
-            echo "CI_GID=$(id -g)"
-            echo "KAORI_CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}"
-            echo "COMPOSE_PROJECT_NAME=kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-tests"
-          } >> "$GITHUB_ENV"
-      - name: Start Test Dependencies
-        run: docker compose --file .github/ci/compose.yml up -d postgres redis
-      - name: Run Functional Tests
-        run: >-
-          docker compose --file .github/ci/compose.yml run --rm ci
-          bash scripts/quality_gate.sh --tests
-      - name: Upload Test Diagnostics
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: tests-${{ github.run_id }}-${{ github.run_attempt }}
-          path: tmp/ci-artifacts/test-output
-          if-no-files-found: ignore
-          retention-days: 1
-      - name: Cleanup Test Dependencies
-        if: ${{ always() }}
-        run: docker compose --file .github/ci/compose.yml down --volumes --remove-orphans
-
-  frontend:
-    if: ${{ needs.validation-profile.outputs.execution == 'full' }}
-    needs: validation-profile
-    name: Frontend
-    runs-on: [self-hosted, linux, x64, kaori-ci]
-    timeout-minutes: 30
-    steps:
-      - name: Checkout Source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.validation-profile.outputs.source_sha }}
-          persist-credentials: false
-      - name: Reuse CI Toolchain
-        run: echo "CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}" >> "$GITHUB_ENV"
-      - name: Build & Verify Frontend
-        run: >-
-          docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp
-          --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE"
-          bash scripts/quality_gate.sh --frontend
-
-  production-runtime:
-    if: ${{ needs.validation-profile.outputs.execution == 'full' }}
-    needs: validation-profile
-    name: Runtime & DAST
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: true
+      max-parallel: 2
+      matrix:
+        include:
+          # Keep the longest comprehensive gate in the first scheduling wave.
+          - gate: functional
+            name: Functional Tests
+          - gate: static
+            name: Static & Governance
+          - gate: security
+            name: Security
+          - gate: frontend
+            name: Frontend
+          - gate: runtime
+            name: Runtime & DAST
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 75
     steps:
@@ -373,29 +260,155 @@ jobs:
           ref: ${{ needs.validation-profile.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Prepare Runtime Contract
+
+      - name: Prepare Gate Contract
+        shell: bash
+        run: |
+          {
+            echo "CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}"
+            echo "KAORI_CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}"
+            echo "GATE_CONTAINER=kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${{ matrix.gate }}"
+          } >> "$GITHUB_ENV"
+
+      - name: Prepare Functional Runtime
+        if: ${{ matrix.gate == 'functional' }}
         shell: bash
         run: |
           {
             echo "CI_UID=$(id -u)"
             echo "CI_GID=$(id -g)"
-            echo "KAORI_CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}"
-            echo "CI_TOOLCHAIN_IMAGE=${{ needs.validation-profile.outputs.toolchain_image }}"
+            echo "COMPOSE_PROJECT_NAME=kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-tests"
+          } >> "$GITHUB_ENV"
+
+      - name: Prepare Runtime & DAST Contract
+        if: ${{ matrix.gate == 'runtime' }}
+        shell: bash
+        run: |
+          {
+            echo "CI_UID=$(id -u)"
+            echo "CI_GID=$(id -g)"
             echo "COMPOSE_PROJECT_NAME=kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-runtime"
             echo "VALIDATION_IMAGE=kaori:ci-${{ needs.validation-profile.outputs.source_sha }}"
           } >> "$GITHUB_ENV"
-      - name: Build Production Image
-        run: docker build --target production --tag "$VALIDATION_IMAGE" .
-      - name: Scan Production Image
+
+      - name: Run Static & Governance
+        if: ${{ matrix.gate == 'static' }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          started="$(date +%s)"
+          docker run --rm --name "$GATE_CONTAINER" --user "$(id -u):$(id -g)" --env HOME=/tmp \
+            --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" \
+            bash scripts/quality_gate.sh --static &
+          gate_pid=$!
+
+          (
+            while kill -0 "$gate_pid" >/dev/null 2>&1; do
+              sleep 60
+              if kill -0 "$gate_pid" >/dev/null 2>&1; then
+                elapsed=$(( $(date +%s) - started ))
+                printf '⏳ Static & Governance still running · ⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
+              fi
+            done
+          ) &
+          heartbeat_pid=$!
+
+          gate_status=0
+          wait "$gate_pid" || gate_status=$?
+          kill "$heartbeat_pid" >/dev/null 2>&1 || true
+          wait "$heartbeat_pid" >/dev/null 2>&1 || true
+          exit "$gate_status"
+
+      - name: Run Security Gate
+        if: ${{ matrix.gate == 'security' }}
         run: >-
-          docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock
+          docker run --rm --name "$GATE_CONTAINER" --user "$(id -u):$(id -g)" --env HOME=/tmp
+          --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE"
+          bash .github/ci/run-security-static.sh
+
+      - name: Start Test Dependencies
+        if: ${{ matrix.gate == 'functional' }}
+        run: docker compose --file .github/ci/compose.yml up -d postgres redis
+
+      - name: Run Functional Tests
+        if: ${{ matrix.gate == 'functional' }}
+        run: >-
+          docker compose --file .github/ci/compose.yml run --rm ci
+          bash scripts/quality_gate.sh --tests
+
+      - name: Build & Verify Frontend
+        if: ${{ matrix.gate == 'frontend' }}
+        run: >-
+          docker run --rm --name "$GATE_CONTAINER" --user "$(id -u):$(id -g)" --env HOME=/tmp
+          --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE"
+          bash scripts/quality_gate.sh --frontend
+
+      - name: Build Production Image
+        if: ${{ matrix.gate == 'runtime' }}
+        run: docker build --target production --tag "$VALIDATION_IMAGE" .
+
+      - name: Scan Production Image
+        if: ${{ matrix.gate == 'runtime' }}
+        run: >-
+          docker run --rm --name "${GATE_CONTAINER}-trivy"
+          --volume /var/run/docker.sock:/var/run/docker.sock
           --volume kaori-trivy-cache:/root/.cache/trivy "$CI_TOOLCHAIN_IMAGE"
           trivy image --cache-dir /root/.cache/trivy --exit-code 1 --ignore-unfixed
           --severity HIGH,CRITICAL --scanners vuln "$VALIDATION_IMAGE"
+
       - name: Validate Runtime & DAST
+        if: ${{ matrix.gate == 'runtime' }}
         run: bash .github/ci/run-runtime-validation.sh "$VALIDATION_IMAGE"
+
+      - name: Upload Static JUnit Evidence
+        if: ${{ success() && matrix.gate == 'static' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: full-admission-junit-static-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/test-output/contract-migration.xml
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Functional JUnit Evidence
+        if: ${{ success() && matrix.gate == 'functional' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: full-admission-junit-functional-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            tmp/ci-artifacts/test-output/release-suite.xml
+            tmp/ci-artifacts/test-output/e2e.xml
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Static Diagnostics
+        if: ${{ failure() && matrix.gate == 'static' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: static-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/static-output
+          if-no-files-found: ignore
+          retention-days: 3
+
+      - name: Upload Security Diagnostics
+        if: ${{ failure() && matrix.gate == 'security' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: security-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/security
+          if-no-files-found: ignore
+          retention-days: 3
+
+      - name: Upload Test Diagnostics
+        if: ${{ failure() && matrix.gate == 'functional' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tests-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/test-output
+          if-no-files-found: ignore
+          retention-days: 1
+
       - name: Upload Runtime Diagnostics
-        if: ${{ failure() }}
+        if: ${{ failure() && matrix.gate == 'runtime' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: runtime-${{ github.run_id }}-${{ github.run_attempt }}
@@ -404,12 +417,31 @@ jobs:
             tmp/ci-artifacts/zap
           if-no-files-found: ignore
           retention-days: 3
+
+      - name: Cleanup Test Dependencies
+        if: ${{ always() && matrix.gate == 'functional' }}
+        shell: bash
+        run: >-
+          docker compose
+          --project-name "kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-tests"
+          --file .github/ci/compose.yml
+          down --volumes --remove-orphans || true
+
       - name: Cleanup Runtime Resources
-        if: ${{ always() }}
+        if: ${{ always() && matrix.gate == 'runtime' }}
         shell: bash
         run: |
-          docker compose --project-name "$COMPOSE_PROJECT_NAME" --file .github/ci/compose.yml --profile dast down --volumes --remove-orphans || true
-          docker image rm "$VALIDATION_IMAGE" >/dev/null 2>&1 || true
+          docker rm -f "${GATE_CONTAINER}-trivy" >/dev/null 2>&1 || true
+          docker compose \
+            --project-name "kaori-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-runtime" \
+            --file .github/ci/compose.yml \
+            --profile dast down --volumes --remove-orphans || true
+          docker image rm "${VALIDATION_IMAGE:-}" >/dev/null 2>&1 || true
+
+      - name: Cleanup Toolchain Gate Container
+        if: ${{ always() && (matrix.gate == 'static' || matrix.gate == 'security' || matrix.gate == 'frontend') }}
+        shell: bash
+        run: docker rm -f "$GATE_CONTAINER" >/dev/null 2>&1 || true
 
   integration-smoke:
     if: ${{ needs.validation-profile.outputs.execution == 'fast' }}
@@ -459,11 +491,7 @@ jobs:
       statuses: write
     needs:
       - validation-profile
-      - static-quality
-      - static-security
-      - functional-tests
-      - frontend
-      - production-runtime
+      - full-admission-gates
       - integration-smoke
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 10
@@ -475,23 +503,34 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Download Static JUnit Evidence
+        if: ${{ needs.validation-profile.outputs.execution == 'full' && needs.full-admission-gates.result == 'success' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: full-admission-junit-static-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/admission-junit/static
+
+      - name: Download Functional JUnit Evidence
+        if: ${{ needs.validation-profile.outputs.execution == 'full' && needs.full-admission-gates.result == 'success' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: full-admission-junit-functional-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/admission-junit/functional
+
       - name: Assert Selected Path
         id: result
         shell: bash
         env:
           EXECUTION: ${{ needs.validation-profile.outputs.execution }}
-          STATIC_QUALITY: ${{ needs.static-quality.result }}
-          STATIC_SECURITY: ${{ needs.static-security.result }}
-          FUNCTIONAL_TESTS: ${{ needs.functional-tests.result }}
-          FRONTEND: ${{ needs.frontend.result }}
-          PRODUCTION_RUNTIME: ${{ needs.production-runtime.result }}
+          FULL_GATES: ${{ needs.full-admission-gates.result }}
           INTEGRATION_SMOKE: ${{ needs.integration-smoke.result }}
         run: |
           set -Eeuo pipefail
           if [[ "$EXECUTION" == "full" ]]; then
-            for result in "$STATIC_QUALITY" "$STATIC_SECURITY" "$FUNCTIONAL_TESTS" "$FRONTEND" "$PRODUCTION_RUNTIME"; do
-              [[ "$result" == "success" ]] || { echo 'selected Full Admission gate failed'; exit 1; }
-            done
+            [[ "$FULL_GATES" == "success" ]] || {
+              printf 'selected Full Admission matrix failed or was cancelled: %s\n' "$FULL_GATES"
+              exit 1
+            }
             {
               echo 'coverage=Foundation & Governance; Domain & Capability Contracts; Engineering Quality; Functional & Integration; Frontend; Security & Runtime'
               echo 'fresh=Foundation & Governance|Domain & Capability Contracts|Engineering Quality|Functional & Integration|Frontend|Security & Runtime'
@@ -506,9 +545,29 @@ jobs:
             } >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Write Full Test Taxonomy Summary
+        id: full_test_evidence
+        if: ${{ needs.validation-profile.outputs.execution == 'full' && steps.result.outcome == 'success' }}
+        shell: bash
+        env:
+          CI_TOOLCHAIN_IMAGE: ${{ needs.validation-profile.outputs.toolchain_image }}
+        run: |
+          set -Eeuo pipefail
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --env HOME=/tmp \
+            --volume "$PWD:/workspace" \
+            --workdir /workspace \
+            "$CI_TOOLCHAIN_IMAGE" \
+            python scripts/ci_admission.py test-summary \
+              --junit tmp/ci-artifacts/admission-junit/static/contract-migration.xml \
+              --junit tmp/ci-artifacts/admission-junit/functional/release-suite.xml \
+              --junit tmp/ci-artifacts/admission-junit/functional/e2e.xml \
+            >> "$GITHUB_STEP_SUMMARY"
+
       - name: Publish Admission Evidence
         id: full-evidence
-        if: ${{ needs.validation-profile.outputs.execution == 'full' }}
+        if: ${{ needs.validation-profile.outputs.execution == 'full' && steps.result.outcome == 'success' && steps.full_test_evidence.outcome == 'success' }}
         shell: bash
         env:
           CI_TOOLCHAIN_IMAGE: ${{ needs.validation-profile.outputs.toolchain_image }}
@@ -525,16 +584,16 @@ jobs:
               --run-id "$GITHUB_RUN_ID" \
               --run-attempt "$GITHUB_RUN_ATTEMPT" \
               --workflow-ref "$GITHUB_WORKFLOW_REF" \
-              --static-quality "${{ needs.static-quality.result }}" \
-              --static-security "${{ needs.static-security.result }}" \
-              --functional-tests "${{ needs.functional-tests.result }}" \
-              --frontend "${{ needs.frontend.result }}" \
-              --production-runtime "${{ needs.production-runtime.result }}" \
+              --static-quality "${{ needs.full-admission-gates.result }}" \
+              --static-security "${{ needs.full-admission-gates.result }}" \
+              --functional-tests "${{ needs.full-admission-gates.result }}" \
+              --frontend "${{ needs.full-admission-gates.result }}" \
+              --production-runtime "${{ needs.full-admission-gates.result }}" \
               --output admission-evidence.json
 
       - name: Upload Admission Evidence
         id: full-evidence-upload
-        if: ${{ needs.validation-profile.outputs.execution == 'full' }}
+        if: ${{ needs.validation-profile.outputs.execution == 'full' && steps.full-evidence.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: kaori-full-admission-${{ needs.validation-profile.outputs.source_sha }}
@@ -557,11 +616,8 @@ jobs:
           FRESH: ${{ steps.result.outputs.fresh }}
           REUSED: ${{ steps.result.outputs.reused }}
           COVERAGE: ${{ steps.result.outputs.coverage }}
-          STATIC_QUALITY: ${{ needs.static-quality.result }}
-          STATIC_SECURITY: ${{ needs.static-security.result }}
-          FUNCTIONAL_TESTS: ${{ needs.functional-tests.result }}
-          FRONTEND: ${{ needs.frontend.result }}
-          PRODUCTION_RUNTIME: ${{ needs.production-runtime.result }}
+          FULL_GATES: ${{ needs.full-admission-gates.result }}
+          TEST_EVIDENCE: ${{ steps.full_test_evidence.outcome }}
           INTEGRATION_SMOKE: ${{ needs.integration-smoke.result }}
         run: |
           set -Eeuo pipefail
@@ -577,11 +633,12 @@ jobs:
           RESULT=PASS
           FIRST_FAILURE=''
           if [[ "$EXECUTION" == "full" ]]; then
-            if [[ "$STATIC_QUALITY" != "success" ]]; then RESULT=FAIL; FIRST_FAILURE="Static & Governance — $STATIC_QUALITY";
-            elif [[ "$STATIC_SECURITY" != "success" ]]; then RESULT=FAIL; FIRST_FAILURE="Security — $STATIC_SECURITY";
-            elif [[ "$FUNCTIONAL_TESTS" != "success" ]]; then RESULT=FAIL; FIRST_FAILURE="Functional Tests — $FUNCTIONAL_TESTS";
-            elif [[ "$FRONTEND" != "success" ]]; then RESULT=FAIL; FIRST_FAILURE="Frontend — $FRONTEND";
-            elif [[ "$PRODUCTION_RUNTIME" != "success" ]]; then RESULT=FAIL; FIRST_FAILURE="Runtime & DAST — $PRODUCTION_RUNTIME";
+            if [[ "$FULL_GATES" != "success" ]]; then
+              RESULT=FAIL
+              FIRST_FAILURE="Comprehensive gate matrix — $FULL_GATES; see failed/cancelled matrix child"
+            elif [[ "$TEST_EVIDENCE" != "success" ]]; then
+              RESULT=FAIL
+              FIRST_FAILURE="Full test taxonomy evidence — $TEST_EVIDENCE"
             fi
           elif [[ "$INTEGRATION_SMOKE" != "success" ]]; then
             RESULT=FAIL
@@ -636,6 +693,7 @@ jobs:
           SOURCE_SHA: ${{ needs.validation-profile.outputs.source_sha }}
           EXECUTION: ${{ needs.validation-profile.outputs.execution }}
           ASSERT_OUTCOME: ${{ steps.result.outcome }}
+          TEST_EVIDENCE_OUTCOME: ${{ steps.full_test_evidence.outcome }}
           EVIDENCE_OUTCOME: ${{ steps.full-evidence.outcome }}
           EVIDENCE_UPLOAD_OUTCOME: ${{ steps.full-evidence-upload.outcome }}
           SUMMARY_OUTCOME: ${{ steps.summary.outcome }}
@@ -647,7 +705,7 @@ jobs:
 
           if [[ "$ASSERT_OUTCOME" == "success" && "$SUMMARY_OUTCOME" == "success" ]]; then
             if [[ "$EXECUTION" == "full" ]]; then
-              if [[ "$EVIDENCE_OUTCOME" == "success" && "$EVIDENCE_UPLOAD_OUTCOME" == "success" ]]; then
+              if [[ "$TEST_EVIDENCE_OUTCOME" == "success" && "$EVIDENCE_OUTCOME" == "success" && "$EVIDENCE_UPLOAD_OUTCOME" == "success" ]]; then
                 state=success
                 description='Full Admission passed'
               fi

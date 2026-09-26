@@ -52,6 +52,8 @@ The long-lived integration branches are `kaori/staging` and `main`. Work branche
 
 A `kaori/*` work branch uses the path-aware **Developer Check** workflow while the PR is Draft. It validates the exact PR head without running comprehensive admission on every implementation/fix commit.
 
+Developer Check resolves changed paths once, prepares one deterministic shared CI toolchain, and then runs at most two heavy `kaori-ci` lanes concurrently: **Python & Governance** and **Frontend & Focused Validation**. A final lightweight aggregate fails closed across every required selected lane. Redundant parent/child focused-test paths are normalized before pytest execution. This two-lane ceiling reflects the current single-host runner memory capacity and avoids OOM-driven retries.
+
 A work branch is eligible to become a Ready/frozen candidate only when:
 
 - it is based on or synchronized with the current staging authority;
@@ -63,7 +65,7 @@ Marking the PR Ready freezes that exact head and starts governed Full Admission.
 
 ### Final-candidate and staging admission
 
-When the PR is marked Ready, `.github/workflows/quality.yml` runs **Full Admission** on the exact frozen work-branch head when reusable evidence is unavailable. Independent comprehensive gates are eligible to execute concurrently across the `kaori-ci` runner pool.
+When the PR is marked Ready, `.github/workflows/quality.yml` runs **Full Admission** on the exact frozen work-branch head when reusable evidence is unavailable. The five comprehensive gates execute as one native matrix with `strategy.fail-fast: true` and `max-parallel: 2`, matching the current single-host capacity ceiling. The Functional Tests critical path is declared in the first scheduling wave so the longest gate starts immediately alongside Static & Governance rather than waiting behind a shorter gate. A decisive matrix failure cancels remaining sibling matrix work instead of waiting for unrelated long-running gates to finish.
 
 After merge to `kaori/staging`, the workflow verifies exact source-tree/authority evidence and transition lineage. The normal staging path reuses the admitted evidence and runs fresh Fast Smoke; staging falls back to a fresh Full Admission only when reuse cannot be proven.
 
@@ -75,6 +77,8 @@ Full Admission owns the integrated evidence set:
 - Frontend;
 - Runtime & DAST;
 - CI Admission.
+
+Test execution ownership is intentionally non-overlapping: Static & Governance owns Contract/Migration pytest execution and emits `contract-migration.xml`; Functional Tests owns the remaining non-debug/non-E2E/non-contract/non-migration release suite plus explicit E2E. CI Admission downloads both JUnit artifacts and renders one complete KAORI taxonomy summary before publishing reusable Full Admission evidence.
 
 A green Developer Check does not replace Full Admission. A green Full Admission on the exact frozen Ready head is the comprehensive authority that staging normally reuses.
 

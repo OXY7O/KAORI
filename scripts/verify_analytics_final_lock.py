@@ -252,8 +252,8 @@ def main() -> int:
         errors,
     )
     require(
-        'tests/kubernetes/analytics' in quality_gate,
-        'quality_gate.sh must retain Analytics functional release evidence.',
+        "-m 'not debug and not e2e and not contract and not migration'" in quality_gate,
+        'quality_gate.sh must retain canonical functional release evidence.',
         errors,
     )
     for relative in RELEASE_EVIDENCE:
