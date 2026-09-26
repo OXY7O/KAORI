@@ -5,7 +5,8 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
 import yaml
-from kubernetes.client import V1TokenRequest, V1TokenRequestSpec
+from kubernetes.client.models.v1_token_request import V1TokenRequest
+from kubernetes.client.models.v1_token_request_spec import V1TokenRequestSpec
 from kubernetes.client.rest import ApiException
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
