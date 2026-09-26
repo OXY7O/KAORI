@@ -115,13 +115,7 @@ def normalize_kubernetes_audit_event(
 
     raw_groups = user.get('groups')
     groups_value = raw_groups if isinstance(raw_groups, list) else []
-    groups = tuple(
-        sorted(
-            normalized
-            for item in groups_value
-            if (normalized := _text(item, limit=255)) is not None
-        )
-    )
+    groups = tuple(sorted(normalized for item in groups_value if (normalized := _text(item, limit=255)) is not None))
     obj = _mapping(event.get('objectRef'))
     response = _mapping(event.get('responseStatus'))
     verb = _text(event.get('verb'), limit=40)
