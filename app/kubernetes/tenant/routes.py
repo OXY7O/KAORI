@@ -82,6 +82,13 @@ def index():
     )
 
 
+def _actor_user() -> User:
+    actor = db.session.get(User, int(current_user.id))
+    if actor is None:
+        raise ValueError('Authenticated KAORI user no longer exists.')
+    return actor
+
+
 def _required_int(name: str) -> int:
     value = str(request.form.get(name) or '').strip()
     if not value:
@@ -201,7 +208,7 @@ def add_group_membership_route():
 def revoke_membership_route(membership_id: int):
     try:
         _csrf()
-        membership = revoke_membership_committed(membership_id=membership_id, actor=current_user)
+        membership = revoke_membership_committed(membership_id=membership_id, actor=_actor_user())
     except (ValueError, ApiException) as exc:
         _record(
             event_type='kubernetes_tenant_membership_revoke_failed',
@@ -236,7 +243,7 @@ def create_access_grant_route():
             scope_type=str(request.form.get('scope_type') or ''),
             tenant_environment_id=_optional_int('tenant_environment_id'),
             tenant_namespace_id=_optional_int('tenant_namespace_id'),
-            actor=current_user,
+            actor=_actor_user(),
         )
     except (ValueError, ApiException, TenantAccessStateConflictError) as exc:
         _record(
@@ -263,7 +270,7 @@ def create_access_grant_route():
 def inspect_access_grant_route(grant_id: int):
     try:
         _csrf()
-        grant = inspect_access_grant_committed(grant_id=grant_id, actor=current_user)
+        grant = inspect_access_grant_committed(grant_id=grant_id, actor=_actor_user())
     except (ValueError, ApiException) as exc:
         _record(
             event_type='kubernetes_tenant_access_grant_inspect_failed',
@@ -289,7 +296,7 @@ def inspect_access_grant_route(grant_id: int):
 def reconcile_access_grant_route(grant_id: int):
     try:
         _csrf()
-        grant = reconcile_access_grant_committed(grant_id=grant_id, actor=current_user)
+        grant = reconcile_access_grant_committed(grant_id=grant_id, actor=_actor_user())
     except (ValueError, ApiException) as exc:
         _record(
             event_type='kubernetes_tenant_access_grant_reconcile_failed',
@@ -314,7 +321,7 @@ def reconcile_access_grant_route(grant_id: int):
 def revoke_access_grant_route(grant_id: int):
     try:
         _csrf()
-        grant = revoke_access_grant_committed(grant_id=grant_id, actor=current_user)
+        grant = revoke_access_grant_committed(grant_id=grant_id, actor=_actor_user())
     except (ValueError, ApiException) as exc:
         _record(
             event_type='kubernetes_tenant_access_grant_revoke_failed',
