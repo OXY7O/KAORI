@@ -161,6 +161,11 @@ def test_full_admission_test_taxonomy_evidence_is_aggregated_across_gate_owners(
     assert 'Download Static JUnit Evidence' in admission
     assert 'Download Functional JUnit Evidence' in admission
     assert 'Write Full Test Taxonomy Summary' in admission
+    assert 'id: full-test-evidence' in admission
+    assert "steps.full-test-evidence.outcome == 'success'" in admission
+    assert 'TEST_EVIDENCE: ${{ steps.full-test-evidence.outcome }}' in admission
+    assert 'TEST_EVIDENCE_OUTCOME: ${{ steps.full-test-evidence.outcome }}' in admission
+    assert 'Full test taxonomy evidence — $TEST_EVIDENCE' in admission
     assert '--junit tmp/ci-artifacts/admission-junit/static/contract-migration.xml' in admission
     assert '--junit tmp/ci-artifacts/admission-junit/functional/release-suite.xml' in admission
     assert '--junit tmp/ci-artifacts/admission-junit/functional/e2e.xml' in admission
