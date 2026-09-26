@@ -171,6 +171,7 @@ run_contract_migration_gate() {
         'Contract & Migration Safety' \
         -q \
         --tb=short \
+        --junitxml="$TEST_OUTPUT_DIR/contract-migration.xml" \
         tests/contracts \
         tests/migrations \
         -m 'contract or migration'
@@ -185,6 +186,11 @@ run_e2e_gate() {
         --junitxml="$TEST_OUTPUT_DIR/e2e.xml" \
         tests/e2e \
         -m e2e
+}
+
+render_contract_migration_taxonomy_summary() {
+    python scripts/ci_admission.py test-summary \
+        --junit "$TEST_OUTPUT_DIR/contract-migration.xml"
 }
 
 render_test_taxonomy_summary() {
@@ -296,6 +302,7 @@ run_static() {
         'UI Style' 'python scripts/verify_ui_style.py'
 
     run_contract_migration_gate
+    render_contract_migration_taxonomy_summary
 }
 
 run_tests() {
@@ -308,7 +315,7 @@ run_tests() {
         -q \
         --tb=short \
         --junitxml="$TEST_OUTPUT_DIR/release-suite.xml" \
-        -m 'not debug and not e2e'
+        -m 'not debug and not e2e and not contract and not migration'
 
     run_e2e_gate
     render_test_taxonomy_summary
