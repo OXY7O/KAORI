@@ -25,7 +25,7 @@ def test_deployer_access_is_service_account_only_and_namespace_scoped() -> None:
     assert "return 'ServiceAccount', subject_name" in access
     assert "profile.key.value == 'deployer'" in access
     assert "subject_kind == 'ServiceAccount'" in reconciliation
-    assert "grant.scope_type != TenantAccessScope.NAMESPACE.value" in policy
+    assert 'grant.scope_type != TenantAccessScope.NAMESPACE.value' in policy
     assert "grant.access_profile != 'deployer'" in policy
 
 
@@ -33,9 +33,9 @@ def test_deployer_migration_preserves_secret_material_boundary() -> None:
     migration = (ROOT / 'migrations/versions/20260926_tenant_deployer_credentials.py').read_text(encoding='utf-8')
 
     assert "down_revision = '20260926_tenant_credentials'" in migration
-    assert "deployer_service_account" in migration
-    assert "cicd_kubeconfig" in migration
-    assert "application_name" in migration
+    assert 'deployer_service_account' in migration
+    assert 'cicd_kubeconfig' in migration
+    assert 'application_name' in migration
     assert "sa.Column('token'" not in migration
     assert "sa.Column('kubeconfig'" not in migration
 
