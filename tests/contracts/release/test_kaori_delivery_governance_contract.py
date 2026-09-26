@@ -247,7 +247,10 @@ def test_work_branches_use_targeted_checks_before_ready_admission() -> None:
     assert 'uses: ./.github/workflows/quality.yml' in developer
 
     assert 'Every `kaori/*` branch except `kaori/staging` is a work branch.' in workflow
-    assert 'Work branches use path-aware Developer Check / targeted validation while Draft and on the exact Ready head.' in workflow
+    assert (
+        'Work branches use path-aware Developer Check / targeted validation while Draft and on the exact Ready head.'
+        in workflow
+    )
     assert 'Comprehensive validation authority begins at the Ready/frozen-candidate boundary' in workflow
 
 
