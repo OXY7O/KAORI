@@ -29,7 +29,8 @@ def test_ingestion_boundary_is_bounded_idempotent_and_projects_activity() -> Non
     assert 'def ingest_kubernetes_audit_events_committed(' in service
     assert 'def correlate_kubernetes_principal(' in service
     assert 'idempotency_key' in service
-    assert "event_type = 'kubernetes_tenant_audit'" in service
+    assert "_EVENT_TYPE = 'kubernetes_tenant_audit'" in service
+    assert 'activity.event_type = _EVENT_TYPE' in service
     assert 'deck_visible = False' in service
     assert "'secret_material_persisted': False" in service
     assert 'requestObject' not in service
