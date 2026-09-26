@@ -269,7 +269,9 @@ A Ready feature PR first attempts exact evidence reuse for its exact head. A new
 
 Full Admission preserves authoritative coverage for source linting/formatting, Pyright/type safety, architecture/import/reachability checks, contract and migration tests, functional/integration tests, frontend reproducibility, secrets/SAST/dependency/workflow security, production image build, vulnerability scan, runtime validation, DAST, application assertions, and code-health integrity.
 
-Successful Full Admission publishes immutable evidence containing source commit SHA, source tree SHA, validation profile version, authority fingerprint, run ID/attempt, workflow identity, required gate conclusions, and timestamp.
+The comprehensive gate set runs as one native GitHub Actions matrix with `fail-fast: true` and a current host ceiling of `max-parallel: 2`. Static & Governance, Security, Functional Tests, Frontend, and Runtime & DAST remain distinct matrix children. If any child fails, GitHub cancels queued/in-progress sibling matrix work instead of consuming the remaining comprehensive critical path. Cancellation cleanup remains mandatory for Compose/runtime resources.
+
+Successful Full Admission publishes immutable evidence containing source commit SHA, source tree SHA, validation profile version, authority fingerprint, run ID/attempt, workflow identity, required gate conclusions, and timestamp. Matrix aggregate success attests that every required comprehensive child succeeded; failed/cancelled matrices cannot publish reusable PASS evidence.
 
 Validation authority includes `.github/workflows/**`, `.github/ci/**`, `requirements/**`, Admission policy helpers, `scripts/quality_gate.sh`, `scripts/verify_*`, release validation contracts, this delivery workflow authority, Dockerfile, and compose authority.
 
