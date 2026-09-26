@@ -56,7 +56,7 @@ def test_managed_modes_cannot_be_reclassified_across_resource_kinds() -> None:
     with pytest.raises(ValueError, match='TLS'):
         validate_managed_resource_intent(_intent(kind='tls', mode='image_pull_secret'), material=None)
 
-    with pytest.raises(ValueError, match='registry'):
+    with pytest.raises(ValueError, match='Registry'):
         validate_managed_resource_intent(_intent(kind='registry', mode='platform_tls'), material=None)
 
 

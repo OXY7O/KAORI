@@ -13,7 +13,7 @@ Application teams may manage application-owned Secrets and ConfigMaps according 
 
 ## Secret boundary
 
-The canonical `TenantManagedResourceIntent` stores only non-secret intent and evidence: Tenant/Namespace identity, mode, resource name, source reference, lifecycle status, hashes, and rotation generation. Secret material is never persisted to the intent, Activity Log, reconciliation evidence, report payload, or routine UI.
+The canonical `TenantManagedResourceIntent` stores only non-secret intent and evidence: Tenant/Namespace identity, mode, resource name, source reference, lifecycle status, hashes, and rotation generation; secret material is never persisted to the intent, Activity Log, reconciliation evidence, report payload, or routine UI.
 
 Ephemeral secret material may exist only in memory while the provider mutation is executed. Provider evidence records a content digest and ownership metadata, never certificate private keys, registry auth values, or generated payloads.
 
