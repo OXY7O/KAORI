@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -12,8 +13,12 @@ def _step_block(workflow: str, step_name: str, next_step_name: str | None = None
     if next_step_name:
         end = workflow.index(f'- name: {next_step_name}', start)
     else:
-        next_step = workflow.find('\n      - name: ', start + len(f'- name: {step_name}'))
-        end = next_step if next_step != -1 else len(workflow)
+        search_start = start + len(f'- name: {step_name}')
+        next_step = workflow.find('\n      - name: ', search_start)
+        next_job_match = re.search(r'\n  [a-zA-Z0-9_-]+:\n', workflow[search_start:])
+        next_job = search_start + next_job_match.start() if next_job_match else -1
+        boundaries = [value for value in (next_step, next_job) if value != -1]
+        end = min(boundaries) if boundaries else len(workflow)
     return workflow[start:end]
 
 
