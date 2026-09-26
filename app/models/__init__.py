@@ -79,6 +79,8 @@ from app.models.tenant import (
     TenantNamespace,
     TenantNamespaceProvisioningStatus,
     TenantOwnershipStatus,
+    TenantProductionAccessException,
+    TenantProductionAccessExceptionStatus,
     TenantResourceProfile,
     TenantResourceProfileClass,
 )
@@ -138,6 +140,8 @@ __all__ = [
     'TenantNamespace',
     'TenantNamespaceProvisioningStatus',
     'TenantOwnershipStatus',
+    'TenantProductionAccessException',
+    'TenantProductionAccessExceptionStatus',
     'TenantResourceProfile',
     'TenantResourceProfileClass',
     'Role',

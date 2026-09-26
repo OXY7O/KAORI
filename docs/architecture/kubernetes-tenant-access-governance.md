@@ -292,3 +292,18 @@ Contextual guidance is explanatory only. Server-side validation and fail-closed 
 Create/reconcile/revoke mutations record non-secret AuditEvent evidence with the grant correlation identifier. Kubernetes audit correlation remains owned by #122.
 
 #115 and #116 may bind governed credential principals to the Access Grant contract, but they must reuse the same profile/scope semantics rather than redefining permissions.
+
+
+## Production access governance
+
+Production is pipeline-first. A namespace whose canonical Tenant Environment is `production` uses the same #114 namespaced RBAC contracts, but KAORI adds a production mutation policy above those permissions.
+
+- A valid namespace-scoped #116 Deployer ServiceAccount is the policy-compliant mutation authority.
+- Ordinary human credentials may retain governed read visibility where their Access Grant permits it, but mutation is denied by default.
+- A direct administrator mutation is technically allowed and attributable, but it is recorded as `production_direct_access` and `production_human_mutation` rather than being treated as normal pipeline delivery.
+- An ordinary human production mutation requires a separately committed, namespace-bounded exception with owner, approving administrator, reason, review/expiry time, and lifecycle state.
+- Production exceptions never create new RBAC. They only allow the production policy preflight to accept an already-authorized human grant for the bounded namespace/time window.
+- Exception validity is short-lived: eight hours by default and no more than seven days.
+- Unsupported or malformed production mutation identities fail closed.
+
+The production policy records non-secret decision evidence for downstream Activity, audit correlation (#122), and Tenant Governance Intelligence (#123). Kubernetes remains authoritative for effective authentication/RBAC; this policy does not replace Kubernetes audit evidence for operations performed outside KAORI-managed flows.
