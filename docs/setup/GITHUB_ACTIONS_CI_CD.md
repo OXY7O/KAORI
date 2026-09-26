@@ -63,7 +63,7 @@ Marking the PR Ready freezes that exact head and starts governed Full Admission.
 
 ### Final-candidate and staging admission
 
-When the PR is marked Ready, `.github/workflows/quality.yml` runs **Full Admission** on the exact frozen work-branch head when reusable evidence is unavailable. The five comprehensive gates execute as one native matrix with `strategy.fail-fast: true` and `max-parallel: 2`, matching the current single-host capacity ceiling. A decisive matrix failure cancels remaining sibling matrix work instead of waiting for unrelated long-running gates to finish.
+When the PR is marked Ready, `.github/workflows/quality.yml` runs **Full Admission** on the exact frozen work-branch head when reusable evidence is unavailable. The five comprehensive gates execute as one native matrix with `strategy.fail-fast: true` and `max-parallel: 2`, matching the current single-host capacity ceiling. The Functional Tests critical path is declared in the first scheduling wave so the longest gate starts immediately alongside Static & Governance rather than waiting behind a shorter gate. A decisive matrix failure cancels remaining sibling matrix work instead of waiting for unrelated long-running gates to finish.
 
 After merge to `kaori/staging`, the workflow verifies exact source-tree/authority evidence and transition lineage. The normal staging path reuses the admitted evidence and runs fresh Fast Smoke; staging falls back to a fresh Full Admission only when reuse cannot be proven.
 
