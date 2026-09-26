@@ -76,6 +76,13 @@ Full Admission owns the integrated evidence set:
 - Runtime & DAST;
 - CI Admission.
 
+Test execution ownership is single-owner by taxonomy:
+- Static & Governance owns Contract and Migration pytest execution and emits their JUnit/taxonomy evidence;
+- Functional Tests owns Unit, Functional, Integration, Security Regression, and Rendering/UI release pytest execution;
+- End-to-End remains an explicit Functional-path smoke gate.
+
+A category must not be executed again by another Full Admission child solely to recreate evidence that is already produced by its authoritative owner.
+
 A green Developer Check does not replace Full Admission. A green Full Admission on the exact frozen Ready head is the comprehensive authority that staging normally reuses.
 
 ## Continuous Delivery
