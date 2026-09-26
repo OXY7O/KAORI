@@ -19,7 +19,6 @@ on:
       - "release/**"
   pull_request:
     branches:
-      - kaori/staging
       - main
     types:
       - opened
@@ -31,6 +30,7 @@ on:
 permissions:
   contents: read
   actions: read
+  statuses: write
 
 concurrency:
   group: kaori-ci-${{ github.workflow }}-${{ github.ref }}
