@@ -1,6 +1,6 @@
 """add Tenant managed TLS and registry resource intents
 
-Revision ID: 20260926_tenant_managed_resources
+Revision ID: 20260926_tenant_managed_res
 Revises: 20260926_tenant_prod_access
 Create Date: 2026-09-26
 """
@@ -8,7 +8,7 @@ Create Date: 2026-09-26
 import sqlalchemy as sa
 from alembic import op
 
-revision = '20260926_tenant_managed_resources'
+revision = '20260926_tenant_managed_res'
 down_revision = '20260926_tenant_prod_access'
 branch_labels = None
 depends_on = None
