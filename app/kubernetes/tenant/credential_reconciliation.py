@@ -238,34 +238,40 @@ def _effective_target(core_api, rbac_api, credential: TenantCredential, namespac
         credential.service_account_name,
         namespace,
     )
-    if service_account is None:
-        return None
-
-    desired = _desired_target(credential, namespace)
     if credential.credential_type == TenantCredentialType.HUMAN_SERVICE_ACCOUNT.value:
+        binding_kind = 'RoleBinding'
         binding = _read_or_none(rbac_api.read_namespaced_role_binding, _human_binding_name(credential), namespace)
     else:
+        binding_kind = 'ClusterRoleBinding'
         binding = _read_or_none(rbac_api.read_cluster_role_binding, _admin_binding_name(credential))
-    if binding is None:
+    if service_account is None and binding is None:
         return None
 
-    subject = (binding.subjects or [None])[0]
+    subject = (binding.subjects or [None])[0] if binding is not None else None
     return {
         'namespace': namespace,
-        'service_account': {
-            'name': service_account.metadata.name,
-            'labels': {key: (service_account.metadata.labels or {}).get(key) for key in _labels(credential)},
-            'automount_service_account_token': bool(service_account.automount_service_account_token),
-        },
-        'binding': {
-            'kind': desired['binding']['kind'],
-            'name': binding.metadata.name,
-            'role_kind': binding.role_ref.kind,
-            'role_name': binding.role_ref.name,
-            'subject_kind': getattr(subject, 'kind', None),
-            'subject_name': getattr(subject, 'name', None),
-            'subject_namespace': getattr(subject, 'namespace', None),
-        },
+        'service_account': (
+            {
+                'name': service_account.metadata.name,
+                'labels': {key: (service_account.metadata.labels or {}).get(key) for key in _labels(credential)},
+                'automount_service_account_token': bool(service_account.automount_service_account_token),
+            }
+            if service_account is not None
+            else None
+        ),
+        'binding': (
+            {
+                'kind': binding_kind,
+                'name': binding.metadata.name,
+                'role_kind': binding.role_ref.kind,
+                'role_name': binding.role_ref.name,
+                'subject_kind': getattr(subject, 'kind', None),
+                'subject_name': getattr(subject, 'name', None),
+                'subject_namespace': getattr(subject, 'namespace', None),
+            }
+            if binding is not None
+            else None
+        ),
     }
 
 
@@ -278,20 +284,36 @@ def _normalized_desired(target: dict[str, Any]) -> dict[str, Any]:
     return normalized
 
 
+def _previous_target_names(credential: TenantCredential) -> set[str]:
+    evidence = credential.reconciliation_evidence_json or {}
+    names: set[str] = set()
+    for item in evidence.get('effective_targets') or []:
+        namespace = item.get('namespace') if isinstance(item, dict) else None
+        if namespace:
+            names.add(str(namespace))
+    for item in evidence.get('desired_targets') or []:
+        namespace = item.get('namespace') if isinstance(item, dict) else None
+        if namespace:
+            names.add(str(namespace))
+    return names
+
+
 def remove_native_credential_access(credential: TenantCredential) -> TenantCredential:
     cluster = _cluster_for_credential(credential)
     client = runtime_adapter.build_client(cluster)
     core_api = client.core_api()
     rbac_api = client.rbac_authorization_api()
-    targets = credential_target_namespaces(credential)
+    target_names = {item.namespace for item in credential_target_namespaces(credential)} | _previous_target_names(
+        credential
+    )
 
     if credential.credential_type == TenantCredentialType.ADMIN_KUBECONFIG.value:
         _delete_admin_binding(rbac_api, credential)
 
-    for namespace in targets:
+    for namespace in sorted(target_names):
         if credential.credential_type == TenantCredentialType.HUMAN_SERVICE_ACCOUNT.value:
-            _delete_human_binding(rbac_api, credential, namespace.namespace)
-        _delete_service_account(core_api, credential, namespace.namespace)
+            _delete_human_binding(rbac_api, credential, namespace)
+        _delete_service_account(core_api, credential, namespace)
     return credential
 
 
@@ -304,21 +326,26 @@ def inspect_native_credential(credential: TenantCredential) -> TenantCredential:
     refresh_credential_status(credential, now=now)
 
     targets = credential_target_namespaces(credential)
-    desired_targets = [_normalized_desired(_desired_target(credential, item.namespace)) for item in targets]
+    active = credential.status in {
+        TenantCredentialStatus.ACTIVE.value,
+        TenantCredentialStatus.RENEWAL_DUE.value,
+    }
+    target_names = {item.namespace for item in targets}
+    if not active:
+        target_names |= _previous_target_names(credential)
+
+    desired_targets = (
+        [_normalized_desired(_desired_target(credential, item.namespace)) for item in targets] if active else []
+    )
     effective_targets = [
         effective
-        for item in targets
-        if (effective := _effective_target(core_api, rbac_api, credential, item.namespace)) is not None
+        for namespace in sorted(target_names)
+        if (effective := _effective_target(core_api, rbac_api, credential, namespace)) is not None
     ]
 
     credential.desired_hash = _canonical_hash(desired_targets)
     credential.effective_hash = _canonical_hash(effective_targets)
     credential.last_reconciled_at = now
-
-    active = credential.status in {
-        TenantCredentialStatus.ACTIVE.value,
-        TenantCredentialStatus.RENEWAL_DUE.value,
-    }
     if active and desired_targets == effective_targets:
         credential.reconciliation_status = TenantCredentialReconciliationStatus.READY.value
         credential.reconciliation_message = 'Native Kubernetes credential identity matches committed Tenant intent.'
@@ -339,13 +366,24 @@ def inspect_native_credential(credential: TenantCredential) -> TenantCredential:
 
 
 def reconcile_native_credential(credential: TenantCredential) -> TenantCredential:
+    now = datetime.now(UTC)
+    refresh_credential_status(credential, now=now)
+    if credential.credential_type == TenantCredentialType.HUMAN_SERVICE_ACCOUNT.value:
+        grant = credential.access_grant
+        if (
+            grant is None
+            or grant.status != 'active'
+            or grant.membership.status != 'active'
+            or grant.membership.user is None
+            or not grant.membership.user.is_active
+        ):
+            credential.status = TenantCredentialStatus.REVOKED.value
+
     validate_credential_contract(credential)
     cluster = _cluster_for_credential(credential)
     client = runtime_adapter.build_client(cluster)
     core_api = client.core_api()
     rbac_api = client.rbac_authorization_api()
-    now = datetime.now(UTC)
-    refresh_credential_status(credential, now=now)
 
     try:
         if credential.status not in {

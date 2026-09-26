@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import server_for_cluster
-from app.kubernetes.tenant.access import validate_active_grant
+from app.kubernetes.tenant.access import validate_active_grant, validate_grant_scope
 from app.kubernetes.tenant.access_reconciliation import target_namespaces
 from app.models import Cluster
 from app.models.tenant import (
@@ -157,13 +157,19 @@ def validate_credential_contract(credential: TenantCredential) -> None:
         grant = credential.access_grant
         if grant is None:
             raise ValueError('Human Tenant credential requires an Access Grant.')
-        validate_active_grant(grant)
+        validate_grant_scope(grant)
         if grant.tenant_id != credential.tenant_id:
             raise ValueError('Tenant credential Access Grant belongs to another Tenant.')
         if grant.membership.principal_type != 'user' or grant.membership.user_id != credential.owner_user_id:
             raise ValueError('Human Tenant credential must be individually owned by the Access Grant user.')
         if grant.access_profile == 'deployer':
             raise ValueError('Human Tenant credentials cannot use the machine-only Deployer Access Profile.')
+        if credential.status in {
+            TenantCredentialStatus.ACTIVE.value,
+            TenantCredentialStatus.RENEWAL_DUE.value,
+            TenantCredentialStatus.ROTATING.value,
+        }:
+            validate_active_grant(grant)
         if delivery not in {
             TenantCredentialDeliveryMethod.JUMPSERVER,
             TenantCredentialDeliveryMethod.EXCEPTIONAL_KUBECONFIG,
@@ -198,9 +204,14 @@ def validate_credential_contract(credential: TenantCredential) -> None:
     targets = credential_target_namespaces(credential)
     if not targets:
         raise ValueError('Tenant credential has no managed namespace target.')
-    for namespace in targets:
-        if namespace.provisioning_status != TenantNamespaceProvisioningStatus.READY.value:
-            raise ValueError('Tenant credential targets must be Ready managed namespaces.')
+    if credential.status in {
+        TenantCredentialStatus.ACTIVE.value,
+        TenantCredentialStatus.RENEWAL_DUE.value,
+        TenantCredentialStatus.ROTATING.value,
+    }:
+        for namespace in targets:
+            if namespace.provisioning_status != TenantNamespaceProvisioningStatus.READY.value:
+                raise ValueError('Tenant credential targets must be Ready managed namespaces.')
 
 
 def token_ttl_seconds(
