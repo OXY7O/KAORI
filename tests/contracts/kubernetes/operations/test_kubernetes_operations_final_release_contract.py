@@ -60,7 +60,7 @@ def test_operations_release_evidence_is_documented_and_wired_to_the_quality_gate
     pattern = read('docs/design/patterns/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS.md')
 
     assert 'verify_kubernetes_operations_final_lock.py' in quality_gate
-    assert "-m 'not debug and not e2e'" in quality_gate
+    assert "-m 'not debug and not e2e and not contract and not migration'" in quality_gate
     assert 'test_kubernetes_operations_final_release_contract.py' in coverage
     assert 'tests/unit/kubernetes/operations/test_operation_flow_unit.py' in coverage
     assert 'tests/unit/kubernetes/operations/test_operation_flow.py' not in coverage

@@ -482,7 +482,7 @@ def verify() -> None:
 
     if 'python scripts/verify_operational_dashboard_standard.py' not in quality_gate:
         raise AssertionError('scripts/quality_gate.sh does not execute the dashboard standard verifier')
-    if "-m 'not debug and not e2e'" not in quality_gate:
+    if "-m 'not debug and not e2e and not contract and not migration'" not in quality_gate:
         raise AssertionError(
             'scripts/quality_gate.sh does not execute the canonical Dashboard functional release suite'
         )
