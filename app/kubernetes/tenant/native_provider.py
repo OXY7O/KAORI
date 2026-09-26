@@ -7,7 +7,6 @@ from app.extensions.db import db
 from app.kubernetes.tenant.access_reconciliation import reconcile_native_access_grant
 from app.kubernetes.tenant.credential_reconciliation import reconcile_native_credential
 from app.kubernetes.tenant.managed_resources import reconcile_native_managed_resource
-from app.kubernetes.tenant.provisioning import reconcile_native_namespace
 from app.kubernetes.tenant.providers import (
     TenantCapabilityStatus,
     TenantProviderCapability,
@@ -17,6 +16,7 @@ from app.kubernetes.tenant.providers import (
     TenantProviderResult,
     TenantProviderState,
 )
+from app.kubernetes.tenant.provisioning import reconcile_native_namespace
 from app.models.kubernetes import KubernetesConnection
 from app.models.tenant import Tenant
 from app.models.tenant_managed_resource import TenantManagedResourceKind
