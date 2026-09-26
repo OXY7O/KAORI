@@ -15,6 +15,7 @@ from app.kubernetes.tenant.access import (
     validate_grant_scope,
 )
 from app.kubernetes.tenant.access_reconciliation import inspect_native_access_grant, reconcile_native_access_grant
+from app.kubernetes.tenant.credential_service import revoke_credentials_for_access_grant
 from app.models import AuditEvent, User
 from app.models.tenant import (
     Tenant,
@@ -232,12 +233,13 @@ def revoke_access_grant_committed(*, grant_id: int, actor: User | None = None) -
 
     grant.status = TenantAccessGrantStatus.REVOKED.value
     try:
+        revoke_credentials_for_access_grant(grant, actor=actor)
         reconcile_native_access_grant(grant)
         _record_grant_event(
             actor=actor,
             grant=grant,
             action='tenant_access_grant.revoked',
-            summary='Tenant Access Grant was revoked and effective RoleBinding access was removed.',
+            summary='Tenant Access Grant and dependent credential access were removed from Kubernetes.',
             outcome='success',
         )
         db.session.commit()
