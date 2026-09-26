@@ -114,11 +114,12 @@ def evaluate_ingress_hosts(
     active = [
         item
         for item in reservations
-        if item.status == TenantDomainReservationStatus.ACTIVE.value
-        and item.tenant_environment_id == environment_id
+        if item.status == TenantDomainReservationStatus.ACTIVE.value and item.tenant_environment_id == environment_id
     ]
     if not hosts:
-        return TenantPolicyDecision(False, ('unregistered_domain',), 'Ingress requires at least one registered hostname.')
+        return TenantPolicyDecision(
+            False, ('unregistered_domain',), 'Ingress requires at least one registered hostname.'
+        )
 
     missing = [
         _normalize_hostname(host)

@@ -49,10 +49,13 @@ def test_wildcard_is_explicit_and_does_not_match_apex() -> None:
 
 def test_cross_scope_domain_collisions_are_detected_fail_closed() -> None:
     assert reservations_conflict(_reservation('x.com'), _reservation('x.com', tenant_id='tenant-b')) is True
-    assert reservations_conflict(
-        _reservation('*.x.com', 'wildcard'),
-        _reservation('api.x.com', tenant_id='tenant-b'),
-    ) is True
+    assert (
+        reservations_conflict(
+            _reservation('*.x.com', 'wildcard'),
+            _reservation('api.x.com', tenant_id='tenant-b'),
+        )
+        is True
+    )
 
 
 def test_default_exposure_profile_denies_public_service_types() -> None:

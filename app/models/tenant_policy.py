@@ -41,9 +41,7 @@ class TenantDomainReservation(db.Model):
     )
     hostname_pattern: Mapped[str] = mapped_column(String(253), nullable=False)
     match_mode: Mapped[str] = mapped_column(String(20), nullable=False, default=TenantDomainMatchMode.EXACT.value)
-    status: Mapped[str] = mapped_column(
-        String(20), nullable=False, default=TenantDomainReservationStatus.ACTIVE.value
-    )
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default=TenantDomainReservationStatus.ACTIVE.value)
     correlation_id: Mapped[str] = mapped_column(String(64), nullable=False, default=lambda: str(uuid.uuid4()))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
@@ -92,9 +90,7 @@ class TenantExposurePolicy(db.Model):
     allow_node_port: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     allow_load_balancer: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     allow_external_name: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    status: Mapped[str] = mapped_column(
-        String(20), nullable=False, default=TenantExposurePolicyStatus.ACTIVE.value
-    )
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default=TenantExposurePolicyStatus.ACTIVE.value)
     correlation_id: Mapped[str] = mapped_column(String(64), nullable=False, default=lambda: str(uuid.uuid4()))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
