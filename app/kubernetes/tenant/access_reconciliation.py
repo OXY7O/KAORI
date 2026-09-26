@@ -46,11 +46,17 @@ def _binding_name(grant: TenantAccessGrant) -> str:
     return f'kaori-tenant-grant-{grant.public_id}'
 
 
-def _labels(grant: TenantAccessGrant) -> dict[str, str]:
+def _role_labels(grant: TenantAccessGrant) -> dict[str, str]:
     return {
         _MANAGED_BY_KEY: _MANAGED_BY_VALUE,
         _TENANT_ID_KEY: grant.tenant_id,
         _ACCESS_PROFILE_KEY: grant.access_profile,
+    }
+
+
+def _binding_labels(grant: TenantAccessGrant) -> dict[str, str]:
+    return {
+        **_role_labels(grant),
         _ACCESS_GRANT_KEY: grant.public_id,
     }
 
@@ -79,7 +85,8 @@ def target_namespaces(grant: TenantAccessGrant) -> list[TenantNamespace]:
 def desired_native_access_contract(grant: TenantAccessGrant, namespace: str) -> dict[str, Any]:
     profile = get_access_profile(grant.access_profile, grant.access_profile_version)
     subject_kind, subject_name = membership_subject(grant.membership)
-    labels = _labels(grant)
+    role_labels = _role_labels(grant)
+    binding_labels = _binding_labels(grant)
     rules = [
         {
             'api_groups': list(rule.api_groups),
@@ -92,12 +99,12 @@ def desired_native_access_contract(grant: TenantAccessGrant, namespace: str) -> 
         'namespace': namespace,
         'role': {
             'name': _role_name(grant),
-            'labels': labels,
+            'labels': role_labels,
             'rules': rules,
         },
         'role_binding': {
             'name': _binding_name(grant),
-            'labels': labels,
+            'labels': binding_labels,
             'role_ref': {
                 'api_group': 'rbac.authorization.k8s.io',
                 'kind': 'Role',
