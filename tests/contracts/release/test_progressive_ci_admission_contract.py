@@ -171,6 +171,24 @@ def test_full_admission_test_taxonomy_evidence_is_aggregated_across_gate_owners(
     assert '--junit tmp/ci-artifacts/admission-junit/functional/e2e.xml' in admission
 
 
+def test_full_admission_junit_handoff_survives_failed_job_reruns() -> None:
+    source = read(WORKFLOW)
+    matrix = source.split('\n  full-admission-gates:', 1)[1].split('\n  integration-smoke:', 1)[0]
+    admission = source.split('\n  admission:', 1)[1]
+
+    static_name = 'full-admission-junit-static-${{ github.run_id }}'
+    functional_name = 'full-admission-junit-functional-${{ github.run_id }}'
+
+    assert f'name: {static_name}' in matrix
+    assert f'name: {functional_name}' in matrix
+    assert f'name: {static_name}' in admission
+    assert f'name: {functional_name}' in admission
+    assert 'full-admission-junit-static-${{ github.run_id }}-${{ github.run_attempt }}' not in source
+    assert 'full-admission-junit-functional-${{ github.run_id }}-${{ github.run_attempt }}' not in source
+    assert matrix.count('overwrite: true') >= 2
+    assert '--run-attempt "$GITHUB_RUN_ATTEMPT"' in admission
+
+
 def test_successful_matrix_preserves_per_gate_evidence_vocabulary() -> None:
     source = read(WORKFLOW)
     admission = source.split('\n  admission:', 1)[1]

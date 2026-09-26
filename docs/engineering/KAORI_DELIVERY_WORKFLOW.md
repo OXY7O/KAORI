@@ -271,6 +271,8 @@ The comprehensive gate set runs as one native GitHub Actions matrix with `fail-f
 
 Release-test ownership is non-overlapping. Static & Governance owns Contract/Migration pytest execution; Functional Tests owns the remaining release taxonomy plus explicit E2E. Their JUnit artifacts are recombined by CI Admission into one complete taxonomy evidence surface before reusable Full Admission evidence is published.
 
+Transient JUnit handoff artifacts are keyed to the workflow run rather than `github.run_attempt`. This allows GitHub Actions **Re-run failed jobs** to retain JUnit evidence from matrix children that already succeeded while a newly successful rerun child replaces only its own transient handoff artifact. CI Admission still requires complete matrix success before publishing reusable PASS evidence, and the final evidence keeps run-attempt identity.
+
 Successful Full Admission publishes immutable evidence containing source commit SHA, source tree SHA, validation profile version, authority fingerprint, run ID/attempt, workflow identity, required gate conclusions, and timestamp. Matrix aggregate success attests that every required comprehensive child succeeded; failed/cancelled matrices cannot publish reusable PASS evidence.
 
 Validation authority includes `.github/workflows/**`, `.github/ci/**`, `requirements/**`, Admission policy helpers, `scripts/quality_gate.sh`, `scripts/verify_*`, release validation contracts, this delivery workflow authority, Dockerfile, and compose authority.
