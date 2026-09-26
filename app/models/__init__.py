@@ -84,6 +84,11 @@ from app.models.tenant import (
     TenantResourceProfile,
     TenantResourceProfileClass,
 )
+from app.models.tenant_audit import (
+    TenantAuditCorrelationStatus,
+    TenantAuditEvidence,
+    TenantAuditPrincipalKind,
+)
 from app.models.tenant_managed_resource import (
     TenantManagedResourceIntent,
     TenantManagedResourceKind,
@@ -96,11 +101,6 @@ from app.models.tenant_policy import (
     TenantDomainReservationStatus,
     TenantExposurePolicy,
     TenantExposurePolicyStatus,
-)
-from app.models.tenant_audit import (
-    TenantAuditCorrelationStatus,
-    TenantAuditEvidence,
-    TenantAuditPrincipalKind,
 )
 from app.models.user import User
 
