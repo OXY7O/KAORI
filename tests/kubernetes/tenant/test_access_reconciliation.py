@@ -38,7 +38,7 @@ class FakeRbacApi:
         self.bindings.pop((namespace, name), None)
 
 
-def _grant():
+def _grant(public_id='11111111-2222-3333-4444-555555555555'):
     membership = SimpleNamespace(
         status='active',
         principal_type='user',
@@ -48,7 +48,7 @@ def _grant():
         tenant_id='tenant-a',
     )
     return SimpleNamespace(
-        public_id='11111111-2222-3333-4444-555555555555',
+        public_id=public_id,
         tenant_id='tenant-a',
         access_profile='operator',
         access_profile_version=1,
@@ -67,6 +67,28 @@ def test_native_role_and_rolebinding_are_idempotent() -> None:
 
     effective = access_reconciliation._effective_target_contract(api, desired)
     assert effective == access_reconciliation._normalized_desired(desired)
+
+
+def test_shared_profile_role_remains_stable_across_multiple_grants() -> None:
+    api = FakeRbacApi()
+    first = _grant('11111111-2222-3333-4444-555555555555')
+    second = _grant('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')
+    first_desired = desired_native_access_contract(first, 'payments-dev')
+    second_desired = desired_native_access_contract(second, 'payments-dev')
+
+    access_reconciliation._upsert_role(api, first_desired)
+    access_reconciliation._upsert_binding(api, first_desired)
+    access_reconciliation._upsert_role(api, second_desired)
+    access_reconciliation._upsert_binding(api, second_desired)
+
+    role = next(iter(api.roles.values()))
+    assert 'kaori.io/access-grant' not in (role.metadata.labels or {})
+    assert first_desired['role'] == second_desired['role']
+    assert first_desired['role_binding']['labels']['kaori.io/access-grant'] == first.public_id
+    assert second_desired['role_binding']['labels']['kaori.io/access-grant'] == second.public_id
+    assert access_reconciliation._effective_target_contract(api, first_desired) == (
+        access_reconciliation._normalized_desired(first_desired)
+    )
 
 
 def test_native_reconciliation_refuses_foreign_rolebinding_ownership() -> None:
