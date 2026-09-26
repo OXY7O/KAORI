@@ -43,7 +43,8 @@ def test_operator_has_interactive_troubleshooting_without_security_admin() -> No
     assert _verbs_for_resource('operator', 'pods/exec') == {'create'}
     assert _verbs_for_resource('operator', 'pods/portforward') == {'create'}
     resources = _resource_names('operator')
-    assert not {'roles', 'rolebindings', 'serviceaccounts', 'namespaces'} & resources
+    assert not {'roles', 'rolebindings', 'namespaces'} & resources
+    assert _verbs_for_resource('operator', 'serviceaccounts') == {'get', 'list', 'watch'}
 
 
 def test_tenant_admin_does_not_gain_platform_security_controls() -> None:
