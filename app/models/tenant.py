@@ -702,9 +702,7 @@ class TenantManagedResourceIntent(db.Model):
     mode: Mapped[str] = mapped_column(String(40), nullable=False)
     resource_name: Mapped[str] = mapped_column(String(253), nullable=False)
     source_reference: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    status: Mapped[str] = mapped_column(
-        String(30), nullable=False, default=TenantManagedResourceStatus.PENDING.value
-    )
+    status: Mapped[str] = mapped_column(String(30), nullable=False, default=TenantManagedResourceStatus.PENDING.value)
     rotation_generation: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     desired_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     effective_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
