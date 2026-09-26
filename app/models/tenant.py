@@ -62,6 +62,7 @@ class TenantNamespaceProvisioningStatus(StrEnum):
 class TenantMembershipPrincipalType(StrEnum):
     USER = 'user'
     GROUP = 'group'
+    SERVICE_ACCOUNT = 'service_account'
 
 
 class TenantMembershipStatus(StrEnum):
@@ -98,12 +99,14 @@ class TenantAccessReconciliationStatus(StrEnum):
 class TenantCredentialType(StrEnum):
     HUMAN_SERVICE_ACCOUNT = 'human_service_account'
     ADMIN_KUBECONFIG = 'admin_kubeconfig'
+    DEPLOYER_SERVICE_ACCOUNT = 'deployer_service_account'
 
 
 class TenantCredentialDeliveryMethod(StrEnum):
     JUMPSERVER = 'jumpserver'
     EXCEPTIONAL_KUBECONFIG = 'exceptional_kubeconfig'
     ADMIN_KUBECONFIG = 'admin_kubeconfig'
+    CICD_KUBECONFIG = 'cicd_kubeconfig'
 
 
 class TenantCredentialStatus(StrEnum):
@@ -444,8 +447,14 @@ class TenantMembership(db.Model):
         UniqueConstraint('correlation_id', name='uq_tenant_memberships_correlation_id'),
         UniqueConstraint('tenant_id', 'user_id', name='uq_tenant_memberships_tenant_user'),
         UniqueConstraint('tenant_id', 'group_id', name='uq_tenant_memberships_tenant_group'),
+        UniqueConstraint(
+            'tenant_id',
+            'principal_type',
+            'subject_name',
+            name='uq_tenant_memberships_tenant_principal_subject',
+        ),
         CheckConstraint(
-            "principal_type IN ('user', 'group')",
+            "principal_type IN ('user', 'group', 'service_account')",
             name='ck_tenant_memberships_principal_type',
         ),
         CheckConstraint(
@@ -454,7 +463,8 @@ class TenantMembership(db.Model):
         ),
         CheckConstraint(
             "((principal_type = 'user' AND user_id IS NOT NULL AND group_id IS NULL) "
-            "OR (principal_type = 'group' AND group_id IS NOT NULL AND user_id IS NULL))",
+            "OR (principal_type = 'group' AND group_id IS NOT NULL AND user_id IS NULL) "
+            "OR (principal_type = 'service_account' AND user_id IS NULL AND group_id IS NULL))",
             name='ck_tenant_memberships_principal_reference',
         ),
         Index('ix_tenant_memberships_tenant_status', 'tenant_id', 'status'),
@@ -549,6 +559,7 @@ class TenantCredential(db.Model):
     )
     credential_type: Mapped[str] = mapped_column(String(30), nullable=False)
     purpose: Mapped[str] = mapped_column(String(120), nullable=False)
+    application_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     delivery_method: Mapped[str] = mapped_column(String(30), nullable=False)
     status: Mapped[str] = mapped_column(String(30), nullable=False, default=TenantCredentialStatus.ACTIVE.value)
     reconciliation_status: Mapped[str] = mapped_column(
@@ -605,11 +616,11 @@ class TenantCredential(db.Model):
         ),
         UniqueConstraint('tenant_id', 'service_account_name', name='uq_tenant_credentials_service_account_name'),
         CheckConstraint(
-            "credential_type IN ('human_service_account', 'admin_kubeconfig')",
+            "credential_type IN ('human_service_account', 'admin_kubeconfig', 'deployer_service_account')",
             name='ck_tenant_credentials_type',
         ),
         CheckConstraint(
-            "delivery_method IN ('jumpserver', 'exceptional_kubeconfig', 'admin_kubeconfig')",
+            "delivery_method IN ('jumpserver', 'exceptional_kubeconfig', 'admin_kubeconfig', 'cicd_kubeconfig')",
             name='ck_tenant_credentials_delivery_method',
         ),
         CheckConstraint(
@@ -622,10 +633,14 @@ class TenantCredential(db.Model):
         ),
         CheckConstraint(
             "((credential_type = 'human_service_account' AND access_grant_id IS NOT NULL "
-            'AND anchor_namespace_id IS NULL '
+            'AND anchor_namespace_id IS NULL AND application_name IS NULL '
             "AND delivery_method IN ('jumpserver', 'exceptional_kubeconfig')) "
             "OR (credential_type = 'admin_kubeconfig' AND access_grant_id IS NULL "
-            "AND anchor_namespace_id IS NOT NULL AND delivery_method = 'admin_kubeconfig'))",
+            "AND anchor_namespace_id IS NOT NULL AND application_name IS NULL "
+            "AND delivery_method = 'admin_kubeconfig') "
+            "OR (credential_type = 'deployer_service_account' AND access_grant_id IS NOT NULL "
+            "AND anchor_namespace_id IS NULL AND application_name IS NOT NULL "
+            "AND delivery_method = 'cicd_kubeconfig'))",
             name='ck_tenant_credentials_type_scope',
         ),
         CheckConstraint(
@@ -642,6 +657,7 @@ class TenantCredential(db.Model):
         ),
         Index('ix_tenant_credentials_tenant_status', 'tenant_id', 'status'),
         Index('ix_tenant_credentials_owner_status', 'owner_user_id', 'status'),
+        Index('ix_tenant_credentials_application', 'tenant_id', 'application_name', 'status'),
         Index('ix_tenant_credentials_validity', 'status', 'renewal_due_at', 'valid_until'),
         Index('ix_tenant_credentials_reconciliation', 'tenant_id', 'reconciliation_status'),
     )
