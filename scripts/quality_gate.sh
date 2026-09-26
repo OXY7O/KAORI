@@ -310,24 +310,6 @@ run_tests() {
         --junitxml="$TEST_OUTPUT_DIR/release-suite.xml" \
         -m 'not debug and not e2e'
 
-    run_pytest_capture \
-        'Domain Characterization Tests' \
-        -q \
-        --tb=short \
-        tests/welcome \
-        tests/access \
-        tests/integrations \
-        tests/kubernetes/dashboard \
-        tests/kubernetes/analytics \
-        tests/kubernetes/inventory \
-        tests/kubernetes/governance \
-        tests/kubernetes/operations \
-        tests/storage \
-        tests/platform_operations \
-        tests/reports \
-        tests/settings \
-        -m functional
-
     run_e2e_gate
     render_test_taxonomy_summary
 }
