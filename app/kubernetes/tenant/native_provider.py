@@ -197,7 +197,6 @@ class NativeKubernetesTenantProvider:
         effective_hash: str | None = None,
         evidence: dict[str, object] | None = None,
         message: str = '',
-        error_code: str | None = None,
     ) -> TenantProviderOperationResult:
         return TenantProviderOperationResult(
             provider_key=self.provider_key,
@@ -208,7 +207,6 @@ class NativeKubernetesTenantProvider:
             effective_hash=effective_hash,
             evidence=evidence,
             message=message,
-            error_code=error_code,
         )
 
     def reconcile_namespace(self, record) -> TenantProviderOperationResult:
