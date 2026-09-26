@@ -622,7 +622,7 @@ class TenantCredential(db.Model):
         ),
         CheckConstraint(
             "((credential_type = 'human_service_account' AND access_grant_id IS NOT NULL "
-            "AND anchor_namespace_id IS NULL "
+            'AND anchor_namespace_id IS NULL '
             "AND delivery_method IN ('jumpserver', 'exceptional_kubeconfig')) "
             "OR (credential_type = 'admin_kubeconfig' AND access_grant_id IS NULL "
             "AND anchor_namespace_id IS NOT NULL AND delivery_method = 'admin_kubeconfig'))",
@@ -630,8 +630,8 @@ class TenantCredential(db.Model):
         ),
         CheckConstraint(
             "(delivery_method != 'exceptional_kubeconfig' "
-            "OR (exception_authorized_by_user_id IS NOT NULL AND exception_reason IS NOT NULL "
-            "AND exception_valid_until IS NOT NULL))",
+            'OR (exception_authorized_by_user_id IS NOT NULL AND exception_reason IS NOT NULL '
+            'AND exception_valid_until IS NOT NULL))',
             name='ck_tenant_credentials_exception_approval',
         ),
         CheckConstraint('rotation_generation >= 1', name='ck_tenant_credentials_generation'),
@@ -651,9 +651,7 @@ class TenantCredentialGeneration(db.Model):
     __tablename__ = 'tenant_credential_generations'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    credential_id: Mapped[int] = mapped_column(
-        ForeignKey('tenant_credentials.id', ondelete='CASCADE'), nullable=False
-    )
+    credential_id: Mapped[int] = mapped_column(ForeignKey('tenant_credentials.id', ondelete='CASCADE'), nullable=False)
     generation: Mapped[int] = mapped_column(Integer, nullable=False)
     provider_evidence_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -668,4 +666,3 @@ class TenantCredentialGeneration(db.Model):
         CheckConstraint('generation >= 1', name='ck_tenant_credential_generations_generation'),
         Index('ix_tenant_credential_generations_credential', 'credential_id', 'generation'),
     )
-

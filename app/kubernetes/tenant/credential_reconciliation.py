@@ -354,7 +354,9 @@ def inspect_native_credential(credential: TenantCredential) -> TenantCredential:
         credential.reconciliation_message = 'Tenant credential has no effective Kubernetes identity or binding.'
     else:
         credential.reconciliation_status = TenantCredentialReconciliationStatus.DRIFTED.value
-        credential.reconciliation_message = 'Native Kubernetes credential identity differs from committed Tenant intent.'
+        credential.reconciliation_message = (
+            'Native Kubernetes credential identity differs from committed Tenant intent.'
+        )
 
     credential.reconciliation_evidence_json = {
         'generation': credential.rotation_generation,

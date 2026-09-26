@@ -255,7 +255,9 @@ def build_namespace_access_package(
 
     if credential.credential_type == TenantCredentialType.HUMAN_SERVICE_ACCOUNT.value:
         profile = credential.access_grant.access_profile if credential.access_grant is not None else 'unknown'
-        profile_version = credential.access_grant.access_profile_version if credential.access_grant is not None else None
+        profile_version = (
+            credential.access_grant.access_profile_version if credential.access_grant is not None else None
+        )
         methods = ('jumpserver',)
         if credential.delivery_method == TenantCredentialDeliveryMethod.EXCEPTIONAL_KUBECONFIG.value:
             methods = ('jumpserver', 'exceptional_kubeconfig')

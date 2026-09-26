@@ -199,9 +199,7 @@ def create_human_credential_committed(
         raise ValueError('Human Tenant credentials require JumpServer or governed exceptional kubeconfig delivery.')
 
     approver = (
-        db.session.get(User, exception_authorized_by_user_id)
-        if exception_authorized_by_user_id is not None
-        else None
+        db.session.get(User, exception_authorized_by_user_id) if exception_authorized_by_user_id is not None else None
     )
     started, renewal_due_at, valid_until = _validity_window(validity_days=validity_days)
     public_id = str(uuid.uuid4())
@@ -332,12 +330,10 @@ def create_admin_credential_committed(
 
 
 def _retire_current_generation(credential: TenantCredential, *, retired_at: datetime) -> None:
-    current = (
-        TenantCredentialGeneration.query.filter_by(
-            credential_id=credential.id,
-            generation=credential.rotation_generation,
-        ).first()
-    )
+    current = TenantCredentialGeneration.query.filter_by(
+        credential_id=credential.id,
+        generation=credential.rotation_generation,
+    ).first()
     if current is not None and current.retired_at is None:
         current.retired_at = retired_at
 

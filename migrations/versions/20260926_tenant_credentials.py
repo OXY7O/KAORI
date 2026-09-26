@@ -63,7 +63,7 @@ def upgrade() -> None:
         ),
         sa.CheckConstraint(
             "((credential_type = 'human_service_account' AND access_grant_id IS NOT NULL "
-            "AND anchor_namespace_id IS NULL "
+            'AND anchor_namespace_id IS NULL '
             "AND delivery_method IN ('jumpserver', 'exceptional_kubeconfig')) "
             "OR (credential_type = 'admin_kubeconfig' AND access_grant_id IS NULL "
             "AND anchor_namespace_id IS NOT NULL AND delivery_method = 'admin_kubeconfig'))",
@@ -71,8 +71,8 @@ def upgrade() -> None:
         ),
         sa.CheckConstraint(
             "(delivery_method != 'exceptional_kubeconfig' "
-            "OR (exception_authorized_by_user_id IS NOT NULL AND exception_reason IS NOT NULL "
-            "AND exception_valid_until IS NOT NULL))",
+            'OR (exception_authorized_by_user_id IS NOT NULL AND exception_reason IS NOT NULL '
+            'AND exception_valid_until IS NOT NULL))',
             name='ck_tenant_credentials_exception_approval',
         ),
         sa.CheckConstraint('rotation_generation >= 1', name='ck_tenant_credentials_generation'),
