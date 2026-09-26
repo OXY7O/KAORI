@@ -190,6 +190,17 @@ def test_fast_profiles_wire_transition_lineage_verification_before_reuse() -> No
     assert 'lineage_reason' in source
 
 
+def test_full_admission_assigns_contract_migration_tests_to_one_owner() -> None:
+    quality = read(QUALITY_GATE)
+    workflow = read(WORKFLOW)
+
+    assert "-m 'not debug and not e2e and not contract and not migration'" in quality
+    assert "'Contract & Migration Safety'" in quality
+    assert '--junitxml="$TEST_OUTPUT_DIR/contract-migration.xml"' in quality
+    assert 'render_contract_migration_taxonomy_summary' in quality
+    assert 'tmp/ci-artifacts/test-output' in workflow
+
+
 def test_full_admission_keeps_canonical_evidence_inventory_under_concise_job_names() -> None:
     source = read(WORKFLOW)
     policy = load_policy()
