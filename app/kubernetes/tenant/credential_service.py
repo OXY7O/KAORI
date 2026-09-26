@@ -4,14 +4,16 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
+import yaml
 from kubernetes.client import V1TokenRequest, V1TokenRequestSpec
 from kubernetes.client.rest import ApiException
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-import yaml
 
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import connection_for_cluster
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
+    connection_for_cluster,
+)
 from app.kubernetes.tenant.credential import (
     DEFAULT_CREDENTIAL_VALIDITY_DAYS,
     DEFAULT_RENEWAL_WINDOW_DAYS,
