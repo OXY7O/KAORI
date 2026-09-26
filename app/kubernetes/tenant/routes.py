@@ -9,18 +9,17 @@ from kubernetes.client.rest import ApiException
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import any_permission_required, permission_required
-from app.extensions.db import db
 from app.kubernetes.tenant.access_service import (
     TenantAccessStateConflictError,
-    add_group_membership_committed,
-    add_user_membership_committed,
-    create_access_grant_committed,
-    create_tenant_group_committed,
+    add_group_membership_by_id_committed,
+    add_user_membership_by_id_committed,
+    create_access_grant_by_id_committed,
+    create_tenant_group_by_id_committed,
     get_tenant_access_context,
-    inspect_access_grant_committed,
-    reconcile_access_grant_committed,
-    revoke_access_grant_committed,
-    revoke_membership_committed,
+    inspect_access_grant_by_id_committed,
+    reconcile_access_grant_by_id_committed,
+    revoke_access_grant_by_id_committed,
+    revoke_membership_by_id_committed,
 )
 from app.kubernetes.tenant.capacity_governance import (
     TenantCapacityStateConflictError,
@@ -34,8 +33,6 @@ from app.kubernetes.tenant.service import (
     get_tenant_context,
     provision_native_namespace_committed,
 )
-from app.models import User
-from app.models.tenant import Tenant, TenantGroup
 from app.platform_operations.notifications.service import record_operational_activity
 
 tenant_bp = Blueprint('tenant', __name__, url_prefix='/kubernetes/tenant')
@@ -82,13 +79,6 @@ def index():
     )
 
 
-def _actor_user() -> User:
-    actor = db.session.get(User, int(current_user.id))
-    if actor is None:
-        raise ValueError('Authenticated KAORI user no longer exists.')
-    return actor
-
-
 def _required_int(name: str) -> int:
     value = str(request.form.get(name) or '').strip()
     if not value:
@@ -106,11 +96,8 @@ def _optional_int(name: str) -> int | None:
 def create_group_route():
     try:
         _csrf()
-        tenant = db.session.get(Tenant, str(request.form.get('tenant_id') or '').strip())
-        if tenant is None:
-            raise ValueError('Select a Tenant.')
-        group = create_tenant_group_committed(
-            tenant=tenant,
+        group = create_tenant_group_by_id_committed(
+            tenant_id=str(request.form.get('tenant_id') or '').strip(),
             name=str(request.form.get('name') or ''),
             subject_name=str(request.form.get('subject_name') or '') or None,
         )
@@ -138,13 +125,9 @@ def create_group_route():
 def add_user_membership_route():
     try:
         _csrf()
-        tenant = db.session.get(Tenant, str(request.form.get('tenant_id') or '').strip())
-        user = db.session.get(User, _required_int('user_id'))
-        if tenant is None or user is None:
-            raise ValueError('Select a valid Tenant and active user.')
-        membership = add_user_membership_committed(
-            tenant=tenant,
-            user=user,
+        membership = add_user_membership_by_id_committed(
+            tenant_id=str(request.form.get('tenant_id') or '').strip(),
+            user_id=_required_int('user_id'),
             subject_name=str(request.form.get('subject_name') or '') or None,
         )
     except (ValueError, TenantAccessStateConflictError) as exc:
@@ -175,11 +158,10 @@ def add_user_membership_route():
 def add_group_membership_route():
     try:
         _csrf()
-        tenant = db.session.get(Tenant, str(request.form.get('tenant_id') or '').strip())
-        group = db.session.get(TenantGroup, _required_int('group_id'))
-        if tenant is None or group is None:
-            raise ValueError('Select a valid Tenant and Tenant Group.')
-        membership = add_group_membership_committed(tenant=tenant, group=group)
+        membership = add_group_membership_by_id_committed(
+            tenant_id=str(request.form.get('tenant_id') or '').strip(),
+            group_id=_required_int('group_id'),
+        )
     except (ValueError, TenantAccessStateConflictError) as exc:
         _record(
             event_type='kubernetes_tenant_membership_create_failed',
@@ -208,7 +190,10 @@ def add_group_membership_route():
 def revoke_membership_route(membership_id: int):
     try:
         _csrf()
-        membership = revoke_membership_committed(membership_id=membership_id, actor=_actor_user())
+        membership = revoke_membership_by_id_committed(
+            membership_id=membership_id,
+            actor_user_id=int(current_user.id),
+        )
     except (ValueError, ApiException) as exc:
         _record(
             event_type='kubernetes_tenant_membership_revoke_failed',
@@ -237,13 +222,13 @@ def revoke_membership_route(membership_id: int):
 def create_access_grant_route():
     try:
         _csrf()
-        grant = create_access_grant_committed(
+        grant = create_access_grant_by_id_committed(
             membership_id=_required_int('membership_id'),
             access_profile=str(request.form.get('access_profile') or ''),
             scope_type=str(request.form.get('scope_type') or ''),
             tenant_environment_id=_optional_int('tenant_environment_id'),
             tenant_namespace_id=_optional_int('tenant_namespace_id'),
-            actor=_actor_user(),
+            actor_user_id=int(current_user.id),
         )
     except (ValueError, ApiException, TenantAccessStateConflictError) as exc:
         _record(
@@ -270,7 +255,10 @@ def create_access_grant_route():
 def inspect_access_grant_route(grant_id: int):
     try:
         _csrf()
-        grant = inspect_access_grant_committed(grant_id=grant_id, actor=_actor_user())
+        grant = inspect_access_grant_by_id_committed(
+            grant_id=grant_id,
+            actor_user_id=int(current_user.id),
+        )
     except (ValueError, ApiException) as exc:
         _record(
             event_type='kubernetes_tenant_access_grant_inspect_failed',
@@ -296,7 +284,10 @@ def inspect_access_grant_route(grant_id: int):
 def reconcile_access_grant_route(grant_id: int):
     try:
         _csrf()
-        grant = reconcile_access_grant_committed(grant_id=grant_id, actor=_actor_user())
+        grant = reconcile_access_grant_by_id_committed(
+            grant_id=grant_id,
+            actor_user_id=int(current_user.id),
+        )
     except (ValueError, ApiException) as exc:
         _record(
             event_type='kubernetes_tenant_access_grant_reconcile_failed',
@@ -321,7 +312,10 @@ def reconcile_access_grant_route(grant_id: int):
 def revoke_access_grant_route(grant_id: int):
     try:
         _csrf()
-        grant = revoke_access_grant_committed(grant_id=grant_id, actor=_actor_user())
+        grant = revoke_access_grant_by_id_committed(
+            grant_id=grant_id,
+            actor_user_id=int(current_user.id),
+        )
     except (ValueError, ApiException) as exc:
         _record(
             event_type='kubernetes_tenant_access_grant_revoke_failed',
