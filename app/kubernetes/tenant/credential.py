@@ -36,6 +36,7 @@ class NamespaceAccessPackage:
     cluster_id: str
     cluster_name: str
     api_endpoint: str
+    transport_reference: str
     access_profile: str
     access_profile_version: int | None
     application_name: str | None
@@ -60,6 +61,7 @@ class NamespaceAccessPackage:
             'cluster_id': self.cluster_id,
             'cluster_name': self.cluster_name,
             'api_endpoint': self.api_endpoint,
+            'transport_reference': self.transport_reference,
             'access_profile': self.access_profile,
             'access_profile_version': self.access_profile_version,
             'application_name': self.application_name,
@@ -378,6 +380,7 @@ def build_namespace_access_package(
         cluster_id=cluster.id,
         cluster_name=cluster.name,
         api_endpoint=server_for_cluster(cluster),
+        transport_reference='canonical_cluster_connection',
         access_profile=profile,
         access_profile_version=profile_version,
         application_name=credential.application_name,

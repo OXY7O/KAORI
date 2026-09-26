@@ -90,6 +90,13 @@ def _admin_binding_name(credential: TenantCredential) -> str:
     return f'kaori-admin-credential-{credential.public_id}'
 
 
+def _deployer_binding_name(credential: TenantCredential) -> str:
+    grant = credential.access_grant
+    if grant is None:
+        raise ValueError('Deployer Tenant credential requires a Deployer Access Grant.')
+    return f'kaori-tenant-grant-{grant.public_id}'
+
+
 def _upsert_service_account(api, credential: TenantCredential, namespace: str) -> V1ServiceAccount:
     current = _read_or_none(api.read_namespaced_service_account, credential.service_account_name, namespace)
     if current is not None:
@@ -222,6 +229,13 @@ def _desired_target(credential: TenantCredential, namespace: str) -> dict[str, A
             'role_kind': 'Role',
             'role_name': _human_role_name(credential, namespace),
         }
+    elif credential.credential_type == TenantCredentialType.DEPLOYER_SERVICE_ACCOUNT.value:
+        target['binding'] = {
+            'kind': 'RoleBinding',
+            'name': _deployer_binding_name(credential),
+            'role_kind': 'Role',
+            'role_name': _human_role_name(credential, namespace),
+        }
     else:
         target['binding'] = {
             'kind': 'ClusterRoleBinding',
@@ -241,6 +255,11 @@ def _effective_target(core_api, rbac_api, credential: TenantCredential, namespac
     if credential.credential_type == TenantCredentialType.HUMAN_SERVICE_ACCOUNT.value:
         binding_kind = 'RoleBinding'
         binding = _read_or_none(rbac_api.read_namespaced_role_binding, _human_binding_name(credential), namespace)
+    elif credential.credential_type == TenantCredentialType.DEPLOYER_SERVICE_ACCOUNT.value:
+        binding_kind = 'RoleBinding'
+        binding = _read_or_none(rbac_api.read_namespaced_role_binding, _deployer_binding_name(credential), namespace)
+        if service_account is None:
+            return None
     else:
         binding_kind = 'ClusterRoleBinding'
         binding = _read_or_none(rbac_api.read_cluster_role_binding, _admin_binding_name(credential))
@@ -384,6 +403,17 @@ def reconcile_native_credential(credential: TenantCredential) -> TenantCredentia
             or not grant.membership.user.is_active
         ):
             credential.status = TenantCredentialStatus.REVOKED.value
+    elif credential.credential_type == TenantCredentialType.DEPLOYER_SERVICE_ACCOUNT.value:
+        grant = credential.access_grant
+        if (
+            grant is None
+            or grant.status != 'active'
+            or grant.access_profile != 'deployer'
+            or grant.membership.status != 'active'
+            or grant.membership.principal_type != 'service_account'
+            or grant.membership.subject_name != credential.service_account_name
+        ):
+            credential.status = TenantCredentialStatus.REVOKED.value
     elif owner is None or not owner.is_admin_level:
         credential.status = TenantCredentialStatus.REVOKED.value
 
@@ -405,7 +435,7 @@ def reconcile_native_credential(credential: TenantCredential) -> TenantCredentia
             _upsert_service_account(core_api, credential, target.namespace)
             if credential.credential_type == TenantCredentialType.HUMAN_SERVICE_ACCOUNT.value:
                 _upsert_human_binding(rbac_api, credential, target.namespace)
-            else:
+            elif credential.credential_type == TenantCredentialType.ADMIN_KUBECONFIG.value:
                 _upsert_admin_binding(rbac_api, credential, target.namespace)
         return inspect_native_credential(credential)
     except (ApiException, ValueError) as exc:
