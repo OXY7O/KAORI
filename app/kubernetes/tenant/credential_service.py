@@ -348,11 +348,7 @@ def revoke_credentials_for_access_grant(
     if grant.id is None:
         return []
 
-    credentials = (
-        TenantCredential.query.filter_by(access_grant_id=grant.id)
-        .order_by(TenantCredential.id.asc())
-        .all()
-    )
+    credentials = TenantCredential.query.filter_by(access_grant_id=grant.id).order_by(TenantCredential.id.asc()).all()
     now = _now()
     for credential in credentials:
         if credential.status != TenantCredentialStatus.REVOKED.value:
