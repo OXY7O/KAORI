@@ -230,22 +230,24 @@ def test_progressive_ci_routes_only_governed_integration_pushes_and_staging_prs(
     assert 'name: CI Admission' in source
 
 
-def test_draft_work_branches_use_targeted_checks_and_ready_starts_admission() -> None:
+def test_work_branches_use_targeted_checks_before_ready_admission() -> None:
     quality = read(QUALITY_WORKFLOW)
     developer = read(DEVELOPER_WORKFLOW)
     workflow = read(WORKFLOW)
 
     pull_request_block = quality.split('pull_request:', 1)[1].split('permissions:', 1)[0]
-    assert '- kaori/staging' in pull_request_block
+    assert '- kaori/staging' not in pull_request_block
     assert '- main' in pull_request_block
 
     assert 'branches:\n      - kaori/staging' in developer
     assert "startsWith(github.event.pull_request.head.ref, 'kaori/')" in developer
     assert "github.event.pull_request.head.ref != 'kaori/staging'" in developer
-    assert 'github.event.pull_request.draft == true' in developer
+    assert "needs.developer-check.result == 'success'" in developer
+    assert 'github.event.pull_request.draft == false' in developer
+    assert 'uses: ./.github/workflows/quality.yml' in developer
 
     assert 'Every `kaori/*` branch except `kaori/staging` is a work branch.' in workflow
-    assert 'Work branches use path-aware Developer Check / targeted validation while Draft.' in workflow
+    assert 'Work branches use path-aware Developer Check / targeted validation while Draft and on the exact Ready head.' in workflow
     assert 'Comprehensive validation authority begins at the Ready/frozen-candidate boundary' in workflow
 
 
