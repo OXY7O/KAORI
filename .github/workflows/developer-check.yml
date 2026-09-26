@@ -205,8 +205,17 @@ jobs:
             selected_tests[tests/migrations]=1
           fi
 
+          # Collapse child selections when their canonical parent is already selected.
+          if [[ -n "${selected_tests[tests/contracts]+x}" ]]; then
+            for selected_path in "${!selected_tests[@]}"; do
+              [[ "$selected_path" == tests/contracts/* ]] || continue
+              unset "selected_tests[$selected_path]"
+            done
+          fi
+
           test_paths=''
-          for path in "${!selected_tests[@]}"; do
+          mapfile -t sorted_test_paths < <(printf '%s\n' "${!selected_tests[@]}" | sort)
+          for path in "${sorted_test_paths[@]}"; do
             [[ -e "$path" ]] || continue
             test_paths+="${test_paths:+ }$path"
           done
@@ -226,12 +235,39 @@ jobs:
 
           printf '📦 Developer Check route — %s\n' "$summary"
 
-  developer-check:
-    name: Developer Check
+  toolchain:
+    name: Prepare Toolchain
     needs: route
-    if: ${{ always() && needs.route.result == 'success' }}
+    if: ${{ needs.route.result == 'success' }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
-    timeout-minutes: 20
+    timeout-minutes: 10
+    outputs:
+      image: ${{ steps.toolchain.outputs.image }}
+    steps:
+      - name: Checkout Work Branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.KAORI_SOURCE_SHA }}
+          persist-credentials: false
+
+      - name: Resolve CI Toolchain
+        id: toolchain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
+          image="kaori-ci-toolchain:$key"
+          docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
+          printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
+          printf '✅ Developer Check toolchain — %s\n' "$image"
+
+
+  python-check:
+    name: Python & Governance
+    needs: [route, toolchain]
+    if: ${{ needs.route.result == 'success' && needs.toolchain.result == 'success' && (needs.route.outputs.python == 'true' || needs.route.outputs.migrations == 'true' || needs.route.outputs.reports == 'true' || needs.route.outputs.wide == 'true') }}
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    timeout-minutes: 15
     steps:
       - name: Checkout Work Branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -240,27 +276,15 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Resolve CI Toolchain
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
-          image="kaori-ci-toolchain:$key"
-          docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
-          printf 'CI_TOOLCHAIN_IMAGE=%s\n' "$image" >> "$GITHUB_ENV"
-
-      - name: Run Path-Aware Checks
+      - name: Run Python & Governance Checks
         shell: bash
         env:
+          CI_TOOLCHAIN_IMAGE: ${{ needs.toolchain.outputs.image }}
           CHECK_PYTHON: ${{ needs.route.outputs.python }}
-          CHECK_TEMPLATES: ${{ needs.route.outputs.templates }}
-          CHECK_FRONTEND: ${{ needs.route.outputs.frontend }}
           CHECK_MIGRATIONS: ${{ needs.route.outputs.migrations }}
           CHECK_CONTRACTS: ${{ needs.route.outputs.contracts }}
           CHECK_REPORTS: ${{ needs.route.outputs.reports }}
           CHECK_WIDE: ${{ needs.route.outputs.wide }}
-          TEST_PATHS: ${{ needs.route.outputs.test_paths }}
-          ROUTE_SUMMARY: ${{ needs.route.outputs.summary }}
         run: |
           set -Eeuo pipefail
           started="$(date +%s)"
@@ -291,10 +315,6 @@ jobs:
             run_toolchain 'Ruff Format' python -m ruff format --check app migrations tests scripts
           fi
 
-          if [[ "$CHECK_TEMPLATES" == "true" ]]; then
-            run_toolchain 'DjLint' python -m djlint app/templates --check
-          fi
-
           if [[ "$CHECK_PYTHON" == "true" && ( "$CHECK_WIDE" == "true" || "$CHECK_CONTRACTS" == "true" ) ]]; then
             run_toolchain 'Code Health' python scripts/verify_code_health.py
             run_toolchain 'Code Health Baseline Integrity' python scripts/verify_code_health_baseline_integrity.py
@@ -310,33 +330,74 @@ jobs:
             run_toolchain 'Analytics PDF Publication' python scripts/verify_analytics_pdf_publication.py
           fi
 
+          elapsed=$(( $(date +%s) - started ))
+          printf '✅ Python & Governance PASS · ⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
+
+  validation-check:
+    name: Frontend & Focused Validation
+    needs: [route, toolchain]
+    if: ${{ needs.route.result == 'success' && needs.toolchain.result == 'success' && (needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.test_paths != '') }}
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Work Branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.KAORI_SOURCE_SHA }}
+          persist-credentials: false
+
+      - name: Run Frontend & Focused Validation
+        shell: bash
+        env:
+          CI_TOOLCHAIN_IMAGE: ${{ needs.toolchain.outputs.image }}
+          CHECK_TEMPLATES: ${{ needs.route.outputs.templates }}
+          CHECK_FRONTEND: ${{ needs.route.outputs.frontend }}
+          CHECK_CONTRACTS: ${{ needs.route.outputs.contracts }}
+          TEST_PATHS: ${{ needs.route.outputs.test_paths }}
+        run: |
+          set -Eeuo pipefail
+          started="$(date +%s)"
+
+          run_toolchain() {
+            local label="$1"
+            shift
+            local check_started elapsed
+            check_started="$(date +%s)"
+            printf '⏳ %s\n' "$label"
+            docker run --rm \
+              --user "$(id -u):$(id -g)" \
+              --env HOME=/tmp \
+              --volume "$PWD:/workspace" \
+              --workdir /workspace \
+              "$CI_TOOLCHAIN_IMAGE" \
+              "$@"
+            elapsed=$(( $(date +%s) - check_started ))
+            printf '✅ %s · ⏱ %dm %02ds\n' "$label" $((elapsed / 60)) $((elapsed % 60))
+          }
+
+          if [[ "$CHECK_TEMPLATES" == "true" ]]; then
+            run_toolchain 'DjLint' python -m djlint app/templates --check
+          fi
+
           if [[ "$CHECK_FRONTEND" == "true" ]]; then
             run_toolchain 'Frontend Dependencies' bash -lc 'npm ci --no-audit --no-fund'
             run_toolchain 'Frontend Test Assets' bash -lc 'npm run build-css'
             run_toolchain 'Frontend Format' bash -lc 'npm run check-format'
           fi
 
-          if [[ "$CHECK_CONTRACTS" == "true" ]]; then
-            paths="$TEST_PATHS"
-            if [[ -z "$paths" ]]; then
-              paths='tests/contracts/release'
-            fi
+          paths="$TEST_PATHS"
+          if [[ "$CHECK_CONTRACTS" == "true" && -z "$paths" ]]; then
+            paths='tests/contracts/release'
+          fi
+          if [[ -n "$paths" ]]; then
             printf '⏳ Focused Tests — %s\n' "$paths"
             # TEST_PATHS is assembled only from the static whitelist above.
             # shellcheck disable=SC2086
             run_toolchain 'Focused Tests' bash -lc "pytest -q --tb=short $paths"
-          elif [[ -n "$TEST_PATHS" ]]; then
-            printf '⏳ Focused Tests — %s\n' "$TEST_PATHS"
-            # TEST_PATHS is assembled only from the static whitelist above.
-            # shellcheck disable=SC2086
-            run_toolchain 'Focused Tests' bash -lc "pytest -q --tb=short $TEST_PATHS"
           fi
 
           elapsed=$(( $(date +%s) - started ))
-          printf '\n✅ Developer Check PASS\n'
-          printf '📦 %s\n' "$ROUTE_SUMMARY"
-          printf '⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
-          printf '➡️ Draft validation is complete; freeze the exact head and mark the PR Ready to start one governed Full Admission.\n'
+          printf '✅ Frontend & Focused Validation PASS · ⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
 
       - name: Upload Browser Diagnostics
         if: ${{ failure() }}
@@ -346,3 +407,70 @@ jobs:
           path: tmp/ci-artifacts/test-output/ui-browser
           if-no-files-found: ignore
           retention-days: 3
+
+  developer-check:
+    name: Developer Check
+    needs:
+      - route
+      - toolchain
+      - python-check
+      - validation-check
+    if: ${{ always() && needs.route.result == 'success' }}
+    runs-on: [self-hosted, linux, x64, platform-ci]
+    timeout-minutes: 5
+    steps:
+      - name: Aggregate Selected Checks
+        shell: bash
+        env:
+          ROUTE_SUMMARY: ${{ needs.route.outputs.summary }}
+          CHECK_PYTHON: ${{ needs.route.outputs.python }}
+          CHECK_MIGRATIONS: ${{ needs.route.outputs.migrations }}
+          CHECK_REPORTS: ${{ needs.route.outputs.reports }}
+          CHECK_WIDE: ${{ needs.route.outputs.wide }}
+          CHECK_TEMPLATES: ${{ needs.route.outputs.templates }}
+          CHECK_FRONTEND: ${{ needs.route.outputs.frontend }}
+          CHECK_CONTRACTS: ${{ needs.route.outputs.contracts }}
+          TEST_PATHS: ${{ needs.route.outputs.test_paths }}
+          TOOLCHAIN_RESULT: ${{ needs.toolchain.result }}
+          PYTHON_RESULT: ${{ needs.python-check.result }}
+          VALIDATION_RESULT: ${{ needs.validation-check.result }}
+        run: |
+          set -Eeuo pipefail
+          python_required=false
+          validation_required=false
+
+          if [[ "$CHECK_PYTHON" == "true" || "$CHECK_MIGRATIONS" == "true" || "$CHECK_REPORTS" == "true" || "$CHECK_WIDE" == "true" ]]; then
+            python_required=true
+          fi
+          if [[ "$CHECK_TEMPLATES" == "true" || "$CHECK_FRONTEND" == "true" || "$CHECK_CONTRACTS" == "true" || -n "$TEST_PATHS" ]]; then
+            validation_required=true
+          fi
+
+          assert_lane() {
+            local label="$1"
+            local required="$2"
+            local result="$3"
+            if [[ "$required" == "true" ]]; then
+              [[ "$result" == "success" ]] || {
+                printf '❌ %s — %s\n' "$label" "$result"
+                exit 1
+              }
+            else
+              [[ "$result" == "skipped" || "$result" == "success" ]] || {
+                printf '❌ %s — unexpected %s\n' "$label" "$result"
+                exit 1
+              }
+            fi
+          }
+
+          [[ "$TOOLCHAIN_RESULT" == "success" ]] || {
+            printf '❌ Prepare Toolchain — %s\n' "$TOOLCHAIN_RESULT"
+            exit 1
+          }
+
+          assert_lane 'Python & Governance' "$python_required" "$PYTHON_RESULT"
+          assert_lane 'Frontend & Focused Validation' "$validation_required" "$VALIDATION_RESULT"
+
+          printf '✅ Developer Check PASS\n'
+          printf '📦 %s\n' "$ROUTE_SUMMARY"
+          printf '➡️ Draft validation is complete; freeze the exact head and mark the PR Ready to start one governed Full Admission.\n'
