@@ -79,11 +79,7 @@ class NativeKubernetesTenantProvider:
         features = discovery.get('features') or {}
 
         if readiness != 'ready':
-            status = (
-                TenantCapabilityStatus.DEGRADED
-                if readiness == 'degraded'
-                else TenantCapabilityStatus.UNAVAILABLE
-            )
+            status = TenantCapabilityStatus.DEGRADED if readiness == 'degraded' else TenantCapabilityStatus.UNAVAILABLE
             baseline = [
                 TenantProviderCapability(
                     key=key,
@@ -126,8 +122,7 @@ class NativeKubernetesTenantProvider:
                     key=capability,
                     status=_combine_status(statuses),
                     message='; '.join(
-                        str((features.get(key) or {}).get('message') or f'{key} evidence unavailable')
-                        for key in keys
+                        str((features.get(key) or {}).get('message') or f'{key} evidence unavailable') for key in keys
                     ),
                 )
             )
@@ -266,9 +261,7 @@ class NativeKubernetesTenantProvider:
     def reconcile_managed_resource(self, intent, *, material=None, external_provider_ready: bool = False):
         self.validate_tenant_authority(intent.namespace.environment.tenant)
         capability = (
-            'managed_tls'
-            if intent.resource_kind == TenantManagedResourceKind.TLS.value
-            else 'managed_registry'
+            'managed_tls' if intent.resource_kind == TenantManagedResourceKind.TLS.value else 'managed_registry'
         )
         require_native_capability(
             self,
