@@ -95,6 +95,34 @@ class TenantAccessReconciliationStatus(StrEnum):
     REVOKED = 'revoked'
 
 
+class TenantCredentialType(StrEnum):
+    HUMAN_SERVICE_ACCOUNT = 'human_service_account'
+    ADMIN_KUBECONFIG = 'admin_kubeconfig'
+
+
+class TenantCredentialDeliveryMethod(StrEnum):
+    JUMPSERVER = 'jumpserver'
+    EXCEPTIONAL_KUBECONFIG = 'exceptional_kubeconfig'
+    ADMIN_KUBECONFIG = 'admin_kubeconfig'
+
+
+class TenantCredentialStatus(StrEnum):
+    ACTIVE = 'active'
+    RENEWAL_DUE = 'renewal_due'
+    ROTATING = 'rotating'
+    SUSPENDED = 'suspended'
+    EXPIRED = 'expired'
+    REVOKED = 'revoked'
+
+
+class TenantCredentialReconciliationStatus(StrEnum):
+    PENDING = 'pending'
+    READY = 'ready'
+    DRIFTED = 'drifted'
+    FAILED = 'failed'
+    DISABLED = 'disabled'
+
+
 class Tenant(db.Model):
     __tablename__ = 'tenants'
 
@@ -133,6 +161,10 @@ class Tenant(db.Model):
     )
     access_grants: Mapped[list[TenantAccessGrant]] = relationship(
         'TenantAccessGrant', back_populates='tenant', cascade='all, delete-orphan', passive_deletes=True
+    )
+
+    credentials: Mapped[list[TenantCredential]] = relationship(
+        'TenantCredential', back_populates='tenant', cascade='all, delete-orphan', passive_deletes=True
     )
 
     __table_args__ = (
@@ -332,6 +364,10 @@ class TenantNamespace(db.Model):
         'TenantAccessGrant', back_populates='namespace', passive_deletes=True
     )
 
+    credential_anchors: Mapped[list[TenantCredential]] = relationship(
+        'TenantCredential', back_populates='anchor_namespace', passive_deletes=True
+    )
+
     __table_args__ = (
         UniqueConstraint('cluster_id', 'namespace', name='uq_tenant_namespaces_cluster_namespace'),
         UniqueConstraint('correlation_id', name='uq_tenant_namespaces_correlation_id'),
@@ -463,6 +499,10 @@ class TenantAccessGrant(db.Model):
     environment: Mapped[TenantEnvironment | None] = relationship('TenantEnvironment', back_populates='access_grants')
     namespace: Mapped[TenantNamespace | None] = relationship('TenantNamespace', back_populates='access_grants')
 
+    credentials: Mapped[list[TenantCredential]] = relationship(
+        'TenantCredential', back_populates='access_grant', passive_deletes=True
+    )
+
     __table_args__ = (
         UniqueConstraint('public_id', name='uq_tenant_access_grants_public_id'),
         UniqueConstraint('correlation_id', name='uq_tenant_access_grants_correlation_id'),
@@ -492,3 +532,140 @@ class TenantAccessGrant(db.Model):
         Index('ix_tenant_access_grants_membership', 'membership_id', 'scope_type'),
         Index('ix_tenant_access_grants_reconciliation', 'tenant_id', 'reconciliation_status'),
     )
+
+
+class TenantCredential(db.Model):
+    __tablename__ = 'tenant_credentials'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    public_id: Mapped[str] = mapped_column(String(36), nullable=False, default=lambda: str(uuid.uuid4()))
+    tenant_id: Mapped[str] = mapped_column(ForeignKey('tenants.id', ondelete='CASCADE'), nullable=False)
+    owner_user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='RESTRICT'), nullable=False)
+    access_grant_id: Mapped[int | None] = mapped_column(
+        ForeignKey('tenant_access_grants.id', ondelete='RESTRICT'), nullable=True
+    )
+    anchor_namespace_id: Mapped[int | None] = mapped_column(
+        ForeignKey('tenant_namespaces.id', ondelete='RESTRICT'), nullable=True
+    )
+    credential_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    purpose: Mapped[str] = mapped_column(String(120), nullable=False)
+    delivery_method: Mapped[str] = mapped_column(String(30), nullable=False)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, default=TenantCredentialStatus.ACTIVE.value)
+    reconciliation_status: Mapped[str] = mapped_column(
+        String(30), nullable=False, default=TenantCredentialReconciliationStatus.PENDING.value
+    )
+    service_account_name: Mapped[str] = mapped_column(String(63), nullable=False)
+    jumpserver_reference: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    exception_authorized_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey('users.id', ondelete='SET NULL'), nullable=True
+    )
+    exception_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    exception_valid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    valid_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    renewal_due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    valid_until: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    rotation_generation: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    desired_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    effective_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    reconciliation_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reconciliation_evidence_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    last_reconciled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    correlation_id: Mapped[str] = mapped_column(String(64), nullable=False, default=lambda: str(uuid.uuid4()))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
+
+    tenant: Mapped[Tenant] = relationship('Tenant', back_populates='credentials')
+    owner_user: Mapped[User] = relationship('User', foreign_keys=[owner_user_id])
+    exception_authorized_by: Mapped[User | None] = relationship('User', foreign_keys=[exception_authorized_by_user_id])
+    access_grant: Mapped[TenantAccessGrant | None] = relationship('TenantAccessGrant', back_populates='credentials')
+    anchor_namespace: Mapped[TenantNamespace | None] = relationship(
+        'TenantNamespace', back_populates='credential_anchors'
+    )
+    generations: Mapped[list[TenantCredentialGeneration]] = relationship(
+        'TenantCredentialGeneration',
+        back_populates='credential',
+        cascade='all, delete-orphan',
+        passive_deletes=True,
+        order_by='TenantCredentialGeneration.generation',
+    )
+
+    __table_args__ = (
+        UniqueConstraint('public_id', name='uq_tenant_credentials_public_id'),
+        UniqueConstraint('correlation_id', name='uq_tenant_credentials_correlation_id'),
+        UniqueConstraint(
+            'tenant_id',
+            'owner_user_id',
+            'credential_type',
+            'purpose',
+            name='uq_tenant_credentials_owner_purpose',
+        ),
+        UniqueConstraint('tenant_id', 'service_account_name', name='uq_tenant_credentials_service_account_name'),
+        CheckConstraint(
+            "credential_type IN ('human_service_account', 'admin_kubeconfig')",
+            name='ck_tenant_credentials_type',
+        ),
+        CheckConstraint(
+            "delivery_method IN ('jumpserver', 'exceptional_kubeconfig', 'admin_kubeconfig')",
+            name='ck_tenant_credentials_delivery_method',
+        ),
+        CheckConstraint(
+            "status IN ('active', 'renewal_due', 'rotating', 'suspended', 'expired', 'revoked')",
+            name='ck_tenant_credentials_status',
+        ),
+        CheckConstraint(
+            "reconciliation_status IN ('pending', 'ready', 'drifted', 'failed', 'disabled')",
+            name='ck_tenant_credentials_reconciliation_status',
+        ),
+        CheckConstraint(
+            "((credential_type = 'human_service_account' AND access_grant_id IS NOT NULL "
+            "AND anchor_namespace_id IS NULL "
+            "AND delivery_method IN ('jumpserver', 'exceptional_kubeconfig')) "
+            "OR (credential_type = 'admin_kubeconfig' AND access_grant_id IS NULL "
+            "AND anchor_namespace_id IS NOT NULL AND delivery_method = 'admin_kubeconfig'))",
+            name='ck_tenant_credentials_type_scope',
+        ),
+        CheckConstraint(
+            "(delivery_method != 'exceptional_kubeconfig' "
+            "OR (exception_authorized_by_user_id IS NOT NULL AND exception_reason IS NOT NULL "
+            "AND exception_valid_until IS NOT NULL))",
+            name='ck_tenant_credentials_exception_approval',
+        ),
+        CheckConstraint('rotation_generation >= 1', name='ck_tenant_credentials_generation'),
+        CheckConstraint('valid_from < valid_until', name='ck_tenant_credentials_validity'),
+        CheckConstraint(
+            'renewal_due_at >= valid_from AND renewal_due_at <= valid_until',
+            name='ck_tenant_credentials_renewal_window',
+        ),
+        Index('ix_tenant_credentials_tenant_status', 'tenant_id', 'status'),
+        Index('ix_tenant_credentials_owner_status', 'owner_user_id', 'status'),
+        Index('ix_tenant_credentials_validity', 'status', 'renewal_due_at', 'valid_until'),
+        Index('ix_tenant_credentials_reconciliation', 'tenant_id', 'reconciliation_status'),
+    )
+
+
+class TenantCredentialGeneration(db.Model):
+    __tablename__ = 'tenant_credential_generations'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    credential_id: Mapped[int] = mapped_column(
+        ForeignKey('tenant_credentials.id', ondelete='CASCADE'), nullable=False
+    )
+    generation: Mapped[int] = mapped_column(Integer, nullable=False)
+    provider_evidence_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    retired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    correlation_id: Mapped[str] = mapped_column(String(64), nullable=False, default=lambda: str(uuid.uuid4()))
+
+    credential: Mapped[TenantCredential] = relationship('TenantCredential', back_populates='generations')
+
+    __table_args__ = (
+        UniqueConstraint('credential_id', 'generation', name='uq_tenant_credential_generations_generation'),
+        UniqueConstraint('correlation_id', name='uq_tenant_credential_generations_correlation_id'),
+        CheckConstraint('generation >= 1', name='ck_tenant_credential_generations_generation'),
+        Index('ix_tenant_credential_generations_credential', 'credential_id', 'generation'),
+    )
+
