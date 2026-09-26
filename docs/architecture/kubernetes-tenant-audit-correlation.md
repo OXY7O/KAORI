@@ -4,7 +4,7 @@ Issue #122 adds provider-neutral correlation between committed KAORI Tenant iden
 
 ## Evidence boundary
 
-The external Kubernetes audit source remains authoritative for the raw Kubernetes audit log. KAORI does not copy request bodies, response bodies, Secret values, token material, managed fields, or arbitrary raw payloads into the operational database.
+The external Kubernetes audit source remains authoritative for the raw Kubernetes audit log. KAORI does not copy request bodies, response bodies, secret values, token material, managed fields, or arbitrary raw payloads into the operational database.
 
 KAORI stores only bounded normalized evidence required for governance correlation: source/audit identity, source reference, Kubernetes principal/groups, Tenant scope where resolvable, credential/access ownership, resource/verb/outcome, timestamps, and explicit correlation status.
 
