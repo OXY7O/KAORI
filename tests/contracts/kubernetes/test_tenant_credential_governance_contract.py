@@ -63,3 +63,13 @@ def test_credential_lifecycle_removal_is_provider_enforced() -> None:
     assert "action='tenant_credential.revoked'" in service
     assert "action='tenant_credential.suspended'" in service
     assert "action='tenant_credential.renewed'" in service
+
+
+def test_access_grant_revocation_cascades_to_dependent_human_credentials() -> None:
+    access_service = (ROOT / 'app/kubernetes/tenant/access_service.py').read_text(encoding='utf-8')
+    credential_service = (ROOT / 'app/kubernetes/tenant/credential_service.py').read_text(encoding='utf-8')
+
+    assert 'revoke_credentials_for_access_grant(grant, actor=actor)' in access_service
+    assert 'def revoke_credentials_for_access_grant(' in credential_service
+    assert "action='tenant_credential.access_grant_revoked'" in credential_service
+    assert 'reconcile_native_credential(credential)' in credential_service

@@ -338,6 +338,49 @@ def _retire_current_generation(credential: TenantCredential, *, retired_at: date
         current.retired_at = retired_at
 
 
+def revoke_credentials_for_access_grant(
+    grant: TenantAccessGrant,
+    *,
+    actor: User | None = None,
+) -> list[TenantCredential]:
+    """Fail closed dependent human credentials when their Access Grant is revoked."""
+
+    if grant.id is None:
+        return []
+
+    credentials = (
+        TenantCredential.query.filter_by(access_grant_id=grant.id)
+        .order_by(TenantCredential.id.asc())
+        .all()
+    )
+    now = _now()
+    for credential in credentials:
+        if credential.status != TenantCredentialStatus.REVOKED.value:
+            credential.status = TenantCredentialStatus.REVOKED.value
+        try:
+            reconcile_native_credential(credential)
+            _retire_current_generation(credential, retired_at=now)
+            _record_event(
+                actor=actor,
+                credential=credential,
+                action='tenant_credential.access_grant_revoked',
+                summary='Tenant credential was revoked because its Access Grant was revoked.',
+                outcome='success',
+                extra={'access_grant_id': grant.public_id},
+            )
+        except (ApiException, ValueError):
+            _record_event(
+                actor=actor,
+                credential=credential,
+                action='tenant_credential.access_grant_revoke_failed',
+                summary='Tenant credential is revoked in KAORI but provider removal requires attention.',
+                outcome='failed',
+                extra={'access_grant_id': grant.public_id},
+            )
+            raise
+    return credentials
+
+
 def renew_credential_committed(
     *,
     credential_id: int,
