@@ -366,7 +366,7 @@ def main() -> int:
         errors,
     )
     require(
-        "-m 'not debug and not e2e'" in quality_gate,
+        "-m 'not debug and not e2e and not contract and not migration'" in quality_gate,
         'quality_gate.sh must retain canonical Kubernetes Operations functional release evidence.',
         errors,
     )
