@@ -215,11 +215,9 @@ def reconcile_native_managed_resource(
 
     try:
         if intent.mode == TenantManagedResourceMode.PLATFORM_TLS.value:
-            _delete_managed_secret(api, intent)
             desired['platform_termination'] = True
             effective = dict(desired)
         elif intent.mode == TenantManagedResourceMode.EXTERNAL_CREDENTIAL_PROVIDER.value:
-            _delete_managed_secret(api, intent)
             if not external_provider_ready:
                 raise ValueError('External registry credential provider capability is not Ready on this cluster.')
             desired['external_credential_provider'] = True
@@ -228,8 +226,13 @@ def reconcile_native_managed_resource(
             if material is None:
                 raise ValueError('Managed namespace Secret reconciliation requires ephemeral secret material.')
             digest = _upsert_managed_secret(api, intent, material)
-            desired['secret_type'] = _secret_type(intent)
-            desired['payload_digest'] = digest
+            desired = {
+                'resource_name': intent.resource_name,
+                'namespace': intent.namespace.namespace,
+                'type': _secret_type(intent),
+                'labels': _labels(intent),
+                'payload_digest': digest,
+            }
             effective = _effective_secret_contract(api, intent)
 
         intent.desired_hash = _canonical_hash(desired)
