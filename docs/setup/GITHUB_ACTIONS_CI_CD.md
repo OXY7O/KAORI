@@ -27,6 +27,8 @@ Developer Check on exact Draft head
   ↓
 Pre-Ready PASS → Ready/frozen candidate
   ↓
+Developer Check on exact Ready head
+  ↓
 Full Admission once on exact frozen head
   ↓
 merge commit to kaori/staging
@@ -50,7 +52,7 @@ The long-lived integration branches are `kaori/staging` and `main`. Work branche
 
 ### Work branch
 
-A `kaori/*` work branch uses the path-aware **Developer Check** workflow while the PR is Draft. It validates the exact PR head without running comprehensive admission on every implementation/fix commit.
+A `kaori/*` work branch uses the path-aware **Developer Check** workflow for Draft development and again on the exact Ready head. Draft validation remains targeted; Ready Full Admission is invoked only after the exact-head Developer Check aggregate passes.
 
 Developer Check resolves changed paths once, prepares one deterministic shared CI toolchain, and then runs at most two heavy `kaori-ci` lanes concurrently: **Python & Governance** and **Frontend & Focused Validation**. A final lightweight aggregate fails closed across every required selected lane. Redundant parent/child focused-test paths are normalized before pytest execution. This two-lane ceiling reflects the current single-host runner memory capacity and avoids OOM-driven retries.
 
@@ -61,11 +63,11 @@ A work branch is eligible to become a Ready/frozen candidate only when:
 - required review discussion is resolved;
 - the PR targets `kaori/staging`.
 
-Marking the PR Ready freezes that exact head and starts governed Full Admission. A changed head invalidates the frozen-candidate evidence and should return to Draft for batch repair.
+Marking the PR Ready freezes that exact head and reruns Developer Check. Only a successful exact-head Developer Check starts governed Full Admission. A failed/cancelled Developer Check leaves Full Admission skipped. A changed head invalidates the frozen-candidate evidence and must pass Developer Check again before admission.
 
 ### Final-candidate and staging admission
 
-When the PR is marked Ready, `.github/workflows/quality.yml` runs **Full Admission** on the exact frozen work-branch head when reusable evidence is unavailable. The five comprehensive gates execute as one native matrix with `strategy.fail-fast: true` and `max-parallel: 2`, matching the current single-host capacity ceiling. The Functional Tests critical path is declared in the first scheduling wave so the longest gate starts immediately alongside Static & Governance rather than waiting behind a shorter gate. A decisive matrix failure cancels remaining sibling matrix work instead of waiting for unrelated long-running gates to finish.
+When the PR is marked Ready, `.github/workflows/developer-check.yml` first validates the exact frozen head. Its downstream reusable `Full Admission` job calls `.github/workflows/quality.yml` only after Developer Check PASS; feature PRs do not independently trigger Full Admission. The five comprehensive gates execute as one native matrix with `strategy.fail-fast: true` and `max-parallel: 2`, matching the current single-host capacity ceiling. The Functional Tests critical path is declared in the first scheduling wave so the longest gate starts immediately alongside Static & Governance rather than waiting behind a shorter gate. A decisive matrix failure cancels remaining sibling matrix work instead of waiting for unrelated long-running gates to finish.
 
 After merge to `kaori/staging`, the workflow verifies exact source-tree/authority evidence and transition lineage. The normal staging path reuses the admitted evidence and runs fresh Fast Smoke; staging falls back to a fresh Full Admission only when reuse cannot be proven.
 
@@ -194,7 +196,7 @@ Use **roll-forward** when restoring previous data/state would be unsafe, includi
 - prior release lineage or reviewed backup cannot be proven;
 - a corrective patch is safer than state restoration.
 
-Roll-forward requires a new governed issue-branch change, fresh Developer Check, a new frozen Ready candidate, Full Admission for that candidate, staging evidence reuse/Fast Smoke, a new immutable RC, deployment verification, and the same human acceptance boundary.
+Roll-forward requires a new governed issue-branch change, fresh Draft Developer Check, a new frozen Ready candidate, exact-head Developer Check PASS, Full Admission for that candidate, staging evidence reuse/Fast Smoke, a new immutable RC, deployment verification, and the same human acceptance boundary.
 
 Historical tags, digests, and evidence must remain immutable.
 

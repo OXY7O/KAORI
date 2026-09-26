@@ -7,6 +7,7 @@ from types import ModuleType
 
 ROOT = Path(__file__).resolve().parents[3]
 WORKFLOW = ROOT / '.github/workflows/quality.yml'
+DEVELOPER_WORKFLOW = ROOT / '.github/workflows/developer-check.yml'
 DELIVERY = ROOT / 'docs/engineering/KAORI_DELIVERY_WORKFLOW.md'
 QUALITY_GATE = ROOT / 'scripts/quality_gate.sh'
 POLICY = ROOT / 'scripts/ci_admission_policy.py'
@@ -94,16 +95,28 @@ def test_issue_branch_pushes_do_not_trigger_governed_full_admission() -> None:
     assert '      - "kaori/**"' not in source
 
 
-def test_ready_feature_pr_is_a_governed_admission_boundary() -> None:
-    source = read(WORKFLOW)
-    pull_request_block = source.split('pull_request:', 1)[1].split('permissions:', 1)[0]
+def test_ready_feature_pr_is_sequenced_through_developer_check_before_admission() -> None:
+    quality = read(WORKFLOW)
+    developer = read(DEVELOPER_WORKFLOW)
+    pull_request_block = quality.split('pull_request:', 1)[1].split('permissions:', 1)[0]
 
-    assert '      - kaori/staging' in pull_request_block
+    assert '      - kaori/staging' not in pull_request_block
     assert '      - main' in pull_request_block
     assert 'ready_for_review' in pull_request_block
-    assert "github.base_ref == 'kaori/staging'" in source
-    assert "startsWith(github.head_ref, 'kaori/')" in source
-    assert "github.head_ref != 'kaori/staging'" in source
+
+    assert 'uses: ./.github/workflows/quality.yml' in developer
+    assert "needs.developer-check.result == 'success'" in developer
+    assert 'github.event.pull_request.draft == false' in developer
+    assert (
+        'github.event.pull_request.draft == true'
+        not in developer.split('\n  route:', 1)[1].split('\n  toolchain:', 1)[0]
+    )
+
+    # Reusable Full Admission still receives the caller PR context and therefore
+    # retains the existing feature-PR routing guard inside the called workflow.
+    assert "github.base_ref == 'kaori/staging'" in quality
+    assert "startsWith(github.head_ref, 'kaori/')" in quality
+    assert "github.head_ref != 'kaori/staging'" in quality
 
 
 def test_full_admission_comprehensive_gates_use_native_fail_fast_matrix() -> None:

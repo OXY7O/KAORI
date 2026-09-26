@@ -13,6 +13,8 @@ on:
 
 permissions:
   contents: read
+  actions: read
+  statuses: write
 
 concurrency:
   group: kaori-developer-check-${{ github.event.pull_request.number }}
@@ -24,7 +26,7 @@ env:
 jobs:
   route:
     name: Route Checks
-    if: ${{ github.event.pull_request.draft == true && github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
     runs-on: [self-hosted, linux, x64, platform-ci]
     timeout-minutes: 5
     outputs:
@@ -421,6 +423,7 @@ jobs:
       - name: Aggregate Selected Checks
         shell: bash
         env:
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
           ROUTE_SUMMARY: ${{ needs.route.outputs.summary }}
           CHECK_PYTHON: ${{ needs.route.outputs.python }}
           CHECK_MIGRATIONS: ${{ needs.route.outputs.migrations }}
@@ -472,4 +475,14 @@ jobs:
 
           printf '✅ Developer Check PASS\n'
           printf '📦 %s\n' "$ROUTE_SUMMARY"
-          printf '➡️ Draft validation is complete; freeze the exact head and mark the PR Ready to start one governed Full Admission.\n'
+          if [[ "$PR_DRAFT" == "true" ]]; then
+            printf '➡️ Draft validation is complete; freeze the exact head and mark the PR Ready.\n'
+          else
+            printf '➡️ Ready exact-head Developer Check PASS; starting governed Full Admission.\n'
+          fi
+
+  full-admission:
+    name: Full Admission
+    needs: developer-check
+    if: ${{ needs.developer-check.result == 'success' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
+    uses: ./.github/workflows/quality.yml
