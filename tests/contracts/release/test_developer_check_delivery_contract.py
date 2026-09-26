@@ -19,7 +19,7 @@ def test_work_branch_developer_check_is_separate_from_governed_admission() -> No
     assert workflow['name'] == 'Developer Check'
     assert workflow[True]['pull_request']['branches'] == ['kaori/staging']
     jobs = workflow['jobs']
-    assert set(jobs) == {'route', 'toolchain', 'python-check', 'frontend-check', 'focused-tests', 'developer-check'}
+    assert set(jobs) == {'route', 'toolchain', 'python-check', 'validation-check', 'developer-check'}
     assert jobs['route']['name'] == 'Route Checks'
     assert jobs['route']['if'] == (
         '${{ github.event.pull_request.draft == true && '
@@ -30,19 +30,16 @@ def test_work_branch_developer_check_is_separate_from_governed_admission() -> No
     assert jobs['toolchain']['name'] == 'Prepare Toolchain'
     assert jobs['toolchain']['needs'] == 'route'
     assert jobs['python-check']['name'] == 'Python & Governance'
-    assert jobs['frontend-check']['name'] == 'Frontend & Templates'
-    assert jobs['focused-tests']['name'] == 'Focused Tests'
+    assert jobs['validation-check']['name'] == 'Frontend & Focused Validation'
     assert jobs['developer-check']['name'] == 'Developer Check'
     assert jobs['developer-check']['if'].startswith('${{ always()')
     assert set(jobs['python-check']['needs']) == {'route', 'toolchain'}
-    assert set(jobs['frontend-check']['needs']) == {'route', 'toolchain'}
-    assert set(jobs['focused-tests']['needs']) == {'route', 'toolchain'}
+    assert set(jobs['validation-check']['needs']) == {'route', 'toolchain'}
     assert set(jobs['developer-check']['needs']) == {
         'route',
         'toolchain',
         'python-check',
-        'frontend-check',
-        'focused-tests',
+        'validation-check',
     }
     source = read(DEVELOPER_WORKFLOW)
     assert 'production-runtime' not in source
@@ -68,20 +65,16 @@ def test_developer_check_parallel_lanes_fail_closed_into_one_aggregate() -> None
     for token in (
         'toolchain:',
         'python-check:',
-        'frontend-check:',
-        'focused-tests:',
+        'validation-check:',
         'name: Prepare Toolchain',
         'name: Python & Governance',
-        'name: Frontend & Templates',
-        'name: Focused Tests',
+        'name: Frontend & Focused Validation',
         "TOOLCHAIN_RESULT: ${{ needs.toolchain.result }}",
         "PYTHON_RESULT: ${{ needs.python-check.result }}",
-        "FRONTEND_RESULT: ${{ needs.frontend-check.result }}",
-        "TEST_RESULT: ${{ needs.focused-tests.result }}",
+        "VALIDATION_RESULT: ${{ needs.validation-check.result }}",
         "[[ "$TOOLCHAIN_RESULT" == "success" ]]",
         "assert_lane 'Python & Governance'",
-        "assert_lane 'Frontend & Templates'",
-        "assert_lane 'Focused Tests'",
+        "assert_lane 'Frontend & Focused Validation'",
     ):
         assert token in source
 
