@@ -38,10 +38,12 @@ def test_ingestion_boundary_is_bounded_idempotent_and_projects_activity() -> Non
 
 
 def test_audit_evidence_reuses_data_lifecycle_retention_framework() -> None:
-    registry = (ROOT / 'app/platform_operations/data_lifecycle/retention/domains/__init__.py').read_text(encoding='utf-8')
-    domain = (
-        ROOT / 'app/platform_operations/data_lifecycle/retention/domains/tenant_audit_evidence.py'
-    ).read_text(encoding='utf-8')
+    registry = (ROOT / 'app/platform_operations/data_lifecycle/retention/domains/__init__.py').read_text(
+        encoding='utf-8'
+    )
+    domain = (ROOT / 'app/platform_operations/data_lifecycle/retention/domains/tenant_audit_evidence.py').read_text(
+        encoding='utf-8'
+    )
 
     assert "'tenant_audit_evidence': TenantAuditEvidenceArchiveDomain" in registry
     assert "name = 'tenant_audit_evidence'" in domain
