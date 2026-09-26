@@ -22,10 +22,15 @@ class ApiCandidate:
     version: str
     resource: str
     stability: str = 'stable'
+    subresource: str | None = None
 
     @property
     def api_version(self) -> str:
         return self.version if not self.group else f'{self.group}/{self.version}'
+
+    @property
+    def discovery_resource(self) -> str:
+        return f'{self.resource}/{self.subresource}' if self.subresource else self.resource
 
     @property
     def discovery_path(self) -> str:
@@ -76,6 +81,77 @@ FEATURE_CONTRACTS: tuple[FeatureContract, ...] = (
         ),
     ),
     FeatureContract('inventory.storageclasses', (ApiCandidate('storage.k8s.io', 'v1', 'storageclasses'),)),
+    FeatureContract(
+        'tenant.namespaces',
+        (ApiCandidate('', 'v1', 'namespaces'),),
+        required_verbs=('get', 'create', 'patch', 'delete'),
+        required=False,
+    ),
+    FeatureContract(
+        'tenant.resourcequotas',
+        (ApiCandidate('', 'v1', 'resourcequotas'),),
+        required_verbs=('get', 'create', 'patch', 'delete'),
+        required=False,
+    ),
+    FeatureContract(
+        'tenant.limitranges',
+        (ApiCandidate('', 'v1', 'limitranges'),),
+        required_verbs=('get', 'create', 'patch', 'delete'),
+        required=False,
+    ),
+    FeatureContract(
+        'tenant.rbac.roles',
+        (ApiCandidate('rbac.authorization.k8s.io', 'v1', 'roles'),),
+        required_verbs=('get', 'create', 'patch', 'delete'),
+        required=False,
+    ),
+    FeatureContract(
+        'tenant.rbac.rolebindings',
+        (ApiCandidate('rbac.authorization.k8s.io', 'v1', 'rolebindings'),),
+        required_verbs=('get', 'create', 'patch', 'delete'),
+        required=False,
+    ),
+    FeatureContract(
+        'tenant.serviceaccounts',
+        (ApiCandidate('', 'v1', 'serviceaccounts'),),
+        required_verbs=('get', 'create', 'patch', 'delete'),
+        required=False,
+    ),
+    FeatureContract(
+        'tenant.serviceaccount_tokens',
+        (ApiCandidate('', 'v1', 'serviceaccounts', subresource='token'),),
+        required_verbs=('create',),
+        required=False,
+    ),
+    FeatureContract(
+        'tenant.secrets',
+        (ApiCandidate('', 'v1', 'secrets'),),
+        required_verbs=('get', 'create', 'patch', 'delete'),
+        required=False,
+    ),
+    FeatureContract(
+        'tenant.admission.validatingpolicies',
+        (
+            ApiCandidate('admissionregistration.k8s.io', 'v1', 'validatingadmissionpolicies'),
+            ApiCandidate('admissionregistration.k8s.io', 'v1beta1', 'validatingadmissionpolicies', 'legacy'),
+        ),
+        required_verbs=('get', 'list', 'create', 'patch', 'delete'),
+        required=False,
+    ),
+    FeatureContract(
+        'tenant.admission.validatingpolicybindings',
+        (
+            ApiCandidate('admissionregistration.k8s.io', 'v1', 'validatingadmissionpolicybindings'),
+            ApiCandidate(
+                'admissionregistration.k8s.io',
+                'v1beta1',
+                'validatingadmissionpolicybindings',
+                'legacy',
+            ),
+        ),
+        required_verbs=('get', 'list', 'create', 'patch', 'delete'),
+        required=False,
+    ),
 )
 
 
@@ -135,7 +211,7 @@ class KubernetesDiscovery:
         observed: list[dict[str, Any]] = []
         for candidate in contract.candidates:
             resources = self._resources(candidate)
-            verbs = resources.get(candidate.resource)
+            verbs = resources.get(candidate.discovery_resource)
             if verbs is None:
                 observed.append({'api_version': candidate.api_version, 'served': False})
                 continue
@@ -174,6 +250,7 @@ class KubernetesDiscovery:
                     'group': candidate.group,
                     'version': candidate.version,
                     'resource': candidate.resource,
+                    'subresource': candidate.subresource,
                     'stability': candidate.stability,
                 },
                 'observed': observed,
@@ -199,6 +276,7 @@ class KubernetesDiscovery:
                 resource_attributes=V1ResourceAttributes(
                     group=candidate.group or '',
                     resource=candidate.resource,
+                    subresource=candidate.subresource,
                     verb=verb,
                 )
             )
@@ -235,7 +313,7 @@ class KubernetesDiscovery:
         resources: dict[str, set[str]] = {}
         for item in _items(payload, 'resources'):
             name = _value(item, 'name')
-            if not name or '/' in name:
+            if not name:
                 continue
             resources[str(name)] = set(_value(item, 'verbs', default=[]) or [])
         self._resource_cache[path] = resources

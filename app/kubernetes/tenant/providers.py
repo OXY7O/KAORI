@@ -40,6 +40,28 @@ class TenantProviderResult:
 
 
 @dataclass(frozen=True, slots=True)
+class TenantProviderOperationResult:
+    provider_key: TenantProviderKey
+    operation: str
+    capability: str
+    status: str
+    desired_hash: str | None = None
+    effective_hash: str | None = None
+    evidence: dict[str, object] | None = None
+    message: str = ''
+    error_code: str | None = None
+
+
+class TenantProviderError(RuntimeError):
+    """Provider-neutral Tenant operation failure with non-secret evidence."""
+
+    def __init__(self, code: str, message: str, *, capability: str | None = None) -> None:
+        super().__init__(message)
+        self.code = code
+        self.capability = capability
+
+
+@dataclass(frozen=True, slots=True)
 class ProviderAuthorityTransition:
     current_provider: TenantProviderKey
     target_provider: TenantProviderKey
