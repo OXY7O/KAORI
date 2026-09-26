@@ -114,6 +114,8 @@ def test_full_admission_comprehensive_gates_use_native_fail_fast_matrix() -> Non
     assert 'strategy:' in matrix
     assert 'fail-fast: true' in matrix
     assert 'max-parallel: 2' in matrix
+    assert matrix.index('gate: functional') < matrix.index('gate: static')
+    assert 'Keep the longest comprehensive gate in the first scheduling wave.' in matrix
     for gate in (
         'gate: static',
         'gate: security',
