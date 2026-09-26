@@ -173,7 +173,9 @@ def _project_activity(evidence: TenantAuditEvidence) -> None:
     activity.actor_key = str(actor['key'])
     activity.actor_label = str(actor['label'])
     activity.actor_snapshot_json = actor
-    activity.status = 'success' if evidence.outcome == 'success' else ('error' if evidence.outcome == 'failure' else 'info')
+    activity.status = (
+        'success' if evidence.outcome == 'success' else ('error' if evidence.outcome == 'failure' else 'info')
+    )
     activity.title = 'Kubernetes Tenant API action observed'
     resource = evidence.resource or 'resource'
     scope = evidence.kubernetes_namespace or 'cluster scope'
@@ -229,9 +231,7 @@ def _build_evidence(
     )
     evidence = TenantAuditEvidence()
     evidence.cluster_id = cluster_id
-    evidence.tenant_id = choice.tenant_id or (
-        namespace.environment.tenant_id if namespace is not None else None
-    )
+    evidence.tenant_id = choice.tenant_id or (namespace.environment.tenant_id if namespace is not None else None)
     evidence.tenant_environment_id = namespace.tenant_environment_id if namespace is not None else None
     evidence.tenant_namespace_id = namespace.id if namespace is not None else choice.namespace_id
     evidence.access_grant_id = choice.access_grant_id
