@@ -128,15 +128,20 @@ def credential_target_namespaces(credential: TenantCredential) -> list[TenantNam
     return [credential.anchor_namespace]
 
 
-def validate_credential_contract(credential: TenantCredential) -> None:
-    owner = credential.owner_user
-    if owner is None:
-        raise ValueError('Tenant credential requires an owner.')
-    active_lifecycle = credential.status in {
+def _is_active_lifecycle(status: str) -> bool:
+    return status in {
         TenantCredentialStatus.ACTIVE.value,
         TenantCredentialStatus.RENEWAL_DUE.value,
         TenantCredentialStatus.ROTATING.value,
     }
+
+
+def _validate_common_credential(credential: TenantCredential) -> bool:
+    owner = credential.owner_user
+    if owner is None:
+        raise ValueError('Tenant credential requires an owner.')
+
+    active_lifecycle = _is_active_lifecycle(credential.status)
     if active_lifecycle and not owner.is_active:
         raise ValueError('Active Tenant credential requires an active owner.')
 
@@ -147,74 +152,110 @@ def validate_credential_contract(credential: TenantCredential) -> None:
 
     if not credential.purpose or credential.purpose != normalize_credential_purpose(credential.purpose):
         raise ValueError('Tenant credential purpose is not normalized.')
-
     if _aware(credential.valid_from) >= _aware(credential.valid_until):
         raise ValueError('Tenant credential validity window is invalid.')
     if not (_aware(credential.valid_from) <= _aware(credential.renewal_due_at) <= _aware(credential.valid_until)):
         raise ValueError('Tenant credential renewal window is invalid.')
+    return active_lifecycle
 
-    credential_type = TenantCredentialType(credential.credential_type)
-    delivery = TenantCredentialDeliveryMethod(credential.delivery_method)
 
-    if credential_type is TenantCredentialType.HUMAN_SERVICE_ACCOUNT:
-        grant = credential.access_grant
-        if grant is None:
-            raise ValueError('Human Tenant credential requires an Access Grant.')
-        validate_grant_scope(grant)
-        if grant.tenant_id != credential.tenant_id:
-            raise ValueError('Tenant credential Access Grant belongs to another Tenant.')
-        if grant.membership.principal_type != 'user' or grant.membership.user_id != credential.owner_user_id:
-            raise ValueError('Human Tenant credential must be individually owned by the Access Grant user.')
-        if grant.access_profile == 'deployer':
-            raise ValueError('Human Tenant credentials cannot use the machine-only Deployer Access Profile.')
-        if credential.status in {
-            TenantCredentialStatus.ACTIVE.value,
-            TenantCredentialStatus.RENEWAL_DUE.value,
-            TenantCredentialStatus.ROTATING.value,
-        }:
-            validate_active_grant(grant)
-        if delivery not in {
-            TenantCredentialDeliveryMethod.JUMPSERVER,
-            TenantCredentialDeliveryMethod.EXCEPTIONAL_KUBECONFIG,
-        }:
-            raise ValueError('Human Tenant credential requires JumpServer or governed exceptional kubeconfig delivery.')
-        if not (credential.jumpserver_reference or '').strip():
-            raise ValueError('Human Tenant credential requires a non-secret JumpServer reference.')
+def _validate_exceptional_kubeconfig(credential: TenantCredential) -> None:
+    approver = credential.exception_authorized_by
+    if approver is None or not approver.is_active or not approver.is_admin_level:
+        raise ValueError('Exceptional kubeconfig delivery requires an active KAORI administrator approval.')
+    if not (credential.exception_reason or '').strip():
+        raise ValueError('Exceptional kubeconfig delivery requires an approval reason.')
+    if credential.exception_valid_until is None:
+        raise ValueError('Exceptional kubeconfig delivery requires an expiry.')
+    if _aware(credential.exception_valid_until) > _aware(credential.valid_until):
+        raise ValueError('Exceptional kubeconfig approval cannot outlive the credential entitlement.')
 
-        if delivery is TenantCredentialDeliveryMethod.EXCEPTIONAL_KUBECONFIG:
-            approver = credential.exception_authorized_by
-            if approver is None or not approver.is_active or not approver.is_admin_level:
-                raise ValueError('Exceptional kubeconfig delivery requires an active KAORI administrator approval.')
-            if not (credential.exception_reason or '').strip():
-                raise ValueError('Exceptional kubeconfig delivery requires an approval reason.')
-            if credential.exception_valid_until is None:
-                raise ValueError('Exceptional kubeconfig delivery requires an expiry.')
-            if _aware(credential.exception_valid_until) > _aware(credential.valid_until):
-                raise ValueError('Exceptional kubeconfig approval cannot outlive the credential entitlement.')
-    else:
-        if delivery is not TenantCredentialDeliveryMethod.ADMIN_KUBECONFIG:
-            raise ValueError('Administrative Tenant credential requires admin kubeconfig delivery.')
-        if active_lifecycle and not owner.is_admin_level:
-            raise ValueError('Active administrative kubeconfig ownership requires a KAORI administrator.')
-        namespace = credential.anchor_namespace
-        if namespace is None:
-            raise ValueError('Administrative Tenant credential requires an anchor namespace.')
-        if namespace.environment.tenant_id != credential.tenant_id:
-            raise ValueError('Administrative credential anchor namespace belongs to another Tenant.')
-        if namespace.cluster_id != credential.tenant.cluster_id:
-            raise ValueError('Administrative credential anchor namespace belongs to another cluster.')
 
+def _validate_human_credential(
+    credential: TenantCredential,
+    *,
+    active_lifecycle: bool,
+    delivery: TenantCredentialDeliveryMethod,
+) -> None:
+    grant = credential.access_grant
+    if grant is None:
+        raise ValueError('Human Tenant credential requires an Access Grant.')
+
+    validate_grant_scope(grant)
+    if grant.tenant_id != credential.tenant_id:
+        raise ValueError('Tenant credential Access Grant belongs to another Tenant.')
+    if grant.membership.principal_type != 'user' or grant.membership.user_id != credential.owner_user_id:
+        raise ValueError('Human Tenant credential must be individually owned by the Access Grant user.')
+    if grant.access_profile == 'deployer':
+        raise ValueError('Human Tenant credentials cannot use the machine-only Deployer Access Profile.')
+    if active_lifecycle:
+        validate_active_grant(grant)
+
+    allowed_delivery = {
+        TenantCredentialDeliveryMethod.JUMPSERVER,
+        TenantCredentialDeliveryMethod.EXCEPTIONAL_KUBECONFIG,
+    }
+    if delivery not in allowed_delivery:
+        raise ValueError('Human Tenant credential requires JumpServer or governed exceptional kubeconfig delivery.')
+    if not (credential.jumpserver_reference or '').strip():
+        raise ValueError('Human Tenant credential requires a non-secret JumpServer reference.')
+    if delivery is TenantCredentialDeliveryMethod.EXCEPTIONAL_KUBECONFIG:
+        _validate_exceptional_kubeconfig(credential)
+
+
+def _validate_admin_credential(
+    credential: TenantCredential,
+    *,
+    active_lifecycle: bool,
+    delivery: TenantCredentialDeliveryMethod,
+) -> None:
+    if delivery is not TenantCredentialDeliveryMethod.ADMIN_KUBECONFIG:
+        raise ValueError('Administrative Tenant credential requires admin kubeconfig delivery.')
+    if active_lifecycle and not credential.owner_user.is_admin_level:
+        raise ValueError('Active administrative kubeconfig ownership requires a KAORI administrator.')
+
+    namespace = credential.anchor_namespace
+    if namespace is None:
+        raise ValueError('Administrative Tenant credential requires an anchor namespace.')
+    if namespace.environment.tenant_id != credential.tenant_id:
+        raise ValueError('Administrative credential anchor namespace belongs to another Tenant.')
+    if namespace.cluster_id != credential.tenant.cluster_id:
+        raise ValueError('Administrative credential anchor namespace belongs to another cluster.')
+
+
+def _validate_target_readiness(
+    credential: TenantCredential,
+    *,
+    active_lifecycle: bool,
+) -> None:
     targets = credential_target_namespaces(credential)
     if not targets:
         raise ValueError('Tenant credential has no managed namespace target.')
-    if credential.status in {
-        TenantCredentialStatus.ACTIVE.value,
-        TenantCredentialStatus.RENEWAL_DUE.value,
-        TenantCredentialStatus.ROTATING.value,
-    }:
-        for namespace in targets:
-            if namespace.provisioning_status != TenantNamespaceProvisioningStatus.READY.value:
-                raise ValueError('Tenant credential targets must be Ready managed namespaces.')
+    if not active_lifecycle:
+        return
+    for namespace in targets:
+        if namespace.provisioning_status != TenantNamespaceProvisioningStatus.READY.value:
+            raise ValueError('Tenant credential targets must be Ready managed namespaces.')
+
+
+def validate_credential_contract(credential: TenantCredential) -> None:
+    active_lifecycle = _validate_common_credential(credential)
+    delivery = TenantCredentialDeliveryMethod(credential.delivery_method)
+    credential_type = TenantCredentialType(credential.credential_type)
+
+    if credential_type is TenantCredentialType.HUMAN_SERVICE_ACCOUNT:
+        _validate_human_credential(
+            credential,
+            active_lifecycle=active_lifecycle,
+            delivery=delivery,
+        )
+    else:
+        _validate_admin_credential(
+            credential,
+            active_lifecycle=active_lifecycle,
+            delivery=delivery,
+        )
+    _validate_target_readiness(credential, active_lifecycle=active_lifecycle)
 
 
 def token_ttl_seconds(
