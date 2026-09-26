@@ -19,6 +19,7 @@ Idea / Request
   -> batch repair
   -> Pre-Ready cheap gate
   -> Ready for Review + frozen final candidate
+  -> exact-head Developer Check PASS
   -> one governed Full Admission on the exact frozen head
      -> exact evidence reuse when already admitted
      -> otherwise comprehensive gates run in parallel
@@ -165,7 +166,7 @@ Only two branches are long-lived by default:
 
 Every `kaori/*` branch except `kaori/staging` is a work branch.
 
-Work branches use path-aware Developer Check / targeted validation while Draft. The exact frozen Ready head becomes a governed final candidate and may run Full Admission.
+Work branches use path-aware Developer Check / targeted validation while Draft and on the exact Ready head. The frozen Ready candidate may enter Full Admission only after that exact-head Developer Check aggregate passes.
 
 Comprehensive validation authority begins at the Ready/frozen-candidate boundary and is then reused through `kaori/staging` and `main` when exact evidence and lineage remain valid.
 
@@ -210,7 +211,7 @@ For work entering the artifact-backed release path, completion additionally requ
 
 ## Developer Check — Work-Branch Loop
 
-`Developer Check` is the path-aware authority for Pull Requests from every `kaori/*` work branch except `kaori/staging` into `kaori/staging` while the PR is Draft. It remains targeted/non-comprehensive and prepares the exact head for the Ready boundary.
+`Developer Check` is the path-aware authority for Pull Requests from every `kaori/*` work branch except `kaori/staging` into `kaori/staging`. Draft runs provide the cheap development loop; Ready/synchronize events rerun the same targeted authority on the exact current head before any Full Admission may start.
 
 It routes changed paths once into the minimum safe focused checks using existing KAORI validation commands. Selected checks then execute in independent Draft lanes where safe:
 
@@ -253,7 +254,7 @@ This prevents trivial formatting, targeted-contract, or review findings from rea
 
 When Pre-Ready is clean, mark the PR **Ready for Review** and treat that exact source head as the frozen work-branch candidate.
 
-Ready **does** trigger the governed Full Admission for the exact frozen candidate. Developer Check must already be green before this transition. Do not add cleanup, wording, formatting, or opportunistic refactors after freeze; any source change invalidates prior evidence and should return the PR to Draft for targeted repair before another Ready candidate is admitted.
+Ready triggers an exact-head Developer Check first. Only when that Ready Developer Check aggregate passes does the Developer Check workflow invoke the governed reusable Full Admission for the frozen candidate. A failed or cancelled Developer Check leaves Full Admission skipped. Do not add cleanup, wording, formatting, or opportunistic refactors after freeze; any source change invalidates prior evidence and must pass Developer Check again before another Ready candidate is admitted.
 
 ## Full Admission and Evidence Authority
 
@@ -352,6 +353,7 @@ Issue
   -> batch repair
   -> Pre-Ready PASS
   -> frozen Ready candidate
+  -> exact-head Developer Check PASS
   -> one Full Admission on the frozen Ready head
   -> merge to kaori/staging
   -> staging evidence lookup + lineage verification
@@ -362,7 +364,7 @@ Issue
 
 ### Small issue / burn-down fix
 
-A small issue follows Issue -> work branch -> Draft -> Developer Check -> Pre-Ready -> Ready -> Full Admission -> staging merge. Draft feedback should remain seconds/minutes. The comprehensive suite runs once for the frozen Ready candidate; staging normally reuses that evidence and runs only Fast Smoke.
+A small issue follows Issue -> work branch -> Draft -> Developer Check -> Pre-Ready -> Ready -> exact-head Developer Check -> Full Admission -> staging merge. Draft feedback should remain seconds/minutes. The comprehensive suite runs once for the frozen Ready candidate; staging normally reuses that evidence and runs only Fast Smoke.
 
 ## Failure Return Paths
 
@@ -384,6 +386,7 @@ Normal staging path:
 ```text
 targeted-green Draft candidate
   -> Ready/frozen head
+  -> exact-head Developer Check PASS
   -> Full Admission PASS on exact candidate
   -> merge commit to kaori/staging
   -> Staging Integration
