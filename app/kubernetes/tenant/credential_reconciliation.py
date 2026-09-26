@@ -368,6 +368,10 @@ def inspect_native_credential(credential: TenantCredential) -> TenantCredential:
 def reconcile_native_credential(credential: TenantCredential) -> TenantCredential:
     now = datetime.now(UTC)
     refresh_credential_status(credential, now=now)
+    owner = credential.owner_user
+    if owner is None or not owner.is_active:
+        credential.status = TenantCredentialStatus.REVOKED.value
+
     if credential.credential_type == TenantCredentialType.HUMAN_SERVICE_ACCOUNT.value:
         grant = credential.access_grant
         if (
@@ -378,6 +382,8 @@ def reconcile_native_credential(credential: TenantCredential) -> TenantCredentia
             or not grant.membership.user.is_active
         ):
             credential.status = TenantCredentialStatus.REVOKED.value
+    elif owner is None or not owner.is_admin_level:
+        credential.status = TenantCredentialStatus.REVOKED.value
 
     validate_credential_contract(credential)
     cluster = _cluster_for_credential(credential)

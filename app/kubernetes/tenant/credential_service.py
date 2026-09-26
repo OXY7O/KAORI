@@ -429,6 +429,7 @@ def resume_credential_committed(*, credential_id: int, actor: User | None = None
     if credential.status != TenantCredentialStatus.SUSPENDED.value:
         raise ValueError('Only a suspended Tenant credential can be resumed.')
 
+    credential.status = TenantCredentialStatus.ACTIVE.value
     next_status = effective_credential_status(credential, now=_now())
     if next_status == TenantCredentialStatus.EXPIRED.value:
         credential.status = TenantCredentialStatus.EXPIRED.value
@@ -659,8 +660,8 @@ def generate_kubeconfig_committed(
     if credential.credential_type == TenantCredentialType.HUMAN_SERVICE_ACCOUNT.value:
         if credential.delivery_method != TenantCredentialDeliveryMethod.EXCEPTIONAL_KUBECONFIG.value:
             raise ValueError('Ordinary-user kubeconfig generation requires explicit governed exception approval.')
-        if credential.exception_valid_until is None or _now() >= credential.exception_valid_until:
-            raise ValueError('Exceptional ordinary-user kubeconfig approval is expired.')
+        if credential.exception_valid_until is None:
+            raise ValueError('Exceptional ordinary-user kubeconfig approval requires an expiry.')
     elif credential.delivery_method != TenantCredentialDeliveryMethod.ADMIN_KUBECONFIG.value:
         raise ValueError('Administrative credential is not approved for kubeconfig generation.')
 

@@ -134,8 +134,15 @@ def credential_target_namespaces(credential: TenantCredential) -> list[TenantNam
 
 def validate_credential_contract(credential: TenantCredential) -> None:
     owner = credential.owner_user
-    if owner is None or not owner.is_active:
-        raise ValueError('Tenant credential requires an active owner.')
+    if owner is None:
+        raise ValueError('Tenant credential requires an owner.')
+    active_lifecycle = credential.status in {
+        TenantCredentialStatus.ACTIVE.value,
+        TenantCredentialStatus.RENEWAL_DUE.value,
+        TenantCredentialStatus.ROTATING.value,
+    }
+    if active_lifecycle and not owner.is_active:
+        raise ValueError('Active Tenant credential requires an active owner.')
 
     if credential.tenant is None:
         raise ValueError('Tenant credential requires a Tenant.')
@@ -191,8 +198,8 @@ def validate_credential_contract(credential: TenantCredential) -> None:
     else:
         if delivery is not TenantCredentialDeliveryMethod.ADMIN_KUBECONFIG:
             raise ValueError('Administrative Tenant credential requires admin kubeconfig delivery.')
-        if not owner.is_admin_level:
-            raise ValueError('Administrative kubeconfig ownership requires an active KAORI administrator.')
+        if active_lifecycle and not owner.is_admin_level:
+            raise ValueError('Active administrative kubeconfig ownership requires a KAORI administrator.')
         namespace = credential.anchor_namespace
         if namespace is None:
             raise ValueError('Administrative Tenant credential requires an anchor namespace.')
