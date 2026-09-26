@@ -261,7 +261,6 @@ jobs:
           printf 'image=%s\n' "$image" >> "$GITHUB_OUTPUT"
           printf '✅ Developer Check toolchain — %s\n' "$image"
 
-
   python-check:
     name: Python & Governance
     needs: [route, toolchain]
