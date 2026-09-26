@@ -90,6 +90,13 @@ from app.models.tenant_managed_resource import (
     TenantManagedResourceMode,
     TenantManagedResourceStatus,
 )
+from app.models.tenant_policy import (
+    TenantDomainMatchMode,
+    TenantDomainReservation,
+    TenantDomainReservationStatus,
+    TenantExposurePolicy,
+    TenantExposurePolicyStatus,
+)
 from app.models.user import User
 
 __all__ = [
@@ -136,6 +143,11 @@ __all__ = [
     'TenantCredentialReconciliationStatus',
     'TenantCredentialStatus',
     'TenantCredentialType',
+    'TenantDomainMatchMode',
+    'TenantDomainReservation',
+    'TenantDomainReservationStatus',
+    'TenantExposurePolicy',
+    'TenantExposurePolicyStatus',
     'TenantEnvironment',
     'TenantEnvironmentName',
     'TenantGroup',
