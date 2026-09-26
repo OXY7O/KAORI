@@ -69,6 +69,17 @@ class GeneratedKubeconfigMaterial:
     kubeconfig: str = field(repr=False)
 
 
+@dataclass(frozen=True, slots=True)
+class HumanCredentialIssueRequest:
+    jumpserver_reference: str
+    purpose: str = 'interactive'
+    validity_days: int = DEFAULT_CREDENTIAL_VALIDITY_DAYS
+    delivery_method: str = TenantCredentialDeliveryMethod.JUMPSERVER.value
+    exception_authorized_by_user_id: int | None = None
+    exception_reason: str | None = None
+    exception_valid_until: datetime | None = None
+
+
 def _now() -> datetime:
     return datetime.now(UTC)
 
@@ -161,13 +172,7 @@ def create_human_credential_committed(
     *,
     access_grant_id: int,
     owner_user_id: int,
-    jumpserver_reference: str,
-    purpose: str = 'interactive',
-    validity_days: int = DEFAULT_CREDENTIAL_VALIDITY_DAYS,
-    delivery_method: str = TenantCredentialDeliveryMethod.JUMPSERVER.value,
-    exception_authorized_by_user_id: int | None = None,
-    exception_reason: str | None = None,
-    exception_valid_until: datetime | None = None,
+    request: HumanCredentialIssueRequest,
     actor: User | None = None,
 ) -> TenantCredential:
     grant = db.session.get(TenantAccessGrant, access_grant_id)
@@ -179,7 +184,7 @@ def create_human_credential_committed(
     if grant.reconciliation_status != TenantAccessReconciliationStatus.READY.value:
         raise ValueError('Reconcile the Tenant Access Grant before issuing a human credential.')
 
-    normalized_purpose = normalize_credential_purpose(purpose)
+    normalized_purpose = normalize_credential_purpose(request.purpose)
     if (
         _existing_owner_purpose(
             tenant_id=grant.tenant_id,
@@ -191,7 +196,7 @@ def create_human_credential_committed(
     ):
         raise ValueError('This user already has a Tenant human credential for the selected purpose.')
 
-    method = TenantCredentialDeliveryMethod(delivery_method)
+    method = TenantCredentialDeliveryMethod(request.delivery_method)
     if method not in {
         TenantCredentialDeliveryMethod.JUMPSERVER,
         TenantCredentialDeliveryMethod.EXCEPTIONAL_KUBECONFIG,
@@ -199,9 +204,9 @@ def create_human_credential_committed(
         raise ValueError('Human Tenant credentials require JumpServer or governed exceptional kubeconfig delivery.')
 
     approver = (
-        db.session.get(User, exception_authorized_by_user_id) if exception_authorized_by_user_id is not None else None
+        db.session.get(User, request.exception_authorized_by_user_id) if request.exception_authorized_by_user_id is not None else None
     )
-    started, renewal_due_at, valid_until = _validity_window(validity_days=validity_days)
+    started, renewal_due_at, valid_until = _validity_window(validity_days=request.validity_days)
     public_id = str(uuid.uuid4())
 
     credential = TenantCredential()
@@ -214,10 +219,10 @@ def create_human_credential_committed(
     credential.delivery_method = method.value
     credential.status = TenantCredentialStatus.ACTIVE.value
     credential.service_account_name = _service_account_name(public_id, admin=False)
-    credential.jumpserver_reference = jumpserver_reference.strip()
+    credential.jumpserver_reference = request.jumpserver_reference.strip()
     credential.exception_authorized_by = approver
-    credential.exception_reason = (exception_reason or '').strip() or None
-    credential.exception_valid_until = exception_valid_until
+    credential.exception_reason = (request.exception_reason or '').strip() or None
+    credential.exception_valid_until = request.exception_valid_until
     credential.valid_from = started
     credential.renewal_due_at = renewal_due_at
     credential.valid_until = valid_until
