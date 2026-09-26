@@ -66,7 +66,7 @@ def test_workflow_exposes_progressive_profiles_before_expensive_full_jobs() -> N
         assert display_name in policy_source
 
     first_profile = source.index('validation-profile:')
-    first_expensive = source.index('static-quality:')
+    first_expensive = source.index('full-admission-gates:')
     assert first_profile < first_expensive
 
 
@@ -106,23 +106,56 @@ def test_ready_feature_pr_is_a_governed_admission_boundary() -> None:
     assert "github.head_ref != 'kaori/staging'" in source
 
 
-def test_full_admission_expensive_gates_are_parallel_after_profile_resolution() -> None:
+def test_full_admission_comprehensive_gates_use_native_fail_fast_matrix() -> None:
     source = read(WORKFLOW)
-    blocks = {
-        'static-quality': source.split('\n  static-quality:', 1)[1].split('\n  static-security:', 1)[0],
-        'static-security': source.split('\n  static-security:', 1)[1].split('\n  functional-tests:', 1)[0],
-        'functional-tests': source.split('\n  functional-tests:', 1)[1].split('\n  frontend:', 1)[0],
-        'frontend': source.split('\n  frontend:', 1)[1].split('\n  production-runtime:', 1)[0],
-        'production-runtime': source.split('\n  production-runtime:', 1)[1].split('\n  integration-smoke:', 1)[0],
-    }
+    matrix = source.split('\n  full-admission-gates:', 1)[1].split('\n  integration-smoke:', 1)[0]
 
-    for block in blocks.values():
-        assert 'needs: validation-profile' in block
+    assert 'needs: validation-profile' in matrix
+    assert 'strategy:' in matrix
+    assert 'fail-fast: true' in matrix
+    assert 'max-parallel: 2' in matrix
+    for gate in (
+        'gate: static',
+        'gate: security',
+        'gate: functional',
+        'gate: frontend',
+        'gate: runtime',
+    ):
+        assert gate in matrix
 
-    assert 'needs: [validation-profile, static-quality]' not in source
-    assert 'needs: [validation-profile, static-security]' not in source
-    assert 'needs: [validation-profile, functional-tests]' not in source
-    assert 'needs: [validation-profile, frontend]' not in source
+    assert 'static-quality:' not in source
+    assert 'static-security:' not in source
+    assert 'functional-tests:' not in source
+    assert '\n  frontend:' not in source
+    assert 'production-runtime:' not in source
+
+
+def test_matrix_cancellation_keeps_resource_cleanup_and_fail_closed_admission() -> None:
+    source = read(WORKFLOW)
+    matrix = source.split('\n  full-admission-gates:', 1)[1].split('\n  integration-smoke:', 1)[0]
+    admission = source.split('\n  admission:', 1)[1]
+
+    assert "if: ${{ always() && matrix.gate == 'functional' }}" in matrix
+    assert "if: ${{ always() && matrix.gate == 'runtime' }}" in matrix
+    assert 'docker rm -f "$GATE_CONTAINER"' in matrix
+    assert 'full-admission-gates' in admission
+    assert 'FULL_GATES: ${{ needs.full-admission-gates.result }}' in admission
+    assert '[[ "$FULL_GATES" == "success" ]]' in admission
+    assert 'selected Full Admission matrix failed or was cancelled' in admission
+
+
+def test_successful_matrix_preserves_per_gate_evidence_vocabulary() -> None:
+    source = read(WORKFLOW)
+    admission = source.split('\n  admission:', 1)[1]
+
+    for option in (
+        '--static-quality "${{ needs.full-admission-gates.result }}"',
+        '--static-security "${{ needs.full-admission-gates.result }}"',
+        '--functional-tests "${{ needs.full-admission-gates.result }}"',
+        '--frontend "${{ needs.full-admission-gates.result }}"',
+        '--production-runtime "${{ needs.full-admission-gates.result }}"',
+    ):
+        assert option in admission
 
 
 def test_profile_version_and_compatibility_wrapper_use_current_authority() -> None:
