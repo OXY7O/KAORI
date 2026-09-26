@@ -529,7 +529,8 @@ def find_remote_full_evidence(
             for workflow_name in workflows:
                 encoded_workflow = urllib.parse.quote(workflow_name, safe='')
                 runs = _github_request(
-                    f'https://api.github.com/repos/{repository}/actions/workflows/{encoded_workflow}/runs?{query}', token
+                    f'https://api.github.com/repos/{repository}/actions/workflows/{encoded_workflow}/runs?{query}',
+                    token,
                 ).get('workflow_runs', [])
                 for run in runs:
                     run_id = int(run['id'])
