@@ -6,17 +6,17 @@ ROOT = Path(__file__).resolve().parents[3]
 def test_capsule_discovery_uses_supported_api_and_explicit_probes() -> None:
     source = (ROOT / 'app/kubernetes/tenant/capsule_provider.py').read_text(encoding='utf-8')
 
-    assert "capsule.clastix.io" in source
-    assert "v1beta2" in source
-    assert "v1beta1" in source
-    assert "tenants.capsule.clastix.io" in source
-    assert "tenantresources.capsule.clastix.io" in source
-    assert "globaltenantresources.capsule.clastix.io" in source
-    assert "globalresourcequotas.capsule.clastix.io" in source
-    assert "resourcepools.capsule.clastix.io" in source
-    assert "resourcepoolclaims.capsule.clastix.io" in source
-    assert "probes.get('proxy')" in source
-    assert "probes.get('admission_enforcement')" in source
+    assert 'capsule.clastix.io' in source
+    assert 'v1beta2' in source
+    assert 'v1beta1' in source
+    assert 'tenants.capsule.clastix.io' in source
+    assert 'tenantresources.capsule.clastix.io' in source
+    assert 'globaltenantresources.capsule.clastix.io' in source
+    assert 'globalresourcequotas.capsule.clastix.io' in source
+    assert 'resourcepools.capsule.clastix.io' in source
+    assert 'resourcepoolclaims.capsule.clastix.io' in source
+    assert 'probes.get('proxy')' in source
+    assert 'probes.get('admission_enforcement')' in source
 
 
 def test_capsule_provider_has_degraded_and_native_recovery_contract() -> None:

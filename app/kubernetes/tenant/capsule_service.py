@@ -77,10 +77,7 @@ def observe_capsule_provider_committed(
             'provider_key': tenant.provider_key,
             'provider_state': tenant.provider_state,
             'capsule_state': result.state.value,
-            'capabilities': {
-                item.key: item.status.value
-                for item in result.capabilities
-            },
+            'capabilities': {item.key: item.status.value for item in result.capabilities},
         },
     )
     db.session.commit()
@@ -169,10 +166,7 @@ def complete_native_recovery_committed(
     recovery.update(
         {
             'phase': 'completed',
-            'native_capabilities': {
-                key: value.value
-                for key, value in sorted(native_capabilities.items())
-            },
+            'native_capabilities': {key: value.value for key, value in sorted(native_capabilities.items())},
             'materialized_capabilities': sorted(materialized_capabilities),
             'verified': True,
             'authority_transferred': True,

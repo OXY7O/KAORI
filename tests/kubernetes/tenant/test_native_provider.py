@@ -48,16 +48,19 @@ def test_connection_degraded_propagates_to_baseline_capabilities() -> None:
     provider = NativeKubernetesTenantProvider(connection=_connection(readiness='degraded'))
     capabilities = provider.capabilities(cluster_id='cluster-a')
     assert all(
-        item.status in {TenantCapabilityStatus.DEGRADED, TenantCapabilityStatus.NOT_APPLICABLE}
-        for item in capabilities
+        item.status in {TenantCapabilityStatus.DEGRADED, TenantCapabilityStatus.NOT_APPLICABLE} for item in capabilities
     )
 
 
 def test_security_sensitive_capability_fails_closed() -> None:
-    provider = NativeKubernetesTenantProvider(connection=_connection(features={
-        'tenant.admission.validatingpolicies': _feature('blocked'),
-        'tenant.admission.validatingpolicybindings': _feature('blocked'),
-    }))
+    provider = NativeKubernetesTenantProvider(
+        connection=_connection(
+            features={
+                'tenant.admission.validatingpolicies': _feature('blocked'),
+                'tenant.admission.validatingpolicybindings': _feature('blocked'),
+            }
+        )
+    )
     with pytest.raises(TenantProviderError, match='admission_enforcement'):
         require_native_capability(provider, cluster_id='cluster-a', capability='admission_enforcement')
 

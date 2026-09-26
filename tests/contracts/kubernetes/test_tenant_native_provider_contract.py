@@ -5,8 +5,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def test_kubernetes_discovery_exposes_optional_tenant_mutation_capabilities() -> None:
     compatibility = (
-        ROOT
-        / 'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/compatibility.py'
+        ROOT / 'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/compatibility.py'
     ).read_text(encoding='utf-8')
 
     for capability in (

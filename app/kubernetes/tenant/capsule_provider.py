@@ -157,17 +157,11 @@ def discover_capsule(
         ),
         'resource_pools': _dependent_status(
             controller_status=controller_status,
-            ready=(
-                _RESOURCE_POOL_CRD in capsule_items
-                and _RESOURCE_POOL_CLAIM_CRD in capsule_items
-            ),
+            ready=(_RESOURCE_POOL_CRD in capsule_items and _RESOURCE_POOL_CLAIM_CRD in capsule_items),
         ),
         'replication': _dependent_status(
             controller_status=controller_status,
-            ready=(
-                _TENANT_RESOURCE_CRD in capsule_items
-                and _GLOBAL_TENANT_RESOURCE_CRD in capsule_items
-            ),
+            ready=(_TENANT_RESOURCE_CRD in capsule_items and _GLOBAL_TENANT_RESOURCE_CRD in capsule_items),
         ),
     }
     return CapsuleDiscoverySnapshot(
