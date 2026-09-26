@@ -179,11 +179,16 @@ def test_admission_summary_reports_real_failure_state_instead_of_hardcoded_pass(
     assert "printf '➡️ %s\\n'" in workflow
 
 
-def test_long_static_gate_has_periodic_heartbeat() -> None:
+def test_long_static_gate_has_non_blocking_periodic_heartbeat() -> None:
     workflow = WORKFLOW.read_text(encoding='utf-8')
 
     assert 'Static & Governance still running' in workflow
     assert 'sleep 60' in workflow
+    assert 'heartbeat_pid=$!' in workflow
+    assert 'wait "$gate_pid" || gate_status=$?' in workflow
+    assert 'kill "$heartbeat_pid" >/dev/null 2>&1 || true' in workflow
+    assert 'wait "$heartbeat_pid" >/dev/null 2>&1 || true' in workflow
+    assert 'exit "$gate_status"' in workflow
     assert '⏱ %dm %02ds' in workflow
 
 
