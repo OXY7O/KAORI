@@ -64,17 +64,19 @@ def test_tenant_members_access_uat_surface_uses_canonical_access_services() -> N
         assert route in routes
 
     for mutation in (
-        'create_tenant_group_committed',
-        'add_user_membership_committed',
-        'add_group_membership_committed',
-        'create_access_grant_committed',
-        'inspect_access_grant_committed',
-        'reconcile_access_grant_committed',
-        'revoke_access_grant_committed',
-        'revoke_membership_committed',
+        'create_tenant_group_by_id_committed',
+        'add_user_membership_by_id_committed',
+        'add_group_membership_by_id_committed',
+        'create_access_grant_by_id_committed',
+        'inspect_access_grant_by_id_committed',
+        'reconcile_access_grant_by_id_committed',
+        'revoke_access_grant_by_id_committed',
+        'revoke_membership_by_id_committed',
     ):
         assert mutation in routes
 
+    assert 'from app.extensions.db import db' not in routes
+    assert 'db.session' not in routes
     assert 'Members &amp; Access' in template
     assert 'Functional UAT Surface' in template
     assert 'Apply Access Grant' in template
