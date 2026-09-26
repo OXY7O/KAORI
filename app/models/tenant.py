@@ -126,6 +126,12 @@ class TenantCredentialReconciliationStatus(StrEnum):
     DISABLED = 'disabled'
 
 
+class TenantProductionAccessExceptionStatus(StrEnum):
+    ACTIVE = 'active'
+    EXPIRED = 'expired'
+    REVOKED = 'revoked'
+
+
 class Tenant(db.Model):
     __tablename__ = 'tenants'
 
@@ -660,6 +666,68 @@ class TenantCredential(db.Model):
         Index('ix_tenant_credentials_application', 'tenant_id', 'application_name', 'status'),
         Index('ix_tenant_credentials_validity', 'status', 'renewal_due_at', 'valid_until'),
         Index('ix_tenant_credentials_reconciliation', 'tenant_id', 'reconciliation_status'),
+    )
+
+
+class TenantProductionAccessException(db.Model):
+    __tablename__ = 'tenant_production_access_exceptions'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    public_id: Mapped[str] = mapped_column(String(36), nullable=False, default=lambda: str(uuid.uuid4()))
+    tenant_id: Mapped[str] = mapped_column(ForeignKey('tenants.id', ondelete='CASCADE'), nullable=False)
+    tenant_namespace_id: Mapped[int] = mapped_column(
+        ForeignKey('tenant_namespaces.id', ondelete='CASCADE'), nullable=False
+    )
+    access_grant_id: Mapped[int] = mapped_column(
+        ForeignKey('tenant_access_grants.id', ondelete='CASCADE'), nullable=False
+    )
+    owner_user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='RESTRICT'), nullable=False)
+    approved_by_user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='RESTRICT'), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default=TenantProductionAccessExceptionStatus.ACTIVE.value
+    )
+    valid_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    review_due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    valid_until: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    correlation_id: Mapped[str] = mapped_column(String(64), nullable=False, default=lambda: str(uuid.uuid4()))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
+
+    tenant: Mapped[Tenant] = relationship('Tenant')
+    namespace: Mapped[TenantNamespace] = relationship('TenantNamespace')
+    access_grant: Mapped[TenantAccessGrant] = relationship('TenantAccessGrant')
+    owner_user: Mapped[User] = relationship('User', foreign_keys=[owner_user_id])
+    approved_by_user: Mapped[User] = relationship('User', foreign_keys=[approved_by_user_id])
+
+    __table_args__ = (
+        UniqueConstraint('public_id', name='uq_tenant_production_access_exceptions_public_id'),
+        UniqueConstraint('correlation_id', name='uq_tenant_production_access_exceptions_correlation_id'),
+        CheckConstraint(
+            "status IN ('active', 'expired', 'revoked')",
+            name='ck_tenant_production_access_exceptions_status',
+        ),
+        CheckConstraint('valid_from < valid_until', name='ck_tenant_production_access_exceptions_validity'),
+        CheckConstraint(
+            'review_due_at >= valid_from AND review_due_at <= valid_until',
+            name='ck_tenant_production_access_exceptions_review_window',
+        ),
+        Index(
+            'ix_tenant_production_access_exceptions_scope_status',
+            'tenant_id',
+            'tenant_namespace_id',
+            'status',
+        ),
+        Index(
+            'ix_tenant_production_access_exceptions_owner_status',
+            'owner_user_id',
+            'status',
+            'valid_until',
+        ),
     )
 
 
