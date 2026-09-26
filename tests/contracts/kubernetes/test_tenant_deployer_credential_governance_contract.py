@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parents[3]
 def test_deployer_credentials_extend_canonical_tenant_credential_domain() -> None:
     model = (ROOT / 'app/models/tenant.py').read_text(encoding='utf-8')
     policy = (ROOT / 'app/kubernetes/tenant/credential.py').read_text(encoding='utf-8')
-    service = (ROOT / 'app/kubernetes/tenant/credential_service.py').read_text(encoding='utf-8')
+    service = (ROOT / 'app/kubernetes/tenant/deployer_credential_service.py').read_text(encoding='utf-8')
 
     assert "SERVICE_ACCOUNT = 'service_account'" in model
     assert "DEPLOYER_SERVICE_ACCOUNT = 'deployer_service_account'" in model
