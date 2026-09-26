@@ -1,6 +1,6 @@
 """extend Tenant credential governance for CI/CD deployer identities
 
-Revision ID: 20260926_tenant_deployer_credentials
+Revision ID: 20260926_tenant_deployer_cred
 Revises: 20260926_tenant_credentials
 Create Date: 2026-09-26
 """
@@ -8,7 +8,7 @@ Create Date: 2026-09-26
 import sqlalchemy as sa
 from alembic import op
 
-revision = '20260926_tenant_deployer_credentials'
+revision = '20260926_tenant_deployer_cred'
 down_revision = '20260926_tenant_credentials'
 branch_labels = None
 depends_on = None
