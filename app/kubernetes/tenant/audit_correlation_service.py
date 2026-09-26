@@ -88,9 +88,9 @@ def _membership_match(
         for grant in membership.access_grants:
             if grant.status != 'active':
                 continue
-            if grant.scope_type == 'namespace' and grant.namespace_id == namespace.id:
+            if grant.scope_type == 'namespace' and grant.tenant_namespace_id == namespace.id:
                 matched.append((membership, grant.id))
-            elif grant.scope_type == 'environment' and grant.environment_id == namespace.tenant_environment_id:
+            elif grant.scope_type == 'environment' and grant.tenant_environment_id == namespace.tenant_environment_id:
                 matched.append((membership, grant.id))
             elif grant.scope_type == 'tenant':
                 matched.append((membership, grant.id))
