@@ -514,7 +514,6 @@ jobs:
         env:
           EXECUTION: ${{ needs.validation-profile.outputs.execution }}
           FULL_GATES: ${{ needs.full-admission-gates.result }}
-          TEST_EVIDENCE: ${{ steps.full_test_evidence.outcome }}
           INTEGRATION_SMOKE: ${{ needs.integration-smoke.result }}
         run: |
           set -Eeuo pipefail
@@ -609,6 +608,7 @@ jobs:
           REUSED: ${{ steps.result.outputs.reused }}
           COVERAGE: ${{ steps.result.outputs.coverage }}
           FULL_GATES: ${{ needs.full-admission-gates.result }}
+          TEST_EVIDENCE: ${{ steps.full_test_evidence.outcome }}
           INTEGRATION_SMOKE: ${{ needs.integration-smoke.result }}
         run: |
           set -Eeuo pipefail
