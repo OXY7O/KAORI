@@ -351,7 +351,7 @@ jobs:
         run: bash .github/ci/run-runtime-validation.sh "$VALIDATION_IMAGE"
 
       - name: Upload Static Diagnostics
-        if: ${{ (failure() || cancelled()) && matrix.gate == 'static' }}
+        if: ${{ failure() && matrix.gate == 'static' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: static-${{ github.run_id }}-${{ github.run_attempt }}
@@ -360,7 +360,7 @@ jobs:
           retention-days: 3
 
       - name: Upload Security Diagnostics
-        if: ${{ (failure() || cancelled()) && matrix.gate == 'security' }}
+        if: ${{ failure() && matrix.gate == 'security' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: security-${{ github.run_id }}-${{ github.run_attempt }}
@@ -369,7 +369,7 @@ jobs:
           retention-days: 3
 
       - name: Upload Test Diagnostics
-        if: ${{ (failure() || cancelled()) && matrix.gate == 'functional' }}
+        if: ${{ failure() && matrix.gate == 'functional' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: tests-${{ github.run_id }}-${{ github.run_attempt }}
@@ -378,7 +378,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Runtime Diagnostics
-        if: ${{ (failure() || cancelled()) && matrix.gate == 'runtime' }}
+        if: ${{ failure() && matrix.gate == 'runtime' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: runtime-${{ github.run_id }}-${{ github.run_attempt }}
@@ -388,7 +388,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 3
 
-      - name: Cleanup Functional Resources
+      - name: Cleanup Test Dependencies
         if: ${{ always() && matrix.gate == 'functional' }}
         shell: bash
         run: >-
