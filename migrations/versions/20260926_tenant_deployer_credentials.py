@@ -53,13 +53,13 @@ def upgrade() -> None:
         'ck_tenant_credentials_type_scope',
         'tenant_credentials',
         "((credential_type = 'human_service_account' AND access_grant_id IS NOT NULL "
-        "AND anchor_namespace_id IS NULL AND application_name IS NULL "
+        'AND anchor_namespace_id IS NULL AND application_name IS NULL '
         "AND delivery_method IN ('jumpserver', 'exceptional_kubeconfig')) "
         "OR (credential_type = 'admin_kubeconfig' AND access_grant_id IS NULL "
-        "AND anchor_namespace_id IS NOT NULL AND application_name IS NULL "
+        'AND anchor_namespace_id IS NOT NULL AND application_name IS NULL '
         "AND delivery_method = 'admin_kubeconfig') "
         "OR (credential_type = 'deployer_service_account' AND access_grant_id IS NOT NULL "
-        "AND anchor_namespace_id IS NULL AND application_name IS NOT NULL "
+        'AND anchor_namespace_id IS NULL AND application_name IS NOT NULL '
         "AND delivery_method = 'cicd_kubeconfig'))",
     )
     op.create_index(
@@ -88,7 +88,7 @@ def downgrade() -> None:
         'ck_tenant_credentials_type_scope',
         'tenant_credentials',
         "((credential_type = 'human_service_account' AND access_grant_id IS NOT NULL "
-        "AND anchor_namespace_id IS NULL "
+        'AND anchor_namespace_id IS NULL '
         "AND delivery_method IN ('jumpserver', 'exceptional_kubeconfig')) "
         "OR (credential_type = 'admin_kubeconfig' AND access_grant_id IS NULL "
         "AND anchor_namespace_id IS NOT NULL AND delivery_method = 'admin_kubeconfig'))",
