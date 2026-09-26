@@ -253,4 +253,4 @@ def test_dashboard_pattern_is_locked_by_documentation_and_quality_gate() -> None
     assert '**Status:** Locked reference pattern' in standard
     assert 'No visual redesign is required' in audit
     assert 'python scripts/verify_operational_dashboard_standard.py' in quality_gate
-    assert 'tests/kubernetes/dashboard' in quality_gate
+    assert "-m 'not debug and not e2e'" in quality_gate
