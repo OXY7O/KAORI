@@ -311,6 +311,13 @@ jobs:
 
       - name: Run Security Gate
         if: ${{ matrix.gate == 'security' }}
+        shell: bash
+        run: |
+          printf '🧪 Controlled #673 fail-fast proof: Security intentionally fails on this temporary commit.\n'
+          exit 1
+
+      - name: Run Security Gate (normal)
+        if: ${{ matrix.gate == 'security' }}
         run: >-
           docker run --rm --name "$GATE_CONTAINER" --user "$(id -u):$(id -g)" --env HOME=/tmp
           --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE"
