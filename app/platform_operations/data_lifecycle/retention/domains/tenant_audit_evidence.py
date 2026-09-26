@@ -6,6 +6,7 @@ from typing import Any
 
 from flask import current_app
 from sqlalchemy import func
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
 from app.models.tenant_audit import TenantAuditEvidence
@@ -92,7 +93,7 @@ class TenantAuditEvidenceArchiveDomain:
                     batch = []
             if batch:
                 deleted_total += self._delete_batch(batch)
-        except Exception as exc:
+        except (SQLAlchemyError, TypeError, ValueError) as exc:
             db.session.rollback()
             raise PartialCleanupError(
                 'Tenant audit evidence cleanup stopped after one or more committed batches.',
