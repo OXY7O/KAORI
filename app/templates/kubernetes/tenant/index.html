@@ -512,8 +512,8 @@
                 <div>
                     <h2 class="text-lg font-semibold text-content-primary">Members &amp; Access</h2>
                     <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">
-                        Exercise the committed #114 membership and Kubernetes RBAC contracts.
-                        Final Tenant Management information architecture remains owned by #125.
+                        Exercise the committed Tenant membership and Kubernetes RBAC contracts.
+                        Final Tenant Management information architecture remains owned by the dedicated UX workstream.
                     </p>
                 </div>
                 {{ table_label.status_label('Functional UAT Surface', 'info') }}
@@ -779,7 +779,7 @@
                                             {{ grant.reconciliation_message or 'Awaiting Kubernetes RBAC evidence.' }}
                                         </p>
                                         {% if grant.desired_hash or grant.effective_hash %}
-                                            <p class="mt-1 font-mono text-[11px] text-content-muted">
+                                            <p class="mt-1 font-mono text-xs text-content-muted">
                                                 desired {{ (grant.desired_hash or '—')[:12] }}
                                                 · effective {{ (grant.effective_hash or '—')[:12] }}
                                             </p>
