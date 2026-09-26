@@ -511,46 +511,52 @@ def find_remote_full_evidence(
     *,
     repository: str,
     token: str,
-    workflow: str,
+    workflow: str | Sequence[str],
     start_sha: str,
     current_tree: str,
     current_authority_fingerprint: str | None = None,
 ) -> ReuseDecision:
     try:
         fingerprint = current_authority_fingerprint or compute_authority_fingerprint()
-        encoded_workflow = urllib.parse.quote(workflow, safe='')
+        workflows = (workflow,) if isinstance(workflow, str) else tuple(workflow)
+        if not workflows:
+            workflows = ('quality.yml',)
+
         for candidate_sha, candidate_tree in _candidate_lineage(repository, token, start_sha):
             if candidate_tree != current_tree:
                 continue
             query = urllib.parse.urlencode({'head_sha': candidate_sha, 'status': 'success', 'per_page': 20})
-            runs = _github_request(
-                f'https://api.github.com/repos/{repository}/actions/workflows/{encoded_workflow}/runs?{query}', token
-            ).get('workflow_runs', [])
-            for run in runs:
-                run_id = int(run['id'])
-                artifacts = _github_request(
-                    f'https://api.github.com/repos/{repository}/actions/runs/{run_id}/artifacts', token
-                ).get('artifacts', [])
-                for artifact in artifacts:
-                    if not str(artifact.get('name', '')).startswith('kaori-full-admission-'):
-                        continue
-                    if bool(artifact.get('expired')):
-                        continue
-                    archive = _github_request(str(artifact['archive_download_url']), token, binary=True)
-                    with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
-                        if 'admission-evidence.json' not in bundle.namelist():
+            for workflow_name in workflows:
+                encoded_workflow = urllib.parse.quote(workflow_name, safe='')
+                runs = _github_request(
+                    f'https://api.github.com/repos/{repository}/actions/workflows/{encoded_workflow}/runs?{query}',
+                    token,
+                ).get('workflow_runs', [])
+                for run in runs:
+                    run_id = int(run['id'])
+                    artifacts = _github_request(
+                        f'https://api.github.com/repos/{repository}/actions/runs/{run_id}/artifacts', token
+                    ).get('artifacts', [])
+                    for artifact in artifacts:
+                        if not str(artifact.get('name', '')).startswith('kaori-full-admission-'):
                             continue
-                        evidence = json.loads(bundle.read('admission-evidence.json').decode('utf-8'))
-                    if str(evidence.get('source_sha', '')) != candidate_sha:
-                        continue
-                    decision = evidence_reuse_decision(
-                        evidence,
-                        current_tree=current_tree,
-                        current_authority_fingerprint=fingerprint,
-                        required_profile_version=PROFILE_VERSION,
-                    )
-                    if decision.reusable:
-                        return decision
+                        if bool(artifact.get('expired')):
+                            continue
+                        archive = _github_request(str(artifact['archive_download_url']), token, binary=True)
+                        with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
+                            if 'admission-evidence.json' not in bundle.namelist():
+                                continue
+                            evidence = json.loads(bundle.read('admission-evidence.json').decode('utf-8'))
+                        if str(evidence.get('source_sha', '')) != candidate_sha:
+                            continue
+                        decision = evidence_reuse_decision(
+                            evidence,
+                            current_tree=current_tree,
+                            current_authority_fingerprint=fingerprint,
+                            required_profile_version=PROFILE_VERSION,
+                        )
+                        if decision.reusable:
+                            return decision
     except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError, zipfile.BadZipFile) as exc:
         return ReuseDecision(False, f'Admission evidence lookup failed closed: {type(exc).__name__}: {exc}')
     return ReuseDecision(False, 'No reusable Full Admission evidence was found for this tree and authority.')
@@ -592,7 +598,7 @@ def _find_evidence(args: argparse.Namespace) -> int:
     decision = find_remote_full_evidence(
         repository=args.repository,
         token=args.token,
-        workflow=args.workflow,
+        workflow=args.workflow or ('quality.yml',),
         start_sha=args.start_sha,
         current_tree=args.current_tree,
     )
@@ -693,7 +699,7 @@ def build_parser() -> argparse.ArgumentParser:
     evidence = sub.add_parser('find-evidence')
     evidence.add_argument('--repository', required=True)
     evidence.add_argument('--token', required=True)
-    evidence.add_argument('--workflow', default='quality.yml')
+    evidence.add_argument('--workflow', action='append')
     evidence.add_argument('--start-sha', required=True)
     evidence.add_argument('--current-tree', required=True)
     evidence.set_defaults(func=_find_evidence)
