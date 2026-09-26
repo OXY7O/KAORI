@@ -93,7 +93,7 @@ def test_staging_evidence_lookup_accepts_direct_and_sequenced_admission_parents(
     assert '--workflow quality.yml' in workflow
     assert '--workflow developer-check.yml' in workflow
     assert "evidence.add_argument('--workflow', action='append')" in policy_source
-    assert "workflows = (workflow,) if isinstance(workflow, str) else tuple(workflow)" in policy_source
+    assert 'workflows = (workflow,) if isinstance(workflow, str) else tuple(workflow)' in policy_source
 
 
 def test_issue_branch_pushes_do_not_trigger_governed_full_admission() -> None:
