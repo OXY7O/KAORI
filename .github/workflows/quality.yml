@@ -514,6 +514,7 @@ jobs:
         env:
           EXECUTION: ${{ needs.validation-profile.outputs.execution }}
           FULL_GATES: ${{ needs.full-admission-gates.result }}
+          TEST_EVIDENCE: ${{ steps.full-test-evidence.outcome }}
           INTEGRATION_SMOKE: ${{ needs.integration-smoke.result }}
         run: |
           set -Eeuo pipefail
@@ -537,6 +538,7 @@ jobs:
           fi
 
       - name: Write Full Test Taxonomy Summary
+        id: full-test-evidence
         if: ${{ needs.validation-profile.outputs.execution == 'full' && steps.result.outcome == 'success' }}
         shell: bash
         env:
@@ -557,7 +559,7 @@ jobs:
 
       - name: Publish Admission Evidence
         id: full-evidence
-        if: ${{ needs.validation-profile.outputs.execution == 'full' }}
+        if: ${{ needs.validation-profile.outputs.execution == 'full' && steps.result.outcome == 'success' && steps.full-test-evidence.outcome == 'success' }}
         shell: bash
         env:
           CI_TOOLCHAIN_IMAGE: ${{ needs.validation-profile.outputs.toolchain_image }}
@@ -583,7 +585,7 @@ jobs:
 
       - name: Upload Admission Evidence
         id: full-evidence-upload
-        if: ${{ needs.validation-profile.outputs.execution == 'full' }}
+        if: ${{ needs.validation-profile.outputs.execution == 'full' && steps.full-evidence.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: kaori-full-admission-${{ needs.validation-profile.outputs.source_sha }}
@@ -625,6 +627,9 @@ jobs:
             if [[ "$FULL_GATES" != "success" ]]; then
               RESULT=FAIL
               FIRST_FAILURE="Comprehensive gate matrix — $FULL_GATES; see failed/cancelled matrix child"
+            elif [[ "$TEST_EVIDENCE" != "success" ]]; then
+              RESULT=FAIL
+              FIRST_FAILURE="Full test taxonomy evidence — $TEST_EVIDENCE"
             fi
           elif [[ "$INTEGRATION_SMOKE" != "success" ]]; then
             RESULT=FAIL
@@ -679,6 +684,7 @@ jobs:
           SOURCE_SHA: ${{ needs.validation-profile.outputs.source_sha }}
           EXECUTION: ${{ needs.validation-profile.outputs.execution }}
           ASSERT_OUTCOME: ${{ steps.result.outcome }}
+          TEST_EVIDENCE_OUTCOME: ${{ steps.full-test-evidence.outcome }}
           EVIDENCE_OUTCOME: ${{ steps.full-evidence.outcome }}
           EVIDENCE_UPLOAD_OUTCOME: ${{ steps.full-evidence-upload.outcome }}
           SUMMARY_OUTCOME: ${{ steps.summary.outcome }}
@@ -690,7 +696,7 @@ jobs:
 
           if [[ "$ASSERT_OUTCOME" == "success" && "$SUMMARY_OUTCOME" == "success" ]]; then
             if [[ "$EXECUTION" == "full" ]]; then
-              if [[ "$EVIDENCE_OUTCOME" == "success" && "$EVIDENCE_UPLOAD_OUTCOME" == "success" ]]; then
+              if [[ "$TEST_EVIDENCE_OUTCOME" == "success" && "$EVIDENCE_OUTCOME" == "success" && "$EVIDENCE_UPLOAD_OUTCOME" == "success" ]]; then
                 state=success
                 description='Full Admission passed'
               fi
