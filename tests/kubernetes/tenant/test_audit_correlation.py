@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+
 import pytest
 
 from app.kubernetes.tenant.audit_correlation import (
