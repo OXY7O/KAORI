@@ -84,6 +84,12 @@ from app.models.tenant import (
     TenantResourceProfile,
     TenantResourceProfileClass,
 )
+from app.models.tenant_managed_resource import (
+    TenantManagedResourceIntent,
+    TenantManagedResourceKind,
+    TenantManagedResourceMode,
+    TenantManagedResourceStatus,
+)
 from app.models.user import User
 
 __all__ = [
@@ -137,6 +143,10 @@ __all__ = [
     'TenantMembership',
     'TenantMembershipPrincipalType',
     'TenantMembershipStatus',
+    'TenantManagedResourceIntent',
+    'TenantManagedResourceKind',
+    'TenantManagedResourceMode',
+    'TenantManagedResourceStatus',
     'TenantNamespace',
     'TenantNamespaceProvisioningStatus',
     'TenantOwnershipStatus',
