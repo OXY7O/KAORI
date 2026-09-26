@@ -102,9 +102,9 @@ class TenantAuditEvidenceArchiveDomain:
 
     @staticmethod
     def _delete_batch(record_ids: list[int]) -> int:
-        deleted = TenantAuditEvidence.query.filter(
-            TenantAuditEvidence.id.in_(record_ids)
-        ).delete(synchronize_session=False)
+        deleted = TenantAuditEvidence.query.filter(TenantAuditEvidence.id.in_(record_ids)).delete(
+            synchronize_session=False
+        )
         db.session.commit()
         return int(deleted or 0)
 
