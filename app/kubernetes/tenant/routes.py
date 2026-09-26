@@ -9,6 +9,19 @@ from kubernetes.client.rest import ApiException
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import any_permission_required, permission_required
+from app.extensions.db import db
+from app.kubernetes.tenant.access_service import (
+    TenantAccessStateConflictError,
+    add_group_membership_committed,
+    add_user_membership_committed,
+    create_access_grant_committed,
+    create_tenant_group_committed,
+    get_tenant_access_context,
+    inspect_access_grant_committed,
+    reconcile_access_grant_committed,
+    revoke_access_grant_committed,
+    revoke_membership_committed,
+)
 from app.kubernetes.tenant.capacity_governance import (
     TenantCapacityStateConflictError,
     upsert_capacity_policy_committed,
@@ -21,6 +34,8 @@ from app.kubernetes.tenant.service import (
     get_tenant_context,
     provision_native_namespace_committed,
 )
+from app.models import User
+from app.models.tenant import Tenant, TenantGroup
 from app.platform_operations.notifications.service import record_operational_activity
 
 tenant_bp = Blueprint('tenant', __name__, url_prefix='/kubernetes/tenant')
@@ -60,7 +75,251 @@ def _record(
 @tenant_bp.get('/')
 @any_permission_required('tenant.view', 'tenant.manage')
 def index():
-    return render_template('kubernetes/tenant/index.html', **get_tenant_context())
+    return render_template(
+        'kubernetes/tenant/index.html',
+        **get_tenant_context(),
+        **get_tenant_access_context(),
+    )
+
+
+def _required_int(name: str) -> int:
+    value = str(request.form.get(name) or '').strip()
+    if not value:
+        raise ValueError(f'Select {name.replace("_", " ")}.')
+    return int(value)
+
+
+def _optional_int(name: str) -> int | None:
+    value = str(request.form.get(name) or '').strip()
+    return int(value) if value else None
+
+
+@tenant_bp.post('/groups')
+@permission_required('tenant.manage')
+def create_group_route():
+    try:
+        _csrf()
+        tenant = db.session.get(Tenant, str(request.form.get('tenant_id') or '').strip())
+        if tenant is None:
+            raise ValueError('Select a Tenant.')
+        group = create_tenant_group_committed(
+            tenant=tenant,
+            name=str(request.form.get('name') or ''),
+            subject_name=str(request.form.get('subject_name') or '') or None,
+        )
+    except (ValueError, TenantAccessStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_group_create_failed',
+            status='error',
+            title='Tenant Group Creation Failed',
+            message=str(exc),
+            metadata={'operation': 'create_tenant_group'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_group_created',
+            status='success',
+            title='Tenant Group Created',
+            message=f'{group.name} is available as a Tenant membership principal.',
+            metadata={'tenant_id': group.tenant_id, 'group_id': group.public_id, 'operation': 'create_tenant_group'},
+        )
+    return redirect(url_for('tenant.index'))
+
+
+@tenant_bp.post('/memberships/users')
+@permission_required('tenant.manage')
+def add_user_membership_route():
+    try:
+        _csrf()
+        tenant = db.session.get(Tenant, str(request.form.get('tenant_id') or '').strip())
+        user = db.session.get(User, _required_int('user_id'))
+        if tenant is None or user is None:
+            raise ValueError('Select a valid Tenant and active user.')
+        membership = add_user_membership_committed(
+            tenant=tenant,
+            user=user,
+            subject_name=str(request.form.get('subject_name') or '') or None,
+        )
+    except (ValueError, TenantAccessStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_membership_create_failed',
+            status='error',
+            title='Tenant Membership Creation Failed',
+            message=str(exc),
+            metadata={'operation': 'add_user_membership'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_membership_created',
+            status='success',
+            title='Tenant User Added',
+            message=f'{membership.subject_name} is an active member of {membership.tenant.name}.',
+            metadata={'tenant_id': membership.tenant_id, 'membership_id': membership.id, 'operation': 'add_user_membership'},
+        )
+    return redirect(url_for('tenant.index'))
+
+
+@tenant_bp.post('/memberships/groups')
+@permission_required('tenant.manage')
+def add_group_membership_route():
+    try:
+        _csrf()
+        tenant = db.session.get(Tenant, str(request.form.get('tenant_id') or '').strip())
+        group = db.session.get(TenantGroup, _required_int('group_id'))
+        if tenant is None or group is None:
+            raise ValueError('Select a valid Tenant and Tenant Group.')
+        membership = add_group_membership_committed(tenant=tenant, group=group)
+    except (ValueError, TenantAccessStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_membership_create_failed',
+            status='error',
+            title='Tenant Membership Creation Failed',
+            message=str(exc),
+            metadata={'operation': 'add_group_membership'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_membership_created',
+            status='success',
+            title='Tenant Group Added',
+            message=f'{membership.subject_name} is an active member of {membership.tenant.name}.',
+            metadata={'tenant_id': membership.tenant_id, 'membership_id': membership.id, 'operation': 'add_group_membership'},
+        )
+    return redirect(url_for('tenant.index'))
+
+
+@tenant_bp.post('/memberships/<int:membership_id>/revoke')
+@permission_required('tenant.manage')
+def revoke_membership_route(membership_id: int):
+    try:
+        _csrf()
+        membership = revoke_membership_committed(membership_id=membership_id, actor=current_user)
+    except (ValueError, ApiException) as exc:
+        _record(
+            event_type='kubernetes_tenant_membership_revoke_failed',
+            status='error',
+            title='Tenant Membership Revoke Requires Attention',
+            message=str(exc),
+            metadata={'membership_id': membership_id, 'operation': 'revoke_membership'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_membership_revoked',
+            status='success',
+            title='Tenant Membership Revoked',
+            message=f'{membership.subject_name} no longer has active Tenant membership.',
+            metadata={'membership_id': membership.id, 'tenant_id': membership.tenant_id, 'operation': 'revoke_membership'},
+        )
+    return redirect(url_for('tenant.index'))
+
+
+@tenant_bp.post('/access-grants')
+@permission_required('tenant.manage')
+def create_access_grant_route():
+    try:
+        _csrf()
+        grant = create_access_grant_committed(
+            membership_id=_required_int('membership_id'),
+            access_profile=str(request.form.get('access_profile') or ''),
+            scope_type=str(request.form.get('scope_type') or ''),
+            tenant_environment_id=_optional_int('tenant_environment_id'),
+            tenant_namespace_id=_optional_int('tenant_namespace_id'),
+            actor=current_user,
+        )
+    except (ValueError, ApiException, TenantAccessStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_access_grant_create_failed',
+            status='error',
+            title='Tenant Access Grant Failed',
+            message=str(exc),
+            metadata={'operation': 'create_access_grant'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_access_grant_created',
+            status='success',
+            title='Tenant Access Granted',
+            message=f'{grant.membership.subject_name} received {grant.access_profile.replace("_", " ").title()} access.',
+            detail=grant.reconciliation_message,
+            metadata={'grant_id': grant.public_id, 'tenant_id': grant.tenant_id, 'operation': 'create_access_grant'},
+        )
+    return redirect(url_for('tenant.index'))
+
+
+@tenant_bp.post('/access-grants/<int:grant_id>/inspect')
+@permission_required('tenant.manage')
+def inspect_access_grant_route(grant_id: int):
+    try:
+        _csrf()
+        grant = inspect_access_grant_committed(grant_id=grant_id, actor=current_user)
+    except (ValueError, ApiException) as exc:
+        _record(
+            event_type='kubernetes_tenant_access_grant_inspect_failed',
+            status='error',
+            title='Tenant Access Inspection Failed',
+            message=str(exc),
+            metadata={'grant_id': grant_id, 'operation': 'inspect_access_grant'},
+        )
+    else:
+        tone = 'success' if grant.reconciliation_status == 'ready' else 'warning'
+        _record(
+            event_type='kubernetes_tenant_access_grant_inspected',
+            status=tone,
+            title='Tenant Access Inspected',
+            message=grant.reconciliation_message or 'Kubernetes RBAC inspection completed.',
+            metadata={'grant_id': grant.public_id, 'operation': 'inspect_access_grant'},
+        )
+    return redirect(url_for('tenant.index'))
+
+
+@tenant_bp.post('/access-grants/<int:grant_id>/reconcile')
+@permission_required('tenant.manage')
+def reconcile_access_grant_route(grant_id: int):
+    try:
+        _csrf()
+        grant = reconcile_access_grant_committed(grant_id=grant_id, actor=current_user)
+    except (ValueError, ApiException) as exc:
+        _record(
+            event_type='kubernetes_tenant_access_grant_reconcile_failed',
+            status='error',
+            title='Tenant Access Reconciliation Failed',
+            message=str(exc),
+            metadata={'grant_id': grant_id, 'operation': 'reconcile_access_grant'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_access_grant_reconciled',
+            status='success',
+            title='Tenant Access Reconciled',
+            message=grant.reconciliation_message or 'Kubernetes RBAC matches committed Tenant access intent.',
+            metadata={'grant_id': grant.public_id, 'operation': 'reconcile_access_grant'},
+        )
+    return redirect(url_for('tenant.index'))
+
+
+@tenant_bp.post('/access-grants/<int:grant_id>/revoke')
+@permission_required('tenant.manage')
+def revoke_access_grant_route(grant_id: int):
+    try:
+        _csrf()
+        grant = revoke_access_grant_committed(grant_id=grant_id, actor=current_user)
+    except (ValueError, ApiException) as exc:
+        _record(
+            event_type='kubernetes_tenant_access_grant_revoke_failed',
+            status='error',
+            title='Tenant Access Revoke Requires Attention',
+            message=str(exc),
+            metadata={'grant_id': grant_id, 'operation': 'revoke_access_grant'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_access_grant_revoked',
+            status='success',
+            title='Tenant Access Revoked',
+            message='Effective Kubernetes RoleBinding access was removed.',
+            metadata={'grant_id': grant.public_id, 'tenant_id': grant.tenant_id, 'operation': 'revoke_access_grant'},
+        )
+    return redirect(url_for('tenant.index'))
 
 
 @tenant_bp.post('/tenants')
