@@ -4,7 +4,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_managed_resource_model_records_intent_without_secret_payload() -> None:
-    model = (ROOT / 'app/models/tenant.py').read_text(encoding='utf-8')
+    model = (ROOT / 'app/models/tenant_managed_resource.py').read_text(encoding='utf-8')
     migration = (ROOT / 'migrations/versions/20260926_tenant_managed_resources.py').read_text(encoding='utf-8')
 
     assert 'class TenantManagedResourceIntent(db.Model):' in model

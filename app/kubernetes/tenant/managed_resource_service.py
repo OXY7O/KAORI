@@ -12,13 +12,12 @@ from app.kubernetes.tenant.managed_resources import (
     remove_native_managed_resource,
 )
 from app.models import AuditEvent, User
-from app.models.tenant import (
+from app.models.tenant import TenantNamespace, TenantNamespaceProvisioningStatus
+from app.models.tenant_managed_resource import (
     TenantManagedResourceIntent,
     TenantManagedResourceKind,
     TenantManagedResourceMode,
     TenantManagedResourceStatus,
-    TenantNamespace,
-    TenantNamespaceProvisioningStatus,
 )
 
 

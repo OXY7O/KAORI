@@ -73,10 +73,6 @@ from app.models.tenant import (
     TenantEnvironmentName,
     TenantGroup,
     TenantLifecycleStatus,
-    TenantManagedResourceIntent,
-    TenantManagedResourceKind,
-    TenantManagedResourceMode,
-    TenantManagedResourceStatus,
     TenantMembership,
     TenantMembershipPrincipalType,
     TenantMembershipStatus,
@@ -87,6 +83,12 @@ from app.models.tenant import (
     TenantProductionAccessExceptionStatus,
     TenantResourceProfile,
     TenantResourceProfileClass,
+)
+from app.models.tenant_managed_resource import (
+    TenantManagedResourceIntent,
+    TenantManagedResourceKind,
+    TenantManagedResourceMode,
+    TenantManagedResourceStatus,
 )
 from app.models.user import User
 
