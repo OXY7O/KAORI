@@ -351,6 +351,26 @@ jobs:
         if: ${{ matrix.gate == 'runtime' }}
         run: bash .github/ci/run-runtime-validation.sh "$VALIDATION_IMAGE"
 
+      - name: Upload Static JUnit Evidence
+        if: ${{ success() && matrix.gate == 'static' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: full-admission-junit-static-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/test-output/contract-migration.xml
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Functional JUnit Evidence
+        if: ${{ success() && matrix.gate == 'functional' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: full-admission-junit-functional-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            tmp/ci-artifacts/test-output/release-suite.xml
+            tmp/ci-artifacts/test-output/e2e.xml
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Upload Static Diagnostics
         if: ${{ failure() && matrix.gate == 'static' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -474,6 +494,20 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Download Static JUnit Evidence
+        if: ${{ needs.validation-profile.outputs.execution == 'full' && needs.full-admission-gates.result == 'success' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: full-admission-junit-static-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/admission-junit/static
+
+      - name: Download Functional JUnit Evidence
+        if: ${{ needs.validation-profile.outputs.execution == 'full' && needs.full-admission-gates.result == 'success' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: full-admission-junit-functional-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/admission-junit/functional
+
       - name: Assert Selected Path
         id: result
         shell: bash
@@ -501,6 +535,25 @@ jobs:
               echo 'reused=Foundation & Governance|Domain & Capability Contracts|Engineering Quality|Functional & Integration|Frontend|Security & Runtime'
             } >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Write Full Test Taxonomy Summary
+        if: ${{ needs.validation-profile.outputs.execution == 'full' && steps.result.outcome == 'success' }}
+        shell: bash
+        env:
+          CI_TOOLCHAIN_IMAGE: ${{ needs.validation-profile.outputs.toolchain_image }}
+        run: |
+          set -Eeuo pipefail
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --env HOME=/tmp \
+            --volume "$PWD:/workspace" \
+            --workdir /workspace \
+            "$CI_TOOLCHAIN_IMAGE" \
+            python scripts/ci_admission.py test-summary \
+              --junit tmp/ci-artifacts/admission-junit/static/contract-migration.xml \
+              --junit tmp/ci-artifacts/admission-junit/functional/release-suite.xml \
+              --junit tmp/ci-artifacts/admission-junit/functional/e2e.xml \
+            >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish Admission Evidence
         id: full-evidence
