@@ -636,10 +636,10 @@ class TenantCredential(db.Model):
             'AND anchor_namespace_id IS NULL AND application_name IS NULL '
             "AND delivery_method IN ('jumpserver', 'exceptional_kubeconfig')) "
             "OR (credential_type = 'admin_kubeconfig' AND access_grant_id IS NULL "
-            "AND anchor_namespace_id IS NOT NULL AND application_name IS NULL "
+            'AND anchor_namespace_id IS NOT NULL AND application_name IS NULL '
             "AND delivery_method = 'admin_kubeconfig') "
             "OR (credential_type = 'deployer_service_account' AND access_grant_id IS NOT NULL "
-            "AND anchor_namespace_id IS NULL AND application_name IS NOT NULL "
+            'AND anchor_namespace_id IS NULL AND application_name IS NOT NULL '
             "AND delivery_method = 'cicd_kubeconfig'))",
             name='ck_tenant_credentials_type_scope',
         ),
