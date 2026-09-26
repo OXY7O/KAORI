@@ -706,6 +706,9 @@ def generate_kubeconfig_committed(
             raise ValueError('Ordinary-user kubeconfig generation requires explicit governed exception approval.')
         if credential.exception_valid_until is None:
             raise ValueError('Exceptional ordinary-user kubeconfig approval requires an expiry.')
+    elif credential.credential_type == TenantCredentialType.DEPLOYER_SERVICE_ACCOUNT.value:
+        if credential.delivery_method != TenantCredentialDeliveryMethod.CICD_KUBECONFIG.value:
+            raise ValueError('Deployer credential is not approved for CI/CD kubeconfig generation.')
     elif credential.delivery_method != TenantCredentialDeliveryMethod.ADMIN_KUBECONFIG.value:
         raise ValueError('Administrative credential is not approved for kubeconfig generation.')
 
@@ -745,16 +748,20 @@ def generate_kubeconfig_committed(
     }
     rendered = yaml.safe_dump(document, sort_keys=False)
     package = build_namespace_access_package(credential, namespace).as_dict()
-    action = (
-        'tenant_credential.exceptional_kubeconfig_generated'
-        if credential.credential_type == TenantCredentialType.HUMAN_SERVICE_ACCOUNT.value
-        else 'tenant_credential.admin_kubeconfig_generated'
-    )
+    if credential.credential_type == TenantCredentialType.HUMAN_SERVICE_ACCOUNT.value:
+        action = 'tenant_credential.exceptional_kubeconfig_generated'
+        summary = 'Short-lived governed ordinary-user Kubernetes kubeconfig material was generated.'
+    elif credential.credential_type == TenantCredentialType.DEPLOYER_SERVICE_ACCOUNT.value:
+        action = 'tenant_credential.cicd_kubeconfig_generated'
+        summary = 'Short-lived CI/CD Kubernetes kubeconfig material was generated.'
+    else:
+        action = 'tenant_credential.admin_kubeconfig_generated'
+        summary = 'Short-lived individually owned administrative Kubernetes kubeconfig material was generated.'
     _record_event(
         actor=actor,
         credential=credential,
         action=action,
-        summary='Short-lived individually owned Kubernetes kubeconfig material was generated.',
+        summary=summary,
         outcome='success',
         extra={'namespace': namespace.namespace, 'expires_at': expires_at.isoformat()},
     )

@@ -92,3 +92,28 @@ Credential records persist desired/effective hashes, reconciliation status/messa
 KAORI-owned ServiceAccounts and bindings carry `app.kubernetes.io/managed-by=kaori`, Tenant identity, and credential identity labels. Foreign provider ownership is never silently overwritten.
 
 Routine AuditEvent evidence records lifecycle action, owner, type, delivery method, status, generation, validity, outcome, and correlation ID. Secret material is explicitly excluded.
+
+
+## CI/CD deployer credentials
+
+Issue #116 extends the same canonical credential lifecycle for GitHub Actions and Helm deployment identities.
+
+A CI/CD Deployer credential:
+- is a `deployer_service_account` credential with `cicd_kubeconfig` delivery;
+- owns a dedicated Kubernetes ServiceAccount identity per application/environment credential;
+- creates a first-class ServiceAccount Tenant membership and a namespace-scoped #114 Deployer Access Grant;
+- never grants the machine-only Deployer profile to a User or Group membership;
+- binds one accountable KAORI owner for governance without using that human identity as the Kubernetes RBAC subject;
+- keeps application name, environment, namespace, purpose, credential status, rotation generation, and Access Grant evidence committed in KAORI.
+
+The Deployer Access Profile remains versioned by #114 and excludes interactive troubleshooting, RBAC administration, namespace administration, and cluster-scoped privileges.
+
+### CI/CD Namespace Access Package
+
+The non-secret CI/CD Namespace Access Package contains Tenant/environment/namespace identity, application and purpose, cluster/API endpoint, a canonical cluster transport reference for CA/TLS material, Deployer profile/version, ServiceAccount identity, credential lifecycle state, rotation generation, and allowed actions.
+
+Bearer tokens and generated kubeconfigs are never persisted in the package, inventory, Activity evidence, reports, or routine logs.
+
+GitHub Actions and Helm obtain a short-lived TokenRequest credential only when an approved pipeline needs it. KAORI constructs the kubeconfig in memory from the canonical Kubernetes connection plus the short-lived ServiceAccount token. The pipeline consumes the ephemeral kubeconfig and does not receive a permanent shared administrator kubeconfig.
+
+Suspend, expiry, revoke, and rotation reuse the canonical #115 lifecycle. Removing the dedicated ServiceAccount invalidates bound ServiceAccount token material while the Deployer Access Grant remains separately auditable and revocable.

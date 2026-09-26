@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from app.models.tenant import TenantAccessProfileKey, TenantAccessScope
+from app.models.tenant import TenantAccessProfileKey, TenantAccessScope, TenantMembershipPrincipalType
 
 if TYPE_CHECKING:
     from app.models.tenant import TenantAccessGrant, TenantMembership
@@ -193,6 +193,11 @@ def membership_subject(membership: TenantMembership) -> tuple[str, str]:
             raise ValueError('Tenant group membership cannot cross Tenant boundaries.')
         return 'Group', subject_name
 
+    if membership.principal_type == TenantMembershipPrincipalType.SERVICE_ACCOUNT.value:
+        if membership.user is not None or membership.group is not None:
+            raise ValueError('ServiceAccount Tenant membership cannot reference a human user or group.')
+        return 'ServiceAccount', subject_name
+
     raise ValueError('Unsupported Tenant membership principal type.')
 
 
@@ -200,8 +205,14 @@ def validate_active_grant(grant: TenantAccessGrant) -> TenantAccessProfile:
     validate_grant_scope(grant)
     if grant.status != 'active':
         raise ValueError('Tenant Access Grant is not active.')
+    profile = get_access_profile(grant.access_profile, grant.access_profile_version)
+    principal_type = grant.membership.principal_type
+    if profile.key.value == 'deployer' and principal_type != TenantMembershipPrincipalType.SERVICE_ACCOUNT.value:
+        raise ValueError('Deployer Access Profile requires a ServiceAccount Tenant membership.')
+    if principal_type == TenantMembershipPrincipalType.SERVICE_ACCOUNT.value and profile.key.value != 'deployer':
+        raise ValueError('ServiceAccount Tenant memberships may only use the Deployer Access Profile.')
     membership_subject(grant.membership)
-    return get_access_profile(grant.access_profile, grant.access_profile_version)
+    return profile
 
 
 for _profile in ACCESS_PROFILE_CATALOG.values():

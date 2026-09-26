@@ -85,6 +85,12 @@ def target_namespaces(grant: TenantAccessGrant) -> list[TenantNamespace]:
 def desired_native_access_contract(grant: TenantAccessGrant, namespace: str) -> dict[str, Any]:
     profile = get_access_profile(grant.access_profile, grant.access_profile_version)
     subject_kind, subject_name = membership_subject(grant.membership)
+    subject = {
+        'api_group': '' if subject_kind == 'ServiceAccount' else 'rbac.authorization.k8s.io',
+        'kind': subject_kind,
+        'name': subject_name,
+        'namespace': namespace if subject_kind == 'ServiceAccount' else None,
+    }
     role_labels = _role_labels(grant)
     binding_labels = _binding_labels(grant)
     rules = [
@@ -110,13 +116,7 @@ def desired_native_access_contract(grant: TenantAccessGrant, namespace: str) -> 
                 'kind': 'Role',
                 'name': _role_name(grant),
             },
-            'subjects': [
-                {
-                    'api_group': 'rbac.authorization.k8s.io',
-                    'kind': subject_kind,
-                    'name': subject_name,
-                }
-            ],
+            'subjects': [subject],
         },
     }
 
@@ -163,7 +163,7 @@ def _binding_body(desired: dict[str, Any]) -> V1RoleBinding:
                 api_group=item['api_group'],
                 kind=item['kind'],
                 name=item['name'],
-                namespace=None,
+                namespace=item.get('namespace'),
             )
             for item in binding['subjects']
         ],
@@ -245,6 +245,7 @@ def _effective_target_contract(api, desired: dict[str, Any]) -> dict[str, Any] |
                         'api_group': item.api_group or '',
                         'kind': item.kind,
                         'name': item.name,
+                        'namespace': item.namespace,
                     }
                     for item in (binding.subjects or [])
                 ],
