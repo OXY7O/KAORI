@@ -191,11 +191,7 @@ def record_production_access_decision_committed(
 ):
     credential = db.session.get(TenantCredential, credential_id)
     namespace = db.session.get(TenantNamespace, namespace_id)
-    exception = (
-        db.session.get(TenantProductionAccessException, exception_id)
-        if exception_id is not None
-        else None
-    )
+    exception = db.session.get(TenantProductionAccessException, exception_id) if exception_id is not None else None
     if credential is None:
         raise ValueError('Selected Tenant credential no longer exists.')
     if namespace is None:
