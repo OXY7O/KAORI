@@ -5,8 +5,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
 import yaml
-from kubernetes.client.models.v1_token_request import V1TokenRequest
-from kubernetes.client.models.v1_token_request_spec import V1TokenRequestSpec
+from kubernetes.client import AuthenticationV1TokenRequest, V1TokenRequestSpec
 from kubernetes.client.rest import ApiException
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
@@ -602,7 +601,7 @@ def _request_short_lived_token(
     response = api.create_namespaced_service_account_token(
         name=credential.service_account_name,
         namespace=namespace.namespace,
-        body=V1TokenRequest(
+        body=AuthenticationV1TokenRequest(
             api_version='authentication.k8s.io/v1',
             kind='TokenRequest',
             spec=V1TokenRequestSpec(audiences=[], expiration_seconds=ttl),
