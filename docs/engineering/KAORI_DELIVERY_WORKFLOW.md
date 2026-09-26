@@ -271,6 +271,8 @@ Full Admission preserves authoritative coverage for source linting/formatting, P
 
 The comprehensive gate set runs as one native GitHub Actions matrix with `fail-fast: true` and a current host ceiling of `max-parallel: 2`. Static & Governance, Security, Functional Tests, Frontend, and Runtime & DAST remain distinct matrix children. If any child fails, GitHub cancels queued/in-progress sibling matrix work instead of consuming the remaining comprehensive critical path. Cancellation cleanup remains mandatory for Compose/runtime resources.
 
+Release-test ownership is non-overlapping. Static & Governance owns Contract/Migration pytest execution; Functional Tests owns the remaining release taxonomy plus explicit E2E. Their JUnit artifacts are recombined by CI Admission into one complete taxonomy evidence surface before reusable Full Admission evidence is published.
+
 Successful Full Admission publishes immutable evidence containing source commit SHA, source tree SHA, validation profile version, authority fingerprint, run ID/attempt, workflow identity, required gate conclusions, and timestamp. Matrix aggregate success attests that every required comprehensive child succeeded; failed/cancelled matrices cannot publish reusable PASS evidence.
 
 Validation authority includes `.github/workflows/**`, `.github/ci/**`, `requirements/**`, Admission policy helpers, `scripts/quality_gate.sh`, `scripts/verify_*`, release validation contracts, this delivery workflow authority, Dockerfile, and compose authority.
