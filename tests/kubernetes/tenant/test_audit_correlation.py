@@ -1,6 +1,4 @@
 from datetime import UTC, datetime
-from types import SimpleNamespace
-
 import pytest
 
 from app.kubernetes.tenant.audit_correlation import (
