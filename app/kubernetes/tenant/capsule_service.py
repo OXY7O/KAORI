@@ -162,7 +162,8 @@ def complete_native_recovery_committed(
     )
 
     evidence = _evidence(tenant)
-    recovery = deepcopy(evidence.get('native_recovery') or {})
+    raw_recovery = evidence.get('native_recovery')
+    recovery = deepcopy(raw_recovery) if isinstance(raw_recovery, dict) else {}
     recovery.update(
         {
             'phase': 'completed',
