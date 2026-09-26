@@ -106,7 +106,7 @@ Use one logical change per commit, lowercase type/scope, an imperative concrete 
 
 ### Pull Requests
 
-A normal work-branch -> `kaori/staging` Pull Request opens as **Draft**. Draft is the implementation/review loop, but changing it to Ready does not switch the branch to comprehensive CI. Draft and Ready work-branch states both remain under path-aware Developer Check / targeted validation.
+A normal work-branch -> `kaori/staging` Pull Request opens as **Draft**. Draft is the implementation/review loop and remains under path-aware Developer Check / targeted validation only. Changing the PR to Ready freezes the candidate, reruns Developer Check on that exact head, and invokes comprehensive Full Admission only after the Developer Check aggregate passes.
 
 Canonical PR body reading order remains:
 

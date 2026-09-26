@@ -157,6 +157,7 @@ jobs:
               --repository "$GITHUB_REPOSITORY" \
               --token "$GH_TOKEN" \
               --workflow quality.yml \
+              --workflow developer-check.yml \
               --start-sha "${{ steps.identity.outputs.source_sha }}" \
               --current-tree "${{ steps.identity.outputs.source_tree }}" \
             >> "$GITHUB_OUTPUT"
