@@ -333,10 +333,10 @@ jobs:
           elapsed=$(( $(date +%s) - started ))
           printf '✅ Python & Governance PASS · ⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
 
-  frontend-check:
-    name: Frontend & Templates
+  validation-check:
+    name: Frontend & Focused Validation
     needs: [route, toolchain]
-    if: ${{ needs.route.result == 'success' && needs.toolchain.result == 'success' && (needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true') }}
+    if: ${{ needs.route.result == 'success' && needs.toolchain.result == 'success' && (needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.test_paths != '') }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 10
     steps:
@@ -346,12 +346,14 @@ jobs:
           ref: ${{ env.KAORI_SOURCE_SHA }}
           persist-credentials: false
 
-      - name: Run Frontend & Template Checks
+      - name: Run Frontend & Focused Validation
         shell: bash
         env:
           CI_TOOLCHAIN_IMAGE: ${{ needs.toolchain.outputs.image }}
           CHECK_TEMPLATES: ${{ needs.route.outputs.templates }}
           CHECK_FRONTEND: ${{ needs.route.outputs.frontend }}
+          CHECK_CONTRACTS: ${{ needs.route.outputs.contracts }}
+          TEST_PATHS: ${{ needs.route.outputs.test_paths }}
         run: |
           set -Eeuo pipefail
           started="$(date +%s)"
@@ -383,49 +385,19 @@ jobs:
             run_toolchain 'Frontend Format' bash -lc 'npm run check-format'
           fi
 
-          elapsed=$(( $(date +%s) - started ))
-          printf '✅ Frontend & Templates PASS · ⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
-
-  focused-tests:
-    name: Focused Tests
-    needs: [route, toolchain]
-    if: ${{ needs.route.result == 'success' && needs.toolchain.result == 'success' && (needs.route.outputs.contracts == 'true' || needs.route.outputs.test_paths != '') }}
-    runs-on: [self-hosted, linux, x64, kaori-ci]
-    timeout-minutes: 15
-    steps:
-      - name: Checkout Work Branch
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ env.KAORI_SOURCE_SHA }}
-          persist-credentials: false
-
-      - name: Run Focused Tests
-        shell: bash
-        env:
-          CI_TOOLCHAIN_IMAGE: ${{ needs.toolchain.outputs.image }}
-          CHECK_CONTRACTS: ${{ needs.route.outputs.contracts }}
-          TEST_PATHS: ${{ needs.route.outputs.test_paths }}
-        run: |
-          set -Eeuo pipefail
-          started="$(date +%s)"
           paths="$TEST_PATHS"
           if [[ "$CHECK_CONTRACTS" == "true" && -z "$paths" ]]; then
             paths='tests/contracts/release'
           fi
-
-          printf '⏳ Focused Tests — %s\n' "$paths"
-          # TEST_PATHS is assembled only from the static whitelist above.
-          # shellcheck disable=SC2086
-          docker run --rm \
-            --user "$(id -u):$(id -g)" \
-            --env HOME=/tmp \
-            --volume "$PWD:/workspace" \
-            --workdir /workspace \
-            "$CI_TOOLCHAIN_IMAGE" \
-            bash -lc "pytest -q --tb=short $paths"
+          if [[ -n "$paths" ]]; then
+            printf '⏳ Focused Tests — %s\n' "$paths"
+            # TEST_PATHS is assembled only from the static whitelist above.
+            # shellcheck disable=SC2086
+            run_toolchain 'Focused Tests' bash -lc "pytest -q --tb=short $paths"
+          fi
 
           elapsed=$(( $(date +%s) - started ))
-          printf '✅ Focused Tests PASS · ⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
+          printf '✅ Frontend & Focused Validation PASS · ⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
 
       - name: Upload Browser Diagnostics
         if: ${{ failure() }}
@@ -442,8 +414,7 @@ jobs:
       - route
       - toolchain
       - python-check
-      - frontend-check
-      - focused-tests
+      - validation-check
     if: ${{ always() && needs.route.result == 'success' }}
     runs-on: [self-hosted, linux, x64, platform-ci]
     timeout-minutes: 5
@@ -462,22 +433,17 @@ jobs:
           TEST_PATHS: ${{ needs.route.outputs.test_paths }}
           TOOLCHAIN_RESULT: ${{ needs.toolchain.result }}
           PYTHON_RESULT: ${{ needs.python-check.result }}
-          FRONTEND_RESULT: ${{ needs.frontend-check.result }}
-          TEST_RESULT: ${{ needs.focused-tests.result }}
+          VALIDATION_RESULT: ${{ needs.validation-check.result }}
         run: |
           set -Eeuo pipefail
           python_required=false
-          frontend_required=false
-          tests_required=false
+          validation_required=false
 
           if [[ "$CHECK_PYTHON" == "true" || "$CHECK_MIGRATIONS" == "true" || "$CHECK_REPORTS" == "true" || "$CHECK_WIDE" == "true" ]]; then
             python_required=true
           fi
-          if [[ "$CHECK_TEMPLATES" == "true" || "$CHECK_FRONTEND" == "true" ]]; then
-            frontend_required=true
-          fi
-          if [[ "$CHECK_CONTRACTS" == "true" || -n "$TEST_PATHS" ]]; then
-            tests_required=true
+          if [[ "$CHECK_TEMPLATES" == "true" || "$CHECK_FRONTEND" == "true" || "$CHECK_CONTRACTS" == "true" || -n "$TEST_PATHS" ]]; then
+            validation_required=true
           fi
 
           assert_lane() {
@@ -503,8 +469,7 @@ jobs:
           }
 
           assert_lane 'Python & Governance' "$python_required" "$PYTHON_RESULT"
-          assert_lane 'Frontend & Templates' "$frontend_required" "$FRONTEND_RESULT"
-          assert_lane 'Focused Tests' "$tests_required" "$TEST_RESULT"
+          assert_lane 'Frontend & Focused Validation' "$validation_required" "$VALIDATION_RESULT"
 
           printf '✅ Developer Check PASS\n'
           printf '📦 %s\n' "$ROUTE_SUMMARY"
