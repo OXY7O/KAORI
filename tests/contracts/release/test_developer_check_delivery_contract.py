@@ -19,11 +19,10 @@ def test_work_branch_developer_check_is_separate_from_governed_admission() -> No
     assert workflow['name'] == 'Developer Check'
     assert workflow[True]['pull_request']['branches'] == ['kaori/staging']
     jobs = workflow['jobs']
-    assert set(jobs) == {'route', 'toolchain', 'python-check', 'validation-check', 'developer-check'}
+    assert set(jobs) == {'route', 'toolchain', 'python-check', 'validation-check', 'developer-check', 'full-admission'}
     assert jobs['route']['name'] == 'Route Checks'
     assert jobs['route']['if'] == (
-        '${{ github.event.pull_request.draft == true && '
-        'github.event.pull_request.head.repo.full_name == github.repository && '
+        '${{ github.event.pull_request.head.repo.full_name == github.repository && '
         "startsWith(github.event.pull_request.head.ref, 'kaori/') && "
         "github.event.pull_request.head.ref != 'kaori/staging' }}"
     )
@@ -41,6 +40,11 @@ def test_work_branch_developer_check_is_separate_from_governed_admission() -> No
         'python-check',
         'validation-check',
     }
+    assert jobs['full-admission']['name'] == 'Full Admission'
+    assert jobs['full-admission']['needs'] == 'developer-check'
+    assert jobs['full-admission']['uses'] == './.github/workflows/quality.yml'
+    assert "needs.developer-check.result == 'success'" in jobs['full-admission']['if']
+    assert 'github.event.pull_request.draft == false' in jobs['full-admission']['if']
     source = read(DEVELOPER_WORKFLOW)
     assert 'production-runtime' not in source
     assert 'run-runtime-validation.sh' not in source
@@ -77,6 +81,21 @@ def test_developer_check_parallel_lanes_fail_closed_into_one_aggregate() -> None
         "assert_lane 'Frontend & Focused Validation'",
     ):
         assert token in source
+
+
+def test_ready_full_admission_is_strictly_downstream_of_developer_check() -> None:
+    workflow = yaml.safe_load(read(DEVELOPER_WORKFLOW))
+    jobs = workflow['jobs']
+    source = read(DEVELOPER_WORKFLOW)
+
+    assert workflow['permissions']['contents'] == 'read'
+    assert workflow['permissions']['actions'] == 'read'
+    assert workflow['permissions']['statuses'] == 'write'
+    assert jobs['full-admission']['needs'] == 'developer-check'
+    assert "needs.developer-check.result == 'success'" in jobs['full-admission']['if']
+    assert 'github.event.pull_request.draft == false' in jobs['full-admission']['if']
+    assert 'github.event.pull_request.draft == true' not in jobs['route']['if']
+    assert 'uses: ./.github/workflows/quality.yml' in source
 
 
 def test_developer_check_routes_changed_paths_and_fails_safe_for_authority_changes() -> None:
@@ -149,7 +168,7 @@ def test_developer_check_output_is_progress_visible_and_actionable() -> None:
         assert token in source
     assert 'Developer Check PASS' in source
     assert 'Draft validation is complete' in source
-    assert 'mark the PR Ready to start one governed Full Admission' in source
+    assert 'Ready exact-head Developer Check PASS; starting governed Full Admission.' in source
 
 
 def test_governed_ci_graph_uses_concise_job_names() -> None:
