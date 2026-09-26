@@ -514,7 +514,7 @@ jobs:
         env:
           EXECUTION: ${{ needs.validation-profile.outputs.execution }}
           FULL_GATES: ${{ needs.full-admission-gates.result }}
-          TEST_EVIDENCE: ${{ steps.full-test-evidence.outcome }}
+          TEST_EVIDENCE: ${{ steps.full_test_evidence.outcome }}
           INTEGRATION_SMOKE: ${{ needs.integration-smoke.result }}
         run: |
           set -Eeuo pipefail
@@ -538,7 +538,7 @@ jobs:
           fi
 
       - name: Write Full Test Taxonomy Summary
-        id: full-test-evidence
+        id: full_test_evidence
         if: ${{ needs.validation-profile.outputs.execution == 'full' && steps.result.outcome == 'success' }}
         shell: bash
         env:
@@ -559,7 +559,7 @@ jobs:
 
       - name: Publish Admission Evidence
         id: full-evidence
-        if: ${{ needs.validation-profile.outputs.execution == 'full' && steps.result.outcome == 'success' && steps.full-test-evidence.outcome == 'success' }}
+        if: ${{ needs.validation-profile.outputs.execution == 'full' && steps.result.outcome == 'success' && steps.full_test_evidence.outcome == 'success' }}
         shell: bash
         env:
           CI_TOOLCHAIN_IMAGE: ${{ needs.validation-profile.outputs.toolchain_image }}
@@ -684,7 +684,7 @@ jobs:
           SOURCE_SHA: ${{ needs.validation-profile.outputs.source_sha }}
           EXECUTION: ${{ needs.validation-profile.outputs.execution }}
           ASSERT_OUTCOME: ${{ steps.result.outcome }}
-          TEST_EVIDENCE_OUTCOME: ${{ steps.full-test-evidence.outcome }}
+          TEST_EVIDENCE_OUTCOME: ${{ steps.full_test_evidence.outcome }}
           EVIDENCE_OUTCOME: ${{ steps.full-evidence.outcome }}
           EVIDENCE_UPLOAD_OUTCOME: ${{ steps.full-evidence-upload.outcome }}
           SUMMARY_OUTCOME: ${{ steps.summary.outcome }}
