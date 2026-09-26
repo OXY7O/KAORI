@@ -204,7 +204,9 @@ def create_human_credential_committed(
         raise ValueError('Human Tenant credentials require JumpServer or governed exceptional kubeconfig delivery.')
 
     approver = (
-        db.session.get(User, request.exception_authorized_by_user_id) if request.exception_authorized_by_user_id is not None else None
+        db.session.get(User, request.exception_authorized_by_user_id)
+        if request.exception_authorized_by_user_id is not None
+        else None
     )
     started, renewal_due_at, valid_until = _validity_window(validity_days=request.validity_days)
     public_id = str(uuid.uuid4())
