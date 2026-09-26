@@ -3,8 +3,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
-
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import server_for_cluster
 from app.kubernetes.tenant.access import validate_active_grant, validate_grant_scope
@@ -18,10 +16,6 @@ from app.models.tenant import (
     TenantNamespace,
     TenantNamespaceProvisioningStatus,
 )
-
-if TYPE_CHECKING:
-    from app.models.user import User
-
 DEFAULT_CREDENTIAL_VALIDITY_DAYS = 365
 DEFAULT_RENEWAL_WINDOW_DAYS = 30
 DEFAULT_TOKEN_TTL_SECONDS = 3600

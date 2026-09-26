@@ -4,10 +4,10 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
-import yaml
 from kubernetes.client import V1TokenRequest, V1TokenRequestSpec
 from kubernetes.client.rest import ApiException
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+import yaml
 
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
