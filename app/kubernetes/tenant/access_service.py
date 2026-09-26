@@ -7,8 +7,14 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.extensions.db import db
-from app.kubernetes.tenant.access import TenantAccessScope, get_access_profile, validate_grant_scope
-from app.kubernetes.tenant.access_reconciliation import reconcile_native_access_grant
+from app.kubernetes.tenant.access import (
+    ACCESS_PROFILE_CATALOG,
+    LATEST_ACCESS_PROFILE_VERSION,
+    TenantAccessScope,
+    get_access_profile,
+    validate_grant_scope,
+)
+from app.kubernetes.tenant.access_reconciliation import inspect_native_access_grant, reconcile_native_access_grant
 from app.models import AuditEvent, User
 from app.models.tenant import (
     Tenant,
@@ -17,6 +23,7 @@ from app.models.tenant import (
     TenantAccessReconciliationStatus,
     TenantEnvironment,
     TenantGroup,
+    TenantLifecycleStatus,
     TenantMembership,
     TenantMembershipPrincipalType,
     TenantMembershipStatus,
@@ -298,6 +305,268 @@ def add_group_membership_committed(*, tenant: Tenant, group: TenantGroup) -> Ten
     except SQLAlchemyError:
         db.session.rollback()
         raise
+
+
+def _actor_by_id(actor_user_id: int | None) -> User | None:
+    if actor_user_id is None:
+        return None
+    actor = db.session.get(User, actor_user_id)
+    if actor is None:
+        raise ValueError('Authenticated KAORI user no longer exists.')
+    return actor
+
+
+def create_tenant_group_by_id_committed(
+    *,
+    tenant_id: str,
+    name: str,
+    subject_name: str | None = None,
+) -> TenantGroup:
+    tenant = db.session.get(Tenant, tenant_id)
+    if tenant is None:
+        raise ValueError('Select a Tenant.')
+    return create_tenant_group_committed(tenant=tenant, name=name, subject_name=subject_name)
+
+
+def add_user_membership_by_id_committed(
+    *,
+    tenant_id: str,
+    user_id: int,
+    subject_name: str | None = None,
+) -> TenantMembership:
+    tenant = db.session.get(Tenant, tenant_id)
+    user = db.session.get(User, user_id)
+    if tenant is None or user is None:
+        raise ValueError('Select a valid Tenant and active user.')
+    return add_user_membership_committed(tenant=tenant, user=user, subject_name=subject_name)
+
+
+def add_group_membership_by_id_committed(*, tenant_id: str, group_id: int) -> TenantMembership:
+    tenant = db.session.get(Tenant, tenant_id)
+    group = db.session.get(TenantGroup, group_id)
+    if tenant is None or group is None:
+        raise ValueError('Select a valid Tenant and Tenant Group.')
+    return add_group_membership_committed(tenant=tenant, group=group)
+
+
+def create_access_grant_by_id_committed(
+    *,
+    membership_id: int,
+    access_profile: str,
+    scope_type: str,
+    tenant_environment_id: int | None = None,
+    tenant_namespace_id: int | None = None,
+    actor_user_id: int | None = None,
+) -> TenantAccessGrant:
+    return create_access_grant_committed(
+        membership_id=membership_id,
+        access_profile=access_profile,
+        scope_type=scope_type,
+        tenant_environment_id=tenant_environment_id,
+        tenant_namespace_id=tenant_namespace_id,
+        actor=_actor_by_id(actor_user_id),
+    )
+
+
+def inspect_access_grant_by_id_committed(
+    *,
+    grant_id: int,
+    actor_user_id: int | None = None,
+) -> TenantAccessGrant:
+    return inspect_access_grant_committed(grant_id=grant_id, actor=_actor_by_id(actor_user_id))
+
+
+def reconcile_access_grant_by_id_committed(
+    *,
+    grant_id: int,
+    actor_user_id: int | None = None,
+) -> TenantAccessGrant:
+    return reconcile_access_grant_committed(grant_id=grant_id, actor=_actor_by_id(actor_user_id))
+
+
+def revoke_access_grant_by_id_committed(
+    *,
+    grant_id: int,
+    actor_user_id: int | None = None,
+) -> TenantAccessGrant:
+    return revoke_access_grant_committed(grant_id=grant_id, actor=_actor_by_id(actor_user_id))
+
+
+def revoke_membership_by_id_committed(
+    *,
+    membership_id: int,
+    actor_user_id: int | None = None,
+) -> TenantMembership:
+    return revoke_membership_committed(membership_id=membership_id, actor=_actor_by_id(actor_user_id))
+
+
+def _record_membership_event(
+    *,
+    actor: User | None,
+    membership: TenantMembership,
+    action: str,
+    summary: str,
+    outcome: str,
+) -> None:
+    event = AuditEvent()
+    event.actor_user_id = actor.id if actor is not None else None
+    event.target_type = 'tenant_membership'
+    event.target_id = str(membership.id)
+    event.action = action
+    event.summary = summary
+    event.metadata_json = {
+        'tenant_id': membership.tenant_id,
+        'principal_type': membership.principal_type,
+        'subject_name': membership.subject_name,
+        'membership_status': membership.status,
+        'outcome': outcome,
+        'correlation_id': membership.correlation_id,
+    }
+    db.session.add(event)
+
+
+def revoke_membership_committed(*, membership_id: int, actor: User | None = None) -> TenantMembership:
+    membership = db.session.get(TenantMembership, membership_id)
+    if membership is None:
+        raise ValueError('Selected Tenant membership no longer exists.')
+    if membership.status == TenantMembershipStatus.REVOKED.value:
+        return membership
+
+    membership.status = TenantMembershipStatus.REVOKED.value
+    errors: list[str] = []
+    for grant in sorted(membership.access_grants, key=lambda item: item.id or 0):
+        if grant.status == TenantAccessGrantStatus.REVOKED.value:
+            continue
+        grant.status = TenantAccessGrantStatus.REVOKED.value
+        try:
+            reconcile_native_access_grant(grant)
+        except (ApiException, ValueError) as exc:
+            errors.append(str(exc))
+            _record_grant_event(
+                actor=actor,
+                grant=grant,
+                action='tenant_access_grant.membership_revoke_failed',
+                summary='Tenant Access Grant was revoked in KAORI but provider cleanup requires attention.',
+                outcome='failed',
+            )
+        else:
+            _record_grant_event(
+                actor=actor,
+                grant=grant,
+                action='tenant_access_grant.membership_revoked',
+                summary='Tenant Access Grant was revoked because its membership was revoked.',
+                outcome='success',
+            )
+
+    _record_membership_event(
+        actor=actor,
+        membership=membership,
+        action='tenant_membership.revoked',
+        summary='Tenant membership was revoked and dependent Access Grants were disabled.',
+        outcome='warning' if errors else 'success',
+    )
+    db.session.commit()
+    if errors:
+        raise ValueError(
+            'Tenant membership is revoked in KAORI, but one or more Kubernetes RoleBindings require operator attention.'
+        )
+    return membership
+
+
+def inspect_access_grant_committed(*, grant_id: int, actor: User | None = None) -> TenantAccessGrant:
+    grant = db.session.get(TenantAccessGrant, grant_id)
+    if grant is None:
+        raise ValueError('Selected Tenant Access Grant no longer exists.')
+    try:
+        inspect_native_access_grant(grant)
+        _record_grant_event(
+            actor=actor,
+            grant=grant,
+            action='tenant_access_grant.inspected',
+            summary='Tenant Access Grant effective Kubernetes RBAC was inspected.',
+            outcome='success',
+        )
+        db.session.commit()
+        return grant
+    except (ApiException, ValueError):
+        db.session.rollback()
+        raise
+
+
+def reconcile_access_grant_committed(*, grant_id: int, actor: User | None = None) -> TenantAccessGrant:
+    grant = db.session.get(TenantAccessGrant, grant_id)
+    if grant is None:
+        raise ValueError('Selected Tenant Access Grant no longer exists.')
+    try:
+        reconcile_native_access_grant(grant)
+        _record_grant_event(
+            actor=actor,
+            grant=grant,
+            action='tenant_access_grant.reconciled',
+            summary='Tenant Access Grant was reconciled to effective Kubernetes RBAC.',
+            outcome='success',
+        )
+        db.session.commit()
+        return grant
+    except (ApiException, ValueError):
+        if grant.id is not None:
+            _record_grant_event(
+                actor=actor,
+                grant=grant,
+                action='tenant_access_grant.reconcile_failed',
+                summary='Tenant Access Grant reconciliation requires operator attention.',
+                outcome='failed',
+            )
+            db.session.commit()
+        raise
+
+
+def get_tenant_access_context() -> dict[str, object]:
+    tenant_options = (
+        Tenant.query.filter(Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value)
+        .order_by(Tenant.name.asc())
+        .all()
+    )
+    user_options = (
+        User.query.filter(User.account_is_active.is_(True), User.deleted_at.is_(None))
+        .order_by(User.username.asc())
+        .all()
+    )
+    group_options = TenantGroup.query.filter_by(enabled=True).order_by(TenantGroup.name.asc()).all()
+    membership_options = (
+        TenantMembership.query.filter_by(status=TenantMembershipStatus.ACTIVE.value)
+        .order_by(TenantMembership.created_at.desc())
+        .all()
+    )
+    environment_options = (
+        TenantEnvironment.query.join(Tenant, Tenant.id == TenantEnvironment.tenant_id)
+        .filter(Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value)
+        .order_by(Tenant.name.asc(), TenantEnvironment.environment.asc())
+        .all()
+    )
+    namespace_options = (
+        TenantNamespace.query.join(TenantEnvironment, TenantEnvironment.id == TenantNamespace.tenant_environment_id)
+        .join(Tenant, Tenant.id == TenantEnvironment.tenant_id)
+        .filter(Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value)
+        .order_by(Tenant.name.asc(), TenantNamespace.namespace.asc())
+        .all()
+    )
+    profiles = [
+        ACCESS_PROFILE_CATALOG[(key, LATEST_ACCESS_PROFILE_VERSION[key])]
+        for key in sorted(LATEST_ACCESS_PROFILE_VERSION)
+    ]
+    return {
+        'access_tenant_options': tenant_options,
+        'access_user_options': user_options,
+        'access_group_options': group_options,
+        'access_membership_options': membership_options,
+        'access_environment_options': environment_options,
+        'access_namespace_options': namespace_options,
+        'access_profiles': profiles,
+        'recent_tenant_groups': TenantGroup.query.order_by(TenantGroup.created_at.desc()).limit(5).all(),
+        'recent_tenant_memberships': TenantMembership.query.order_by(TenantMembership.created_at.desc()).limit(5).all(),
+        'recent_access_grants': TenantAccessGrant.query.order_by(TenantAccessGrant.created_at.desc()).limit(5).all(),
+    }
 
 
 def active_membership_count(tenant_id: str) -> int:
