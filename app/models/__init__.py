@@ -97,6 +97,11 @@ from app.models.tenant_policy import (
     TenantExposurePolicy,
     TenantExposurePolicyStatus,
 )
+from app.models.tenant_audit import (
+    TenantAuditCorrelationStatus,
+    TenantAuditEvidence,
+    TenantAuditPrincipalKind,
+)
 from app.models.user import User
 
 __all__ = [
@@ -130,6 +135,9 @@ __all__ = [
     'Cluster',
     'User',
     'Tenant',
+    'TenantAuditCorrelationStatus',
+    'TenantAuditEvidence',
+    'TenantAuditPrincipalKind',
     'TenantAccessGrant',
     'TenantAccessGrantStatus',
     'TenantAccessProfileKey',
