@@ -49,17 +49,25 @@ def _active_exception_matches(exception, credential, namespace, *, now: datetime
     if effective_production_exception_status(exception, now=now) != TenantProductionAccessExceptionStatus.ACTIVE.value:
         return False
     return (
-        exception.credential_id == credential.id
-        if hasattr(exception, 'credential_id')
-        else exception.access_grant_id == credential.access_grant.id
-    ) and exception.tenant_namespace_id == namespace.id and exception.owner_user_id == credential.owner_user_id
+        (
+            exception.credential_id == credential.id
+            if hasattr(exception, 'credential_id')
+            else exception.access_grant_id == credential.access_grant.id
+        )
+        and exception.tenant_namespace_id == namespace.id
+        and exception.owner_user_id == credential.owner_user_id
+    )
 
 
 def _validate_deployer(credential, namespace) -> None:
     grant = credential.access_grant
     if grant is None or grant.access_profile != 'deployer':
         raise ValueError('Production pipeline credential requires the Deployer Access Profile.')
-    if grant.scope_type != TenantAccessScope.NAMESPACE.value or grant.namespace is None or grant.namespace.id != namespace.id:
+    if (
+        grant.scope_type != TenantAccessScope.NAMESPACE.value
+        or grant.namespace is None
+        or grant.namespace.id != namespace.id
+    ):
         raise ValueError('Production Deployer credential must be bound to exactly one namespace.')
     if grant.membership.principal_type != 'service_account':
         raise ValueError('Production Deployer credential requires a ServiceAccount principal.')
