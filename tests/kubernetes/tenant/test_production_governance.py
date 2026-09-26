@@ -43,9 +43,7 @@ def _credential(kind: str, *, profile: str = 'operator', namespace=None):
     owner = SimpleNamespace(id=7, is_active=True, is_admin_level=kind == 'admin_kubeconfig')
     principal = 'service_account' if kind == 'deployer_service_account' else 'user'
     grant = (
-        None
-        if kind == 'admin_kubeconfig'
-        else _grant(profile=profile, principal_type=principal, namespace=namespace)
+        None if kind == 'admin_kubeconfig' else _grant(profile=profile, principal_type=principal, namespace=namespace)
     )
     return SimpleNamespace(
         id=11,
