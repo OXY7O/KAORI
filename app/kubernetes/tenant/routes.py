@@ -154,7 +154,11 @@ def add_user_membership_route():
             status='success',
             title='Tenant User Added',
             message=f'{membership.subject_name} is an active member of {membership.tenant.name}.',
-            metadata={'tenant_id': membership.tenant_id, 'membership_id': membership.id, 'operation': 'add_user_membership'},
+            metadata={
+                'tenant_id': membership.tenant_id,
+                'membership_id': membership.id,
+                'operation': 'add_user_membership',
+            },
         )
     return redirect(url_for('tenant.index'))
 
@@ -183,7 +187,11 @@ def add_group_membership_route():
             status='success',
             title='Tenant Group Added',
             message=f'{membership.subject_name} is an active member of {membership.tenant.name}.',
-            metadata={'tenant_id': membership.tenant_id, 'membership_id': membership.id, 'operation': 'add_group_membership'},
+            metadata={
+                'tenant_id': membership.tenant_id,
+                'membership_id': membership.id,
+                'operation': 'add_group_membership',
+            },
         )
     return redirect(url_for('tenant.index'))
 
@@ -208,7 +216,11 @@ def revoke_membership_route(membership_id: int):
             status='success',
             title='Tenant Membership Revoked',
             message=f'{membership.subject_name} no longer has active Tenant membership.',
-            metadata={'membership_id': membership.id, 'tenant_id': membership.tenant_id, 'operation': 'revoke_membership'},
+            metadata={
+                'membership_id': membership.id,
+                'tenant_id': membership.tenant_id,
+                'operation': 'revoke_membership',
+            },
         )
     return redirect(url_for('tenant.index'))
 
