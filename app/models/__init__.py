@@ -84,6 +84,7 @@ from app.models.tenant import (
     TenantResourceProfile,
     TenantResourceProfileClass,
 )
+from app.models.tenant_audit import TenantKubernetesAuditObservation
 from app.models.tenant_managed_resource import (
     TenantManagedResourceIntent,
     TenantManagedResourceKind,
@@ -130,6 +131,7 @@ __all__ = [
     'Cluster',
     'User',
     'Tenant',
+    'TenantKubernetesAuditObservation',
     'TenantAccessGrant',
     'TenantAccessGrantStatus',
     'TenantAccessProfileKey',
