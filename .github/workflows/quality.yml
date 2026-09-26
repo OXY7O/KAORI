@@ -301,14 +301,23 @@ jobs:
             --volume "$PWD:/workspace" --workdir /workspace "$CI_TOOLCHAIN_IMAGE" \
             bash scripts/quality_gate.sh --static &
           gate_pid=$!
-          while kill -0 "$gate_pid" >/dev/null 2>&1; do
-            sleep 60
-            if kill -0 "$gate_pid" >/dev/null 2>&1; then
-              elapsed=$(( $(date +%s) - started ))
-              printf '⏳ Static & Governance still running · ⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
-            fi
-          done
-          wait "$gate_pid"
+
+          (
+            while kill -0 "$gate_pid" >/dev/null 2>&1; do
+              sleep 60
+              if kill -0 "$gate_pid" >/dev/null 2>&1; then
+                elapsed=$(( $(date +%s) - started ))
+                printf '⏳ Static & Governance still running · ⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
+              fi
+            done
+          ) &
+          heartbeat_pid=$!
+
+          gate_status=0
+          wait "$gate_pid" || gate_status=$?
+          kill "$heartbeat_pid" >/dev/null 2>&1 || true
+          wait "$heartbeat_pid" >/dev/null 2>&1 || true
+          exit "$gate_status"
 
       - name: Run Security Gate
         if: ${{ matrix.gate == 'security' }}
