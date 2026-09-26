@@ -231,7 +231,6 @@ jobs:
             printf '✅ %s · execution=%s\n' "$DISPLAY_PROFILE" "$execution"
           fi
 
-
   full-admission-gates:
     if: ${{ needs.validation-profile.outputs.execution == 'full' }}
     needs: validation-profile
