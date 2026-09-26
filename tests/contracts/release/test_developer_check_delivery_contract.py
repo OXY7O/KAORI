@@ -229,3 +229,7 @@ def test_delivery_standard_codifies_pre_ready_and_batch_repair() -> None:
         'small issue',
     ):
         assert token in source
+
+
+def test_controlled_ready_gate_probe() -> None:
+    raise AssertionError('Controlled #684 probe: Developer Check must block Full Admission.')
