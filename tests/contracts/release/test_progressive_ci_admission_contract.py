@@ -146,6 +146,26 @@ def test_matrix_cancellation_keeps_resource_cleanup_and_fail_closed_admission() 
     assert 'selected Full Admission matrix failed or was cancelled' in admission
 
 
+def test_full_admission_test_taxonomy_evidence_is_aggregated_across_gate_owners() -> None:
+    source = read(WORKFLOW)
+    matrix = source.split('\n  full-admission-gates:', 1)[1].split('\n  integration-smoke:', 1)[0]
+    admission = source.split('\n  admission:', 1)[1]
+
+    assert 'Upload Static JUnit Evidence' in matrix
+    assert 'Upload Functional JUnit Evidence' in matrix
+    assert 'contract-migration.xml' in matrix
+    assert 'release-suite.xml' in matrix
+    assert 'e2e.xml' in matrix
+
+    assert 'actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1' in admission
+    assert 'Download Static JUnit Evidence' in admission
+    assert 'Download Functional JUnit Evidence' in admission
+    assert 'Write Full Test Taxonomy Summary' in admission
+    assert '--junit tmp/ci-artifacts/admission-junit/static/contract-migration.xml' in admission
+    assert '--junit tmp/ci-artifacts/admission-junit/functional/release-suite.xml' in admission
+    assert '--junit tmp/ci-artifacts/admission-junit/functional/e2e.xml' in admission
+
+
 def test_successful_matrix_preserves_per_gate_evidence_vocabulary() -> None:
     source = read(WORKFLOW)
     admission = source.split('\n  admission:', 1)[1]
