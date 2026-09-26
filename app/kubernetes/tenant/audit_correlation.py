@@ -94,35 +94,6 @@ def service_account_identity(principal_username: str) -> tuple[str, str] | None:
     return parts[0], parts[1]
 
 
-def _safe_identity_payload(
-    *,
-    principal_username: str,
-    principal_groups: tuple[str, ...],
-    namespace: str | None,
-    resource_group: str | None,
-    resource_version: str | None,
-    resource: str | None,
-    subresource: str | None,
-    resource_name: str | None,
-    verb: str,
-    response_code: int | None,
-    event_at: datetime,
-) -> dict[str, object]:
-    return {
-        'principal_username': principal_username,
-        'principal_groups': list(principal_groups),
-        'namespace': namespace,
-        'resource_group': resource_group,
-        'resource_version': resource_version,
-        'resource': resource,
-        'subresource': subresource,
-        'resource_name': resource_name,
-        'verb': verb,
-        'response_code': response_code,
-        'event_at': event_at.isoformat(),
-    }
-
-
 def _safe_digest(payload: dict[str, object]) -> str:
     rendered = json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=True)
     return hashlib.sha256(rendered.encode()).hexdigest()
@@ -162,19 +133,19 @@ def normalize_kubernetes_audit_event(
     source_event_id = _text(event.get('auditID'), limit=160)
     principal_kind = 'service_account' if service_account_identity(principal) else 'user'
 
-    safe = _safe_identity_payload(
-        principal_username=principal,
-        principal_groups=groups,
-        namespace=namespace,
-        resource_group=resource_group,
-        resource_version=resource_version,
-        resource=resource,
-        subresource=subresource,
-        resource_name=resource_name,
-        verb=verb,
-        response_code=code,
-        event_at=event_at,
-    )
+    safe = {
+        'principal_username': principal,
+        'principal_groups': list(groups),
+        'namespace': namespace,
+        'resource_group': resource_group,
+        'resource_version': resource_version,
+        'resource': resource,
+        'subresource': subresource,
+        'resource_name': resource_name,
+        'verb': verb,
+        'response_code': code,
+        'event_at': event_at.isoformat(),
+    }
     idempotency_key = _safe_digest({'audit_id': source_event_id} if source_event_id else safe)
     return NormalizedKubernetesAuditEvent(
         source_event_id=source_event_id,
