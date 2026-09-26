@@ -529,9 +529,7 @@
                         </span>
                         <div>
                             <h3 class="text-base font-semibold text-content-primary">Add User Membership</h3>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">
-                                Bind one active KAORI user to one Tenant.
-                            </p>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Bind one active KAORI user to one Tenant.</p>
                         </div>
                     </div>
                     <div class="space-y-4">
@@ -539,9 +537,7 @@
                             {{ form_field.label_row("Tenant") }}
                             <select name="tenant_id" required class="{{ form_field.select_classes() }}">
                                 <option value="">Select Tenant</option>
-                                {% for tenant in access_tenant_options %}
-                                    <option value="{{ tenant.id }}">{{ tenant.name }}</option>
-                                {% endfor %}
+                                {% for tenant in access_tenant_options %}<option value="{{ tenant.id }}">{{ tenant.name }}</option>{% endfor %}
                             </select>
                         </label>
                         <label class="block">
@@ -580,15 +576,15 @@
                             </p>
                         </div>
                     </div>
-                    <form method="post" action="{{ url_for('tenant.create_group_route') }}" class="space-y-4">
+                    <form method="post"
+                          action="{{ url_for('tenant.create_group_route') }}"
+                          class="space-y-4">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <label class="block">
                             {{ form_field.label_row("Tenant") }}
                             <select name="tenant_id" required class="{{ form_field.select_classes() }}">
                                 <option value="">Select Tenant</option>
-                                {% for tenant in access_tenant_options %}
-                                    <option value="{{ tenant.id }}">{{ tenant.name }}</option>
-                                {% endfor %}
+                                {% for tenant in access_tenant_options %}<option value="{{ tenant.id }}">{{ tenant.name }}</option>{% endfor %}
                             </select>
                         </label>
                         <label class="block">
@@ -613,15 +609,15 @@
                         </button>
                     </form>
                     <div class="my-5 border-t border-outline-subtle"></div>
-                    <form method="post" action="{{ url_for('tenant.add_group_membership_route') }}" class="space-y-4">
+                    <form method="post"
+                          action="{{ url_for('tenant.add_group_membership_route') }}"
+                          class="space-y-4">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <label class="block">
                             {{ form_field.label_row("Tenant") }}
                             <select name="tenant_id" required class="{{ form_field.select_classes() }}">
                                 <option value="">Select Tenant</option>
-                                {% for tenant in access_tenant_options %}
-                                    <option value="{{ tenant.id }}">{{ tenant.name }}</option>
-                                {% endfor %}
+                                {% for tenant in access_tenant_options %}<option value="{{ tenant.id }}">{{ tenant.name }}</option>{% endfor %}
                             </select>
                         </label>
                         <label class="block">
@@ -658,7 +654,9 @@
                     <div class="space-y-4">
                         <label class="block">
                             {{ form_field.label_row("Membership") }}
-                            <select name="membership_id" required class="{{ form_field.select_classes() }}">
+                            <select name="membership_id"
+                                    required
+                                    class="{{ form_field.select_classes() }}">
                                 <option value="">Select active membership</option>
                                 {% for membership in access_membership_options %}
                                     <option value="{{ membership.id }}">
@@ -670,7 +668,9 @@
                         </label>
                         <label class="block">
                             {{ form_field.label_row("Access Profile") }}
-                            <select name="access_profile" required class="{{ form_field.select_classes() }}">
+                            <select name="access_profile"
+                                    required
+                                    class="{{ form_field.select_classes() }}">
                                 {% for profile in access_profiles %}
                                     <option value="{{ profile.key.value }}">{{ profile.label }} · v{{ profile.version }}</option>
                                 {% endfor %}
@@ -687,12 +687,11 @@
                         </label>
                         <label class="block">
                             {{ form_field.label_row('Environment Target', 'Environment scope only', 'info') }}
-                            <select name="tenant_environment_id" class="{{ form_field.select_classes() }}">
+                            <select name="tenant_environment_id"
+                                    class="{{ form_field.select_classes() }}">
                                 <option value="">No environment target</option>
                                 {% for environment in access_environment_options %}
-                                    <option value="{{ environment.id }}">
-                                        {{ environment.tenant.name }} · {{ environment.environment|title }}
-                                    </option>
+                                    <option value="{{ environment.id }}">{{ environment.tenant.name }} · {{ environment.environment|title }}</option>
                                 {% endfor %}
                             </select>
                         </label>
@@ -701,9 +700,7 @@
                             <select name="tenant_namespace_id" class="{{ form_field.select_classes() }}">
                                 <option value="">No namespace target</option>
                                 {% for namespace in access_namespace_options %}
-                                    <option value="{{ namespace.id }}">
-                                        {{ namespace.environment.tenant.name }} · {{ namespace.namespace }}
-                                    </option>
+                                    <option value="{{ namespace.id }}">{{ namespace.environment.tenant.name }} · {{ namespace.namespace }}</option>
                                 {% endfor %}
                             </select>
                             {{ form_field.help("Tenant scope uses neither target. Cross-Tenant references fail closed.") }}
@@ -732,9 +729,7 @@
                                         <span class="font-semibold text-content-primary">{{ membership.subject_name }}</span>
                                         {{ table_label.status_label(membership.status|title, 'normal' if membership.status == 'active' else 'critical') }}
                                     </div>
-                                    <p class="mt-1 text-xs text-content-muted">
-                                        {{ membership.tenant.name }} · {{ membership.principal_type|title }}
-                                    </p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ membership.tenant.name }} · {{ membership.principal_type|title }}</p>
                                 </div>
                                 {% if membership.status == 'active' %}
                                     <form method="post"
@@ -767,9 +762,7 @@
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div class="min-w-0">
                                         <div class="flex flex-wrap items-center gap-2">
-                                            <span class="font-semibold text-content-primary">
-                                                {{ grant.membership.subject_name }}
-                                            </span>
+                                            <span class="font-semibold text-content-primary">{{ grant.membership.subject_name }}</span>
                                             {{ table_label.status_label(grant.access_profile|replace('_', ' ') |title, 'info') }}
                                             {{ table_label.status_label(grant.reconciliation_status|title, reconciliation_tone) }}
                                         </div>
