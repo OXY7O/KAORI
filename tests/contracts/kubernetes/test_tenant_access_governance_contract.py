@@ -44,3 +44,52 @@ def test_tenant_access_revocation_records_effective_removal_evidence() -> None:
     assert 'provider access removal requires attention' in service_source
     assert '_delete_binding(api, grant, namespace)' in reconciliation_source
     assert 'Revoked Tenant Access Grant still has effective RoleBinding state.' in reconciliation_source
+
+
+def test_tenant_members_access_uat_surface_uses_canonical_access_services() -> None:
+    routes = (ROOT / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
+    service = (ROOT / 'app/kubernetes/tenant/access_service.py').read_text(encoding='utf-8')
+    template = (ROOT / 'app/templates/kubernetes/tenant/index.html').read_text(encoding='utf-8')
+
+    for route in (
+        "@tenant_bp.post('/groups')",
+        "@tenant_bp.post('/memberships/users')",
+        "@tenant_bp.post('/memberships/groups')",
+        "@tenant_bp.post('/memberships/<int:membership_id>/revoke')",
+        "@tenant_bp.post('/access-grants')",
+        "@tenant_bp.post('/access-grants/<int:grant_id>/inspect')",
+        "@tenant_bp.post('/access-grants/<int:grant_id>/reconcile')",
+        "@tenant_bp.post('/access-grants/<int:grant_id>/revoke')",
+    ):
+        assert route in routes
+
+    for mutation in (
+        'create_tenant_group_committed',
+        'add_user_membership_committed',
+        'add_group_membership_committed',
+        'create_access_grant_committed',
+        'inspect_access_grant_committed',
+        'reconcile_access_grant_committed',
+        'revoke_access_grant_committed',
+        'revoke_membership_committed',
+    ):
+        assert mutation in routes
+
+    assert 'Members &amp; Access' in template
+    assert 'Functional UAT Surface' in template
+    assert 'Apply Access Grant' in template
+    assert 'Inspect' in template
+    assert 'Reconcile' in template
+    assert 'Revoke' in template
+    assert 'get_tenant_access_context' in service
+
+
+def test_membership_revocation_is_fail_closed_for_dependent_grants() -> None:
+    service = (ROOT / 'app/kubernetes/tenant/access_service.py').read_text(encoding='utf-8')
+
+    assert "membership.status = TenantMembershipStatus.REVOKED.value" in service
+    assert "grant.status = TenantAccessGrantStatus.REVOKED.value" in service
+    assert 'reconcile_native_access_grant(grant)' in service
+    assert "action='tenant_access_grant.membership_revoked'" in service
+    assert 'one or more Kubernetes RoleBindings require operator attention' in service
+
