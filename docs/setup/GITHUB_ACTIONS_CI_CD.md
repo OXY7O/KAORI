@@ -76,6 +76,8 @@ Full Admission owns the integrated evidence set:
 - Runtime & DAST;
 - CI Admission.
 
+Test execution ownership is intentionally non-overlapping: Static & Governance owns Contract/Migration pytest execution and emits `contract-migration.xml`; Functional Tests owns the remaining non-debug/non-E2E/non-contract/non-migration release suite plus explicit E2E. CI Admission downloads both JUnit artifacts and renders one complete KAORI taxonomy summary before publishing reusable Full Admission evidence.
+
 A green Developer Check does not replace Full Admission. A green Full Admission on the exact frozen Ready head is the comprehensive authority that staging normally reuses.
 
 ## Continuous Delivery
