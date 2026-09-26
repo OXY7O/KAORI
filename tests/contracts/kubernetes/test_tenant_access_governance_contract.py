@@ -87,9 +87,8 @@ def test_tenant_members_access_uat_surface_uses_canonical_access_services() -> N
 def test_membership_revocation_is_fail_closed_for_dependent_grants() -> None:
     service = (ROOT / 'app/kubernetes/tenant/access_service.py').read_text(encoding='utf-8')
 
-    assert "membership.status = TenantMembershipStatus.REVOKED.value" in service
-    assert "grant.status = TenantAccessGrantStatus.REVOKED.value" in service
+    assert 'membership.status = TenantMembershipStatus.REVOKED.value' in service
+    assert 'grant.status = TenantAccessGrantStatus.REVOKED.value' in service
     assert 'reconcile_native_access_grant(grant)' in service
     assert "action='tenant_access_grant.membership_revoked'" in service
     assert 'one or more Kubernetes RoleBindings require operator attention' in service
-
