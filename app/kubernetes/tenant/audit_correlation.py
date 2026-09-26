@@ -99,20 +99,31 @@ def _safe_digest(payload: dict[str, object]) -> str:
     return hashlib.sha256(rendered.encode()).hexdigest()
 
 
+def _mapping(value: object) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
 def normalize_kubernetes_audit_event(
     event: dict[str, Any],
     *,
     source_reference: str | None = None,
 ) -> NormalizedKubernetesAuditEvent:
-    user = event.get('user') if isinstance(event.get('user'), dict) else {}
+    user = _mapping(event.get('user'))
     principal = _text(user.get('username'), limit=500)
     if not principal:
         raise TenantAuditNormalizationError('Kubernetes audit principal username is required.')
 
-    groups_value = user.get('groups') if isinstance(user.get('groups'), list) else []
-    groups = tuple(sorted({_text(item, limit=255) for item in groups_value if _text(item, limit=255)}))
-    obj = event.get('objectRef') if isinstance(event.get('objectRef'), dict) else {}
-    response = event.get('responseStatus') if isinstance(event.get('responseStatus'), dict) else {}
+    raw_groups = user.get('groups')
+    groups_value = raw_groups if isinstance(raw_groups, list) else []
+    groups = tuple(
+        sorted(
+            normalized
+            for item in groups_value
+            if (normalized := _text(item, limit=255)) is not None
+        )
+    )
+    obj = _mapping(event.get('objectRef'))
+    response = _mapping(event.get('responseStatus'))
     verb = _text(event.get('verb'), limit=40)
     if not verb:
         raise TenantAuditNormalizationError('Kubernetes audit verb is required.')
