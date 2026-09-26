@@ -72,7 +72,7 @@ def test_developer_check_parallel_lanes_fail_closed_into_one_aggregate() -> None
         "TOOLCHAIN_RESULT: ${{ needs.toolchain.result }}",
         "PYTHON_RESULT: ${{ needs.python-check.result }}",
         "VALIDATION_RESULT: ${{ needs.validation-check.result }}",
-        "[[ "$TOOLCHAIN_RESULT" == "success" ]]",
+        '[[ "$TOOLCHAIN_RESULT" == "success" ]]',
         "assert_lane 'Python & Governance'",
         "assert_lane 'Frontend & Focused Validation'",
     ):
