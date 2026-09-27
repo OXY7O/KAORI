@@ -420,6 +420,100 @@ def provision_native_namespace_committed(source: Mapping[str, Any]) -> TenantNam
         raise
 
 
+
+_ALLOWED_PAGE_SIZES = (5, 10, 25, 50)
+
+
+def _paged_context(query: Any, *, page: int, per_page: int) -> tuple[list[Any], dict[str, Any]]:
+    normalized_page = max(int(page), 1)
+    normalized_per_page = per_page if per_page in _ALLOWED_PAGE_SIZES else 5
+    pagination = query.paginate(page=normalized_page, per_page=normalized_per_page, error_out=False)
+    if pagination.pages and normalized_page > pagination.pages:
+        normalized_page = pagination.pages
+        pagination = query.paginate(page=normalized_page, per_page=normalized_per_page, error_out=False)
+
+    start_item = ((normalized_page - 1) * normalized_per_page + 1) if pagination.total else 0
+    end_item = min(normalized_page * normalized_per_page, pagination.total) if pagination.total else 0
+    return list(pagination.items), {
+        'page': normalized_page,
+        'per_page': normalized_per_page,
+        'total': pagination.total,
+        'pages': max(pagination.pages, 1),
+        'start_item': start_item,
+        'end_item': end_item,
+        'has_prev': pagination.has_prev,
+        'prev_num': pagination.prev_num,
+        'has_next': pagination.has_next,
+        'next_num': pagination.next_num,
+        'allowed_per_page': _ALLOWED_PAGE_SIZES,
+    }
+
+
+def get_tenant_registry_context(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
+    items, pagination = _paged_context(
+        Tenant.query.order_by(Tenant.created_at.desc()),
+        page=page,
+        per_page=per_page,
+    )
+    return {'tenants': items, 'tenant_pagination': pagination}
+
+
+def get_resource_profile_registry_context(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
+    items, pagination = _paged_context(
+        TenantResourceProfile.query.order_by(TenantResourceProfile.created_at.desc()),
+        page=page,
+        per_page=per_page,
+    )
+    return {'profiles': items, 'profile_pagination': pagination}
+
+
+def get_namespace_registry_context(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
+    namespace_query = TenantNamespace.query.order_by(TenantNamespace.created_at.desc())
+    items, pagination = _paged_context(namespace_query, page=page, per_page=per_page)
+    namespace_options = namespace_query.all()
+    profile_options = (
+        TenantResourceProfile.query.filter_by(enabled=True).order_by(TenantResourceProfile.name.asc()).all()
+    )
+    return {
+        'namespaces': items,
+        'namespace_options': namespace_options,
+        'profiles': profile_options,
+        'namespace_pagination': pagination,
+        'namespace_allocation_state': {
+            str(record.id): {
+                'namespace': record.namespace,
+                'profile_id': str(record.resource_profile_id) if record.resource_profile_id is not None else None,
+                'profile_name': record.resource_profile.name if record.resource_profile is not None else 'Unknown',
+                'profile_version': record.resource_profile_version,
+                'quota': record.allocation_quota_json or {},
+                'limits': record.allocation_limit_defaults_json or {},
+            }
+            for record in namespace_options
+        },
+        'namespace_allocation_profiles': {
+            str(profile.id): {
+                'quota': (
+                    RESOURCE_PROFILE_PRESETS[profile.profile_class]['quota']
+                    if profile.profile_class in RESOURCE_PROFILE_PRESETS
+                    else profile.quota_hard_json or {}
+                ),
+                'limits': (
+                    RESOURCE_PROFILE_PRESETS[profile.profile_class]['limits']
+                    if profile.profile_class in RESOURCE_PROFILE_PRESETS
+                    else profile.limit_defaults_json or {}
+                ),
+                'version': (
+                    int(RESOURCE_PROFILE_PRESETS[profile.profile_class]['version'])
+                    if profile.profile_class in RESOURCE_PROFILE_PRESETS
+                    else profile.version
+                ),
+                'profile_class': profile.profile_class,
+            }
+            for profile in profile_options
+        },
+    }
+
+
 def get_tenant_context() -> dict[str, Any]:
     tenants = Tenant.query.order_by(Tenant.created_at.desc()).limit(5).all()
     profiles = TenantResourceProfile.query.order_by(TenantResourceProfile.created_at.desc()).limit(5).all()
