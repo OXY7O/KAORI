@@ -16,11 +16,16 @@ def test_tls_registry_uses_governance_resource_registry_pattern() -> None:
 
     assert 'partials/_hero.html' in page
     assert 'partials/_snapshot_context.html' in scope
-    assert 'Certificate Validity & Operations' in summary
-    assert 'partials/_sync_panel.html' in summary
+    assert 'Certificate Validity' in summary
+    assert 'Certificate Validity & Operations' not in summary
+    assert 'partials/_sync_panel.html' not in summary
     assert 'posture_grid.render' in summary
-    assert 'partials/_sync_panel.html' not in scope
+    assert 'partials/_sync_panel.html' in scope
+    assert 'components/section_intro.html' in scope
+    assert "'Certificate Posture'" in scope
+    assert "'Certificate Inventory'" in scope
     assert 'TLS Certificate Registry' in table
+    assert 'Open Cluster Integrations' in table
     assert 'Certificate</th>' in table
     assert 'Host Coverage</th>' in table
     assert 'Ingress Usage</th>' in table
