@@ -8,6 +8,9 @@ from app.platform_operations.data_lifecycle.retention.domains.operational_activi
     OperationalActivityArchiveDomain,
 )
 from app.platform_operations.data_lifecycle.retention.domains.runtime_observation import RuntimeObservationArchiveDomain
+from app.platform_operations.data_lifecycle.retention.domains.tenant_audit_evidence import (
+    TenantAuditEvidenceArchiveDomain,
+)
 from app.platform_operations.data_lifecycle.retention.types import ArchiveDomain
 
 DOMAIN_FACTORIES: dict[str, Callable[[], ArchiveDomain]] = {
@@ -17,6 +20,7 @@ DOMAIN_FACTORIES: dict[str, Callable[[], ArchiveDomain]] = {
     'operational_activity': OperationalActivityArchiveDomain,
     'job_execution': JobExecutionArchiveDomain,
     'runtime_observation': RuntimeObservationArchiveDomain,
+    'tenant_audit_evidence': TenantAuditEvidenceArchiveDomain,
 }
 
 
@@ -37,5 +41,6 @@ __all__ = [
     'OperationalActivityArchiveDomain',
     'JobExecutionArchiveDomain',
     'RuntimeObservationArchiveDomain',
+    'TenantAuditEvidenceArchiveDomain',
     'get_archive_domain',
 ]
