@@ -587,7 +587,6 @@ def provision_namespace_route():
     return redirect(url_for('tenant.index'))
 
 
-
 @tenant_bp.post('/credentials/human')
 @permission_required('tenant.manage')
 def create_human_credential_route():
