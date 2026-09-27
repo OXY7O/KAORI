@@ -7,7 +7,7 @@
         {% include "kubernetes/tenant/partials/_resource_profile_form.html" %}
         <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
             <header class="border-b border-outline-subtle px-5 py-4">
-                <h2 class="text-base font-semibold text-content-primary">Recent Resource Profiles</h2>
+                <h2 class="text-base font-semibold text-content-primary">Resource Profiles</h2>
                 <p class="mt-1 text-sm text-content-secondary">Review profile class, lineage, and effective allocation contracts.</p>
             </header>
             <div class="divide-y divide-outline-subtle">
@@ -24,6 +24,11 @@
                     <p class="px-5 py-8 text-sm text-content-muted">No Resource Profiles yet.</p>
                 {% endfor %}
             </div>
+            {% set pagination_state = profile_pagination %}
+            {% set pagination_resource = 'resource profiles' %}
+            {% set pagination_endpoint = 'tenant.resource_profiles' %}
+            {% set pagination_id = 'tenant-profile-registry' %}
+            {% include "kubernetes/tenant/partials/_pagination_footer.html" %}
         </div>
     </section>
     {% include "kubernetes/tenant/partials/_capacity_governance.html" %}
