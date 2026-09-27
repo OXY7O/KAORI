@@ -1,0 +1,35 @@
+{% extends "kubernetes/tenant/base.html" %}
+{% import "components/table_label.html" as table_label %}
+{% block tenant_content %}
+    {% set can_manage = current_user.has_permission('tenant.manage') %}
+    <section class="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]" aria-label="Tenant ownership">
+        {% include "kubernetes/tenant/partials/_tenant_form.html" %}
+        <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+            <header class="border-b border-outline-subtle px-5 py-4">
+                <h2 class="text-base font-semibold text-content-primary">Tenants</h2>
+                <p class="mt-1 text-sm text-content-secondary">Review committed ownership, provider authority, and lifecycle state.</p>
+            </header>
+            <div class="divide-y divide-outline-subtle">
+                {% for tenant in tenants %}
+                    <article class="px-5 py-4">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <p class="font-semibold text-content-primary">{{ tenant.name }}</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ tenant.slug }} · {{ tenant.provider_key|replace('_', ' ')|title }}</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                {{ table_label.status_label(tenant.lifecycle_status|title, 'normal' if tenant.lifecycle_status == 'ready' else 'warning') }}
+                                {{ table_label.status_label(tenant.provider_state|replace('_', ' ')|title, 'info') }}
+                            </div>
+                        </div>
+                        <p class="mt-2 text-xs text-content-muted">Reconciliation authority: {{ tenant.reconciliation_authority|replace('_', ' ')|title }}</p>
+                    </article>
+                {% else %}
+                    <p class="px-5 py-8 text-sm text-content-muted">No Tenant records yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% include "kubernetes/tenant/partials/_members_access.html" %}
+    {% include "kubernetes/tenant/partials/_credential_management.html" %}
+{% endblock tenant_content %}
