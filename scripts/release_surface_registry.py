@@ -110,12 +110,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         title='Tenant',
         lock_state='BASELINE LOCKED',
         navigation_source='app/templates/components/navigation/tenant_menu.html',
-        navigation_endpoints=(
-            'tenant.index',
-            'tenant.management',
-            'tenant.inventory',
-            'tenant.analytics',
-        ),
+        navigation_endpoints=('tenant.index',),
         blueprint_vars=('tenant_bp',),
         verifiers=(),
         contract_paths=(
