@@ -306,13 +306,6 @@ def tenants():
         environment=str(request.args.get('environment') or ''),
         lifecycle_status=str(request.args.get('lifecycle_status') or ''),
     )
-    if request.args.get('partial_mode') == 'registry':
-        return render_template(
-            'kubernetes/tenant/partials/_tenant_registry.html',
-            active_tenant_section=active_section,
-            **registry_context,
-        )
-
     context = _tenant_workspace_context()
     context.update(registry_context)
     return render_template(
@@ -322,6 +315,23 @@ def tenants():
         tenant_page_icon='users-round',
         active_tenant_section=active_section,
         **context,
+    )
+
+
+@tenant_bp.get('/tenants/registry')
+@any_permission_required('tenant.view', 'tenant.manage')
+def tenant_registry():
+    return render_template(
+        'kubernetes/tenant/partials/_tenant_registry.html',
+        active_tenant_section=_tenant_admin_section(request.args.get('section')),
+        **get_tenant_registry_context(
+            page=request.args.get('page', 1, type=int) or 1,
+            per_page=request.args.get('per_page', 5, type=int) or 5,
+            search=str(request.args.get('search') or ''),
+            cluster_id=str(request.args.get('cluster_id') or ''),
+            environment=str(request.args.get('environment') or ''),
+            lifecycle_status=str(request.args.get('lifecycle_status') or ''),
+        ),
     )
 
 
