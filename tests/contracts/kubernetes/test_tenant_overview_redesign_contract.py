@@ -8,16 +8,16 @@ def test_tenant_overview_reuses_canonical_inventory_sync_authority() -> None:
     workspace = (ROOT / 'app/kubernetes/tenant/workspace.py').read_text(encoding='utf-8')
     template = (ROOT / 'app/templates/kubernetes/tenant/overview.html').read_text(encoding='utf-8')
 
-    assert "def get_tenant_overview_context(" in workspace
-    assert "get_inventory_freshness_context" in workspace
-    assert "kubernetes.inventory.sync" in workspace
+    assert 'def get_tenant_overview_context(' in workspace
+    assert 'get_inventory_freshness_context' in workspace
+    assert 'kubernetes.inventory.sync' in workspace
     assert "@tenant_bp.post('/inventory-sync')" in routes
     assert "@permission_required('clusters.sync')" in routes
     assert "job_key='kubernetes.inventory.sync'" in routes
     assert "trigger_type='manual'" in routes
-    assert "tenant.inventory_sync" in template
-    assert "Sync Now" in template
-    assert "Reconcile" not in template
+    assert 'tenant.inventory_sync' in template
+    assert 'Sync Now' in template
+    assert 'Reconcile' not in template
 
 
 def test_tenant_overview_has_multicluster_inventory_and_capacity_hierarchy() -> None:
