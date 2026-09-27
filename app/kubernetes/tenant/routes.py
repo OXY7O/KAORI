@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 from flask import Blueprint, current_app, redirect, render_template, request, url_for
 from flask_login import current_user
@@ -49,6 +49,7 @@ from app.kubernetes.tenant.service import (
     provision_native_namespace_committed,
 )
 from app.kubernetes.tenant.workspace import get_tenant_workspace_context
+from app.models import User
 from app.models.tenant import TenantAccessGrant, TenantCredential
 from app.platform_operations.notifications.service import record_operational_activity
 
@@ -603,7 +604,7 @@ def create_human_credential_route():
                 jumpserver_reference=str(request.form.get('jumpserver_reference') or ''),
                 purpose=str(request.form.get('purpose') or 'interactive'),
             ),
-            actor=current_user,
+            actor=cast(User, current_user),
         )
     except (ValueError, ApiException, TenantCredentialStateConflictError) as exc:
         _record(
@@ -640,7 +641,7 @@ def create_deployer_credential_route():
                 application_name=str(request.form.get('application_name') or ''),
                 purpose=str(request.form.get('purpose') or 'github-actions-helm'),
             ),
-            actor=current_user,
+            actor=cast(User, current_user),
         )
     except (ValueError, ApiException, TenantCredentialStateConflictError) as exc:
         _record(
