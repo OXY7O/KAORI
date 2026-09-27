@@ -39,9 +39,12 @@ Overview actions follow the established operational sync pattern:
 
 - **Sync Tenant** — manually dispatch `kubernetes.tenant.sync`.
 - **Configure Sync** — open the registered-job policy for automatic cadence.
-- **Sync All Inventory** — use the existing cross-domain inventory action; Tenant sync participates alongside the Kubernetes/Object Storage inventory domains allowed by the operator's permissions.
 
-Capacity Analytics remains a separate committed evidence authority. Tenant sync must not fabricate missing capacity data or imply that refreshing Tenant inventory refreshes `analytics.capacity`. When capacity evidence is unavailable or stale, Overview renders that state and reason explicitly rather than filling allocation metrics with meaningless `N/A` tiles.
+The existing global **Sync All Inventory** quick action remains the cross-domain orchestration entry point and includes Tenant sync alongside Kubernetes/Object Storage inventory domains allowed by the operator's permissions. Tenant Overview does not duplicate that global action.
+
+Successful manual dispatch follows the TLS synchronization behavior: the HTMX click updates worker progress without creating a completion toast or incrementing the Notification Deck immediately. The worker persists the operator notification only when the job reaches a terminal state, with Tenant/namespace/cluster coverage and exception evidence from that completed snapshot.
+
+Capacity Analytics remains a separate committed evidence authority. Tenant sync must not fabricate missing capacity data or imply that refreshing Tenant inventory refreshes `analytics.capacity`. Overview keeps per-cluster capacity information compact: posture, freshness, and a path to Capacity Analytics are shown instead of detailed allocation tiles or meaningless `N/A` values. The Overview cluster estate is bounded to five attention-prioritized rows; full fleet inventory remains owned by Kubernetes Inventory.
 
 - Native Kubernetes is the mandatory baseline provider.
 - Capsule is capability-aware and optional.
