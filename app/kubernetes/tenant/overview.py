@@ -9,11 +9,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable, dispatch_registered_job
 from app.platform_operations.jobs.service import JobQuotaExceeded
 
-_INVENTORY_JOB_KEY = 'kubernetes.inventory.sync'
+_INVENTORY_JOB_KEY = 'kubernetes.tenant.sync'
 
 
 def dispatch_tenant_inventory_sync(*, requested_by_user_id: int) -> dict[str, Any]:
-    """Dispatch the canonical Kubernetes Inventory job for the Tenant Overview."""
+    """Dispatch the canonical Tenant inventory worker job for the Tenant Overview."""
 
     metadata: dict[str, Any] = {
         'operation': 'tenant_inventory_sync',
@@ -29,7 +29,7 @@ def dispatch_tenant_inventory_sync(*, requested_by_user_id: int) -> dict[str, An
         return {
             'event_type': 'kubernetes_tenant_inventory_sync_blocked',
             'status': 'warning',
-            'title': 'Tenant Inventory Sync Could Not Start',
+            'title': 'Tenant Sync Could Not Start',
             'message': str(exc),
             'metadata': metadata,
         }
@@ -46,7 +46,7 @@ def dispatch_tenant_inventory_sync(*, requested_by_user_id: int) -> dict[str, An
             'event_type': 'kubernetes_tenant_inventory_sync_failed',
             'status': 'error',
             'title': 'Tenant Inventory Sync Could Not Start',
-            'message': 'KAORI could not queue the canonical Kubernetes inventory synchronization.',
+            'message': 'KAORI could not queue the canonical Tenant inventory synchronization.',
             'detail': f'{type(exc).__name__}: {str(exc)[:500]}',
             'metadata': metadata,
         }
@@ -55,7 +55,7 @@ def dispatch_tenant_inventory_sync(*, requested_by_user_id: int) -> dict[str, An
         return {
             'event_type': 'kubernetes_tenant_inventory_sync_blocked',
             'status': 'warning',
-            'title': 'Tenant Inventory Sync Blocked',
+            'title': 'Tenant Sync Blocked',
             'message': outcome.message,
             'metadata': {**metadata, 'dispatch_status': outcome.status},
         }
@@ -64,9 +64,9 @@ def dispatch_tenant_inventory_sync(*, requested_by_user_id: int) -> dict[str, An
     return {
         'event_type': 'kubernetes_tenant_inventory_sync_dispatched',
         'status': 'success' if outcome.created else 'info',
-        'title': 'Tenant Inventory Sync Queued' if outcome.created else 'Tenant Inventory Sync Already Active',
+        'title': 'Tenant Sync Queued' if outcome.created else 'Tenant Sync Already Active',
         'message': outcome.message,
-        'detail': ('Tenant Overview will read the committed Kubernetes inventory evidence after collection completes.'),
+        'detail': ('Tenant Overview will read the committed Tenant collection snapshot after the worker completes.'),
         'metadata': {
             **metadata,
             'job_public_id': job.public_id if job is not None else None,
