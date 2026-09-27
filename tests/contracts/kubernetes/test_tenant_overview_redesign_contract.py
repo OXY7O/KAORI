@@ -5,6 +5,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def test_tenant_overview_reuses_canonical_inventory_sync_authority() -> None:
     routes = (ROOT / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
+    overview = (ROOT / 'app/kubernetes/tenant/overview.py').read_text(encoding='utf-8')
     workspace = (ROOT / 'app/kubernetes/tenant/workspace.py').read_text(encoding='utf-8')
     template = (ROOT / 'app/templates/kubernetes/tenant/overview.html').read_text(encoding='utf-8')
 
@@ -13,8 +14,10 @@ def test_tenant_overview_reuses_canonical_inventory_sync_authority() -> None:
     assert 'kubernetes.inventory.sync' in workspace
     assert "@tenant_bp.post('/inventory-sync')" in routes
     assert "@permission_required('clusters.sync')" in routes
-    assert "job_key='kubernetes.inventory.sync'" in routes
-    assert "trigger_type='manual'" in routes
+    assert 'dispatch_tenant_inventory_sync' in routes
+    assert "_INVENTORY_JOB_KEY = 'kubernetes.inventory.sync'" in overview
+    assert "job_key=_INVENTORY_JOB_KEY" in overview
+    assert "trigger_type='manual'" in overview
     assert 'tenant.inventory_sync' in template
     assert 'Sync Now' in template
     assert 'Reconcile' not in template
