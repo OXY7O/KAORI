@@ -29,10 +29,10 @@ def test_tenant_routes_own_five_primary_destinations_and_compatibility_redirects
     routes = (ROOT / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
 
     for path, endpoint in (
-        ("/tenants", 'tenants'),
-        ("/resource-profiles", 'resource_profiles'),
-        ("/namespace-provisioning", 'namespace_provisioning'),
-        ("/operations", 'operations'),
+        ('/tenants', 'tenants'),
+        ('/resource-profiles', 'resource_profiles'),
+        ('/namespace-provisioning', 'namespace_provisioning'),
+        ('/operations', 'operations'),
     ):
         assert f"@tenant_bp.get('{path}')" in routes
         assert f'def {endpoint}()' in routes
