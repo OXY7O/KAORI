@@ -3,11 +3,13 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from sqlalchemy import or_
+
 from app.common.job_execution_presentation import present_job_execution
 from app.common.presentation import present_user_datetime
 from app.kubernetes.tenant.sync_service import build_tenant_inventory_snapshot
 from app.kubernetes.tenant.tasks import sync_tenant_inventory_task
-from app.models.job import JobExecution, JobPolicy
+from app.models.job import JobExecution, JobExecutionSubscriber, JobPolicy
 from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES, WORKLOAD_STANDARD
 from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchResult
 from app.platform_operations.jobs.dispatcher import enqueue_canonical_job
@@ -19,6 +21,25 @@ TENANT_SYNC_JOB_TYPE = 'kubernetes_tenant_inventory'
 TENANT_SYNC_OPERATION = 'sync_kubernetes_tenant_inventory'
 TENANT_SYNC_QUEUE = 'inventory'
 _SUCCESS_STATUSES = ('succeeded', 'partially_succeeded')
+
+
+def get_visible_tenant_sync_job(*, public_id: str, user_id: int) -> JobExecution | None:
+    subscriber_can_view = JobExecution.subscribers.any(
+        JobExecutionSubscriber.user_id == user_id,
+    )
+    return (
+        JobExecution.query.filter(
+            JobExecution.job_type == TENANT_SYNC_JOB_TYPE,
+            JobExecution.operation == TENANT_SYNC_OPERATION,
+            or_(
+                JobExecution.requested_by_user_id == user_id,
+                subscriber_can_view,
+            ),
+            JobExecution.public_id == public_id,
+        )
+        .order_by(JobExecution.id.desc())
+        .first()
+    )
 
 
 def dispatch_tenant_sync(
