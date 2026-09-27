@@ -54,7 +54,8 @@ def test_tenant_uat_pages_preserve_current_admitted_workflows() -> None:
     assert 'partials/_namespace_form.html' in namespaces
     assert 'partials/_allocation_change.html' in namespaces
     assert 'partials/_capacity_decisions.html' in namespaces
-    assert 'data-tenant-namespace-allocation-profiles' in namespaces
+    assert 'id="tenant-namespace-allocation-profiles"' in namespaces
+    assert 'id="tenant-namespace-allocation-state"' in namespaces
 
     assert 'content_tabs.render_links' in operations
     assert 'Kubernetes Audit Evidence' in operations
