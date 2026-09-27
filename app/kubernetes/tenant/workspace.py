@@ -90,12 +90,21 @@ def _tenant_collection_snapshot(sync_state: dict[str, Any]) -> dict[str, Any]:
     if sync_state['last_success_at'] is None:
         coverage_label = 'Not Collected'
         coverage_supporting = 'Run Tenant sync to establish committed coverage.'
+        coverage_tone = 'warning'
+        exception_label = 'Not Collected'
+        exceptions_tone = 'warning'
     elif namespace_count:
         coverage_label = f'{covered_count} / {namespace_count} Namespaces'
         coverage_supporting = 'Fully committed' if covered_count == namespace_count else 'Coverage requires review'
+        coverage_tone = 'normal' if covered_count == namespace_count else 'warning'
+        exception_label = 'No Exceptions' if exception_count == 0 else f'{exception_count} Exceptions'
+        exceptions_tone = 'normal' if exception_count == 0 else 'warning'
     else:
         coverage_label = '0 Namespaces'
         coverage_supporting = 'No governed Tenant namespaces were present in the snapshot.'
+        coverage_tone = 'normal'
+        exception_label = 'No Exceptions' if exception_count == 0 else f'{exception_count} Exceptions'
+        exceptions_tone = 'normal' if exception_count == 0 else 'warning'
 
     return {
         'status': sync_state['label'],
@@ -106,8 +115,10 @@ def _tenant_collection_snapshot(sync_state: dict[str, Any]) -> dict[str, Any]:
         'scope_label': str(snapshot.get('scope_label') or 'All Clusters'),
         'coverage_label': coverage_label,
         'coverage_supporting': coverage_supporting,
+        'coverage_tone': coverage_tone,
         'exception_count': exception_count,
-        'exception_label': 'No Exceptions' if exception_count == 0 else f'{exception_count} Exceptions',
+        'exception_label': exception_label,
+        'exceptions_tone': exceptions_tone,
         'source_label': str(snapshot.get('source') or 'KAORI Tenant State + committed Kubernetes Inventory'),
         'source_cutoff_label': present_user_datetime(
             snapshot.get('source_inventory_cutoff'),
