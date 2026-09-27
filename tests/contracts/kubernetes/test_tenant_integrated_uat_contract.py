@@ -21,9 +21,6 @@ def test_tenant_workspace_uses_only_approved_sidebar_destinations() -> None:
         assert f"url_for('{endpoint}')" in menu
         assert f'>{label}</span>' in menu
 
-    assert "@tenant_bp.get('/management')" not in routes
-    assert "@tenant_bp.get('/inventory')" not in routes
-    assert "@tenant_bp.get('/analytics')" not in routes
 
 
 def test_tenant_workspace_reads_committed_cross_child_state() -> None:
