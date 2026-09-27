@@ -1,17 +1,17 @@
 {
   "welcome-dark-compact-laptop": {
     "height": 768,
-    "visual_sha256": "f023965efb0f6ff8b31c98901fde51474baba6bc93c49a5d9857dc02431e1def",
+    "visual_sha256": "79c276f22de34831fb7242e48e814a639ff901a21c068adc58c26c9a4f7471ca",
     "width": 1024
   },
   "welcome-dark-laptop": {
     "height": 800,
-    "visual_sha256": "1b96a318708ef561dd3c632ecbf9f2e057a0717c36b9e7f95d8c142ac94995b0",
+    "visual_sha256": "f1b96656300303e76ed19b7924d187890bcf26e79b8f52e922bc935e6066c231",
     "width": 1280
   },
   "welcome-dark-large-desktop": {
     "height": 900,
-    "visual_sha256": "6de7a5d017a83b0573910ad07b3b9b98ec38529d14d6b18e5cc8d21953f3cdef",
+    "visual_sha256": "a643a5e3c0f547500f049df84a8b751b928ac6102fbb0505bd5cd4fb23fb4db3",
     "width": 1440
   },
   "welcome-dark-mobile": {
