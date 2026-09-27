@@ -81,8 +81,9 @@ def _record(
     message: str,
     metadata: dict[str, Any],
     detail: str | None = None,
-) -> None:
-    record_operational_activity(
+    queue_feedback: bool = True,
+) -> dict[str, Any]:
+    return record_operational_activity(
         user_id=int(current_user.id),
         event_type=event_type,
         status=status,
@@ -93,7 +94,7 @@ def _record(
         action_label='Open Tenant',
         action_icon='building-2',
         metadata={**metadata, 'operation_domain': 'kubernetes_tenant', 'feedback_delivery': 'toast'},
-        queue_feedback=True,
+        queue_feedback=queue_feedback,
     )
 
 
@@ -158,21 +159,30 @@ def inventory_sync():
             summary=str(feedback.get('message') or 'Tenant synchronization could not start.'),
             metadata=dict(feedback.get('metadata') or {}),
         )
-        _record(
+        recorded_feedback = _record(
             event_type=str(feedback['event_type']),
             status=str(feedback['status']),
             title=str(feedback['title']),
             message=str(feedback['message']),
             detail=str(feedback.get('detail') or '') or None,
             metadata=dict(feedback.get('metadata') or {}),
+            queue_feedback=not is_htmx,
         )
         if is_htmx:
-            response = make_response(
-                render_template(
-                    'kubernetes/tenant/partials/_sync_workspace.html',
-                    **get_tenant_sync_workspace_context(),
+            rendered = ''.join(
+                (
+                    render_template(
+                        'kubernetes/tenant/partials/_sync_workspace.html',
+                        **get_tenant_sync_workspace_context(),
+                    ),
+                    render_template(
+                        'components/operational_toast.html',
+                        **recorded_feedback,
+                        toast_oob=True,
+                    ),
                 )
             )
+            response = make_response(rendered)
             response.status_code = 409 if feedback.get('status') == 'warning' else 503
             response.headers['Cache-Control'] = 'no-store, max-age=0'
             return response
