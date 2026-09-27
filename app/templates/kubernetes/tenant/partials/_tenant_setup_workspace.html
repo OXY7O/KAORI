@@ -1,17 +1,77 @@
-{% import "components/context_guidance_card.html" as context_guidance %}
-<div class="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(18rem,0.95fr)] xl:items-start">
-    {% include "kubernetes/tenant/partials/_tenant_form.html" %}
-    {{ context_guidance.render(
-        'Tenant Setup Guidance',
-        'Create the governed ownership boundary first; namespace and access workflows follow committed Tenant state.',
-        [
-            ('Choose a Ready cluster.', 'Tenant creation binds ownership to one registered Kubernetes cluster and one initial environment.'),
-            ('Keep provider authority explicit.', 'Native Kubernetes is the admitted baseline; Capsule remains capability-gated until qualified.'),
-            ('Provision namespaces separately.', 'Use Namespace Provisioning after the Tenant exists so quota, limits, capacity, and evidence remain governed.'),
-            ('Grant access after membership.', 'Membership, RBAC grants, and credentials remain separate lifecycle contracts.')
-        ],
-        icon='route',
-        open_by_default=true,
-        aria_label='Tenant setup guidance'
-    ) }}
+{% import "components/operational_flow_steps.html" as operational_flow_steps %}
+{% set setup_flow = [
+    [
+        ('building-2', 'Create Tenant', 'Bind ownership to one Ready cluster and initial environment.'),
+        ('boxes', 'Provision Namespace', 'Apply Resource Profile, capacity guardrails, quota, and evidence.'),
+        ('users-round', 'Add Membership', 'Commit a user or Kubernetes group as a Tenant principal.')
+    ],
+    [
+        ('shield-check', 'Apply Access Grant', 'Select a versioned profile and the narrowest required scope.'),
+        ('key-round', 'Issue Credential', 'Create individual human or machine access only after grant readiness.')
+    ]
+] %}
+<div class="grid gap-5 xl:grid-cols-12 xl:items-start">
+    <div class="xl:col-span-5">
+        {% include "kubernetes/tenant/partials/_tenant_form.html" %}
+    </div>
+    <div class="space-y-5 xl:col-span-7">
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+                 aria-labelledby="tenant-setup-flow-heading">
+            <header class="border-b border-outline-subtle px-5 py-4">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="workflow" class="h-5 w-5"></i>
+                    </span>
+                    <div>
+                        <h3 id="tenant-setup-flow-heading"
+                            class="text-base font-semibold text-content-primary">Tenant Governance Flow</h3>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">
+                            Create the ownership boundary first, then progress through namespace, identity, access, and credential governance.
+                        </p>
+                    </div>
+                </div>
+            </header>
+            <div class="p-5">
+                {{ operational_flow_steps.render(setup_flow, aria_label='Tenant setup governance flow') }}
+            </div>
+        </section>
+
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+                 aria-labelledby="tenant-setup-boundaries-heading">
+            <header class="border-b border-outline-subtle px-5 py-4">
+                <h3 id="tenant-setup-boundaries-heading"
+                    class="text-base font-semibold text-content-primary">Important Boundaries</h3>
+                <p class="mt-1 text-xs leading-5 text-content-muted">
+                    Keep these contracts intact while moving through the setup flow.
+                </p>
+            </header>
+            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2">
+                <div class="bg-surface-card p-4">
+                    <p class="text-xs font-semibold text-content-primary">Provider Authority</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        Native Kubernetes is the admitted baseline. Capsule stays capability-gated until qualified.
+                    </p>
+                </div>
+                <div class="bg-surface-card p-4">
+                    <p class="text-xs font-semibold text-content-primary">Namespace Creation</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        Use Namespace Provisioning after Tenant creation; do not bypass profile and capacity governance.
+                    </p>
+                </div>
+                <div class="bg-surface-card p-4">
+                    <p class="text-xs font-semibold text-content-primary">Identity Before Access</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        Membership establishes the principal. Access Grant establishes the authorized profile and scope.
+                    </p>
+                </div>
+                <div class="bg-surface-card p-4">
+                    <p class="text-xs font-semibold text-content-primary">Credentials Last</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        Human and CI/CD credentials are issued only from committed, eligible access state.
+                    </p>
+                </div>
+            </div>
+        </section>
+    </div>
 </div>
