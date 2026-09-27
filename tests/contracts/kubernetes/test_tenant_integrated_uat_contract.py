@@ -41,9 +41,12 @@ def test_tenant_workspace_reads_committed_cross_child_state() -> None:
 def test_tenant_tenants_surface_exposes_governed_access_and_credential_lifecycle_without_secrets() -> None:
     routes = _read('app/kubernetes/tenant/routes.py')
     page = _read('app/templates/kubernetes/tenant/tenants.html')
-    access = _read('app/templates/kubernetes/tenant/partials/_members_access.html')
-    credential = _read('app/templates/kubernetes/tenant/partials/_credential_management.html')
-    template = page + access + credential
+    admin = _read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
+    memberships = _read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
+    grants = _read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    credential = _read('app/templates/kubernetes/tenant/partials/_tenant_credentials_workspace.html')
+    namespace_access = _read('app/templates/kubernetes/tenant/partials/_tenant_namespace_access_workspace.html')
+    template = page + admin + memberships + grants + credential + namespace_access
 
     for path in (
         '/credentials/human',
@@ -55,7 +58,8 @@ def test_tenant_tenants_surface_exposes_governed_access_and_credential_lifecycle
     ):
         assert f"@tenant_bp.post('{path}')" in routes
 
-    assert 'Members &amp; Access' in template
+    assert 'Memberships' in template
+    assert 'Access Grants' in template
     assert 'Issue Human Access' in template
     assert 'Issue CI/CD Deployer' in template
     assert 'Namespace Access' in template
