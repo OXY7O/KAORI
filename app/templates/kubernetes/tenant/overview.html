@@ -1,0 +1,115 @@
+{% extends "kubernetes/tenant/base.html" %}
+{% import "components/table_label.html" as table_label %}
+{% block tenant_content %}
+    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Tenant posture summary">
+        {% for icon, label, value, note in [
+            ('building-2', 'Tenants', tenant_count, 'Committed ownership records'),
+            ('boxes', 'Namespaces', namespace_count, 'Managed namespace allocations'),
+            ('key-round', 'Credentials', recent_credentials|length, 'Recent governed identities'),
+            ('shield-alert', 'Findings', tenant_governance_findings|length, 'Active governance findings')
+        ] %}
+            <article class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
+                        <i data-lucide="{{ icon }}" class="h-5 w-5" aria-hidden="true"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+                        <p class="mt-1 text-2xl font-semibold text-content-primary">{{ value }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ note }}</p>
+                    </div>
+                </div>
+            </article>
+        {% endfor %}
+    </section>
+
+    <section class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm" aria-label="Tenant quick actions">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <h2 class="text-base font-semibold text-content-primary">Quick Actions</h2>
+                <p class="mt-1 text-sm text-content-secondary">Continue with the focused Tenant workflow you need.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ url_for('tenant.tenants') }}" class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover">
+                    <i data-lucide="user-plus" class="h-4 w-4" aria-hidden="true"></i>Add Tenant
+                </a>
+                <a href="{{ url_for('tenant.resource_profiles') }}" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-primary transition hover:bg-surface-hover">
+                    <i data-lucide="layers-3" class="h-4 w-4" aria-hidden="true"></i>Resource Profiles
+                </a>
+                <a href="{{ url_for('tenant.namespace_provisioning') }}" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-primary transition hover:bg-surface-hover">
+                    <i data-lucide="boxes" class="h-4 w-4" aria-hidden="true"></i>Provision Namespace
+                </a>
+                <a href="{{ url_for('tenant.operations') }}" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-primary transition hover:bg-surface-hover">
+                    <i data-lucide="activity" class="h-4 w-4" aria-hidden="true"></i>Operations
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="grid gap-5 xl:grid-cols-3" aria-label="Tenant overview evidence">
+        <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+            <header class="border-b border-outline-subtle px-5 py-4">
+                <h2 class="text-base font-semibold text-content-primary">Recent Tenants</h2>
+                <p class="mt-1 text-xs text-content-muted">Latest committed ownership and provider state.</p>
+            </header>
+            <div class="divide-y divide-outline-subtle">
+                {% for tenant in tenants %}
+                    <div class="px-5 py-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="font-semibold text-content-primary">{{ tenant.name }}</span>
+                            {{ table_label.status_label(tenant.lifecycle_status|title, 'normal' if tenant.lifecycle_status == 'ready' else 'warning') }}
+                        </div>
+                        <p class="mt-1 text-xs text-content-muted">{{ tenant.provider_key|replace('_', ' ')|title }} · {{ tenant.provider_state|replace('_', ' ')|title }}</p>
+                    </div>
+                {% else %}
+                    <p class="px-5 py-6 text-sm text-content-muted">No Tenant records yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+            <header class="border-b border-outline-subtle px-5 py-4">
+                <h2 class="text-base font-semibold text-content-primary">Access Attention</h2>
+                <p class="mt-1 text-xs text-content-muted">Recent grants and credential lifecycle state.</p>
+            </header>
+            <div class="divide-y divide-outline-subtle">
+                {% for grant in recent_access_grants %}
+                    <div class="px-5 py-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="font-semibold text-content-primary">{{ grant.membership.subject_name }}</span>
+                            {{ table_label.status_label(grant.reconciliation_status|title, 'normal' if grant.reconciliation_status == 'ready' else 'warning') }}
+                        </div>
+                        <p class="mt-1 text-xs text-content-muted">{{ grant.tenant.name }} · {{ grant.access_profile|replace('_', ' ')|title }}</p>
+                    </div>
+                {% else %}
+                    <p class="px-5 py-6 text-sm text-content-muted">No recent Tenant Access Grants.</p>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+            <header class="border-b border-outline-subtle px-5 py-4">
+                <h2 class="text-base font-semibold text-content-primary">Governance Posture</h2>
+                <p class="mt-1 text-xs text-content-muted">Canonical Tenant Governance Intelligence findings.</p>
+            </header>
+            <div class="divide-y divide-outline-subtle">
+                {% for finding in tenant_governance_findings[:5] %}
+                    <div class="px-5 py-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="font-semibold text-content-primary">{{ finding.get('title') or finding.get('rule_key') }}</span>
+                            {{ table_label.status_label((finding.get('severity') or 'info')|title, 'critical' if finding.get('severity') in ['critical', 'high'] else 'warning') }}
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="px-5 py-6 text-sm text-content-muted">No active Tenant Governance findings.</p>
+                {% endfor %}
+            </div>
+            <div class="flex flex-wrap gap-2 border-t border-outline-subtle px-5 py-4">
+                <a href="{{ url_for('intelligence.recommendations') }}" class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default px-3 py-2 text-xs font-semibold text-content-primary hover:bg-surface-hover">
+                    <i data-lucide="brain-circuit" class="h-4 w-4" aria-hidden="true"></i>Open Intelligence
+                </a>
+                <a href="{{ url_for('reports.generate_report') }}" class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default px-3 py-2 text-xs font-semibold text-content-primary hover:bg-surface-hover">
+                    <i data-lucide="file-text" class="h-4 w-4" aria-hidden="true"></i>Open Reports
+                </a>
+            </div>
+        </div>
+    </section>
+{% endblock tenant_content %}
