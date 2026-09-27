@@ -34,8 +34,3 @@
         {% include "components/operational_toast.html" %}
     {% endwith %}
 {% endif %}
-{% if sync_progress and sync_progress.is_active %}
-    {% with toast_oob=true %}
-        {% include "kubernetes/governance/tls_certificates/partials/_sync_progress_toast.html" %}
-    {% endwith %}
-{% endif %}
