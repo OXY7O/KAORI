@@ -39,6 +39,7 @@
           hx-swap="outerHTML"
           hx-push-url="{{ url_for('tenant.tenants', section='access-grants') }}"
           hx-indicator="#tenant-admin-loading"
+          hx-disabled-elt="find button"
           class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <header class="flex items-start justify-between gap-4 border-b border-outline-subtle px-5 py-4">
