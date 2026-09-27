@@ -107,6 +107,24 @@ def _tenant_workspace_context() -> dict[str, Any]:
     }
 
 
+_TENANT_ADMIN_SECTIONS = {
+    'tenant-setup',
+    'memberships',
+    'access-grants',
+    'credentials',
+    'namespace-access',
+}
+
+
+def _tenant_admin_section(value: str | None) -> str:
+    normalized = str(value or 'tenant-setup').strip().lower()
+    return normalized if normalized in _TENANT_ADMIN_SECTIONS else 'tenant-setup'
+
+
+def _tenant_section_redirect(section: str):
+    return redirect(url_for('tenant.tenants', section=_tenant_admin_section(section)))
+
+
 @tenant_bp.get('/')
 @any_permission_required('tenant.view', 'tenant.manage')
 def index():
@@ -279,18 +297,30 @@ def inventory_sync_status(public_id: str):
 @tenant_bp.get('/tenants')
 @any_permission_required('tenant.view', 'tenant.manage')
 def tenants():
-    context = _tenant_workspace_context()
-    context.update(
-        get_tenant_registry_context(
-            page=request.args.get('page', 1, type=int) or 1,
-            per_page=request.args.get('per_page', 5, type=int) or 5,
-        )
+    active_section = _tenant_admin_section(request.args.get('section'))
+    registry_context = get_tenant_registry_context(
+        page=request.args.get('page', 1, type=int) or 1,
+        per_page=request.args.get('per_page', 5, type=int) or 5,
+        search=str(request.args.get('search') or ''),
+        cluster_id=str(request.args.get('cluster_id') or ''),
+        environment=str(request.args.get('environment') or ''),
+        lifecycle_status=str(request.args.get('lifecycle_status') or ''),
     )
+    if request.args.get('partial_mode') == 'registry':
+        return render_template(
+            'kubernetes/tenant/partials/_tenant_registry.html',
+            active_tenant_section=active_section,
+            **registry_context,
+        )
+
+    context = _tenant_workspace_context()
+    context.update(registry_context)
     return render_template(
         'kubernetes/tenant/tenants.html',
         tenant_page='tenants',
         tenant_page_title='Tenants',
         tenant_page_icon='users-round',
+        active_tenant_section=active_section,
         **context,
     )
 
@@ -387,7 +417,7 @@ def create_group_route():
             message=f'{group.name} is available as a Tenant membership principal.',
             metadata={'tenant_id': group.tenant_id, 'group_id': group.public_id, 'operation': 'create_tenant_group'},
         )
-    return redirect(url_for('tenant.tenants'))
+    return _tenant_section_redirect('memberships')
 
 
 @tenant_bp.post('/memberships/users')
@@ -420,7 +450,7 @@ def add_user_membership_route():
                 'operation': 'add_user_membership',
             },
         )
-    return redirect(url_for('tenant.tenants'))
+    return _tenant_section_redirect('memberships')
 
 
 @tenant_bp.post('/memberships/groups')
@@ -452,7 +482,7 @@ def add_group_membership_route():
                 'operation': 'add_group_membership',
             },
         )
-    return redirect(url_for('tenant.tenants'))
+    return _tenant_section_redirect('memberships')
 
 
 @tenant_bp.post('/memberships/<int:membership_id>/revoke')
@@ -484,7 +514,7 @@ def revoke_membership_route(membership_id: int):
                 'operation': 'revoke_membership',
             },
         )
-    return redirect(url_for('tenant.tenants'))
+    return _tenant_section_redirect('memberships')
 
 
 @tenant_bp.post('/access-grants')
@@ -517,7 +547,7 @@ def create_access_grant_route():
             detail=grant.reconciliation_message,
             metadata={'grant_id': grant.public_id, 'tenant_id': grant.tenant_id, 'operation': 'create_access_grant'},
         )
-    return redirect(url_for('tenant.tenants'))
+    return _tenant_section_redirect('access-grants')
 
 
 @tenant_bp.post('/access-grants/<int:grant_id>/inspect')
@@ -546,7 +576,7 @@ def inspect_access_grant_route(grant_id: int):
             message=grant.reconciliation_message or 'Kubernetes RBAC inspection completed.',
             metadata={'grant_id': grant.public_id, 'operation': 'inspect_access_grant'},
         )
-    return redirect(url_for('tenant.tenants'))
+    return _tenant_section_redirect('access-grants')
 
 
 @tenant_bp.post('/access-grants/<int:grant_id>/reconcile')
@@ -574,7 +604,7 @@ def reconcile_access_grant_route(grant_id: int):
             message=grant.reconciliation_message or 'Kubernetes RBAC matches committed Tenant access intent.',
             metadata={'grant_id': grant.public_id, 'operation': 'reconcile_access_grant'},
         )
-    return redirect(url_for('tenant.tenants'))
+    return _tenant_section_redirect('access-grants')
 
 
 @tenant_bp.post('/access-grants/<int:grant_id>/revoke')
@@ -602,7 +632,7 @@ def revoke_access_grant_route(grant_id: int):
             message='Effective Kubernetes RoleBinding access was removed.',
             metadata={'grant_id': grant.public_id, 'tenant_id': grant.tenant_id, 'operation': 'revoke_access_grant'},
         )
-    return redirect(url_for('tenant.tenants'))
+    return _tenant_section_redirect('access-grants')
 
 
 @tenant_bp.post('/tenants')
@@ -644,7 +674,7 @@ def create_tenant_route():
                 'operation': 'create_tenant',
             },
         )
-    return redirect(url_for('tenant.tenants'))
+    return _tenant_section_redirect('tenant-setup')
 
 
 @tenant_bp.post('/resource-profiles')
@@ -839,7 +869,7 @@ def create_human_credential_route():
                 'operation': 'credential_issue_human',
             },
         )
-    return redirect(url_for('tenant.tenants'))
+    return _tenant_section_redirect('credentials')
 
 
 @tenant_bp.post('/credentials/deployer')
@@ -876,7 +906,7 @@ def create_deployer_credential_route():
                 'operation': 'credential_issue_deployer',
             },
         )
-    return redirect(url_for('tenant.tenants'))
+    return _tenant_section_redirect('credentials')
 
 
 def _credential_feedback(
@@ -914,25 +944,25 @@ def _credential_feedback(
 @permission_required('tenant.manage')
 def renew_credential_route(credential_id: int):
     _credential_feedback(action='renewed', credential_id=credential_id, operation=renew_credential_committed)
-    return redirect(url_for('tenant.tenants'))
+    return _tenant_section_redirect('credentials')
 
 
 @tenant_bp.post('/credentials/<int:credential_id>/suspend')
 @permission_required('tenant.manage')
 def suspend_credential_route(credential_id: int):
     _credential_feedback(action='suspended', credential_id=credential_id, operation=suspend_credential_committed)
-    return redirect(url_for('tenant.tenants'))
+    return _tenant_section_redirect('credentials')
 
 
 @tenant_bp.post('/credentials/<int:credential_id>/resume')
 @permission_required('tenant.manage')
 def resume_credential_route(credential_id: int):
     _credential_feedback(action='resumed', credential_id=credential_id, operation=resume_credential_committed)
-    return redirect(url_for('tenant.tenants'))
+    return _tenant_section_redirect('credentials')
 
 
 @tenant_bp.post('/credentials/<int:credential_id>/revoke')
 @permission_required('tenant.manage')
 def revoke_credential_route(credential_id: int):
     _credential_feedback(action='revoked', credential_id=credential_id, operation=revoke_credential_committed)
-    return redirect(url_for('tenant.tenants'))
+    return _tenant_section_redirect('credentials')
