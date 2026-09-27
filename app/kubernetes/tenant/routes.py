@@ -3,10 +3,13 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any, cast
 
+from celery.exceptions import CeleryError
 from flask import Blueprint, current_app, redirect, render_template, request, url_for
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
+from kombu.exceptions import OperationalError as KombuOperationalError
 from kubernetes.client.rest import ApiException
+from sqlalchemy.exc import SQLAlchemyError
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import any_permission_required, permission_required
@@ -50,9 +53,11 @@ from app.kubernetes.tenant.service import (
     get_tenant_registry_context,
     provision_native_namespace_committed,
 )
-from app.kubernetes.tenant.workspace import get_tenant_workspace_context
+from app.kubernetes.tenant.workspace import get_tenant_overview_context, get_tenant_workspace_context
 from app.models import User
 from app.models.tenant import TenantCredential
+from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable, dispatch_registered_job
+from app.platform_operations.jobs.service import JobQuotaExceeded
 from app.platform_operations.notifications.service import record_operational_activity
 
 tenant_bp = Blueprint('tenant', __name__, url_prefix='/kubernetes/tenant')
@@ -100,13 +105,74 @@ def _tenant_workspace_context() -> dict[str, Any]:
 @tenant_bp.get('/')
 @any_permission_required('tenant.view', 'tenant.manage')
 def index():
+    context = _tenant_workspace_context()
+    context.update(get_tenant_overview_context())
     return render_template(
         'kubernetes/tenant/overview.html',
         tenant_page='overview',
         tenant_page_title='Overview',
         tenant_page_icon='layout-dashboard',
-        **_tenant_workspace_context(),
+        **context,
     )
+
+
+@tenant_bp.post('/inventory-sync')
+@permission_required('clusters.sync')
+def inventory_sync():
+    try:
+        _csrf()
+        outcome = dispatch_registered_job(
+            job_key='kubernetes.inventory.sync',
+            trigger_type='manual',
+            requested_by_user_id=int(current_user.id),
+        )
+    except ValueError as exc:
+        _record(
+            event_type='kubernetes_tenant_inventory_sync_blocked',
+            status='warning',
+            title='Tenant Inventory Sync Could Not Start',
+            message=str(exc),
+            metadata={'operation': 'tenant_inventory_sync', 'job_key': 'kubernetes.inventory.sync'},
+        )
+    except (JobWorkerUnavailable, JobQuotaExceeded, CeleryError, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError) as exc:
+        current_app.logger.exception('Could not dispatch Tenant Overview inventory synchronization.')
+        _record(
+            event_type='kubernetes_tenant_inventory_sync_failed',
+            status='error',
+            title='Tenant Inventory Sync Could Not Start',
+            message='KAORI could not queue the canonical Kubernetes inventory synchronization.',
+            detail=f'{type(exc).__name__}: {str(exc)[:500]}',
+            metadata={'operation': 'tenant_inventory_sync', 'job_key': 'kubernetes.inventory.sync'},
+        )
+    else:
+        if not outcome.accepted:
+            _record(
+                event_type='kubernetes_tenant_inventory_sync_blocked',
+                status='warning',
+                title='Tenant Inventory Sync Blocked',
+                message=outcome.message,
+                metadata={
+                    'operation': 'tenant_inventory_sync',
+                    'job_key': 'kubernetes.inventory.sync',
+                    'dispatch_status': outcome.status,
+                },
+            )
+        else:
+            job = outcome.job
+            _record(
+                event_type='kubernetes_tenant_inventory_sync_dispatched',
+                status='success' if outcome.created else 'info',
+                title='Tenant Inventory Sync Queued' if outcome.created else 'Tenant Inventory Sync Already Active',
+                message=outcome.message,
+                detail='Tenant Overview will read the committed Kubernetes inventory evidence after collection completes.',
+                metadata={
+                    'operation': 'tenant_inventory_sync',
+                    'job_key': 'kubernetes.inventory.sync',
+                    'job_public_id': job.public_id if job is not None else None,
+                    'created': outcome.created,
+                },
+            )
+    return redirect(url_for('tenant.index'))
 
 
 @tenant_bp.get('/tenants')
