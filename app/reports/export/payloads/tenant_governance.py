@@ -43,9 +43,61 @@ def _latest_timestamp(rows: Iterable[Any]) -> datetime | None:
     return latest
 
 
-def _owner_label(credential: TenantCredential) -> str:
-    owner = credential.owner_user
-    return str(getattr(owner, 'display_name', None) or getattr(owner, 'username', None) or credential.owner_user_id)
+def _owner_label(credential: Any) -> str:
+    owner = getattr(credential, 'owner_user', None)
+    return str(
+        getattr(owner, 'display_name', None)
+        or getattr(owner, 'username', None)
+        or getattr(credential, 'owner_user_id', '')
+    )
+
+
+def credential_row(credential: Any) -> dict[str, Any]:
+    tenant = getattr(credential, 'tenant', None)
+    return {
+        'credential_id': str(getattr(credential, 'public_id', '') or ''),
+        'tenant': str(getattr(tenant, 'name', None) or getattr(credential, 'tenant_id', '') or ''),
+        'owner': _owner_label(credential),
+        'credential_type': str(getattr(credential, 'credential_type', '') or ''),
+        'purpose': str(getattr(credential, 'purpose', '') or ''),
+        'application': str(getattr(credential, 'application_name', '') or ''),
+        'delivery_method': str(getattr(credential, 'delivery_method', '') or ''),
+        'status': str(getattr(credential, 'status', '') or ''),
+        'reconciliation_status': str(getattr(credential, 'reconciliation_status', '') or ''),
+        'service_account': str(getattr(credential, 'service_account_name', '') or ''),
+        'jumpserver_reference': str(getattr(credential, 'jumpserver_reference', '') or ''),
+        'renewal_due_at': _iso(getattr(credential, 'renewal_due_at', None)),
+        'valid_until': _iso(getattr(credential, 'valid_until', None)),
+        'rotation_generation': getattr(credential, 'rotation_generation', None),
+        'last_reconciled_at': _iso(getattr(credential, 'last_reconciled_at', None)),
+        'secret_material_persisted': False,
+    }
+
+
+def recommendation_row(finding: dict[str, Any]) -> dict[str, Any]:
+    evidence = finding.get('evidence')
+    evidence_map = evidence if isinstance(evidence, dict) else {}
+    return {
+        'rule_key': str(finding.get('rule_key') or ''),
+        'title': str(finding.get('title') or 'Tenant Governance finding'),
+        'description': str(
+            finding.get('summary') or finding.get('condition_summary') or finding.get('description') or ''
+        ),
+        'severity': str(finding.get('severity') or 'info'),
+        'priority': str(finding.get('priority') or ''),
+        'status': str(finding.get('status') or 'available'),
+        'tenant_id': str(evidence_map.get('tenant_id') or ''),
+        'namespace': str(evidence_map.get('namespace') or evidence_map.get('kubernetes_namespace') or ''),
+        'affected_scope': str(
+            finding.get('affected_summary')
+            or evidence_map.get('asset_key')
+            or evidence_map.get('namespace')
+            or evidence_map.get('cluster_id')
+            or ''
+        ),
+        'recommended_action': str(finding.get('recommended_action') or ''),
+        'tone': str(finding.get('severity') or 'info'),
+    }
 
 
 def _tenant_findings() -> list[dict[str, Any]]:
@@ -54,28 +106,7 @@ def _tenant_findings() -> list[dict[str, Any]]:
         rule_key = str(finding.get('rule_key') or '')
         if not rule_key.startswith('kubernetes.tenant.'):
             continue
-        evidence = finding.get('evidence')
-        evidence_map = evidence if isinstance(evidence, dict) else {}
-        rows.append(
-            {
-                'rule_key': rule_key,
-                'title': str(finding.get('title') or 'Tenant Governance finding'),
-                'description': str(
-                    finding.get('summary') or finding.get('condition_summary') or finding.get('description') or ''
-                ),
-                'severity': str(finding.get('severity') or 'info'),
-                'priority': str(finding.get('priority') or ''),
-                'status': str(finding.get('status') or 'available'),
-                'affected_scope': str(
-                    finding.get('affected_summary')
-                    or evidence_map.get('asset_key')
-                    or evidence_map.get('cluster_id')
-                    or ''
-                ),
-                'recommended_action': str(finding.get('recommended_action') or ''),
-                'tone': str(finding.get('severity') or 'info'),
-            }
-        )
+        rows.append(recommendation_row(finding))
     return rows
 
 
@@ -292,25 +323,7 @@ def get_report_tenant_governance_payload(report: Report) -> dict[str, Any]:
         for row in grants
     )
 
-    credential_posture = [
-        {
-            'tenant': tenant_by_id[row.tenant_id].name if row.tenant_id in tenant_by_id else row.tenant_id,
-            'owner': _owner_label(row),
-            'credential_type': row.credential_type,
-            'purpose': row.purpose,
-            'application': row.application_name or '',
-            'delivery_method': row.delivery_method,
-            'status': row.status,
-            'reconciliation_status': row.reconciliation_status,
-            'service_account': row.service_account_name,
-            'jumpserver_reference': row.jumpserver_reference or '',
-            'renewal_due_at': _iso(row.renewal_due_at),
-            'valid_until': _iso(row.valid_until),
-            'rotation_generation': row.rotation_generation,
-            'secret_material_persisted': False,
-        }
-        for row in credentials
-    ]
+    credential_posture = [credential_row(row) for row in credentials]
 
     managed_resource_posture = [
         {
