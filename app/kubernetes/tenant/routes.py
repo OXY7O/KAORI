@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any, cast
 
-from flask import Blueprint, current_app, redirect, render_template, request, url_for
+from flask import Blueprint, current_app, make_response, redirect, render_template, request, url_for
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
 from kubernetes.client.rest import ApiException
@@ -39,6 +39,7 @@ from app.kubernetes.tenant.deployer_credential_service import (
     DeployerCredentialIssueRequest,
     create_deployer_credential_committed,
 )
+from app.kubernetes.tenant.job_adapter import build_tenant_sync_state
 from app.kubernetes.tenant.overview import dispatch_tenant_inventory_sync
 from app.kubernetes.tenant.service import (
     TenantStateConflictError,
@@ -113,7 +114,7 @@ def index():
 
 
 @tenant_bp.post('/inventory-sync')
-@permission_required('clusters.sync')
+@permission_required('tenant.manage')
 def inventory_sync():
     try:
         _csrf()
@@ -123,12 +124,27 @@ def inventory_sync():
             'status': 'warning',
             'title': 'Tenant Inventory Sync Could Not Start',
             'message': str(exc),
-            'metadata': {'operation': 'tenant_inventory_sync', 'job_key': 'kubernetes.inventory.sync'},
+            'metadata': {'operation': 'tenant_inventory_sync', 'job_key': 'kubernetes.tenant.sync'},
         }
     else:
         feedback = dispatch_tenant_inventory_sync(requested_by_user_id=int(current_user.id))
     _record(**feedback)
     return redirect(url_for('tenant.index'))
+
+
+@tenant_bp.get('/inventory-sync/status/<string:public_id>')
+@any_permission_required('tenant.view', 'tenant.manage')
+def inventory_sync_status(public_id: str):
+    state = build_tenant_sync_state()
+    response = make_response(
+        render_template(
+            'kubernetes/tenant/partials/_sync_live_state.html',
+            tenant_sync_state=state,
+            requested_job_public_id=public_id,
+        )
+    )
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    return response
 
 
 @tenant_bp.get('/tenants')
