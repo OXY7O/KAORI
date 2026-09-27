@@ -10,7 +10,6 @@ from kubernetes.client.rest import ApiException
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import any_permission_required, permission_required
-from app.extensions.db import db
 from app.kubernetes.tenant.access_service import (
     TenantAccessStateConflictError,
     add_group_membership_by_id_committed,
@@ -30,7 +29,7 @@ from app.kubernetes.tenant.capacity_governance import (
 from app.kubernetes.tenant.credential_service import (
     HumanCredentialIssueRequest,
     TenantCredentialStateConflictError,
-    create_human_credential_committed,
+    create_human_credential_from_grant_committed,
     renew_credential_committed,
     resume_credential_committed,
     revoke_credential_committed,
@@ -50,7 +49,7 @@ from app.kubernetes.tenant.service import (
 )
 from app.kubernetes.tenant.workspace import get_tenant_workspace_context
 from app.models import User
-from app.models.tenant import TenantAccessGrant, TenantCredential
+from app.models.tenant import TenantCredential
 from app.platform_operations.notifications.service import record_operational_activity
 
 tenant_bp = Blueprint('tenant', __name__, url_prefix='/kubernetes/tenant')
@@ -593,13 +592,8 @@ def provision_namespace_route():
 def create_human_credential_route():
     try:
         _csrf()
-        grant_id = _required_int('access_grant_id')
-        grant = db.session.get(TenantAccessGrant, grant_id)
-        if grant is None or grant.membership.user_id is None:
-            raise ValueError('Select an active reconciled human Access Grant.')
-        credential = create_human_credential_committed(
-            access_grant_id=grant.id,
-            owner_user_id=grant.membership.user_id,
+        credential = create_human_credential_from_grant_committed(
+            access_grant_id=_required_int('access_grant_id'),
             request=HumanCredentialIssueRequest(
                 jumpserver_reference=str(request.form.get('jumpserver_reference') or ''),
                 purpose=str(request.form.get('purpose') or 'interactive'),
@@ -675,7 +669,7 @@ def _credential_feedback(
     try:
         _csrf()
         credential = operation(credential_id=credential_id, actor=current_user)
-    except (ValueError, ApiException) as exc:
+    except (ValueError, ApiException, TenantCredentialStateConflictError) as exc:
         _record(
             event_type=f'kubernetes_tenant_credential_{action}_failed',
             status='error',
