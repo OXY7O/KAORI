@@ -4,15 +4,17 @@ Issue #61 is the parent product authority. Issue #125 owns the integrated Tenant
 
 ## Product boundary
 
-KAORI exposes one `Kubernetes → Tenant` sidebar destination. Tenant is a capability/domain; Native Kubernetes and Capsule are provider implementations behind the same canonical Tenant model.
+KAORI exposes one expandable `Kubernetes → Tenant` capability parent. Native Kubernetes and Capsule remain provider implementations behind the same canonical Tenant model and never become sibling product menus.
 
-The integrated workspace uses internal surfaces:
+The approved Tenant destinations are:
 
-- **Management** — governed mutations for Tenant, Resource Profile, namespace allocation/provisioning, membership/access, human access credentials, CI/CD deployer credentials, and credential lifecycle.
-- **Inventory** — committed Tenant, namespace, credential, managed-resource, policy, provider-authority, and Kubernetes audit-correlation evidence.
-- **Analytics** — committed capacity/admission evidence, Tenant Governance Intelligence findings, and canonical Reports entry points.
+- **Overview** — posture, provider readiness, access attention, governance findings, and operator shortcuts.
+- **Tenants** — ownership, membership, Access Grants, Namespace Access, human credentials, and CI/CD deployer identities.
+- **Resource Profiles** — governed presets/custom profiles, allocation lineage, and capacity policy.
+- **Namespace Provisioning** — namespace creation, allocation changes, ResourceQuota/LimitRange evidence, and capacity decisions.
+- **Operations** — provisioning status, runs/evidence, drift/reconciliation, and Activity through internal Content Tabs.
 
-These are content-level workspace destinations. They do not create provider-specific sidebar branches and do not override the locked sidebar authority in `docs/design/components/SIDEBAR_NAVIGATION.md`.
+Operations task views stay inside the page so the sidebar remains exactly two interactive levels. Only the five approved Tenant destinations are supported; superseded workspace routes are not retained.
 
 ## Evidence and provider authority
 
@@ -55,15 +57,17 @@ Tenant does not own a second Intelligence engine or export subsystem.
 
 Native-provider acceptance is mandatory. Final UAT must exercise, as applicable:
 
-1. Tenant/environment creation.
-2. Resource Profile and governed namespace provisioning.
-3. Membership and Access Grant creation/revocation.
-4. Human JumpServer credential issuance and lifecycle.
-5. CI/CD Deployer identity issuance.
-6. Namespace Access metadata without secret exposure.
-7. Managed-resource, policy, provider-state, Activity, and Kubernetes audit evidence inspection.
-8. Tenant Governance findings and capacity admission evidence.
-9. Representative Tenant Governance PDF/XLSX/CSV generation and human artifact review.
+1. Expand/collapse the Tenant parent and verify Overview, Tenants, Resource Profiles, Namespace Provisioning, and Operations active states on desktop/mobile.
+2. Tenant/environment creation.
+3. Resource Profile and governed namespace provisioning.
+4. Membership and Access Grant creation/revocation.
+5. Human JumpServer credential issuance and lifecycle.
+6. CI/CD Deployer identity issuance.
+7. Namespace Access metadata without secret exposure.
+8. Managed-resource, policy, provider-state, Activity, and Kubernetes audit evidence inspection.
+9. Tenant Governance findings and capacity admission evidence.
+10. Representative Tenant Governance PDF/XLSX/CSV generation and human artifact review.
+11. Light/dark, responsive, loading/empty/error/degraded, keyboard/focus, and normal KAORI not-found behavior for unsupported Tenant URLs.
 
 Capsule UAT is capability-conditional and must record the exact compatible Capsule evidence when available. Fixture-only Capsule state is not acceptance evidence.
 

@@ -110,16 +110,23 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         title='Tenant',
         lock_state='BASELINE LOCKED',
         navigation_source='app/templates/components/navigation/tenant_menu.html',
-        navigation_endpoints=('tenant.index',),
+        navigation_endpoints=(
+            'tenant.index',
+            'tenant.tenants',
+            'tenant.resource_profiles',
+            'tenant.namespace_provisioning',
+            'tenant.operations',
+        ),
         blueprint_vars=('tenant_bp',),
         verifiers=(),
         contract_paths=(
             'tests/contracts/kubernetes/test_tenant_uat_ui_contract.py',
             'tests/contracts/kubernetes/test_tenant_integrated_uat_contract.py',
+            'tests/contracts/kubernetes/test_tenant_navigation_ux_contract.py',
         ),
         notes=(
             'Provider-neutral Kubernetes Tenant workspace. Native Kubernetes is the admitted baseline provider; '
-            'Management, Inventory, and Analytics are internal workspace routes; Native remains mandatory and Capsule UAT remains capability-conditional.'
+            'Overview, Tenants, Resource Profiles, Namespace Provisioning, and Operations are the approved Tenant submenu destinations; Native remains mandatory and Capsule UAT remains capability-conditional.'
         ),
     ),
     ReleaseSurface(
