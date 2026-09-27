@@ -59,9 +59,7 @@ def get_tenant_workspace_context(*, limit: int = 20) -> dict[str, Any]:
         .all()
     )
     deployer_namespace_options = (
-        TenantNamespace.query.filter_by(provisioning_status='ready')
-        .order_by(TenantNamespace.created_at.desc())
-        .all()
+        TenantNamespace.query.filter_by(provisioning_status='ready').order_by(TenantNamespace.created_at.desc()).all()
     )
     return {
         'credential_grant_options': credential_grant_options,
