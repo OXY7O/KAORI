@@ -8,6 +8,7 @@ from kubernetes.client.rest import ApiException
 from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.kubernetes.tenant.capacity_governance import (
     build_capacity_governance_summary,
@@ -483,7 +484,7 @@ def get_tenant_registry_context(
             .distinct()
         )
 
-    items, pagination = _paged_context(
+    items, pagination = paginate_query(
         query.order_by(Tenant.created_at.desc(), Tenant.name.asc()),
         page=page,
         per_page=per_page,
