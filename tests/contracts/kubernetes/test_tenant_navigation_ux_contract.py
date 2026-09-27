@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -20,10 +21,6 @@ def test_tenant_uses_canonical_expandable_sidebar_parent() -> None:
         assert f"url_for('{endpoint}')" in menu
         assert f'>{label}</span>' in menu
 
-    assert "url_for('tenant.management')" not in menu
-    assert "url_for('tenant.inventory')" not in menu
-    assert "url_for('tenant.analytics')" not in menu
-
 
 def test_tenant_routes_own_only_five_primary_destinations() -> None:
     routes = (ROOT / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
@@ -43,9 +40,8 @@ def test_tenant_routes_own_only_five_primary_destinations() -> None:
     assert "render_template('kubernetes/tenant/namespace_provisioning.html'" in routes
     assert "render_template('kubernetes/tenant/operations.html'" in routes
 
-    assert "@tenant_bp.get('/management')" not in routes
-    assert "@tenant_bp.get('/inventory')" not in routes
-    assert "@tenant_bp.get('/analytics')" not in routes
+    get_routes = set(re.findall(r"@tenant_bp\.get\('([^']+)'\)", routes))
+    assert get_routes == {'/', '/tenants', '/resource-profiles', '/namespace-provisioning', '/operations'}
 
 
 def test_tenant_pages_reuse_kaori_shared_presentation_patterns() -> None:
