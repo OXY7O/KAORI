@@ -1,0 +1,21 @@
+{#
+  Shared KAORI section-intro hierarchy.
+
+  Owns the plain heading + supporting copy used to group a major workspace/card
+  below it. It is intentionally not a card, not a Hero, and not a replacement
+  for the owning component's title.
+#}
+{% macro render(title, description, id=None, supporting=None, extra_classes='') -%}
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between {{ extra_classes }}">
+        <div class="min-w-0">
+            <h2{% if id %} id="{{ id }}"{% endif %}
+                class="text-lg font-semibold text-content-primary">{{ title }}</h2>
+            {% if description %}
+                <p class="mt-1 text-sm leading-6 text-content-secondary">{{ description }}</p>
+            {% endif %}
+        </div>
+        {% if supporting %}
+            <p class="max-w-xl text-xs leading-5 text-content-muted sm:text-right">{{ supporting }}</p>
+        {% endif %}
+    </div>
+{%- endmacro %}
