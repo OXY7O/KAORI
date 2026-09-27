@@ -46,8 +46,10 @@ def test_tenant_routes_own_only_five_primary_destinations() -> None:
     get_routes = set(re.findall(r"@tenant_bp\.get\('([^']+)'\)", routes))
     primary_routes = {'/', '/tenants', '/resource-profiles', '/namespace-provisioning', '/operations'}
     assert primary_routes.issubset(get_routes)
-    assert '/tenants/registry' in get_routes
     assert '/overview/cluster-estate' in get_routes
+    assert '/tenants/registry' not in get_routes
+    assert '/tenants/membership-registry' not in get_routes
+    assert '/tenants/group-registry' not in get_routes
     assert {'/management', '/inventory', '/analytics'}.isdisjoint(get_routes)
 
 
@@ -118,9 +120,10 @@ def test_tenant_registry_pages_use_shared_default_five_pagination() -> None:
     assert 'pagination_ui.page_size_classes' in footer
 
     assert 'tenant_pagination' in tenant_registry
-    assert 'components/pagination.html' in tenant_registry
-    assert 'pagination_ui.numeric_pages' in tenant_registry
-    assert 'pagination_ui.page_size_classes' in tenant_registry
+    assert 'components/table_registry.html' in tenant_registry
+    assert 'registry_ui.filter_form' in tenant_registry
+    assert 'registry_ui.footer' in tenant_registry
+    assert "'tenant.tenants'" in tenant_registry
 
     for path, state in (
         ('resource_profiles.html', 'profile_pagination'),
