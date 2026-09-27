@@ -20,6 +20,7 @@ from app.intelligence.finding_presentation import (
 )
 from app.intelligence.kubernetes_runtime_recommendations import build_kubernetes_runtime_recommendation_findings
 from app.intelligence.object_storage_recommendations import build_object_storage_recommendation_findings
+from app.intelligence.tenant_governance_recommendations import build_tenant_governance_recommendation_findings
 from app.intelligence.recommendation_alerting import (
     decorate_catalog_rules,
     decorate_recommendation_findings,
@@ -243,6 +244,7 @@ def _build_recommendation_findings(catalog: list[dict[str, Any]]) -> list[dict[s
     findings.extend(_build_storage_binding_findings(rules))
     findings.extend(_build_tls_certificate_findings(rules))
     findings.extend(build_object_storage_recommendation_findings(rules))
+    findings.extend(build_tenant_governance_recommendation_findings(rules))
 
     findings = [normalize_rule(finding) for finding in findings]
     for finding in findings:
