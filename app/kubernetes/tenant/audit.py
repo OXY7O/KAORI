@@ -8,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.extensions.db import db
 from app.models.audit import AuditEvent
 from app.models.job import JobExecution
+from app.platform_operations.jobs.audit import is_automatic_execution
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ def record_tenant_sync_terminal_audit(
     terminal_status: str,
     result: dict[str, Any],
 ) -> bool:
-    if job is None:
+    if job is None or is_automatic_execution(job):
         return False
 
     action = f'kubernetes_tenant_inventory_sync_{terminal_status}'
