@@ -39,7 +39,6 @@ from app.kubernetes.tenant.deployer_credential_service import (
     DeployerCredentialIssueRequest,
     create_deployer_credential_committed,
 )
-from app.kubernetes.tenant.overview import dispatch_tenant_inventory_sync
 from app.kubernetes.tenant.service import (
     TenantStateConflictError,
     change_native_namespace_allocation_committed,
@@ -51,7 +50,7 @@ from app.kubernetes.tenant.service import (
     get_tenant_registry_context,
     provision_native_namespace_committed,
 )
-from app.kubernetes.tenant.workspace import get_tenant_overview_context, get_tenant_workspace_context
+from app.kubernetes.tenant.workspace import get_tenant_workspace_context
 from app.models import User
 from app.models.tenant import TenantCredential
 from app.platform_operations.notifications.service import record_operational_activity
@@ -101,34 +100,13 @@ def _tenant_workspace_context() -> dict[str, Any]:
 @tenant_bp.get('/')
 @any_permission_required('tenant.view', 'tenant.manage')
 def index():
-    context = _tenant_workspace_context()
-    context.update(get_tenant_overview_context())
     return render_template(
         'kubernetes/tenant/overview.html',
         tenant_page='overview',
         tenant_page_title='Overview',
         tenant_page_icon='layout-dashboard',
-        **context,
+        **_tenant_workspace_context(),
     )
-
-
-@tenant_bp.post('/inventory-sync')
-@permission_required('clusters.sync')
-def inventory_sync():
-    try:
-        _csrf()
-    except ValueError as exc:
-        feedback = {
-            'event_type': 'kubernetes_tenant_inventory_sync_blocked',
-            'status': 'warning',
-            'title': 'Tenant Inventory Sync Could Not Start',
-            'message': str(exc),
-            'metadata': {'operation': 'tenant_inventory_sync', 'job_key': 'kubernetes.inventory.sync'},
-        }
-    else:
-        feedback = dispatch_tenant_inventory_sync(requested_by_user_id=int(current_user.id))
-    _record(**feedback)
-    return redirect(url_for('tenant.index'))
 
 
 @tenant_bp.get('/tenants')
