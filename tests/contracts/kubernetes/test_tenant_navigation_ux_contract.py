@@ -25,7 +25,7 @@ def test_tenant_uses_canonical_expandable_sidebar_parent() -> None:
     assert "url_for('tenant.analytics')" not in menu
 
 
-def test_tenant_routes_own_five_primary_destinations_and_compatibility_redirects() -> None:
+def test_tenant_routes_own_only_five_primary_destinations() -> None:
     routes = (ROOT / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
 
     for path, endpoint in (
@@ -43,12 +43,9 @@ def test_tenant_routes_own_five_primary_destinations_and_compatibility_redirects
     assert "render_template('kubernetes/tenant/namespace_provisioning.html'" in routes
     assert "render_template('kubernetes/tenant/operations.html'" in routes
 
-    # Old v0.3.0-rc.1 workspace URLs remain safe bookmarks but are not primary navigation.
-    assert 'def management()' in routes
-    assert 'def inventory()' in routes
-    assert 'def analytics()' in routes
-    assert "redirect(url_for('tenant.index'))" in routes
-    assert "redirect(url_for('tenant.operations', tab='runs-evidence'))" in routes
+    assert "@tenant_bp.get('/management')" not in routes
+    assert "@tenant_bp.get('/inventory')" not in routes
+    assert "@tenant_bp.get('/analytics')" not in routes
 
 
 def test_tenant_pages_reuse_kaori_shared_presentation_patterns() -> None:
