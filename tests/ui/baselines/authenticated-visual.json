@@ -31,17 +31,17 @@
   },
   "welcome-light-compact-laptop": {
     "height": 768,
-    "visual_sha256": "4ec30e7bef8c3109ae66aa00a37d79c86966dc743aadca5e1a9e5b92165b96f9",
+    "visual_sha256": "03e6a2b84f05b37c6a87e3de88a49d762142e3e8e38ee1abcf52a4cba587cc27",
     "width": 1024
   },
   "welcome-light-laptop": {
     "height": 800,
-    "visual_sha256": "fc58c5a9dfed2ec7cf9160f2acabacd759113e80a0f6cccdee8f4fe1aaee90cc",
+    "visual_sha256": "062f21b66ccb32f882c60900e9cb243fe24620c08d65bfeb79c256fbcc8f47af",
     "width": 1280
   },
   "welcome-light-large-desktop": {
     "height": 900,
-    "visual_sha256": "85b7d9ed74dc0b387390dd50015206f9d872583949007af65e5c651c6b0ab5f5",
+    "visual_sha256": "0064505fbca77bf09dbad3cf3e694b7d5a9f743e807612e9fd9197f1c0d8a499",
     "width": 1440
   },
   "welcome-light-mobile": {
