@@ -1,0 +1,56 @@
+{% import "components/pagination.html" as pagination_ui %}
+<footer class="{{ pagination_ui.footer_classes() }}"
+        aria-label="{{ pagination_resource|title }} pagination">
+    <div class="{{ pagination_ui.summary_group_classes() }}">
+        <span>
+            Showing {{ pagination_state.start_item }}–{{ pagination_state.end_item }}
+            of {{ pagination_state.total }} {{ pagination_resource }}
+        </span>
+        <form method="get"
+              action="{{ url_for(pagination_endpoint) }}"
+              class="{{ pagination_ui.rows_group_classes() }}">
+            <input type="hidden" name="page" value="1">
+            <label for="{{ pagination_id }}-per-page" class="sr-only">{{ pagination_resource|title }} per page</label>
+            <select id="{{ pagination_id }}-per-page"
+                    name="per_page"
+                    class="{{ pagination_ui.page_size_classes() }}"
+                    title="{{ pagination_resource|title }} per page">
+                {% for size in pagination_state.allowed_per_page %}
+                    <option value="{{ size }}"
+                            {% if size == pagination_state.per_page %}selected{% endif %}>{{ size }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit"
+                    class="{{ pagination_ui.navigation_classes(false) }}">Apply</button>
+        </form>
+    </div>
+    <nav class="{{ pagination_ui.navigation_group_classes() }}"
+         aria-label="{{ pagination_resource|title }} pages">
+        {% if pagination_state.has_prev %}
+            <a href="{{ url_for(pagination_endpoint, page=pagination_state.prev_num, per_page=pagination_state.per_page) }}"
+               class="{{ pagination_ui.navigation_classes(false) }}">
+                <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous
+            </a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">
+                <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous
+            </span>
+        {% endif %}
+        {{ pagination_ui.numeric_pages(
+            pagination_state.page,
+            pagination_state.pages,
+            endpoint=pagination_endpoint,
+            query_params={'per_page': pagination_state.per_page}
+        ) }}
+        {% if pagination_state.has_next %}
+            <a href="{{ url_for(pagination_endpoint, page=pagination_state.next_num, per_page=pagination_state.per_page) }}"
+               class="{{ pagination_ui.navigation_classes(false) }}">
+                Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
+            </a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">
+                Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
+            </span>
+        {% endif %}
+    </nav>
+</footer>
