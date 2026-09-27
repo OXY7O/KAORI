@@ -420,7 +420,6 @@ def provision_native_namespace_committed(source: Mapping[str, Any]) -> TenantNam
         raise
 
 
-
 _ALLOWED_PAGE_SIZES = (5, 10, 25, 50)
 
 
