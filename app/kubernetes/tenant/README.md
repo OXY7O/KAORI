@@ -8,7 +8,7 @@ KAORI exposes one expandable `Kubernetes → Tenant` capability parent. Native K
 
 The approved Tenant destinations are:
 
-- **Overview** — posture, provider readiness, access attention, governance findings, and operator shortcuts.
+- **Overview** — multi-cluster Tenant estate posture, provider readiness, committed Kubernetes inventory freshness, governed allocation/capacity context, access attention, governance findings, and compact operator shortcuts. Manual refresh reuses the canonical `kubernetes.inventory.sync` registered job; it observes provider state and never acts as Tenant reconciliation.
 - **Tenants** — ownership, membership, Access Grants, Namespace Access, human credentials, and CI/CD deployer identities.
 - **Resource Profiles** — governed presets/custom profiles, allocation lineage, and capacity policy.
 - **Namespace Provisioning** — namespace creation, allocation changes, ResourceQuota/LimitRange evidence, and capacity decisions.
@@ -19,6 +19,17 @@ Operations task views stay inside the page so the sidebar remains exactly two in
 ## Evidence and provider authority
 
 Normal Tenant workspace reads are composed from committed KAORI state. Live provider calls remain inside the owning mutation/reconciliation adapters.
+
+Tenant Overview uses the canonical Kubernetes Inventory collection authority for observed fleet freshness:
+
+```text
+Kubernetes provider observation
+→ kubernetes.inventory.sync
+→ committed Kubernetes inventory snapshot
+→ Tenant Overview correlation
+```
+
+Scheduled inventory collection remains owned by Platform Operations job policy. The Overview may trigger the same registered job through a permission-gated **Sync Now** shortcut, but it must not create a second Tenant scheduler or treat inventory refresh as provider reconciliation.
 
 - Native Kubernetes is the mandatory baseline provider.
 - Capsule is capability-aware and optional.

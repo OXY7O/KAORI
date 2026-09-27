@@ -49,9 +49,14 @@ def test_hero_documentation_has_one_global_contract_and_one_domain_extension() -
     global_standard = (components / 'HERO.md').read_text(encoding='utf-8')
     analytics_extension = (components / 'ANALYTICS_HERO.md').read_text(encoding='utf-8')
 
-    assert 'KAORI Hero Component Standard v1.8' in global_standard
+    assert 'KAORI Hero Component Standard v1.9' in global_standard
     assert 'Hero Profile' in global_standard
     assert 'Hero State' in global_standard
+    assert 'Eyebrow = where / domain context' in global_standard
+    assert 'KUBERNETES TENANT → Overview' in global_standard
+    assert 'OBJECT STORAGE INVENTORY → Overview' in global_standard
+    assert 'OBJECT STORAGE INVENTORY → Object Storage Overview' in global_standard
+    assert 'Legacy surfaces that still duplicate eyebrow/title wording' in global_standard
     assert 'same Profile + same State' in global_standard
     assert 'exactly three metadata' in global_standard
     assert 'normal, blocked, and degraded' in global_standard
