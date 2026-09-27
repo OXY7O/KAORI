@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 from flask import Blueprint, current_app, redirect, render_template, request, url_for
@@ -9,6 +10,7 @@ from kubernetes.client.rest import ApiException
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import any_permission_required, permission_required
+from app.extensions.db import db
 from app.kubernetes.tenant.access_service import (
     TenantAccessStateConflictError,
     add_group_membership_by_id_committed,
@@ -47,8 +49,7 @@ from app.kubernetes.tenant.service import (
     provision_native_namespace_committed,
 )
 from app.kubernetes.tenant.workspace import get_tenant_workspace_context
-from app.extensions.db import db
-from app.models.tenant import TenantAccessGrant
+from app.models.tenant import TenantAccessGrant, TenantCredential
 from app.platform_operations.notifications.service import record_operational_activity
 
 tenant_bp = Blueprint('tenant', __name__, url_prefix='/kubernetes/tenant')
@@ -664,7 +665,13 @@ def create_deployer_credential_route():
         )
     return redirect(url_for('tenant.management'))
 
-def _credential_feedback(*, action: str, credential_id: int, operation) -> None:
+
+def _credential_feedback(
+    *,
+    action: str,
+    credential_id: int,
+    operation: Callable[..., TenantCredential],
+) -> None:
     try:
         _csrf()
         credential = operation(credential_id=credential_id, actor=current_user)
