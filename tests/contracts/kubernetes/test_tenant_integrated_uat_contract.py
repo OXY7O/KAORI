@@ -9,8 +9,6 @@ def _read(relative: str) -> str:
 
 def test_tenant_workspace_uses_only_approved_sidebar_destinations() -> None:
     menu = _read('app/templates/components/navigation/tenant_menu.html')
-    routes = _read('app/kubernetes/tenant/routes.py')
-
     for endpoint, label in (
         ('tenant.index', 'Overview'),
         ('tenant.tenants', 'Tenants'),
