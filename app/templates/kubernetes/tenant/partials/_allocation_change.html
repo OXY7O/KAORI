@@ -18,7 +18,7 @@
                     data-tenant-allocation-change-namespace
                     class="{{ form_field.select_classes() }}">
                 <option value="">Select managed namespace</option>
-                {% for item in namespaces %}
+                {% for item in namespace_options %}
                     <option value="{{ item.id }}">{{ item.namespace }} · {{ item.environment.tenant.name }}</option>
                 {% endfor %}
             </select>
@@ -82,7 +82,7 @@
     </div>
     <p class="mt-4 text-xs leading-5 text-content-muted">CPU and memory requests are the Tenant Capacity Governance physical-capacity admission dimensions. Other ResourceQuota and LimitRange values still reconcile from the selected profile but are not represented as physical node reservations.</p>
     <button type="submit"
-            {% if not can_manage or not namespaces or not profiles %}disabled aria-disabled="true"{% endif %}
+            {% if not can_manage or not namespace_options or not profiles %}disabled aria-disabled="true"{% endif %}
             class="mt-5 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
         <i data-lucide="refresh-cw" class="h-4 w-4"></i>Preflight &amp; Apply Allocation
     </button>
