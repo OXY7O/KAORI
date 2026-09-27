@@ -38,6 +38,7 @@ def test_tenant_workspace_reads_committed_cross_child_state() -> None:
         assert model_name in workspace
 
     assert "get_active_recommendation_findings(domain='kubernetes')" in workspace
+    assert 'build_namespace_access_package' in workspace
     assert "startswith('kubernetes.tenant.')" in workspace
 
 
@@ -56,6 +57,8 @@ def test_tenant_management_exposes_governed_credential_lifecycle_without_secret_
     assert 'service_account_name' in template
     assert 'renewal_due_at' in template
     assert 'valid_until' in template
+    assert 'Namespace Access' in template
+    assert 'approved_access_methods' in template
     assert 'credential.token' not in template
     assert 'credential.token' not in template
     assert 'credential.kubeconfig' not in template
