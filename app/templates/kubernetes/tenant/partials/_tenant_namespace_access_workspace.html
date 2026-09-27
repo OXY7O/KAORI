@@ -1,50 +1,30 @@
-{% import "components/table_label.html" as table_label %}
-<section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
-         aria-label="Namespace access">
-    <header class="border-b border-outline-subtle px-5 py-4">
-        <h2 class="text-base font-semibold text-content-primary">Namespace Access</h2>
-        <p class="mt-1 text-xs leading-5 text-content-muted">
-            Effective non-secret access metadata from committed grants and credential lifecycle state.
-        </p>
-    </header>
-    <div class="divide-y divide-outline-subtle">
-        {% for access in namespace_access_rows %}
-            <div class="px-5 py-4">
-                {% if access.get('error') %}
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <span class="font-semibold text-content-primary">{{ access.get("service_account_name") }}</span>
-                        {{ table_label.status_label('Evidence Unavailable', 'warning') }}
+<div class="space-y-5">
+    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+             aria-labelledby="namespace-access-model-heading">
+        <div class="grid gap-px bg-outline-subtle lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+            <div class="bg-surface-card p-5">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="route" class="h-5 w-5"></i>
+                    </span>
+                    <div>
+                        <h3 id="namespace-access-model-heading"
+                            class="text-base font-semibold text-content-primary">Effective Namespace Access</h3>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">
+                            Correlate committed grants and credential lifecycle into one non-secret operator view.
+                        </p>
                     </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ access.get("error") }}</p>
-                {% else %}
-                    <div class="flex flex-wrap items-start justify-between gap-3">
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <span class="font-semibold text-content-primary">{{ access.get("namespace") }}</span>
-                                {{ table_label.status_label(access.get('access_profile') |replace('_', ' ')|title, 'info') }}
-                                {{ table_label.status_label(access.get('credential_status') |replace('_', ' ')|title, 'normal' if access.get('credential_status') in ['active', 'renewal_due'] else 'warning') }}
-                            </div>
-                            <p class="mt-1 text-xs text-content-muted">
-                                {{ access.get("tenant_name") }} · {{ access.get("environment") |title }}
-                                · {{ access.get("cluster_name") }} · {{ access.get("service_account_name") }}
-                            </p>
-                            <p class="mt-2 text-xs leading-5 text-content-muted">
-                                Approved method:
-                                {{ access.get("approved_access_methods") |join(', ')|replace('_', ' ')|title }}
-                                · review {{ access.get("renewal_due_at") }}
-                                · valid until {{ access.get("valid_until") }}
-                            </p>
-                        </div>
-                        <div class="flex flex-wrap gap-2">
-                            {% for action in access.get('actions', []) %}
-                                {{ table_label.status_label(action|title, 'normal' if action in ['rotate', 'resume'] else ('warning' if action == 'suspend' else 'critical') ) }}
-                            {% endfor %}
-                        </div>
-                    </div>
-                {% endif %}
+                </div>
             </div>
-        {% else %}
-            <p class="px-5 py-6 text-sm text-content-muted">No Namespace Access package is available yet.</p>
-        {% endfor %}
-    </div>
-</section>
+            <div class="bg-surface-subtle p-5">
+                <p class="text-xs font-semibold text-content-secondary">Security Boundary</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">
+                    Token, kubeconfig, private key, certificate, and Kubernetes Secret material are never rendered here.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    {% include "kubernetes/tenant/partials/_namespace_access_registry.html" %}
+</div>
