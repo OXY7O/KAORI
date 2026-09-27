@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.intelligence.service import get_active_recommendation_findings
-from app.models.tenant import TenantCredential
+from app.models.tenant import TenantAccessGrant, TenantCredential, TenantNamespace
 from app.models.tenant_advanced import TenantAdvancedCapabilityIntent
 from app.models.tenant_audit import TenantAuditEvidence
 from app.models.tenant_managed_resource import TenantManagedResourceIntent
@@ -26,7 +26,19 @@ def get_tenant_workspace_context(*, limit: int = 20) -> dict[str, Any]:
         for finding in get_active_recommendation_findings(domain='kubernetes')
         if str(finding.get('rule_key') or '').startswith('kubernetes.tenant.')
     ]
+    credential_grant_options = (
+        TenantAccessGrant.query.filter_by(status='active', reconciliation_status='ready')
+        .order_by(TenantAccessGrant.created_at.desc())
+        .all()
+    )
+    deployer_namespace_options = (
+        TenantNamespace.query.filter_by(provisioning_status='ready')
+        .order_by(TenantNamespace.created_at.desc())
+        .all()
+    )
     return {
+        'credential_grant_options': credential_grant_options,
+        'deployer_namespace_options': deployer_namespace_options,
         'recent_credentials': _recent(TenantCredential, limit=limit),
         'managed_resources': _recent(TenantManagedResourceIntent, limit=limit),
         'domain_reservations': _recent(TenantDomainReservation, limit=limit),
