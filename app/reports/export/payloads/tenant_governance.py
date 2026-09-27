@@ -287,7 +287,8 @@ def _capacity_decision_row(
     row: TenantCapacityDecision,
     environment_by_id: dict[int, TenantEnvironment],
 ) -> dict[str, Any]:
-    environment = environment_by_id.get(row.tenant_environment_id)
+    environment_id = row.tenant_environment_id
+    environment = environment_by_id.get(environment_id) if environment_id is not None else None
     return {
         'tenant': environment.tenant.name if environment is not None else 'Not Available',
         'environment': environment.environment if environment is not None else 'Not Available',

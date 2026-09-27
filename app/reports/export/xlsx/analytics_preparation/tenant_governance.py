@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 from app.reports.export.xlsx.analytics_preparation.common import (
@@ -233,7 +233,7 @@ def _allocation_table(rows: list[Mapping[str, Any]]) -> AnalyticsTableData:
     )
 
 
-def _governance_table(rows: list[Mapping[str, Any]]) -> AnalyticsTableData:
+def _governance_table(rows: Sequence[Mapping[str, Any]]) -> AnalyticsTableData:
     return table(
         'Governance',
         'Tenant Governance Evidence',
