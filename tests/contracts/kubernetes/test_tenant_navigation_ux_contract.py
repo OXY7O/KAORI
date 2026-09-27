@@ -44,9 +44,9 @@ def test_tenant_routes_own_five_primary_destinations_and_compatibility_redirects
     assert "render_template('kubernetes/tenant/operations.html'" in routes
 
     # Old v0.3.0-rc.1 workspace URLs remain safe bookmarks but are not primary navigation.
-    assert "def management()" in routes
-    assert "def inventory()" in routes
-    assert "def analytics()" in routes
+    assert 'def management()' in routes
+    assert 'def inventory()' in routes
+    assert 'def analytics()' in routes
     assert "redirect(url_for('tenant.index'))" in routes
     assert "redirect(url_for('tenant.operations', tab='runs-evidence'))" in routes
 
