@@ -14,7 +14,7 @@ The approved Tenant destinations are:
 - **Namespace Provisioning** — namespace creation, allocation changes, ResourceQuota/LimitRange evidence, and capacity decisions.
 - **Operations** — provisioning status, runs/evidence, drift/reconciliation, and Activity through internal Content Tabs.
 
-Operations task views stay inside the page so the sidebar remains exactly two interactive levels. The rejected Management/Inventory/Analytics route split has no compatibility aliases or redirects.
+Operations task views stay inside the page so the sidebar remains exactly two interactive levels. Only the five approved Tenant destinations are supported; superseded workspace routes are not retained.
 
 ## Evidence and provider authority
 
@@ -67,7 +67,7 @@ Native-provider acceptance is mandatory. Final UAT must exercise, as applicable:
 8. Managed-resource, policy, provider-state, Activity, and Kubernetes audit evidence inspection.
 9. Tenant Governance findings and capacity admission evidence.
 10. Representative Tenant Governance PDF/XLSX/CSV generation and human artifact review.
-11. Light/dark, responsive, loading/empty/error/degraded, keyboard/focus, and normal KAORI not-found behavior for retired Tenant URLs.
+11. Light/dark, responsive, loading/empty/error/degraded, keyboard/focus, and normal KAORI not-found behavior for unsupported Tenant URLs.
 
 Capsule UAT is capability-conditional and must record the exact compatible Capsule evidence when available. Fixture-only Capsule state is not acceptance evidence.
 
