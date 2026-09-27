@@ -145,6 +145,13 @@ def _project_desired(desired: object, effective: object) -> object:
     return effective
 
 
+def _namespace_name(intent: TenantAdvancedCapabilityIntent) -> str:
+    namespace = intent.namespace
+    if namespace is None:
+        raise ValueError('Advanced Capsule resource requires a governed Tenant namespace.')
+    return namespace.namespace
+
+
 def _labels(intent: TenantAdvancedCapabilityIntent) -> dict[str, str]:
     return {
         _MANAGED_BY_LABEL: 'kaori',
@@ -238,7 +245,7 @@ def _read_custom_object(api, intent: TenantAdvancedCapabilityIntent, descriptor:
             return api.get_namespaced_custom_object(
                 _CAPSULE_GROUP,
                 _ADVANCED_API_VERSION,
-                intent.namespace.namespace,
+                _namespace_name(intent),
                 str(descriptor.plural),
                 intent.resource_name,
             )
@@ -279,7 +286,7 @@ def _write_custom_object(api, intent: TenantAdvancedCapabilityIntent, descriptor
 
     current = _read_custom_object(api, intent, descriptor)
     if descriptor.namespaced:
-        namespace = intent.namespace.namespace
+        namespace = _namespace_name(intent)
         if current is None:
             api.create_namespaced_custom_object(
                 _CAPSULE_GROUP,
@@ -346,7 +353,7 @@ def reconcile_capsule_advanced_intent(
         'capability': descriptor.capability,
         'resource_kind': intent.resource_kind,
         'resource_name': intent.resource_name,
-        'namespace': intent.namespace.namespace if intent.namespace is not None else None,
+        'namespace': _namespace_name(intent) if intent.namespace is not None else None,
         'secret_material_persisted': False,
     }
     if intent.desired_hash == intent.effective_hash:
@@ -381,7 +388,7 @@ def remove_capsule_advanced_intent(
             api.delete_namespaced_custom_object(
                 _CAPSULE_GROUP,
                 _ADVANCED_API_VERSION,
-                intent.namespace.namespace,
+                _namespace_name(intent),
                 str(descriptor.plural),
                 intent.resource_name,
                 body=V1DeleteOptions(),
