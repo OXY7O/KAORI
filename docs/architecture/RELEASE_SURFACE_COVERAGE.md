@@ -4,7 +4,7 @@ Status: **Locked release-coverage contract**
 
 This registry answers one release question: **is every operator-visible menu, nested web domain, and non-navigation system surface explicitly owned by a release verifier or test boundary?**
 
-The current baseline contains **62 navigation links** across the authenticated application shell and **28 registered blueprints**. A new menu link, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
+The current baseline contains **66 navigation links** across the authenticated application shell and **28 registered blueprints**. A new menu link, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
 
 ## Navigation and Surface Matrix
 
@@ -106,6 +106,6 @@ The evidence contract is snapshot-first: committed Object Storage Inventory owns
 
 ## Kubernetes Tenant Expansion
 
-`Kubernetes → Tenant` is a distinct provider-neutral Kubernetes capability surface. The release registry owns the single direct `tenant.index` sidebar destination and `tenant_bp`. `tenant.management`, `tenant.inventory`, and `tenant.analytics` are internal content-workspace routes covered by the integrated Tenant contracts and capability audit; they are intentionally not sidebar navigation endpoints.
+`Kubernetes → Tenant` is a distinct provider-neutral Kubernetes capability surface. Tenant is one expandable parent with five release-owned submenu destinations: **Overview**, **Tenants**, **Resource Profiles**, **Namespace Provisioning**, and **Operations**. Native Kubernetes and Capsule remain providers behind the same Tenant contract and do not become sidebar products. Operations owns task-level Content Tabs for Provisioning, Runs & Evidence, Drift & Reconcile, and Activity; no third sidebar nesting level is introduced.
 
-The current state remains **BASELINE LOCKED** until #125 completes full staging UAT and human acceptance. The integrated candidate composes Management, Inventory, and Analytics over the admitted Tenant domain, access/credential, capacity, managed-resource/policy, provider, audit, Intelligence, and Reports authorities. Native Kubernetes is mandatory for baseline acceptance. Capsule execution remains capability-conditional and must not be inferred from fixture-only evidence.
+The current state remains **BASELINE LOCKED** until #125 completes full staging UAT and human acceptance. #728 owns the human-UAT navigation/UI correction that recomposes the admitted Tenant domain, access/credential, capacity, managed-resource/policy, provider, audit, Intelligence, and Reports authorities into the approved five-destination Tenant IA. Native Kubernetes is mandatory for baseline acceptance. Capsule execution remains capability-conditional and must not be inferred from fixture-only evidence.
