@@ -916,9 +916,12 @@ def verify() -> None:
     _require_tokens(
         standard,
         (
-            '# KAORI Hero Component Standard v1.8',
+            '# KAORI Hero Component Standard v1.9',
             'Hero Profile',
             'Hero State',
+            'Eyebrow = where / domain context',
+            'Rejected semantic duplication',
+            'Legacy surfaces that still duplicate eyebrow/title wording',
             'same Profile + same State',
             'exactly three metadata',
             'normal, blocked, and degraded',
@@ -1005,7 +1008,7 @@ def verify() -> None:
         'KAORI Hero component standard passed: '
         f'{len(primitive_shells)} compatibility shells, '
         f'{len(profile_templates)} profile consumers, '
-        f'{audited} audited descriptions; v1.8 phone-native compact composition and persistent metadata, '
+        f'{audited} audited descriptions; v1.9 non-redundant Hero identity, phone-native compact composition, and persistent metadata, '
         '7-15 word density with a preferred 8-12 word range, maximum 68 characters, browser-proven non-phone single-line rendering, action-oriented copy, blocked/degraded state ownership, dynamic Jinja resolution, '
         'dark-mode ownership, and unmanaged-shell detection are synchronized.'
     )
