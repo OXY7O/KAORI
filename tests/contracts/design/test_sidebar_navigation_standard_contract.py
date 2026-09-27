@@ -26,9 +26,9 @@ def test_sidebar_standard_is_registered_as_authoritative_design_document() -> No
     standard = (ROOT / 'docs' / 'design' / 'components' / 'SIDEBAR_NAVIGATION.md').read_text(encoding='utf-8')
 
     assert 'locked application-shell navigation contract' in readme
-    assert 'locked v1.6 sidebar hierarchy' in design_system
+    assert 'locked v1.7 sidebar hierarchy' in design_system
     assert 'The earlier 12/11 px markdown baseline' in standard
-    assert 'KAORI Sidebar Navigation Standard v1.6' in standard
+    assert 'KAORI Sidebar Navigation Standard v1.7' in standard
     assert 'dark mode keeps the active Violet surface without a separate left-edge accent' in standard
     assert '## Navigation Naming Contract' in standard
     assert 'Section provides domain context' in standard
