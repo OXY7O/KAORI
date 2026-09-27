@@ -53,6 +53,7 @@ Authoritative shell standards include the locked application-shell navigation co
 - `components/ANALYTICS_ALERTS_ANOMALIES.md`
 - `components/ANALYTICS_METRICS_SOURCE_READINESS.md`
 - `components/SECTION_HEADER_ACTION.md`
+- `components/SECTION_INTRO.md` — shared plain heading hierarchy above major operational workspaces and registries.
 - `components/PEER_CONTENT_GRID.md`
 - `components/RIGHT_CONTEXT_RAIL.md`
 - `components/FORM_WITH_CONTEXT_RAIL.md`
