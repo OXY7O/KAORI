@@ -1,0 +1,55 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/form_field.html" as form_field %}
+{% import "components/table_label.html" as table_label %}
+{% block title %}{{ tenant_page_title }} · Tenant{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-6" data-tenant-workspace="{{ tenant_page }}">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro(tenant_page_icon, 'Kubernetes Tenant', tenant_page_icon) %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ tenant_page_title }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">{{ tenant_page_description }}</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('building-2', tenant_count ~ ' Tenants') }}
+                            {{ page_hero.meta_label('boxes', namespace_count ~ ' Namespaces') }}
+                            {{ page_hero.meta_label('layers-3', profile_count ~ ' Profiles') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {% set tenant_context_metrics = [
+                    ('server', 'Ready Clusters', ready_clusters|length, 'Native provider targets', true),
+                    ('circle-check', 'Ready Namespaces', ready_namespace_count, 'Verified committed state')
+                ] %}
+                {{ page_hero.context_card(
+                    'Tenant context',
+                    'Provider Readiness',
+                    'Native Kubernetes',
+                    'Ready' if native_available else 'Blocked',
+                    'normal' if native_available else 'warning',
+                    tenant_context_metrics,
+                    'Open Cluster Integrations',
+                    url_for('integrations.kubernetes'),
+                    'server-cog'
+                ) }}
+            </div>
+        </section>
+        {% if not native_available %}
+            {% set blocked_state_title = 'Tenant capability is blocked' %}
+            {% set blocked_state_description = 'Register and validate a Kubernetes cluster before running Native Tenant workflows.' %}
+            {% set blocked_state_action_url = url_for('integrations.kubernetes') %}
+            {% set blocked_state_action_label = 'Open Cluster Integrations' %}
+            {% set blocked_state_action_icon = 'server-cog' %}
+            {% set blocked_state_permission = 'integrations.manage' %}
+            {% set blocked_state_show_admin_required = true %}
+            {% set blocked_state_steps = ['Register Cluster', 'Run Sync', 'Return to Tenant'] %}
+            {% include "components/states/_blocked_state.html" %}
+        {% endif %}
+        {% block tenant_content %}{% endblock tenant_content %}
+    </div>
+{% endblock dashboard_content %}
+{% block scripts %}
+    {{ super() }}
+    {% block tenant_scripts %}{% endblock tenant_scripts %}
+{% endblock scripts %}
