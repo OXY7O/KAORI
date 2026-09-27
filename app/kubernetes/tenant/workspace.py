@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy import func
 
+from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.intelligence.service import get_active_recommendation_findings
 from app.kubernetes.tenant.capacity_governance import build_capacity_governance_summary
@@ -231,39 +232,54 @@ def _tenant_recent_activity(*, limit: int = 5) -> list[dict[str, str]]:
     rows: list[tuple[datetime | None, dict[str, str]]] = []
 
     for tenant in Tenant.query.order_by(Tenant.updated_at.desc()).limit(limit).all():
+        lifecycle = tenant.lifecycle_status.replace('_', ' ').title()
+        provider_state = tenant.provider_state.replace('_', ' ').title()
         rows.append(
             (
                 tenant.updated_at,
                 {
+                    'kind': 'Tenant',
                     'icon': 'building-2',
                     'title': tenant.name,
-                    'detail': f'Tenant state · {tenant.lifecycle_status.replace("_", " ").title()} · {tenant.provider_state.replace("_", " ").title()}',
+                    'detail': f'Provider {provider_state}',
+                    'status': lifecycle,
+                    'tone': 'normal' if tenant.lifecycle_status == 'ready' else 'warning',
                     'time': present_user_datetime(tenant.updated_at, empty='Not recorded'),
                 },
             )
         )
 
     for grant in TenantAccessGrant.query.order_by(TenantAccessGrant.updated_at.desc()).limit(limit).all():
+        reconciliation = grant.reconciliation_status.replace('_', ' ').title()
         rows.append(
             (
                 grant.updated_at,
                 {
+                    'kind': 'Access',
                     'icon': 'key-round',
-                    'title': f'Access · {grant.membership.subject_name}',
-                    'detail': f'{grant.tenant.name} · {grant.access_profile.replace("_", " ").title()} · {grant.status.title()}',
+                    'title': grant.membership.subject_name,
+                    'detail': f'{grant.tenant.name} · {grant.access_profile.replace("_", " ").title()}',
+                    'status': reconciliation,
+                    'tone': 'normal' if grant.reconciliation_status == 'ready' else _attention_tone(grant.reconciliation_status),
                     'time': present_user_datetime(grant.updated_at, empty='Not recorded'),
                 },
             )
         )
 
     for credential in TenantCredential.query.order_by(TenantCredential.updated_at.desc()).limit(limit).all():
+        credential_status = credential.status.replace('_', ' ').title()
         rows.append(
             (
                 credential.updated_at,
                 {
+                    'kind': 'Credential',
                     'icon': 'key-square',
                     'title': credential.service_account_name,
-                    'detail': f'{credential.tenant.name} · Credential {credential.status.replace("_", " ").title()}',
+                    'detail': f'{credential.tenant.name} · {credential.credential_type.replace("_", " ").title()}',
+                    'status': credential_status,
+                    'tone': _attention_tone(credential.status)
+                    if credential.status != 'active'
+                    else 'normal',
                     'time': present_user_datetime(credential.updated_at, empty='Not recorded'),
                 },
             )
@@ -281,15 +297,11 @@ def get_tenant_sync_workspace_context() -> dict[str, Any]:
     }
 
 
-def get_tenant_overview_context() -> dict[str, Any]:
-    """Compose Overview-only cross-cluster posture from committed KAORI evidence."""
-
+def _build_tenant_cluster_rows(sync_state: dict[str, Any]) -> list[dict[str, Any]]:
     clusters = Cluster.query.order_by(Cluster.name.asc(), Cluster.id.asc()).all()
     tenant_counts = _cluster_tenant_counts()
     namespace_counts = _cluster_namespace_counts()
     total_tenants = sum(tenant_counts.values())
-    sync_context = get_tenant_sync_workspace_context()
-    sync_state = sync_context['tenant_sync_state']
     snapshot_clusters = _snapshot_cluster_rows(dict(sync_state.get('snapshot') or {}))
 
     cluster_rows: list[dict[str, Any]] = []
@@ -312,25 +324,17 @@ def get_tenant_overview_context() -> dict[str, Any]:
                 'snapshot_coverage_complete': bool(snapshot_cluster.get('coverage_complete')),
                 'snapshot_coverage_label': (
                     f"{int(snapshot_cluster.get('covered_namespace_count') or 0)} / "
-                    f"{int(snapshot_cluster.get('namespace_count') or 0)} Namespaces"
+                    f"{int(snapshot_cluster.get('namespace_count') or 0)}"
                     if snapshot_cluster
                     else 'Not Collected'
-                ),
-                'snapshot_cutoff_label': present_user_datetime(
-                    snapshot_cluster.get('source_inventory_cutoff'),
-                    empty='No Tenant snapshot evidence',
                 ),
                 'capacity_available': capacity_available,
                 'capacity_state': capacity['state'],
                 'capacity_tone': _capacity_tone(str(capacity['state'])),
                 'capacity_snapshot_state': str(capacity.get('snapshot_state') or 'Unknown').replace('_', ' ').title(),
-                'capacity_reason': capacity['reason'],
-                'committed_allocation': capacity['display']['committed'],
-                'allocation_budget': capacity['display']['budget'],
-                'allocation_headroom': capacity['display']['headroom'],
                 'capacity_data_cutoff': present_user_datetime(
                     capacity.get('data_cutoff'),
-                    empty='No committed capacity snapshot',
+                    empty='No committed snapshot',
                 ),
             }
         )
@@ -344,14 +348,36 @@ def get_tenant_overview_context() -> dict[str, Any]:
             str(row['name']).lower(),
         )
     )
-    visible_cluster_rows = cluster_rows[:5]
+    return cluster_rows
+
+
+def get_tenant_cluster_estate_context(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
+    sync_state = build_tenant_sync_state()
+    rows = _build_tenant_cluster_rows(sync_state)
+    visible_rows, pagination = paginate_sequence(
+        rows,
+        page=page,
+        per_page=per_page,
+    )
+    return {
+        'tenant_overview_clusters': visible_rows,
+        'tenant_overview_cluster_pagination': pagination,
+        'tenant_overview_cluster_total': pagination['total_items'],
+    }
+
+
+def get_tenant_overview_context(*, cluster_page: int = 1, cluster_per_page: int = 5) -> dict[str, Any]:
+    """Compose Overview-only cross-cluster posture from committed KAORI evidence."""
+
+    sync_context = get_tenant_sync_workspace_context()
+    cluster_context = get_tenant_cluster_estate_context(
+        page=cluster_page,
+        per_page=cluster_per_page,
+    )
 
     return {
-        'tenant_overview_clusters': visible_cluster_rows,
-        'tenant_overview_cluster_total': len(cluster_rows),
-        'tenant_overview_cluster_hidden': max(len(cluster_rows) - len(visible_cluster_rows), 0),
-        'tenant_collection_snapshot': _tenant_collection_snapshot(sync_state),
-        'tenant_sync_state': sync_state,
+        **cluster_context,
+        **sync_context,
         'tenant_attention_rows': _tenant_attention_rows(
             [
                 finding
