@@ -3,29 +3,33 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 
 
-def test_tenant_workspace_keeps_one_sidebar_destination_and_internal_surfaces() -> None:
-    menu = (ROOT / 'app/templates/components/navigation/tenant_menu.html').read_text(encoding='utf-8')
-    routes = (ROOT / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
-    tabs = (ROOT / 'app/templates/kubernetes/tenant/workspace_tabs.html').read_text(encoding='utf-8')
+def _read(relative: str) -> str:
+    return (ROOT / relative).read_text(encoding='utf-8')
 
-    assert '>Tenant</span>' in menu
-    assert 'tenant.management' not in menu
-    assert 'tenant.inventory' not in menu
-    assert 'tenant.analytics' not in menu
+
+def test_tenant_workspace_uses_approved_sidebar_destinations_and_compatibility_redirects() -> None:
+    menu = _read('app/templates/components/navigation/tenant_menu.html')
+    routes = _read('app/kubernetes/tenant/routes.py')
+
+    for endpoint, label in (
+        ('tenant.index', 'Overview'),
+        ('tenant.tenants', 'Tenants'),
+        ('tenant.resource_profiles', 'Resource Profiles'),
+        ('tenant.namespace_provisioning', 'Namespace Provisioning'),
+        ('tenant.operations', 'Operations'),
+    ):
+        assert f"url_for('{endpoint}')" in menu
+        assert f'>{label}</span>' in menu
 
     assert "@tenant_bp.get('/management')" in routes
     assert "@tenant_bp.get('/inventory')" in routes
     assert "@tenant_bp.get('/analytics')" in routes
-    assert "url_for('tenant.management')" in tabs
-    assert "url_for('tenant.inventory')" in tabs
-    assert "url_for('tenant.analytics')" in tabs
-    assert 'Management' in tabs
-    assert 'Inventory' in tabs
-    assert 'Analytics' in tabs
+    assert "return redirect(url_for('tenant.index'))" in routes
+    assert "return redirect(url_for('tenant.operations', tab='runs-evidence'))" in routes
 
 
 def test_tenant_workspace_reads_committed_cross_child_state() -> None:
-    workspace = (ROOT / 'app/kubernetes/tenant/workspace.py').read_text(encoding='utf-8')
+    workspace = _read('app/kubernetes/tenant/workspace.py')
 
     for model_name in (
         'TenantCredential',
@@ -42,11 +46,12 @@ def test_tenant_workspace_reads_committed_cross_child_state() -> None:
     assert "startswith('kubernetes.tenant.')" in workspace
 
 
-def test_tenant_management_exposes_governed_credential_lifecycle_without_secret_material() -> None:
-    routes = (ROOT / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
-    template = (ROOT / 'app/templates/kubernetes/tenant/management.html').read_text(encoding='utf-8') + (
-        ROOT / 'app/templates/kubernetes/tenant/partials/_credential_management.html'
-    ).read_text(encoding='utf-8')
+def test_tenant_tenants_surface_exposes_governed_access_and_credential_lifecycle_without_secrets() -> None:
+    routes = _read('app/kubernetes/tenant/routes.py')
+    page = _read('app/templates/kubernetes/tenant/tenants.html')
+    access = _read('app/templates/kubernetes/tenant/partials/_members_access.html')
+    credential = _read('app/templates/kubernetes/tenant/partials/_credential_management.html')
+    template = page + access + credential
 
     for path in (
         '/credentials/human',
@@ -58,24 +63,37 @@ def test_tenant_management_exposes_governed_credential_lifecycle_without_secret_
     ):
         assert f"@tenant_bp.post('{path}')" in routes
 
+    assert 'Members &amp; Access' in template
     assert 'Issue Human Access' in template
     assert 'Issue CI/CD Deployer' in template
+    assert 'Namespace Access' in template
     assert 'service_account_name' in template
     assert 'renewal_due_at' in template
     assert 'valid_until' in template
-    assert 'Namespace Access' in template
     assert 'approved_access_methods' in template
     assert 'credential.token' not in template
     assert 'credential.kubeconfig' not in template
 
 
-def test_tenant_inventory_and_analytics_keep_provider_and_evidence_states_explicit() -> None:
-    inventory = (ROOT / 'app/templates/kubernetes/tenant/inventory.html').read_text(encoding='utf-8')
-    analytics = (ROOT / 'app/templates/kubernetes/tenant/analytics.html').read_text(encoding='utf-8')
+def test_tenant_operations_keeps_provider_policy_audit_and_reports_evidence_explicit() -> None:
+    overview = _read('app/templates/kubernetes/tenant/overview.html')
+    operations = _read('app/templates/kubernetes/tenant/operations.html')
 
-    assert 'provider_state' in inventory
-    assert 'reconciliation_authority' in inventory
-    assert 'correlation_status' in inventory
-    assert 'Unknown' in analytics
-    assert 'Tenant Governance' in analytics
-    assert 'Reports' in analytics
+    assert 'provider_state' in operations
+    assert 'reconciliation_authority' in operations
+    assert 'correlation_status' in operations
+    assert 'Managed Resources &amp; Policies' in operations
+    assert 'Tenant Governance' in overview
+    assert 'Open Reports' in overview
+    assert 'Reports' in operations
+
+
+def test_tenant_operations_uses_shared_content_tabs_without_sidebar_third_level() -> None:
+    menu = _read('app/templates/components/navigation/tenant_menu.html')
+    operations = _read('app/templates/kubernetes/tenant/operations.html')
+
+    assert 'components/content_tabs.html' in operations
+    assert 'content_tabs.render_links' in operations
+    for label in ('Provisioning', 'Runs & Evidence', 'Drift & Reconcile', 'Activity'):
+        assert label in operations
+        assert f'>{label}</span>' not in menu
