@@ -8,29 +8,27 @@
 {% block tenant_content %}
     <nav class="flex flex-wrap items-center gap-2"
          aria-label="Tenant overview actions">
-        {{ section_link_button.render(url_for('tenant.tenants'), 'Add Tenant', icon='user-plus') }}
-        {{ section_link_button.render(url_for('tenant.resource_profiles'), 'Resource Profiles', icon='layers-3') }}
-        {{ section_link_button.render(url_for('tenant.namespace_provisioning'), 'Provision Namespace', icon='boxes') }}
-        {{ section_link_button.render(url_for('tenant.operations'), 'Operations', icon='activity') }}
+        {{ section_link_button.render(url_for('tenant.tenants') , 'Add Tenant', icon='user-plus') }}
+        {{ section_link_button.render(url_for('tenant.resource_profiles') , 'Resource Profiles', icon='layers-3') }}
+        {{ section_link_button.render(url_for('tenant.namespace_provisioning') , 'Provision Namespace', icon='boxes') }}
+        {{ section_link_button.render(url_for('tenant.operations') , 'Operations', icon='activity') }}
     </nav>
-
     {% set estate_metrics = [
-        ('building-2', 'Tenants', tenant_count, 'Committed ownership records', 'info'),
-        ('boxes', 'Namespaces', namespace_count, 'Governed namespace allocations', 'info'),
-        ('server', 'Managed Clusters', (ready_clusters|length) ~ ' / ' ~ (tenant_overview_clusters|length), 'Ready / registered Tenant sources', 'normal' if ready_clusters|length == tenant_overview_clusters|length and tenant_overview_clusters else 'warning'),
-        ('key-round', 'Credentials', tenant_credential_count, 'Governed human and machine identities', 'info'),
-        ('shield-alert', 'Findings', tenant_governance_finding_count, 'Active Tenant Governance findings', 'warning' if tenant_governance_finding_count else 'normal')
-    ] %}
+            ('building-2', 'Tenants', tenant_count, 'Committed ownership records', 'info'),
+            ('boxes', 'Namespaces', namespace_count, 'Governed namespace allocations', 'info'),
+            ('server', 'Managed Clusters', (ready_clusters|length) ~ ' / ' ~ (tenant_overview_clusters|length), 'Ready / registered Tenant sources', 'normal' if ready_clusters|length == tenant_overview_clusters|length and tenant_overview_clusters else 'warning'),
+            ('key-round', 'Credentials', tenant_credential_count, 'Governed human and machine identities', 'info'),
+            ('shield-alert', 'Findings', tenant_governance_finding_count, 'Active Tenant Governance findings', 'warning' if tenant_governance_finding_count else 'normal')
+        ] %}
     {% call operational_section_card.render(
         'Tenant Estate',
         'Committed Tenant governance scope across managed Kubernetes clusters.',
         'layout-grid',
         body_classes='p-0',
         aria_label='Tenant estate summary'
-    ) %}
+        ) %}
         {{ resource_posture_grid.render(estate_metrics, columns=5) }}
     {% endcall %}
-
     <section class="space-y-4" aria-labelledby="tenant-multicluster-heading">
         <div>
             <h2 id="tenant-multicluster-heading"
@@ -39,7 +37,6 @@
                 Compare Tenant placement, governed allocation, and committed inventory evidence across the fleet.
             </p>
         </div>
-
         <div class="grid gap-5 xl:grid-cols-12">
             <div class="xl:col-span-7">
                 {% call operational_section_card.render(
@@ -52,7 +49,7 @@
                     body_classes='p-0',
                     extra_classes='h-full',
                     aria_label='Cluster coverage and Tenant allocation'
-                ) %}
+                    ) %}
                     <div class="divide-y divide-outline-subtle">
                         {% for row in tenant_overview_clusters %}
                             <article class="px-5 py-4">
@@ -102,7 +99,6 @@
                     </div>
                 {% endcall %}
             </div>
-
             <div class="space-y-5 xl:col-span-5">
                 {% call operational_section_card.render(
                     'Tenant Distribution',
@@ -133,7 +129,6 @@
                         <p class="text-sm text-content-muted">No committed Tenant ownership records are available yet.</p>
                     {% endif %}
                 {% endcall %}
-
                 {% call operational_section_card.render(
                     'Inventory Data Snapshot',
                     'Freshness and schedule for the committed Kubernetes inventory used by Tenant Overview.',
@@ -143,7 +138,7 @@
                     action_icon='calendar-clock',
                     body_classes='p-5',
                     aria_label='Tenant inventory data snapshot'
-                ) %}
+                    ) %}
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div>
                             {{ table_label.status_label(tenant_inventory_snapshot.status, tenant_inventory_snapshot.tone) }}
@@ -163,11 +158,12 @@
                             </form>
                         {% endif %}
                     </div>
-
                     <dl class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle text-sm">
                         <div class="flex items-start justify-between gap-4 py-3">
                             <dt class="text-content-muted">Last Committed Snapshot</dt>
-                            <dd class="text-right font-medium text-content-primary">{{ tenant_inventory_snapshot.last_sync_label }}</dd>
+                            <dd class="text-right font-medium text-content-primary">
+                                {{ tenant_inventory_snapshot.last_sync_label }}
+                            </dd>
                         </div>
                         <div class="flex items-start justify-between gap-4 py-3">
                             <dt class="text-content-muted">Automatic Sync</dt>
@@ -177,7 +173,9 @@
                         </div>
                         <div class="flex items-start justify-between gap-4 py-3">
                             <dt class="text-content-muted">Next Scheduled</dt>
-                            <dd class="text-right font-medium text-content-primary">{{ tenant_inventory_snapshot.next_run_label }}</dd>
+                            <dd class="text-right font-medium text-content-primary">
+                                {{ tenant_inventory_snapshot.next_run_label }}
+                            </dd>
                         </div>
                         <div class="flex items-start justify-between gap-4 py-3">
                             <dt class="text-content-muted">Source Coverage</dt>
@@ -188,14 +186,17 @@
                         </div>
                         <div class="flex items-start justify-between gap-4 py-3">
                             <dt class="text-content-muted">Freshness Window</dt>
-                            <dd class="text-right font-medium text-content-primary">{{ tenant_inventory_snapshot.freshness_window_label }}</dd>
+                            <dd class="text-right font-medium text-content-primary">
+                                {{ tenant_inventory_snapshot.freshness_window_label }}
+                            </dd>
                         </div>
                         <div class="flex items-start justify-between gap-4 py-3">
                             <dt class="text-content-muted">Exceptions</dt>
-                            <dd class="text-right font-medium text-content-primary">{{ tenant_inventory_snapshot.exception_label }}</dd>
+                            <dd class="text-right font-medium text-content-primary">
+                                {{ tenant_inventory_snapshot.exception_label }}
+                            </dd>
                         </div>
                     </dl>
-
                     {% if tenant_inventory_snapshot.active_job %}
                         <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-subtle p-3">
                             {{ progress_bar.job_progress(tenant_inventory_snapshot.active_job, label='Kubernetes inventory synchronization progress', compact=true) }}
@@ -211,7 +212,6 @@
             </div>
         </div>
     </section>
-
     <section class="space-y-4" aria-labelledby="tenant-attention-heading">
         <div>
             <h2 id="tenant-attention-heading"
@@ -220,7 +220,6 @@
                 Review recent Tenant changes, access state, and governance findings that may require action.
             </p>
         </div>
-
         <div class="grid gap-5 xl:grid-cols-3">
             {% call operational_section_card.render(
                 'Recent Tenant Changes',
@@ -231,7 +230,7 @@
                 action_icon='arrow-right',
                 body_classes='p-0',
                 aria_label='Recent Tenant changes'
-            ) %}
+                ) %}
                 <div class="divide-y divide-outline-subtle">
                     {% for row in tenant_recent_rows %}
                         <div class="px-5 py-4">
@@ -239,7 +238,7 @@
                                 <div class="min-w-0">
                                     <p class="font-semibold text-content-primary">{{ row.name }}</p>
                                     <p class="mt-1 text-xs leading-5 text-content-muted">
-                                        {{ row.cluster_name }} · {{ row.provider_key|replace('_', ' ')|title }}
+                                        {{ row.cluster_name }} · {{ row.provider_key|replace('_', ' ') |title }}
                                     </p>
                                 </div>
                                 {{ table_label.status_label(row.lifecycle_status|title, 'normal' if row.lifecycle_status == 'ready' else 'warning') }}
@@ -251,7 +250,6 @@
                     {% endfor %}
                 </div>
             {% endcall %}
-
             {% call operational_section_card.render(
                 'Access Attention',
                 'Recent Access Grants and credential lifecycle evidence.',
@@ -261,7 +259,7 @@
                 action_icon='arrow-right',
                 body_classes='p-0',
                 aria_label='Tenant access attention'
-            ) %}
+                ) %}
                 <div class="divide-y divide-outline-subtle">
                     {% for grant in recent_access_grants[:5] %}
                         <div class="px-5 py-4">
@@ -269,7 +267,7 @@
                                 <div class="min-w-0">
                                     <p class="font-semibold text-content-primary">{{ grant.membership.subject_name }}</p>
                                     <p class="mt-1 text-xs leading-5 text-content-muted">
-                                        {{ grant.tenant.name }} · {{ grant.access_profile|replace('_', ' ')|title }}
+                                        {{ grant.tenant.name }} · {{ grant.access_profile|replace('_', ' ') |title }}
                                     </p>
                                 </div>
                                 {{ table_label.status_label(grant.reconciliation_status|title, 'normal' if grant.reconciliation_status == 'ready' else 'warning') }}
@@ -280,7 +278,6 @@
                     {% endfor %}
                 </div>
             {% endcall %}
-
             {% call operational_section_card.render(
                 'Governance Posture',
                 'Canonical Tenant Governance Intelligence findings.',
@@ -290,7 +287,7 @@
                 action_icon='arrow-right',
                 body_classes='p-0',
                 aria_label='Tenant governance posture'
-            ) %}
+                ) %}
                 <div class="divide-y divide-outline-subtle">
                     {% for finding in tenant_governance_findings[:5] %}
                         <div class="px-5 py-4">
@@ -306,8 +303,8 @@
                     {% endfor %}
                 </div>
                 <div class="flex flex-wrap gap-2 border-t border-outline-subtle px-5 py-4">
-                    {{ section_link_button.render(url_for('intelligence.recommendations'), 'Open Intelligence', icon='brain-circuit') }}
-                    {{ section_link_button.render(url_for('reports.generate_report'), 'Open Reports', icon='file-text') }}
+                    {{ section_link_button.render(url_for('intelligence.recommendations') , 'Open Intelligence', icon='brain-circuit') }}
+                    {{ section_link_button.render(url_for('reports.generate_report') , 'Open Reports', icon='file-text') }}
                 </div>
             {% endcall %}
         </div>
