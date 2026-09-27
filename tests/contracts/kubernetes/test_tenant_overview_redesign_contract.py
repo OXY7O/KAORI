@@ -116,35 +116,39 @@ def test_tenant_overview_uses_tls_style_collection_snapshot_and_contextual_sync_
     assert 'Provision Namespace' not in overview
 
 
-def test_tenant_overview_keeps_multicluster_posture_compact() -> None:
+def test_tenant_overview_keeps_multicluster_posture_compact_and_canonical() -> None:
     workspace = (ROOT / 'app/kubernetes/tenant/workspace.py').read_text(encoding='utf-8')
-    template = (ROOT / 'app/templates/kubernetes/tenant/overview.html').read_text(encoding='utf-8')
+    overview = (ROOT / 'app/templates/kubernetes/tenant/overview.html').read_text(encoding='utf-8')
+    cluster_estate = (ROOT / 'app/templates/kubernetes/tenant/partials/_cluster_estate.html').read_text(
+        encoding='utf-8'
+    )
+    routes = (ROOT / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
 
-    for label in (
-        'Multi-Cluster Posture',
-        'Tenant Estate by Cluster',
-        'Tenant Estate',
-        'Snapshot',
-        'Capacity',
-        'Open Cluster Inventory',
-    ):
-        assert label in template
+    assert 'Multi-Cluster Posture' in overview
+    assert 'kubernetes/tenant/partials/_cluster_estate.html' in overview
+    assert 'components/table.html' in cluster_estate
+    assert 'components/pagination.html' in cluster_estate
+    assert "table_ui.table_classes('min-w-[900px]')" in cluster_estate
+    assert 'table_ui.cluster_identity(row.name, row.environment)' in cluster_estate
+    assert 'pagination_ui.footer_classes()' in cluster_estate
+    assert 'pagination.allowed_per_page' in cluster_estate
+    assert "hx-get="{{ url_for('tenant.cluster_estate') }}"" in cluster_estate
+    assert "endpoint='tenant.cluster_estate'" in cluster_estate
+    assert "href_endpoint='tenant.index'" in cluster_estate
+    assert "def get_tenant_cluster_estate_context(*, page: int = 1, per_page: int = 5)" in workspace
+    assert 'paginate_sequence(' in workspace
+    assert "@tenant_bp.get('/overview/cluster-estate')" in routes
+    assert 'Committed Allocation' not in cluster_estate
+    assert 'Allocation Budget' not in cluster_estate
+    assert 'Remaining Headroom' not in cluster_estate
+    assert 'Capacity Evidence Unavailable' not in cluster_estate
+    assert 'Open Capacity' in cluster_estate
+    assert 'CPU N/A' not in cluster_estate
+    assert 'Memory N/A' not in cluster_estate
+    assert 'Actual Utilization' not in cluster_estate
 
-    assert 'visible_cluster_rows = cluster_rows[:5]' in workspace
-    assert "'tenant_overview_cluster_hidden'" in workspace
-    assert 'Showing {{ tenant_overview_clusters|length }} of {{ tenant_overview_cluster_total }}' in template
-    assert 'Committed Allocation' not in template
-    assert 'Allocation Budget' not in template
-    assert 'Remaining Headroom' not in template
-    assert 'Capacity Evidence Unavailable' not in template
-    assert 'Capacity data stale' in template
-    assert 'Open Capacity' in template
-    assert 'CPU N/A' not in template
-    assert 'Memory N/A' not in template
-    assert 'Actual Utilization' not in template
 
-
-def test_operational_attention_is_bounded_and_recent_activity_is_not_forced_equal_height() -> None:
+def test_operational_attention_is_bounded_and_recent_activity_is_richer() -> None:
     workspace = (ROOT / 'app/kubernetes/tenant/workspace.py').read_text(encoding='utf-8')
     template = (ROOT / 'app/templates/kubernetes/tenant/overview.html').read_text(encoding='utf-8')
 
@@ -153,7 +157,14 @@ def test_operational_attention_is_bounded_and_recent_activity_is_not_forced_equa
     assert 'limit: int = 3' in workspace
     assert 'tenant_attention_rows' in workspace
     assert 'tenant_recent_activity_rows' in workspace
-    assert 'Recent Tenant, access, and credential changes.' in template
+    assert "'kind': 'Tenant'" in workspace
+    assert "'kind': 'Access'" in workspace
+    assert "'kind': 'Credential'" in workspace
+    assert "'status': lifecycle" in workspace
+    assert 'Latest committed Tenant lifecycle changes.' in template
+    assert '{{ item.kind }}' in template
+    assert 'table_label.status_label(item.status, item.tone)' in template
+    assert 'Showing {{ tenant_recent_activity_rows|length }} latest committed event' in template
     assert "extra_classes='h-full'" not in template
     assert 'xl:items-start' in template
     assert 'Access Attention' not in template
@@ -169,9 +180,15 @@ def test_tenant_overview_uses_shared_kaori_components() -> None:
 
     assert 'components/operational_section_card.html' in overview
     assert 'components/resource_posture_grid.html' in overview
+    cluster_estate = (ROOT / 'app/templates/kubernetes/tenant/partials/_cluster_estate.html').read_text(
+        encoding='utf-8'
+    )
+
     assert 'components/table_label.html' in overview
     assert 'operational_section_card.render' in overview
     assert 'resource_posture_grid.render' in overview
+    assert 'components/table.html' in cluster_estate
+    assert 'components/pagination.html' in cluster_estate
     assert 'components/action_button.html' in sync_workspace
     assert 'components/snapshot_context_bar.html' in sync_workspace
     assert 'snapshot_context.render' in sync_workspace
