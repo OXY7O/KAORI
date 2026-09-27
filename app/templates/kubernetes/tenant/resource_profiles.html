@@ -2,7 +2,8 @@
 {% import "components/table_label.html" as table_label %}
 {% block tenant_content %}
     {% set can_manage = current_user.has_permission('tenant.manage') %}
-    <section class="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)]" aria-label="Tenant Resource Profiles">
+    <section class="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)]"
+             aria-label="Tenant Resource Profiles">
         {% include "kubernetes/tenant/partials/_resource_profile_form.html" %}
         <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
             <header class="border-b border-outline-subtle px-5 py-4">
@@ -29,5 +30,6 @@
     <script type="application/json" id="tenant-resource-profile-presets">{{ resource_profile_presets|tojson }}</script>
 {% endblock tenant_content %}
 {% block tenant_scripts %}
-    <script defer src="{{ url_for('static', filename='js/tenant_resource_profile_presets.js') }}"></script>
+    <script defer
+            src="{{ url_for('static', filename='js/tenant_resource_profile_presets.js') }}"></script>
 {% endblock tenant_scripts %}
