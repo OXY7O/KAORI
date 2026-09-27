@@ -49,9 +49,17 @@ def test_tenant_access_revocation_records_effective_removal_evidence() -> None:
 def test_tenant_members_access_uat_surface_uses_canonical_access_services() -> None:
     routes = (ROOT / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
     service = (ROOT / 'app/kubernetes/tenant/access_service.py').read_text(encoding='utf-8')
-    template = (ROOT / 'app/templates/kubernetes/tenant/tenants.html').read_text(encoding='utf-8') + (
-        ROOT / 'app/templates/kubernetes/tenant/partials/_members_access.html'
-    ).read_text(encoding='utf-8')
+    template = ''.join(
+        [
+            (ROOT / 'app/templates/kubernetes/tenant/tenants.html').read_text(encoding='utf-8'),
+            (ROOT / 'app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html').read_text(
+                encoding='utf-8'
+            ),
+            (ROOT / 'app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html').read_text(
+                encoding='utf-8'
+            ),
+        ]
+    )
 
     for route in (
         "@tenant_bp.post('/groups')",
@@ -79,8 +87,9 @@ def test_tenant_members_access_uat_surface_uses_canonical_access_services() -> N
 
     assert 'from app.extensions.db import db' not in routes
     assert 'db.session' not in routes
-    assert 'Members &amp; Access' in template
-    assert 'Functional UAT Surface' in template
+    assert 'Add User Membership' in template
+    assert 'Tenant Group' in template
+    assert 'Functional UAT Surface' not in template
     assert 'Apply Access Grant' in template
     assert 'Inspect' in template
     assert 'Reconcile' in template
