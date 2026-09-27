@@ -34,11 +34,14 @@ def test_tenant_routes_own_only_five_primary_destinations() -> None:
         assert f"@tenant_bp.get('{path}')" in routes
         assert f'def {endpoint}()' in routes
 
-    assert "render_template('kubernetes/tenant/overview.html'" in routes
-    assert "render_template('kubernetes/tenant/tenants.html'" in routes
-    assert "render_template('kubernetes/tenant/resource_profiles.html'" in routes
-    assert "render_template('kubernetes/tenant/namespace_provisioning.html'" in routes
-    assert "render_template('kubernetes/tenant/operations.html'" in routes
+    for template in (
+        'kubernetes/tenant/overview.html',
+        'kubernetes/tenant/tenants.html',
+        'kubernetes/tenant/resource_profiles.html',
+        'kubernetes/tenant/namespace_provisioning.html',
+        'kubernetes/tenant/operations.html',
+    ):
+        assert template in routes
 
     get_routes = set(re.findall(r"@tenant_bp\.get\('([^']+)'\)", routes))
     assert get_routes == {'/', '/tenants', '/resource-profiles', '/namespace-provisioning', '/operations'}
@@ -82,9 +85,11 @@ def test_sidebar_authority_documents_tenant_submenu_v17() -> None:
 def test_tenant_primary_navigation_preserves_provider_neutral_boundary() -> None:
     menu = (ROOT / 'app/templates/components/navigation/tenant_menu.html').read_text(encoding='utf-8')
     base = (ROOT / 'app/templates/kubernetes/tenant/base.html').read_text(encoding='utf-8')
+    readme = (ROOT / 'app/kubernetes/tenant/README.md').read_text(encoding='utf-8')
 
     assert 'Native Kubernetes' in base
-    assert 'Capsule' in base
+    assert 'Native Kubernetes' in readme
+    assert 'Capsule' in readme
     assert 'Native Kubernetes</span>' not in menu
     assert 'Capsule</span>' not in menu
 
