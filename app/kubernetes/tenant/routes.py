@@ -187,24 +187,6 @@ def operations():
     )
 
 
-@tenant_bp.get('/management')
-@any_permission_required('tenant.view', 'tenant.manage')
-def management():
-    return redirect(url_for('tenant.index'))
-
-
-@tenant_bp.get('/inventory')
-@any_permission_required('tenant.view', 'tenant.manage')
-def inventory():
-    return redirect(url_for('tenant.operations', tab='runs-evidence'))
-
-
-@tenant_bp.get('/analytics')
-@any_permission_required('tenant.view', 'tenant.manage')
-def analytics():
-    return redirect(url_for('tenant.operations', tab='runs-evidence'))
-
-
 def _required_int(name: str) -> int:
     value = str(request.form.get(name) or '').strip()
     if not value:
