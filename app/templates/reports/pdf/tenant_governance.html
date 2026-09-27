@@ -20,10 +20,22 @@
                     <section>
                         <h2>Reporting Boundary</h2>
                         <dl class="context-list">
-                            <dt>Cluster</dt><dd>{{ document.cluster_scope }}</dd>
-                            <dt>Namespace</dt><dd>{{ document.namespace_scope }}</dd>
-                            <dt>Data Cut-off</dt><dd>{{ document.data_cutoff }}</dd>
-                            <dt>Generated At</dt><dd>{{ document.generated_at }}</dd>
+                            <dt>Cluster</dt>
+                            <dd>
+                                {{ document.cluster_scope }}
+                            </dd>
+                            <dt>Namespace</dt>
+                            <dd>
+                                {{ document.namespace_scope }}
+                            </dd>
+                            <dt>Data Cut-off</dt>
+                            <dd>
+                                {{ document.data_cutoff }}
+                            </dd>
+                            <dt>Generated At</dt>
+                            <dd>
+                                {{ document.generated_at }}
+                            </dd>
                         </dl>
                     </section>
                     <section>
@@ -77,7 +89,9 @@
                                             {% for value in row %}<td>{{ value }}</td>{% endfor %}
                                         </tr>
                                     {% else %}
-                                        <tr><td colspan="{{ table.columns|length }}">No committed records are available for this section.</td></tr>
+                                        <tr>
+                                            <td colspan="{{ table.columns|length }}">No committed records are available for this section.</td>
+                                        </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>

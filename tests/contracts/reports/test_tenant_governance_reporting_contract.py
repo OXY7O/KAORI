@@ -60,9 +60,7 @@ def test_tenant_pdf_uses_report_document_not_dashboard_capture() -> None:
 
 def test_tenant_xlsx_profile_has_governance_evidence_sheets() -> None:
     profile = (ROOT / 'app/reports/export/xlsx/analytics_profile_catalog.py').read_text(encoding='utf-8')
-    preparer = (
-        ROOT / 'app/reports/export/xlsx/analytics_preparation/tenant_governance.py'
-    ).read_text(encoding='utf-8')
+    preparer = (ROOT / 'app/reports/export/xlsx/analytics_preparation/tenant_governance.py').read_text(encoding='utf-8')
 
     assert "'tenant_governance': AnalyticsWorkbookProfile(" in profile
     for sheet in ('Tenants', 'Namespaces', 'Access', 'Credentials', 'Allocations', 'Governance'):

@@ -45,11 +45,7 @@ def _latest_timestamp(rows: Iterable[Any]) -> datetime | None:
 
 def _owner_label(credential: TenantCredential) -> str:
     owner = credential.owner_user
-    return str(
-        getattr(owner, 'display_name', None)
-        or getattr(owner, 'username', None)
-        or credential.owner_user_id
-    )
+    return str(getattr(owner, 'display_name', None) or getattr(owner, 'username', None) or credential.owner_user_id)
 
 
 def _tenant_findings() -> list[dict[str, Any]]:
@@ -65,10 +61,7 @@ def _tenant_findings() -> list[dict[str, Any]]:
                 'rule_key': rule_key,
                 'title': str(finding.get('title') or 'Tenant Governance finding'),
                 'description': str(
-                    finding.get('summary')
-                    or finding.get('condition_summary')
-                    or finding.get('description')
-                    or ''
+                    finding.get('summary') or finding.get('condition_summary') or finding.get('description') or ''
                 ),
                 'severity': str(finding.get('severity') or 'info'),
                 'priority': str(finding.get('priority') or ''),
@@ -167,11 +160,7 @@ def get_report_tenant_governance_payload(report: Report) -> dict[str, Any]:
 
     namespace_ids = {row.id for row in namespaces}
     if report.namespace:
-        grants = [
-            row
-            for row in grants
-            if row.scope_type != 'namespace' or row.tenant_namespace_id in namespace_ids
-        ]
+        grants = [row for row in grants if row.scope_type != 'namespace' or row.tenant_namespace_id in namespace_ids]
         credentials = [
             row
             for row in credentials
