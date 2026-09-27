@@ -11,6 +11,7 @@ from app.reports.export.payloads.capacity import get_report_capacity_analysis_pa
 from app.reports.export.payloads.forecast import get_report_resource_forecast_payload
 from app.reports.export.payloads.object_storage_analysis import get_report_object_storage_analysis_payload
 from app.reports.export.payloads.storage import get_report_storage_analysis_payload
+from app.reports.export.payloads.tenant_governance import get_report_tenant_governance_payload
 from app.reports.export.payloads.top_consumers import get_report_top_consumers_payload
 from app.reports.export.payloads.utilization import get_report_resource_utilization_payload
 from app.reports.export.payloads.workload import get_report_workload_analysis_payload
@@ -23,6 +24,7 @@ _PAYLOAD_COLLECTORS: dict[str, PayloadCollector] = {
     'capacity_analysis': get_report_capacity_analysis_payload,
     'storage_analysis': get_report_storage_analysis_payload,
     'workload_analysis': get_report_workload_analysis_payload,
+    'tenant_governance': get_report_tenant_governance_payload,
     'resource_forecast': get_report_resource_forecast_payload,
     'top_consumers': get_report_top_consumers_payload,
     'alerts_anomalies': get_report_alerts_anomalies_payload,

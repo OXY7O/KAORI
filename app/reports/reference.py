@@ -17,6 +17,7 @@ REPORT_TYPE_CODES = {
     'capacity_analysis': 'CAP',
     'storage_analysis': 'STO',
     'workload_analysis': 'WLA',
+    'tenant_governance': 'TNG',
     'resource_forecast': 'FCT',
     'top_consumers': 'TPC',
     'alerts_anomalies': 'ALA',

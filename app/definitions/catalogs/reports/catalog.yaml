@@ -109,6 +109,33 @@ report_types:
   - governance_findings
   - operational_recommendations
   period_mode: range
+- value: tenant_governance
+  label: Tenant Governance Report
+  description: Governed Tenant inventory, allocation, access, credential, provider, policy, Intelligence, and audit evidence.
+  icon: building-2
+  family: analytics
+  default_format: pdf
+  allowed_formats:
+  - pdf
+  - xlsx
+  - csv
+  default_sections:
+  - executive_summary
+  - tenant_inventory
+  - namespace_inventory
+  - allocation_posture
+  - access_posture
+  - credential_posture
+  - managed_resource_posture
+  - provider_posture
+  - governance_findings
+  - activity_evidence
+  - operational_recommendations
+  - methodology_evidence_boundary
+  period_mode: snapshot
+  domain: kubernetes
+  source_kind: tenant_management
+  scope_asset_type: kubernetes_cluster
 - value: resource_forecast
   label: Resource Forecast Report
   description: Forecast CPU, memory, storage, and pod growth using historical metrics.
