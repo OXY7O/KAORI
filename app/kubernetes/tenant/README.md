@@ -8,7 +8,7 @@ KAORI exposes one expandable `Kubernetes → Tenant` capability parent. Native K
 
 The approved Tenant destinations are:
 
-- **Overview** — multi-cluster Tenant estate posture, provider readiness, committed Kubernetes inventory freshness, governed allocation/capacity context, access attention, governance findings, and compact operator shortcuts. Manual refresh reuses the canonical `kubernetes.inventory.sync` registered job; it observes provider state and never acts as Tenant reconciliation.
+- **Overview** — Tenant Collection Snapshot, multi-cluster estate posture, governed allocation/capacity evidence, prioritized operator attention, and recent Tenant activity. Navigation remains owned by the five Tenant sidebar destinations; Overview does not duplicate them as a Quick Actions strip.
 - **Tenants** — ownership, membership, Access Grants, Namespace Access, human credentials, and CI/CD deployer identities.
 - **Resource Profiles** — governed presets/custom profiles, allocation lineage, and capacity policy.
 - **Namespace Provisioning** — namespace creation, allocation changes, ResourceQuota/LimitRange evidence, and capacity decisions.
@@ -20,16 +20,28 @@ Operations task views stay inside the page so the sidebar remains exactly two in
 
 Normal Tenant workspace reads are composed from committed KAORI state. Live provider calls remain inside the owning mutation/reconciliation adapters.
 
-Tenant Overview uses the canonical Kubernetes Inventory collection authority for observed fleet freshness:
+Tenant Overview owns a registered **Tenant inventory correlation** job while Kubernetes remains authoritative for observed cluster resources:
 
 ```text
 Kubernetes provider observation
 → kubernetes.inventory.sync
-→ committed Kubernetes inventory snapshot
-→ Tenant Overview correlation
+→ committed Kubernetes inventory
+
+KAORI Tenant state + committed Kubernetes inventory
+→ kubernetes.tenant.sync
+→ worker-generated Tenant Collection Snapshot
+→ Tenant Overview
 ```
 
-Scheduled inventory collection remains owned by Platform Operations job policy. The Overview may trigger the same registered job through a permission-gated **Sync Now** shortcut, but it must not create a second Tenant scheduler or treat inventory refresh as provider reconciliation.
+`kubernetes.tenant.sync` runs through the canonical Platform Operations registered-job scheduler and the existing `inventory` worker queue. It does not introduce a Tenant-specific scheduler framework and it does not perform Tenant reconciliation or provider mutation.
+
+Overview actions follow the established operational sync pattern:
+
+- **Sync Tenant** — manually dispatch `kubernetes.tenant.sync`.
+- **Configure Sync** — open the registered-job policy for automatic cadence.
+- **Sync All Inventory** — use the existing cross-domain inventory action; Tenant sync participates alongside the Kubernetes/Object Storage inventory domains allowed by the operator's permissions.
+
+Capacity Analytics remains a separate committed evidence authority. Tenant sync must not fabricate missing capacity data or imply that refreshing Tenant inventory refreshes `analytics.capacity`. When capacity evidence is unavailable or stale, Overview renders that state and reason explicitly rather than filling allocation metrics with meaningless `N/A` tiles.
 
 - Native Kubernetes is the mandatory baseline provider.
 - Capsule is capability-aware and optional.
