@@ -1,0 +1,132 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_registry.html" as registry_ui %}
+{% set registry_id = 'tenant-group-registry' %}
+{% set loading_id = 'tenant-group-registry-loading' %}
+{% set query_params = {
+    'section': 'memberships',
+    'group_tenant_id': group_filters.tenant_id,
+    'group_enabled': group_filters.enabled,
+    'group_search': group_filters.search
+} %}
+<section id="{{ registry_id }}" class="{{ table_ui.block_classes() }}">
+    {% set header_actions %}
+        {% if group_filters.tenant_id or group_filters.enabled or group_filters.search %}
+            {{ registry_ui.clear_filters_link(
+                'tenant.tenants',
+                registry_id,
+                loading_id,
+                group_pagination.per_page,
+                table_ui.action_classes(),
+                query_params={'section': 'memberships'},
+                page_param='group_page',
+                per_page_param='group_per_page'
+            ) }}
+        {% endif %}
+    {% endset %}
+    {{ table_ui.inventory_block_header(
+        'users',
+        'Tenant Group Registry',
+        'Governed Kubernetes group subjects available for Tenant membership.',
+        loading_id,
+        'Refreshing Tenant Group Registry',
+        url_for('tenant.tenants', section='memberships') ~ '#membership-actions',
+        'Create Group',
+        header_actions=header_actions
+    ) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% call registry_ui.filter_form(
+            'tenant.tenants',
+            registry_id,
+            loading_id,
+            group_pagination.per_page,
+            page_param='group_page',
+            per_page_param='group_per_page'
+        ) %}
+            <input type="hidden" name="section" value="memberships">
+            <div>
+                <label for="group-tenant-filter" class="{{ table_ui.filter_label_classes() }}">Tenant</label>
+                <select id="group-tenant-filter" name="group_tenant_id" class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Tenants</option>
+                    {% for tenant in group_tenant_options %}
+                        <option value="{{ tenant.id }}"
+                                {% if group_filters.tenant_id == tenant.id|string %}selected{% endif %}>{{ tenant.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="group-enabled-filter" class="{{ table_ui.filter_label_classes() }}">State</label>
+                <select id="group-enabled-filter" name="group_enabled" class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All States</option>
+                    {% for state in group_enabled_options %}
+                        <option value="{{ state }}"
+                                {% if group_filters.enabled == state %}selected{% endif %}>{{ state|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="lg:col-span-2">
+                <label for="group-search-filter" class="{{ table_ui.filter_label_classes() }}">Search</label>
+                {{ table_ui.search_field('group_search', group_filters.search, 'Group, subject, or Tenant', id='group-search-filter') }}
+            </div>
+        {% endcall %}
+    </div>
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[760px]') }}">
+            <caption class="sr-only">Tenant group registry.</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Group</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Kubernetes Subject</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">State</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Updated</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for group in group_rows %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_ui.title_cell(group.name, group.slug, 'users') }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-sm font-semibold text-content-primary">{{ group.tenant.name }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <code class="text-xs text-content-secondary">{{ group.subject_name }}</code>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_label.status_label('Enabled' if group.enabled else 'Disabled', 'normal' if group.enabled else 'warning') }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }}">
+                            <p class="text-xs font-medium text-content-secondary">{{ group.updated_at|user_datetime }}</p>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="p-0">
+                            {% set empty_state_icon = 'users' %}
+                            {% set empty_state_title = 'No Tenant Groups Found' %}
+                            {% set empty_state_description = 'Adjust filters or create a governed group above.' %}
+                            {% include 'components/states/_empty_state.html' %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if group_pagination.total_items > 0 %}
+        {{ registry_ui.footer(
+            'tenant.tenants',
+            registry_id,
+            loading_id,
+            group_pagination,
+            query_params,
+            group_pagination.allowed_per_page,
+            resource_label='Groups',
+            rows_aria_label='Tenant group rows per page',
+            control_name='tenant-groups',
+            page_param='group_page',
+            per_page_param='group_per_page'
+        ) }}
+    {% endif %}
+</section>
