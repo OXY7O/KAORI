@@ -90,131 +90,99 @@
     {% endcall %}
 
     <section class="space-y-4" aria-labelledby="tenant-multicluster-heading">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-                <h2 id="tenant-multicluster-heading"
-                    class="text-lg font-semibold text-content-primary">Multi-Cluster Posture</h2>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">
-                    Tenant placement, committed snapshot coverage, and governed allocation posture by cluster.
-                </p>
-            </div>
-            <p class="text-xs leading-5 text-content-muted">
-                Capacity evidence is independent from Tenant inventory synchronization.
+        <div>
+            <h2 id="tenant-multicluster-heading"
+                class="text-lg font-semibold text-content-primary">Multi-Cluster Posture</h2>
+            <p class="mt-1 text-sm leading-6 text-content-secondary">
+                Tenant distribution, snapshot coverage, and capacity posture across clusters.
             </p>
         </div>
 
         {% call operational_section_card.render(
             'Tenant Estate by Cluster',
-            'One operational view for placement, inventory evidence, and allocation readiness.',
+            'Compact fleet posture for the clusters carrying Tenant workloads.',
             'network',
+            action_href=url_for('inventory.overview') if current_user.has_permission('inventory.view') else none,
+            action_label='Open Cluster Inventory' if current_user.has_permission('inventory.view') else none,
+            action_icon='arrow-right',
             body_classes='p-0',
             aria_label='Multi-cluster Tenant estate'
         ) %}
-            <div class="divide-y divide-outline-subtle">
-                {% for row in tenant_overview_clusters %}
-                    <article class="px-5 py-5 sm:px-6">
-                        <div class="grid gap-5 xl:grid-cols-12 xl:items-start">
-                            <div class="min-w-0 xl:col-span-3">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <h3 class="font-semibold text-content-primary">{{ row.name }}</h3>
-                                    {{ table_label.status_indicator_label(row.provider_status|title, row.provider_tone) }}
-                                </div>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.environment|title }}</p>
-                                <dl class="mt-4 grid grid-cols-2 gap-3">
-                                    <div class="rounded-lg bg-surface-subtle px-3 py-3">
-                                        <dt class="text-xs font-semibold text-content-muted">Tenants</dt>
-                                        <dd class="mt-1 text-lg font-semibold text-content-primary">{{ row.tenant_count }}</dd>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-outline-subtle text-left text-sm">
+                    <thead class="bg-surface-hover text-xs font-semibold text-content-muted">
+                        <tr>
+                            <th scope="col" class="px-5 py-3 sm:px-6">Cluster</th>
+                            <th scope="col" class="px-5 py-3">Tenant Estate</th>
+                            <th scope="col" class="px-5 py-3">Snapshot</th>
+                            <th scope="col" class="px-5 py-3 sm:pr-6">Capacity</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-outline-subtle bg-surface-card">
+                        {% for row in tenant_overview_clusters %}
+                            <tr class="align-top">
+                                <td class="px-5 py-4 sm:px-6">
+                                    <div class="flex min-w-0 items-center gap-2">
+                                        <span class="truncate font-semibold text-content-primary">{{ row.name }}</span>
+                                        {{ table_label.status_indicator_label(row.provider_status|title, row.provider_tone) }}
                                     </div>
-                                    <div class="rounded-lg bg-surface-subtle px-3 py-3">
-                                        <dt class="text-xs font-semibold text-content-muted">Namespaces</dt>
-                                        <dd class="mt-1 text-lg font-semibold text-content-primary">{{ row.namespace_count }}</dd>
-                                    </div>
-                                </dl>
-                            </div>
-
-                            <div class="min-w-0 xl:col-span-4">
-                                <div class="flex items-center justify-between gap-3">
-                                    <div>
-                                        <p class="text-xs font-semibold text-content-secondary">Tenant Distribution</p>
-                                        <p class="mt-1 text-xs text-content-muted">{{ row.tenant_count }} of {{ tenant_count }} Tenants</p>
-                                    </div>
-                                    <span class="text-sm font-semibold text-kaori-primary dark:text-kaori-accent">{{ row.tenant_share_percent }}%</span>
-                                </div>
-                                <div class="mt-3">
-                                    {{ progress_bar.semantic_bar(row.tenant_share_percent, 'info', label='Tenant distribution for ' ~ row.name) }}
-                                </div>
-                                <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-subtle px-3 py-3">
-                                    <div class="flex flex-wrap items-center justify-between gap-2">
-                                        <p class="text-xs font-semibold text-content-secondary">Committed Snapshot Coverage</p>
-                                        {{ table_label.status_label(
-                                            'Complete' if row.snapshot_coverage_complete else ('Not Collected' if row.snapshot_coverage_label == 'Not Collected' else 'Needs Review'),
-                                            'normal' if row.snapshot_coverage_complete else 'warning'
-                                        ) }}
-                                    </div>
-                                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ row.snapshot_coverage_label }}</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Source cutoff: {{ row.snapshot_cutoff_label }}</p>
-                                </div>
-                            </div>
-
-                            <div class="min-w-0 xl:col-span-5">
-                                <div class="flex flex-wrap items-center justify-between gap-2">
-                                    <div>
-                                        <p class="text-xs font-semibold text-content-secondary">Tenant Capacity Governance</p>
-                                        <p class="mt-1 text-xs text-content-muted">{{ row.capacity_data_cutoff }}</p>
-                                    </div>
+                                    <p class="mt-1 text-xs text-content-muted">{{ row.environment|title }}</p>
+                                </td>
+                                <td class="px-5 py-4">
+                                    <p class="font-semibold text-content-primary">
+                                        {{ row.tenant_count }} Tenant{{ '' if row.tenant_count == 1 else 's' }} ·
+                                        {{ row.namespace_count }} Namespace{{ '' if row.namespace_count == 1 else 's' }}
+                                    </p>
+                                    <p class="mt-1 text-xs text-content-muted">
+                                        {{ row.tenant_share_percent }}% of governed Tenants
+                                    </p>
+                                </td>
+                                <td class="px-5 py-4">
+                                    {{ table_label.status_label(
+                                        'Current' if row.snapshot_coverage_complete else ('Not Collected' if row.snapshot_coverage_label == 'Not Collected' else 'Needs Review'),
+                                        'normal' if row.snapshot_coverage_complete else 'warning'
+                                    ) }}
+                                    <p class="mt-1 text-xs text-content-muted">{{ row.snapshot_coverage_label }}</p>
+                                </td>
+                                <td class="px-5 py-4 sm:pr-6">
                                     {{ table_label.status_label(row.capacity_state, row.capacity_tone) }}
-                                </div>
-                                {% if row.capacity_available %}
-                                    <div class="mt-3 grid gap-2 sm:grid-cols-3">
-                                        <div class="rounded-lg border border-outline-subtle px-3 py-3">
-                                            <p class="text-xs font-semibold text-content-muted">Committed Allocation</p>
-                                            <p class="mt-2 text-xs font-semibold text-content-primary">
-                                                CPU {{ row.committed_allocation.cpu }}
-                                            </p>
-                                            <p class="mt-1 text-xs text-content-muted">Memory {{ row.committed_allocation.memory }}</p>
-                                        </div>
-                                        <div class="rounded-lg border border-outline-subtle px-3 py-3">
-                                            <p class="text-xs font-semibold text-content-muted">Allocation Budget</p>
-                                            <p class="mt-2 text-xs font-semibold text-content-primary">
-                                                CPU {{ row.allocation_budget.cpu }}
-                                            </p>
-                                            <p class="mt-1 text-xs text-content-muted">Memory {{ row.allocation_budget.memory }}</p>
-                                        </div>
-                                        <div class="rounded-lg border border-outline-subtle px-3 py-3">
-                                            <p class="text-xs font-semibold text-content-muted">Remaining Headroom</p>
-                                            <p class="mt-2 text-xs font-semibold text-content-primary">
-                                                CPU {{ row.allocation_headroom.cpu }}
-                                            </p>
-                                            <p class="mt-1 text-xs text-content-muted">Memory {{ row.allocation_headroom.memory }}</p>
-                                        </div>
-                                    </div>
-                                    <p class="mt-3 text-xs leading-5 text-content-muted">{{ row.capacity_reason }}</p>
-                                {% else %}
-                                    <div class="mt-3 rounded-lg border border-status-warning/25 bg-status-warning-soft p-4">
-                                        <div class="flex items-start gap-3">
-                                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text"
-                                                  aria-hidden="true">
-                                                <i data-lucide="database-zap" class="h-4 w-4"></i>
-                                            </span>
-                                            <div class="min-w-0">
-                                                <p class="text-sm font-semibold text-content-primary">Capacity Evidence Unavailable</p>
-                                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.capacity_reason }}</p>
-                                                <p class="mt-2 text-xs text-content-muted">
-                                                    Evidence state: {{ row.capacity_snapshot_state }}. Tenant sync does not fabricate or replace Capacity Analytics evidence.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </article>
-                {% else %}
-                    <div class="px-5 py-8 text-sm text-content-muted">
-                        No registered Kubernetes clusters are available for Tenant posture.
-                    </div>
-                {% endfor %}
+                                    {% if row.capacity_available %}
+                                        <p class="mt-1 text-xs text-content-muted">{{ row.capacity_reason }}</p>
+                                    {% else %}
+                                        <p class="mt-1 text-xs font-medium text-content-secondary">
+                                            {{ 'Capacity data stale' if row.capacity_snapshot_state == 'Stale' else 'Capacity data unavailable' }}
+                                        </p>
+                                        <p class="mt-1 text-xs text-content-muted">Last observed: {{ row.capacity_data_cutoff }}</p>
+                                        {% if current_user.has_permission('analytics.view') %}
+                                            <a href="{{ url_for('analytics.capacity', cluster_id=row.id, time_range='24h') }}"
+                                               class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:underline">
+                                                Open Capacity
+                                                <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="px-5 py-8 text-sm text-content-muted sm:px-6">
+                                    No registered Kubernetes clusters are available for Tenant posture.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
+            {% if tenant_overview_cluster_total %}
+                <footer class="flex flex-col gap-1 border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs text-content-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <span>
+                        Showing {{ tenant_overview_clusters|length }} of {{ tenant_overview_cluster_total }} cluster{{ '' if tenant_overview_cluster_total == 1 else 's' }}.
+                    </span>
+                    {% if tenant_overview_cluster_hidden %}
+                        <span>Clusters requiring attention are shown first.</span>
+                    {% endif %}
+                </footer>
+            {% endif %}
         {% endcall %}
     </section>
 
@@ -227,7 +195,7 @@
             </p>
         </div>
 
-        <div class="grid gap-5 xl:grid-cols-12">
+        <div class="grid gap-5 xl:grid-cols-12 xl:items-start">
             <div class="xl:col-span-7">
                 {% call operational_section_card.render(
                     'Needs Attention',
@@ -237,7 +205,6 @@
                     action_label='Open Intelligence',
                     action_icon='arrow-right',
                     body_classes='p-0',
-                    extra_classes='h-full',
                     aria_label='Tenant needs attention'
                 ) %}
                     <div class="divide-y divide-outline-subtle">
@@ -285,7 +252,6 @@
                     action_label='Open Activity',
                     action_icon='arrow-right',
                     body_classes='p-0',
-                    extra_classes='h-full',
                     aria_label='Recent Tenant activity'
                 ) %}
                     <ol class="divide-y divide-outline-subtle">
