@@ -25,9 +25,9 @@
                 {% endfor %}
             </div>
             {% set pagination_state = profile_pagination %}
-            {% set pagination_resource = 'resource profiles' %}
-            {% set pagination_endpoint = 'tenant.resource_profiles' %}
-            {% set pagination_id = 'tenant-profile-registry' %}
+            {% set pagination_resource = "resource profiles" %}
+            {% set pagination_endpoint = "tenant.resource_profiles" %}
+            {% set pagination_id = "tenant-profile-registry" %}
             {% include "kubernetes/tenant/partials/_pagination_footer.html" %}
         </div>
     </section>
