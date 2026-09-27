@@ -44,7 +44,10 @@ from app.kubernetes.tenant.service import (
     change_native_namespace_allocation_committed,
     create_resource_profile_committed,
     create_tenant_committed,
+    get_namespace_registry_context,
+    get_resource_profile_registry_context,
     get_tenant_context,
+    get_tenant_registry_context,
     provision_native_namespace_committed,
 )
 from app.kubernetes.tenant.workspace import get_tenant_workspace_context
@@ -110,39 +113,60 @@ def index():
 @tenant_bp.get('/tenants')
 @any_permission_required('tenant.view', 'tenant.manage')
 def tenants():
+    context = _tenant_workspace_context()
+    context.update(
+        get_tenant_registry_context(
+            page=request.args.get('page', 1, type=int) or 1,
+            per_page=request.args.get('per_page', 5, type=int) or 5,
+        )
+    )
     return render_template(
         'kubernetes/tenant/tenants.html',
         tenant_page='tenants',
         tenant_page_title='Tenants',
         tenant_page_description='Manage tenant ownership, membership, access grants, and governed credentials.',
         tenant_page_icon='users-round',
-        **_tenant_workspace_context(),
+        **context,
     )
 
 
 @tenant_bp.get('/resource-profiles')
 @any_permission_required('tenant.view', 'tenant.manage')
 def resource_profiles():
+    context = _tenant_workspace_context()
+    context.update(
+        get_resource_profile_registry_context(
+            page=request.args.get('page', 1, type=int) or 1,
+            per_page=request.args.get('per_page', 5, type=int) or 5,
+        )
+    )
     return render_template(
         'kubernetes/tenant/resource_profiles.html',
         tenant_page='resource_profiles',
         tenant_page_title='Resource Profiles',
         tenant_page_description='Manage allocation profiles, capacity policy, lineage, and effective limits.',
         tenant_page_icon='layers-3',
-        **_tenant_workspace_context(),
+        **context,
     )
 
 
 @tenant_bp.get('/namespace-provisioning')
 @any_permission_required('tenant.view', 'tenant.manage')
 def namespace_provisioning():
+    context = _tenant_workspace_context()
+    context.update(
+        get_namespace_registry_context(
+            page=request.args.get('page', 1, type=int) or 1,
+            per_page=request.args.get('per_page', 5, type=int) or 5,
+        )
+    )
     return render_template(
         'kubernetes/tenant/namespace_provisioning.html',
         tenant_page='namespace_provisioning',
         tenant_page_title='Namespace Provisioning',
         tenant_page_description='Provision namespaces and verify quotas, limits, allocation, and capacity.',
         tenant_page_icon='boxes',
-        **_tenant_workspace_context(),
+        **context,
     )
 
 
