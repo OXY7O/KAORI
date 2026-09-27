@@ -273,6 +273,13 @@ def _tenant_recent_activity(*, limit: int = 5) -> list[dict[str, str]]:
     return [row for _updated_at, row in rows[:limit]]
 
 
+def get_tenant_sync_workspace_context() -> dict[str, Any]:
+    sync_state = build_tenant_sync_state()
+    return {
+        **sync_context,
+    }
+
+
 def get_tenant_overview_context() -> dict[str, Any]:
     """Compose Overview-only cross-cluster posture from committed KAORI evidence."""
 
@@ -280,7 +287,8 @@ def get_tenant_overview_context() -> dict[str, Any]:
     tenant_counts = _cluster_tenant_counts()
     namespace_counts = _cluster_namespace_counts()
     total_tenants = sum(tenant_counts.values())
-    sync_state = build_tenant_sync_state()
+    sync_context = get_tenant_sync_workspace_context()
+    sync_state = sync_context['tenant_sync_state']
     snapshot_clusters = _snapshot_cluster_rows(dict(sync_state.get('snapshot') or {}))
 
     cluster_rows: list[dict[str, Any]] = []
