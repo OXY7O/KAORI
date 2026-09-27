@@ -66,9 +66,7 @@ def dispatch_tenant_inventory_sync(*, requested_by_user_id: int) -> dict[str, An
         'status': 'success' if outcome.created else 'info',
         'title': 'Tenant Inventory Sync Queued' if outcome.created else 'Tenant Inventory Sync Already Active',
         'message': outcome.message,
-        'detail': (
-            'Tenant Overview will read the committed Kubernetes inventory evidence after collection completes.'
-        ),
+        'detail': ('Tenant Overview will read the committed Kubernetes inventory evidence after collection completes.'),
         'metadata': {
             **metadata,
             'job_public_id': job.public_id if job is not None else None,
