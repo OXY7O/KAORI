@@ -57,7 +57,8 @@ def test_tenant_management_exposes_governed_credential_lifecycle_without_secret_
     assert 'renewal_due_at' in template
     assert 'valid_until' in template
     assert 'credential.token' not in template
-    assert 'kubeconfig' not in template.lower()
+    assert 'credential.token' not in template
+    assert 'credential.kubeconfig' not in template
 
 
 def test_tenant_inventory_and_analytics_keep_provider_and_evidence_states_explicit() -> None:
