@@ -276,7 +276,8 @@ def _tenant_recent_activity(*, limit: int = 5) -> list[dict[str, str]]:
 def get_tenant_sync_workspace_context() -> dict[str, Any]:
     sync_state = build_tenant_sync_state()
     return {
-        **sync_context,
+        'tenant_collection_snapshot': _tenant_collection_snapshot(sync_state),
+        'tenant_sync_state': sync_state,
     }
 
 
