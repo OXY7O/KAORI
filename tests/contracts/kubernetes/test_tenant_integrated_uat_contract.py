@@ -7,7 +7,7 @@ def _read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_tenant_workspace_uses_approved_sidebar_destinations_and_compatibility_redirects() -> None:
+def test_tenant_workspace_uses_only_approved_sidebar_destinations() -> None:
     menu = _read('app/templates/components/navigation/tenant_menu.html')
     routes = _read('app/kubernetes/tenant/routes.py')
 
@@ -21,11 +21,9 @@ def test_tenant_workspace_uses_approved_sidebar_destinations_and_compatibility_r
         assert f"url_for('{endpoint}')" in menu
         assert f'>{label}</span>' in menu
 
-    assert "@tenant_bp.get('/management')" in routes
-    assert "@tenant_bp.get('/inventory')" in routes
-    assert "@tenant_bp.get('/analytics')" in routes
-    assert "return redirect(url_for('tenant.index'))" in routes
-    assert "return redirect(url_for('tenant.operations', tab='runs-evidence'))" in routes
+    assert "@tenant_bp.get('/management')" not in routes
+    assert "@tenant_bp.get('/inventory')" not in routes
+    assert "@tenant_bp.get('/analytics')" not in routes
 
 
 def test_tenant_workspace_reads_committed_cross_child_state() -> None:
