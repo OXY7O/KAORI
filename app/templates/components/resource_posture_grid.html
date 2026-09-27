@@ -3,7 +3,8 @@
   Each metric tuple: (icon, label, value, description, tone).
 #}
 {% macro render(metrics, columns=3) -%}
-    <div class="grid gap-px bg-outline-subtle {{ 'sm:grid-cols-2 xl:grid-cols-3' if columns == 3 else 'sm:grid-cols-2 xl:grid-cols-4' }}">
+    {% set grid_classes = 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' if columns == 5 else ('sm:grid-cols-2 xl:grid-cols-3' if columns == 3 else 'sm:grid-cols-2 xl:grid-cols-4') %}
+    <div class="grid gap-px bg-outline-subtle {{ grid_classes }}">
         {% for icon, label, value, description, tone in metrics %}
             {% set icon_surface = 'bg-status-normal-soft text-status-normal-text' if tone == 'normal' else ('bg-status-warning-soft text-status-warning-text' if tone == 'warning' else ('bg-status-critical-soft text-status-critical-text' if tone == 'critical' else ('bg-status-info-soft text-status-info-text' if tone == 'info' else ('bg-status-unknown-soft text-status-unknown-text' if tone == 'unknown' else 'bg-kaori-soft text-kaori-primary')))) %}
             <article class="flex min-h-32 items-start justify-between gap-4 bg-surface-card p-5">
