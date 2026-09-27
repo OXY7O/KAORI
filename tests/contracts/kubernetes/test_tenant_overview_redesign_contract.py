@@ -103,9 +103,12 @@ def test_tenant_overview_uses_tls_style_collection_snapshot_and_contextual_sync_
     assert "title='Tenant Collection Snapshot'" in sync_workspace
     assert "latest_supporting='Source: '" in sync_workspace
     assert 'Tenant Inventory Operations' in live_state
-    assert 'Automatic Sync' in live_state
-    assert 'Last Successful' in live_state
-    assert 'Next Scheduled' in live_state
+    assert 'Automatic Sync' in sync_workspace
+    assert 'Last Successful' in sync_workspace
+    assert 'Next Scheduled' in sync_workspace
+    assert 'Automatic Sync:' not in live_state
+    assert 'Last Successful:' not in live_state
+    assert 'Next Scheduled:' not in live_state
     assert 'Sync Tenant' in sync_workspace
     assert 'Configure Sync' in sync_workspace
     assert "job_key='kubernetes.tenant.sync'" in sync_workspace
@@ -132,7 +135,7 @@ def test_tenant_overview_keeps_multicluster_posture_compact_and_canonical() -> N
     assert 'table_ui.cluster_identity(row.name, row.environment)' in cluster_estate
     assert 'pagination_ui.footer_classes()' in cluster_estate
     assert 'pagination.allowed_per_page' in cluster_estate
-    assert "hx-get="{{ url_for('tenant.cluster_estate') }}"" in cluster_estate
+    assert "hx-get=\"{{ url_for('tenant.cluster_estate') }}\"" in cluster_estate
     assert "endpoint='tenant.cluster_estate'" in cluster_estate
     assert "href_endpoint='tenant.index'" in cluster_estate
     assert "def get_tenant_cluster_estate_context(*, page: int = 1, per_page: int = 5)" in workspace
@@ -180,6 +183,7 @@ def test_tenant_overview_uses_shared_kaori_components() -> None:
 
     assert 'components/operational_section_card.html' in overview
     assert 'components/resource_posture_grid.html' in overview
+    assert 'components/section_intro.html' in overview
     cluster_estate = (ROOT / 'app/templates/kubernetes/tenant/partials/_cluster_estate.html').read_text(
         encoding='utf-8'
     )
