@@ -11,6 +11,7 @@ from app.models.tenant import (
     TenantAccessGrant,
     TenantCapacityDecision,
     TenantCredential,
+    TenantMembership,
     TenantNamespace,
 )
 from app.models.tenant_audit import TenantAuditEvidence
@@ -161,6 +162,9 @@ def _credential_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any
 
 def _access_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     findings: list[dict[str, Any]] = []
+    active_membership_ids = {
+        membership.id for membership in TenantMembership.query.filter_by(status='active').all()
+    }
     for grant in TenantAccessGrant.query.all():
         evidence = {
             'asset_key': grant.tenant.cluster_id,
@@ -184,7 +188,7 @@ def _access_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
                 summary='Committed Access Grant reconciliation is drifted or failed.',
                 evidence=evidence,
             )
-        if grant.status == 'active' and grant.membership.status != 'active':
+        if grant.status == 'active' and grant.membership_id not in active_membership_ids:
             _append(
                 findings,
                 rules,

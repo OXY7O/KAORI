@@ -901,13 +901,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "A governed Tenant credential has entered its committed renewal window."
   condition_summary: "A governed Tenant credential has entered its committed renewal window."
   recommended_action: "Rotate or renew the credential through the governed Tenant credential workflow and verify the next generation."
@@ -931,13 +924,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "Credential validity has ended while its lifecycle state still permits use."
   condition_summary: "Credential validity has ended while its lifecycle state still permits use."
   recommended_action: "Suspend or revoke effective Kubernetes access immediately, then reconcile lifecycle state and investigate any subsequent use."
@@ -961,13 +947,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "Credential reconciliation is drifted or failed against committed intent."
   condition_summary: "Credential reconciliation is drifted or failed against committed intent."
   recommended_action: "Reconcile the credential, verify effective ServiceAccount or binding state, and rotate if integrity cannot be proven."
@@ -991,13 +970,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "An inactive KAORI user still owns a credential in an active lifecycle state."
   condition_summary: "An inactive KAORI user still owns a credential in an active lifecycle state."
   recommended_action: "Suspend or revoke the credential and its effective access, then review the associated Access Grant."
@@ -1021,13 +993,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "Successful Kubernetes audit evidence is attributed to a credential whose committed status is revoked."
   condition_summary: "Successful Kubernetes audit evidence is attributed to a credential whose committed status is revoked."
   recommended_action: "Treat this as an access-control incident; verify provider revocation, remove residual bindings or tokens, and correlate recent activity."
@@ -1051,13 +1016,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "Access Grant reconciliation is drifted or failed against committed RBAC intent."
   condition_summary: "Access Grant reconciliation is drifted or failed against committed RBAC intent."
   recommended_action: "Reconcile the Access Grant and compare effective RoleBinding or ClusterRoleBinding evidence before restoring normal posture."
@@ -1081,13 +1039,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "An Access Grant remains active while its canonical membership is not active."
   condition_summary: "An Access Grant remains active while its canonical membership is not active."
   recommended_action: "Revoke the orphaned grant and verify effective RBAC removal."
@@ -1111,13 +1062,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "Normalized Kubernetes audit evidence cannot map the acting principal to one canonical governed Tenant identity."
   condition_summary: "Normalized Kubernetes audit evidence cannot map the acting principal to one canonical governed Tenant identity."
   recommended_action: "Identify the principal, establish approved ownership or remove its access, and retain the audit evidence for review."
@@ -1141,13 +1085,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "A correlated Tenant principal successfully modified ClusterRoleBinding state."
   condition_summary: "A correlated Tenant principal successfully modified ClusterRoleBinding state."
   recommended_action: "Review the cluster-scoped mutation immediately and remove any Tenant principal elevation outside the approved boundary."
@@ -1171,13 +1108,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "A namespace is known to KAORI but remains discovered rather than managed or adopted."
   condition_summary: "A namespace is known to KAORI but remains discovered rather than managed or adopted."
   recommended_action: "Assign or adopt the namespace into the approved Tenant model, or document why it remains outside governance."
@@ -1201,13 +1131,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "Namespace provisioning hashes or status show drift from committed Resource Profile intent."
   condition_summary: "Namespace provisioning hashes or status show drift from committed Resource Profile intent."
   recommended_action: "Reconcile ResourceQuota and LimitRange from the committed profile and verify effective provider state."
@@ -1231,13 +1154,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "No active Tenant Admin Access Grant exists for the Tenant."
   condition_summary: "No active Tenant Admin Access Grant exists for the Tenant."
   recommended_action: "Assign an approved Tenant Admin through canonical membership and Access Grant workflow."
@@ -1261,13 +1177,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "A committed exposure preflight denied a Service or Ingress shape."
   condition_summary: "A committed exposure preflight denied a Service or Ingress shape."
   recommended_action: "Correct the Service type or hostname reservation and rerun governed preflight before deployment."
@@ -1291,13 +1200,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "A platform-managed TLS or registry resource is drifted or failed."
   condition_summary: "A platform-managed TLS or registry resource is drifted or failed."
   recommended_action: "Reconcile the managed resource from its non-secret source reference and verify KAORI ownership and effective hash."
@@ -1321,13 +1223,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "Committed Tenant provider state is degraded and one or more required capabilities are not fully available."
   condition_summary: "Committed Tenant provider state is degraded and one or more required capabilities are not fully available."
   recommended_action: "Review provider capability evidence, restore required enforcement, and do not relax security-sensitive operations."
@@ -1351,13 +1246,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "Tenant authority is in the controlled Native Recovery workflow."
   condition_summary: "Tenant authority is in the controlled Native Recovery workflow."
   recommended_action: "Complete snapshot, materialization and verification steps before transferring reconciliation authority."
@@ -1381,13 +1269,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "Committed production policy or Kubernetes audit evidence shows a successful human or administrator mutation."
   condition_summary: "Committed production policy or Kubernetes audit evidence shows a successful human or administrator mutation."
   recommended_action: "Review the reason and exception or administrator authority, then return routine changes to the CI/CD path."
@@ -1411,13 +1292,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "A production workload mutation succeeded without a correlated CI/CD Deployer identity."
   condition_summary: "A production workload mutation succeeded without a correlated CI/CD Deployer identity."
   recommended_action: "Investigate the actor and change, verify deployment integrity, and restore pipeline-only mutation authority."
@@ -1441,13 +1315,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "The latest committed Tenant Allocation decision reports Near Capacity or Critical posture."
   condition_summary: "The latest committed Tenant Allocation decision reports Near Capacity or Critical posture."
   recommended_action: "Review committed allocation headroom and planned namespace or profile growth before approving further increases."
@@ -1471,13 +1338,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "The latest committed Tenant Allocation decision reports Exhausted capacity."
   condition_summary: "The latest committed Tenant Allocation decision reports Exhausted capacity."
   recommended_action: "Stop discretionary allocation growth and restore governed headroom before approving new or increased allocations."
@@ -1501,13 +1361,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "The latest committed Tenant Allocation decision reports Overcommitted state."
   condition_summary: "The latest committed Tenant Allocation decision reports Overcommitted state."
   recommended_action: "Review committed Tenant allocations and capacity policy, then reduce commitments or add capacity through approved change."
@@ -1531,13 +1384,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "The latest committed Tenant Allocation decision blocked the requested operation."
   condition_summary: "The latest committed Tenant Allocation decision blocked the requested operation."
   recommended_action: "Review the canonical capacity decision evidence and adjust profile, request, reserve, or physical capacity before retrying."
@@ -1561,13 +1407,6 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kaori_kubernetes_analysis
-  risk_exception:
-    enabled: true
-    default_scope_mode: finding_keys
-    allowed_scope_modes:
-    - finding_keys
-    - rule_asset
-    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
   summary: "The latest committed Tenant Allocation decision reports Unknown evidence state."
   condition_summary: "The latest committed Tenant Allocation decision reports Unknown evidence state."
   recommended_action: "Refresh the authoritative capacity inputs and rerun allocation preflight before making a higher-risk allocation decision."

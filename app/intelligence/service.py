@@ -20,7 +20,6 @@ from app.intelligence.finding_presentation import (
 )
 from app.intelligence.kubernetes_runtime_recommendations import build_kubernetes_runtime_recommendation_findings
 from app.intelligence.object_storage_recommendations import build_object_storage_recommendation_findings
-from app.intelligence.tenant_governance_recommendations import build_tenant_governance_recommendation_findings
 from app.intelligence.recommendation_alerting import (
     decorate_catalog_rules,
     decorate_recommendation_findings,
@@ -57,6 +56,7 @@ from app.intelligence.rule_presentation import (
     provider_label,
     to_int,
 )
+from app.intelligence.tenant_governance_recommendations import build_tenant_governance_recommendation_findings
 
 
 def _is_active_filter_value(value: str | None) -> bool:
