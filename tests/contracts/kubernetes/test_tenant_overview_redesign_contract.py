@@ -168,6 +168,8 @@ def test_operational_attention_is_bounded_and_recent_activity_is_richer() -> Non
     assert '{{ item.kind }}' in template
     assert 'table_label.status_label(item.status, item.tone)' in template
     assert 'Showing {{ tenant_recent_activity_rows|length }} latest committed event' in template
+    assert template.count('min-h-[7.5rem]') >= 3
+    assert 'Committed governance finding' in template
     assert "extra_classes='h-full'" not in template
     assert 'xl:items-start' in template
     assert 'Access Attention' not in template
