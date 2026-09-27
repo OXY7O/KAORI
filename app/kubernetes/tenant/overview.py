@@ -13,12 +13,8 @@ _INVENTORY_JOB_KEY = 'kubernetes.tenant.sync'
 
 
 def dispatch_tenant_inventory_sync(*, requested_by_user_id: int) -> dict[str, Any]:
-    """Dispatch the canonical Tenant inventory worker job for the Tenant Overview."""
+    """Dispatch Tenant sync without creating a success notification at click time."""
 
-    metadata: dict[str, Any] = {
-        'operation': 'tenant_inventory_sync',
-        'job_key': _INVENTORY_JOB_KEY,
-    }
     try:
         outcome = dispatch_registered_job(
             job_key=_INVENTORY_JOB_KEY,
@@ -27,11 +23,12 @@ def dispatch_tenant_inventory_sync(*, requested_by_user_id: int) -> dict[str, An
         )
     except ValueError as exc:
         return {
+            'accepted': False,
             'event_type': 'kubernetes_tenant_inventory_sync_blocked',
             'status': 'warning',
             'title': 'Tenant Sync Could Not Start',
             'message': str(exc),
-            'metadata': metadata,
+            'metadata': {'operation': 'tenant_inventory_sync', 'job_key': _INVENTORY_JOB_KEY},
         }
     except (
         JobWorkerUnavailable,
@@ -43,33 +40,37 @@ def dispatch_tenant_inventory_sync(*, requested_by_user_id: int) -> dict[str, An
         SQLAlchemyError,
     ) as exc:
         return {
+            'accepted': False,
             'event_type': 'kubernetes_tenant_inventory_sync_failed',
             'status': 'error',
-            'title': 'Tenant Inventory Sync Could Not Start',
-            'message': 'KAORI could not queue the canonical Tenant inventory synchronization.',
-            'detail': f'{type(exc).__name__}: {str(exc)[:500]}',
-            'metadata': metadata,
+            'title': 'Tenant Sync Could Not Start',
+            'message': 'KAORI could not dispatch Tenant synchronization to the inventory worker.',
+            'detail': 'Verify PostgreSQL, Redis, Celery Beat, and the inventory worker before retrying.',
+            'metadata': {
+                'operation': 'tenant_inventory_sync',
+                'job_key': _INVENTORY_JOB_KEY,
+                'error_type': type(exc).__name__,
+            },
         }
 
-    if not outcome.accepted:
+    if not outcome.accepted or outcome.job is None:
         return {
+            'accepted': False,
             'event_type': 'kubernetes_tenant_inventory_sync_blocked',
             'status': 'warning',
             'title': 'Tenant Sync Blocked',
             'message': outcome.message,
-            'metadata': {**metadata, 'dispatch_status': outcome.status},
+            'metadata': {
+                'operation': 'tenant_inventory_sync',
+                'job_key': _INVENTORY_JOB_KEY,
+                'dispatch_status': outcome.status,
+            },
         }
 
-    job = outcome.job
     return {
-        'event_type': 'kubernetes_tenant_inventory_sync_dispatched',
-        'status': 'success' if outcome.created else 'info',
-        'title': 'Tenant Sync Queued' if outcome.created else 'Tenant Sync Already Active',
+        'accepted': True,
+        'created': outcome.created,
+        'job': outcome.job,
+        'job_public_id': outcome.job.public_id,
         'message': outcome.message,
-        'detail': ('Tenant Overview will read the committed Tenant collection snapshot after the worker completes.'),
-        'metadata': {
-            **metadata,
-            'job_public_id': job.public_id if job is not None else None,
-            'created': outcome.created,
-        },
     }
