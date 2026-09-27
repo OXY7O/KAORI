@@ -25,6 +25,12 @@ from app.kubernetes.tenant.capacity_governance import (
     TenantCapacityStateConflictError,
     upsert_capacity_policy_committed,
 )
+from app.kubernetes.tenant.credential_service import (
+    renew_credential_committed,
+    resume_credential_committed,
+    revoke_credential_committed,
+    suspend_credential_committed,
+)
 from app.kubernetes.tenant.service import (
     TenantStateConflictError,
     change_native_namespace_allocation_committed,
@@ -33,6 +39,7 @@ from app.kubernetes.tenant.service import (
     get_tenant_context,
     provision_native_namespace_committed,
 )
+from app.kubernetes.tenant.workspace import get_tenant_workspace_context
 from app.platform_operations.notifications.service import record_operational_activity
 
 tenant_bp = Blueprint('tenant', __name__, url_prefix='/kubernetes/tenant')
@@ -69,13 +76,47 @@ def _record(
     )
 
 
+def _tenant_workspace_context() -> dict[str, Any]:
+    return {
+        **get_tenant_context(),
+        **get_tenant_access_context(),
+        **get_tenant_workspace_context(),
+    }
+
+
 @tenant_bp.get('/')
 @any_permission_required('tenant.view', 'tenant.manage')
 def index():
+    return redirect(url_for('tenant.management'))
+
+
+@tenant_bp.get('/management')
+@any_permission_required('tenant.view', 'tenant.manage')
+def management():
     return render_template(
-        'kubernetes/tenant/index.html',
-        **get_tenant_context(),
-        **get_tenant_access_context(),
+        'kubernetes/tenant/management.html',
+        tenant_workspace_active='management',
+        **_tenant_workspace_context(),
+    )
+
+
+@tenant_bp.get('/inventory')
+@any_permission_required('tenant.view', 'tenant.manage')
+def inventory():
+    return render_template(
+        'kubernetes/tenant/inventory.html',
+        tenant_workspace_active='inventory',
+        **_tenant_workspace_context(),
+    )
+
+
+@tenant_bp.get('/analytics')
+@any_permission_required('tenant.view', 'tenant.manage')
+def analytics():
+    return render_template(
+        'kubernetes/tenant/analytics.html',
+        tenant_workspace_active='analytics',
+        **_tenant_workspace_context(),
     )
 
 
@@ -534,3 +575,57 @@ def provision_namespace_route():
             },
         )
     return redirect(url_for('tenant.index'))
+
+
+def _credential_feedback(*, action: str, credential_id: int, operation) -> None:
+    try:
+        _csrf()
+        credential = operation(credential_id=credential_id, actor=current_user)
+    except (ValueError, ApiException) as exc:
+        _record(
+            event_type=f'kubernetes_tenant_credential_{action}_failed',
+            status='error',
+            title=f'Tenant Credential {action.title()} Requires Attention',
+            message=str(exc),
+            metadata={'credential_id': credential_id, 'operation': f'credential_{action}'},
+        )
+    else:
+        _record(
+            event_type=f'kubernetes_tenant_credential_{action}',
+            status='success',
+            title=f'Tenant Credential {action.title()}',
+            message=f'{credential.service_account_name} is now {credential.status.replace("_", " ")}.',
+            metadata={
+                'credential_id': credential.id,
+                'credential_public_id': credential.public_id,
+                'operation': f'credential_{action}',
+            },
+        )
+
+
+@tenant_bp.post('/credentials/<int:credential_id>/renew')
+@permission_required('tenant.manage')
+def renew_credential_route(credential_id: int):
+    _credential_feedback(action='renewed', credential_id=credential_id, operation=renew_credential_committed)
+    return redirect(url_for('tenant.management'))
+
+
+@tenant_bp.post('/credentials/<int:credential_id>/suspend')
+@permission_required('tenant.manage')
+def suspend_credential_route(credential_id: int):
+    _credential_feedback(action='suspended', credential_id=credential_id, operation=suspend_credential_committed)
+    return redirect(url_for('tenant.management'))
+
+
+@tenant_bp.post('/credentials/<int:credential_id>/resume')
+@permission_required('tenant.manage')
+def resume_credential_route(credential_id: int):
+    _credential_feedback(action='resumed', credential_id=credential_id, operation=resume_credential_committed)
+    return redirect(url_for('tenant.management'))
+
+
+@tenant_bp.post('/credentials/<int:credential_id>/revoke')
+@permission_required('tenant.manage')
+def revoke_credential_route(credential_id: int):
+    _credential_feedback(action='revoked', credential_id=credential_id, operation=revoke_credential_committed)
+    return redirect(url_for('tenant.management'))
