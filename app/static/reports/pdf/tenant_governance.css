@@ -1,0 +1,19 @@
+.kaori-tenant-governance-report .tenant-governance-table {
+    font-size: 8pt;
+}
+
+.kaori-tenant-governance-report .tenant-finding-list {
+    display: grid;
+    gap: 3mm;
+}
+
+.kaori-tenant-governance-report .tenant-section-note {
+    margin-top: 4mm;
+    color: #475569;
+    font-size: 8.5pt;
+    line-height: 1.45;
+}
+
+.kaori-tenant-governance-report .tenant-governance-section.landscape {
+    page: analytics-landscape;
+}

@@ -356,6 +356,8 @@ def build_report_document(
             context=context,
             classification=classification,
         )
+    elif report.report_type == 'tenant_governance':
+        template_name = 'reports/pdf/tenant_governance.html'
 
     return finalize_report_document(
         report,
