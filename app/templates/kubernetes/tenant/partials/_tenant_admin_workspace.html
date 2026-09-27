@@ -1,4 +1,5 @@
 {% import "components/content_tabs.html" as content_tabs %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% set registry_args = {
     'search': tenant_registry_filters.search,
@@ -32,6 +33,7 @@
                 </p>
             </div>
         </div>
+        {{ loading_bar.render('tenant-admin-loading', label='Loading Tenant Administration') }}
     </header>
 
     {{ content_tabs.render_links(
@@ -41,7 +43,13 @@
         'Tenant Administration',
         embedded=true,
         data_namespace='tenant-admin',
-        nowrap=true
+        hx_target='#tenant-admin-workspace',
+        hx_select='#tenant-admin-workspace',
+        hx_swap='outerHTML',
+        hx_push_url='true',
+        hx_indicator='#tenant-admin-loading',
+        nowrap=true,
+        hx_sync='this:replace'
     ) }}
 
     <div class="p-4 sm:p-5">
