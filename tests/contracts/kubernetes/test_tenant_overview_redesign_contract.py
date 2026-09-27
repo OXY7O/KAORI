@@ -161,7 +161,7 @@ def test_operational_attention_is_bounded_and_recent_activity_is_richer() -> Non
     assert "'kind': 'Access'" in workspace
     assert "'kind': 'Credential'" in workspace
     assert "'status': lifecycle" in workspace
-    assert 'Latest committed Tenant lifecycle changes.' in template
+    assert 'Latest Tenant, access & credential changes.' in template
     assert '{{ item.kind }}' in template
     assert 'table_label.status_label(item.status, item.tone)' in template
     assert 'Showing {{ tenant_recent_activity_rows|length }} latest committed event' in template
