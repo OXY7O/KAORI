@@ -1,3 +1,4 @@
+{% import "components/section_intro.html" as section_intro %}
 <div id="tls-certificates-page-workspace" class="space-y-6">
     {% if not payload.schema_readiness.ready %}
         {% include "kubernetes/governance/tls_certificates/partials/_schema_blocker.html" %}
@@ -11,8 +12,25 @@
               hx-swap="outerHTML"
               hx-indicator="this"></span>
         {% include "kubernetes/governance/tls_certificates/partials/_snapshot_context.html" %}
-        {% include "kubernetes/governance/tls_certificates/partials/_summary_cards.html" %}
-        {% include "kubernetes/governance/tls_certificates/partials/_table.html" %}
+        {% include "kubernetes/governance/tls_certificates/partials/_sync_panel.html" %}
+        <section class="space-y-4"
+                 aria-labelledby="tls-certificate-posture-heading">
+            {{ section_intro.render(
+                'Certificate Posture',
+                'Review lifecycle and host-coverage conditions from committed TLS evidence.',
+                'tls-certificate-posture-heading'
+            ) }}
+            {% include "kubernetes/governance/tls_certificates/partials/_summary_cards.html" %}
+        </section>
+        <section class="space-y-4"
+                 aria-labelledby="tls-certificate-inventory-heading">
+            {{ section_intro.render(
+                'Certificate Inventory',
+                'Browse committed TLS certificate records for the active governance scope.',
+                'tls-certificate-inventory-heading'
+            ) }}
+            {% include "kubernetes/governance/tls_certificates/partials/_table.html" %}
+        </section>
     {% endif %}
 </div>
 {% if sync_feedback %}
