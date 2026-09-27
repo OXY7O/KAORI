@@ -177,7 +177,8 @@ def validate_advanced_intent(
     *,
     provider: CapsuleTenantProvider,
 ) -> CapsuleResourceDescriptor:
-    if str(getattr(intent, 'provider_key', '') or '') != 'capsule':
+    provider_key = str(getattr(intent, 'provider_key', '') or '')
+    if provider_key != 'capsule':
         raise ValueError('Capsule provider authority is required for advanced Tenant capabilities.')
 
     tenant = getattr(intent, 'tenant', None)

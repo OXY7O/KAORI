@@ -28,7 +28,7 @@ Proxy remains a discovered read-only capability and is not treated as an indepen
 
 Cross-namespace credential scope is evidence-only in this workstream: the specific Capsule capability must be available and the requested namespace set must be a subset of explicitly approved namespaces. Secret or kubeconfig material is never persisted in the advanced intent.
 
-Self-service namespace creation remains disabled because #124 does not expose an executable self-service resource kind. Discovery may report the provider capability, but a separate approval is still required before product workflow can enable it.
+self-service namespace creation remains disabled because #124 does not expose an executable self-service resource kind. Discovery may report the provider capability, but a separate approval is still required before product workflow can enable it.
 
 ## Evidence and lifecycle
 
