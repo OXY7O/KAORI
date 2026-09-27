@@ -47,11 +47,16 @@ canonical workspace.
 
 ## Consistency rules
 
-Inventory pages use the same filter, pagination, label, empty-state, and detail
-patterns. Default page size is 5 with 5/10/25/50 options. Keep raw payloads and
-technical exceptions out of rows; expose only relevant normalized information.
-Topology relationships must come from the latest committed snapshot and preserve
-Cluster and Namespace boundaries. The canonical server implementation separates committed
+Inventory pages use the same section hierarchy, filter, pagination, label, empty-state, and detail
+patterns. Default page size is 5 with 5/10/25/50 options. Major resource-page content is grouped
+with the shared `components/section_intro.html`: `Operational Posture` owns the posture card and
+`Inventory Records` owns the canonical registry/table. Inventory Overview uses `Inventory Assets`
+and `Multi-Cluster Inventory`; Topology uses `Inventory Relationships`.
+
+Cluster-source navigation is consistently labeled `Open Cluster Integrations` and routes to
+`integrations.kubernetes`. Keep raw payloads and technical exceptions out of rows; expose only
+relevant normalized information. Topology relationships must come from the latest committed snapshot
+and preserve Cluster and Namespace boundaries. The canonical server implementation separates committed
 queries, node projection, edge projection, graph assembly, presentation, and cache orchestration;
 do not restore a monolithic graph function or renderer bootstrap.
 
