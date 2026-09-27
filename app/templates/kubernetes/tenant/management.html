@@ -1,0 +1,933 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/form_field.html" as form_field %}
+{% import "components/table_label.html" as table_label %}
+{% block title %}Tenant Management{% endblock title %}
+{% block dashboard_content %}
+    {% set can_manage = current_user.has_permission('tenant.manage') %}
+    <div class="space-y-6" data-tenant-workspace="native-baseline-v1">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('building-2', 'Kubernetes', 'building-2') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Tenant Management</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Govern tenant access, allocation, policy, and provider state.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('layers-3', tenant_count ~ ' Tenants') }}
+                            {{ page_hero.meta_label('boxes', namespace_count ~ ' Namespaces') }}
+                            {{ page_hero.meta_label('shield-check', 'Native Baseline') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {% set tenant_context_metrics = [
+                                    ('server', 'Ready Clusters', ready_clusters|length, 'Native provider targets', true),
+                                    ('circle-check', 'Verified', ready_namespace_count, 'Ready namespaces')
+                                ] %}
+                {{ page_hero.context_card('Tenant context',
+                                'Provider Readiness',
+                                'Native Kubernetes',
+                                'Ready' if native_available else 'Blocked',
+                                'normal' if native_available else 'warning',
+                                tenant_context_metrics,
+                                'Open Cluster Integrations',
+                                url_for('integrations.kubernetes') ,
+                'server-cog'
+                ) }}
+            </div>
+        </section>
+        {% include "kubernetes/tenant/workspace_tabs.html" %}
+        {% if not native_available %}
+            <section class="rounded-xl border border-status-warning/30 bg-status-warning-soft p-5">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning">
+                        <i data-lucide="triangle-alert" class="h-5 w-5"></i>
+                    </span>
+                    <div>
+                        <h2 class="text-base font-semibold text-content-primary">Tenant capability is blocked</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Register and fully validate a Kubernetes cluster before creating Native Tenant resources.</p>
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+        <section class="grid gap-5 xl:grid-cols-3"
+                 aria-label="Tenant baseline workflows">
+            <form method="post"
+                  action="{{ url_for('tenant.create_tenant_route') }}"
+                  class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-5 flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="building-2" class="h-5 w-5"></i></span>
+                    <div>
+                        <h2 class="text-base font-semibold text-content-primary">1. Add Tenant</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Bind one Tenant and initial environment to a Ready cluster.</p>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <label class="block">
+                        {{ form_field.label_row("Tenant Name") }}
+                        <input name="name"
+                               required
+                               autocomplete="off"
+                               placeholder="Payments"
+                               class="{{ form_field.input_classes() }}">
+                    </label>
+                    <label class="block">
+                        {{ form_field.label_row("Tenant Slug") }}
+                        <input name="slug"
+                               autocomplete="off"
+                               placeholder="payments"
+                               class="{{ form_field.input_classes() }}">
+                        {{ form_field.help("Optional. KAORI derives a lowercase slug from the name when omitted.") }}
+                    </label>
+                    <label class="block">
+                        {{ form_field.label_row("Cluster") }}
+                        <select name="cluster_id" required class="{{ form_field.select_classes() }}">
+                            <option value="">Select Ready cluster</option>
+                            {% for cluster in ready_clusters %}
+                                <option value="{{ cluster.id }}">{{ cluster.name }} · {{ cluster.environment|title }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label class="block">
+                        {{ form_field.label_row("Environment") }}
+                        <select name="environment" required class="{{ form_field.select_classes() }}">
+                            <option value="development">Development</option>
+                            <option value="staging">Staging</option>
+                            <option value="production">Production</option>
+                        </select>
+                    </label>
+                    <label class="block">
+                        {{ form_field.label_row('Provider', 'Baseline', 'normal', 'shield-check') }}
+                        <select disabled class="{{ form_field.select_classes() }}">
+                            <option>Native Kubernetes</option>
+                            <option>Capsule — available after capability qualification</option>
+                        </select>
+                        <input type="hidden" name="provider_key" value="native_kubernetes">
+                    </label>
+                    <label class="block">
+                        {{ form_field.label_row("Description") }}
+                        <input name="description"
+                               autocomplete="off"
+                               placeholder="Optional operator context"
+                               class="{{ form_field.input_classes() }}">
+                    </label>
+                </div>
+                <button type="submit"
+                        {% if not can_manage or not native_available %}disabled aria-disabled="true"{% endif %}
+                        class="mt-5 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
+                    <i data-lucide="plus" class="h-4 w-4"></i>Add Tenant
+                </button>
+            </form>
+            <form method="post"
+                  action="{{ url_for('tenant.create_resource_profile_route') }}"
+                  class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm"
+                  data-tenant-resource-profile-form>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-5 flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="gauge" class="h-5 w-5"></i></span>
+                    <div>
+                        <h2 class="text-base font-semibold text-content-primary">2. Resource Profile</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Define reusable quota and Container LimitRange intent.</p>
+                    </div>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                    <label class="block sm:col-span-2 xl:col-span-1 2xl:col-span-2">
+                        {{ form_field.label_row("Profile Name") }}
+                        <input name="profile_name"
+                               required
+                               placeholder="Standard Platform"
+                               class="{{ form_field.input_classes() }}">
+                    </label>
+                    <label class="block sm:col-span-2 xl:col-span-1 2xl:col-span-2">
+                        {{ form_field.label_row("Class") }}
+                        <select name="profile_class"
+                                required
+                                data-tenant-profile-class
+                                class="{{ form_field.select_classes() }}">
+                            <option value="small">Small</option>
+                            <option value="standard" selected>Standard</option>
+                            <option value="large">Large</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                        {{ form_field.help("Small, Standard, and Large are locked KAORI presets. Choose Custom when different values are required.") }}
+                    </label>
+                    <label class="block sm:col-span-2 xl:col-span-1 2xl:col-span-2"
+                           data-tenant-base-preset-wrapper
+                           hidden>
+                        {{ form_field.label_row('Base Preset', 'Optional', 'info', 'copy') }}
+                        <select name="base_preset_class"
+                                data-tenant-base-preset
+                                disabled
+                                class="{{ form_field.select_classes() }}">
+                            <option value="">Start empty</option>
+                            <option value="small">Small</option>
+                            <option value="standard">Standard</option>
+                            <option value="large">Large</option>
+                        </select>
+                        {{ form_field.help("Custom may start from a built-in preset, then be edited before commit. KAORI retains the base preset/version as lineage evidence.") }}
+                    </label>
+                    {% for field, label, placeholder in [
+                        ('requests_cpu', 'CPU Requests', '2'),
+                        ('limits_cpu', 'CPU Limits', '4'),
+                        ('requests_memory', 'Memory Requests', '4Gi'),
+                        ('limits_memory', 'Memory Limits', '8Gi'),
+                        ('pods', 'Pods', '20'),
+                        ('persistentvolumeclaims', 'PVCs', '10'),
+                        ('requests_storage', 'Storage', '100Gi'),
+                        ('services', 'Services', '10'),
+                        ('configmaps', 'ConfigMaps', '50'),
+                        ('secrets', 'Secrets', '50'),
+                        ('default_request_cpu', 'Container CPU Request', '100m'),
+                        ('default_cpu', 'Container CPU Limit', '500m'),
+                        ('default_request_memory', 'Container Memory Request', '128Mi'),
+                        ('default_memory', 'Container Memory Limit', '512Mi')
+                        ] %}
+                        <label class="block">
+                            {{ form_field.label_row(label) }}
+                            <input name="{{ field }}"
+                                   placeholder="{{ placeholder }}"
+                                   data-tenant-resource-field="{{ field }}"
+                                   readonly
+                                   aria-readonly="true"
+                                   class="{{ form_field.input_classes() }}">
+                        </label>
+                    {% endfor %}
+                </div>
+                <label class="mt-4 block">
+                    {{ form_field.label_row("Description") }}
+                    <input name="profile_description"
+                           placeholder="Optional profile intent"
+                           class="{{ form_field.input_classes() }}">
+                </label>
+                <button type="submit"
+                        {% if not can_manage %}disabled aria-disabled="true"{% endif %}
+                        class="mt-5 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
+                    <i data-lucide="save" class="h-4 w-4"></i>Create Profile
+                </button>
+            </form>
+            <form method="post"
+                  action="{{ url_for('tenant.provision_namespace_route') }}"
+                  class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm"
+                  data-tenant-namespace-allocation-form>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-5 flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="boxes" class="h-5 w-5"></i></span>
+                    <div>
+                        <h2 class="text-base font-semibold text-content-primary">3. Provision Namespace</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Create and verify Namespace, ResourceQuota, and LimitRange.</p>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <label class="block">
+                        {{ form_field.label_row("Tenant Environment") }}
+                        <select name="tenant_environment_id"
+                                required
+                                class="{{ form_field.select_classes() }}">
+                            <option value="">Select Tenant environment</option>
+                            {% for environment in environment_options %}
+                                <option value="{{ environment.id }}">{{ environment.tenant.name }} · {{ environment.environment|title }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label class="block">
+                        {{ form_field.label_row("Resource Profile") }}
+                        <select name="resource_profile_id"
+                                required
+                                data-tenant-namespace-profile
+                                class="{{ form_field.select_classes() }}">
+                            <option value="">Select profile</option>
+                            {% for profile in profiles %}
+                                {% if profile.enabled %}
+                                    <option value="{{ profile.id }}">{{ profile.name }} · {{ profile.profile_class|title }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label class="block">
+                        {{ form_field.label_row("Namespace") }}
+                        <input name="namespace"
+                               required
+                               autocomplete="off"
+                               placeholder="payments-dev"
+                               class="{{ form_field.input_classes() }}">
+                        {{ form_field.help("KAORI refuses to overwrite resources owned by another controller.") }}
+                    </label>
+                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                        <div class="flex flex-col gap-1">
+                            <p class="text-sm font-semibold text-content-primary">Effective Allocation</p>
+                            <p class="text-xs leading-5 text-content-muted">Selecting a Resource Profile shows the committed allocation that will be snapshotted for this namespace. Built-in and Custom profile values are not overridden inline here.</p>
+                        </div>
+                        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                            {% for field, label, placeholder in [
+                                ('requests_cpu', 'CPU Requests', '2'),
+                                ('limits_cpu', 'CPU Limits', '4'),
+                                ('requests_memory', 'Memory Requests', '4Gi'),
+                                ('limits_memory', 'Memory Limits', '8Gi'),
+                                ('pods', 'Pods', '20'),
+                                ('persistentvolumeclaims', 'PVCs', '10'),
+                                ('requests_storage', 'Storage', '100Gi'),
+                                ('services', 'Services', '10'),
+                                ('configmaps', 'ConfigMaps', '50'),
+                                ('secrets', 'Secrets', '50'),
+                                ('default_request_cpu', 'Container CPU Request', '100m'),
+                                ('default_cpu', 'Container CPU Limit', '500m'),
+                                ('default_request_memory', 'Container Memory Request', '128Mi'),
+                                ('default_memory', 'Container Memory Limit', '512Mi')
+                                ] %}
+                                <label class="block">
+                                    {{ form_field.label_row(label) }}
+                                    <input placeholder="{{ placeholder }}"
+                                           data-tenant-namespace-resource-field="{{ field }}"
+                                           readonly
+                                           aria-readonly="true"
+                                           class="{{ form_field.input_classes() }}">
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-5 rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Apply boundary</p>
+                    <p class="mt-2 text-sm leading-6 text-content-secondary">Native Kubernetes only. Capsule remains unavailable until the Capsule provider discovery and compatibility workstream is admitted.</p>
+                </div>
+                <button type="submit"
+                        {% if not can_manage or not native_available or not environment_options or not profiles %}disabled aria-disabled="true"{% endif %}
+                        class="mt-5 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
+                    <i data-lucide="play" class="h-4 w-4"></i>Create &amp; Verify Namespace
+                </button>
+            </form>
+        </section>
+        <section class="grid gap-5 xl:grid-cols-3"
+                 aria-label="Tenant Capacity Governance">
+            <form method="post"
+                  action="{{ url_for('tenant.update_capacity_policy_route') }}"
+                  class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-5 flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
+                        <i data-lucide="shield-check" class="h-5 w-5"></i>
+                    </span>
+                    <div>
+                        <h2 class="text-base font-semibold text-content-primary">Tenant Capacity Policy</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Configure the request-budget inputs used before namespace allocation.</p>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <label class="block">
+                        {{ form_field.label_row("Cluster") }}
+                        <select name="capacity_cluster_id"
+                                required
+                                class="{{ form_field.select_classes() }}">
+                            <option value="">Select Ready cluster</option>
+                            {% for cluster in ready_clusters %}
+                                <option value="{{ cluster.id }}">{{ cluster.name }} · {{ cluster.environment|title }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <label class="block">
+                            {{ form_field.label_row("Platform Reserve CPU") }}
+                            <input name="platform_reserve_cpu"
+                                   required
+                                   value="0"
+                                   placeholder="500m"
+                                   class="{{ form_field.input_classes() }}">
+                        </label>
+                        <label class="block">
+                            {{ form_field.label_row("Platform Reserve Memory") }}
+                            <input name="platform_reserve_memory"
+                                   required
+                                   value="0"
+                                   placeholder="2Gi"
+                                   class="{{ form_field.input_classes() }}">
+                        </label>
+                        <label class="block">
+                            {{ form_field.label_row("Safety Headroom %") }}
+                            <input name="safety_headroom_percent"
+                                   type="number"
+                                   min="0"
+                                   max="99"
+                                   required
+                                   placeholder="10"
+                                   class="{{ form_field.input_classes() }}">
+                        </label>
+                        <label class="block">
+                            {{ form_field.label_row("Unmanaged CPU") }}
+                            <input name="unmanaged_commitment_cpu"
+                                   required
+                                   value="0"
+                                   placeholder="2"
+                                   class="{{ form_field.input_classes() }}">
+                        </label>
+                        <label class="block sm:col-span-2">
+                            {{ form_field.label_row("Unmanaged Memory") }}
+                            <input name="unmanaged_commitment_memory"
+                                   required
+                                   value="0"
+                                   placeholder="8Gi"
+                                   class="{{ form_field.input_classes() }}">
+                        </label>
+                    </div>
+                    {{ form_field.help("Reserve and unmanaged values are request commitments, not observed utilization. Fresh committed Capacity Analytics evidence is required before positive allocation.") }}
+                </div>
+                <button type="submit"
+                        {% if not can_manage or not native_available %}disabled aria-disabled="true"{% endif %}
+                        class="mt-5 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
+                    <i data-lucide="save" class="h-4 w-4"></i>Save Capacity Policy
+                </button>
+            </form>
+            <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm xl:col-span-2">
+                <header class="border-b border-outline-subtle px-5 py-4">
+                    <h2 class="text-base font-semibold text-content-primary">Allocation Budget</h2>
+                    <p class="mt-1 text-xs text-content-muted">Committed Ready-worker capacity evidence minus reserve, safety headroom, and unmanaged request commitments.</p>
+                </header>
+                <div class="divide-y divide-outline-subtle">
+                    {% for item in capacity_governance %}
+                        {% set state_tone = 'normal' if item.state == 'Healthy' else ('warning' if item.state in ['Near Capacity', 'Unknown'] else 'critical') %}
+                        <div class="px-5 py-4">
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                    <p class="font-semibold text-content-primary">{{ item.cluster.name }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ item.snapshot_state|title }} capacity evidence · {{ item.committed_namespace_count }} committed namespaces</p>
+                                </div>
+                                {{ table_label.status_label(item.state, state_tone) }}
+                            </div>
+                            <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                                <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Budget</p>
+                                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ item.display.budget.cpu }}</p>
+                                    <p class="text-xs text-content-muted">{{ item.display.budget.memory }}</p>
+                                </div>
+                                <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Committed</p>
+                                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ item.display.committed.cpu }}</p>
+                                    <p class="text-xs text-content-muted">{{ item.display.committed.memory }}</p>
+                                </div>
+                                <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Headroom</p>
+                                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ item.display.headroom.cpu }}</p>
+                                    <p class="text-xs text-content-muted">{{ item.display.headroom.memory }}</p>
+                                </div>
+                            </div>
+                            <p class="mt-3 text-xs leading-5 text-content-muted">{{ item.reason }}</p>
+                        </div>
+                    {% else %}
+                        <p class="px-5 py-6 text-sm text-content-muted">No Ready Kubernetes cluster is available for Tenant Capacity Governance.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+        <section aria-label="Tenant allocation changes">
+            <form method="post"
+                  action="{{ url_for('tenant.change_namespace_allocation_route') }}"
+                  data-tenant-allocation-change-form
+                  class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-base font-semibold text-content-primary">Change Namespace Allocation</h2>
+                        <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Compare the frozen current allocation with a proposed Resource Profile. KAORI runs Tenant Capacity Governance before changing committed intent or reconciling Kubernetes.</p>
+                    </div>
+                    {{ table_label.status_label('Capacity Preflight', 'info') }}
+                </div>
+                <div class="mt-5 grid gap-4 md:grid-cols-2">
+                    <label class="block">
+                        {{ form_field.label_row("Managed Namespace") }}
+                        <select name="tenant_namespace_id"
+                                required
+                                data-tenant-allocation-change-namespace
+                                class="{{ form_field.select_classes() }}">
+                            <option value="">Select managed namespace</option>
+                            {% for item in namespaces %}
+                                <option value="{{ item.id }}">{{ item.namespace }} · {{ item.environment.tenant.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label class="block">
+                        {{ form_field.label_row("Proposed Resource Profile") }}
+                        <select name="resource_profile_id"
+                                required
+                                data-tenant-allocation-change-profile
+                                class="{{ form_field.select_classes() }}">
+                            <option value="">Select Resource Profile</option>
+                            {% for profile in profiles if profile.enabled %}
+                                <option value="{{ profile.id }}">{{ profile.name }} · {{ profile.profile_class|title }} v{{ profile.version }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                </div>
+                <div class="mt-5 grid gap-4 md:grid-cols-2">
+                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Current Allocation</p>
+                        <p class="mt-2 text-sm font-semibold text-content-primary"
+                           data-tenant-allocation-current-profile>—</p>
+                        <dl class="mt-3 grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <dt class="text-xs text-content-muted">CPU requests</dt>
+                                <dd class="mt-1 font-medium text-content-primary"
+                                    data-tenant-allocation-current-cpu>
+                                    —
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs text-content-muted">Memory requests</dt>
+                                <dd class="mt-1 font-medium text-content-primary"
+                                    data-tenant-allocation-current-memory>
+                                    —
+                                </dd>
+                            </div>
+                        </dl>
+                    </div>
+                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Proposed Allocation</p>
+                        <p class="mt-2 text-sm font-semibold text-content-primary"
+                           data-tenant-allocation-proposed-profile>—</p>
+                        <dl class="mt-3 grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <dt class="text-xs text-content-muted">CPU requests</dt>
+                                <dd class="mt-1 font-medium text-content-primary"
+                                    data-tenant-allocation-proposed-cpu>
+                                    —
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs text-content-muted">Memory requests</dt>
+                                <dd class="mt-1 font-medium text-content-primary"
+                                    data-tenant-allocation-proposed-memory>
+                                    —
+                                </dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+                <p class="mt-4 text-xs leading-5 text-content-muted">CPU and memory requests are the Tenant Capacity Governance physical-capacity admission dimensions. Other ResourceQuota and LimitRange values still reconcile from the selected profile but are not represented as physical node reservations.</p>
+                <button type="submit"
+                        {% if not can_manage or not namespaces or not profiles %}disabled aria-disabled="true"{% endif %}
+                        class="mt-5 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
+                    <i data-lucide="refresh-cw" class="h-4 w-4"></i>Preflight &amp; Apply Allocation
+                </button>
+            </form>
+        </section>
+        <section class="space-y-5" aria-label="Tenant members and access">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-semibold text-content-primary">Members &amp; Access</h2>
+                    <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">
+                        Exercise the committed Tenant membership and Kubernetes RBAC contracts.
+                        Final Tenant Management information architecture remains owned by the dedicated UX workstream.
+                    </p>
+                </div>
+                {{ table_label.status_label('Functional UAT Surface', 'info') }}
+            </div>
+            <div class="grid gap-5 xl:grid-cols-3">
+                <form method="post"
+                      action="{{ url_for('tenant.add_user_membership_route') }}"
+                      class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-5 flex items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
+                            <i data-lucide="user-plus" class="h-5 w-5"></i>
+                        </span>
+                        <div>
+                            <h3 class="text-base font-semibold text-content-primary">Add User Membership</h3>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Bind one active KAORI user to one Tenant.</p>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <label class="block">
+                            {{ form_field.label_row("Tenant") }}
+                            <select name="tenant_id" required class="{{ form_field.select_classes() }}">
+                                <option value="">Select Tenant</option>
+                                {% for tenant in access_tenant_options %}<option value="{{ tenant.id }}">{{ tenant.name }}</option>{% endfor %}
+                            </select>
+                        </label>
+                        <label class="block">
+                            {{ form_field.label_row("KAORI User") }}
+                            <select name="user_id" required class="{{ form_field.select_classes() }}">
+                                <option value="">Select active user</option>
+                                {% for user in access_user_options %}
+                                    <option value="{{ user.id }}">{{ user.display_label }} · {{ user.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="block">
+                            {{ form_field.label_row('Kubernetes Subject', 'Optional', 'info', 'fingerprint') }}
+                            <input name="subject_name"
+                                   autocomplete="off"
+                                   placeholder="Defaults to KAORI username"
+                                   class="{{ form_field.input_classes() }}">
+                            {{ form_field.help("Use only when the Kubernetes identity subject differs from the KAORI username.") }}
+                        </label>
+                    </div>
+                    <button type="submit"
+                            {% if not can_manage or not access_tenant_options or not access_user_options %}disabled aria-disabled="true"{% endif %}
+                            class="mt-5 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
+                        <i data-lucide="user-plus" class="h-4 w-4"></i>Add User
+                    </button>
+                </form>
+                <div class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+                    <div class="mb-5 flex items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
+                            <i data-lucide="users" class="h-5 w-5"></i>
+                        </span>
+                        <div>
+                            <h3 class="text-base font-semibold text-content-primary">Tenant Group</h3>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">
+                                Create a Kubernetes group subject, then add it as a Tenant membership principal.
+                            </p>
+                        </div>
+                    </div>
+                    <form method="post"
+                          action="{{ url_for('tenant.create_group_route') }}"
+                          class="space-y-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <label class="block">
+                            {{ form_field.label_row("Tenant") }}
+                            <select name="tenant_id" required class="{{ form_field.select_classes() }}">
+                                <option value="">Select Tenant</option>
+                                {% for tenant in access_tenant_options %}<option value="{{ tenant.id }}">{{ tenant.name }}</option>{% endfor %}
+                            </select>
+                        </label>
+                        <label class="block">
+                            {{ form_field.label_row("Group Name") }}
+                            <input name="name"
+                                   required
+                                   autocomplete="off"
+                                   placeholder="Platform Operators"
+                                   class="{{ form_field.input_classes() }}">
+                        </label>
+                        <label class="block">
+                            {{ form_field.label_row('Kubernetes Group Subject', 'Optional', 'info', 'fingerprint') }}
+                            <input name="subject_name"
+                                   autocomplete="off"
+                                   placeholder="Derived from Tenant and group"
+                                   class="{{ form_field.input_classes() }}">
+                        </label>
+                        <button type="submit"
+                                {% if not can_manage or not access_tenant_options %}disabled aria-disabled="true"{% endif %}
+                                class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-2 text-sm font-semibold text-content-primary transition hover:border-kaori-primary/40 disabled:cursor-not-allowed disabled:opacity-50">
+                            <i data-lucide="plus" class="h-4 w-4"></i>Create Group
+                        </button>
+                    </form>
+                    <div class="my-5 border-t border-outline-subtle"></div>
+                    <form method="post"
+                          action="{{ url_for('tenant.add_group_membership_route') }}"
+                          class="space-y-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <label class="block">
+                            {{ form_field.label_row("Tenant") }}
+                            <select name="tenant_id" required class="{{ form_field.select_classes() }}">
+                                <option value="">Select Tenant</option>
+                                {% for tenant in access_tenant_options %}<option value="{{ tenant.id }}">{{ tenant.name }}</option>{% endfor %}
+                            </select>
+                        </label>
+                        <label class="block">
+                            {{ form_field.label_row("Tenant Group") }}
+                            <select name="group_id" required class="{{ form_field.select_classes() }}">
+                                <option value="">Select enabled group</option>
+                                {% for group in access_group_options %}
+                                    <option value="{{ group.id }}">{{ group.tenant.name }} · {{ group.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <button type="submit"
+                                {% if not can_manage or not access_group_options %}disabled aria-disabled="true"{% endif %}
+                                class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
+                            <i data-lucide="users-round" class="h-4 w-4"></i>Add Group Membership
+                        </button>
+                    </form>
+                </div>
+                <form method="post"
+                      action="{{ url_for('tenant.create_access_grant_route') }}"
+                      class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-5 flex items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
+                            <i data-lucide="key-round" class="h-5 w-5"></i>
+                        </span>
+                        <div>
+                            <h3 class="text-base font-semibold text-content-primary">Apply Access Grant</h3>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">
+                                Reconcile a versioned least-privilege profile into namespaced Kubernetes RBAC.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <label class="block">
+                            {{ form_field.label_row("Membership") }}
+                            <select name="membership_id"
+                                    required
+                                    class="{{ form_field.select_classes() }}">
+                                <option value="">Select active membership</option>
+                                {% for membership in access_membership_options %}
+                                    <option value="{{ membership.id }}">
+                                        {{ membership.tenant.name }} · {{ membership.subject_name }}
+                                        · {{ membership.principal_type|title }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="block">
+                            {{ form_field.label_row("Access Profile") }}
+                            <select name="access_profile"
+                                    required
+                                    class="{{ form_field.select_classes() }}">
+                                {% for profile in access_profiles %}
+                                    <option value="{{ profile.key.value }}">{{ profile.label }} · v{{ profile.version }}</option>
+                                {% endfor %}
+                            </select>
+                            {{ form_field.help("Built-in profiles are code-owned security contracts and cannot be edited inline.") }}
+                        </label>
+                        <label class="block">
+                            {{ form_field.label_row("Scope") }}
+                            <select name="scope_type" required class="{{ form_field.select_classes() }}">
+                                <option value="namespace" selected>Namespace</option>
+                                <option value="environment">Environment</option>
+                                <option value="tenant">Tenant</option>
+                            </select>
+                        </label>
+                        <label class="block">
+                            {{ form_field.label_row('Environment Target', 'Environment scope only', 'info') }}
+                            <select name="tenant_environment_id"
+                                    class="{{ form_field.select_classes() }}">
+                                <option value="">No environment target</option>
+                                {% for environment in access_environment_options %}
+                                    <option value="{{ environment.id }}">{{ environment.tenant.name }} · {{ environment.environment|title }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="block">
+                            {{ form_field.label_row('Namespace Target', 'Namespace scope only', 'info') }}
+                            <select name="tenant_namespace_id" class="{{ form_field.select_classes() }}">
+                                <option value="">No namespace target</option>
+                                {% for namespace in access_namespace_options %}
+                                    <option value="{{ namespace.id }}">{{ namespace.environment.tenant.name }} · {{ namespace.namespace }}</option>
+                                {% endfor %}
+                            </select>
+                            {{ form_field.help("Tenant scope uses neither target. Cross-Tenant references fail closed.") }}
+                        </label>
+                    </div>
+                    <button type="submit"
+                            {% if not can_manage or not access_membership_options %}disabled aria-disabled="true"{% endif %}
+                            class="mt-5 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
+                        <i data-lucide="shield-check" class="h-4 w-4"></i>Apply Grant
+                    </button>
+                </form>
+            </div>
+            <div class="grid gap-5 xl:grid-cols-2">
+                <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+                    <header class="border-b border-outline-subtle px-5 py-4">
+                        <h3 class="text-base font-semibold text-content-primary">Memberships</h3>
+                        <p class="mt-1 text-xs text-content-muted">
+                            Latest 5 committed principals. Revoking membership also disables dependent grants.
+                        </p>
+                    </header>
+                    <div class="divide-y divide-outline-subtle">
+                        {% for membership in recent_tenant_memberships %}
+                            <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="font-semibold text-content-primary">{{ membership.subject_name }}</span>
+                                        {{ table_label.status_label(membership.status|title, 'normal' if membership.status == 'active' else 'critical') }}
+                                    </div>
+                                    <p class="mt-1 text-xs text-content-muted">{{ membership.tenant.name }} · {{ membership.principal_type|title }}</p>
+                                </div>
+                                {% if membership.status == 'active' %}
+                                    <form method="post"
+                                          action="{{ url_for('tenant.revoke_membership_route', membership_id=membership.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit"
+                                                {% if not can_manage %}disabled aria-disabled="true"{% endif %}
+                                                class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-status-critical/30 px-3 py-2 text-xs font-semibold text-status-critical transition hover:bg-status-critical-soft disabled:cursor-not-allowed disabled:opacity-50">
+                                            <i data-lucide="user-x" class="h-4 w-4"></i>Revoke
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <p class="px-5 py-6 text-sm text-content-muted">No Tenant memberships yet.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+                    <header class="border-b border-outline-subtle px-5 py-4">
+                        <h3 class="text-base font-semibold text-content-primary">Access Grants</h3>
+                        <p class="mt-1 text-xs text-content-muted">
+                            Latest 5 grants with committed versus effective Kubernetes RBAC evidence.
+                        </p>
+                    </header>
+                    <div class="divide-y divide-outline-subtle">
+                        {% for grant in recent_access_grants %}
+                            {% set reconciliation_tone = 'normal' if grant.reconciliation_status == 'ready' else ('critical' if grant.reconciliation_status == 'failed' else 'warning') %}
+                            <div class="px-5 py-4">
+                                <div class="flex flex-wrap items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <span class="font-semibold text-content-primary">{{ grant.membership.subject_name }}</span>
+                                            {{ table_label.status_label(grant.access_profile|replace('_', ' ') |title, 'info') }}
+                                            {{ table_label.status_label(grant.reconciliation_status|title, reconciliation_tone) }}
+                                        </div>
+                                        <p class="mt-1 text-xs text-content-muted">
+                                            {{ grant.tenant.name }} · {{ grant.scope_type|title }}
+                                            {% if grant.environment %}
+                                                · {{ grant.environment.environment|title }}
+                                            {% elif grant.namespace %}
+                                                · {{ grant.namespace.namespace }}
+                                            {% endif %}
+                                            · v{{ grant.access_profile_version }}
+                                        </p>
+                                        <p class="mt-2 text-xs leading-5 text-content-muted">
+                                            {{ grant.reconciliation_message or 'Awaiting Kubernetes RBAC evidence.' }}
+                                        </p>
+                                        {% if grant.desired_hash or grant.effective_hash %}
+                                            <p class="mt-1 font-mono text-xs text-content-muted">
+                                                desired {{ (grant.desired_hash or '—')[:12] }}
+                                                · effective {{ (grant.effective_hash or '—')[:12] }}
+                                            </p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex flex-wrap items-center justify-end gap-2">
+                                        <form method="post"
+                                              action="{{ url_for('tenant.inspect_access_grant_route', grant_id=grant.id) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit"
+                                                    {% if not can_manage %}disabled aria-disabled="true"{% endif %}
+                                                    class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-subtle px-3 py-2 text-xs font-semibold text-content-primary transition hover:border-kaori-primary/40 disabled:cursor-not-allowed disabled:opacity-50">
+                                                <i data-lucide="scan-search" class="h-4 w-4"></i>Inspect
+                                            </button>
+                                        </form>
+                                        {% if grant.status == 'active' %}
+                                            <form method="post"
+                                                  action="{{ url_for('tenant.reconcile_access_grant_route', grant_id=grant.id) }}">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit"
+                                                        {% if not can_manage %}disabled aria-disabled="true"{% endif %}
+                                                        class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-kaori-primary/30 px-3 py-2 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft disabled:cursor-not-allowed disabled:opacity-50">
+                                                    <i data-lucide="refresh-cw" class="h-4 w-4"></i>Reconcile
+                                                </button>
+                                            </form>
+                                            <form method="post"
+                                                  action="{{ url_for('tenant.revoke_access_grant_route', grant_id=grant.id) }}">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit"
+                                                        {% if not can_manage %}disabled aria-disabled="true"{% endif %}
+                                                        class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-status-critical/30 px-3 py-2 text-xs font-semibold text-status-critical transition hover:bg-status-critical-soft disabled:cursor-not-allowed disabled:opacity-50">
+                                                    <i data-lucide="shield-x" class="h-4 w-4"></i>Revoke
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <p class="px-5 py-6 text-sm text-content-muted">No Tenant Access Grants yet.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% if recent_tenant_groups %}
+                <div class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h3 class="text-sm font-semibold text-content-primary">Recent Tenant Groups</h3>
+                            <p class="mt-1 text-xs text-content-muted">Latest 5 group subjects available for membership.</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            {% for group in recent_tenant_groups %}
+                                {{ table_label.status_label(group.tenant.name ~ ' · ' ~ group.name, 'normal' if group.enabled else 'warning') }}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </section>
+        {% include "kubernetes/tenant/partials/_credential_management.html" %}
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+                 aria-label="Tenant capacity decisions">
+            <header class="border-b border-outline-subtle px-5 py-4">
+                <h2 class="text-base font-semibold text-content-primary">Capacity Decisions</h2>
+                <p class="mt-1 text-xs text-content-muted">Latest 5 committed allocation preflight decisions.</p>
+            </header>
+            <div class="divide-y divide-outline-subtle">
+                {% for decision in capacity_decisions %}
+                    <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                        <div>
+                            <p class="font-semibold text-content-primary">{{ decision.namespace }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ decision.operation|replace('_', ' ') |title }} · {{ decision.capacity_state }}</p>
+                        </div>
+                        {{ table_label.status_label(decision.decision|title, 'normal' if decision.decision == 'allow' else 'critical') }}
+                    </div>
+                {% else %}
+                    <p class="px-5 py-6 text-sm text-content-muted">No capacity preflight decision has been committed yet.</p>
+                {% endfor %}
+            </div>
+        </section>
+        <section class="grid gap-5 xl:grid-cols-3" aria-label="Tenant committed state">
+            <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+                <header class="border-b border-outline-subtle px-5 py-4">
+                    <h2 class="text-base font-semibold text-content-primary">Tenants</h2>
+                    <p class="mt-1 text-xs text-content-muted">Latest 5 committed Tenant records.</p>
+                </header>
+                <div class="divide-y divide-outline-subtle">
+                    {% for tenant in tenants %}
+                        <div class="px-5 py-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="font-semibold text-content-primary">{{ tenant.name }}</span>
+                                {{ table_label.status_label(tenant.lifecycle_status|title, 'normal' if tenant.lifecycle_status == 'ready' else 'warning') }}
+                            </div>
+                            <p class="mt-1 text-xs text-content-muted">{{ tenant.slug }} · {{ tenant.provider_key|replace('_', ' ') |title }}</p>
+                        </div>
+                    {% else %}
+                        <p class="px-5 py-6 text-sm text-content-muted">No Tenant records yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+                <header class="border-b border-outline-subtle px-5 py-4">
+                    <h2 class="text-base font-semibold text-content-primary">Resource Profiles</h2>
+                    <p class="mt-1 text-xs text-content-muted">Latest 5 reusable quota contracts.</p>
+                </header>
+                <div class="divide-y divide-outline-subtle">
+                    {% for profile in profiles %}
+                        <div class="px-5 py-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="font-semibold text-content-primary">{{ profile.name }}</span>
+                                {{ table_label.status_label(profile.profile_class|title, 'info') }}
+                            </div>
+                            <p class="mt-1 text-xs text-content-muted">{{ profile.quota_hard_json|length }} quota keys · {{ 'Enabled' if profile.enabled else 'Disabled' }}</p>
+                        </div>
+                    {% else %}
+                        <p class="px-5 py-6 text-sm text-content-muted">No Resource Profiles yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+                <header class="border-b border-outline-subtle px-5 py-4">
+                    <h2 class="text-base font-semibold text-content-primary">Namespaces</h2>
+                    <p class="mt-1 text-xs text-content-muted">Latest 5 provisioning outcomes.</p>
+                </header>
+                <div class="divide-y divide-outline-subtle">
+                    {% for item in namespaces %}
+                        <div class="px-5 py-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="font-semibold text-content-primary">{{ item.namespace }}</span>
+                                {{ table_label.status_label(item.provisioning_status|title, 'normal' if item.provisioning_status == 'ready' else ('warning' if item.provisioning_status in ['pending', 'drifted'] else 'critical') ) }}
+                            </div>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.environment.tenant.name }} · {{ item.environment.environment|title }} · {{ item.provisioning_message or 'Awaiting reconciliation evidence' }}</p>
+                        </div>
+                    {% else %}
+                        <p class="px-5 py-6 text-sm text-content-muted">No managed Tenant namespaces yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+        <script type="application/json" id="tenant-resource-profile-presets">{{ resource_profile_presets|tojson }}</script>
+        <script type="application/json" id="tenant-namespace-allocation-profiles">{{ namespace_allocation_profiles|tojson }}</script>
+        <script type="application/json" id="tenant-namespace-allocation-state">{{ namespace_allocation_state|tojson }}</script>
+    </div>
+{% endblock dashboard_content %}
+{% block scripts %}
+    {{ super() }}
+    <script defer
+            src="{{ url_for('static', filename='js/tenant_resource_profile_presets.js') }}"></script>
+{% endblock scripts %}

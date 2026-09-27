@@ -1,0 +1,134 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/table_label.html" as table_label %}
+{% block title %}Tenant Inventory{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-6" data-tenant-workspace="inventory">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('boxes', 'Kubernetes Tenant', 'boxes') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Tenant Inventory</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Inspect committed tenancy, access, policy, and provider evidence.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('layers-3', tenant_count ~ ' Tenants') }}
+                            {{ page_hero.meta_label('boxes', namespace_count ~ ' Namespaces') }}
+                            {{ page_hero.meta_label('key-round', recent_credentials|length ~ ' Credentials') }}
+                        </div>
+                    {% endcall %}
+                </div>
+            </div>
+        </section>
+        {% include "kubernetes/tenant/workspace_tabs.html" %}
+        <section class="grid gap-5 xl:grid-cols-2"
+                 aria-label="Tenant provider and namespace inventory">
+            <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+                <header class="border-b border-outline-subtle px-5 py-4">
+                    <h2 class="text-base font-semibold text-content-primary">Tenants & Provider Authority</h2>
+                </header>
+                <div class="divide-y divide-outline-subtle">
+                    {% for tenant in tenants %}
+                        <div class="px-5 py-4">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <span class="font-semibold text-content-primary">{{ tenant.name }}</span>
+                                {{ table_label.status_label(tenant.provider_state|replace('_', ' ') |title, 'normal' if tenant.provider_state in ['native', 'capsule'] else 'warning') }}
+                            </div>
+                            <p class="mt-1 text-xs text-content-muted">
+                                {{ tenant.provider_key|replace('_', ' ') |title }} · authority {{ tenant.reconciliation_authority|replace('_', ' ') |title }} · {{ tenant.lifecycle_status|title }}
+                            </p>
+                        </div>
+                    {% else %}
+                        <p class="px-5 py-6 text-sm text-content-muted">No committed Tenant records.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+                <header class="border-b border-outline-subtle px-5 py-4">
+                    <h2 class="text-base font-semibold text-content-primary">Namespaces</h2>
+                </header>
+                <div class="divide-y divide-outline-subtle">
+                    {% for item in namespaces %}
+                        <div class="px-5 py-4">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <span class="font-semibold text-content-primary">{{ item.namespace }}</span>
+                                {{ table_label.status_label(item.provisioning_status|title, 'normal' if item.provisioning_status == 'ready' else 'warning') }}
+                            </div>
+                            <p class="mt-1 text-xs text-content-muted">{{ item.environment.tenant.name }} · {{ item.environment.environment|title }} · {{ item.ownership_status|title }}</p>
+                        </div>
+                    {% else %}
+                        <p class="px-5 py-6 text-sm text-content-muted">No managed Tenant namespaces.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+        <section class="grid gap-5 xl:grid-cols-2"
+                 aria-label="Tenant security inventory">
+            <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+                <header class="border-b border-outline-subtle px-5 py-4">
+                    <h2 class="text-base font-semibold text-content-primary">Credentials</h2>
+                </header>
+                <div class="divide-y divide-outline-subtle">
+                    {% for credential in recent_credentials %}
+                        <div class="px-5 py-4">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <span class="font-semibold text-content-primary">{{ credential.service_account_name }}</span>
+                                {{ table_label.status_label(credential.status|replace('_', ' ') |title, 'normal' if credential.status in ['active', 'renewal_due'] else 'warning') }}
+                            </div>
+                            <p class="mt-1 text-xs text-content-muted">{{ credential.credential_type|replace('_', ' ') |title }} · {{ credential.delivery_method|replace('_', ' ') |title }} · reconciliation {{ credential.reconciliation_status|title }}</p>
+                        </div>
+                    {% else %}
+                        <p class="px-5 py-6 text-sm text-content-muted">No committed credential metadata.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+                <header class="border-b border-outline-subtle px-5 py-4">
+                    <h2 class="text-base font-semibold text-content-primary">Managed Resources & Policies</h2>
+                </header>
+                <div class="divide-y divide-outline-subtle">
+                    {% for item in managed_resources %}
+                        <div class="px-5 py-4">
+                            <span class="font-semibold text-content-primary">{{ item.resource_name }}</span>
+                            <p class="mt-1 text-xs text-content-muted">{{ item.resource_kind|upper }} · {{ item.mode|replace('_', ' ') |title }} · {{ item.status|title }}</p>
+                        </div>
+                    {% endfor %}
+                    {% for reservation in domain_reservations %}
+                        <div class="px-5 py-4">
+                            <span class="font-semibold text-content-primary">{{ reservation.hostname_pattern }}</span>
+                            <p class="mt-1 text-xs text-content-muted">Domain reservation · {{ reservation.match_mode|title }} · {{ reservation.status|title }}</p>
+                        </div>
+                    {% endfor %}
+                    {% for policy in exposure_policies %}
+                        <div class="px-5 py-4">
+                            <span class="font-semibold text-content-primary">{{ policy.namespace.namespace }}</span>
+                            <p class="mt-1 text-xs text-content-muted">Exposure policy · {{ policy.profile_key|replace('_', ' ') |title }} · {{ policy.status|title }}</p>
+                        </div>
+                    {% endfor %}
+                    {% if not managed_resources and not domain_reservations and not exposure_policies %}
+                        <p class="px-5 py-6 text-sm text-content-muted">No committed managed-resource or exposure-policy state.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+                 aria-label="Tenant audit correlation">
+            <header class="border-b border-outline-subtle px-5 py-4">
+                <h2 class="text-base font-semibold text-content-primary">Kubernetes Audit Correlation</h2>
+                <p class="mt-1 text-xs text-content-muted">Committed API evidence mapped back to Tenant identity and credential state.</p>
+            </header>
+            <div class="divide-y divide-outline-subtle">
+                {% for evidence in audit_evidence %}
+                    <div class="px-5 py-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="font-semibold text-content-primary">{{ evidence.principal_username }}</span>
+                            {{ table_label.status_label(evidence.correlation_status|title, 'normal' if evidence.correlation_status == 'matched' else 'warning') }}
+                        </div>
+                        <p class="mt-1 text-xs text-content-muted">{{ evidence.verb|upper }} {{ evidence.resource or 'resource' }} · {{ evidence.kubernetes_namespace or 'cluster scope' }} · {{ evidence.outcome|title }}</p>
+                    </div>
+                {% else %}
+                    <p class="px-5 py-6 text-sm text-content-muted">No correlated Kubernetes audit evidence has been committed yet.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+{% endblock dashboard_content %}

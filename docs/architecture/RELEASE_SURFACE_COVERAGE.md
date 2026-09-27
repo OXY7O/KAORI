@@ -16,7 +16,7 @@ The current baseline contains **62 navigation links** across the authenticated a
 | Object Storage Inventory | LOCKED | Storage → Object Storage | `verify_object_storage_inventory_final_lock.py` |
 | Kubernetes Operations | LOCKED | Kubernetes → Operations | `verify_kubernetes_operations_final_lock.py` |
 | Kubernetes Governance | LOCKED | Kubernetes → Governance | `verify_governance_final_lock.py` |
-| Tenant | BASELINE LOCKED | Kubernetes → Tenant | `tests/contracts/kubernetes/test_tenant_uat_ui_contract.py` |
+| Tenant | BASELINE LOCKED | Kubernetes → Tenant | baseline + integrated Tenant UAT contracts |
 | Analytics | LOCKED | Insights & Reporting → Kubernetes Analytics + Object Storage Analytics | `verify_analytics_final_lock.py` + `verify_object_storage_analytics.py` |
 | Intelligence | BASELINE LOCKED | Insights & Reporting → Intelligence | `verify_intelligence_baseline_lock.py` |
 | Reports | LOCKED | Insights & Reporting → Reports | Reports generation/job/storage/runtime verifiers + Reports contracts |
@@ -106,6 +106,6 @@ The evidence contract is snapshot-first: committed Object Storage Inventory owns
 
 ## Kubernetes Tenant Expansion
 
-`Kubernetes → Tenant` is a distinct provider-neutral Kubernetes capability surface. The release registry owns the direct `tenant.index` navigation destination and `tenant_bp` Blueprint explicitly so new Tenant routes cannot enter staging without release-surface ownership.
+`Kubernetes → Tenant` is a distinct provider-neutral Kubernetes capability surface. The release registry owns the single direct `tenant.index` sidebar destination and `tenant_bp`. `tenant.management`, `tenant.inventory`, and `tenant.analytics` are internal content-workspace routes covered by the integrated Tenant contracts and capability audit; they are intentionally not sidebar navigation endpoints.
 
-The current state is **BASELINE LOCKED** rather than final UX lock. Native Kubernetes is the admitted provider baseline for Tenant creation, Resource Profiles, and Namespace/ResourceQuota/LimitRange provisioning. Capsule discovery, qualification, access workflows, and the final integrated Tenant UX remain bounded downstream work and must not be implied as already complete.
+The current state remains **BASELINE LOCKED** until #125 completes full staging UAT and human acceptance. The integrated candidate composes Management, Inventory, and Analytics over the admitted Tenant domain, access/credential, capacity, managed-resource/policy, provider, audit, Intelligence, and Reports authorities. Native Kubernetes is mandatory for baseline acceptance. Capsule execution remains capability-conditional and must not be inferred from fixture-only evidence.

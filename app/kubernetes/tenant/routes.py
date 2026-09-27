@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any
+from collections.abc import Callable
+from typing import Any, cast
 
 from flask import Blueprint, current_app, redirect, render_template, request, url_for
 from flask_login import current_user
@@ -25,6 +26,19 @@ from app.kubernetes.tenant.capacity_governance import (
     TenantCapacityStateConflictError,
     upsert_capacity_policy_committed,
 )
+from app.kubernetes.tenant.credential_service import (
+    HumanCredentialIssueRequest,
+    TenantCredentialStateConflictError,
+    create_human_credential_from_grant_committed,
+    renew_credential_committed,
+    resume_credential_committed,
+    revoke_credential_committed,
+    suspend_credential_committed,
+)
+from app.kubernetes.tenant.deployer_credential_service import (
+    DeployerCredentialIssueRequest,
+    create_deployer_credential_committed,
+)
 from app.kubernetes.tenant.service import (
     TenantStateConflictError,
     change_native_namespace_allocation_committed,
@@ -33,6 +47,9 @@ from app.kubernetes.tenant.service import (
     get_tenant_context,
     provision_native_namespace_committed,
 )
+from app.kubernetes.tenant.workspace import get_tenant_workspace_context
+from app.models import User
+from app.models.tenant import TenantCredential
 from app.platform_operations.notifications.service import record_operational_activity
 
 tenant_bp = Blueprint('tenant', __name__, url_prefix='/kubernetes/tenant')
@@ -69,13 +86,47 @@ def _record(
     )
 
 
+def _tenant_workspace_context() -> dict[str, Any]:
+    return {
+        **get_tenant_context(),
+        **get_tenant_access_context(),
+        **get_tenant_workspace_context(),
+    }
+
+
 @tenant_bp.get('/')
 @any_permission_required('tenant.view', 'tenant.manage')
 def index():
+    return redirect(url_for('tenant.management'))
+
+
+@tenant_bp.get('/management')
+@any_permission_required('tenant.view', 'tenant.manage')
+def management():
     return render_template(
-        'kubernetes/tenant/index.html',
-        **get_tenant_context(),
-        **get_tenant_access_context(),
+        'kubernetes/tenant/management.html',
+        tenant_workspace_active='management',
+        **_tenant_workspace_context(),
+    )
+
+
+@tenant_bp.get('/inventory')
+@any_permission_required('tenant.view', 'tenant.manage')
+def inventory():
+    return render_template(
+        'kubernetes/tenant/inventory.html',
+        tenant_workspace_active='inventory',
+        **_tenant_workspace_context(),
+    )
+
+
+@tenant_bp.get('/analytics')
+@any_permission_required('tenant.view', 'tenant.manage')
+def analytics():
+    return render_template(
+        'kubernetes/tenant/analytics.html',
+        tenant_workspace_active='analytics',
+        **_tenant_workspace_context(),
     )
 
 
@@ -534,3 +585,135 @@ def provision_namespace_route():
             },
         )
     return redirect(url_for('tenant.index'))
+
+
+@tenant_bp.post('/credentials/human')
+@permission_required('tenant.manage')
+def create_human_credential_route():
+    try:
+        _csrf()
+        credential = create_human_credential_from_grant_committed(
+            access_grant_id=_required_int('access_grant_id'),
+            request=HumanCredentialIssueRequest(
+                jumpserver_reference=str(request.form.get('jumpserver_reference') or ''),
+                purpose=str(request.form.get('purpose') or 'interactive'),
+            ),
+            actor=cast(User, current_user),
+        )
+    except (ValueError, ApiException, TenantCredentialStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_credential_issue_failed',
+            status='error',
+            title='Tenant Human Credential Requires Attention',
+            message=str(exc),
+            metadata={'operation': 'credential_issue_human'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_credential_issued',
+            status='success',
+            title='Tenant Human Credential Issued',
+            message=f'{credential.service_account_name} is ready for governed JumpServer delivery.',
+            metadata={
+                'credential_id': credential.id,
+                'credential_public_id': credential.public_id,
+                'operation': 'credential_issue_human',
+            },
+        )
+    return redirect(url_for('tenant.management'))
+
+
+@tenant_bp.post('/credentials/deployer')
+@permission_required('tenant.manage')
+def create_deployer_credential_route():
+    try:
+        _csrf()
+        credential = create_deployer_credential_committed(
+            tenant_namespace_id=_required_int('tenant_namespace_id'),
+            owner_user_id=_required_int('owner_user_id'),
+            request=DeployerCredentialIssueRequest(
+                application_name=str(request.form.get('application_name') or ''),
+                purpose=str(request.form.get('purpose') or 'github-actions-helm'),
+            ),
+            actor=cast(User, current_user),
+        )
+    except (ValueError, ApiException, TenantCredentialStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_deployer_credential_issue_failed',
+            status='error',
+            title='Tenant Deployer Credential Requires Attention',
+            message=str(exc),
+            metadata={'operation': 'credential_issue_deployer'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_deployer_credential_issued',
+            status='success',
+            title='Tenant Deployer Credential Issued',
+            message=f'{credential.service_account_name} is ready for governed CI/CD delivery.',
+            metadata={
+                'credential_id': credential.id,
+                'credential_public_id': credential.public_id,
+                'operation': 'credential_issue_deployer',
+            },
+        )
+    return redirect(url_for('tenant.management'))
+
+
+def _credential_feedback(
+    *,
+    action: str,
+    credential_id: int,
+    operation: Callable[..., TenantCredential],
+) -> None:
+    try:
+        _csrf()
+        credential = operation(credential_id=credential_id, actor=current_user)
+    except (ValueError, ApiException, TenantCredentialStateConflictError) as exc:
+        _record(
+            event_type=f'kubernetes_tenant_credential_{action}_failed',
+            status='error',
+            title=f'Tenant Credential {action.title()} Requires Attention',
+            message=str(exc),
+            metadata={'credential_id': credential_id, 'operation': f'credential_{action}'},
+        )
+    else:
+        _record(
+            event_type=f'kubernetes_tenant_credential_{action}',
+            status='success',
+            title=f'Tenant Credential {action.title()}',
+            message=f'{credential.service_account_name} is now {credential.status.replace("_", " ")}.',
+            metadata={
+                'credential_id': credential.id,
+                'credential_public_id': credential.public_id,
+                'operation': f'credential_{action}',
+            },
+        )
+
+
+@tenant_bp.post('/credentials/<int:credential_id>/renew')
+@permission_required('tenant.manage')
+def renew_credential_route(credential_id: int):
+    _credential_feedback(action='renewed', credential_id=credential_id, operation=renew_credential_committed)
+    return redirect(url_for('tenant.management'))
+
+
+@tenant_bp.post('/credentials/<int:credential_id>/suspend')
+@permission_required('tenant.manage')
+def suspend_credential_route(credential_id: int):
+    _credential_feedback(action='suspended', credential_id=credential_id, operation=suspend_credential_committed)
+    return redirect(url_for('tenant.management'))
+
+
+@tenant_bp.post('/credentials/<int:credential_id>/resume')
+@permission_required('tenant.manage')
+def resume_credential_route(credential_id: int):
+    _credential_feedback(action='resumed', credential_id=credential_id, operation=resume_credential_committed)
+    return redirect(url_for('tenant.management'))
+
+
+@tenant_bp.post('/credentials/<int:credential_id>/revoke')
+@permission_required('tenant.manage')
+def revoke_credential_route(credential_id: int):
+    _credential_feedback(action='revoked', credential_id=credential_id, operation=revoke_credential_committed)
+    return redirect(url_for('tenant.management'))

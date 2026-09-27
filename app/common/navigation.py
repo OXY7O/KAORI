@@ -72,6 +72,9 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'governance.overview': 'Overview',
     'governance.tls_certificates': 'TLS Certificates',
     'tenant.index': 'Overview',
+    'tenant.management': 'Management',
+    'tenant.inventory': 'Inventory',
+    'tenant.analytics': 'Analytics',
     # Platform operations
     'jobs.executions': 'Jobs',
     'jobs.configuration': 'Job Configuration',

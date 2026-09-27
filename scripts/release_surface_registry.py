@@ -113,10 +113,13 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         navigation_endpoints=('tenant.index',),
         blueprint_vars=('tenant_bp',),
         verifiers=(),
-        contract_paths=('tests/contracts/kubernetes/test_tenant_uat_ui_contract.py',),
+        contract_paths=(
+            'tests/contracts/kubernetes/test_tenant_uat_ui_contract.py',
+            'tests/contracts/kubernetes/test_tenant_integrated_uat_contract.py',
+        ),
         notes=(
             'Provider-neutral Kubernetes Tenant workspace. Native Kubernetes is the admitted baseline provider; '
-            'Capsule readiness and provider UX remain downstream work until qualification is admitted.'
+            'Management, Inventory, and Analytics are internal workspace routes; Native remains mandatory and Capsule UAT remains capability-conditional.'
         ),
     ),
     ReleaseSurface(
