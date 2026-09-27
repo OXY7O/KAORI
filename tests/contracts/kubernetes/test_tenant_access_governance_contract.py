@@ -49,10 +49,9 @@ def test_tenant_access_revocation_records_effective_removal_evidence() -> None:
 def test_tenant_members_access_uat_surface_uses_canonical_access_services() -> None:
     routes = (ROOT / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
     service = (ROOT / 'app/kubernetes/tenant/access_service.py').read_text(encoding='utf-8')
-    template = (
-        (ROOT / 'app/templates/kubernetes/tenant/tenants.html').read_text(encoding='utf-8')
-        + (ROOT / 'app/templates/kubernetes/tenant/partials/_members_access.html').read_text(encoding='utf-8')
-    )
+    template = (ROOT / 'app/templates/kubernetes/tenant/tenants.html').read_text(encoding='utf-8') + (
+        ROOT / 'app/templates/kubernetes/tenant/partials/_members_access.html'
+    ).read_text(encoding='utf-8')
 
     for route in (
         "@tenant_bp.post('/groups')",
