@@ -149,7 +149,9 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     assert workspace.count('flex h-full flex-col') >= 2
     assert 'Issue Human Access' in workspace
     assert 'Issue CI/CD Deployer' in workspace
-    assert workspace.count('Delivery Contract') == 2
+    assert 'Delivery Contract' not in workspace
+    assert 'human-credential-tip' in workspace
+    assert 'deployer-credential-tip' in workspace
     assert '_credential_registry.html' in workspace
 
     assert "'Credential Lifecycle'" in registry
