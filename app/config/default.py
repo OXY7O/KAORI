@@ -349,6 +349,7 @@ class Config:
             'app.kubernetes.cluster.tasks',
             'app.storage.object_storage.inventory.tasks',
             'app.kubernetes.governance.tls_certificates.tasks',
+            'app.kubernetes.tenant.tasks',
             'app.platform_operations.data_lifecycle.retention.tasks',
             'app.integrations.runtime.tasks',
             'app.integrations.validation.tasks',
@@ -381,6 +382,9 @@ class Config:
                 'queue': 'inventory',
             },
             'app.kubernetes.governance.tls_certificates.tasks.sync_tls_certificates': {
+                'queue': 'inventory',
+            },
+            'app.kubernetes.tenant.tasks.sync_tenant_inventory': {
                 'queue': 'inventory',
             },
             'app.platform_operations.data_lifecycle.retention.tasks.run_domain_retention': {
