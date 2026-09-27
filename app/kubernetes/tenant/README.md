@@ -59,8 +59,8 @@ The Tenants destination keeps a small page-level governance summary visible abov
 
 ```text
 Hero
-→ Tenant Summary
-   └── Governance Estate
+→ Multi-Cluster Posture
+   └── Tenant Estate
 → Tenant Workspace
    ├── Tenant Registry
    ├── Tenant Setup
@@ -72,13 +72,13 @@ Hero
 
 `Tenant Registry` is the default tab and uses the canonical KAORI server-backed registry contract: shared loading bar, Cluster/Environment/Lifecycle/Search filters, committed-state reads, semantic labels, responsive horizontal overflow, default 5-row pagination, 5/10/25/50 page sizes, and HTMX progressive enhancement with the Tenants route as the real navigation fallback.
 
-`Tenant Setup` combines the create form with a non-collapsible governance flow so the operator sees the required order: Tenant → Namespace → Membership → Access Grant → Credential.
+`Tenant Setup` combines the create form with a non-collapsible governance flow so the operator sees the required order: Tenant → Namespace → Membership → Access Grant → Credential. Important boundaries use icon-backed tiles plus a persistent warning row. Dense field guidance uses the shared `components/info_tip.html` hover/focus pattern instead of repeating helper paragraphs under controls.
 
-`Memberships` separates three peer actions (add user, create group, add group membership) from scalable registries. Membership and Tenant Group data each use canonical filtered/paginated tables instead of fixed recent-item lists.
+`Memberships` separates three peer actions (add user, create group, add group membership) from scalable registries. Successful administration mutations progressively refresh only the Tenant Workspace through HTMX rather than forcing a full-page navigation/scroll reset. Membership and Tenant Group data each use canonical filtered/paginated tables instead of fixed recent-item lists.
 
 `Access Grants` keeps one full-width multi-column form above the canonical Access Grant Registry. The registry owns all committed/effective RBAC evidence, filters, pagination, and Inspect/Reconcile/Revoke actions.
 
-`Credentials` presents Human and CI/CD issuance as symmetric peer forms. Credential Lifecycle is a canonical registry table with filters, pagination, validity, reconciliation state, and lifecycle actions. Secret material is never rendered.
+`Credentials` presents Human and CI/CD issuance as symmetric peer forms. Credential Lifecycle is a canonical registry table with filters, pagination, validity, reconciliation state, and lifecycle actions. Desktop layout uses a compact fixed-width column contract so normal KAORI desktop widths do not require horizontal scrolling; narrow viewports may still use controlled table overflow. Secret material is never rendered.
 
 `Namespace Access` is a derived non-secret read model presented as a canonical registry with Tenant/Environment/Credential filters and pagination.
 
