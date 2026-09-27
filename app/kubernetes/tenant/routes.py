@@ -134,7 +134,15 @@ def inventory_sync():
             message=str(exc),
             metadata={'operation': 'tenant_inventory_sync', 'job_key': 'kubernetes.inventory.sync'},
         )
-    except (JobWorkerUnavailable, JobQuotaExceeded, CeleryError, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError) as exc:
+    except (
+        JobWorkerUnavailable,
+        JobQuotaExceeded,
+        CeleryError,
+        KombuOperationalError,
+        OSError,
+        RuntimeError,
+        SQLAlchemyError,
+    ) as exc:
         current_app.logger.exception('Could not dispatch Tenant Overview inventory synchronization.')
         _record(
             event_type='kubernetes_tenant_inventory_sync_failed',
