@@ -182,9 +182,7 @@ def _namespace_scoped_records(
         return records
     namespace_ids = {row.id for row in namespaces}
     grants = [
-        row
-        for row in records['grants']
-        if row.scope_type != 'namespace' or row.tenant_namespace_id in namespace_ids
+        row for row in records['grants'] if row.scope_type != 'namespace' or row.tenant_namespace_id in namespace_ids
     ]
     return {
         **records,
@@ -196,12 +194,8 @@ def _namespace_scoped_records(
             or row.anchor_namespace_id in namespace_ids
             or (row.access_grant is not None and row.access_grant in grants)
         ],
-        'managed_resources': [
-            row for row in records['managed_resources'] if row.tenant_namespace_id in namespace_ids
-        ],
-        'exposure_policies': [
-            row for row in records['exposure_policies'] if row.tenant_namespace_id in namespace_ids
-        ],
+        'managed_resources': [row for row in records['managed_resources'] if row.tenant_namespace_id in namespace_ids],
+        'exposure_policies': [row for row in records['exposure_policies'] if row.tenant_namespace_id in namespace_ids],
         'audit_evidence': [
             row
             for row in records['audit_evidence']

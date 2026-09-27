@@ -308,4 +308,6 @@ def _readout(*, findings: int, drift: int) -> str:
             f'{findings} active Tenant Governance finding(s) and {drift} drift/failure signal(s) '
             'require review in committed evidence.'
         )
-    return 'No active Tenant Governance finding or committed drift/failure signal is present in this reporting boundary.'
+    return (
+        'No active Tenant Governance finding or committed drift/failure signal is present in this reporting boundary.'
+    )
