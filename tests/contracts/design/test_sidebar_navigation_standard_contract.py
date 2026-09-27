@@ -55,6 +55,10 @@ def test_navigation_content_hierarchy_matches_design_system_v2_contract() -> Non
     assert sidebar.index('>Storage</div>') < sidebar.index('>Analytics</div>') < sidebar.index('>Insights</div>')
     assert '>Tenant</span>' in tenant_menu
     assert "url_for('tenant.index')" in tenant_menu
+    assert "url_for('tenant.tenants')" in tenant_menu
+    assert "url_for('tenant.resource_profiles')" in tenant_menu
+    assert "url_for('tenant.namespace_provisioning')" in tenant_menu
+    assert "url_for('tenant.operations')" in tenant_menu
     assert '>Kubernetes</span>' in analytics_menu
     assert '>Object Storage</span>' in analytics_menu
     assert '>Kubernetes Analytics</span>' not in analytics_menu
