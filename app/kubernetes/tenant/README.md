@@ -55,13 +55,14 @@ Capacity Analytics remains a separate committed evidence authority. Tenant sync 
 
 ## Tenants workspace composition
 
-The Tenants destination follows the KAORI Inventory/List archetype for its primary content, with subordinate administration workflows below it:
+The Tenants destination keeps a small page-level governance summary visible above one tabbed workspace:
 
 ```text
 Hero
-→ Tenant Estate
-   └── Tenant Registry
-→ Administration Workspace
+→ Tenant Summary
+   └── Governance Estate
+→ Tenant Workspace
+   ├── Tenant Registry
    ├── Tenant Setup
    ├── Memberships
    ├── Access Grants
@@ -69,9 +70,19 @@ Hero
    └── Namespace Access
 ```
 
-The Tenant Registry is always visible and uses the canonical KAORI table family: shared loading bar, Cluster/Environment/Lifecycle/Search filters, server-side filtering, default 5-row pagination, 5/10/25/50 page sizes, semantic labels, responsive horizontal overflow, and HTMX table refresh. Normal registry reads use committed KAORI Tenant state only.
+`Tenant Registry` is the default tab and uses the canonical KAORI server-backed registry contract: shared loading bar, Cluster/Environment/Lifecycle/Search filters, committed-state reads, semantic labels, responsive horizontal overflow, default 5-row pagination, 5/10/25/50 page sizes, and HTMX progressive enhancement with the Tenants route as the real navigation fallback.
 
-Administration uses the shared Analytics-derived `components/content_tabs.html` server-link mode. Every tab retains a real URL fallback; HTMX progressively replaces only the administration workspace. Mutation routes return operators to the relevant administration section rather than resetting the page to Tenant Setup.
+`Tenant Setup` combines the create form with a non-collapsible governance flow so the operator sees the required order: Tenant → Namespace → Membership → Access Grant → Credential.
+
+`Memberships` separates three peer actions (add user, create group, add group membership) from scalable registries. Membership and Tenant Group data each use canonical filtered/paginated tables instead of fixed recent-item lists.
+
+`Access Grants` keeps one full-width multi-column form above the canonical Access Grant Registry. The registry owns all committed/effective RBAC evidence, filters, pagination, and Inspect/Reconcile/Revoke actions.
+
+`Credentials` presents Human and CI/CD issuance as symmetric peer forms. Credential Lifecycle is a canonical registry table with filters, pagination, validity, reconciliation state, and lifecycle actions. Secret material is never rendered.
+
+`Namespace Access` is a derived non-secret read model presented as a canonical registry with Tenant/Environment/Credential filters and pagination.
+
+All tabs reuse the Analytics-derived `components/content_tabs.html` server-link mode. Every tab retains a real URL fallback while HTMX replaces only the Tenant Workspace. Mutation routes return operators to the relevant section.
 
 The former monolithic UAT-only Members & Access and Credential Management partials are retired. Final UX does not expose `Functional UAT Surface` copy or render all administration forms simultaneously.
 
