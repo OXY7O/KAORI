@@ -1,7 +1,3 @@
-.kaori-tenant-governance-report .tenant-governance-table {
-    font-size: 8pt;
-}
-
 .kaori-tenant-governance-report .tenant-finding-list {
     display: grid;
     gap: 3mm;
