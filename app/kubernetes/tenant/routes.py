@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 from typing import Any, cast
 
-from flask import Blueprint, current_app, make_response, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, make_response, redirect, render_template, request, url_for
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
 from kubernetes.client.rest import ApiException
@@ -39,7 +40,8 @@ from app.kubernetes.tenant.deployer_credential_service import (
     DeployerCredentialIssueRequest,
     create_deployer_credential_committed,
 )
-from app.kubernetes.tenant.job_adapter import build_tenant_sync_state
+from app.kubernetes.tenant.audit import record_tenant_sync_dispatch_audit
+from app.kubernetes.tenant.job_adapter import build_tenant_sync_state, get_visible_tenant_sync_job
 from app.kubernetes.tenant.overview import dispatch_tenant_inventory_sync
 from app.kubernetes.tenant.service import (
     TenantStateConflictError,
@@ -52,10 +54,14 @@ from app.kubernetes.tenant.service import (
     get_tenant_registry_context,
     provision_native_namespace_committed,
 )
-from app.kubernetes.tenant.workspace import get_tenant_overview_context, get_tenant_workspace_context
+from app.kubernetes.tenant.workspace import (
+    get_tenant_overview_context,
+    get_tenant_sync_workspace_context,
+    get_tenant_workspace_context,
+)
 from app.models import User
 from app.models.tenant import TenantCredential
-from app.platform_operations.notifications.service import record_operational_activity
+from app.platform_operations.notifications.service import queue_transient_feedback, record_operational_activity
 
 tenant_bp = Blueprint('tenant', __name__, url_prefix='/kubernetes/tenant')
 
@@ -113,28 +119,115 @@ def index():
     )
 
 
+@tenant_bp.get('/inventory-sync/workspace')
+@any_permission_required('tenant.view', 'tenant.manage')
+def inventory_sync_workspace():
+    response = make_response(
+        render_template(
+            'kubernetes/tenant/partials/_sync_workspace.html',
+            **get_tenant_sync_workspace_context(),
+        )
+    )
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    return response
+
+
 @tenant_bp.post('/inventory-sync')
 @permission_required('tenant.manage')
 def inventory_sync():
+    is_htmx = request.headers.get('HX-Request') == 'true'
     try:
         _csrf()
     except ValueError as exc:
         feedback = {
+            'accepted': False,
             'event_type': 'kubernetes_tenant_inventory_sync_blocked',
             'status': 'warning',
-            'title': 'Tenant Inventory Sync Could Not Start',
+            'title': 'Tenant Sync Could Not Start',
             'message': str(exc),
             'metadata': {'operation': 'tenant_inventory_sync', 'job_key': 'kubernetes.tenant.sync'},
         }
     else:
         feedback = dispatch_tenant_inventory_sync(requested_by_user_id=int(current_user.id))
-    _record(**feedback)
+
+    if not feedback.get('accepted'):
+        record_tenant_sync_dispatch_audit(
+            actor_user_id=int(current_user.id),
+            action_status='blocked' if feedback.get('status') == 'warning' else 'failed',
+            summary=str(feedback.get('message') or 'Tenant synchronization could not start.'),
+            metadata=dict(feedback.get('metadata') or {}),
+        )
+        _record(
+            event_type=str(feedback['event_type']),
+            status=str(feedback['status']),
+            title=str(feedback['title']),
+            message=str(feedback['message']),
+            detail=str(feedback.get('detail') or '') or None,
+            metadata=dict(feedback.get('metadata') or {}),
+        )
+        if is_htmx:
+            response = make_response(
+                render_template(
+                    'kubernetes/tenant/partials/_sync_workspace.html',
+                    **get_tenant_sync_workspace_context(),
+                )
+            )
+            response.status_code = 409 if feedback.get('status') == 'warning' else 503
+            response.headers['Cache-Control'] = 'no-store, max-age=0'
+            return response
+        return redirect(url_for('tenant.index'))
+
+    job = feedback['job']
+    record_tenant_sync_dispatch_audit(
+        actor_user_id=int(current_user.id),
+        action_status='queued' if feedback.get('created') else 'already_active',
+        summary=(
+            'Tenant synchronization was queued for the inventory worker.'
+            if feedback.get('created')
+            else 'Tenant synchronization was already active when another request was received.'
+        ),
+        job=job,
+        metadata={'created': bool(feedback.get('created')), 'trigger_type': 'manual'},
+    )
+
+    if is_htmx:
+        response = make_response(
+            render_template(
+                'kubernetes/tenant/partials/_sync_workspace.html',
+                **get_tenant_sync_workspace_context(),
+            )
+        )
+        response.status_code = 202
+        response.headers['Cache-Control'] = 'no-store, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        return response
+
+    queue_transient_feedback(
+        status='success' if feedback.get('created') else 'info',
+        title='Tenant Sync Queued' if feedback.get('created') else 'Tenant Sync Already Active',
+        message=(
+            'The inventory worker is refreshing the committed Tenant collection snapshot.'
+            if feedback.get('created')
+            else 'The existing Tenant sync job remains active.'
+        ),
+        action_url=url_for('jobs.executions', queue='inventory', search=job.public_id),
+        action_label='View Job Progress',
+        action_icon='activity',
+    )
     return redirect(url_for('tenant.index'))
 
 
 @tenant_bp.get('/inventory-sync/status/<string:public_id>')
-@any_permission_required('tenant.view', 'tenant.manage')
+@permission_required('tenant.manage')
 def inventory_sync_status(public_id: str):
+    job = get_visible_tenant_sync_job(
+        public_id=public_id,
+        user_id=int(current_user.id),
+    )
+    if job is None:
+        abort(404)
+
     state = build_tenant_sync_state()
     response = make_response(
         render_template(
@@ -144,6 +237,14 @@ def inventory_sync_status(public_id: str):
         )
     )
     response.headers['Cache-Control'] = 'no-store, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    if not job.is_active:
+        response.headers['HX-Trigger-After-Swap'] = json.dumps(
+            {
+                'tenantInventorySyncFinished': True,
+                'kaori:notifications-changed': True,
+            }
+        )
     return response
 
 
