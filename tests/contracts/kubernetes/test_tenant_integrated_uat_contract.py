@@ -47,6 +47,8 @@ def test_tenant_management_exposes_governed_credential_lifecycle_without_secret_
     template = (ROOT / 'app/templates/kubernetes/tenant/management.html').read_text(encoding='utf-8')
 
     for path in (
+        '/credentials/human',
+        '/credentials/deployer',
         '/credentials/<int:credential_id>/renew',
         '/credentials/<int:credential_id>/suspend',
         '/credentials/<int:credential_id>/resume',
@@ -54,12 +56,13 @@ def test_tenant_management_exposes_governed_credential_lifecycle_without_secret_
     ):
         assert f"@tenant_bp.post('{path}')" in routes
 
+    assert 'Issue Human Access' in template
+    assert 'Issue CI/CD Deployer' in template
     assert 'service_account_name' in template
     assert 'renewal_due_at' in template
     assert 'valid_until' in template
     assert 'Namespace Access' in template
     assert 'approved_access_methods' in template
-    assert 'credential.token' not in template
     assert 'credential.token' not in template
     assert 'credential.kubeconfig' not in template
 
