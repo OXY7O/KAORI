@@ -892,7 +892,7 @@ rules:
   - Reports
 
 - rule_key: kubernetes.tenant.credential.renewal_due
-  title: Tenant Credential Renewal Due
+  title: "Tenant Credential Renewal Due"
   domain: kubernetes
   source_kind: namespace
   category: governance
@@ -907,12 +907,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: A governed Tenant credential has entered its committed renewal window.
-  condition_summary: A governed Tenant credential has entered its committed renewal window.
-  recommended_action: Rotate or renew the credential through the governed Tenant credential workflow and verify the next generation.
-  impact: Prevents credential expiry from interrupting governed user or deployment access.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "A governed Tenant credential has entered its committed renewal window."
+  condition_summary: "A governed Tenant credential has entered its committed renewal window."
+  recommended_action: "Rotate or renew the credential through the governed Tenant credential workflow and verify the next generation."
+  impact: "Prevents credential expiry from interrupting governed user or deployment access."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -920,8 +920,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.credential.expired_active
-  title: Expired Tenant Credential Still Marked Active
+  title: "Expired Tenant Credential Still Marked Active"
   domain: kubernetes
   source_kind: namespace
   category: governance
@@ -936,12 +937,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: Credential validity has ended while its lifecycle state still permits use.
-  condition_summary: Credential validity has ended while its lifecycle state still permits use.
-  recommended_action: Suspend or revoke effective Kubernetes access immediately, then reconcile lifecycle state and investigate any subsequent use.
-  impact: Reduces continued access with an entitlement that should no longer be valid.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "Credential validity has ended while its lifecycle state still permits use."
+  condition_summary: "Credential validity has ended while its lifecycle state still permits use."
+  recommended_action: "Suspend or revoke effective Kubernetes access immediately, then reconcile lifecycle state and investigate any subsequent use."
+  impact: "Reduces continued access with an entitlement that should no longer be valid."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -949,8 +950,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.credential.reconciliation_drift
-  title: Tenant Credential Reconciliation Drift
+  title: "Tenant Credential Reconciliation Drift"
   domain: kubernetes
   source_kind: namespace
   category: governance
@@ -965,12 +967,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: Credential reconciliation is drifted or failed against committed intent.
-  condition_summary: Credential reconciliation is drifted or failed against committed intent.
-  recommended_action: Reconcile the credential, verify effective ServiceAccount or binding state, and rotate if integrity cannot be proven.
-  impact: Protects identity lifecycle consistency between KAORI and Kubernetes.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "Credential reconciliation is drifted or failed against committed intent."
+  condition_summary: "Credential reconciliation is drifted or failed against committed intent."
+  recommended_action: "Reconcile the credential, verify effective ServiceAccount or binding state, and rotate if integrity cannot be proven."
+  impact: "Protects identity lifecycle consistency between KAORI and Kubernetes."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -978,8 +980,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.credential.inactive_owner_active_access
-  title: Inactive User Retains Active Tenant Credential
+  title: "Inactive User Retains Active Tenant Credential"
   domain: kubernetes
   source_kind: namespace
   category: governance
@@ -994,12 +997,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: An inactive KAORI user still owns a credential in an active lifecycle state.
-  condition_summary: An inactive KAORI user still owns a credential in an active lifecycle state.
-  recommended_action: Suspend or revoke the credential and its effective access, then review the associated Access Grant.
-  impact: Prevents inactive identities from retaining effective Kubernetes access.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "An inactive KAORI user still owns a credential in an active lifecycle state."
+  condition_summary: "An inactive KAORI user still owns a credential in an active lifecycle state."
+  recommended_action: "Suspend or revoke the credential and its effective access, then review the associated Access Grant."
+  impact: "Prevents inactive identities from retaining effective Kubernetes access."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -1007,8 +1010,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.credential.revoked_still_usable
-  title: Revoked Tenant Credential Still Produces Successful API Evidence
+  title: "Revoked Tenant Credential Still Produces Successful API Evidence"
   domain: kubernetes
   source_kind: namespace
   category: governance
@@ -1023,12 +1027,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: Successful Kubernetes audit evidence is attributed to a credential whose committed status is revoked.
-  condition_summary: Successful Kubernetes audit evidence is attributed to a credential whose committed status is revoked.
-  recommended_action: Treat as an access-control incident: verify provider revocation, remove residual bindings/tokens, and correlate recent activity.
-  impact: Detects revocation failures that leave real Kubernetes access usable.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "Successful Kubernetes audit evidence is attributed to a credential whose committed status is revoked."
+  condition_summary: "Successful Kubernetes audit evidence is attributed to a credential whose committed status is revoked."
+  recommended_action: "Treat this as an access-control incident; verify provider revocation, remove residual bindings or tokens, and correlate recent activity."
+  impact: "Detects revocation failures that leave real Kubernetes access usable."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -1036,8 +1040,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.access.grant_drift
-  title: Tenant Access Grant Drift
+  title: "Tenant Access Grant Drift"
   domain: kubernetes
   source_kind: namespace
   category: governance
@@ -1052,12 +1057,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: Access Grant reconciliation is drifted or failed against committed RBAC intent.
-  condition_summary: Access Grant reconciliation is drifted or failed against committed RBAC intent.
-  recommended_action: Reconcile the Access Grant and compare effective RoleBinding/ClusterRoleBinding evidence before restoring normal posture.
-  impact: Prevents silent divergence between approved Tenant access and Kubernetes RBAC.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "Access Grant reconciliation is drifted or failed against committed RBAC intent."
+  condition_summary: "Access Grant reconciliation is drifted or failed against committed RBAC intent."
+  recommended_action: "Reconcile the Access Grant and compare effective RoleBinding or ClusterRoleBinding evidence before restoring normal posture."
+  impact: "Prevents silent divergence between approved Tenant access and Kubernetes RBAC."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -1065,8 +1070,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.access.grant_without_active_membership
-  title: Active Grant Without Active Membership
+  title: "Active Grant Without Active Membership"
   domain: kubernetes
   source_kind: namespace
   category: governance
@@ -1081,12 +1087,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: An Access Grant remains active while its canonical membership is not active.
-  condition_summary: An Access Grant remains active while its canonical membership is not active.
-  recommended_action: Revoke the orphaned grant and verify effective RBAC removal.
-  impact: Prevents stale authorization surviving membership revocation.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "An Access Grant remains active while its canonical membership is not active."
+  condition_summary: "An Access Grant remains active while its canonical membership is not active."
+  recommended_action: "Revoke the orphaned grant and verify effective RBAC removal."
+  impact: "Prevents stale authorization surviving membership revocation."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -1094,8 +1100,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.access.unmanaged_principal
-  title: Unmanaged or Ambiguous Principal Observed
+  title: "Unmanaged or Ambiguous Principal Observed"
   domain: kubernetes
   source_kind: namespace
   category: governance
@@ -1110,12 +1117,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: Normalized Kubernetes audit evidence cannot map the acting principal to one canonical governed Tenant identity.
-  condition_summary: Normalized Kubernetes audit evidence cannot map the acting principal to one canonical governed Tenant identity.
-  recommended_action: Identify the principal, establish approved ownership or remove its access, and retain the audit evidence for review.
-  impact: Surfaces access that bypasses or cannot be attributed to canonical Tenant identity governance.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "Normalized Kubernetes audit evidence cannot map the acting principal to one canonical governed Tenant identity."
+  condition_summary: "Normalized Kubernetes audit evidence cannot map the acting principal to one canonical governed Tenant identity."
+  recommended_action: "Identify the principal, establish approved ownership or remove its access, and retain the audit evidence for review."
+  impact: "Surfaces access that bypasses or cannot be attributed to canonical Tenant identity governance."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -1123,8 +1130,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.access.cluster_scope_binding
-  title: Tenant Principal Modified Cluster-Scoped Binding
+  title: "Tenant Principal Modified Cluster-Scoped Binding"
   domain: kubernetes
   source_kind: cluster
   category: governance
@@ -1139,12 +1147,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: A correlated Tenant principal successfully modified ClusterRoleBinding state.
-  condition_summary: A correlated Tenant principal successfully modified ClusterRoleBinding state.
-  recommended_action: Review the cluster-scoped mutation immediately and remove any Tenant principal elevation outside the approved boundary.
-  impact: Protects the namespaced Tenant boundary from unexpected cluster-scope privilege.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "A correlated Tenant principal successfully modified ClusterRoleBinding state."
+  condition_summary: "A correlated Tenant principal successfully modified ClusterRoleBinding state."
+  recommended_action: "Review the cluster-scoped mutation immediately and remove any Tenant principal elevation outside the approved boundary."
+  impact: "Protects the namespaced Tenant boundary from unexpected cluster-scope privilege."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -1152,8 +1160,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.namespace.unmanaged
-  title: Discovered Namespace Is Not Governed by a Tenant
+  title: "Discovered Namespace Is Not Governed by a Tenant"
   domain: kubernetes
   source_kind: namespace
   category: governance
@@ -1168,12 +1177,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: A namespace is known to KAORI but remains discovered rather than managed/adopted.
-  condition_summary: A namespace is known to KAORI but remains discovered rather than managed/adopted.
-  recommended_action: Assign or adopt the namespace into the approved Tenant model, or document why it remains outside governance.
-  impact: Reduces unmanaged namespace capacity and access blind spots.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "A namespace is known to KAORI but remains discovered rather than managed or adopted."
+  condition_summary: "A namespace is known to KAORI but remains discovered rather than managed or adopted."
+  recommended_action: "Assign or adopt the namespace into the approved Tenant model, or document why it remains outside governance."
+  impact: "Reduces unmanaged namespace capacity and access blind spots."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -1181,8 +1190,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.namespace.profile_drift
-  title: Tenant Namespace Resource Profile Drift
+  title: "Tenant Namespace Resource Profile Drift"
   domain: kubernetes
   source_kind: namespace
   category: governance
@@ -1197,12 +1207,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: Namespace provisioning hashes or status show drift from committed Resource Profile intent.
-  condition_summary: Namespace provisioning hashes or status show drift from committed Resource Profile intent.
-  recommended_action: Reconcile ResourceQuota and LimitRange from the committed profile and verify effective provider state.
-  impact: Keeps resource governance reproducible and prevents silent allocation drift.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "Namespace provisioning hashes or status show drift from committed Resource Profile intent."
+  condition_summary: "Namespace provisioning hashes or status show drift from committed Resource Profile intent."
+  recommended_action: "Reconcile ResourceQuota and LimitRange from the committed profile and verify effective provider state."
+  impact: "Keeps resource governance reproducible and prevents silent allocation drift."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -1210,8 +1220,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.namespace.missing_tenant_admin
-  title: Tenant Has No Active Tenant Admin
+  title: "Tenant Has No Active Tenant Admin"
   domain: kubernetes
   source_kind: namespace
   category: governance
@@ -1226,12 +1237,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: No active Tenant Admin Access Grant exists for the Tenant.
-  condition_summary: No active Tenant Admin Access Grant exists for the Tenant.
-  recommended_action: Assign an approved Tenant Admin through canonical membership and Access Grant workflow.
-  impact: Maintains accountable operational ownership for each governed Tenant.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "No active Tenant Admin Access Grant exists for the Tenant."
+  condition_summary: "No active Tenant Admin Access Grant exists for the Tenant."
+  recommended_action: "Assign an approved Tenant Admin through canonical membership and Access Grant workflow."
+  impact: "Maintains accountable operational ownership for each governed Tenant."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -1239,8 +1250,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.policy.exposure_violation
-  title: Tenant Service or Ingress Exposure Violates Policy
+  title: "Tenant Service or Ingress Exposure Violates Policy"
   domain: kubernetes
   source_kind: namespace
   category: governance
@@ -1255,12 +1267,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: A committed exposure preflight denied a Service or Ingress shape.
-  condition_summary: A committed exposure preflight denied a Service or Ingress shape.
-  recommended_action: Correct the Service type or hostname reservation and rerun governed preflight before deployment.
-  impact: Prevents unapproved external exposure and hostname ownership conflicts.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "A committed exposure preflight denied a Service or Ingress shape."
+  condition_summary: "A committed exposure preflight denied a Service or Ingress shape."
+  recommended_action: "Correct the Service type or hostname reservation and rerun governed preflight before deployment."
+  impact: "Prevents unapproved external exposure and hostname ownership conflicts."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -1268,8 +1280,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.policy.managed_resource_drift
-  title: Managed TLS or Registry Resource Drift
+  title: "Managed TLS or Registry Resource Drift"
   domain: kubernetes
   source_kind: namespace
   category: governance
@@ -1284,12 +1297,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: A platform-managed TLS or registry resource is drifted or failed.
-  condition_summary: A platform-managed TLS or registry resource is drifted or failed.
-  recommended_action: Reconcile the managed resource from its non-secret source reference and verify KAORI ownership/effective hash.
-  impact: Protects platform-security resources without exposing secret material.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "A platform-managed TLS or registry resource is drifted or failed."
+  condition_summary: "A platform-managed TLS or registry resource is drifted or failed."
+  recommended_action: "Reconcile the managed resource from its non-secret source reference and verify KAORI ownership and effective hash."
+  impact: "Protects platform-security resources without exposing secret material."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -1297,8 +1310,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.provider.degraded
-  title: Tenant Provider Capability Degraded
+  title: "Tenant Provider Capability Degraded"
   domain: kubernetes
   source_kind: cluster
   category: reliability
@@ -1313,12 +1327,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: Committed Tenant provider state is degraded and one or more required capabilities are not fully available.
-  condition_summary: Committed Tenant provider state is degraded and one or more required capabilities are not fully available.
-  recommended_action: Review provider capability evidence, restore required enforcement, and do not relax security-sensitive operations.
-  impact: Prevents partial provider health from silently weakening Tenant governance.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "Committed Tenant provider state is degraded and one or more required capabilities are not fully available."
+  condition_summary: "Committed Tenant provider state is degraded and one or more required capabilities are not fully available."
+  recommended_action: "Review provider capability evidence, restore required enforcement, and do not relax security-sensitive operations."
+  impact: "Prevents partial provider health from silently weakening Tenant governance."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -1326,8 +1340,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.provider.native_recovery
-  title: Tenant Is in Native Recovery
+  title: "Tenant Is in Native Recovery"
   domain: kubernetes
   source_kind: cluster
   category: operations
@@ -1342,12 +1357,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: Tenant authority is in the controlled Native Recovery workflow.
-  condition_summary: Tenant authority is in the controlled Native Recovery workflow.
-  recommended_action: Complete snapshot, materialization and verification steps before transferring reconciliation authority.
-  impact: Prevents Native and Capsule from becoming simultaneous authorities during recovery.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "Tenant authority is in the controlled Native Recovery workflow."
+  condition_summary: "Tenant authority is in the controlled Native Recovery workflow."
+  recommended_action: "Complete snapshot, materialization and verification steps before transferring reconciliation authority."
+  impact: "Prevents Native and Capsule from becoming simultaneous authorities during recovery."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -1355,8 +1370,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.production.human_mutation
-  title: Human Mutation Observed in Production Tenant
+  title: "Human Mutation Observed in Production Tenant"
   domain: kubernetes
   source_kind: namespace
   category: governance
@@ -1371,12 +1387,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: Committed production policy or Kubernetes audit evidence shows a successful human/admin mutation.
-  condition_summary: Committed production policy or Kubernetes audit evidence shows a successful human/admin mutation.
-  recommended_action: Review the reason and exception/administrator authority, then return routine changes to the CI/CD path.
-  impact: Reduces untracked interactive production mutation risk.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "Committed production policy or Kubernetes audit evidence shows a successful human or administrator mutation."
+  condition_summary: "Committed production policy or Kubernetes audit evidence shows a successful human or administrator mutation."
+  recommended_action: "Review the reason and exception or administrator authority, then return routine changes to the CI/CD path."
+  impact: "Reduces untracked interactive production mutation risk."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -1384,8 +1400,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.production.deployment_outside_cicd
-  title: Production Deployment Mutation Outside CI/CD
+  title: "Production Deployment Mutation Outside CI/CD"
   domain: kubernetes
   source_kind: namespace
   category: governance
@@ -1400,12 +1417,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: A production workload mutation succeeded without a correlated CI/CD Deployer identity.
-  condition_summary: A production workload mutation succeeded without a correlated CI/CD Deployer identity.
-  recommended_action: Investigate the actor and change, verify deployment integrity, and restore pipeline-only mutation authority.
-  impact: Protects reproducibility and provenance of production changes.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "A production workload mutation succeeded without a correlated CI/CD Deployer identity."
+  condition_summary: "A production workload mutation succeeded without a correlated CI/CD Deployer identity."
+  recommended_action: "Investigate the actor and change, verify deployment integrity, and restore pipeline-only mutation authority."
+  impact: "Protects reproducibility and provenance of production changes."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -1413,8 +1430,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.capacity.near_capacity
-  title: Cluster Tenant Allocation Near Capacity
+  title: "Cluster Tenant Allocation Near Capacity"
   domain: kubernetes
   source_kind: cluster
   category: capacity
@@ -1429,12 +1447,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: The latest committed Tenant Allocation decision reports Near Capacity or Critical posture.
-  condition_summary: The latest committed Tenant Allocation decision reports Near Capacity or Critical posture.
-  recommended_action: Review committed allocation headroom and planned namespace/profile growth before approving further increases.
-  impact: Provides early warning without recomputing the allocation budget in Intelligence.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "The latest committed Tenant Allocation decision reports Near Capacity or Critical posture."
+  condition_summary: "The latest committed Tenant Allocation decision reports Near Capacity or Critical posture."
+  recommended_action: "Review committed allocation headroom and planned namespace or profile growth before approving further increases."
+  impact: "Provides early warning without recomputing the allocation budget in Intelligence."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -1442,8 +1460,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.capacity.exhausted
-  title: Cluster Tenant Allocation Exhausted
+  title: "Cluster Tenant Allocation Exhausted"
   domain: kubernetes
   source_kind: cluster
   category: capacity
@@ -1458,12 +1477,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: The latest committed Tenant Allocation decision reports Exhausted capacity.
-  condition_summary: The latest committed Tenant Allocation decision reports Exhausted capacity.
-  recommended_action: Stop discretionary allocation growth and restore governed headroom before approving new or increased allocations.
-  impact: Prevents allocation decisions from exceeding committed cluster Tenant budget.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "The latest committed Tenant Allocation decision reports Exhausted capacity."
+  condition_summary: "The latest committed Tenant Allocation decision reports Exhausted capacity."
+  recommended_action: "Stop discretionary allocation growth and restore governed headroom before approving new or increased allocations."
+  impact: "Prevents allocation decisions from exceeding committed cluster Tenant budget."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -1471,8 +1490,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.capacity.overcommitted
-  title: Cluster Tenant Allocation Overcommitted
+  title: "Cluster Tenant Allocation Overcommitted"
   domain: kubernetes
   source_kind: cluster
   category: capacity
@@ -1487,12 +1507,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: The latest committed Tenant Allocation decision reports Overcommitted state.
-  condition_summary: The latest committed Tenant Allocation decision reports Overcommitted state.
-  recommended_action: Review committed Tenant allocations and capacity policy, then reduce commitments or add capacity through approved change.
-  impact: Surfaces a committed allocation posture that already exceeds governed budget.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "The latest committed Tenant Allocation decision reports Overcommitted state."
+  condition_summary: "The latest committed Tenant Allocation decision reports Overcommitted state."
+  recommended_action: "Review committed Tenant allocations and capacity policy, then reduce commitments or add capacity through approved change."
+  impact: "Surfaces a committed allocation posture that already exceeds governed budget."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -1500,8 +1520,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.capacity.allocation_denied
-  title: Tenant Allocation Increase Denied
+  title: "Tenant Allocation Increase Denied"
   domain: kubernetes
   source_kind: namespace
   category: capacity
@@ -1516,12 +1537,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: The latest committed Tenant Allocation decision blocked the requested operation.
-  condition_summary: The latest committed Tenant Allocation decision blocked the requested operation.
-  recommended_action: Review the canonical capacity decision evidence and adjust profile, request, reserve, or physical capacity before retrying.
-  impact: Keeps denial rationale auditable and avoids bypassing allocation governance.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "The latest committed Tenant Allocation decision blocked the requested operation."
+  condition_summary: "The latest committed Tenant Allocation decision blocked the requested operation."
+  recommended_action: "Review the canonical capacity decision evidence and adjust profile, request, reserve, or physical capacity before retrying."
+  impact: "Keeps denial rationale auditable and avoids bypassing allocation governance."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation
@@ -1529,8 +1550,9 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+
 - rule_key: kubernetes.tenant.capacity.evidence_unknown
-  title: Tenant Capacity Evidence Unknown or Stale
+  title: "Tenant Capacity Evidence Unknown or Stale"
   domain: kubernetes
   source_kind: cluster
   category: capacity
@@ -1545,12 +1567,12 @@ rules:
     allowed_scope_modes:
     - finding_keys
     - rule_asset
-    guidance: Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point.
-  summary: The latest committed Tenant Allocation decision reports Unknown evidence state.
-  condition_summary: The latest committed Tenant Allocation decision reports Unknown evidence state.
-  recommended_action: Refresh the authoritative capacity inputs and rerun allocation preflight before making a higher-risk allocation decision.
-  impact: Prevents missing evidence from being treated as healthy capacity.
-  evidence_boundary: Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state.
+    guidance: "Use only when the committed Tenant condition is understood, has a named risk owner, and has an explicit review or expiry point."
+  summary: "The latest committed Tenant Allocation decision reports Unknown evidence state."
+  condition_summary: "The latest committed Tenant Allocation decision reports Unknown evidence state."
+  recommended_action: "Refresh the authoritative capacity inputs and rerun allocation preflight before making a higher-risk allocation decision."
+  impact: "Prevents missing evidence from being treated as healthy capacity."
+  evidence_boundary: "Evaluated only from committed KAORI Tenant evidence. External providers remain authoritative for effective Kubernetes state."
   supported_sources:
   - KAORI Tenant committed state
   - Kubernetes API evidence via Tenant reconciliation

@@ -11,7 +11,6 @@ from app.models.tenant import (
     TenantAccessGrant,
     TenantCapacityDecision,
     TenantCredential,
-    TenantMembership,
     TenantNamespace,
 )
 from app.models.tenant_audit import TenantAuditEvidence
