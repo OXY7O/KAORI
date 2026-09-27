@@ -8,6 +8,7 @@ from kubernetes.client import (
     AppsV1Api,
     AuthorizationV1Api,
     CoreV1Api,
+    CustomObjectsApi,
     NetworkingV1Api,
     RbacAuthorizationV1Api,
     StorageV1Api,
@@ -73,6 +74,9 @@ class KubernetesClient:
         return CoreV1Api(
             self._api_client(),
         )
+
+    def custom_objects_api(self) -> CustomObjectsApi:
+        return CustomObjectsApi(self._api_client())
 
     def apps_api(
         self,
