@@ -46,9 +46,7 @@ def _cluster_tenant_counts() -> dict[str, int]:
     return {
         str(cluster_id): int(count)
         for cluster_id, count in (
-            Tenant.query.with_entities(Tenant.cluster_id, func.count(Tenant.id))
-            .group_by(Tenant.cluster_id)
-            .all()
+            Tenant.query.with_entities(Tenant.cluster_id, func.count(Tenant.id)).group_by(Tenant.cluster_id).all()
         )
     }
 
@@ -155,9 +153,9 @@ def get_tenant_overview_context() -> dict[str, Any]:
             freshness['oldest_collected_at'],
             empty='No committed snapshot',
         ),
-        'source_coverage_label': f"{freshness['committed_count']} / {freshness['cluster_count']}",
+        'source_coverage_label': f'{freshness["committed_count"]} / {freshness["cluster_count"]}',
         'source_coverage_supporting': freshness['coverage_supporting'],
-        'freshness_window_label': f"{freshness['freshness_window_hours']} Hours",
+        'freshness_window_label': f'{freshness["freshness_window_hours"]} Hours',
         'exception_label': freshness['exception_label'],
         'exceptions_supporting': freshness['exceptions_supporting'],
         **sync,
