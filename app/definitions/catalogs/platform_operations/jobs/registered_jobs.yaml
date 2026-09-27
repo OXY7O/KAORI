@@ -24,6 +24,31 @@ jobs:
   execution_summary: Run a fleet inventory refresh and monitor the canonical execution without leaving this page.
   recent_execution_summary: Latest scheduled and manual fleet inventory synchronizations.
   legacy_module: inventory_sync
+- key: kubernetes.tenant.sync
+  name: Kubernetes Tenant Sync
+  domain: Kubernetes Tenant
+  description: Refresh committed Tenant inventory correlation across registered clusters.
+  icon: building-2
+  queue_name: inventory
+  workload_class: standard
+  job_type: kubernetes_tenant_inventory
+  operation: sync_kubernetes_tenant_inventory
+  scope_type: kubernetes_tenant_fleet
+  scope_key: all
+  configure_permission: jobs.configure
+  execute_permission: jobs.execute
+  domain_execute_permission: tenant.manage
+  dispatcher_path: app.kubernetes.tenant.job_adapter:dispatch_tenant_sync
+  context_builder_path: app.kubernetes.tenant.job_adapter:build_tenant_sync_context
+  configuration_template: platform_operations/jobs/configuration/definitions/tenant_sync.html
+  default_enabled: true
+  default_interval_minutes: 60
+  minimum_interval_minutes: 15
+  maximum_interval_minutes: 1440
+  safety_summary: Tenant sync materializes correlation from canonical KAORI Tenant state and committed Kubernetes inventory without provider mutation.
+  execution_summary: Refresh the Tenant collection snapshot on the inventory worker and monitor the canonical execution.
+  recent_execution_summary: Latest scheduled and manual Tenant inventory synchronization runs.
+  legacy_module: kubernetes_tenant_sync
 - key: object_storage.inventory.sync
   name: Object Storage Inventory Sync
   domain: Object Storage Inventory
