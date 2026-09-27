@@ -1,0 +1,83 @@
+{% import "components/action_button.html" as action_button %}
+{% import "components/snapshot_context_bar.html" as snapshot_context %}
+<div id="tenant-sync-workspace" class="space-y-4">
+    <span id="tenant-sync-background-refresh-trigger"
+          class="htmx-indicator hidden"
+          aria-hidden="true"
+          hx-get="{{ url_for('tenant.inventory_sync_workspace') }}"
+          hx-trigger="tenantInventorySyncFinished from:body"
+          hx-target="#tenant-sync-workspace"
+          hx-swap="outerHTML"
+          hx-indicator="this"></span>
+
+    {{ snapshot_context.render(
+        source_label=tenant_collection_snapshot.source_label,
+        status=tenant_collection_snapshot.status,
+        tone=tenant_collection_snapshot.tone,
+        description=tenant_collection_snapshot.description,
+        latest_collected=tenant_collection_snapshot.last_sync_label,
+        scope_label=tenant_collection_snapshot.scope_label,
+        coverage_label=tenant_collection_snapshot.coverage_label,
+        exceptions_label=tenant_collection_snapshot.exception_label,
+        icon='database-backup',
+        title='Tenant Collection Snapshot',
+        latest_supporting='Source: ' ~ tenant_collection_snapshot.source_cutoff_label,
+        scope_supporting='Worker correlation scope',
+        coverage_supporting=tenant_collection_snapshot.coverage_supporting,
+        exceptions_supporting='Committed Tenant snapshot evidence',
+        coverage_tone=tenant_collection_snapshot.coverage_tone,
+        exceptions_tone=tenant_collection_snapshot.exceptions_tone
+    ) }}
+
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+             aria-labelledby="tenant-inventory-operations-heading">
+        <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="min-w-0 flex-1">
+                {% include "kubernetes/tenant/partials/_sync_live_state.html" %}
+            </div>
+            <div class="flex shrink-0 flex-wrap items-center gap-2">
+                {% if current_user.has_permission('tenant.manage') %}
+                    <form method="post"
+                          action="{{ url_for('tenant.inventory_sync') }}"
+                          hx-post="{{ url_for('tenant.inventory_sync') }}"
+                          hx-target="#tenant-sync-workspace"
+                          hx-swap="outerHTML"
+                          hx-disabled-elt="find button">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit"
+                                {% if tenant_sync_state.is_active %}disabled{% endif %}
+                                class="{{ action_button.classes('primary') }}">
+                            <i data-lucide="refresh-cw"
+                               class="h-4 w-4 {% if tenant_sync_state.is_active %}animate-spin{% endif %}"
+                               aria-hidden="true"></i>
+                            {{ 'Syncing Tenant' if tenant_sync_state.is_active else 'Sync Tenant' }}
+                        </button>
+                    </form>
+                {% endif %}
+                {% if current_user.has_permission('jobs.view') %}
+                    <a href="{{ url_for('jobs.configuration', job_key='kubernetes.tenant.sync') }}"
+                       class="{{ action_button.classes('secondary') }}">
+                        <i data-lucide="calendar-clock" class="h-4 w-4" aria-hidden="true"></i>
+                        Configure Sync
+                    </a>
+                {% endif %}
+            </div>
+        </header>
+        <div class="grid gap-px bg-outline-subtle sm:grid-cols-3">
+            <div class="bg-surface-card px-5 py-3">
+                <p class="text-xs font-semibold text-content-muted">Automatic Sync</p>
+                <p class="mt-1 text-sm font-semibold text-content-primary">
+                    {{ tenant_collection_snapshot.automatic_label }} · {{ tenant_collection_snapshot.interval_label }}
+                </p>
+            </div>
+            <div class="bg-surface-card px-5 py-3">
+                <p class="text-xs font-semibold text-content-muted">Last Successful</p>
+                <p class="mt-1 text-sm font-semibold text-content-primary">{{ tenant_collection_snapshot.last_sync_label }}</p>
+            </div>
+            <div class="bg-surface-card px-5 py-3">
+                <p class="text-xs font-semibold text-content-muted">Next Scheduled</p>
+                <p class="mt-1 text-sm font-semibold text-content-primary">{{ tenant_collection_snapshot.next_run_label }}</p>
+            </div>
+        </div>
+    </section>
+</div>
