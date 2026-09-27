@@ -1,0 +1,17 @@
+{% import "components/context_guidance_card.html" as context_guidance %}
+<div class="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(18rem,0.95fr)] xl:items-start">
+    {% include "kubernetes/tenant/partials/_tenant_form.html" %}
+    {{ context_guidance.render(
+        'Tenant Setup Guidance',
+        'Create the governed ownership boundary first; namespace and access workflows follow committed Tenant state.',
+        [
+            ('Choose a Ready cluster.', 'Tenant creation binds ownership to one registered Kubernetes cluster and one initial environment.'),
+            ('Keep provider authority explicit.', 'Native Kubernetes is the admitted baseline; Capsule remains capability-gated until qualified.'),
+            ('Provision namespaces separately.', 'Use Namespace Provisioning after the Tenant exists so quota, limits, capacity, and evidence remain governed.'),
+            ('Grant access after membership.', 'Membership, RBAC grants, and credentials remain separate lifecycle contracts.')
+        ],
+        icon='route',
+        open_by_default=true,
+        aria_label='Tenant setup guidance'
+    ) }}
+</div>
