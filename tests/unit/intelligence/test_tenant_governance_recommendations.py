@@ -58,6 +58,4 @@ def test_unmanaged_principal_is_explicit_governance_finding() -> None:
         verb='get',
         resource='pods',
     )
-    assert audit_rule_keys(evidence, production=False) == (
-        'kubernetes.tenant.access.unmanaged_principal',
-    )
+    assert audit_rule_keys(evidence, production=False) == ('kubernetes.tenant.access.unmanaged_principal',)

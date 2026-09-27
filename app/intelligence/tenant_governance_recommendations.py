@@ -85,7 +85,11 @@ def audit_rule_keys(evidence, *, production: bool) -> tuple[str, ...]:
         keys.append('kubernetes.tenant.access.cluster_scope_binding')
     if production and verb in _MUTATING_VERBS and identity_class in {'human', 'admin', 'group'}:
         keys.append('kubernetes.tenant.production.human_mutation')
-    if production and verb in _MUTATING_VERBS and resource in {'deployments', 'statefulsets', 'daemonsets', 'jobs', 'cronjobs'}:
+    if (
+        production
+        and verb in _MUTATING_VERBS
+        and resource in {'deployments', 'statefulsets', 'daemonsets', 'jobs', 'cronjobs'}
+    ):
         if identity_class != 'cicd':
             keys.append('kubernetes.tenant.production.deployment_outside_cicd')
     return tuple(keys)
@@ -104,7 +108,7 @@ def _finding(
     finding = dict(rule)
     finding.update(
         {
-            'rule_key': f"{rule['rule_key']}:{suffix}",
+            'rule_key': f'{rule["rule_key"]}:{suffix}',
             'title': title,
             'summary': summary,
             'condition_summary': summary,
@@ -162,9 +166,7 @@ def _credential_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any
 
 def _access_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     findings: list[dict[str, Any]] = []
-    active_membership_ids = {
-        membership.id for membership in TenantMembership.query.filter_by(status='active').all()
-    }
+    active_membership_ids = {membership.id for membership in TenantMembership.query.filter_by(status='active').all()}
     for grant in TenantAccessGrant.query.all():
         evidence = {
             'asset_key': grant.tenant.cluster_id,
@@ -225,13 +227,10 @@ def _namespace_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]
                 summary='Namespace ownership is discovered rather than managed or adopted.',
                 evidence=evidence,
             )
-        profile_mismatch = (
-            namespace.provisioning_status in {'drifted', 'failed'}
-            or (
-                namespace.desired_hash is not None
-                and namespace.effective_hash is not None
-                and namespace.desired_hash != namespace.effective_hash
-            )
+        profile_mismatch = namespace.provisioning_status in {'drifted', 'failed'} or (
+            namespace.desired_hash is not None
+            and namespace.effective_hash is not None
+            and namespace.desired_hash != namespace.effective_hash
         )
         if profile_mismatch:
             _append(
@@ -246,9 +245,7 @@ def _namespace_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]
 
     for tenant in Tenant.query.all():
         has_admin = any(
-            grant.status == 'active'
-            and grant.access_profile == 'tenant_admin'
-            and grant.membership.status == 'active'
+            grant.status == 'active' and grant.access_profile == 'tenant_admin' and grant.membership.status == 'active'
             for grant in tenant.access_grants
         )
         if not has_admin:
