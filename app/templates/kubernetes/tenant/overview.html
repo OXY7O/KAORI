@@ -1,6 +1,7 @@
 {% extends "kubernetes/tenant/base.html" %}
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/resource_posture_grid.html" as resource_posture_grid %}
+{% import "components/section_intro.html" as section_intro %}
 {% import "components/table_label.html" as table_label %}
 {% block tenant_content %}
     {% include "kubernetes/tenant/partials/_sync_workspace.html" %}
@@ -23,25 +24,21 @@
     {% endcall %}
 
     <section class="space-y-4" aria-labelledby="tenant-multicluster-heading">
-        <div>
-            <h2 id="tenant-multicluster-heading"
-                class="text-lg font-semibold text-content-primary">Multi-Cluster Posture</h2>
-            <p class="mt-1 text-sm leading-6 text-content-secondary">
-                Tenant, namespace, snapshot, and capacity posture across clusters.
-            </p>
-        </div>
+        {{ section_intro.render(
+            'Multi-Cluster Posture',
+            'Tenant, namespace, snapshot, and capacity posture across clusters.',
+            'tenant-multicluster-heading'
+        ) }}
 
         {% include "kubernetes/tenant/partials/_cluster_estate.html" %}
     </section>
 
     <section class="space-y-4" aria-labelledby="tenant-attention-heading">
-        <div>
-            <h2 id="tenant-attention-heading"
-                class="text-lg font-semibold text-content-primary">Operational Attention</h2>
-            <p class="mt-1 text-sm leading-6 text-content-secondary">
-                Prioritize actionable Tenant conditions, then review the latest committed Tenant activity.
-            </p>
-        </div>
+        {{ section_intro.render(
+            'Operational Attention',
+            'Prioritize actionable Tenant conditions, then review the latest committed Tenant activity.',
+            'tenant-attention-heading'
+        ) }}
 
         <div class="grid gap-5 xl:grid-cols-12 xl:items-start">
             <div class="xl:col-span-7">
