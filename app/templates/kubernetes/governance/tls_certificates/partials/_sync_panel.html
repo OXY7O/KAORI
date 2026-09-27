@@ -2,11 +2,13 @@
 {% set can_sync = current_user.has_permission('tls_certificates.sync') %}
 {% set can_configure = current_user.has_permission('jobs.view') %}
 {% set can_bulk_rotate = current_user.has_permission('kubernetes_secrets.bulk_rotate_tls') %}
-<div id="tls-registry-actions"
-     class="border-b border-outline-subtle px-5 py-4 sm:px-6"
-     aria-label="TLS Registry Operations">
-    <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div class="min-w-0 flex-1">{% include "kubernetes/governance/tls_certificates/partials/_sync_live_state.html" %}</div>
+<section id="tls-registry-actions"
+         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+         aria-labelledby="tls-inventory-operations-heading">
+    <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div class="min-w-0 flex-1">
+            {% include "kubernetes/governance/tls_certificates/partials/_sync_live_state.html" %}
+        </div>
         <div class="flex shrink-0 flex-wrap items-center gap-2">
             {% if can_sync %}
                 <form method="post"
@@ -31,7 +33,8 @@
                     <button type="submit"
                             {% if payload.sync_state.is_active %}disabled{% endif %}
                             class="{{ action_button.classes('primary', false) }}">
-                        <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                        <i data-lucide="refresh-cw"
+                           class="h-4 w-4 {% if payload.sync_state.is_active %}animate-spin{% endif %}"></i>
                         {{ 'Syncing TLS' if payload.sync_state.is_active else 'Sync TLS' }}
                     </button>
                 </form>
@@ -54,5 +57,21 @@
                 <span class="text-xs font-medium text-content-muted">Operational actions are not available for your current role.</span>
             {% endif %}
         </div>
+    </header>
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-3">
+        <div class="bg-surface-card px-5 py-3">
+            <p class="text-xs font-semibold text-content-muted">Automatic Sync</p>
+            <p class="mt-1 text-sm font-semibold text-content-primary">
+                {{ 'Enabled' if payload.sync_state.automatic_enabled else 'Manual Only' }} · {{ payload.sync_state.interval_label }}
+            </p>
+        </div>
+        <div class="bg-surface-card px-5 py-3">
+            <p class="text-xs font-semibold text-content-muted">Last Successful</p>
+            <p class="mt-1 text-sm font-semibold text-content-primary">{{ payload.sync_state.last_success_label }}</p>
+        </div>
+        <div class="bg-surface-card px-5 py-3">
+            <p class="text-xs font-semibold text-content-muted">Next Scheduled</p>
+            <p class="mt-1 text-sm font-semibold text-content-primary">{{ payload.sync_state.next_run_label }}</p>
+        </div>
     </div>
-</div>
+</section>
