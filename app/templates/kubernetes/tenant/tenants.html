@@ -29,6 +29,11 @@
                     <p class="px-5 py-8 text-sm text-content-muted">No Tenant records yet.</p>
                 {% endfor %}
             </div>
+            {% set pagination_state = tenant_pagination %}
+            {% set pagination_resource = 'tenants' %}
+            {% set pagination_endpoint = 'tenant.tenants' %}
+            {% set pagination_id = 'tenant-registry' %}
+            {% include "kubernetes/tenant/partials/_pagination_footer.html" %}
         </div>
     </section>
     {% include "kubernetes/tenant/partials/_members_access.html" %}
