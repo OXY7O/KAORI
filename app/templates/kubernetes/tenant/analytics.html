@@ -9,7 +9,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('chart-no-axes-combined', 'Kubernetes Tenant', 'chart-no-axes-combined') %}
                         <h1 class="{{ page_hero.title_classes() }}">Tenant Analytics</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Review committed capacity, governance findings, and evidence quality.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review committed capacity, governance findings, and evidence.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('shield-alert', tenant_governance_findings|length ~ ' Findings') }}
                             {{ page_hero.meta_label('activity', capacity_decisions|length ~ ' Decisions') }}
