@@ -144,7 +144,7 @@ def _attention_tone(value: str) -> str:
     return 'info'
 
 
-def _tenant_attention_rows(findings: list[dict[str, Any]], *, limit: int = 6) -> list[dict[str, str]]:
+def _tenant_attention_rows(findings: list[dict[str, Any]], *, limit: int = 3) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
 
     for finding in findings:
@@ -227,7 +227,7 @@ def _sort_time(value: datetime | None) -> float:
     return normalized.timestamp()
 
 
-def _tenant_recent_activity(*, limit: int = 6) -> list[dict[str, str]]:
+def _tenant_recent_activity(*, limit: int = 5) -> list[dict[str, str]]:
     rows: list[tuple[datetime | None, dict[str, str]]] = []
 
     for tenant in Tenant.query.order_by(Tenant.updated_at.desc()).limit(limit).all():
@@ -326,8 +326,21 @@ def get_tenant_overview_context() -> dict[str, Any]:
             }
         )
 
+    cluster_rows.sort(
+        key=lambda row: (
+            0 if row['provider_tone'] == 'critical' else 1,
+            0 if not row['snapshot_coverage_complete'] else 1,
+            0 if row['capacity_state'] in {'Critical', 'Exhausted', 'Overcommitted', 'Unknown'} else 1,
+            -int(row['tenant_count']),
+            str(row['name']).lower(),
+        )
+    )
+    visible_cluster_rows = cluster_rows[:5]
+
     return {
-        'tenant_overview_clusters': cluster_rows,
+        'tenant_overview_clusters': visible_cluster_rows,
+        'tenant_overview_cluster_total': len(cluster_rows),
+        'tenant_overview_cluster_hidden': max(len(cluster_rows) - len(visible_cluster_rows), 0),
         'tenant_collection_snapshot': _tenant_collection_snapshot(sync_state),
         'tenant_sync_state': sync_state,
         'tenant_attention_rows': _tenant_attention_rows(
