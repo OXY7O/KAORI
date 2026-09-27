@@ -204,6 +204,7 @@ def inventory():
 def analytics():
     return redirect(url_for('tenant.operations', tab='runs-evidence'))
 
+
 def _required_int(name: str) -> int:
     value = str(request.form.get(name) or '').strip()
     if not value:
