@@ -8,7 +8,7 @@
     {% set estate_metrics = [
         ('building-2', 'Tenants', tenant_count, 'Committed Tenant ownership records', 'info'),
         ('boxes', 'Namespaces', namespace_count, 'Governed namespace allocations', 'info'),
-        ('server', 'Managed Clusters', (ready_clusters|length) ~ ' / ' ~ (tenant_overview_clusters|length), 'Ready / registered Kubernetes clusters', 'normal' if ready_clusters|length == tenant_overview_clusters|length and tenant_overview_clusters else 'warning'),
+        ('server', 'Managed Clusters', (ready_clusters|length) ~ ' / ' ~ tenant_overview_cluster_total, 'Ready / registered Kubernetes clusters', 'normal' if ready_clusters|length == tenant_overview_cluster_total and tenant_overview_cluster_total else 'warning'),
         ('key-round', 'Credentials', tenant_credential_count, 'Human & machine identities', 'info'),
         ('shield-alert', 'Findings', tenant_governance_finding_count, 'Active Tenant Governance findings', 'warning' if tenant_governance_finding_count else 'normal')
     ] %}
