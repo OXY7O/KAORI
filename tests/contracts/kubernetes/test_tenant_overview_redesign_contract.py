@@ -16,7 +16,7 @@ def test_tenant_overview_reuses_canonical_inventory_sync_authority() -> None:
     assert "@permission_required('clusters.sync')" in routes
     assert 'dispatch_tenant_inventory_sync' in routes
     assert "_INVENTORY_JOB_KEY = 'kubernetes.inventory.sync'" in overview
-    assert "job_key=_INVENTORY_JOB_KEY" in overview
+    assert 'job_key=_INVENTORY_JOB_KEY' in overview
     assert "trigger_type='manual'" in overview
     assert 'tenant.inventory_sync' in template
     assert 'Sync Now' in template
