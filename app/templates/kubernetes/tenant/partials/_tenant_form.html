@@ -1,14 +1,30 @@
 {% import "components/form_field.html" as form_field %}
+{% import "components/info_tip.html" as info_tip %}
 <form method="post"
       action="{{ url_for('tenant.create_tenant_route') }}"
       class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="mb-5 flex items-start gap-3">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="building-2" class="h-5 w-5"></i></span>
-        <div>
-            <h2 class="text-base font-semibold text-content-primary">Add Tenant</h2>
-            <p class="mt-1 text-sm leading-6 text-content-secondary">Bind one Tenant and initial environment to a Ready cluster.</p>
+    <div class="mb-5 flex items-start justify-between gap-3">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
+                <i data-lucide="building-2" class="h-5 w-5"></i>
+            </span>
+            <div>
+                <h2 class="text-base font-semibold text-content-primary">Add Tenant</h2>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Bind one Tenant and initial environment to a Ready cluster.</p>
+            </div>
         </div>
+        {{ info_tip.render(
+            'tenant-setup-form-tip',
+            'Tenant setup',
+            'The form creates the Tenant ownership boundary and initial environment only.',
+            [
+                'Slug is derived from the Tenant name when omitted.',
+                'Only Ready clusters are eligible for creation.',
+                'Native Kubernetes is the admitted provider baseline.',
+                'Namespace, membership, access, and credentials are governed in later workflow steps.'
+            ]
+        ) }}
     </div>
     <div class="space-y-4">
         <label class="block">
@@ -25,7 +41,6 @@
                    autocomplete="off"
                    placeholder="payments"
                    class="{{ form_field.input_classes() }}">
-            {{ form_field.help("Optional. KAORI derives a lowercase slug from the name when omitted.") }}
         </label>
         <label class="block">
             {{ form_field.label_row("Cluster") }}
