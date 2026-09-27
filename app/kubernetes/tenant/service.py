@@ -5,7 +5,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from kubernetes.client.rest import ApiException
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.extensions.db import db
@@ -448,13 +448,99 @@ def _paged_context(query: Any, *, page: int, per_page: int) -> tuple[list[Any], 
     }
 
 
-def get_tenant_registry_context(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
+def get_tenant_registry_context(
+    *,
+    page: int = 1,
+    per_page: int = 5,
+    search: str = '',
+    cluster_id: str = '',
+    environment: str = '',
+    lifecycle_status: str = '',
+) -> dict[str, Any]:
+    normalized_search = search.strip()
+    normalized_cluster_id = cluster_id.strip()
+    normalized_environment = environment.strip().lower()
+    normalized_lifecycle = lifecycle_status.strip().lower()
+
+    query = Tenant.query
+
+    if normalized_search:
+        pattern = f'%{normalized_search.lower()}%'
+        query = query.filter(
+            or_(
+                func.lower(Tenant.name).like(pattern),
+                func.lower(Tenant.slug).like(pattern),
+            )
+        )
+    if normalized_cluster_id:
+        query = query.filter(Tenant.cluster_id == normalized_cluster_id)
+    if normalized_lifecycle:
+        query = query.filter(Tenant.lifecycle_status == normalized_lifecycle)
+    if normalized_environment:
+        query = (
+            query.join(TenantEnvironment, TenantEnvironment.tenant_id == Tenant.id)
+            .filter(TenantEnvironment.environment == normalized_environment)
+            .distinct()
+        )
+
     items, pagination = _paged_context(
-        Tenant.query.order_by(Tenant.created_at.desc()),
+        query.order_by(Tenant.created_at.desc(), Tenant.name.asc()),
         page=page,
         per_page=per_page,
     )
-    return {'tenants': items, 'tenant_pagination': pagination}
+
+    tenant_ids = [item.id for item in items]
+    environment_map: dict[str, list[str]] = {tenant_id: [] for tenant_id in tenant_ids}
+    namespace_count_map: dict[str, int] = {tenant_id: 0 for tenant_id in tenant_ids}
+
+    if tenant_ids:
+        environment_rows = (
+            TenantEnvironment.query.filter(TenantEnvironment.tenant_id.in_(tenant_ids))
+            .order_by(TenantEnvironment.tenant_id.asc(), TenantEnvironment.environment.asc())
+            .all()
+        )
+        for row in environment_rows:
+            environment_map.setdefault(row.tenant_id, []).append(row.environment)
+
+        namespace_rows = (
+            db.session.query(TenantEnvironment.tenant_id, func.count(TenantNamespace.id))
+            .join(TenantNamespace, TenantNamespace.tenant_environment_id == TenantEnvironment.id)
+            .filter(TenantEnvironment.tenant_id.in_(tenant_ids))
+            .group_by(TenantEnvironment.tenant_id)
+            .all()
+        )
+        namespace_count_map.update({str(tenant_id): int(count) for tenant_id, count in namespace_rows})
+
+    cluster_ids = {item.cluster_id for item in items}
+    cluster_map = {
+        str(cluster.id): cluster
+        for cluster in Cluster.query.filter(Cluster.id.in_(cluster_ids)).all()
+    } if cluster_ids else {}
+
+    tenant_rows = [
+        {
+            'tenant': item,
+            'cluster': cluster_map.get(str(item.cluster_id)),
+            'environments': environment_map.get(item.id, []),
+            'namespace_count': namespace_count_map.get(item.id, 0),
+        }
+        for item in items
+    ]
+
+    return {
+        'tenants': items,
+        'tenant_rows': tenant_rows,
+        'tenant_pagination': pagination,
+        'tenant_registry_filters': {
+            'search': normalized_search,
+            'cluster_id': normalized_cluster_id,
+            'environment': normalized_environment,
+            'lifecycle_status': normalized_lifecycle,
+        },
+        'tenant_cluster_options': Cluster.query.order_by(Cluster.name.asc()).all(),
+        'tenant_environment_filter_options': [item.value for item in TenantEnvironmentName],
+        'tenant_lifecycle_filter_options': [item.value for item in TenantLifecycleStatus],
+    }
 
 
 def get_resource_profile_registry_context(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
