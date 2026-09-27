@@ -144,12 +144,17 @@ def test_tls_page_exposes_automatic_freshness_with_scoped_worker_progress() -> N
         ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_sync_live_state.html'
     ).read_text()
 
-    assert 'Automatic Sync' in live_state
-    assert 'Last Successful' in live_state
-    assert 'Next Scheduled' in live_state
+    assert 'Automatic Sync' in sync_panel
+    assert 'Last Successful' in sync_panel
+    assert 'Next Scheduled' in sync_panel
+    assert 'Automatic Sync:' not in live_state
+    assert 'Last Successful:' not in live_state
+    assert 'Next Scheduled:' not in live_state
     assert 'payload.sync_state.is_active' in live_state
     assert "job_key='governance.tls_certificates.sync'" in sync_panel
     assert 'TLS Secret synchronization progress' in live_state
+    assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' in sync_panel
+    assert 'aria-labelledby="tls-inventory-operations-heading"' in sync_panel
     assert 'hx-indicator="#tls-sync-panel-poll-indicator"' in live_state
 
 
