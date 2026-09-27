@@ -6,6 +6,7 @@ REPORT_DOMAIN_SERVER = 'server'
 REPORT_DOMAIN_HCI = 'hci'
 
 SOURCE_KIND_KUBERNETES = 'kubernetes'
+SOURCE_KIND_TENANT_MANAGEMENT = 'tenant_management'
 SOURCE_KIND_OBJECT_STORAGE = 'object_storage'
 SOURCE_KIND_SERVER = 'server'
 SOURCE_KIND_VM = 'vm'
@@ -27,6 +28,7 @@ REPORT_DOMAIN_DESCRIPTIONS = {
 
 SOURCE_KIND_LABELS = {
     SOURCE_KIND_KUBERNETES: 'Kubernetes',
+    SOURCE_KIND_TENANT_MANAGEMENT: 'Tenant Management Committed Evidence',
     SOURCE_KIND_OBJECT_STORAGE: 'Object Storage',
     SOURCE_KIND_SERVER: 'Server',
     SOURCE_KIND_VM: 'Virtual Machine',
@@ -34,7 +36,7 @@ SOURCE_KIND_LABELS = {
 }
 
 REPORT_DOMAIN_SOURCE_KINDS = {
-    REPORT_DOMAIN_KUBERNETES: [SOURCE_KIND_KUBERNETES],
+    REPORT_DOMAIN_KUBERNETES: [SOURCE_KIND_KUBERNETES, SOURCE_KIND_TENANT_MANAGEMENT],
     REPORT_DOMAIN_OBJECT_STORAGE: [SOURCE_KIND_OBJECT_STORAGE],
     REPORT_DOMAIN_SERVER: [SOURCE_KIND_SERVER, SOURCE_KIND_VM],
     REPORT_DOMAIN_HCI: [SOURCE_KIND_HCI],
@@ -91,6 +93,14 @@ SECTION_LABELS = {
     'tenant_quota_summary': 'Tenant Quota Summary',
     'request_limit_coverage': 'Request & Limit Coverage',
     'namespace_breakdown': 'Namespace Breakdown',
+    'tenant_inventory': 'Tenant Inventory',
+    'namespace_inventory': 'Environment & Namespace Inventory',
+    'allocation_posture': 'Allocation & Capacity Posture',
+    'access_posture': 'Memberships & Access Grants',
+    'credential_posture': 'Credential Lifecycle Posture',
+    'managed_resource_posture': 'Managed Resources & Policies',
+    'provider_posture': 'Provider & Capability Posture',
+    'activity_evidence': 'Activity & Audit Evidence',
     'governance_findings': 'Governance Findings',
     'forecast_summary': 'Forecast Summary',
     'forecast_risk_summary': 'Forecast Risk Summary',

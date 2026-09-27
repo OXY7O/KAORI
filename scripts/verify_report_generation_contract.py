@@ -278,6 +278,7 @@ def _check_cross_format_standards(errors: list[str]) -> None:
         'reports/pdf/top_consumers_analysis.html',
         'reports/pdf/alerts_anomalies.html',
         'reports/pdf/object_storage_analysis.html',
+        'reports/pdf/tenant_governance.html',
         'reports/pdf/analytics_unavailable.html',
     }
     if mapped_templates != expected_templates:
@@ -308,6 +309,7 @@ def _check_cross_format_standards(errors: list[str]) -> None:
         'top_consumers_analysis.css',
         'workload_analysis.css',
         'object_storage_analysis.css',
+        'tenant_governance.css',
     )
     for filename in geometry_only_css:
         path = ANALYTICS_CSS_ROOT / filename

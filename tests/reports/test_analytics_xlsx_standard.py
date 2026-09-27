@@ -35,6 +35,7 @@ ANALYTICS_TYPES = {
     'top_consumers',
     'alerts_anomalies',
     'object_storage_analysis',
+    'tenant_governance',
 }
 
 

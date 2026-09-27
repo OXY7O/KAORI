@@ -179,6 +179,46 @@ SECTION_OPTIONS: list[dict[str, str]] = [
         'description': 'Namespace-level workload and resource summary.',
     },
     {
+        'value': 'tenant_inventory',
+        'label': 'Tenant Inventory',
+        'description': 'Canonical Tenant lifecycle, ownership, environment, and provider authority records.',
+    },
+    {
+        'value': 'namespace_inventory',
+        'label': 'Environment & Namespace Inventory',
+        'description': 'Committed Tenant environments, namespaces, provisioning state, and profile lineage.',
+    },
+    {
+        'value': 'allocation_posture',
+        'label': 'Allocation & Capacity Posture',
+        'description': 'Effective Tenant allocation plus capacity allow/block and shortfall evidence.',
+    },
+    {
+        'value': 'access_posture',
+        'label': 'Memberships & Access Grants',
+        'description': 'Tenant principal membership and scoped RBAC grant posture.',
+    },
+    {
+        'value': 'credential_posture',
+        'label': 'Credential Lifecycle Posture',
+        'description': 'Non-secret human, admin, and CI/CD credential lifecycle metadata.',
+    },
+    {
+        'value': 'managed_resource_posture',
+        'label': 'Managed Resources & Policies',
+        'description': 'Managed TLS/registry, domain/exposure policy, and advanced provider intent posture.',
+    },
+    {
+        'value': 'provider_posture',
+        'label': 'Provider & Capability Posture',
+        'description': 'Committed Native/Capsule authority, capabilities, degradation, and recovery evidence.',
+    },
+    {
+        'value': 'activity_evidence',
+        'label': 'Activity & Audit Evidence',
+        'description': 'Correlated Kubernetes audit evidence for governed Tenant activity.',
+    },
+    {
         'value': 'governance_findings',
         'label': 'Governance Findings',
         'description': 'Detected workload governance gaps, severity, and remediation filters.',

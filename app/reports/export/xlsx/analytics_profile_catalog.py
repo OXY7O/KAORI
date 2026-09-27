@@ -137,6 +137,19 @@ ANALYTICS_WORKBOOK_PROFILES: dict[str, AnalyticsWorkbookProfile] = {
         sheet_names=('Analysis', 'Alerts & Anomalies', 'Recommendations'),
         primary_visual='composition_bar',
     ),
+    'tenant_governance': AnalyticsWorkbookProfile(
+        report_type='tenant_governance',
+        title='Tenant Governance',
+        description='Committed Tenant inventory, allocation, access, credential, provider, policy, Intelligence, and audit evidence.',
+        metric_specs=(
+            _metric('Tenants', fmt='#,##0'),
+            _metric('Namespaces', fmt='#,##0'),
+            _metric('Active Grants', fmt='#,##0'),
+            _metric('Credential Attention', fmt='#,##0'),
+        ),
+        sheet_names=('Tenants', 'Namespaces', 'Access', 'Credentials', 'Allocations', 'Governance'),
+        primary_visual='composition_bar',
+    ),
     'object_storage_analysis': AnalyticsWorkbookProfile(
         report_type='object_storage_analysis',
         title='Object Storage Analysis',

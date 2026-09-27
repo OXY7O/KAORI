@@ -31,6 +31,7 @@ def test_v3_registry_covers_every_analytics_pdf_template() -> None:
         'reports/pdf/alerts_anomalies.html': 'alerts_anomalies.css',
         'reports/pdf/analytics_unavailable.html': 'analytics_unavailable.css',
         'reports/pdf/object_storage_analysis.html': 'object_storage_analysis.css',
+        'reports/pdf/tenant_governance.html': 'tenant_governance.css',
     }
 
 
@@ -103,6 +104,7 @@ def test_every_analytics_type_has_a_public_reference_code() -> None:
         'capacity_analysis': 'CAP',
         'storage_analysis': 'STO',
         'workload_analysis': 'WLA',
+        'tenant_governance': 'TNG',
         'resource_forecast': 'FCT',
         'top_consumers': 'TPC',
         'alerts_anomalies': 'ALA',

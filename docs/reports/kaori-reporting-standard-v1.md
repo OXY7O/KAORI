@@ -179,6 +179,17 @@ Analytics CSV is a normalized long-form export of the same `ReportDocument` used
 
 Inventory CSV contains common report metadata, `record_type`, `record_reference`, `row_number`, and the same normalized report-specific columns and ordering used by the XLSX Inventory sheet. An empty inventory dataset produces one explicit `no_data` row so metadata and the selected-asset boundary remain auditable.
 
+### Tenant Governance publication
+
+`tenant_governance` is an Analytics report type owned by Kubernetes Tenant Management. It uses the same committed KAORI evidence boundary for PDF, XLSX, and CSV and never performs provider queries during rendering.
+
+- PDF is the governance-review publication and uses the canonical Analytics PDF v3 component/rhythm contract.
+- XLSX exposes governed Tenant, Namespace, Access, Credentials, Allocations, and Governance evidence sheets plus the shared Overview/Metadata/Field Dictionary contract.
+- CSV is the normalized long-form companion derived from the same `ReportDocument` semantics.
+- Credential output is metadata-only; token, kubeconfig, private-key, and other secret material are prohibited.
+- Missing capacity, audit, provider, or Intelligence evidence remains explicit rather than being converted to zero, healthy, or silently omitted.
+- Generation, storage, scheduling, regeneration, retention, and download continue through the shared Reports lifecycle.
+
 ## 9. Template and schedule rules
 
 - System templates are generated from `REPORT_TYPE_SPECS`; they are not manually duplicated constants.
