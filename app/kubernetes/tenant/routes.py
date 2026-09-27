@@ -55,6 +55,7 @@ from app.kubernetes.tenant.service import (
     provision_native_namespace_committed,
 )
 from app.kubernetes.tenant.workspace import (
+    get_tenant_cluster_estate_context,
     get_tenant_overview_context,
     get_tenant_sync_workspace_context,
     get_tenant_workspace_context,
@@ -110,13 +111,30 @@ def _tenant_workspace_context() -> dict[str, Any]:
 @any_permission_required('tenant.view', 'tenant.manage')
 def index():
     context = _tenant_workspace_context()
-    context.update(get_tenant_overview_context())
+    context.update(
+        get_tenant_overview_context(
+            cluster_page=request.args.get('cluster_page', 1, type=int) or 1,
+            cluster_per_page=request.args.get('cluster_per_page', 5, type=int) or 5,
+        )
+    )
     return render_template(
         'kubernetes/tenant/overview.html',
         tenant_page='overview',
         tenant_page_title='Overview',
         tenant_page_icon='layout-dashboard',
         **context,
+    )
+
+
+@tenant_bp.get('/overview/cluster-estate')
+@any_permission_required('tenant.view', 'tenant.manage')
+def cluster_estate():
+    return render_template(
+        'kubernetes/tenant/partials/_cluster_estate.html',
+        **get_tenant_cluster_estate_context(
+            page=request.args.get('cluster_page', 1, type=int) or 1,
+            per_page=request.args.get('cluster_per_page', 5, type=int) or 5,
+        ),
     )
 
 
