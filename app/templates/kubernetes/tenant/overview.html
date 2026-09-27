@@ -17,7 +17,7 @@
         exceptions_label=tenant_collection_snapshot.exception_label,
         icon='database-backup',
         title='Tenant Collection Snapshot',
-        latest_supporting='Kubernetes source cutoff: ' ~ tenant_collection_snapshot.source_cutoff_label,
+        latest_supporting='Source: ' ~ tenant_collection_snapshot.source_cutoff_label,
         scope_supporting='Worker correlation scope',
         coverage_supporting=tenant_collection_snapshot.coverage_supporting,
         exceptions_supporting='Committed Tenant snapshot evidence',
@@ -52,18 +52,6 @@
                         Configure Sync
                     </a>
                 {% endif %}
-                {% if current_user.has_permission('jobs.execute') and current_user.has_permission('tenant.manage') %}
-                    <form method="post"
-                          action="{{ url_for('jobs.quick_sync_all_inventory') }}"
-                          hx-post="{{ url_for('jobs.quick_sync_all_inventory') }}"
-                          hx-swap="none">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="{{ action_button.classes('secondary') }}">
-                            <i data-lucide="database-zap" class="h-4 w-4" aria-hidden="true"></i>
-                            Sync All Inventory
-                        </button>
-                    </form>
-                {% endif %}
             </div>
         </header>
         <div class="grid gap-px bg-outline-subtle sm:grid-cols-3">
@@ -88,7 +76,7 @@
         ('building-2', 'Tenants', tenant_count, 'Committed Tenant ownership records', 'info'),
         ('boxes', 'Namespaces', namespace_count, 'Governed namespace allocations', 'info'),
         ('server', 'Managed Clusters', (ready_clusters|length) ~ ' / ' ~ (tenant_overview_clusters|length), 'Ready / registered Kubernetes clusters', 'normal' if ready_clusters|length == tenant_overview_clusters|length and tenant_overview_clusters else 'warning'),
-        ('key-round', 'Credentials', tenant_credential_count, 'Governed human and machine identities', 'info'),
+        ('key-round', 'Credentials', tenant_credential_count, 'Human & machine identities', 'info'),
         ('shield-alert', 'Findings', tenant_governance_finding_count, 'Active Tenant Governance findings', 'warning' if tenant_governance_finding_count else 'normal')
     ] %}
     {% call operational_section_card.render(
@@ -291,7 +279,7 @@
             <div class="xl:col-span-5">
                 {% call operational_section_card.render(
                     'Recent Tenant Activity',
-                    'Latest committed Tenant, access, and credential state changes.',
+                    'Recent Tenant, access, and credential changes.',
                     'activity',
                     action_href=url_for('tenant.operations', tab='activity'),
                     action_label='Open Activity',
