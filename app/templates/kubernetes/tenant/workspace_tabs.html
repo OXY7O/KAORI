@@ -4,9 +4,7 @@
     ('inventory', 'Inventory', 'boxes', none, url_for('tenant.inventory')),
     ('analytics', 'Analytics', 'chart-no-axes-combined', none, url_for('tenant.analytics'))
 ] %}
-{{ workspace_tabs.render_navigation(
-    tenant_workspace_tabs,
-    tenant_workspace_active,
-    prefix='tenant-workspace',
-    aria_label='Tenant Workspace'
-) }}
+{{ workspace_tabs.render_navigation(tenant_workspace_tabs,
+tenant_workspace_active,
+prefix='tenant-workspace',
+aria_label='Tenant Workspace') }}
