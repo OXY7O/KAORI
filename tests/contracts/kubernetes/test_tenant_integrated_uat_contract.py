@@ -44,7 +44,10 @@ def test_tenant_workspace_reads_committed_cross_child_state() -> None:
 
 def test_tenant_management_exposes_governed_credential_lifecycle_without_secret_material() -> None:
     routes = (ROOT / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
-    template = (ROOT / 'app/templates/kubernetes/tenant/management.html').read_text(encoding='utf-8')
+    template = (
+        (ROOT / 'app/templates/kubernetes/tenant/management.html').read_text(encoding='utf-8')
+        + (ROOT / 'app/templates/kubernetes/tenant/partials/_credential_management.html').read_text(encoding='utf-8')
+    )
 
     for path in (
         '/credentials/human',
