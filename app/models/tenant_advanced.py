@@ -75,7 +75,7 @@ class TenantAdvancedCapabilityIntent(db.Model):
         UniqueConstraint('correlation_id', name='uq_tenant_advanced_capability_intents_correlation_id'),
         CheckConstraint("provider_key IN ('capsule')", name='ck_tenant_advanced_capability_intents_provider'),
         CheckConstraint(
-            "resource_kind IN ("
+            'resource_kind IN ('
             "'global_resource_quota', 'resource_pool', 'resource_pool_claim', 'tenant_resource', "
             "'global_tenant_resource', 'tenant_cordon', 'namespace_controls', 'resource_rules', "
             "'cross_namespace_credential')",

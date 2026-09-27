@@ -29,8 +29,7 @@ def test_capsule_discovery_exposes_advanced_capabilities_without_native_emulatio
 
 def test_advanced_capsule_mutations_use_custom_objects_api_and_capability_gate() -> None:
     client = (
-        ROOT
-        / 'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/client.py'
+        ROOT / 'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/client.py'
     ).read_text(encoding='utf-8')
     source = (ROOT / 'app/kubernetes/tenant/capsule_advanced.py').read_text(encoding='utf-8')
 
