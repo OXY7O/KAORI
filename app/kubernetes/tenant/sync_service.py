@@ -41,20 +41,8 @@ def build_tenant_inventory_snapshot() -> dict[str, Any]:
         (str(item.cluster_id), item.namespace): item
         for item in NamespaceInventory.query.all()
     }
-    latest_cluster_inventory = {
-        str(cluster_id): collected_at
-        for cluster_id, collected_at in (
-            ClusterInventory.query.with_entities(
-                ClusterInventory.cluster_id,
-                ClusterInventory.collected_at,
-            )
-            .order_by(ClusterInventory.cluster_id.asc(), ClusterInventory.collected_at.desc())
-            .all()
-        )
-    }
-
-    # The ordered query above can contain more than one historical cluster row.
-    # Keep the newest committed cutoff for each cluster.
+    # Cluster inventory can retain more than one generation. Keep the newest
+    # committed cutoff for each cluster without querying the provider here.
     normalized_cutoffs: dict[str, datetime] = {}
     for cluster_id, collected_at in (
         ClusterInventory.query.with_entities(
