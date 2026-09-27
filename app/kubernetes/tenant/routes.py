@@ -402,12 +402,12 @@ def tenant_membership_registry():
     return render_template(
         'kubernetes/tenant/partials/_membership_registry.html',
         **get_membership_registry_context(
-            page=request.args.get('page', 1, type=int) or 1,
-            per_page=request.args.get('per_page', 5, type=int) or 5,
-            tenant_id=str(request.args.get('tenant_id') or ''),
-            principal_type=str(request.args.get('principal_type') or ''),
-            status=str(request.args.get('status') or ''),
-            search=str(request.args.get('search') or ''),
+            page=request.args.get('membership_page', 1, type=int) or 1,
+            per_page=request.args.get('membership_per_page', 5, type=int) or 5,
+            tenant_id=str(request.args.get('membership_tenant_id') or ''),
+            principal_type=str(request.args.get('membership_principal_type') or ''),
+            status=str(request.args.get('membership_status') or ''),
+            search=str(request.args.get('membership_search') or ''),
         ),
     )
 
@@ -418,11 +418,11 @@ def tenant_group_registry():
     return render_template(
         'kubernetes/tenant/partials/_group_registry.html',
         **get_group_registry_context(
-            page=request.args.get('page', 1, type=int) or 1,
-            per_page=request.args.get('per_page', 5, type=int) or 5,
-            tenant_id=str(request.args.get('tenant_id') or ''),
-            enabled=str(request.args.get('enabled') or ''),
-            search=str(request.args.get('search') or ''),
+            page=request.args.get('group_page', 1, type=int) or 1,
+            per_page=request.args.get('group_per_page', 5, type=int) or 5,
+            tenant_id=str(request.args.get('group_tenant_id') or ''),
+            enabled=str(request.args.get('group_enabled') or ''),
+            search=str(request.args.get('group_search') or ''),
         ),
     )
 
@@ -433,13 +433,13 @@ def tenant_access_grant_registry():
     return render_template(
         'kubernetes/tenant/partials/_access_grant_registry.html',
         **get_access_grant_registry_context(
-            page=request.args.get('page', 1, type=int) or 1,
-            per_page=request.args.get('per_page', 5, type=int) or 5,
-            tenant_id=str(request.args.get('tenant_id') or ''),
-            status=str(request.args.get('status') or ''),
-            reconciliation_status=str(request.args.get('reconciliation_status') or ''),
-            scope_type=str(request.args.get('scope_type') or ''),
-            search=str(request.args.get('search') or ''),
+            page=request.args.get('grant_page', 1, type=int) or 1,
+            per_page=request.args.get('grant_per_page', 5, type=int) or 5,
+            tenant_id=str(request.args.get('grant_tenant_id') or ''),
+            status=str(request.args.get('grant_status') or ''),
+            reconciliation_status=str(request.args.get('grant_reconciliation_status') or ''),
+            scope_type=str(request.args.get('grant_scope_type') or ''),
+            search=str(request.args.get('grant_search') or ''),
         ),
     )
 
@@ -450,12 +450,12 @@ def tenant_credential_registry():
     return render_template(
         'kubernetes/tenant/partials/_credential_registry.html',
         **get_credential_registry_context(
-            page=request.args.get('page', 1, type=int) or 1,
-            per_page=request.args.get('per_page', 5, type=int) or 5,
-            tenant_id=str(request.args.get('tenant_id') or ''),
+            page=request.args.get('credential_page', 1, type=int) or 1,
+            per_page=request.args.get('credential_per_page', 5, type=int) or 5,
+            tenant_id=str(request.args.get('credential_tenant_id') or ''),
             credential_type=str(request.args.get('credential_type') or ''),
-            status=str(request.args.get('status') or ''),
-            search=str(request.args.get('search') or ''),
+            status=str(request.args.get('credential_status') or ''),
+            search=str(request.args.get('credential_search') or ''),
         ),
     )
 
@@ -466,12 +466,12 @@ def tenant_namespace_access_registry():
     return render_template(
         'kubernetes/tenant/partials/_namespace_access_registry.html',
         **get_namespace_access_registry_context(
-            page=request.args.get('page', 1, type=int) or 1,
-            per_page=request.args.get('per_page', 5, type=int) or 5,
-            tenant_id=str(request.args.get('tenant_id') or ''),
-            environment=str(request.args.get('environment') or ''),
-            credential_status=str(request.args.get('credential_status') or ''),
-            search=str(request.args.get('search') or ''),
+            page=request.args.get('namespace_access_page', 1, type=int) or 1,
+            per_page=request.args.get('namespace_access_per_page', 5, type=int) or 5,
+            tenant_id=str(request.args.get('namespace_access_tenant_id') or ''),
+            environment=str(request.args.get('namespace_access_environment') or ''),
+            credential_status=str(request.args.get('namespace_access_status') or ''),
+            search=str(request.args.get('namespace_access_search') or ''),
         ),
     )
 
