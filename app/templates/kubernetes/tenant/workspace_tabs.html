@@ -1,0 +1,23 @@
+<nav class="rounded-xl border border-outline-subtle bg-surface-card p-2 shadow-sm"
+     aria-label="Tenant workspace">
+    <div class="grid gap-2 sm:grid-cols-3">
+        <a href="{{ url_for('tenant.management') }}"
+           {% if tenant_workspace_active == 'management' %}aria-current="page"{% endif %}
+           class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition {{ 'bg-kaori-soft text-kaori-primary dark:text-kaori-accent' if tenant_workspace_active == 'management' else 'text-content-secondary hover:bg-surface-muted hover:text-content-primary' }}">
+            <i data-lucide="sliders-horizontal" class="h-4 w-4" aria-hidden="true"></i>
+            Management
+        </a>
+        <a href="{{ url_for('tenant.inventory') }}"
+           {% if tenant_workspace_active == 'inventory' %}aria-current="page"{% endif %}
+           class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition {{ 'bg-kaori-soft text-kaori-primary dark:text-kaori-accent' if tenant_workspace_active == 'inventory' else 'text-content-secondary hover:bg-surface-muted hover:text-content-primary' }}">
+            <i data-lucide="boxes" class="h-4 w-4" aria-hidden="true"></i>
+            Inventory
+        </a>
+        <a href="{{ url_for('tenant.analytics') }}"
+           {% if tenant_workspace_active == 'analytics' %}aria-current="page"{% endif %}
+           class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition {{ 'bg-kaori-soft text-kaori-primary dark:text-kaori-accent' if tenant_workspace_active == 'analytics' else 'text-content-secondary hover:bg-surface-muted hover:text-content-primary' }}">
+            <i data-lucide="chart-no-axes-combined" class="h-4 w-4" aria-hidden="true"></i>
+            Analytics
+        </a>
+    </div>
+</nav>
