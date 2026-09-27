@@ -1,46 +1,49 @@
-{% import "components/pagination.html" as pagination_ui %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
-<section id="tenant-registry-card" class="{{ table_ui.block_classes() }}">
-    {% set registry_header_actions = none %}
-    {% if tenant_registry_filters.search or tenant_registry_filters.cluster_id or tenant_registry_filters.environment or tenant_registry_filters.lifecycle_status %}
-        {% set registry_header_actions %}
-            {{ registry_ui.clear_filters_action(
-                url_for('tenant.tenants', section=active_tenant_section, per_page=tenant_pagination.per_page),
+{% set registry_id = 'tenant-registry-card' %}
+{% set loading_id = 'tenant-registry-loading' %}
+{% set query_params = {
+    'section': 'registry',
+    'search': tenant_registry_filters.search,
+    'cluster_id': tenant_registry_filters.cluster_id,
+    'environment': tenant_registry_filters.environment,
+    'lifecycle_status': tenant_registry_filters.lifecycle_status
+} %}
+<section id="{{ registry_id }}" class="{{ table_ui.block_classes() }}">
+    {% set header_actions %}
+        {% if tenant_registry_filters.search or tenant_registry_filters.cluster_id or tenant_registry_filters.environment or tenant_registry_filters.lifecycle_status %}
+            {{ registry_ui.clear_filters_link(
+                'tenant.tenants',
+                registry_id,
+                loading_id,
+                tenant_pagination.per_page,
                 table_ui.action_classes(),
-                hx_get=url_for('tenant.tenant_registry', section=active_tenant_section, per_page=tenant_pagination.per_page),
-                target='#tenant-registry-card',
-                indicator='#tenant-registry-loading'
+                query_params={'section': 'registry'}
             ) }}
-        {% endset %}
-    {% endif %}
+        {% endif %}
+    {% endset %}
     {{ table_ui.inventory_block_header(
         'building-2',
         'Tenant Registry',
         'Committed Tenant ownership, placement, provider authority, and lifecycle state.',
-        'tenant-registry-loading',
+        loading_id,
         'Refreshing Tenant Registry',
-        url_for('integrations.kubernetes'),
-        'Open Cluster Integrations',
-        header_actions=registry_header_actions
+        url_for('tenant.tenants', section='tenant-setup'),
+        'Add Tenant',
+        header_actions=header_actions
     ) }}
+
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
-        <form action="{{ url_for('tenant.tenants') }}"
-              method="get"
-              hx-get="{{ url_for('tenant.tenant_registry') }}"
-              hx-target="#tenant-registry-card"
-              hx-swap="outerHTML"
-              hx-indicator="#tenant-registry-loading"
-              hx-trigger="change, keyup changed delay:500ms from:find input[name='search']"
-              aria-label="Tenant registry filters"
-              class="{{ table_ui.filter_layout_classes() }}">
-            <input type="hidden" name="section" value="{{ active_tenant_section }}">
-            <input type="hidden" name="page" value="1">
-            <input type="hidden" name="per_page" value="{{ tenant_pagination.per_page }}">
+        {% call registry_ui.filter_form(
+            'tenant.tenants',
+            registry_id,
+            loading_id,
+            tenant_pagination.per_page
+        ) %}
+            <input type="hidden" name="section" value="registry">
             <div>
-                <label for="tenant-registry-cluster"
-                       class="{{ table_ui.filter_label_classes() }}">Cluster</label>
+                <label for="tenant-registry-cluster" class="{{ table_ui.filter_label_classes() }}">Cluster</label>
                 <select id="tenant-registry-cluster"
                         name="cluster_id"
                         class="{{ table_ui.filter_select_classes() }}">
@@ -52,8 +55,7 @@
                 </select>
             </div>
             <div>
-                <label for="tenant-registry-environment"
-                       class="{{ table_ui.filter_label_classes() }}">Environment</label>
+                <label for="tenant-registry-environment" class="{{ table_ui.filter_label_classes() }}">Environment</label>
                 <select id="tenant-registry-environment"
                         name="environment"
                         class="{{ table_ui.filter_select_classes() }}">
@@ -65,8 +67,7 @@
                 </select>
             </div>
             <div>
-                <label for="tenant-registry-lifecycle"
-                       class="{{ table_ui.filter_label_classes() }}">Lifecycle</label>
+                <label for="tenant-registry-lifecycle" class="{{ table_ui.filter_label_classes() }}">Lifecycle</label>
                 <select id="tenant-registry-lifecycle"
                         name="lifecycle_status"
                         class="{{ table_ui.filter_select_classes() }}">
@@ -78,16 +79,10 @@
                 </select>
             </div>
             <div>
-                <label for="tenant-registry-search"
-                       class="{{ table_ui.filter_label_classes() }}">Search Tenants</label>
-                {{ table_ui.search_field(
-                    'search',
-                    tenant_registry_filters.search,
-                    'Search tenant name or slug',
-                    id='tenant-registry-search'
-                ) }}
+                <label for="tenant-registry-search" class="{{ table_ui.filter_label_classes() }}">Search Tenants</label>
+                {{ table_ui.search_field('search', tenant_registry_filters.search, 'Search tenant name or slug', id='tenant-registry-search') }}
             </div>
-        </form>
+        {% endcall %}
     </div>
 
     <div class="overflow-x-auto">
@@ -149,10 +144,10 @@
                 {% else %}
                     <tr>
                         <td colspan="6" class="p-0">
-                            {% set empty_state_icon = "building-2" %}
-                            {% set empty_state_title = "No Tenants Found" %}
-                            {% set empty_state_description = "Adjust the filters or create a Tenant from the Tenant Setup tab." %}
-                            {% include "components/states/_empty_state.html" %}
+                            {% set empty_state_icon = 'building-2' %}
+                            {% set empty_state_title = 'No Tenants Found' %}
+                            {% set empty_state_description = 'Adjust filters or open Tenant Setup to create the first governed Tenant.' %}
+                            {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
                 {% endfor %}
@@ -160,98 +155,17 @@
         </table>
     </div>
 
-    {% set base_query = {
-        'section': active_tenant_section,
-        'search': tenant_registry_filters.search,
-        'cluster_id': tenant_registry_filters.cluster_id,
-        'environment': tenant_registry_filters.environment,
-        'lifecycle_status': tenant_registry_filters.lifecycle_status,
-        'per_page': tenant_pagination.per_page
-    } %}
-    {% if tenant_pagination.total > 0 %}
-        <footer class="{{ pagination_ui.footer_classes() }}">
-            <div class="{{ pagination_ui.summary_group_classes() }}">
-                <p>
-                    Showing <span class="font-semibold text-content-primary">{{ tenant_pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ tenant_pagination.end_item }}</span>
-                    of <span class="font-semibold text-content-primary">{{ tenant_pagination.total }}</span>
-                    {{ 'Tenant' if tenant_pagination.total == 1 else 'Tenants' }}
-                </p>
-                <form action="{{ url_for('tenant.tenants') }}"
-                      method="get"
-                      hx-get="{{ url_for('tenant.tenant_registry') }}"
-                      hx-target="#tenant-registry-card"
-                      hx-swap="outerHTML"
-                      hx-indicator="#tenant-registry-loading"
-                      class="{{ pagination_ui.rows_group_classes() }}">
-                    <input type="hidden" name="section" value="{{ active_tenant_section }}">
-                    <input type="hidden" name="page" value="1">
-                    <input type="hidden" name="search" value="{{ tenant_registry_filters.search }}">
-                    <input type="hidden" name="cluster_id" value="{{ tenant_registry_filters.cluster_id }}">
-                    <input type="hidden" name="environment" value="{{ tenant_registry_filters.environment }}">
-                    <input type="hidden" name="lifecycle_status" value="{{ tenant_registry_filters.lifecycle_status }}">
-                    <label for="tenant-registry-per-page"
-                           class="text-xs font-semibold text-content-secondary">Rows</label>
-                    <select id="tenant-registry-per-page"
-                            name="per_page"
-                            data-kaori-auto-submit
-                            class="{{ pagination_ui.page_size_classes() }}">
-                        {% for option in tenant_pagination.allowed_per_page %}
-                            <option value="{{ option }}"
-                                    {% if tenant_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
-                        {% endfor %}
-                    </select>
-                </form>
-            </div>
-            <div class="{{ pagination_ui.navigation_group_classes() }}">
-                {% if tenant_pagination.has_prev %}
-                    {% set prev_href = url_for('tenant.tenants', page=tenant_pagination.prev_num, **base_query) %}
-                    {% set prev_hx = url_for('tenant.tenant_registry', page=tenant_pagination.prev_num, **base_query) %}
-                    <a href="{{ prev_href }}"
-                       hx-get="{{ prev_hx }}"
-                       hx-target="#tenant-registry-card"
-                       hx-swap="outerHTML"
-                       hx-indicator="#tenant-registry-loading"
-                       class="{{ pagination_ui.navigation_classes() }}">
-                        <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
-                        Previous
-                    </a>
-                {% else %}
-                    <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">
-                        <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
-                        Previous
-                    </span>
-                {% endif %}
-
-                {{ pagination_ui.numeric_pages(
-                    tenant_pagination.page,
-                    tenant_pagination.pages,
-                    endpoint='tenant.tenant_registry',
-                    query_params=base_query,
-                    hx_target='#tenant-registry-card',
-                    hx_indicator='#tenant-registry-loading',
-                    hx_swap='outerHTML',
-                    href_endpoint='tenant.tenants'
-                ) }}
-
-                {% if tenant_pagination.has_next %}
-                    {% set next_href = url_for('tenant.tenants', page=tenant_pagination.next_num, **base_query) %}
-                    {% set next_hx = url_for('tenant.tenant_registry', page=tenant_pagination.next_num, **base_query) %}
-                    <a href="{{ next_href }}"
-                       hx-get="{{ next_hx }}"
-                       hx-target="#tenant-registry-card"
-                       hx-swap="outerHTML"
-                       hx-indicator="#tenant-registry-loading"
-                       class="{{ pagination_ui.navigation_classes() }}">
-                        Next
-                        <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
-                    </a>
-                {% else %}
-                    <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">
-                        Next
-                        <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
-                    </span>
-                {% endif %}
-            </div>
-        </footer>
+    {% if tenant_pagination.total_items > 0 %}
+        {{ registry_ui.footer(
+            'tenant.tenants',
+            registry_id,
+            loading_id,
+            tenant_pagination,
+            query_params,
+            tenant_pagination.allowed_per_page,
+            resource_label='Tenants',
+            rows_aria_label='Tenant rows per page',
+            control_name='tenant-registry'
+        ) }}
     {% endif %}
 </section>
