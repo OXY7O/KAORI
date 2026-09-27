@@ -163,6 +163,26 @@ def discover_capsule(
             controller_status=controller_status,
             ready=(_TENANT_RESOURCE_CRD in capsule_items and _GLOBAL_TENANT_RESOURCE_CRD in capsule_items),
         ),
+        'tenant_cordon': _dependent_status(
+            controller_status=controller_status,
+            ready=bool(probes.get('tenant_cordon')),
+        ),
+        'namespace_controls': _dependent_status(
+            controller_status=controller_status,
+            ready=bool(probes.get('namespace_controls')),
+        ),
+        'resource_rules': _dependent_status(
+            controller_status=controller_status,
+            ready=bool(probes.get('resource_rules')),
+        ),
+        'cross_namespace_credential': _dependent_status(
+            controller_status=controller_status,
+            ready=bool(probes.get('cross_namespace_credential')),
+        ),
+        'self_service_namespace': _dependent_status(
+            controller_status=controller_status,
+            ready=bool(probes.get('self_service_namespace')),
+        ),
     }
     return CapsuleDiscoverySnapshot(
         installed=installed,
