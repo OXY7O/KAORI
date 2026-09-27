@@ -1,17 +1,16 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import func
 
-from app.common.job_execution_presentation import present_job_execution
 from app.common.presentation import present_user_datetime
 from app.intelligence.service import get_active_recommendation_findings
-from app.kubernetes.inventory.overview import get_inventory_freshness_context
 from app.kubernetes.tenant.capacity_governance import build_capacity_governance_summary
 from app.kubernetes.tenant.credential import build_namespace_access_package, credential_target_namespaces
+from app.kubernetes.tenant.job_adapter import build_tenant_sync_state
 from app.models import Cluster
-from app.models.job import JobExecution, JobPolicy
 from app.models.tenant import (
     Tenant,
     TenantAccessGrant,
@@ -23,9 +22,6 @@ from app.models.tenant_advanced import TenantAdvancedCapabilityIntent
 from app.models.tenant_audit import TenantAuditEvidence
 from app.models.tenant_managed_resource import TenantManagedResourceIntent
 from app.models.tenant_policy import TenantDomainReservation, TenantExposurePolicy
-from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES
-from app.platform_operations.jobs.policies.presentation import present_interval
-from app.platform_operations.jobs.registry import get_job_definition
 
 
 def _recent(model, *, limit: int) -> list[Any]:
@@ -38,6 +34,14 @@ def _capacity_tone(state: str) -> str:
     if state == 'Near Capacity':
         return 'warning'
     if state in {'Critical', 'Exhausted', 'Overcommitted'}:
+        return 'critical'
+    return 'unknown'
+
+
+def _provider_tone(state: str) -> str:
+    if state == 'connected':
+        return 'normal'
+    if state == 'failed':
         return 'critical'
     return 'unknown'
 
@@ -67,41 +71,195 @@ def _cluster_namespace_counts() -> dict[str, int]:
     }
 
 
-def _inventory_sync_context() -> dict[str, Any]:
-    definition = get_job_definition('kubernetes.inventory.sync')
-    policy = JobPolicy.query.filter_by(
-        job_key=definition.key,
-        scope_type=definition.scope_type,
-        scope_key=definition.scope_key,
-    ).first()
-    jobs = JobExecution.query.filter(
-        JobExecution.job_type == definition.job_type,
-        JobExecution.operation == definition.operation,
-    )
-    active_job = (
-        jobs.filter(
-            JobExecution.status.in_(ACTIVE_JOB_STATUSES),
-            JobExecution.completed_at.is_(None),
-        )
-        .order_by(JobExecution.updated_at.desc(), JobExecution.id.desc())
-        .first()
-    )
-    latest_job = jobs.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).first()
-
-    automatic_enabled = policy.enabled if policy is not None else definition.default_enabled
-    interval_minutes = policy.interval_minutes if policy is not None else definition.default_interval_minutes
-    next_run_at = policy.next_run_at if policy is not None else None
+def _snapshot_cluster_rows(snapshot: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    rows = snapshot.get('clusters')
+    if not isinstance(rows, list):
+        return {}
     return {
-        'automatic_enabled': automatic_enabled,
-        'automatic_label': 'Enabled' if automatic_enabled else 'Manual Only',
-        'interval_label': present_interval(interval_minutes),
-        'next_run_label': present_user_datetime(
-            next_run_at,
-            empty='Pending scheduler plan' if automatic_enabled else 'Not Scheduled',
-        ),
-        'active_job': present_job_execution(active_job) if active_job is not None else None,
-        'latest_job': present_job_execution(latest_job) if latest_job is not None else None,
+        str(row.get('cluster_id')): row
+        for row in rows
+        if isinstance(row, dict) and str(row.get('cluster_id') or '').strip()
     }
+
+
+def _tenant_collection_snapshot(sync_state: dict[str, Any]) -> dict[str, Any]:
+    snapshot = dict(sync_state.get('snapshot') or {})
+    namespace_count = int(snapshot.get('namespace_count') or 0)
+    covered_count = int(snapshot.get('covered_namespace_count') or 0)
+    exception_count = int(snapshot.get('exception_count') or 0)
+    if sync_state['last_success_at'] is None:
+        coverage_label = 'Not Collected'
+        coverage_supporting = 'Run Tenant sync to establish committed coverage.'
+    elif namespace_count:
+        coverage_label = f'{covered_count} / {namespace_count} Namespaces'
+        coverage_supporting = 'Fully committed' if covered_count == namespace_count else 'Coverage requires review'
+    else:
+        coverage_label = '0 Namespaces'
+        coverage_supporting = 'No governed Tenant namespaces were present in the snapshot.'
+
+    return {
+        'status': sync_state['label'],
+        'tone': sync_state['tone'],
+        'icon': sync_state['icon'],
+        'description': sync_state['helper'],
+        'last_sync_label': sync_state['last_success_label'],
+        'scope_label': str(snapshot.get('scope_label') or 'All Clusters'),
+        'coverage_label': coverage_label,
+        'coverage_supporting': coverage_supporting,
+        'exception_count': exception_count,
+        'exception_label': 'No Exceptions' if exception_count == 0 else f'{exception_count} Exceptions',
+        'source_label': str(snapshot.get('source') or 'KAORI Tenant State + committed Kubernetes Inventory'),
+        'source_cutoff_label': present_user_datetime(
+            snapshot.get('source_inventory_cutoff'),
+            empty='No committed Kubernetes inventory cutoff',
+        ),
+        'automatic_enabled': sync_state['automatic_enabled'],
+        'automatic_label': 'Enabled' if sync_state['automatic_enabled'] else 'Manual Only',
+        'interval_label': sync_state['interval_label'],
+        'next_run_label': sync_state['next_run_label'],
+        'active_job': sync_state['active_job'],
+        'latest_job': sync_state['latest_job'],
+        'progress_percent': sync_state['progress_percent'],
+        'progress_message': sync_state['progress_message'],
+    }
+
+
+def _attention_tone(value: str) -> str:
+    normalized = value.strip().lower()
+    if normalized in {'critical', 'high', 'failed', 'expired'}:
+        return 'critical'
+    if normalized in {'warning', 'medium', 'drifted', 'pending', 'renewal_due', 'suspended', 'rotating'}:
+        return 'warning'
+    return 'info'
+
+
+def _tenant_attention_rows(findings: list[dict[str, Any]], *, limit: int = 6) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+
+    for finding in findings:
+        severity = str(finding.get('severity') or 'warning')
+        rows.append(
+            {
+                'kind': 'Governance',
+                'icon': 'shield-alert',
+                'title': str(finding.get('title') or finding.get('rule_key') or 'Tenant governance finding'),
+                'detail': str(
+                    finding.get('summary')
+                    or finding.get('recommendation')
+                    or finding.get('description')
+                    or 'Review the canonical Tenant Governance finding.'
+                ),
+                'status': severity.title(),
+                'tone': _attention_tone(severity),
+            }
+        )
+
+    grants = (
+        TenantAccessGrant.query.filter(
+            TenantAccessGrant.status == 'active',
+            TenantAccessGrant.reconciliation_status.in_(('pending', 'drifted', 'failed')),
+        )
+        .order_by(TenantAccessGrant.updated_at.desc())
+        .limit(limit)
+        .all()
+    )
+    for grant in grants:
+        rows.append(
+            {
+                'kind': 'Access',
+                'icon': 'key-round',
+                'title': f'{grant.membership.subject_name} · {grant.access_profile.replace("_", " ").title()}',
+                'detail': grant.reconciliation_message
+                or f'{grant.tenant.name} access requires reconciliation review.',
+                'status': grant.reconciliation_status.title(),
+                'tone': _attention_tone(grant.reconciliation_status),
+            }
+        )
+
+    credentials = (
+        TenantCredential.query.filter(
+            (
+                TenantCredential.status.in_(('renewal_due', 'rotating', 'suspended', 'expired'))
+                | TenantCredential.reconciliation_status.in_(('pending', 'drifted', 'failed'))
+            )
+        )
+        .order_by(TenantCredential.updated_at.desc())
+        .limit(limit)
+        .all()
+    )
+    for credential in credentials:
+        status = (
+            credential.status
+            if credential.status in {'renewal_due', 'rotating', 'suspended', 'expired'}
+            else credential.reconciliation_status
+        )
+        rows.append(
+            {
+                'kind': 'Credential',
+                'icon': 'key-square',
+                'title': credential.service_account_name,
+                'detail': f'{credential.tenant.name} · {credential.credential_type.replace("_", " ").title()}',
+                'status': status.replace('_', ' ').title(),
+                'tone': _attention_tone(status),
+            }
+        )
+
+    tone_order = {'critical': 0, 'warning': 1, 'info': 2}
+    rows.sort(key=lambda row: (tone_order.get(row['tone'], 3), row['kind'], row['title']))
+    return rows[:limit]
+
+
+def _sort_time(value: datetime | None) -> float:
+    if value is None:
+        return 0.0
+    normalized = value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+    return normalized.timestamp()
+
+
+def _tenant_recent_activity(*, limit: int = 6) -> list[dict[str, str]]:
+    rows: list[tuple[datetime | None, dict[str, str]]] = []
+
+    for tenant in Tenant.query.order_by(Tenant.updated_at.desc()).limit(limit).all():
+        rows.append(
+            (
+                tenant.updated_at,
+                {
+                    'icon': 'building-2',
+                    'title': tenant.name,
+                    'detail': f'Tenant state · {tenant.lifecycle_status.replace("_", " ").title()} · {tenant.provider_state.replace("_", " ").title()}',
+                    'time': present_user_datetime(tenant.updated_at, empty='Not recorded'),
+                },
+            )
+        )
+
+    for grant in TenantAccessGrant.query.order_by(TenantAccessGrant.updated_at.desc()).limit(limit).all():
+        rows.append(
+            (
+                grant.updated_at,
+                {
+                    'icon': 'key-round',
+                    'title': f'Access · {grant.membership.subject_name}',
+                    'detail': f'{grant.tenant.name} · {grant.access_profile.replace("_", " ").title()} · {grant.status.title()}',
+                    'time': present_user_datetime(grant.updated_at, empty='Not recorded'),
+                },
+            )
+        )
+
+    for credential in TenantCredential.query.order_by(TenantCredential.updated_at.desc()).limit(limit).all():
+        rows.append(
+            (
+                credential.updated_at,
+                {
+                    'icon': 'key-square',
+                    'title': credential.service_account_name,
+                    'detail': f'{credential.tenant.name} · Credential {credential.status.replace("_", " ").title()}',
+                    'time': present_user_datetime(credential.updated_at, empty='Not recorded'),
+                },
+            )
+        )
+
+    rows.sort(key=lambda item: _sort_time(item[0]), reverse=True)
+    return [row for _updated_at, row in rows[:limit]]
 
 
 def get_tenant_overview_context() -> dict[str, Any]:
@@ -111,23 +269,41 @@ def get_tenant_overview_context() -> dict[str, Any]:
     tenant_counts = _cluster_tenant_counts()
     namespace_counts = _cluster_namespace_counts()
     total_tenants = sum(tenant_counts.values())
+    sync_state = build_tenant_sync_state()
+    snapshot_clusters = _snapshot_cluster_rows(dict(sync_state.get('snapshot') or {}))
 
     cluster_rows: list[dict[str, Any]] = []
     for cluster in clusters:
-        tenant_count = tenant_counts.get(str(cluster.id), 0)
+        cluster_id = str(cluster.id)
+        tenant_count = tenant_counts.get(cluster_id, 0)
         capacity = build_capacity_governance_summary(cluster.id)
+        snapshot_cluster = snapshot_clusters.get(cluster_id, {})
+        capacity_available = capacity.get('budget') is not None and capacity.get('headroom') is not None
         cluster_rows.append(
             {
-                'id': str(cluster.id),
+                'id': cluster_id,
                 'name': cluster.name,
                 'environment': cluster.environment,
                 'provider_status': cluster.status,
-                'provider_tone': 'normal' if cluster.status == 'connected' else 'warning',
+                'provider_tone': _provider_tone(cluster.status),
                 'tenant_count': tenant_count,
-                'namespace_count': namespace_counts.get(str(cluster.id), 0),
+                'namespace_count': namespace_counts.get(cluster_id, 0),
                 'tenant_share_percent': round((tenant_count / total_tenants) * 100) if total_tenants else 0,
+                'snapshot_coverage_complete': bool(snapshot_cluster.get('coverage_complete')),
+                'snapshot_coverage_label': (
+                    f"{int(snapshot_cluster.get('covered_namespace_count') or 0)} / "
+                    f"{int(snapshot_cluster.get('namespace_count') or 0)} Namespaces"
+                    if snapshot_cluster
+                    else 'Not Collected'
+                ),
+                'snapshot_cutoff_label': present_user_datetime(
+                    snapshot_cluster.get('source_inventory_cutoff'),
+                    empty='No Tenant snapshot evidence',
+                ),
+                'capacity_available': capacity_available,
                 'capacity_state': capacity['state'],
                 'capacity_tone': _capacity_tone(str(capacity['state'])),
+                'capacity_snapshot_state': str(capacity.get('snapshot_state') or 'Unknown').replace('_', ' ').title(),
                 'capacity_reason': capacity['reason'],
                 'committed_allocation': capacity['display']['committed'],
                 'allocation_budget': capacity['display']['budget'],
@@ -139,47 +315,18 @@ def get_tenant_overview_context() -> dict[str, Any]:
             }
         )
 
-    freshness = get_inventory_freshness_context()
-    sync = _inventory_sync_context()
-    inventory_snapshot = {
-        'status': freshness['status'],
-        'tone': freshness['tone'],
-        'description': freshness['description'],
-        'last_sync_label': present_user_datetime(
-            freshness['latest_collected_at'],
-            empty='Never Collected',
-        ),
-        'oldest_sync_label': present_user_datetime(
-            freshness['oldest_collected_at'],
-            empty='No committed snapshot',
-        ),
-        'source_coverage_label': f'{freshness["committed_count"]} / {freshness["cluster_count"]}',
-        'source_coverage_supporting': freshness['coverage_supporting'],
-        'freshness_window_label': f'{freshness["freshness_window_hours"]} Hours',
-        'exception_label': freshness['exception_label'],
-        'exceptions_supporting': freshness['exceptions_supporting'],
-        **sync,
-    }
-
-    cluster_by_id = {str(cluster.id): cluster for cluster in clusters}
-    recent_tenant_rows = []
-    for tenant in Tenant.query.order_by(Tenant.updated_at.desc(), Tenant.id.asc()).limit(5).all():
-        cluster = cluster_by_id.get(str(tenant.cluster_id))
-        recent_tenant_rows.append(
-            {
-                'name': tenant.name,
-                'lifecycle_status': tenant.lifecycle_status,
-                'provider_key': tenant.provider_key,
-                'provider_state': tenant.provider_state,
-                'cluster_name': cluster.name if cluster is not None else 'Unknown cluster',
-                'updated_at_label': present_user_datetime(tenant.updated_at, empty='Not recorded'),
-            }
-        )
-
     return {
         'tenant_overview_clusters': cluster_rows,
-        'tenant_inventory_snapshot': inventory_snapshot,
-        'tenant_recent_rows': recent_tenant_rows,
+        'tenant_collection_snapshot': _tenant_collection_snapshot(sync_state),
+        'tenant_sync_state': sync_state,
+        'tenant_attention_rows': _tenant_attention_rows(
+            [
+                finding
+                for finding in get_active_recommendation_findings(domain='kubernetes')
+                if str(finding.get('rule_key') or '').startswith('kubernetes.tenant.')
+            ]
+        ),
+        'tenant_recent_activity_rows': _tenant_recent_activity(),
     }
 
 
