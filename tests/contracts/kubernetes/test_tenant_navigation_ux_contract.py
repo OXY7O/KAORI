@@ -94,3 +94,38 @@ def test_tenant_primary_navigation_preserves_provider_neutral_boundary() -> None
     assert 'Capsule' in base
     assert 'Native Kubernetes</span>' not in menu
     assert 'Capsule</span>' not in menu
+
+
+def test_tenant_registry_pages_use_shared_default_five_pagination() -> None:
+    service = (ROOT / 'app/kubernetes/tenant/service.py').read_text(encoding='utf-8')
+    footer = (ROOT / 'app/templates/kubernetes/tenant/partials/_pagination_footer.html').read_text(encoding='utf-8')
+
+    assert '_ALLOWED_PAGE_SIZES = (5, 10, 25, 50)' in service
+    for helper in (
+        'get_tenant_registry_context',
+        'get_resource_profile_registry_context',
+        'get_namespace_registry_context',
+    ):
+        assert f'def {helper}(' in service
+
+    assert 'components/pagination.html' in footer
+    assert 'pagination_ui.numeric_pages' in footer
+    assert 'pagination_ui.page_size_classes' in footer
+
+    for path, state in (
+        ('tenants.html', 'tenant_pagination'),
+        ('resource_profiles.html', 'profile_pagination'),
+        ('namespace_provisioning.html', 'namespace_pagination'),
+    ):
+        template = (ROOT / 'app/templates/kubernetes/tenant' / path).read_text(encoding='utf-8')
+        assert state in template
+        assert 'partials/_pagination_footer.html' in template
+
+
+def test_namespace_allocation_selector_is_not_limited_by_visible_page() -> None:
+    service = (ROOT / 'app/kubernetes/tenant/service.py').read_text(encoding='utf-8')
+    allocation = (ROOT / 'app/templates/kubernetes/tenant/partials/_allocation_change.html').read_text(encoding='utf-8')
+
+    assert "'namespace_options': namespace_options" in service
+    assert '{% for item in namespace_options %}' in allocation
+    assert '{% for item in namespaces %}' not in allocation
