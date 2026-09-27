@@ -140,7 +140,7 @@ def namespace_provisioning():
         'kubernetes/tenant/namespace_provisioning.html',
         tenant_page='namespace_provisioning',
         tenant_page_title='Namespace Provisioning',
-        tenant_page_description='Provision namespaces and validate allocation, quota, limits, and capacity.',
+        tenant_page_description='Provision namespaces and verify quotas, limits, allocation, and capacity.',
         tenant_page_icon='boxes',
         **_tenant_workspace_context(),
     )
@@ -156,7 +156,7 @@ def operations():
         'kubernetes/tenant/operations.html',
         tenant_page='operations',
         tenant_page_title='Operations',
-        tenant_page_description='Inspect provisioning evidence, drift, audit correlation, and operational activity.',
+        tenant_page_description='Inspect provisioning evidence, drift, audit correlation, and activity.',
         tenant_page_icon='activity',
         active_tab=active_tab,
         **_tenant_workspace_context(),
