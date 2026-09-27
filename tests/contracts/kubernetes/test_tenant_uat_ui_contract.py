@@ -44,12 +44,13 @@ def test_tenant_uat_pages_preserve_current_admitted_workflows() -> None:
     namespaces = _read('app/templates/kubernetes/tenant/namespace_provisioning.html')
     operations = _read('app/templates/kubernetes/tenant/operations.html')
 
-    assert 'partials/_tenant_registry.html' in tenants
+    assert "'Tenant Summary'" in tenants
     assert 'partials/_tenant_admin_workspace.html' in tenants
     admin = _read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
     assert 'components/content_tabs.html' in admin
     assert 'content_tabs.render_links' in admin
     for partial in (
+        '_tenant_registry.html',
         '_tenant_setup_workspace.html',
         '_tenant_memberships_workspace.html',
         '_tenant_access_grants_workspace.html',
