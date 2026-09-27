@@ -7,7 +7,7 @@
         {% include "kubernetes/tenant/partials/_namespace_form.html" %}
         <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
             <header class="border-b border-outline-subtle px-5 py-4">
-                <h2 class="text-base font-semibold text-content-primary">Recent Provisioning Outcomes</h2>
+                <h2 class="text-base font-semibold text-content-primary">Provisioning Outcomes</h2>
                 <p class="mt-1 text-sm text-content-secondary">Review committed namespace and reconciliation evidence.</p>
             </header>
             <div class="divide-y divide-outline-subtle">
@@ -24,6 +24,11 @@
                     <p class="px-5 py-8 text-sm text-content-muted">No managed Tenant namespaces yet.</p>
                 {% endfor %}
             </div>
+            {% set pagination_state = namespace_pagination %}
+            {% set pagination_resource = 'namespaces' %}
+            {% set pagination_endpoint = 'tenant.namespace_provisioning' %}
+            {% set pagination_id = 'tenant-namespace-registry' %}
+            {% include "kubernetes/tenant/partials/_pagination_footer.html" %}
         </div>
     </section>
     <section aria-label="Namespace allocation change">
