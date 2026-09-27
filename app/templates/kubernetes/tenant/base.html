@@ -19,37 +19,38 @@
                     {% endcall %}
                 </div>
                 {% set tenant_context_metrics = [
-                    ('server', 'Ready Clusters', ready_clusters|length, 'Native provider targets', true),
-                    ('circle-check', 'Ready Namespaces', ready_namespace_count, 'Verified committed state')
-                ] %}
-                {{ page_hero.context_card(
-                    'Tenant context',
-                    'Provider Readiness',
-                    'Native Kubernetes',
-                    'Ready' if native_available else 'Blocked',
-                    'normal' if native_available else 'warning',
-                    tenant_context_metrics,
-                    'Open Cluster Integrations',
-                    url_for('integrations.kubernetes'),
-                    'server-cog'
+                                    ('server', 'Ready Clusters', ready_clusters|length, 'Native provider targets', true),
+                                    ('circle-check', 'Ready Namespaces', ready_namespace_count, 'Verified committed state')
+                                ] %}
+                {{ page_hero.context_card('Tenant context',
+                                'Provider Readiness',
+                                'Native Kubernetes',
+                                'Ready' if native_available else 'Blocked',
+                                'normal' if native_available else 'warning',
+                                tenant_context_metrics,
+                                'Open Cluster Integrations',
+                                url_for('integrations.kubernetes') ,
+                'server-cog'
                 ) }}
             </div>
         </section>
         {% if not native_available %}
-            {% set blocked_state_title = 'Tenant capability is blocked' %}
-            {% set blocked_state_description = 'Register and validate a Kubernetes cluster before running Native Tenant workflows.' %}
+            {% set blocked_state_title = "Tenant capability is blocked" %}
+            {% set blocked_state_description = "Register and validate a Kubernetes cluster before running Native Tenant workflows." %}
             {% set blocked_state_action_url = url_for('integrations.kubernetes') %}
-            {% set blocked_state_action_label = 'Open Cluster Integrations' %}
-            {% set blocked_state_action_icon = 'server-cog' %}
-            {% set blocked_state_permission = 'integrations.manage' %}
+            {% set blocked_state_action_label = "Open Cluster Integrations" %}
+            {% set blocked_state_action_icon = "server-cog" %}
+            {% set blocked_state_permission = "integrations.manage" %}
             {% set blocked_state_show_admin_required = true %}
-            {% set blocked_state_steps = ['Register Cluster', 'Run Sync', 'Return to Tenant'] %}
+            {% set blocked_state_steps = ["Register Cluster", "Run Sync", "Return to Tenant"] %}
             {% include "components/states/_blocked_state.html" %}
         {% endif %}
-        {% block tenant_content %}{% endblock tenant_content %}
+        {% block tenant_content %}
+        {% endblock tenant_content %}
     </div>
 {% endblock dashboard_content %}
 {% block scripts %}
     {{ super() }}
-    {% block tenant_scripts %}{% endblock tenant_scripts %}
+    {% block tenant_scripts %}
+    {% endblock tenant_scripts %}
 {% endblock scripts %}
