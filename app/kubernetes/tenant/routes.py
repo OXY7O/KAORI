@@ -97,38 +97,88 @@ def _tenant_workspace_context() -> dict[str, Any]:
 @tenant_bp.get('/')
 @any_permission_required('tenant.view', 'tenant.manage')
 def index():
-    return redirect(url_for('tenant.management'))
+    return render_template(
+        'kubernetes/tenant/overview.html',
+        tenant_page='overview',
+        tenant_page_title='Overview',
+        tenant_page_description='Review tenant posture, provider readiness, access attention, and governance.',
+        tenant_page_icon='layout-dashboard',
+        **_tenant_workspace_context(),
+    )
+
+
+@tenant_bp.get('/tenants')
+@any_permission_required('tenant.view', 'tenant.manage')
+def tenants():
+    return render_template(
+        'kubernetes/tenant/tenants.html',
+        tenant_page='tenants',
+        tenant_page_title='Tenants',
+        tenant_page_description='Manage tenant ownership, membership, access grants, and governed credentials.',
+        tenant_page_icon='users-round',
+        **_tenant_workspace_context(),
+    )
+
+
+@tenant_bp.get('/resource-profiles')
+@any_permission_required('tenant.view', 'tenant.manage')
+def resource_profiles():
+    return render_template(
+        'kubernetes/tenant/resource_profiles.html',
+        tenant_page='resource_profiles',
+        tenant_page_title='Resource Profiles',
+        tenant_page_description='Manage allocation profiles, capacity policy, lineage, and effective limits.',
+        tenant_page_icon='layers-3',
+        **_tenant_workspace_context(),
+    )
+
+
+@tenant_bp.get('/namespace-provisioning')
+@any_permission_required('tenant.view', 'tenant.manage')
+def namespace_provisioning():
+    return render_template(
+        'kubernetes/tenant/namespace_provisioning.html',
+        tenant_page='namespace_provisioning',
+        tenant_page_title='Namespace Provisioning',
+        tenant_page_description='Provision namespaces and validate allocation, quota, limits, and capacity.',
+        tenant_page_icon='boxes',
+        **_tenant_workspace_context(),
+    )
+
+
+@tenant_bp.get('/operations')
+@any_permission_required('tenant.view', 'tenant.manage')
+def operations():
+    active_tab = str(request.args.get('tab') or 'provisioning')
+    if active_tab not in {'provisioning', 'runs-evidence', 'drift-reconcile', 'activity'}:
+        active_tab = 'provisioning'
+    return render_template(
+        'kubernetes/tenant/operations.html',
+        tenant_page='operations',
+        tenant_page_title='Operations',
+        tenant_page_description='Inspect provisioning evidence, drift, audit correlation, and operational activity.',
+        tenant_page_icon='activity',
+        active_tab=active_tab,
+        **_tenant_workspace_context(),
+    )
 
 
 @tenant_bp.get('/management')
 @any_permission_required('tenant.view', 'tenant.manage')
 def management():
-    return render_template(
-        'kubernetes/tenant/management.html',
-        tenant_workspace_active='management',
-        **_tenant_workspace_context(),
-    )
+    return redirect(url_for('tenant.index'))
 
 
 @tenant_bp.get('/inventory')
 @any_permission_required('tenant.view', 'tenant.manage')
 def inventory():
-    return render_template(
-        'kubernetes/tenant/inventory.html',
-        tenant_workspace_active='inventory',
-        **_tenant_workspace_context(),
-    )
+    return redirect(url_for('tenant.operations', tab='runs-evidence'))
 
 
 @tenant_bp.get('/analytics')
 @any_permission_required('tenant.view', 'tenant.manage')
 def analytics():
-    return render_template(
-        'kubernetes/tenant/analytics.html',
-        tenant_workspace_active='analytics',
-        **_tenant_workspace_context(),
-    )
-
+    return redirect(url_for('tenant.operations', tab='runs-evidence'))
 
 def _required_int(name: str) -> int:
     value = str(request.form.get(name) or '').strip()
@@ -168,7 +218,7 @@ def create_group_route():
             message=f'{group.name} is available as a Tenant membership principal.',
             metadata={'tenant_id': group.tenant_id, 'group_id': group.public_id, 'operation': 'create_tenant_group'},
         )
-    return redirect(url_for('tenant.index'))
+    return redirect(url_for('tenant.tenants'))
 
 
 @tenant_bp.post('/memberships/users')
@@ -201,7 +251,7 @@ def add_user_membership_route():
                 'operation': 'add_user_membership',
             },
         )
-    return redirect(url_for('tenant.index'))
+    return redirect(url_for('tenant.tenants'))
 
 
 @tenant_bp.post('/memberships/groups')
@@ -233,7 +283,7 @@ def add_group_membership_route():
                 'operation': 'add_group_membership',
             },
         )
-    return redirect(url_for('tenant.index'))
+    return redirect(url_for('tenant.tenants'))
 
 
 @tenant_bp.post('/memberships/<int:membership_id>/revoke')
@@ -265,7 +315,7 @@ def revoke_membership_route(membership_id: int):
                 'operation': 'revoke_membership',
             },
         )
-    return redirect(url_for('tenant.index'))
+    return redirect(url_for('tenant.tenants'))
 
 
 @tenant_bp.post('/access-grants')
@@ -298,7 +348,7 @@ def create_access_grant_route():
             detail=grant.reconciliation_message,
             metadata={'grant_id': grant.public_id, 'tenant_id': grant.tenant_id, 'operation': 'create_access_grant'},
         )
-    return redirect(url_for('tenant.index'))
+    return redirect(url_for('tenant.tenants'))
 
 
 @tenant_bp.post('/access-grants/<int:grant_id>/inspect')
@@ -327,7 +377,7 @@ def inspect_access_grant_route(grant_id: int):
             message=grant.reconciliation_message or 'Kubernetes RBAC inspection completed.',
             metadata={'grant_id': grant.public_id, 'operation': 'inspect_access_grant'},
         )
-    return redirect(url_for('tenant.index'))
+    return redirect(url_for('tenant.tenants'))
 
 
 @tenant_bp.post('/access-grants/<int:grant_id>/reconcile')
@@ -355,7 +405,7 @@ def reconcile_access_grant_route(grant_id: int):
             message=grant.reconciliation_message or 'Kubernetes RBAC matches committed Tenant access intent.',
             metadata={'grant_id': grant.public_id, 'operation': 'reconcile_access_grant'},
         )
-    return redirect(url_for('tenant.index'))
+    return redirect(url_for('tenant.tenants'))
 
 
 @tenant_bp.post('/access-grants/<int:grant_id>/revoke')
@@ -383,7 +433,7 @@ def revoke_access_grant_route(grant_id: int):
             message='Effective Kubernetes RoleBinding access was removed.',
             metadata={'grant_id': grant.public_id, 'tenant_id': grant.tenant_id, 'operation': 'revoke_access_grant'},
         )
-    return redirect(url_for('tenant.index'))
+    return redirect(url_for('tenant.tenants'))
 
 
 @tenant_bp.post('/tenants')
@@ -425,7 +475,7 @@ def create_tenant_route():
                 'operation': 'create_tenant',
             },
         )
-    return redirect(url_for('tenant.index'))
+    return redirect(url_for('tenant.tenants'))
 
 
 @tenant_bp.post('/resource-profiles')
@@ -464,7 +514,7 @@ def create_resource_profile_route():
                 'operation': 'create_resource_profile',
             },
         )
-    return redirect(url_for('tenant.index'))
+    return redirect(url_for('tenant.resource_profiles'))
 
 
 @tenant_bp.post('/capacity-policy')
@@ -509,7 +559,7 @@ def update_capacity_policy_route():
                 'operation': 'update_capacity_policy',
             },
         )
-    return redirect(url_for('tenant.index'))
+    return redirect(url_for('tenant.resource_profiles'))
 
 
 @tenant_bp.post('/namespace-allocation')
@@ -547,7 +597,7 @@ def change_namespace_allocation_route():
                 'operation': 'change_namespace_allocation',
             },
         )
-    return redirect(url_for('tenant.index'))
+    return redirect(url_for('tenant.namespace_provisioning'))
 
 
 @tenant_bp.post('/namespaces')
@@ -584,7 +634,7 @@ def provision_namespace_route():
                 'operation': 'provision_namespace',
             },
         )
-    return redirect(url_for('tenant.index'))
+    return redirect(url_for('tenant.namespace_provisioning'))
 
 
 @tenant_bp.post('/credentials/human')
@@ -620,7 +670,7 @@ def create_human_credential_route():
                 'operation': 'credential_issue_human',
             },
         )
-    return redirect(url_for('tenant.management'))
+    return redirect(url_for('tenant.tenants'))
 
 
 @tenant_bp.post('/credentials/deployer')
@@ -657,7 +707,7 @@ def create_deployer_credential_route():
                 'operation': 'credential_issue_deployer',
             },
         )
-    return redirect(url_for('tenant.management'))
+    return redirect(url_for('tenant.tenants'))
 
 
 def _credential_feedback(
@@ -695,25 +745,25 @@ def _credential_feedback(
 @permission_required('tenant.manage')
 def renew_credential_route(credential_id: int):
     _credential_feedback(action='renewed', credential_id=credential_id, operation=renew_credential_committed)
-    return redirect(url_for('tenant.management'))
+    return redirect(url_for('tenant.tenants'))
 
 
 @tenant_bp.post('/credentials/<int:credential_id>/suspend')
 @permission_required('tenant.manage')
 def suspend_credential_route(credential_id: int):
     _credential_feedback(action='suspended', credential_id=credential_id, operation=suspend_credential_committed)
-    return redirect(url_for('tenant.management'))
+    return redirect(url_for('tenant.tenants'))
 
 
 @tenant_bp.post('/credentials/<int:credential_id>/resume')
 @permission_required('tenant.manage')
 def resume_credential_route(credential_id: int):
     _credential_feedback(action='resumed', credential_id=credential_id, operation=resume_credential_committed)
-    return redirect(url_for('tenant.management'))
+    return redirect(url_for('tenant.tenants'))
 
 
 @tenant_bp.post('/credentials/<int:credential_id>/revoke')
 @permission_required('tenant.manage')
 def revoke_credential_route(credential_id: int):
     _credential_feedback(action='revoked', credential_id=credential_id, operation=revoke_credential_committed)
-    return redirect(url_for('tenant.management'))
+    return redirect(url_for('tenant.tenants'))
