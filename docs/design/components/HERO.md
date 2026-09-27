@@ -1,4 +1,4 @@
-# KAORI Hero Component Standard v1.8
+# KAORI Hero Component Standard v1.9
 
 This document is the authoritative implementation and semantic contract for authenticated KAORI page heroes.
 
@@ -15,7 +15,7 @@ scripts/verify_hero_component_standard.py
 tests/contracts/design/test_hero_component_standard_contract.py
 ```
 
-The v1.8 change preserves the accepted Violet identity, dark-mode ownership, accessibility, HTMX stability, context semantics, and tablet/desktop Hero grammar while adding a **phone-native compact composition** below `sm` (640 px). The phone contract removes desktop minimum-height floors, reduces padding/gaps and typography, omits the decorative leading icon, and prioritizes primary metadata/context evidence. From `sm` upward, the established v1.7 geometry and typography remain authoritative. UAT clarification under #470 makes the description intent executable: 7–15 words, preferably 8–12 words, one action-oriented sentence, maximum 68 characters, and **one visual line at canonical non-phone widths (768 px and above)** without ellipsis, clipping, or hidden overflow. Phone viewports below 640 px may wrap naturally for readability.
+The v1.9 change preserves the accepted Violet identity, dark-mode ownership, accessibility, HTMX stability, context semantics, responsive Hero grammar, and v1.8 phone-native compact composition while making **non-redundant eyebrow/title identity** an explicit KAORI-wide semantic contract. The phone contract removes desktop minimum-height floors, reduces padding/gaps and typography, omits the decorative leading icon, and prioritizes primary metadata/context evidence. From `sm` upward, the established v1.7 geometry and typography remain authoritative. UAT clarification under #470 makes the description intent executable: 7–15 words, preferably 8–12 words, one action-oriented sentence, maximum 68 characters, and **one visual line at canonical non-phone widths (768 px and above)** without ellipsis, clipping, or hidden overflow. Phone viewports below 640 px may wrap naturally for readability.
 
 ## Purpose
 
@@ -106,17 +106,34 @@ Metadata communicates identity, scope, evidence boundary, or stable operating co
 
 ### Eyebrow and title ownership
 
-The eyebrow supplies domain/capability context. The `h1` supplies the exact page or workspace identity.
+The eyebrow supplies **domain/capability/context**. The `h1` supplies the **current page, task, object, or workspace identity**. Together they form one semantic identity and must not restate the same noun phrase.
 
-Examples:
+Canonical pattern:
 
 ```text
+Eyebrow = where / domain context
+Title   = what / current destination
+```
+
+Approved examples:
+
+```text
+KUBERNETES TENANT → Overview
+OBJECT STORAGE INVENTORY → Overview
 KUBERNETES ANALYTICS → Capacity
-OBJECT STORAGE ANALYTICS → Performance
 ACCESS → Users
 ```
 
-Do not repeat domain/capability wording already carried by the eyebrow merely to make the title longer. Titles remain stable across normal, blocked, degraded, and empty states. A title may be more descriptive than the sidebar label only when standalone page identity would otherwise be ambiguous.
+Rejected semantic duplication:
+
+```text
+OBJECT STORAGE INVENTORY → Object Storage Overview
+KUBERNETES TENANT → Kubernetes Tenant Overview
+```
+
+Do not repeat domain/capability wording already carried by the eyebrow merely to make the title longer. When an eyebrow already establishes the domain, prefer a concise destination title such as `Overview`, `Capacity`, `Users`, or `Operations`. Titles remain stable across normal, blocked, degraded, and empty states. A title may be more descriptive than the sidebar label only when standalone page identity would otherwise be ambiguous.
+
+This is a semantic rule, not a typography preference. New or materially redesigned Heroes must satisfy it. Legacy surfaces that still duplicate eyebrow/title wording are tracked as UI-standard drift and must not be used as precedent.
 
 ## Operational Dashboard Hero Profile
 
