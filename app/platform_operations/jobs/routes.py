@@ -368,6 +368,8 @@ def quick_sync_all_inventory() -> ResponseReturnValue:
     job_keys: list[str] = []
     if current_user.has_permission('clusters.sync'):
         job_keys.append('kubernetes.inventory.sync')
+    if current_user.has_permission('tenant.manage'):
+        job_keys.append('kubernetes.tenant.sync')
     if current_user.has_permission('storage.sync'):
         job_keys.append('object_storage.inventory.sync')
     if not job_keys:
