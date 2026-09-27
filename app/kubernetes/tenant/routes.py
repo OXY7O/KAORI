@@ -104,7 +104,6 @@ def index():
         'kubernetes/tenant/overview.html',
         tenant_page='overview',
         tenant_page_title='Overview',
-        tenant_page_description='Review tenant posture, provider readiness, access attention, and governance.',
         tenant_page_icon='layout-dashboard',
         **_tenant_workspace_context(),
     )
@@ -124,7 +123,6 @@ def tenants():
         'kubernetes/tenant/tenants.html',
         tenant_page='tenants',
         tenant_page_title='Tenants',
-        tenant_page_description='Manage tenant ownership, membership, access grants, and governed credentials.',
         tenant_page_icon='users-round',
         **context,
     )
@@ -144,7 +142,6 @@ def resource_profiles():
         'kubernetes/tenant/resource_profiles.html',
         tenant_page='resource_profiles',
         tenant_page_title='Resource Profiles',
-        tenant_page_description='Manage allocation profiles, capacity policy, lineage, and effective limits.',
         tenant_page_icon='layers-3',
         **context,
     )
@@ -164,7 +161,6 @@ def namespace_provisioning():
         'kubernetes/tenant/namespace_provisioning.html',
         tenant_page='namespace_provisioning',
         tenant_page_title='Namespace Provisioning',
-        tenant_page_description='Provision namespaces and verify quotas, limits, allocation, and capacity.',
         tenant_page_icon='boxes',
         **context,
     )
@@ -180,7 +176,6 @@ def operations():
         'kubernetes/tenant/operations.html',
         tenant_page='operations',
         tenant_page_title='Operations',
-        tenant_page_description='Inspect provisioning evidence, drift, audit correlation, and activity.',
         tenant_page_icon='activity',
         active_tab=active_tab,
         **_tenant_workspace_context(),
