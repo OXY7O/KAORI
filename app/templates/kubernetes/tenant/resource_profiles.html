@@ -1,0 +1,33 @@
+{% extends "kubernetes/tenant/base.html" %}
+{% import "components/table_label.html" as table_label %}
+{% block tenant_content %}
+    {% set can_manage = current_user.has_permission('tenant.manage') %}
+    <section class="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)]" aria-label="Tenant Resource Profiles">
+        {% include "kubernetes/tenant/partials/_resource_profile_form.html" %}
+        <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+            <header class="border-b border-outline-subtle px-5 py-4">
+                <h2 class="text-base font-semibold text-content-primary">Recent Resource Profiles</h2>
+                <p class="mt-1 text-sm text-content-secondary">Review profile class, lineage, and effective allocation contracts.</p>
+            </header>
+            <div class="divide-y divide-outline-subtle">
+                {% for profile in profiles %}
+                    <article class="px-5 py-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="font-semibold text-content-primary">{{ profile.name }}</span>
+                            {{ table_label.status_label(profile.profile_class|title, 'info') }}
+                        </div>
+                        <p class="mt-1 text-xs text-content-muted">v{{ profile.version }} · {{ 'Enabled' if profile.enabled else 'Disabled' }}</p>
+                        <p class="mt-2 text-xs text-content-muted">{{ profile.quota_hard_json.get('requests.cpu', '—') }} CPU · {{ profile.quota_hard_json.get('requests.memory', '—') }} memory</p>
+                    </article>
+                {% else %}
+                    <p class="px-5 py-8 text-sm text-content-muted">No Resource Profiles yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% include "kubernetes/tenant/partials/_capacity_governance.html" %}
+    <script type="application/json" id="tenant-resource-profile-presets">{{ resource_profile_presets|tojson }}</script>
+{% endblock tenant_content %}
+{% block tenant_scripts %}
+    <script defer src="{{ url_for('static', filename='js/tenant_resource_profile_presets.js') }}"></script>
+{% endblock tenant_scripts %}
