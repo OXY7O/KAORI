@@ -125,6 +125,13 @@
                             {% if membership.status == 'active' %}
                                 <form method="post"
                                       action="{{ url_for('tenant.revoke_membership_route', membership_id=membership.id) }}"
+                                      hx-post="{{ url_for('tenant.revoke_membership_route', membership_id=membership.id) }}"
+                                      hx-target="#tenant-admin-workspace"
+                                      hx-select="#tenant-admin-workspace"
+                                      hx-swap="outerHTML"
+                                      hx-push-url="{{ url_for('tenant.tenants', section='memberships') }}"
+                                      hx-indicator="#tenant-admin-loading"
+                                      hx-disabled-elt="find button"
                                       class="flex justify-end">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit"
