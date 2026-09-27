@@ -1,22 +1,39 @@
 {% extends "kubernetes/tenant/base.html" %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/resource_posture_grid.html" as resource_posture_grid %}
 {% import "components/section_intro.html" as section_intro %}
 {% block tenant_content %}
     {% set can_manage = current_user.has_permission('tenant.manage') %}
+    {% set tenant_summary_metrics = [
+        ('building-2', 'Tenants', tenant_summary_tenant_count, tenant_summary_environment_count ~ ' committed environments', 'info'),
+        ('boxes', 'Namespaces', tenant_summary_namespace_count, 'Governed namespace allocations', 'info'),
+        ('users-round', 'Memberships', tenant_summary_membership_count, 'Active user, group, and machine principals', 'normal'),
+        ('shield-check', 'Access Grants', tenant_summary_access_grant_count, 'Active versioned RBAC grants', 'normal'),
+        ('key-round', 'Credentials', tenant_summary_credential_count, 'Active governed credential lifecycle', 'info')
+    ] %}
 
-    <section class="space-y-4" aria-labelledby="tenant-estate-heading">
+    <section class="space-y-4" aria-labelledby="tenant-summary-heading">
         {{ section_intro.render(
-            'Tenant Estate',
-            'Find, filter, and review committed Tenant ownership across the Kubernetes fleet.',
-            'tenant-estate-heading'
+            'Tenant Summary',
+            'Current committed Tenant governance scope across ownership, namespace, identity, access, and credentials.',
+            'tenant-summary-heading'
         ) }}
-        {% include "kubernetes/tenant/partials/_tenant_registry.html" %}
+        {% call operational_section_card.render(
+            'Governance Estate',
+            'A compact page-level summary. Open the workspace below for registry and lifecycle administration.',
+            'layout-dashboard',
+            body_classes='p-0',
+            aria_label='Tenant governance summary'
+        ) %}
+            {{ resource_posture_grid.render(tenant_summary_metrics, columns=5) }}
+        {% endcall %}
     </section>
 
-    <section class="space-y-4" aria-labelledby="tenant-administration-heading">
+    <section class="space-y-4" aria-labelledby="tenant-workspace-heading">
         {{ section_intro.render(
-            'Administration Workspace',
-            'Create and govern Tenant ownership, membership, access, credentials, and effective namespace access.',
-            'tenant-administration-heading'
+            'Tenant Workspace',
+            'Use one focused workspace at a time while retaining the same governed Tenant context.',
+            'tenant-workspace-heading'
         ) }}
         {% include "kubernetes/tenant/partials/_tenant_admin_workspace.html" %}
     </section>
