@@ -25,9 +25,9 @@
                 {% endfor %}
             </div>
             {% set pagination_state = namespace_pagination %}
-            {% set pagination_resource = 'namespaces' %}
-            {% set pagination_endpoint = 'tenant.namespace_provisioning' %}
-            {% set pagination_id = 'tenant-namespace-registry' %}
+            {% set pagination_resource = "namespaces" %}
+            {% set pagination_endpoint = "tenant.namespace_provisioning" %}
+            {% set pagination_id = "tenant-namespace-registry" %}
             {% include "kubernetes/tenant/partials/_pagination_footer.html" %}
         </div>
     </section>
