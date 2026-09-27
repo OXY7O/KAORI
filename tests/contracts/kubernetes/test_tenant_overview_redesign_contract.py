@@ -75,6 +75,20 @@ def test_tenant_sync_matches_tls_background_behavior() -> None:
     assert "notification_deck_user_ids" in task
 
 
+def test_tenant_sync_workspace_context_is_constructed_from_sync_state() -> None:
+    workspace = (ROOT / 'app/kubernetes/tenant/workspace.py').read_text(encoding='utf-8')
+
+    assert "def get_tenant_sync_workspace_context() -> dict[str, Any]:" in workspace
+    assert "'tenant_collection_snapshot': _tenant_collection_snapshot(sync_state)" in workspace
+    assert "'tenant_sync_state': sync_state" in workspace
+    broken_helper = """def get_tenant_sync_workspace_context() -> dict[str, Any]:
+    sync_state = build_tenant_sync_state()
+    return {
+        **sync_context,
+    }"""
+    assert broken_helper not in workspace
+
+
 def test_tenant_overview_uses_tls_style_collection_snapshot_and_contextual_sync_actions() -> None:
     overview = (ROOT / 'app/templates/kubernetes/tenant/overview.html').read_text(encoding='utf-8')
     sync_workspace = (ROOT / 'app/templates/kubernetes/tenant/partials/_sync_workspace.html').read_text(
