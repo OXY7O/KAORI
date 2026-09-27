@@ -9,7 +9,7 @@ KAORI exposes one expandable `Kubernetes → Tenant` capability parent. Native K
 The approved Tenant destinations are:
 
 - **Overview** — Tenant Collection Snapshot, multi-cluster estate posture, governed allocation/capacity evidence, prioritized operator attention, and recent Tenant activity. Navigation remains owned by the five Tenant sidebar destinations; Overview does not duplicate them as a Quick Actions strip.
-- **Tenants** — ownership, membership, Access Grants, Namespace Access, human credentials, and CI/CD deployer identities.
+- **Tenants** — canonical Tenant Registry plus a subordinate administration workspace for Tenant Setup, Memberships, Access Grants, Credentials, and Namespace Access.
 - **Resource Profiles** — governed presets/custom profiles, allocation lineage, and capacity policy.
 - **Namespace Provisioning** — namespace creation, allocation changes, ResourceQuota/LimitRange evidence, and capacity decisions.
 - **Operations** — provisioning status, runs/evidence, drift/reconciliation, and Activity through internal Content Tabs.
@@ -52,6 +52,28 @@ Capacity Analytics remains a separate committed evidence authority. Tenant sync 
 - Provider state and reconciliation authority are explicit committed evidence.
 - Capsule-only advanced mutations require admitted compatible capability evidence.
 - Native Recovery remains an explicit governed authority transfer, never an automatic fallback.
+
+## Tenants workspace composition
+
+The Tenants destination follows the KAORI Inventory/List archetype for its primary content, with subordinate administration workflows below it:
+
+```text
+Hero
+→ Tenant Estate
+   └── Tenant Registry
+→ Administration Workspace
+   ├── Tenant Setup
+   ├── Memberships
+   ├── Access Grants
+   ├── Credentials
+   └── Namespace Access
+```
+
+The Tenant Registry is always visible and uses the canonical KAORI table family: shared loading bar, Cluster/Environment/Lifecycle/Search filters, server-side filtering, default 5-row pagination, 5/10/25/50 page sizes, semantic labels, responsive horizontal overflow, and HTMX table refresh. Normal registry reads use committed KAORI Tenant state only.
+
+Administration uses the shared Analytics-derived `components/content_tabs.html` server-link mode. Every tab retains a real URL fallback; HTMX progressively replaces only the administration workspace. Mutation routes return operators to the relevant administration section rather than resetting the page to Tenant Setup.
+
+The former monolithic UAT-only Members & Access and Credential Management partials are retired. Final UX does not expose `Functional UAT Surface` copy or render all administration forms simultaneously.
 
 ## Access and credential boundary
 
