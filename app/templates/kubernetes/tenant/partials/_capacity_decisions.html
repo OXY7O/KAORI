@@ -1,0 +1,20 @@
+<section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+                 aria-label="Tenant capacity decisions">
+            <header class="border-b border-outline-subtle px-5 py-4">
+                <h2 class="text-base font-semibold text-content-primary">Capacity Decisions</h2>
+                <p class="mt-1 text-xs text-content-muted">Latest 5 committed allocation preflight decisions.</p>
+            </header>
+            <div class="divide-y divide-outline-subtle">
+                {% for decision in capacity_decisions %}
+                    <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                        <div>
+                            <p class="font-semibold text-content-primary">{{ decision.namespace }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ decision.operation|replace('_', ' ') |title }} · {{ decision.capacity_state }}</p>
+                        </div>
+                        {{ table_label.status_label(decision.decision|title, 'normal' if decision.decision == 'allow' else 'critical') }}
+                    </div>
+                {% else %}
+                    <p class="px-5 py-6 text-sm text-content-muted">No capacity preflight decision has been committed yet.</p>
+                {% endfor %}
+            </div>
+        </section>
