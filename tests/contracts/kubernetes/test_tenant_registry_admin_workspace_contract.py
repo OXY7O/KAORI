@@ -12,10 +12,10 @@ def test_tenants_page_keeps_summary_above_the_tabbed_workspace() -> None:
     admin = read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
     routes = read('app/kubernetes/tenant/routes.py')
 
-    assert "'Tenant Summary'" in page
-    assert "'Governance Estate'" in page
+    assert "'Multi-Cluster Posture'" in page
+    assert "'Tenant Estate'" in page
     assert 'tenant_summary_metrics' in page
-    assert page.index("'Tenant Summary'") < page.index("'Tenant Workspace'")
+    assert page.index("'Multi-Cluster Posture'") < page.index("'Tenant Workspace'")
     assert page.index("'Tenant Workspace'") < page.index('partials/_tenant_admin_workspace.html')
 
     assert 'components/content_tabs.html' in admin
@@ -71,8 +71,17 @@ def test_tenant_setup_uses_a_static_governance_flow_not_expandable_guidance() ->
     for label in ('Create Tenant', 'Provision Namespace', 'Add Membership', 'Apply Access Grant', 'Issue Credential'):
         assert label in setup
     assert 'Important Boundaries' in setup
+    for icon in ('shield-check', 'boxes', 'users-round', 'key-round'):
+        assert f'data-lucide="{icon}"' in setup
+    assert 'Cross-Tenant references fail closed.' in setup
+    assert 'bg-status-warning-soft' in setup
     assert 'context_guidance_card.html' not in setup
     assert 'open_by_default' not in setup
+
+    tenant_form = read('app/templates/kubernetes/tenant/partials/_tenant_form.html')
+    assert 'components/info_tip.html' in tenant_form
+    assert 'tenant-setup-form-tip' in tenant_form
+    assert 'Optional. KAORI derives a lowercase slug' not in tenant_form
 
 
 def test_memberships_use_symmetric_actions_and_scalable_registries() -> None:
@@ -88,6 +97,15 @@ def test_memberships_use_symmetric_actions_and_scalable_registries() -> None:
         assert label in workspace
     assert '_membership_registry.html' in workspace
     assert '_group_registry.html' in workspace
+    assert 'components/info_tip.html' in workspace
+    assert 'membership-user-tip' in workspace
+    assert 'membership-group-tip' in workspace
+    assert 'membership-attach-group-tip' in workspace
+    assert workspace.count('hx-target="#tenant-admin-workspace"') >= 3
+    assert workspace.count('hx-select="#tenant-admin-workspace"') >= 3
+    assert workspace.count('hx-disabled-elt="find button"') >= 3
+    assert 'bg-status-warning-soft' in workspace
+    assert 'Scope Safety' in workspace
 
     for table in (memberships, groups):
         assert 'components/table.html' in table
@@ -108,6 +126,10 @@ def test_access_grants_use_wide_form_and_full_registry() -> None:
     assert 'Access Grant Model' in workspace
     assert 'id="access-grant-form"' in workspace
     assert 'md:grid-cols-2 xl:grid-cols-3' in workspace
+    assert 'components/info_tip.html' in workspace
+    assert 'access-grant-form-tip' in workspace
+    assert 'Governance note.' in workspace
+    assert 'hx-target="#tenant-admin-workspace"' in workspace
     assert '_access_grant_registry.html' in workspace
     assert "'Access Grant Registry'" in registry
     assert 'registry_ui.filter_form' in registry
@@ -133,6 +155,14 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     assert "'Credential Lifecycle'" in registry
     assert 'registry_ui.filter_form' in registry
     assert 'registry_ui.footer' in registry
+    assert 'components/info_tip.html' in workspace
+    assert 'human-credential-tip' in workspace
+    assert 'deployer-credential-tip' in workspace
+    assert workspace.count('hx-target="#tenant-admin-workspace"') >= 2
+    assert "table_ui.table_classes('min-w-[760px] table-fixed lg:min-w-0')" in registry
+    assert 'min-w-[1180px]' not in registry
+    assert 'Type / Delivery' in registry
+    assert 'Owner / Delivery' not in registry
     for action in ('Renew', 'Suspend', 'Resume', 'Revoke'):
         assert action in registry
     assert 'def get_credential_registry_context(' in read_model
@@ -145,6 +175,10 @@ def test_namespace_access_is_a_paginated_non_secret_registry() -> None:
 
     assert 'Effective Namespace Access' in workspace
     assert 'Security Boundary' in workspace
+    assert 'components/info_tip.html' in workspace
+    assert 'namespace-access-tip' in workspace
+    assert 'Derived Evidence' in workspace
+    assert 'Credential Context' in workspace
     assert '_namespace_access_registry.html' in workspace
     assert "'Namespace Access Registry'" in registry
     assert 'registry_ui.filter_form' in registry
@@ -156,6 +190,23 @@ def test_namespace_access_is_a_paginated_non_secret_registry() -> None:
     assert 'def get_namespace_access_registry_context(' in read_model
     assert 'paginate_sequence(' in read_model
 
+
+
+
+def test_kaori_info_tip_is_a_reusable_hover_and_focus_standard() -> None:
+    component = read('app/templates/components/info_tip.html')
+    docs = read('docs/design/components/INFO_TIP.md')
+
+    assert 'macro render(id, title, text=' in component
+    assert 'aria-describedby="{{ id }}"' in component
+    assert 'role="tooltip"' in component
+    assert 'group-hover:visible' in component
+    assert 'group-focus-within:visible' in component
+    assert 'focus-visible:ring-2' in component
+
+    assert 'compact guidance pattern' in docs
+    assert 'pointer hover and keyboard/touch focus' in docs
+    assert 'Do **not** hide validation errors' in docs
 
 def test_tenant_administration_retires_monolithic_uat_partials() -> None:
     assert not (ROOT / 'app/templates/kubernetes/tenant/partials/_members_access.html').exists()
