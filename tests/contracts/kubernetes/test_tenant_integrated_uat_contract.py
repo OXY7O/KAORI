@@ -46,7 +46,24 @@ def test_tenant_tenants_surface_exposes_governed_access_and_credential_lifecycle
     grants = _read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
     credential = _read('app/templates/kubernetes/tenant/partials/_tenant_credentials_workspace.html')
     namespace_access = _read('app/templates/kubernetes/tenant/partials/_tenant_namespace_access_workspace.html')
-    template = page + admin + memberships + grants + credential + namespace_access
+    membership_registry = _read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
+    group_registry = _read('app/templates/kubernetes/tenant/partials/_group_registry.html')
+    access_grant_registry = _read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+    credential_registry = _read('app/templates/kubernetes/tenant/partials/_credential_registry.html')
+    namespace_access_registry = _read('app/templates/kubernetes/tenant/partials/_namespace_access_registry.html')
+    template = (
+        page
+        + admin
+        + memberships
+        + grants
+        + credential
+        + namespace_access
+        + membership_registry
+        + group_registry
+        + access_grant_registry
+        + credential_registry
+        + namespace_access_registry
+    )
 
     for path in (
         '/credentials/human',
