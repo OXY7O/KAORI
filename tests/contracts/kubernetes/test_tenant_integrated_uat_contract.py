@@ -20,7 +20,6 @@ def test_tenant_workspace_uses_only_approved_sidebar_destinations() -> None:
         assert f'>{label}</span>' in menu
 
 
-
 def test_tenant_workspace_reads_committed_cross_child_state() -> None:
     workspace = _read('app/kubernetes/tenant/workspace.py')
 
