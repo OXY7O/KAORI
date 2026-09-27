@@ -168,6 +168,29 @@ def _existing_owner_purpose(
     ).first()
 
 
+def create_human_credential_from_grant_committed(
+    *,
+    access_grant_id: int,
+    request: HumanCredentialIssueRequest,
+    actor: User | None = None,
+) -> TenantCredential:
+    """Issue a human credential from a reconciled user grant.
+
+    Route code supplies only the committed grant authority. Owner resolution
+    stays inside the Tenant credential service so the web layer never queries
+    persistence directly.
+    """
+    grant = db.session.get(TenantAccessGrant, access_grant_id)
+    if grant is None or grant.membership.user_id is None:
+        raise ValueError('Select an active reconciled human Access Grant.')
+    return create_human_credential_committed(
+        access_grant_id=grant.id,
+        owner_user_id=grant.membership.user_id,
+        request=request,
+        actor=actor,
+    )
+
+
 def create_human_credential_committed(
     *,
     access_grant_id: int,
