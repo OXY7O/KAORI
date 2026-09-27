@@ -235,6 +235,7 @@ def get_tenant_workspace_context(*, limit: int = 20) -> dict[str, Any]:
         'credential_grant_options': credential_grant_options,
         'deployer_namespace_options': deployer_namespace_options,
         'recent_credentials': recent_credentials,
+        'tenant_credential_count': TenantCredential.query.count(),
         'namespace_access_rows': namespace_access_rows[:limit],
         'managed_resources': _recent(TenantManagedResourceIntent, limit=limit),
         'domain_reservations': _recent(TenantDomainReservation, limit=limit),
@@ -242,4 +243,5 @@ def get_tenant_workspace_context(*, limit: int = 20) -> dict[str, Any]:
         'audit_evidence': _recent(TenantAuditEvidence, limit=limit),
         'advanced_intents': _recent(TenantAdvancedCapabilityIntent, limit=limit),
         'tenant_governance_findings': findings[:limit],
+        'tenant_governance_finding_count': len(findings),
     }
