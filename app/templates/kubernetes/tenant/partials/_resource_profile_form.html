@@ -1,0 +1,87 @@
+<form method="post"
+                  action="{{ url_for('tenant.create_resource_profile_route') }}"
+                  class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm"
+                  data-tenant-resource-profile-form>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-5 flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="gauge" class="h-5 w-5"></i></span>
+                    <div>
+                        <h2 class="text-base font-semibold text-content-primary">2. Resource Profile</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Define reusable quota and Container LimitRange intent.</p>
+                    </div>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                    <label class="block sm:col-span-2 xl:col-span-1 2xl:col-span-2">
+                        {{ form_field.label_row("Profile Name") }}
+                        <input name="profile_name"
+                               required
+                               placeholder="Standard Platform"
+                               class="{{ form_field.input_classes() }}">
+                    </label>
+                    <label class="block sm:col-span-2 xl:col-span-1 2xl:col-span-2">
+                        {{ form_field.label_row("Class") }}
+                        <select name="profile_class"
+                                required
+                                data-tenant-profile-class
+                                class="{{ form_field.select_classes() }}">
+                            <option value="small">Small</option>
+                            <option value="standard" selected>Standard</option>
+                            <option value="large">Large</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                        {{ form_field.help("Small, Standard, and Large are locked KAORI presets. Choose Custom when different values are required.") }}
+                    </label>
+                    <label class="block sm:col-span-2 xl:col-span-1 2xl:col-span-2"
+                           data-tenant-base-preset-wrapper
+                           hidden>
+                        {{ form_field.label_row('Base Preset', 'Optional', 'info', 'copy') }}
+                        <select name="base_preset_class"
+                                data-tenant-base-preset
+                                disabled
+                                class="{{ form_field.select_classes() }}">
+                            <option value="">Start empty</option>
+                            <option value="small">Small</option>
+                            <option value="standard">Standard</option>
+                            <option value="large">Large</option>
+                        </select>
+                        {{ form_field.help("Custom may start from a built-in preset, then be edited before commit. KAORI retains the base preset/version as lineage evidence.") }}
+                    </label>
+                    {% for field, label, placeholder in [
+                        ('requests_cpu', 'CPU Requests', '2'),
+                        ('limits_cpu', 'CPU Limits', '4'),
+                        ('requests_memory', 'Memory Requests', '4Gi'),
+                        ('limits_memory', 'Memory Limits', '8Gi'),
+                        ('pods', 'Pods', '20'),
+                        ('persistentvolumeclaims', 'PVCs', '10'),
+                        ('requests_storage', 'Storage', '100Gi'),
+                        ('services', 'Services', '10'),
+                        ('configmaps', 'ConfigMaps', '50'),
+                        ('secrets', 'Secrets', '50'),
+                        ('default_request_cpu', 'Container CPU Request', '100m'),
+                        ('default_cpu', 'Container CPU Limit', '500m'),
+                        ('default_request_memory', 'Container Memory Request', '128Mi'),
+                        ('default_memory', 'Container Memory Limit', '512Mi')
+                        ] %}
+                        <label class="block">
+                            {{ form_field.label_row(label) }}
+                            <input name="{{ field }}"
+                                   placeholder="{{ placeholder }}"
+                                   data-tenant-resource-field="{{ field }}"
+                                   readonly
+                                   aria-readonly="true"
+                                   class="{{ form_field.input_classes() }}">
+                        </label>
+                    {% endfor %}
+                </div>
+                <label class="mt-4 block">
+                    {{ form_field.label_row("Description") }}
+                    <input name="profile_description"
+                           placeholder="Optional profile intent"
+                           class="{{ form_field.input_classes() }}">
+                </label>
+                <button type="submit"
+                        {% if not can_manage %}disabled aria-disabled="true"{% endif %}
+                        class="mt-5 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
+                    <i data-lucide="save" class="h-4 w-4"></i>Create Profile
+                </button>
+            </form>
