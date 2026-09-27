@@ -44,7 +44,8 @@ def test_tenant_uat_pages_preserve_current_admitted_workflows() -> None:
     namespaces = _read('app/templates/kubernetes/tenant/namespace_provisioning.html')
     operations = _read('app/templates/kubernetes/tenant/operations.html')
 
-    assert "'Tenant Summary'" in tenants
+    assert "'Multi-Cluster Posture'" in tenants
+    assert "'Tenant Estate'" in tenants
     assert 'partials/_tenant_admin_workspace.html' in tenants
     admin = _read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
     assert 'components/content_tabs.html' in admin
