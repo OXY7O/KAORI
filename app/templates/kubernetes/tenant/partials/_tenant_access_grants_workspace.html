@@ -1,5 +1,6 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/form_field.html" as form_field %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/operational_flow_steps.html" as operational_flow_steps %}
 {% set grant_flow = [[
     ('users-round', 'Membership', 'Start from one active Tenant principal.'),
@@ -32,10 +33,16 @@
     <form id="access-grant-form"
           method="post"
           action="{{ url_for('tenant.create_access_grant_route') }}"
+          hx-post="{{ url_for('tenant.create_access_grant_route') }}"
+          hx-target="#tenant-admin-workspace"
+          hx-select="#tenant-admin-workspace"
+          hx-swap="outerHTML"
+          hx-push-url="{{ url_for('tenant.tenants', section='access-grants') }}"
+          hx-indicator="#tenant-admin-loading"
           class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <header class="border-b border-outline-subtle px-5 py-4">
-            <div class="flex items-start gap-3">
+        <header class="flex items-start justify-between gap-4 border-b border-outline-subtle px-5 py-4">
+            <div class="flex min-w-0 items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                       aria-hidden="true">
                     <i data-lucide="key-round" class="h-5 w-5"></i>
@@ -43,10 +50,21 @@
                 <div>
                     <h3 class="text-base font-semibold text-content-primary">Apply Access Grant</h3>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">
-                        Select the principal, profile, and narrowest required scope. Cross-Tenant references fail closed.
+                        Select the principal, profile, and narrowest required scope.
                     </p>
                 </div>
             </div>
+            {{ info_tip.render(
+                'access-grant-form-tip',
+                'Access Grant rules',
+                'An Access Grant binds one committed Tenant principal to one versioned access profile and explicit scope.',
+                [
+                    'Built-in profiles are code-owned security contracts.',
+                    'Tenant scope uses no target.',
+                    'Environment or Namespace scope requires exactly one matching target.',
+                    'Cross-Tenant references are rejected before reconciliation.'
+                ]
+            ) }}
         </header>
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
             <label class="block">
@@ -67,7 +85,6 @@
                         <option value="{{ profile.key.value }}">{{ profile.label }} · v{{ profile.version }}</option>
                     {% endfor %}
                 </select>
-                {{ form_field.help("Built-in profiles are code-owned security contracts.") }}
             </label>
             <label class="block">
                 {{ form_field.label_row("Scope") }}
@@ -104,7 +121,17 @@
                 </div>
             </div>
         </div>
-        <footer class="flex justify-end border-t border-outline-subtle bg-surface-hover px-5 py-4">
+        <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-start gap-2.5 text-status-info-text">
+                <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-status-info-soft"
+                      aria-hidden="true">
+                    <i data-lucide="info" class="h-4 w-4"></i>
+                </span>
+                <p class="max-w-3xl text-xs leading-5">
+                    <span class="font-semibold">Governance note.</span>
+                    KAORI validates Tenant ownership and scope before creating intent; effective access is authoritative only after Kubernetes RBAC reconciliation succeeds.
+                </p>
+            </div>
             <button type="submit"
                     {% if not can_manage or not access_membership_options %}disabled aria-disabled="true"{% endif %}
                     class="{{ action_button.classes('primary') }}">
