@@ -21,8 +21,8 @@
         scope_supporting='Worker correlation scope',
         coverage_supporting=tenant_collection_snapshot.coverage_supporting,
         exceptions_supporting='Committed Tenant snapshot evidence',
-        coverage_tone='normal' if tenant_collection_snapshot.coverage_supporting == 'Fully committed' else 'warning',
-        exceptions_tone='normal' if tenant_collection_snapshot.exception_count == 0 else 'warning'
+        coverage_tone=tenant_collection_snapshot.coverage_tone,
+        exceptions_tone=tenant_collection_snapshot.exceptions_tone
     ) }}
 
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
