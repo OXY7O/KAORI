@@ -44,7 +44,11 @@ def test_tenant_routes_own_only_five_primary_destinations() -> None:
         assert template in routes
 
     get_routes = set(re.findall(r"@tenant_bp\.get\('([^']+)'\)", routes))
-    assert get_routes == {'/', '/tenants', '/resource-profiles', '/namespace-provisioning', '/operations'}
+    primary_routes = {'/', '/tenants', '/resource-profiles', '/namespace-provisioning', '/operations'}
+    assert primary_routes.issubset(get_routes)
+    assert '/tenants/registry' in get_routes
+    assert '/overview/cluster-estate' in get_routes
+    assert {'/management', '/inventory', '/analytics'}.isdisjoint(get_routes)
 
 
 def test_tenant_pages_reuse_kaori_shared_presentation_patterns() -> None:
@@ -97,6 +101,9 @@ def test_tenant_primary_navigation_preserves_provider_neutral_boundary() -> None
 def test_tenant_registry_pages_use_shared_default_five_pagination() -> None:
     service = (ROOT / 'app/kubernetes/tenant/service.py').read_text(encoding='utf-8')
     footer = (ROOT / 'app/templates/kubernetes/tenant/partials/_pagination_footer.html').read_text(encoding='utf-8')
+    tenant_registry = (ROOT / 'app/templates/kubernetes/tenant/partials/_tenant_registry.html').read_text(
+        encoding='utf-8'
+    )
 
     assert '_ALLOWED_PAGE_SIZES = (5, 10, 25, 50)' in service
     for helper in (
@@ -110,8 +117,12 @@ def test_tenant_registry_pages_use_shared_default_five_pagination() -> None:
     assert 'pagination_ui.numeric_pages' in footer
     assert 'pagination_ui.page_size_classes' in footer
 
+    assert 'tenant_pagination' in tenant_registry
+    assert 'components/pagination.html' in tenant_registry
+    assert 'pagination_ui.numeric_pages' in tenant_registry
+    assert 'pagination_ui.page_size_classes' in tenant_registry
+
     for path, state in (
-        ('tenants.html', 'tenant_pagination'),
         ('resource_profiles.html', 'profile_pagination'),
         ('namespace_provisioning.html', 'namespace_pagination'),
     ):
