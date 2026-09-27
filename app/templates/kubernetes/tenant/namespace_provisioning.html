@@ -2,7 +2,8 @@
 {% import "components/table_label.html" as table_label %}
 {% block tenant_content %}
     {% set can_manage = current_user.has_permission('tenant.manage') %}
-    <section class="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]" aria-label="Namespace provisioning">
+    <section class="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]"
+             aria-label="Namespace provisioning">
         {% include "kubernetes/tenant/partials/_namespace_form.html" %}
         <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
             <header class="border-b border-outline-subtle px-5 py-4">
@@ -14,7 +15,7 @@
                     <article class="px-5 py-4">
                         <div class="flex items-center justify-between gap-3">
                             <span class="font-semibold text-content-primary">{{ item.namespace }}</span>
-                            {{ table_label.status_label(item.provisioning_status|title, 'normal' if item.provisioning_status == 'ready' else ('warning' if item.provisioning_status in ['pending', 'drifted'] else 'critical')) }}
+                            {{ table_label.status_label(item.provisioning_status|title, 'normal' if item.provisioning_status == 'ready' else ('warning' if item.provisioning_status in ['pending', 'drifted'] else 'critical') ) }}
                         </div>
                         <p class="mt-1 text-xs text-content-muted">{{ item.environment.tenant.name }} · {{ item.environment.environment|title }}</p>
                         <p class="mt-2 text-xs leading-5 text-content-muted">{{ item.provisioning_message or 'Awaiting reconciliation evidence.' }}</p>
@@ -34,5 +35,6 @@
     <script type="application/json" id="tenant-namespace-allocation-state">{{ namespace_allocation_state|tojson }}</script>
 {% endblock tenant_content %}
 {% block tenant_scripts %}
-    <script defer src="{{ url_for('static', filename='js/tenant_resource_profile_presets.js') }}"></script>
+    <script defer
+            src="{{ url_for('static', filename='js/tenant_resource_profile_presets.js') }}"></script>
 {% endblock tenant_scripts %}
