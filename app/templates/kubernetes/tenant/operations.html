@@ -1,0 +1,161 @@
+{% extends "kubernetes/tenant/base.html" %}
+{% import "components/content_tabs.html" as content_tabs %}
+{% import "components/table_label.html" as table_label %}
+{% block tenant_content %}
+    {% set operation_tabs = [
+        ('provisioning', 'Provisioning', 'list-checks', url_for('tenant.operations', tab='provisioning')),
+        ('runs-evidence', 'Runs & Evidence', 'file-check-2', url_for('tenant.operations', tab='runs-evidence')),
+        ('drift-reconcile', 'Drift & Reconcile', 'refresh-cw', url_for('tenant.operations', tab='drift-reconcile')),
+        ('activity', 'Activity', 'activity', url_for('tenant.operations', tab='activity'))
+    ] %}
+    <section class="space-y-5" aria-label="Tenant operations workspace">
+        {{ content_tabs.render_links('tenant-operations', operation_tabs, active_tab, 'Tenant Operations', nowrap=true) }}
+        {% if active_tab == 'provisioning' %}
+            <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+                <header class="border-b border-outline-subtle px-5 py-4">
+                    <h2 class="text-base font-semibold text-content-primary">Provisioning</h2>
+                    <p class="mt-1 text-sm text-content-secondary">Inspect recent namespace provisioning and provider execution state.</p>
+                </header>
+                <div class="divide-y divide-outline-subtle">
+                    {% for item in namespaces %}
+                        <article class="px-5 py-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <p class="font-semibold text-content-primary">{{ item.namespace }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ item.environment.tenant.name }} · {{ item.environment.environment|title }}</p>
+                                </div>
+                                {{ table_label.status_label(item.provisioning_status|title, 'normal' if item.provisioning_status == 'ready' else 'warning') }}
+                            </div>
+                        </article>
+                    {% else %}
+                        <p class="px-5 py-8 text-sm text-content-muted">No provisioning records yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        {% elif active_tab == 'runs-evidence' %}
+            <div class="grid gap-5 xl:grid-cols-2">
+                <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+                    <header class="border-b border-outline-subtle px-5 py-4">
+                        <h2 class="text-base font-semibold text-content-primary">Kubernetes Audit Evidence</h2>
+                        <p class="mt-1 text-xs text-content-muted">Committed API activity correlated to Tenant identity.</p>
+                    </header>
+                    <div class="divide-y divide-outline-subtle">
+                        {% for evidence in audit_evidence %}
+                            <div class="px-5 py-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="font-semibold text-content-primary">{{ evidence.principal_username }}</span>
+                                    {{ table_label.status_label(evidence.correlation_status|title, 'normal' if evidence.correlation_status == 'matched' else 'warning') }}
+                                </div>
+                                <p class="mt-1 text-xs text-content-muted">{{ evidence.verb|upper }} {{ evidence.resource or 'resource' }} · {{ evidence.kubernetes_namespace or 'cluster scope' }}</p>
+                            </div>
+                        {% else %}
+                            <p class="px-5 py-6 text-sm text-content-muted">No correlated Kubernetes audit evidence yet.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+                    <header class="border-b border-outline-subtle px-5 py-4">
+                        <h2 class="text-base font-semibold text-content-primary">Managed Resources &amp; Policies</h2>
+                        <p class="mt-1 text-xs text-content-muted">Committed managed-resource and exposure-policy evidence.</p>
+                    </header>
+                    <div class="divide-y divide-outline-subtle">
+                        {% for item in managed_resources %}
+                            <div class="px-5 py-4">
+                                <span class="font-semibold text-content-primary">{{ item.resource_name }}</span>
+                                <p class="mt-1 text-xs text-content-muted">{{ item.resource_kind|upper }} · {{ item.mode|replace('_', ' ')|title }} · {{ item.status|title }}</p>
+                            </div>
+                        {% endfor %}
+                        {% for reservation in domain_reservations %}
+                            <div class="px-5 py-4">
+                                <span class="font-semibold text-content-primary">{{ reservation.hostname_pattern }}</span>
+                                <p class="mt-1 text-xs text-content-muted">Domain reservation · {{ reservation.match_mode|title }} · {{ reservation.status|title }}</p>
+                            </div>
+                        {% endfor %}
+                        {% for policy in exposure_policies %}
+                            <div class="px-5 py-4">
+                                <span class="font-semibold text-content-primary">{{ policy.namespace.namespace }}</span>
+                                <p class="mt-1 text-xs text-content-muted">Exposure policy · {{ policy.profile_key|replace('_', ' ')|title }} · {{ policy.status|title }}</p>
+                            </div>
+                        {% endfor %}
+                        {% if not managed_resources and not domain_reservations and not exposure_policies %}
+                            <p class="px-5 py-6 text-sm text-content-muted">No managed-resource or exposure-policy evidence yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% elif active_tab == 'drift-reconcile' %}
+            <div class="grid gap-5 xl:grid-cols-2">
+                <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+                    <header class="border-b border-outline-subtle px-5 py-4">
+                        <h2 class="text-base font-semibold text-content-primary">Provider Authority</h2>
+                        <p class="mt-1 text-xs text-content-muted">Committed provider state and reconciliation ownership.</p>
+                    </header>
+                    <div class="divide-y divide-outline-subtle">
+                        {% for tenant in tenants %}
+                            <div class="px-5 py-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="font-semibold text-content-primary">{{ tenant.name }}</span>
+                                    {{ table_label.status_label(tenant.provider_state|replace('_', ' ')|title, 'normal' if tenant.provider_state in ['native', 'capsule'] else 'warning') }}
+                                </div>
+                                <p class="mt-1 text-xs text-content-muted">Authority {{ tenant.reconciliation_authority|replace('_', ' ')|title }}</p>
+                            </div>
+                        {% else %}
+                            <p class="px-5 py-6 text-sm text-content-muted">No committed Tenant provider state.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+                    <header class="border-b border-outline-subtle px-5 py-4">
+                        <h2 class="text-base font-semibold text-content-primary">Access Reconciliation</h2>
+                        <p class="mt-1 text-xs text-content-muted">Committed versus effective Kubernetes RBAC evidence.</p>
+                    </header>
+                    <div class="divide-y divide-outline-subtle">
+                        {% for grant in recent_access_grants %}
+                            <div class="px-5 py-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="font-semibold text-content-primary">{{ grant.membership.subject_name }}</span>
+                                    {{ table_label.status_label(grant.reconciliation_status|title, 'normal' if grant.reconciliation_status == 'ready' else 'warning') }}
+                                </div>
+                                <p class="mt-1 text-xs text-content-muted">{{ grant.tenant.name }} · {{ grant.access_profile|replace('_', ' ')|title }}</p>
+                            </div>
+                        {% else %}
+                            <p class="px-5 py-6 text-sm text-content-muted">No Access Grant reconciliation evidence.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="grid gap-5 xl:grid-cols-2">
+                <div class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
+                            <i data-lucide="activity" class="h-5 w-5" aria-hidden="true"></i>
+                        </span>
+                        <div>
+                            <h2 class="text-base font-semibold text-content-primary">Activity Audit</h2>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Review Tenant mutations through the canonical KAORI Activity Audit surface.</p>
+                            <a href="{{ url_for('access.activity_audit.index') }}" class="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default px-4 py-2 text-sm font-semibold text-content-primary hover:bg-surface-hover">
+                                Open Activity Audit<i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
+                            <i data-lucide="brain-circuit" class="h-5 w-5" aria-hidden="true"></i>
+                        </span>
+                        <div>
+                            <h2 class="text-base font-semibold text-content-primary">Governance &amp; Reports</h2>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Open canonical Intelligence and Reports without duplicating those capabilities inside Tenant.</p>
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <a href="{{ url_for('intelligence.recommendations') }}" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default px-4 py-2 text-sm font-semibold text-content-primary hover:bg-surface-hover">Intelligence</a>
+                                <a href="{{ url_for('reports.generate_report') }}" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default px-4 py-2 text-sm font-semibold text-content-primary hover:bg-surface-hover">Reports</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </section>
+{% endblock tenant_content %}
