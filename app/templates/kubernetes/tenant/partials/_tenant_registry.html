@@ -2,7 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/destructive_confirmation_modal.html" as destructive_modal %}
-{% import "components/status_detail_dialog.html" as status_detail_dialog %}
+{% import "components/info_tip.html" as info_tip %}
 {% set registry_id = 'tenant-registry-card' %}
 {% set loading_id = 'tenant-registry-loading' %}
 {% set query_params = {
@@ -24,6 +24,18 @@
                 query_params={'section': 'registry'}
             ) }}
         {% endif %}
+        {{ info_tip.render(
+            'tenant-registry-status-tip',
+            'Tenant Registry status',
+            'Lifecycle describes committed Tenant state; Actions show whether teardown is currently admitted.',
+            [
+                'Ready — Tenant governance is active.',
+                'Decommission — authority-safe teardown is currently admitted.',
+                'Blocked — Tenant stays valid; teardown fails closed until blockers clear.',
+                'History Retained — decommission is complete and audit history remains.',
+                'Unavailable — no admitted lifecycle action is available.'
+            ]
+        ) }}
     {% endset %}
     {{ table_ui.inventory_block_header(
         'building-2',
@@ -183,13 +195,7 @@
                                 {% elif tenant.lifecycle_status == 'decommissioned' %}
                                     {{ table_label.special_label('History Retained', 'unknown', 'archive') }}
                                 {% elif decommission.blockers %}
-                                    <div class="flex items-center justify-end gap-1.5">
-                                        {{ table_label.special_label('Blocked', 'critical', 'shield-alert') }}
-                                        {{ status_detail_dialog.trigger(
-                                            'tenant-decommission-blocked-' ~ tenant.id,
-                                            'View decommission blocker details for ' ~ tenant.name
-                                        ) }}
-                                    </div>
+                                    {{ table_label.special_label('Blocked', 'critical', 'shield-alert') }}
                                 {% else %}
                                     {{ table_label.special_label('Unavailable', 'unknown', 'circle-slash-2') }}
                                 {% endif %}
@@ -225,36 +231,6 @@
     {% endif %}
 </section>
 
-{% for row in tenant_rows %}
-    {% set tenant = row.tenant %}
-    {% set decommission = row.decommission_preflight %}
-    {% if decommission.blockers and tenant.lifecycle_status != 'decommissioned' %}
-        {{ status_detail_dialog.render(
-            'tenant-decommission-blocked-' ~ tenant.id,
-            'Tenant Registry',
-            tenant.name ~ ' · Decommission blocked',
-            'Blocked is a destructive-action readiness state, not a broken Tenant lifecycle. KAORI keeps the Tenant valid and refuses teardown until every authority and residue check is safe.',
-            decommission.blockers,
-            icon='shield-alert',
-            facts=[
-                ('Tenant', tenant.name, tenant.slug),
-                ('Cluster', row.cluster.name if row.cluster else tenant.cluster_id, row.cluster.environment|title if row.cluster else 'Cluster reference only'),
-                ('Provider', tenant.provider_key|replace('_', ' ')|title, 'Authority: ' ~ tenant.reconciliation_authority|replace('_', ' ')|title),
-                ('Lifecycle', tenant.lifecycle_status|replace('_', ' ')|title, tenant.ownership_status|replace('_', ' ')|title ~ ' · Gen ' ~ tenant.generation),
-                ('Namespaces', decommission.namespace_count, decommission.managed_resource_count ~ ' managed resource intent(s)'),
-                ('Access State', decommission.access_grant_count ~ ' grant(s)', decommission.credential_count ~ ' credential(s) · ' ~ decommission.membership_count ~ ' membership(s)')
-            ],
-            stages=[
-                ('Freeze', 'Stop new Tenant mutations.'),
-                ('Revoke', 'Revoke credentials, grants, and active memberships.'),
-                ('Remove', 'Remove admitted managed resources and namespaces.'),
-                ('Verify', 'Confirm provider-authoritative absence and no residue.'),
-                ('Retain', 'Commit Decommissioned while preserving audit history.')
-            ],
-            note='Resolve the listed blockers first, then run Decommission again. KAORI never bypasses provider authority to make this action appear successful.'
-        ) }}
-    {% endif %}
-{% endfor %}
 
 {{ destructive_modal.render(
     'tenant-decommission-modal',

@@ -4,7 +4,6 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
-{% import "components/status_detail_dialog.html" as status_detail_dialog %}
 {% set capacity_registry_id = 'capacity-budget-registry' %}
 {% set capacity_loading_id = 'capacity-budget-loading' %}
 {% set capacity_query_params = {
@@ -111,6 +110,18 @@
                     per_page_param='capacity_per_page'
                 ) }}
             {% endif %}
+            {{ info_tip.render(
+                'allocation-budget-status-tip',
+                'Allocation Budget status',
+                'Capacity state uses committed Budget, active request commitments, and remaining Headroom.',
+                [
+                    'Healthy — sufficient governed headroom remains.',
+                    'Near Capacity / Critical — headroom is narrowing.',
+                    'Exhausted — committed requests reached the budget.',
+                    'Overcommitted — commitments exceed the governed budget.',
+                    'Unknown — required capacity evidence is incomplete or stale.'
+                ]
+            ) }}
         {% endset %}
         {{ table_ui.inventory_block_header(
             'chart-no-axes-combined',
@@ -171,13 +182,7 @@
                                 </td>
                             {% endfor %}
                             <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
-                                <div class="ml-auto flex w-fit items-center gap-2">
-                                    {{ table_label.status_label(item.state, state_tone) }}
-                                    {{ status_detail_dialog.trigger(
-                                        'capacity-budget-state-' ~ item.cluster.id,
-                                        'View capacity state details for ' ~ item.cluster.name
-                                    ) }}
-                                </div>
+                                <div class="ml-auto w-fit">{{ table_label.status_label(item.state, state_tone) }}</div>
                             </td>
                         </tr>
                     {% else %}
@@ -211,22 +216,3 @@
         {% endif %}
     </section>
 </section>
-
-{% for item in capacity_governance %}
-    {{ status_detail_dialog.render(
-        'capacity-budget-state-' ~ item.cluster.id,
-        'Capacity Governance',
-        item.cluster.name ~ ' · ' ~ item.state,
-        item.reason,
-        icon='gauge',
-        facts=[
-            ('Cluster', item.cluster.name, item.cluster.environment|title),
-            ('Evidence', item.snapshot_state|title, item.committed_namespace_count ~ ' active committed namespace(s)'),
-            ('Budget', item.display.budget.cpu ~ ' CPU', item.display.budget.memory ~ ' memory'),
-            ('Committed', item.display.committed.cpu ~ ' CPU', item.display.committed.memory ~ ' memory'),
-            ('Headroom', item.display.headroom.cpu ~ ' CPU', item.display.headroom.memory ~ ' memory'),
-            ('State', item.state, 'Positive allocation remains fail-closed when required evidence is Unknown')
-        ],
-        note=item.reason
-    ) }}
-{% endfor %}
