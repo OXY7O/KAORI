@@ -42,6 +42,7 @@ def test_resource_profiles_use_server_owned_kaori_content_tabs_and_snapshot_stat
 def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None:
     form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
     script = read('app/static/js/tenant_resource_profile_presets.js')
+    form_field = read('app/templates/components/form_field.html')
 
     assert 'Create Resource Profile' in form
     assert 'Identity &amp; Lineage' in form
@@ -63,6 +64,9 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'setReadonly(fields, true)' in script
     assert "classSelect?.value === 'custom'" in script
     assert "document.addEventListener('htmx:afterSwap'" in script
+    assert 'read-only:bg-surface-disabled' in form_field
+    assert 'read-only:text-content-muted' in form_field
+    assert 'read-only:shadow-none' in form_field
 
 def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_resource_profile_registry.html')
@@ -152,8 +156,10 @@ def test_capacity_commitment_excludes_deprovisioned_history_and_preserves_unknow
     governance = read('app/kubernetes/tenant/capacity_governance.py')
 
     assert 'TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in governance
-    assert 'def _committed_evidence_reason(committed: CapacityVector)' in governance
-    assert 'At least one active Tenant namespace has an unbounded or missing CPU/memory request commitment' in governance
+    assert 'def _committed_evidence_reason(' in governance
+    assert 'unbounded_namespaces: list[str] | None = None' in governance
+    assert 'Unbounded or missing CPU/memory request commitment on active Namespace(s):' in governance
+    assert 'Apply a bounded Resource Profile allocation before positive changes.' in governance
     assert "state = 'Unknown' if commitment_reason" in governance
     assert 'commitment_reason or _state_reason(state)' in governance
 
