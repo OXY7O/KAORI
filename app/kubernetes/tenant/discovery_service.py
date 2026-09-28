@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
 
@@ -349,7 +350,7 @@ def _read_capsule_tenant(client, name: str) -> tuple[str, dict[str, Any]]:
     raise ValueError('The Capsule Tenant is no longer present in the provider.')
 
 
-def adopt_discovered_tenant_committed(source: dict[str, Any]) -> tuple[Tenant, TenantEnvironment, TenantNamespace | None]:
+def adopt_discovered_tenant_committed(source: Mapping[str, Any]) -> tuple[Tenant, TenantEnvironment, TenantNamespace | None]:
     """Adopt an existing provider object without mutating Kubernetes or Capsule."""
 
     cluster_id = str(source.get('cluster_id') or '').strip()
