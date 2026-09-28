@@ -684,7 +684,12 @@ def issue_jumpserver_token_committed(
         action='tenant_credential.jumpserver_material_issued',
         summary='Short-lived Tenant credential material was issued for JumpServer delivery.',
         outcome='success',
-        extra={'namespace': namespace.namespace, 'expires_at': expires_at.isoformat()},
+        extra={
+            'namespace': namespace.namespace,
+            'environment': namespace.environment.environment,
+            'requested_seconds': requested_seconds,
+            'expires_at': expires_at.isoformat(),
+        },
     )
     db.session.commit()
     return GeneratedTokenMaterial(
@@ -799,7 +804,12 @@ def generate_kubeconfig_committed(
         action=action,
         summary=summary,
         outcome='success',
-        extra={'namespace': namespace.namespace, 'expires_at': expires_at.isoformat()},
+        extra={
+            'namespace': namespace.namespace,
+            'environment': namespace.environment.environment,
+            'requested_seconds': requested_seconds,
+            'expires_at': expires_at.isoformat(),
+        },
     )
     db.session.commit()
     return GeneratedKubeconfigMaterial(
