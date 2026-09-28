@@ -88,7 +88,6 @@ def dispatch_tenant_sync(
     )
 
 
-
 def dispatch_tenant_decommission(
     *,
     tenant_id: str,
@@ -130,6 +129,7 @@ def dispatch_tenant_decommission(
         job=job,
         created=created,
     )
+
 
 def _as_utc(value: datetime | None) -> datetime | None:
     if value is None:
@@ -217,13 +217,13 @@ def build_tenant_sync_context(policy: JobPolicy) -> dict[str, Any]:
         'namespace_count': preview['namespace_count'],
         'interval_label': present_interval(policy.interval_minutes),
         'configuration_state': {
-            'label': 'Execution Active'
-            if state['is_active']
-            else 'Enabled'
-            if policy.enabled
-            else 'Manual Only',
+            'label': 'Execution Active' if state['is_active'] else 'Enabled' if policy.enabled else 'Manual Only',
             'tone': 'pending' if state['is_active'] else 'normal' if policy.enabled else 'unknown',
-            'icon': 'loader-circle' if state['is_active'] else 'circle-check' if policy.enabled else 'mouse-pointer-click',
+            'icon': 'loader-circle'
+            if state['is_active']
+            else 'circle-check'
+            if policy.enabled
+            else 'mouse-pointer-click',
         },
         'execution_state': {
             'label': state['label'],
