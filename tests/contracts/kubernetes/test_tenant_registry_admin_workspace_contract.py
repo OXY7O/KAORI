@@ -638,3 +638,26 @@ def test_tenant_setup_explains_capsule_adoption_boundary() -> None:
     assert 'Capsule — use Discovery → Adoption' in form
     assert 'Existing Capsule Tenant CRs are onboarded through Discovery → Adoption.' in form
     assert 'Existing Capsule Tenant CRs enter KAORI through Discovery and governed Adoption.' in setup
+
+
+
+def test_tenant_sync_marks_fresh_missing_namespaces_as_observational_drift() -> None:
+    sync = read('app/kubernetes/tenant/sync_service.py')
+    tasks = read('app/kubernetes/tenant/tasks.py')
+    operations = read('app/templates/kubernetes/tenant/operations.html')
+
+    assert 'def apply_missing_namespace_drift_from_inventory()' in sync
+    assert "TenantNamespaceProvisioningStatus.READY.value" in sync
+    assert "TenantNamespaceProvisioningStatus.DRIFTED.value" in sync
+    assert "source_inventory_cutoff" in sync
+    assert "cutoff < anchor" in sync
+    assert "observed_absent': True" in sync
+    assert "source': 'committed_kubernetes_inventory'" in sync
+    assert 'create_namespace(' not in sync
+    assert 'patch_namespace(' not in sync
+    assert 'delete_namespace(' not in sync
+
+    assert 'apply_missing_namespace_drift_from_inventory()' in tasks
+    assert "snapshot['drifted_namespace_count']" in tasks
+    assert 'Namespace Provider Drift' in operations
+    assert "special_label('Drifted', 'warning', 'triangle-alert')" in operations

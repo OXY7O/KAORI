@@ -84,8 +84,34 @@
                 </div>
             </div>
         {% elif active_tab == 'drift-reconcile' %}
-            <div class="grid gap-5 xl:grid-cols-2">
-                <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+            <div class="space-y-5">
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+                         aria-labelledby="tenant-namespace-drift-heading">
+                    <header class="border-b border-outline-subtle px-5 py-4">
+                        <h2 id="tenant-namespace-drift-heading" class="text-base font-semibold text-content-primary">Namespace Provider Drift</h2>
+                        <p class="mt-1 text-xs text-content-muted">
+                            Missing provider objects detected from fresh committed Kubernetes Inventory. Observation never recreates resources automatically.
+                        </p>
+                    </header>
+                    <div class="divide-y divide-outline-subtle">
+                        {% for item in namespace_drift_rows %}
+                            <article class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div class="min-w-0">
+                                    <p class="font-semibold text-content-primary">{{ item.namespace }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">
+                                        {{ item.environment.tenant.name }} · {{ item.environment.environment|title }} · {{ item.ownership_status|title }}
+                                    </p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.provisioning_message }}</p>
+                                </div>
+                                {{ table_label.special_label('Drifted', 'warning', 'triangle-alert') }}
+                            </article>
+                        {% else %}
+                            <p class="px-5 py-6 text-sm text-content-muted">No committed namespace provider drift.</p>
+                        {% endfor %}
+                    </div>
+                </section>
+                <div class="grid gap-5 xl:grid-cols-2">
+                    <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
                     <header class="border-b border-outline-subtle px-5 py-4">
                         <h2 class="text-base font-semibold text-content-primary">Provider Authority</h2>
                         <p class="mt-1 text-xs text-content-muted">Committed provider state and reconciliation ownership.</p>
@@ -124,6 +150,7 @@
                     </div>
                 </div>
             </div>
+        </div>
         {% else %}
             <div class="grid gap-5 xl:grid-cols-2">
                 <div class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">

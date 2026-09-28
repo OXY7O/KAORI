@@ -5,7 +5,13 @@ from typing import Any
 
 from app.models.cluster import Cluster
 from app.models.inventory import ClusterInventory, NamespaceInventory
-from app.models.tenant import Tenant, TenantEnvironment, TenantNamespace
+from app.models.tenant import (
+    Tenant,
+    TenantEnvironment,
+    TenantLifecycleStatus,
+    TenantNamespace,
+    TenantNamespaceProvisioningStatus,
+)
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -33,6 +39,10 @@ def build_tenant_inventory_snapshot() -> dict[str, Any]:
             TenantNamespace.tenant_environment_id == TenantEnvironment.id,
         )
         .join(Tenant, TenantEnvironment.tenant_id == Tenant.id)
+        .filter(
+            Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value,
+            TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+        )
         .order_by(TenantNamespace.cluster_id.asc(), TenantNamespace.namespace.asc())
         .all()
     )
@@ -130,3 +140,91 @@ def build_tenant_inventory_snapshot() -> dict[str, Any]:
         'clusters': cluster_rows,
         'secret_material_persisted': False,
     }
+
+
+
+def _as_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
+def apply_missing_namespace_drift_from_inventory() -> list[int]:
+    """Commit provider-absence drift only from sufficiently fresh inventory evidence.
+
+    This function is observation-only. It never recreates, patches, or deletes a
+    Kubernetes resource. A drifted record stays drifted until an explicit
+    provider reconciliation verifies the full effective contract.
+    """
+
+    observed = {
+        (str(item.cluster_id), item.namespace)
+        for item in NamespaceInventory.query.all()
+    }
+    latest_cutoffs: dict[str, datetime] = {}
+    for cluster_id, collected_at in (
+        ClusterInventory.query.with_entities(
+            ClusterInventory.cluster_id,
+            ClusterInventory.collected_at,
+        )
+        .order_by(ClusterInventory.collected_at.desc())
+        .all()
+    ):
+        latest_cutoffs.setdefault(str(cluster_id), collected_at)
+
+    records = (
+        TenantNamespace.query.join(
+            TenantEnvironment,
+            TenantNamespace.tenant_environment_id == TenantEnvironment.id,
+        )
+        .join(Tenant, TenantEnvironment.tenant_id == Tenant.id)
+        .filter(
+            Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value,
+            TenantNamespace.provisioning_status == TenantNamespaceProvisioningStatus.READY.value,
+        )
+        .order_by(TenantNamespace.id.asc())
+        .all()
+    )
+
+    now = datetime.now(UTC)
+    changed: list[int] = []
+    for record in records:
+        key = (str(record.cluster_id), record.namespace)
+        if key in observed:
+            continue
+
+        cutoff = _as_utc(latest_cutoffs.get(str(record.cluster_id)))
+        anchor_candidates = [
+            _as_utc(record.last_reconciled_at),
+            _as_utc(record.updated_at),
+            _as_utc(record.created_at),
+        ]
+        anchors = [value for value in anchor_candidates if value is not None]
+        anchor = max(anchors) if anchors else None
+        if cutoff is None or (anchor is not None and cutoff < anchor):
+            # Inventory predates the latest KAORI-side provider evidence and
+            # therefore cannot prove that the namespace disappeared.
+            continue
+
+        evidence = dict(record.provisioning_evidence_json or {})
+        evidence['provider_observation'] = {
+            'provider': 'native_kubernetes',
+            'namespace': record.namespace,
+            'observed_absent': True,
+            'source': 'committed_kubernetes_inventory',
+            'source_inventory_cutoff': cutoff.isoformat(),
+            'observed_at': now.isoformat(),
+            'ownership_status': record.ownership_status,
+            'secret_material_persisted': False,
+        }
+        record.provisioning_evidence_json = evidence
+        record.provisioning_status = TenantNamespaceProvisioningStatus.DRIFTED.value
+        record.provisioning_message = (
+            'Committed Kubernetes inventory no longer contains this namespace. '
+            'Review provider deletion/loss before explicit reconcile or Tenant decommission.'
+        )
+        changed.append(record.id)
+
+    if changed:
+        db.session.flush()
+    return changed

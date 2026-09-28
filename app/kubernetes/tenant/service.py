@@ -674,6 +674,12 @@ def get_tenant_context() -> dict[str, Any]:
         'profile_count': TenantResourceProfile.query.count(),
         'namespace_count': namespace_count,
         'ready_namespace_count': TenantNamespace.query.filter_by(provisioning_status='ready').count(),
+        'namespace_drift_rows': (
+            TenantNamespace.query.filter_by(provisioning_status=TenantNamespaceProvisioningStatus.DRIFTED.value)
+            .order_by(TenantNamespace.updated_at.desc(), TenantNamespace.id.desc())
+            .limit(20)
+            .all()
+        ),
         'native_available': bool(ready_clusters),
         'resource_profile_presets': RESOURCE_PROFILE_PRESETS,
         'namespace_allocation_state': {

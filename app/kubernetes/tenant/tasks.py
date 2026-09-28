@@ -8,7 +8,10 @@ from celery import shared_task
 from app.extensions.db import db
 from app.kubernetes.tenant.audit import record_tenant_sync_terminal_audit
 from app.kubernetes.tenant.decommission_service import execute_tenant_decommission
-from app.kubernetes.tenant.sync_service import build_tenant_inventory_snapshot
+from app.kubernetes.tenant.sync_service import (
+    apply_missing_namespace_drift_from_inventory,
+    build_tenant_inventory_snapshot,
+)
 from app.models.job import JobExecution
 from app.platform_operations.jobs.execution import JobCancellationRequested, JobExecutionContext
 from app.platform_operations.jobs.service import subscriber_user_ids
@@ -33,6 +36,7 @@ def _notification_copy(
     covered_count = int(result.get('covered_namespace_count') or 0)
     cluster_count = int(result.get('tenant_cluster_count') or 0)
     exception_count = int(result.get('exception_count') or 0)
+    drifted_namespace_count = int(result.get('drifted_namespace_count') or 0)
     cluster_word = 'cluster' if cluster_count == 1 else 'clusters'
     tenant_word = 'Tenant' if tenant_count == 1 else 'Tenants'
     namespace_word = 'namespace' if namespace_count == 1 else 'namespaces'
@@ -60,7 +64,8 @@ def _notification_copy(
             ),
             (
                 f'{exception_count} snapshot exception{"s" if exception_count != 1 else ""} require review. '
-                f'{covered_count} of {namespace_count} governed namespaces matched committed Kubernetes inventory.'
+                f'{drifted_namespace_count} namespace record{"s" if drifted_namespace_count != 1 else ""} '
+                f'were newly marked Drifted; {covered_count} of {namespace_count} governed namespaces matched inventory.'
             ),
         )
     if terminal_status == 'canceled':
@@ -181,6 +186,10 @@ def sync_tenant_inventory_task(
             message='Reading committed Tenant ownership and Kubernetes inventory evidence.',
         )
         snapshot = build_tenant_inventory_snapshot()
+        drifted_namespace_ids = apply_missing_namespace_drift_from_inventory()
+        snapshot['drifted_namespace_count'] = len(drifted_namespace_ids)
+        snapshot['drifted_namespace_ids'] = drifted_namespace_ids
+        db.session.commit()
         context.checkpoint(
             current=80,
             total=100,
