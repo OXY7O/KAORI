@@ -112,12 +112,14 @@ def create_deployer_credential_committed(
     profile = get_access_profile('deployer')
 
     membership = TenantMembership()
+    membership.tenant_id = tenant.id
     membership.tenant = tenant
     membership.principal_type = TenantMembershipPrincipalType.SERVICE_ACCOUNT.value
     membership.subject_name = service_account_name
     membership.status = TenantMembershipStatus.ACTIVE.value
 
     grant = TenantAccessGrant()
+    grant.tenant_id = tenant.id
     grant.tenant = tenant
     grant.membership = membership
     grant.namespace = namespace
@@ -129,6 +131,7 @@ def create_deployer_credential_committed(
 
     credential = TenantCredential()
     credential.public_id = public_id
+    credential.tenant_id = tenant.id
     credential.tenant = tenant
     credential.owner_user = owner
     credential.access_grant = grant
