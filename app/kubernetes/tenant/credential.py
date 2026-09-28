@@ -325,11 +325,7 @@ def validate_credential_contract(credential: TenantCredential) -> None:
 def credential_material_ttl_policy(environment: str | None) -> dict[str, object]:
     normalized_environment = str(environment or '').strip().lower()
     max_seconds = _TOKEN_TTL_ENVIRONMENT_MAX_SECONDS.get(normalized_environment, DEFAULT_TOKEN_TTL_SECONDS)
-    choices = [
-        {'seconds': seconds, 'label': label}
-        for seconds, label in _TOKEN_TTL_CHOICES
-        if seconds <= max_seconds
-    ]
+    choices = [{'seconds': seconds, 'label': label} for seconds, label in _TOKEN_TTL_CHOICES if seconds <= max_seconds]
     return {
         'environment': normalized_environment or 'unknown',
         'default_seconds': min(DEFAULT_TOKEN_TTL_SECONDS, max_seconds),
