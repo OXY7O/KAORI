@@ -214,7 +214,6 @@ def create_tenant(source: Mapping[str, Any]) -> tuple[Tenant, TenantEnvironment]
         tenant.provider_evidence_json = result.evidence()
 
     tenant.lifecycle_status = TenantLifecycleStatus.READY.value
-    db.session.flush()
     return tenant, tenant_environment
 
 
