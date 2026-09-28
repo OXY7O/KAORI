@@ -152,6 +152,7 @@ def _tenant_section_redirect(section: str):
     context = _tenant_workspace_context()
     context.update(get_tenant_summary_context())
     context.update(_tenant_active_section_context(resolved_section))
+    context.update(get_live_tenant_connection_context())
     rendered = render_template(
         'kubernetes/tenant/partials/_tenant_admin_workspace.html',
         active_tenant_section=resolved_section,
@@ -159,6 +160,11 @@ def _tenant_section_redirect(section: str):
         **context,
     )
     feedback = getattr(g, 'tenant_operational_feedback', None)
+    rendered += render_template(
+        'kubernetes/tenant/partials/_live_connection_snapshot.html',
+        tenant_live_connection_oob=True,
+        **context,
+    )
     if feedback:
         rendered += render_template(
             'components/operational_toast.html',
@@ -343,7 +349,6 @@ def inventory_sync_status(public_id: str):
 def _tenant_active_section_context(section: str) -> dict[str, Any]:
     if section == 'registry':
         return {
-            **get_live_tenant_connection_context(),
             **get_tenant_registry_context(
                 page=request.args.get('page', 1, type=int) or 1,
                 per_page=request.args.get('per_page', 5, type=int) or 5,
@@ -355,7 +360,6 @@ def _tenant_active_section_context(section: str) -> dict[str, Any]:
         }
     if section == 'discovery':
         return {
-            **get_live_tenant_connection_context(),
             **get_tenant_discovery_context(
                 page=request.args.get('discovery_page', 1, type=int) or 1,
                 per_page=request.args.get('discovery_per_page', 5, type=int) or 5,
@@ -385,7 +389,6 @@ def _tenant_active_section_context(section: str) -> dict[str, Any]:
         }
     if section == 'access-grants':
         return {
-            **get_live_tenant_connection_context(),
             **get_access_grant_registry_context(
                 page=request.args.get('grant_page', 1, type=int) or 1,
                 per_page=request.args.get('grant_per_page', 5, type=int) or 5,
@@ -398,7 +401,6 @@ def _tenant_active_section_context(section: str) -> dict[str, Any]:
         }
     if section == 'credentials':
         return {
-            **get_live_tenant_connection_context(),
             **get_credential_registry_context(
                 page=request.args.get('credential_page', 1, type=int) or 1,
                 per_page=request.args.get('credential_per_page', 5, type=int) or 5,
@@ -426,6 +428,7 @@ def tenants():
     active_section = _tenant_admin_section(request.args.get('section'))
     context = _tenant_workspace_context()
     context.update(get_tenant_summary_context())
+    context.update(get_live_tenant_connection_context())
     context.update(_tenant_active_section_context(active_section))
     return render_template(
         'kubernetes/tenant/tenants.html',
@@ -441,6 +444,7 @@ def tenants():
 @any_permission_required('tenant.view', 'tenant.manage')
 def resource_profiles():
     context = _tenant_workspace_context()
+    context.update(get_live_tenant_connection_context())
     context.update(
         get_resource_profile_registry_context(
             page=request.args.get('page', 1, type=int) or 1,
@@ -482,13 +486,15 @@ def operations():
     active_tab = str(request.args.get('tab') or 'provisioning')
     if active_tab not in {'provisioning', 'runs-evidence', 'drift-reconcile', 'activity'}:
         active_tab = 'provisioning'
+    context = _tenant_workspace_context()
+    context.update(get_live_tenant_connection_context())
     return render_template(
         'kubernetes/tenant/operations.html',
         tenant_page='operations',
         tenant_page_title='Operations',
         tenant_page_icon='activity',
         active_tab=active_tab,
-        **_tenant_workspace_context(),
+        **context,
     )
 
 
