@@ -527,12 +527,15 @@ def get_tenant_registry_context(
         for cluster in Cluster.query.filter(Cluster.id.in_(cluster_ids)).all()
     } if cluster_ids else {}
 
+    from app.kubernetes.tenant.decommission_service import build_tenant_decommission_preflight
+
     tenant_rows = [
         {
             'tenant': item,
             'cluster': cluster_map.get(str(item.cluster_id)),
             'environments': environment_map.get(item.id, []),
             'namespace_count': namespace_count_map.get(item.id, 0),
+            'decommission_preflight': build_tenant_decommission_preflight(item.id),
         }
         for item in items
     ]
