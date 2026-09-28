@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from kubernetes.client.rest import ApiException
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -163,7 +163,7 @@ def get_tenant_discovery_context(
         cluster_key = str(cluster.id)
         try:
             client = runtime_adapter.build_client(cluster)
-            namespace_items = client.core_api().list_namespace(_request_timeout=5).items or []
+            namespace_items = cast(Any, client.core_api().list_namespace(_request_timeout=5)).items or []
         except Exception:
             errors.append(
                 {
