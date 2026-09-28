@@ -74,8 +74,10 @@ def test_tenant_setup_uses_a_static_governance_flow_not_expandable_guidance() ->
     assert 'Important Boundaries' in setup
     for icon in ('shield-check', 'boxes', 'users-round', 'key-round'):
         assert f'data-lucide="{icon}"' in setup
-    assert 'Cross-Tenant references fail closed.' in setup
+    assert 'Cross-Tenant references are blocked.' in setup
     assert 'bg-status-warning-soft' in setup
+    assert 'xl:items-stretch' in setup
+    assert 'xl:grid-rows-[auto_1fr]' in setup
     assert 'context_guidance_card.html' not in setup
     assert 'open_by_default' not in setup
     assert 'Tenant Lifecycle Contract' in setup
@@ -88,6 +90,8 @@ def test_tenant_setup_uses_a_static_governance_flow_not_expandable_guidance() ->
     tenant_form = read('app/templates/kubernetes/tenant/partials/_tenant_form.html')
     assert 'components/info_tip.html' in tenant_form
     assert 'tenant-setup-form-tip' in tenant_form
+    assert 'flex h-full flex-col' in tenant_form
+    assert 'class="mt-auto pt-5"' in tenant_form
     assert 'Optional. KAORI derives a lowercase slug' not in tenant_form
 
 
@@ -137,6 +141,15 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'Access Boundaries' in workspace
     assert 'components/info_tip.html' in workspace
     assert 'access-grant-form-tip' in workspace
+    assert 'access-profile-tip' in workspace
+    assert 'access-scope-tip' in workspace
+    assert 'data-access-membership' in workspace
+    assert 'data-access-scope-guidance' in workspace
+    assert 'data-access-environment-field' in workspace
+    assert 'data-access-namespace-field' in workspace
+    assert 'data-tenant-id="{{ membership.tenant_id }}"' in workspace
+    assert 'data-tenant-id="{{ environment.tenant_id }}"' in workspace
+    assert 'data-tenant-id="{{ namespace.environment.tenant_id }}"' in workspace
     assert 'hx-target="#tenant-admin-workspace"' in workspace
     assert '_access_grant_registry.html' in workspace
     assert "'Access Grant Registry'" in registry
@@ -634,6 +647,7 @@ def test_tenant_status_actions_use_semantic_labels() -> None:
 
     assert "special_label('History Retained', 'unknown', 'archive')" in registry
     assert "special_label('Blocked', 'critical', 'shield-alert')" in registry
+    assert 'Capsule teardown not admitted' in registry
     assert "special_label('Unavailable', 'unknown', 'circle-slash-2')" in registry
 
 
@@ -777,3 +791,32 @@ def test_tenant_group_registry_uses_governed_lifecycle_actions_without_hard_dele
     assert 'Delete Tenant Group' not in registry
     assert 'hard-delete' not in membership_registry.lower()
     assert 'Revoke/Reactivate' in membership_registry
+
+
+
+def test_access_grant_form_filters_targets_and_profiles_from_selected_membership() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    page = read('app/templates/kubernetes/tenant/tenants.html')
+    scope_js = read('app/static/js/tenant_access_grant_form.js')
+    service = read('app/kubernetes/tenant/access_service.py')
+
+    assert 'data-principal-type="{{ membership.principal_type }}"' in workspace
+    assert 'data-principal-types="{{ \'service_account\' if profile.key.value == \'deployer\' else \'user,group\' }}"' in workspace
+    assert 'Filtered by Membership Tenant' in workspace
+    assert 'Tenant scope still uses namespaced RBAC' in workspace
+    assert 'Select Membership first' in workspace
+    assert 'tenant_access_grant_form.js' in page
+
+    assert 'filterTenantOptions' in scope_js
+    assert 'option.dataset.tenantId === tenantId' in scope_js
+    assert "scopeValue === 'environment'" in scope_js
+    assert "scopeValue === 'namespace'" in scope_js
+    assert 'environment.required = showEnvironment && Boolean(tenantId)' in scope_js
+    assert 'namespace.required = showNamespace && Boolean(tenantId)' in scope_js
+    assert 'No target selection is required.' in scope_js
+    assert 'incompatible profiles are filtered automatically.' in scope_js
+    assert 'htmx:afterSwap' in scope_js
+
+    # Browser filtering is operator guidance only; server-side Tenant boundary validation remains authoritative.
+    assert 'Environment scope cannot cross Tenant boundaries.' in service
+    assert 'Namespace scope cannot cross Tenant boundaries.' in service
