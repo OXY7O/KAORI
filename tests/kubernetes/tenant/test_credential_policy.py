@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.kubernetes.tenant.credential import (
+    credential_material_ttl_policy,
     effective_credential_status,
     normalize_credential_purpose,
     token_ttl_seconds,
@@ -131,3 +132,36 @@ def test_revoked_credential_can_still_validate_for_provider_cleanup_after_grant_
     credential.access_grant.membership.status = 'revoked'
     credential.owner_user.is_active = False
     validate_credential_contract(credential)
+
+
+def test_material_lifetime_policy_is_environment_aware() -> None:
+    development = credential_material_ttl_policy('development')
+    staging = credential_material_ttl_policy('staging')
+    production = credential_material_ttl_policy('production')
+
+    assert development['max_seconds'] == 24 * 60 * 60
+    assert staging['max_seconds'] == 8 * 60 * 60
+    assert production['max_seconds'] == 60 * 60
+    assert development['max_seconds'] > staging['max_seconds'] > production['max_seconds']
+
+
+def test_production_material_rejects_lifetime_above_policy() -> None:
+    credential = _human_credential()
+
+    with pytest.raises(ValueError, match='Production credential material is limited to 1 hour'):
+        token_ttl_seconds(
+            credential,
+            requested_seconds=4 * 60 * 60,
+            environment='production',
+        )
+
+
+def test_development_material_allows_longer_bounded_request() -> None:
+    credential = _human_credential()
+    ttl = token_ttl_seconds(
+        credential,
+        requested_seconds=8 * 60 * 60,
+        environment='development',
+    )
+
+    assert ttl == 8 * 60 * 60
