@@ -1,7 +1,8 @@
 ;(() => {
     const syncProviderFields = (root = document) => {
         const select =
-            root.querySelector?.('#tenant-provider-select') || document.querySelector('#tenant-provider-select')
+            root.querySelector?.('#tenant-provider-select') ||
+            document.querySelector('#tenant-provider-select')
         const fields =
             root.querySelector?.('[data-capsule-owner-fields]') ||
             document.querySelector('[data-capsule-owner-fields]')
