@@ -255,9 +255,13 @@ def create_tenant_committed(source: Mapping[str, Any]) -> tuple[Tenant, TenantEn
     tenant: Tenant | None = None
     try:
         tenant, environment = create_tenant(source)
-        cleanup_context = _capsule_create_cleanup_context(tenant)
         db.session.commit()
         return tenant, environment
+    except ValueError:
+        cleanup_context = _capsule_create_cleanup_context(tenant)
+        db.session.rollback()
+        _compensate_capsule_create(cleanup_context)
+        raise
     except IntegrityError as exc:
         cleanup_context = _capsule_create_cleanup_context(tenant)
         db.session.rollback()
