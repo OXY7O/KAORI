@@ -180,12 +180,13 @@
                                         </button>
                                     </form>
                                 {% elif tenant.lifecycle_status == 'decommissioned' %}
-                                    <span class="text-xs font-medium text-content-muted">History retained</span>
+                                    {{ table_label.special_label('History Retained', 'unknown', 'archive') }}
                                 {% elif decommission.blockers %}
-                                    <span class="text-xs font-medium text-content-muted"
-                                          title="{{ decommission.blockers|join(' ') }}">Blocked</span>
+                                    <span title="{{ decommission.blockers|join(' ') }}">
+                                        {{ table_label.special_label('Blocked', 'critical', 'shield-alert') }}
+                                    </span>
                                 {% else %}
-                                    <span class="text-xs font-medium text-content-muted">Not available</span>
+                                    {{ table_label.special_label('Unavailable', 'unknown', 'circle-slash-2') }}
                                 {% endif %}
                             </div>
                         </td>
