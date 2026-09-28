@@ -3,7 +3,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% set pagination = tenant_overview_cluster_pagination %}
-{% set summary = 'Showing ' ~ pagination.start_item ~ '–' ~ pagination.end_item ~ ' of ' ~ pagination.total_items ~ ' Clusters. Compact Tenant posture from committed evidence.' %}
+{% set summary = 'Committed Tenant posture by cluster.' %}
 {% call operational_section_card.render(
     'Tenant Estate by Cluster',
     summary,
