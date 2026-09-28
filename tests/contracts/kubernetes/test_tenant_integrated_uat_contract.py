@@ -91,11 +91,17 @@ def test_tenant_tenants_surface_exposes_governed_access_and_credential_lifecycle
 def test_tenant_operations_keeps_provider_policy_audit_and_reports_evidence_explicit() -> None:
     overview = _read('app/templates/kubernetes/tenant/overview.html')
     operations = _read('app/templates/kubernetes/tenant/operations.html')
+    provider = _read('app/templates/kubernetes/tenant/partials/_operations_provider_registry.html')
+    access = _read('app/templates/kubernetes/tenant/partials/_operations_access_reconciliation_registry.html')
+    evidence = _read('app/templates/kubernetes/tenant/partials/_operations_evidence_registry.html')
 
-    assert 'provider_state' in operations
-    assert 'reconciliation_authority' in operations
-    assert 'correlation_status' in operations
-    assert 'Managed Resources &amp; Policies' in operations
+    assert 'provider_state' in provider
+    assert 'reconciliation_authority' in provider
+    assert 'reconciliation_status' in access
+    assert 'correlation_status' in evidence
+    assert 'managed-resource' in evidence
+    assert 'domain-reservation' in evidence
+    assert 'exposure-policy' in evidence
     assert 'Tenant Governance' in overview
     assert 'Open Reports' in overview
     assert 'Reports' in operations
