@@ -23,7 +23,19 @@ DEFAULT_CREDENTIAL_VALIDITY_DAYS = 365
 DEFAULT_RENEWAL_WINDOW_DAYS = 30
 DEFAULT_TOKEN_TTL_SECONDS = 3600
 _MIN_TOKEN_TTL_SECONDS = 300
-_MAX_TOKEN_TTL_SECONDS = 3600
+_TOKEN_TTL_CHOICES: tuple[tuple[int, str], ...] = (
+    (900, '15 minutes'),
+    (1800, '30 minutes'),
+    (3600, '1 hour'),
+    (14400, '4 hours'),
+    (28800, '8 hours'),
+    (86400, '24 hours'),
+)
+_TOKEN_TTL_ENVIRONMENT_MAX_SECONDS = {
+    'development': 86400,
+    'staging': 28800,
+    'production': 3600,
+}
 _PURPOSE_RE = re.compile(r'[^a-z0-9-]+')
 
 
@@ -310,15 +322,49 @@ def validate_credential_contract(credential: TenantCredential) -> None:
     _validate_target_readiness(credential, active_lifecycle=active_lifecycle)
 
 
+def credential_material_ttl_policy(environment: str | None) -> dict[str, object]:
+    normalized_environment = str(environment or '').strip().lower()
+    max_seconds = _TOKEN_TTL_ENVIRONMENT_MAX_SECONDS.get(normalized_environment, DEFAULT_TOKEN_TTL_SECONDS)
+    choices = [
+        {'seconds': seconds, 'label': label}
+        for seconds, label in _TOKEN_TTL_CHOICES
+        if seconds <= max_seconds
+    ]
+    return {
+        'environment': normalized_environment or 'unknown',
+        'default_seconds': min(DEFAULT_TOKEN_TTL_SECONDS, max_seconds),
+        'max_seconds': max_seconds,
+        'choices': choices,
+    }
+
+
+def credential_material_ttl_choices() -> list[dict[str, object]]:
+    return [{'seconds': seconds, 'label': label} for seconds, label in _TOKEN_TTL_CHOICES]
+
+
 def token_ttl_seconds(
     credential: TenantCredential,
     *,
     requested_seconds: int = DEFAULT_TOKEN_TTL_SECONDS,
+    environment: str | None = None,
     now: datetime | None = None,
 ) -> int:
     status = effective_credential_status(credential, now=now)
     if status not in {TenantCredentialStatus.ACTIVE.value, TenantCredentialStatus.RENEWAL_DUE.value}:
         raise ValueError('Tenant credential is not active for credential material issuance.')
+
+    requested = int(requested_seconds)
+    if requested < _MIN_TOKEN_TTL_SECONDS:
+        raise ValueError('Credential material lifetime must be at least 5 minutes.')
+
+    policy = credential_material_ttl_policy(environment)
+    max_seconds = int(policy['max_seconds'])
+    if requested > max_seconds:
+        environment_label = str(policy['environment']).replace('_', ' ').title()
+        raise ValueError(
+            f'{environment_label} credential material is limited to {max_seconds // 3600 if max_seconds >= 3600 else max_seconds // 60} '
+            f'{"hour" if max_seconds == 3600 else "hours" if max_seconds > 3600 else "minutes"} per issuance.'
+        )
 
     current = _aware(now or datetime.now(UTC))
     remaining = int((_aware(credential.valid_until) - current).total_seconds())
@@ -327,7 +373,7 @@ def token_ttl_seconds(
             raise ValueError('Exceptional kubeconfig approval is expired.')
         remaining = min(remaining, int((_aware(credential.exception_valid_until) - current).total_seconds()))
 
-    bounded = min(max(int(requested_seconds), _MIN_TOKEN_TTL_SECONDS), _MAX_TOKEN_TTL_SECONDS, remaining)
+    bounded = min(requested, remaining)
     if bounded < _MIN_TOKEN_TTL_SECONDS:
         raise ValueError('Tenant credential validity is too close to expiry to issue new credential material.')
     return bounded
