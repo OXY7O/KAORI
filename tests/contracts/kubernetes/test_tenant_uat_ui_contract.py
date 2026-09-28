@@ -69,7 +69,7 @@ def test_tenant_uat_pages_preserve_current_admitted_workflows() -> None:
     assert 'Namespace Provisioning Workspace' in namespaces
     assert 'Namespace Administration' in namespaces
     assert 'content_tabs.render_links' in namespaces
-    assert "active_namespace_view" in namespaces
+    assert 'active_namespace_view' in namespaces
     assert 'partials/_namespace_form.html' in namespaces
     assert 'partials/_namespace_registry.html' in namespaces
     assert 'partials/_allocation_change.html' in namespaces
@@ -94,6 +94,7 @@ def test_tenant_uat_pages_preserve_current_admitted_workflows() -> None:
         '_operations_access_reconciliation_registry.html',
     ):
         assert partial in operations
+
 
 def test_tenant_uat_surface_separates_platform_permission_from_tenant_membership() -> None:
     registry = _read('app/definitions/catalogs/access/rbac/access.yaml')
