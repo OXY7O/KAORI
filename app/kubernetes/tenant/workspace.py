@@ -188,8 +188,7 @@ def _tenant_attention_rows(findings: list[dict[str, Any]], *, limit: int = 3) ->
                 'kind': 'Access',
                 'icon': 'key-round',
                 'title': f'{grant.membership.subject_name} · {grant.access_profile.replace("_", " ").title()}',
-                'detail': grant.reconciliation_message
-                or f'{grant.tenant.name} access requires reconciliation review.',
+                'detail': grant.reconciliation_message or f'{grant.tenant.name} access requires reconciliation review.',
                 'status': grant.reconciliation_status.title(),
                 'tone': _attention_tone(grant.reconciliation_status),
             }
@@ -265,7 +264,9 @@ def _tenant_recent_activity(*, limit: int = 3) -> list[dict[str, str]]:
                     'title': grant.membership.subject_name,
                     'detail': f'{grant.tenant.name} · {grant.access_profile.replace("_", " ").title()}',
                     'status': reconciliation,
-                    'tone': 'normal' if grant.reconciliation_status == 'ready' else _attention_tone(grant.reconciliation_status),
+                    'tone': 'normal'
+                    if grant.reconciliation_status == 'ready'
+                    else _attention_tone(grant.reconciliation_status),
                     'time': present_user_datetime(grant.updated_at, empty='Not recorded'),
                 },
             )
@@ -282,9 +283,7 @@ def _tenant_recent_activity(*, limit: int = 3) -> list[dict[str, str]]:
                     'title': credential.service_account_name,
                     'detail': f'{credential.tenant.name} · {credential.credential_type.replace("_", " ").title()}',
                     'status': credential_status,
-                    'tone': _attention_tone(credential.status)
-                    if credential.status != 'active'
-                    else 'normal',
+                    'tone': _attention_tone(credential.status) if credential.status != 'active' else 'normal',
                     'time': present_user_datetime(credential.updated_at, empty='Not recorded'),
                 },
             )
@@ -328,8 +327,8 @@ def _build_tenant_cluster_rows(sync_state: dict[str, Any]) -> list[dict[str, Any
                 'tenant_share_percent': round((tenant_count / total_tenants) * 100) if total_tenants else 0,
                 'snapshot_coverage_complete': bool(snapshot_cluster.get('coverage_complete')),
                 'snapshot_coverage_label': (
-                    f"{int(snapshot_cluster.get('covered_namespace_count') or 0)} / "
-                    f"{int(snapshot_cluster.get('namespace_count') or 0)}"
+                    f'{int(snapshot_cluster.get("covered_namespace_count") or 0)} / '
+                    f'{int(snapshot_cluster.get("namespace_count") or 0)}'
                     if snapshot_cluster
                     else 'Not Collected'
                 ),
