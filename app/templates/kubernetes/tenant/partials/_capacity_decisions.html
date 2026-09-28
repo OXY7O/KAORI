@@ -1,6 +1,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
-<section class="{{ table_ui.block_classes() }}" aria-label="Tenant capacity decisions">
+<section class="{{ table_ui.block_classes() }}"
+         aria-label="Tenant capacity decisions">
     <header class="border-b border-outline-subtle px-5 py-4">
         <div class="flex min-w-0 items-start gap-3">
             <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
@@ -30,10 +31,10 @@
                             {{ table_ui.title_cell(decision.namespace, 'Committed admission evidence', 'folder-tree') }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-sm font-semibold text-content-primary">{{ decision.operation|replace('_', ' ')|title }}</p>
+                            <p class="text-sm font-semibold text-content-primary">{{ decision.operation|replace('_', ' ') |title }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            {{ table_label.status_label(decision.capacity_state, 'normal' if decision.capacity_state == 'Healthy' else ('critical' if decision.capacity_state in ['Critical', 'Exhausted', 'Overcommitted'] else 'warning')) }}
+                            {{ table_label.status_label(decision.capacity_state, 'normal' if decision.capacity_state == 'Healthy' else ('critical' if decision.capacity_state in ['Critical', 'Exhausted', 'Overcommitted'] else 'warning') ) }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             {{ table_label.status_label(decision.decision|title, 'normal' if decision.decision == 'allow' else 'critical') }}
@@ -42,9 +43,9 @@
                 {% else %}
                     <tr>
                         <td colspan="4" class="p-0">
-                            {% set empty_state_icon = 'shield-check' %}
-                            {% set empty_state_title = 'No Capacity Decisions Yet' %}
-                            {% set empty_state_description = 'A decision appears after Namespace provisioning or allocation-change preflight runs.' %}
+                            {% set empty_state_icon = "shield-check" %}
+                            {% set empty_state_title = "No Capacity Decisions Yet" %}
+                            {% set empty_state_description = "A decision appears after Namespace provisioning or allocation-change preflight runs." %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>

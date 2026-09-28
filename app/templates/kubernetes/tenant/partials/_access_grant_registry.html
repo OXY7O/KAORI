@@ -1,8 +1,8 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
-{% set registry_id = 'tenant-access-grant-registry' %}
-{% set loading_id = 'tenant-access-grant-registry-loading' %}
+{% set registry_id = "tenant-access-grant-registry" %}
+{% set loading_id = "tenant-access-grant-registry-loading" %}
 {% set query_params = {
     'section': 'access-grants',
     'grant_tenant_id': access_grant_filters.tenant_id,
@@ -14,29 +14,25 @@
 <section id="{{ registry_id }}" class="{{ table_ui.block_classes() }}">
     {% set header_actions %}
         {% if access_grant_filters.tenant_id or access_grant_filters.status or access_grant_filters.reconciliation_status or access_grant_filters.scope_type or access_grant_filters.search %}
-            {{ registry_ui.clear_filters_link(
-                'tenant.tenants',
-                registry_id,
-                loading_id,
-                access_grant_pagination.per_page,
-                table_ui.action_classes(),
-                query_params={'section': 'access-grants'},
-                page_param='grant_page',
-                per_page_param='grant_per_page'
+            {{ registry_ui.clear_filters_link('tenant.tenants',
+                        registry_id,
+                        loading_id,
+                        access_grant_pagination.per_page,
+                        table_ui.action_classes() ,
+            query_params={'section': 'access-grants'},
+            page_param='grant_page',
+            per_page_param='grant_per_page'
             ) }}
         {% endif %}
     {% endset %}
-    {{ table_ui.inventory_block_header(
-        'shield-check',
+    {{ table_ui.inventory_block_header('shield-check',
         'Access Grant Registry',
         'Committed authorization intent with effective Kubernetes RBAC reconciliation state.',
         loading_id,
         'Refreshing Access Grant Registry',
         '#access-grant-form',
         'Apply Grant',
-        header_actions=header_actions
-    ) }}
-
+        header_actions=header_actions) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
             'tenant.tenants',
@@ -45,11 +41,14 @@
             access_grant_pagination.per_page,
             page_param='grant_page',
             per_page_param='grant_per_page'
-        ) %}
+            ) %}
             <input type="hidden" name="section" value="access-grants">
             <div>
-                <label for="grant-tenant-filter" class="{{ table_ui.filter_label_classes() }}">Tenant</label>
-                <select id="grant-tenant-filter" name="grant_tenant_id" class="{{ table_ui.filter_select_classes() }}">
+                <label for="grant-tenant-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Tenant</label>
+                <select id="grant-tenant-filter"
+                        name="grant_tenant_id"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Tenants</option>
                     {% for tenant in access_grant_tenant_options %}
                         <option value="{{ tenant.id }}"
@@ -58,8 +57,11 @@
                 </select>
             </div>
             <div>
-                <label for="grant-scope-filter" class="{{ table_ui.filter_label_classes() }}">Scope</label>
-                <select id="grant-scope-filter" name="grant_scope_type" class="{{ table_ui.filter_select_classes() }}">
+                <label for="grant-scope-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Scope</label>
+                <select id="grant-scope-filter"
+                        name="grant_scope_type"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Scopes</option>
                     {% for scope in access_grant_scope_options %}
                         <option value="{{ scope }}"
@@ -68,8 +70,11 @@
                 </select>
             </div>
             <div>
-                <label for="grant-status-filter" class="{{ table_ui.filter_label_classes() }}">Grant Status</label>
-                <select id="grant-status-filter" name="grant_status" class="{{ table_ui.filter_select_classes() }}">
+                <label for="grant-status-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Grant Status</label>
+                <select id="grant-status-filter"
+                        name="grant_status"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Status</option>
                     {% for status in access_grant_status_options %}
                         <option value="{{ status }}"
@@ -78,7 +83,8 @@
                 </select>
             </div>
             <div>
-                <label for="grant-reconciliation-filter" class="{{ table_ui.filter_label_classes() }}">Reconciliation</label>
+                <label for="grant-reconciliation-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Reconciliation</label>
                 <select id="grant-reconciliation-filter"
                         name="grant_reconciliation_status"
                         class="{{ table_ui.filter_select_classes() }}">
@@ -90,12 +96,12 @@
                 </select>
             </div>
             <div>
-                <label for="grant-search-filter" class="{{ table_ui.filter_label_classes() }}">Search</label>
+                <label for="grant-search-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Search</label>
                 {{ table_ui.search_field('grant_search', access_grant_filters.search, 'Principal, Tenant, profile', id='grant-search-filter') }}
             </div>
         {% endcall %}
     </div>
-
     <div class="overflow-x-auto">
         <table class="{{ table_ui.table_classes('min-w-[1080px]') }}">
             <caption class="sr-only">Tenant Access Grant registry.</caption>
@@ -114,7 +120,7 @@
                     {% set reconciliation_tone = 'normal' if grant.reconciliation_status == 'ready' else ('critical' if grant.reconciliation_status == 'failed' else 'warning') %}
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }}">
-                            {{ table_ui.title_cell(grant.membership.subject_name, grant.membership.principal_type|replace('_', ' ')|title, 'key-round') }}
+                            {{ table_ui.title_cell(grant.membership.subject_name, grant.membership.principal_type|replace('_', ' ') |title, 'key-round') }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             <p class="text-sm font-semibold text-content-primary">{{ grant.tenant.name }}</p>
@@ -122,7 +128,7 @@
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             <div class="flex flex-wrap items-center gap-2">
-                                {{ table_label.metadata_label(grant.access_profile|replace('_', ' ')|title) }}
+                                {{ table_label.metadata_label(grant.access_profile|replace('_', ' ') |title) }}
                                 <span class="text-xs text-content-muted">v{{ grant.access_profile_version }}</span>
                             </div>
                             {{ table_label.status_label(grant.status|title, 'normal' if grant.status == 'active' else 'critical') }}
@@ -165,13 +171,13 @@
                                 </form>
                                 {% if grant.status == 'active' or grant.reconciliation_status != 'revoked' %}
                                     <form method="post"
-                                      action="{{ url_for('tenant.reconcile_access_grant_route', grant_id=grant.id) }}"
-                                      hx-post="{{ url_for('tenant.reconcile_access_grant_route', grant_id=grant.id) }}"
-                                      hx-target="#tenant-admin-workspace"
-                                      hx-select="#tenant-admin-workspace"
-                                      hx-swap="outerHTML show:none focus-scroll:false"
-                                      hx-indicator="#tenant-admin-loading"
-                                      hx-disabled-elt="find button">
+                                          action="{{ url_for('tenant.reconcile_access_grant_route', grant_id=grant.id) }}"
+                                          hx-post="{{ url_for('tenant.reconcile_access_grant_route', grant_id=grant.id) }}"
+                                          hx-target="#tenant-admin-workspace"
+                                          hx-select="#tenant-admin-workspace"
+                                          hx-swap="outerHTML show:none focus-scroll:false"
+                                          hx-indicator="#tenant-admin-loading"
+                                          hx-disabled-elt="find button">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit"
                                                 {% if not can_manage %}disabled aria-disabled="true"{% endif %}
@@ -183,13 +189,13 @@
                                 {% endif %}
                                 {% if grant.status == 'active' %}
                                     <form method="post"
-                                      action="{{ url_for('tenant.revoke_access_grant_route', grant_id=grant.id) }}"
-                                      hx-post="{{ url_for('tenant.revoke_access_grant_route', grant_id=grant.id) }}"
-                                      hx-target="#tenant-admin-workspace"
-                                      hx-select="#tenant-admin-workspace"
-                                      hx-swap="outerHTML show:none focus-scroll:false"
-                                      hx-indicator="#tenant-admin-loading"
-                                      hx-disabled-elt="find button">
+                                          action="{{ url_for('tenant.revoke_access_grant_route', grant_id=grant.id) }}"
+                                          hx-post="{{ url_for('tenant.revoke_access_grant_route', grant_id=grant.id) }}"
+                                          hx-target="#tenant-admin-workspace"
+                                          hx-select="#tenant-admin-workspace"
+                                          hx-swap="outerHTML show:none focus-scroll:false"
+                                          hx-indicator="#tenant-admin-loading"
+                                          hx-disabled-elt="find button">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit"
                                                 {% if not can_manage %}disabled aria-disabled="true"{% endif %}
@@ -205,9 +211,9 @@
                 {% else %}
                     <tr>
                         <td colspan="6" class="p-0">
-                            {% set empty_state_icon = 'shield-check' %}
-                            {% set empty_state_title = 'No Access Grants Found' %}
-                            {% set empty_state_description = 'Adjust filters or apply a governed Access Grant above.' %}
+                            {% set empty_state_icon = "shield-check" %}
+                            {% set empty_state_title = "No Access Grants Found" %}
+                            {% set empty_state_description = "Adjust filters or apply a governed Access Grant above." %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
@@ -216,18 +222,16 @@
         </table>
     </div>
     {% if access_grant_pagination.total_items > 0 %}
-        {{ registry_ui.footer(
-            'tenant.tenants',
-            registry_id,
-            loading_id,
-            access_grant_pagination,
-            query_params,
-            access_grant_pagination.allowed_per_page,
-            resource_label='Access Grants',
-            rows_aria_label='Access Grant rows per page',
-            control_name='tenant-access-grants',
-            page_param='grant_page',
-            per_page_param='grant_per_page'
-        ) }}
+        {{ registry_ui.footer('tenant.tenants',
+                registry_id,
+                loading_id,
+                access_grant_pagination,
+                query_params,
+                access_grant_pagination.allowed_per_page,
+                resource_label='Access Grants',
+                rows_aria_label='Access Grant rows per page',
+                control_name='tenant-access-grants',
+                page_param='grant_page',
+                per_page_param='grant_per_page') }}
     {% endif %}
 </section>

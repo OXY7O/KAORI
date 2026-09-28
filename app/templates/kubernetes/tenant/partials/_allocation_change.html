@@ -6,10 +6,10 @@
       data-tenant-allocation-change-form
       class="overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
     <header class="flex items-start justify-between gap-4 border-b border-outline-subtle px-5 py-4">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
                 <i data-lucide="refresh-cw" class="h-5 w-5"></i>
             </span>
             <div>
@@ -17,19 +17,16 @@
                 <p class="mt-1 text-sm leading-6 text-content-secondary">Compare the frozen current allocation with a proposed Resource Profile before committing a governed change.</p>
             </div>
         </div>
-        {{ info_tip.render(
-            'namespace-allocation-change-tip',
-            'Allocation change',
-            'Changing allocation is a new admitted intent, not an in-place rewrite of historical profile evidence.',
-            [
+        {{ info_tip.render('namespace-allocation-change-tip',
+                'Allocation change',
+                'Changing allocation is a new admitted intent, not an in-place rewrite of historical profile evidence.',
+                [
                 'Current allocation remains visible from its committed snapshot.',
                 'The proposed profile is evaluated against fresh committed capacity evidence.',
                 'Allow commits the new profile/version snapshot and reconciles provider resources.',
                 'Block leaves current Namespace allocation unchanged.'
-            ]
-        ) }}
+                ]) }}
     </header>
-
     <div class="space-y-5 p-5">
         <div class="grid gap-4 md:grid-cols-2">
             <label class="block">
@@ -57,48 +54,60 @@
                 </select>
             </label>
         </div>
-
         <div class="grid gap-4 md:grid-cols-2">
-            <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4" aria-label="Current Namespace allocation">
+            <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4"
+                     aria-label="Current Namespace allocation">
                 <div class="flex items-center justify-between gap-3">
                     <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Current Snapshot</p>
                     <span class="inline-flex min-h-6 items-center rounded-md bg-surface-card px-2 text-[11px] font-semibold text-content-muted">Frozen</span>
                 </div>
-                <p class="mt-3 text-sm font-semibold text-content-primary" data-tenant-allocation-current-profile>—</p>
+                <p class="mt-3 text-sm font-semibold text-content-primary"
+                   data-tenant-allocation-current-profile>—</p>
                 <dl class="mt-4 grid grid-cols-2 gap-3">
                     <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
                         <dt class="text-xs text-content-muted">CPU requests</dt>
-                        <dd class="mt-1 text-sm font-semibold text-content-primary" data-tenant-allocation-current-cpu>—</dd>
+                        <dd class="mt-1 text-sm font-semibold text-content-primary"
+                            data-tenant-allocation-current-cpu>
+                            —
+                        </dd>
                     </div>
                     <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
                         <dt class="text-xs text-content-muted">Memory requests</dt>
-                        <dd class="mt-1 text-sm font-semibold text-content-primary" data-tenant-allocation-current-memory>—</dd>
+                        <dd class="mt-1 text-sm font-semibold text-content-primary"
+                            data-tenant-allocation-current-memory>
+                            —
+                        </dd>
                     </div>
                 </dl>
             </section>
-
-            <section class="rounded-xl border border-kaori-primary/20 bg-kaori-soft p-4" aria-label="Proposed Namespace allocation">
+            <section class="rounded-xl border border-kaori-primary/20 bg-kaori-soft p-4"
+                     aria-label="Proposed Namespace allocation">
                 <div class="flex items-center justify-between gap-3">
                     <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Proposed Contract</p>
                     <span class="inline-flex min-h-6 items-center rounded-md bg-surface-card px-2 text-[11px] font-semibold text-kaori-primary">Capacity preflight</span>
                 </div>
-                <p class="mt-3 text-sm font-semibold text-content-primary" data-tenant-allocation-proposed-profile>—</p>
+                <p class="mt-3 text-sm font-semibold text-content-primary"
+                   data-tenant-allocation-proposed-profile>—</p>
                 <dl class="mt-4 grid grid-cols-2 gap-3">
                     <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
                         <dt class="text-xs text-content-muted">CPU requests</dt>
-                        <dd class="mt-1 text-sm font-semibold text-content-primary" data-tenant-allocation-proposed-cpu>—</dd>
+                        <dd class="mt-1 text-sm font-semibold text-content-primary"
+                            data-tenant-allocation-proposed-cpu>
+                            —
+                        </dd>
                     </div>
                     <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
                         <dt class="text-xs text-content-muted">Memory requests</dt>
-                        <dd class="mt-1 text-sm font-semibold text-content-primary" data-tenant-allocation-proposed-memory>—</dd>
+                        <dd class="mt-1 text-sm font-semibold text-content-primary"
+                            data-tenant-allocation-proposed-memory>
+                            —
+                        </dd>
                     </div>
                 </dl>
             </section>
         </div>
-
         <p class="text-xs leading-5 text-content-muted">CPU and memory requests are capacity-admission dimensions. Other ResourceQuota and LimitRange values still reconcile from the selected profile but are not treated as physical node reservations.</p>
     </div>
-
     <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <p class="max-w-2xl text-xs leading-5 text-content-muted">No committed allocation changes until preflight allows the request.</p>
         <button type="submit"

@@ -5,48 +5,37 @@
 {% import "components/table_label.html" as table_label %}
 {% block tenant_content %}
     {% include "kubernetes/tenant/partials/_sync_workspace.html" %}
-
     {% set estate_metrics = [
-        ('building-2', 'Tenants', tenant_count, 'Committed Tenant ownership records', 'info'),
-        ('boxes', 'Namespaces', namespace_count, 'Governed namespace allocations', 'info'),
-        ('server', 'Managed Clusters', (ready_clusters|length) ~ ' / ' ~ tenant_overview_cluster_total, 'Ready / registered Kubernetes clusters', 'normal' if ready_clusters|length == tenant_overview_cluster_total and tenant_overview_cluster_total else 'warning'),
-        ('key-round', 'Credentials', tenant_credential_count, 'Human & machine identities', 'info'),
-        ('shield-alert', 'Findings', tenant_governance_finding_count, 'Active Tenant Governance findings', 'warning' if tenant_governance_finding_count else 'normal')
-    ] %}
+            ('building-2', 'Tenants', tenant_count, 'Committed Tenant ownership records', 'info'),
+            ('boxes', 'Namespaces', namespace_count, 'Governed namespace allocations', 'info'),
+            ('server', 'Managed Clusters', (ready_clusters|length) ~ ' / ' ~ tenant_overview_cluster_total, 'Ready / registered Kubernetes clusters', 'normal' if ready_clusters|length == tenant_overview_cluster_total and tenant_overview_cluster_total else 'warning'),
+            ('key-round', 'Credentials', tenant_credential_count, 'Human & machine identities', 'info'),
+            ('shield-alert', 'Findings', tenant_governance_finding_count, 'Active Tenant Governance findings', 'warning' if tenant_governance_finding_count else 'normal')
+        ] %}
     <section class="space-y-4" aria-labelledby="tenant-governance-scope-heading">
-        {{ section_intro.render(
-            'Governance Scope',
-            'Committed Tenant, namespace, cluster, credential, and finding posture across the Kubernetes estate.',
-            'tenant-governance-scope-heading'
-        ) }}
+        {{ section_intro.render('Governance Scope',
+                'Committed Tenant, namespace, cluster, credential, and finding posture across the Kubernetes estate.',
+                'tenant-governance-scope-heading') }}
         {% call operational_section_card.render(
             'Tenant Estate',
             'Committed governance scope across the Kubernetes fleet.',
             'layout-grid',
             body_classes='p-0',
             aria_label='Tenant estate summary'
-        ) %}
+            ) %}
             {{ resource_posture_grid.render(estate_metrics, columns=5) }}
         {% endcall %}
     </section>
-
     <section class="space-y-4" aria-labelledby="tenant-multicluster-heading">
-        {{ section_intro.render(
-            'Multi-Cluster Posture',
-            'Tenant, namespace, snapshot, and capacity posture across clusters.',
-            'tenant-multicluster-heading'
-        ) }}
-
+        {{ section_intro.render('Multi-Cluster Posture',
+                'Tenant, namespace, snapshot, and capacity posture across clusters.',
+                'tenant-multicluster-heading') }}
         {% include "kubernetes/tenant/partials/_cluster_estate.html" %}
     </section>
-
     <section class="space-y-4" aria-labelledby="tenant-attention-heading">
-        {{ section_intro.render(
-            'Operational Attention',
-            'Prioritize actionable Tenant conditions, then review the latest committed Tenant activity.',
-            'tenant-attention-heading'
-        ) }}
-
+        {{ section_intro.render('Operational Attention',
+                'Prioritize actionable Tenant conditions, then review the latest committed Tenant activity.',
+                'tenant-attention-heading') }}
         <div class="grid gap-5 xl:grid-cols-12 xl:items-stretch">
             <div class="xl:col-span-7">
                 {% call operational_section_card.render(
@@ -59,7 +48,7 @@
                     body_classes='flex flex-1 flex-col p-0',
                     extra_classes='flex h-full flex-col',
                     aria_label='Tenant needs attention'
-                ) %}
+                    ) %}
                     <div class="flex-1 divide-y divide-outline-subtle">
                         {% for item in tenant_attention_rows %}
                             <article class="flex min-h-[7.5rem] items-start gap-3 px-5 py-4">
@@ -102,7 +91,6 @@
                     </footer>
                 {% endcall %}
             </div>
-
             <div class="xl:col-span-5">
                 {% call operational_section_card.render(
                     'Recent Tenant Activity',
@@ -114,7 +102,7 @@
                     body_classes='flex flex-1 flex-col p-0',
                     extra_classes='flex h-full flex-col',
                     aria_label='Recent Tenant activity'
-                ) %}
+                    ) %}
                     {% if tenant_recent_activity_rows %}
                         <ol class="flex-1 divide-y divide-outline-subtle">
                             {% for item in tenant_recent_activity_rows %}

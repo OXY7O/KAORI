@@ -7,42 +7,38 @@
 {% import "components/table.html" as table_ui %}
 {% block tenant_content %}
     {% set operation_tabs = [
-        ('provisioning', 'Provisioning', 'list-checks', url_for('tenant.operations', tab='provisioning')),
-        ('runs-evidence', 'Runs & Evidence', 'file-check-2', url_for('tenant.operations', tab='runs-evidence')),
-        ('drift-reconcile', 'Drift & Reconcile', 'refresh-cw', url_for('tenant.operations', tab='drift-reconcile')),
-        ('activity', 'Activity', 'activity', url_for('tenant.operations', tab='activity'))
-    ] %}
+            ('provisioning', 'Provisioning', 'list-checks', url_for('tenant.operations', tab='provisioning')),
+            ('runs-evidence', 'Runs & Evidence', 'file-check-2', url_for('tenant.operations', tab='runs-evidence')),
+            ('drift-reconcile', 'Drift & Reconcile', 'refresh-cw', url_for('tenant.operations', tab='drift-reconcile')),
+            ('activity', 'Activity', 'activity', url_for('tenant.operations', tab='activity'))
+        ] %}
     {% set namespace_attention_count = namespace_count - ready_namespace_count %}
     {% set operations_metrics = [
-        ('folder-tree', 'Managed Namespaces', namespace_count, 'Active committed Namespace records', 'info'),
-        ('circle-check', 'Ready Namespaces', ready_namespace_count, 'Provider reconciliation currently verified', 'normal'),
-        ('triangle-alert', 'Needs Attention', namespace_attention_count, 'Non-ready Namespace reconciliation states', 'warning' if namespace_attention_count else 'normal'),
-        ('shield-alert', 'Governance Findings', tenant_governance_finding_count, 'Active Kubernetes Tenant Governance findings', 'warning' if tenant_governance_finding_count else 'normal')
-    ] %}
-
-    <section class="space-y-4" aria-labelledby="tenant-operations-snapshot-heading">
-        {{ section_intro.render(
-            'Tenant Operations Snapshot',
-            'Operational evidence for Namespace provisioning, provider drift, access reconciliation, and Tenant governance.',
-            'tenant-operations-snapshot-heading'
-        ) }}
+            ('folder-tree', 'Managed Namespaces', namespace_count, 'Active committed Namespace records', 'info'),
+            ('circle-check', 'Ready Namespaces', ready_namespace_count, 'Provider reconciliation currently verified', 'normal'),
+            ('triangle-alert', 'Needs Attention', namespace_attention_count, 'Non-ready Namespace reconciliation states', 'warning' if namespace_attention_count else 'normal'),
+            ('shield-alert', 'Governance Findings', tenant_governance_finding_count, 'Active Kubernetes Tenant Governance findings', 'warning' if tenant_governance_finding_count else 'normal')
+        ] %}
+    <section class="space-y-4"
+             aria-labelledby="tenant-operations-snapshot-heading">
+        {{ section_intro.render('Tenant Operations Snapshot',
+                'Operational evidence for Namespace provisioning, provider drift, access reconciliation, and Tenant governance.',
+                'tenant-operations-snapshot-heading') }}
         {% call operational_section_card.render(
             'Operations Estate',
             'Review committed operational posture before opening a focused workflow.',
             'activity',
             body_classes='p-0',
             aria_label='Tenant operations summary'
-        ) %}
+            ) %}
             {{ resource_posture_grid.render(operations_metrics, columns=4) }}
         {% endcall %}
     </section>
-
-    <section class="space-y-4" aria-labelledby="tenant-operations-workspace-heading">
-        {{ section_intro.render(
-            'Tenant Operations Workspace',
-            'Inspect committed execution evidence and run explicit recovery actions without bypassing provider authority.',
-            'tenant-operations-workspace-heading'
-        ) }}
+    <section class="space-y-4"
+             aria-labelledby="tenant-operations-workspace-heading">
+        {{ section_intro.render('Tenant Operations Workspace',
+                'Inspect committed execution evidence and run explicit recovery actions without bypassing provider authority.',
+                'tenant-operations-workspace-heading') }}
         {% call operational_section_card.render(
             'Operational Control',
             'Provisioning, evidence, drift recovery, and canonical audit/governance handoffs remain separate but correlated.',
@@ -52,40 +48,35 @@
             loading_bar_label='Loading Tenant Operations Workspace',
             body_classes='p-0',
             aria_label='Tenant Operations Workspace'
-        ) %}
-            {{ content_tabs.render_links(
-                'tenant-operations',
-                operation_tabs,
-                active_tab,
-                'Tenant Operations',
-                embedded=true,
-                data_namespace='tenant-operations',
-                hx_target='#tenant-operations-workspace',
-                hx_select='#tenant-operations-workspace',
-                hx_swap='outerHTML show:none focus-scroll:false',
-                hx_push_url='true',
-                hx_indicator='#tenant-operations-workspace-loading',
-                nowrap=true,
-                hx_sync='this:replace'
-            ) }}
-
+            ) %}
+            {{ content_tabs.render_links('tenant-operations',
+                        operation_tabs,
+                        active_tab,
+                        'Tenant Operations',
+                        embedded=true,
+                        data_namespace='tenant-operations',
+                        hx_target='#tenant-operations-workspace',
+                        hx_select='#tenant-operations-workspace',
+                        hx_swap='outerHTML show:none focus-scroll:false',
+                        hx_push_url='true',
+                        hx_indicator='#tenant-operations-workspace-loading',
+                        nowrap=true,
+                        hx_sync='this:replace') }}
             <div class="space-y-5 p-4 sm:p-5">
                 {% if active_tab == 'provisioning' %}
                     {% include "kubernetes/tenant/partials/_operations_namespace_registry.html" %}
-
                 {% elif active_tab == 'runs-evidence' %}
                     {% include "kubernetes/tenant/partials/_operations_evidence_registry.html" %}
-
                 {% elif active_tab == 'drift-reconcile' %}
                     <div class="space-y-5">
                         {% include "kubernetes/tenant/partials/_operations_drift_registry.html" %}
                         {% include "kubernetes/tenant/partials/_operations_provider_registry.html" %}
                         {% include "kubernetes/tenant/partials/_operations_access_reconciliation_registry.html" %}
                     </div>
-
                 {% else %}
                     <div class="grid gap-5 xl:grid-cols-2">
-                        <section class="{{ table_ui.block_classes() }}" aria-label="Activity Audit handoff">
+                        <section class="{{ table_ui.block_classes() }}"
+                                 aria-label="Activity Audit handoff">
                             <div class="p-5">
                                 <div class="flex items-start gap-3">
                                     <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
@@ -94,7 +85,8 @@
                                     <div class="min-w-0">
                                         <h3 class="{{ table_ui.block_title_classes() }}">Activity Audit</h3>
                                         <p class="mt-1 text-sm leading-6 text-content-secondary">Tenant mutation history stays in the canonical Activity Audit surface so Operations does not duplicate an unbounded audit feed.</p>
-                                        <a href="{{ url_for('access.activity_audit.index') }}" class="{{ action_button.classes('secondary') }} mt-4">
+                                        <a href="{{ url_for('access.activity_audit.index') }}"
+                                           class="{{ action_button.classes('secondary') }} mt-4">
                                             Open Activity Audit
                                             <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
                                         </a>
@@ -102,8 +94,8 @@
                                 </div>
                             </div>
                         </section>
-
-                        <section class="{{ table_ui.block_classes() }}" aria-label="Governance and Reports handoff">
+                        <section class="{{ table_ui.block_classes() }}"
+                                 aria-label="Governance and Reports handoff">
                             <div class="p-5">
                                 <div class="flex items-start gap-3">
                                     <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
@@ -113,8 +105,10 @@
                                         <h3 class="{{ table_ui.block_title_classes() }}">Governance &amp; Reports</h3>
                                         <p class="mt-1 text-sm leading-6 text-content-secondary">Recommendations and published reports remain owned by their canonical KAORI capabilities rather than being copied into Tenant Operations.</p>
                                         <div class="mt-4 flex flex-wrap gap-2">
-                                            <a href="{{ url_for('intelligence.recommendations') }}" class="{{ action_button.classes('secondary') }}">Intelligence</a>
-                                            <a href="{{ url_for('reports.generate_report') }}" class="{{ action_button.classes('secondary') }}">Reports</a>
+                                            <a href="{{ url_for('intelligence.recommendations') }}"
+                                               class="{{ action_button.classes('secondary') }}">Intelligence</a>
+                                            <a href="{{ url_for('reports.generate_report') }}"
+                                               class="{{ action_button.classes('secondary') }}">Reports</a>
                                         </div>
                                     </div>
                                 </div>

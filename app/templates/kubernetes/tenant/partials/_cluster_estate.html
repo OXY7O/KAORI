@@ -3,7 +3,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% set pagination = tenant_overview_cluster_pagination %}
-{% set summary = 'Committed Tenant posture by cluster.' %}
+{% set summary = "Committed Tenant posture by cluster." %}
 {% call operational_section_card.render(
     'Tenant Estate by Cluster',
     summary,
@@ -58,9 +58,8 @@
                             </td>
                             <td class="{{ table_ui.cell_classes() }} align-middle">
                                 <div class="space-y-1.5">
-                                    {{ table_label.status_label(
-                                        'Current' if row.snapshot_coverage_complete else ('Not Collected' if row.snapshot_coverage_label == 'Not Collected' else 'Needs Review'),
-                                        'normal' if row.snapshot_coverage_complete else 'warning'
+                                    {{ table_label.status_label('Current' if row.snapshot_coverage_complete else ('Not Collected' if row.snapshot_coverage_label == 'Not Collected' else 'Needs Review') ,
+                                    'normal' if row.snapshot_coverage_complete else 'warning'
                                     ) }}
                                     <p class="text-xs leading-4 text-content-muted">{{ row.snapshot_coverage_label }} coverage</p>
                                 </div>
@@ -81,7 +80,9 @@
                                 {% if current_user.has_permission('analytics.view') %}
                                     <a href="{{ url_for('analytics.capacity', cluster_id=row.id, time_range='24h') }}"
                                        class="{{ table_ui.action_classes() }} ml-auto whitespace-nowrap">
-                                        <i data-lucide="chart-no-axes-combined" class="h-4 w-4" aria-hidden="true"></i>
+                                        <i data-lucide="chart-no-axes-combined"
+                                           class="h-4 w-4"
+                                           aria-hidden="true"></i>
                                         <span>Open Capacity</span>
                                         <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                     </a>
@@ -107,9 +108,7 @@
     {% if pagination.total_items > 0 %}
         <footer class="{{ pagination_ui.footer_classes() }}">
             <div class="{{ pagination_ui.summary_group_classes() }}">
-                <p>
-                    Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} Clusters
-                </p>
+                <p>Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} Clusters</p>
                 <div class="{{ pagination_ui.rows_group_classes() }}">
                     <input id="tenant-cluster-page-reset"
                            type="hidden"
@@ -156,17 +155,15 @@
                         Previous
                     </span>
                 {% endif %}
-                {{ pagination_ui.numeric_pages(
-                    pagination.page,
-                    pagination.total_pages,
-                    'cluster_page',
-                    hx_target='#tenant-cluster-estate-section',
-                    hx_indicator='#tenant-cluster-estate-loading',
-                    endpoint='tenant.cluster_estate',
-                    query_params={'cluster_per_page': pagination.per_page},
-                    hx_swap='outerHTML',
-                    href_endpoint='tenant.index'
-                ) }}
+                {{ pagination_ui.numeric_pages(pagination.page,
+                                pagination.total_pages,
+                                'cluster_page',
+                                hx_target='#tenant-cluster-estate-section',
+                                hx_indicator='#tenant-cluster-estate-loading',
+                                endpoint='tenant.cluster_estate',
+                                query_params={'cluster_per_page': pagination.per_page},
+                                hx_swap='outerHTML',
+                                href_endpoint='tenant.index') }}
                 {% if pagination.has_next %}
                     <a href="{{ next_href }}"
                        hx-get="{{ next_hx_url }}"
