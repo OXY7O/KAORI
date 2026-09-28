@@ -1,0 +1,203 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_registry.html" as registry_ui %}
+{% set registry_id = 'operations-evidence-registry' %}
+{% set loading_id = 'operations-evidence-loading' %}
+{% set query_params = {
+    'tab': 'runs-evidence',
+    'ops_evidence_type': operations_evidence_filters.evidence_type,
+    'ops_evidence_tenant_id': operations_evidence_filters.tenant_id,
+    'ops_evidence_search': operations_evidence_filters.search
+} %}
+<section id="{{ registry_id }}" class="{{ table_ui.block_classes() }}" aria-label="Operations Evidence Registry">
+    {% set header_actions %}
+        {% if operations_evidence_filters.tenant_id or operations_evidence_filters.search or operations_evidence_filters.evidence_type != 'audit' %}
+            {{ registry_ui.clear_filters_link(
+                'tenant.operations',
+                registry_id,
+                loading_id,
+                operations_evidence_pagination.per_page,
+                table_ui.action_classes(),
+                query_params={'tab': 'runs-evidence', 'ops_evidence_type': 'audit'},
+                page_param='ops_evidence_page',
+                per_page_param='ops_evidence_per_page'
+            ) }}
+        {% endif %}
+    {% endset %}
+    {{ table_ui.inventory_block_header(
+        'file-check-2',
+        'Runs & Evidence Registry',
+        'Browse one committed evidence family at a time; routine reads stay bounded as operational history grows.',
+        loading_id,
+        'Refreshing Runs & Evidence Registry',
+        none,
+        none,
+        header_actions=header_actions
+    ) }}
+
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% call registry_ui.filter_form(
+            'tenant.operations',
+            registry_id,
+            loading_id,
+            operations_evidence_pagination.per_page,
+            page_param='ops_evidence_page',
+            per_page_param='ops_evidence_per_page'
+        ) %}
+            <input type="hidden" name="tab" value="runs-evidence">
+            <div>
+                <label for="ops-evidence-type" class="{{ table_ui.filter_label_classes() }}">Evidence</label>
+                <select id="ops-evidence-type" name="ops_evidence_type" class="{{ table_ui.filter_select_classes() }}">
+                    {% for evidence_type in operations_evidence_type_options %}
+                        <option value="{{ evidence_type }}" {% if operations_evidence_filters.evidence_type == evidence_type %}selected{% endif %}>{{ evidence_type|replace('-', ' ')|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="ops-evidence-tenant" class="{{ table_ui.filter_label_classes() }}">Tenant</label>
+                <select id="ops-evidence-tenant" name="ops_evidence_tenant_id" class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Tenants</option>
+                    {% for tenant in operations_evidence_tenant_options %}
+                        <option value="{{ tenant.id }}" {% if operations_evidence_filters.tenant_id == tenant.id|string %}selected{% endif %}>{{ tenant.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="ops-evidence-search" class="{{ table_ui.filter_label_classes() }}">Search</label>
+                {{ table_ui.search_field('ops_evidence_search', operations_evidence_filters.search, 'Identity, resource, namespace, state', id='ops-evidence-search') }}
+            </div>
+        {% endcall %}
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[940px]') }}">
+            <caption class="sr-only">Tenant operational evidence.</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                {% if operations_evidence_filters.evidence_type == 'audit' %}
+                    <tr>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Principal</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Request</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Namespace</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Correlation / Outcome</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed</th>
+                    </tr>
+                {% elif operations_evidence_filters.evidence_type == 'managed-resource' %}
+                    <tr>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Resource</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant / Namespace</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Mode</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">State</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Updated</th>
+                    </tr>
+                {% elif operations_evidence_filters.evidence_type == 'domain-reservation' %}
+                    <tr>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Hostname</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant / Environment</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Match</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">State</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Updated</th>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Namespace</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Profile</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Allowed Exposure</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">State</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Updated</th>
+                    </tr>
+                {% endif %}
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for item in operations_evidence_rows %}
+                    {% if operations_evidence_filters.evidence_type == 'audit' %}
+                        {% set correlation_tone = 'normal' if item.correlation_status == 'matched' else 'warning' %}
+                        {% set outcome_tone = 'normal' if item.outcome == 'success' else ('critical' if item.outcome == 'failure' else 'unknown') %}
+                        <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.principal_username, item.identity_class|title, 'user-round-search') }}</td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="text-sm font-semibold text-content-primary">{{ item.tenant.name if item.tenant else 'Uncorrelated' }}</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ item.principal_kind|replace('_', ' ')|title }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="text-sm font-semibold text-content-primary">{{ item.verb|upper }} {{ item.resource or 'resource' }}</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ item.resource_name or 'Unnamed resource' }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}"><p class="text-sm text-content-primary">{{ item.kubernetes_namespace or 'Cluster scope' }}</p></td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <div class="flex flex-wrap gap-1.5">
+                                    {{ table_label.status_label(item.correlation_status|title, correlation_tone) }}
+                                    {{ table_label.status_label(item.outcome|title, outcome_tone) }}
+                                </div>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}"><p class="text-xs text-content-secondary">{{ item.event_at|user_datetime }}</p></td>
+                        </tr>
+                    {% elif operations_evidence_filters.evidence_type == 'managed-resource' %}
+                        {% set state_tone = 'normal' if item.status == 'ready' else ('critical' if item.status == 'failed' else 'warning') %}
+                        <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.resource_name, item.resource_kind|upper, 'package-check') }}</td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="text-sm font-semibold text-content-primary">{{ item.tenant.name }}</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ item.namespace.namespace }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}"><p class="text-sm text-content-primary">{{ item.mode|replace('_', ' ')|title }}</p></td>
+                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(item.status|title, state_tone) }}</td>
+                            <td class="{{ table_ui.cell_classes() }}"><p class="text-xs text-content-secondary">{{ item.updated_at|user_datetime }}</p></td>
+                        </tr>
+                    {% elif operations_evidence_filters.evidence_type == 'domain-reservation' %}
+                        <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.hostname_pattern, 'Reserved domain contract', 'globe-lock') }}</td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="text-sm font-semibold text-content-primary">{{ item.tenant.name }}</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ item.environment.environment|title }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}"><p class="text-sm text-content-primary">{{ item.match_mode|title }}</p></td>
+                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(item.status|title, 'normal' if item.status == 'active' else 'critical') }}</td>
+                            <td class="{{ table_ui.cell_classes() }}"><p class="text-xs text-content-secondary">{{ item.updated_at|user_datetime }}</p></td>
+                        </tr>
+                    {% else %}
+                        <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.namespace.namespace, 'Exposure policy', 'network') }}</td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="text-sm font-semibold text-content-primary">{{ item.tenant.name }}</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ item.namespace.environment.environment|title }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}"><p class="text-sm font-semibold text-content-primary">{{ item.profile_key|replace('_', ' ')|title }}</p></td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="text-xs leading-5 text-content-secondary">
+                                    ClusterIP {{ 'Yes' if item.allow_cluster_ip else 'No' }} · Ingress {{ 'Yes' if item.allow_ingress else 'No' }} · LB {{ 'Yes' if item.allow_load_balancer else 'No' }}
+                                </p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(item.status|title, 'normal' if item.status == 'active' else 'unknown') }}</td>
+                            <td class="{{ table_ui.cell_classes() }}"><p class="text-xs text-content-secondary">{{ item.updated_at|user_datetime }}</p></td>
+                        </tr>
+                    {% endif %}
+                {% else %}
+                    <tr><td colspan="6" class="p-0">
+                        {% set empty_state_icon = 'file-check-2' %}
+                        {% set empty_state_title = 'No Evidence Found' %}
+                        {% set empty_state_description = 'Adjust the evidence family or filters.' %}
+                        {% include 'components/states/_empty_state.html' %}
+                    </td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if operations_evidence_pagination.total_items > 0 %}
+        {{ registry_ui.footer(
+            'tenant.operations',
+            registry_id,
+            loading_id,
+            operations_evidence_pagination,
+            query_params,
+            operations_evidence_pagination.allowed_per_page,
+            resource_label='Evidence Records',
+            rows_aria_label='Evidence rows per page',
+            control_name='operations-evidence',
+            page_param='ops_evidence_page',
+            per_page_param='ops_evidence_per_page'
+        ) }}
+    {% endif %}
+</section>
