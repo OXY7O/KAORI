@@ -448,12 +448,19 @@ def tenants():
 @tenant_bp.get('/resource-profiles')
 @any_permission_required('tenant.view', 'tenant.manage')
 def resource_profiles():
+    active_view = str(request.args.get('view') or 'profiles').strip().lower()
+    if active_view not in {'profiles', 'capacity', 'workflow'}:
+        active_view = 'profiles'
+
     context = _tenant_workspace_context()
     context.update(get_live_tenant_connection_context())
     context.update(
         get_resource_profile_registry_context(
             page=request.args.get('page', 1, type=int) or 1,
             per_page=request.args.get('per_page', 5, type=int) or 5,
+            search=str(request.args.get('profile_search') or ''),
+            profile_class=str(request.args.get('profile_class') or ''),
+            state=str(request.args.get('profile_state') or ''),
         )
     )
     return render_template(
@@ -461,6 +468,7 @@ def resource_profiles():
         tenant_page='resource_profiles',
         tenant_page_title='Resource Profiles',
         tenant_page_icon='layers-3',
+        active_resource_profile_view=active_view,
         **context,
     )
 
@@ -1068,7 +1076,7 @@ def create_resource_profile_route():
                 'operation': 'create_resource_profile',
             },
         )
-    return redirect(url_for('tenant.resource_profiles'))
+    return redirect(url_for('tenant.resource_profiles', view='profiles'))
 
 
 @tenant_bp.post('/capacity-policy')
@@ -1113,7 +1121,7 @@ def update_capacity_policy_route():
                 'operation': 'update_capacity_policy',
             },
         )
-    return redirect(url_for('tenant.resource_profiles'))
+    return redirect(url_for('tenant.resource_profiles', view='capacity'))
 
 
 @tenant_bp.post('/namespace-allocation')

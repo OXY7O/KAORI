@@ -1,17 +1,69 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
-<section class="{{ table_ui.block_classes() }}" aria-labelledby="resource-profile-registry-heading">
-    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-        <div class="flex items-start gap-3">
-            <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
-                <i data-lucide="library-big" class="h-5 w-5"></i>
-            </span>
+{% import "components/table_registry.html" as registry_ui %}
+{% set registry_id = 'resource-profile-registry-card' %}
+{% set loading_id = 'resource-profile-registry-loading' %}
+{% set query_params = {
+    'view': 'profiles',
+    'profile_search': profile_registry_filters.search,
+    'profile_class': profile_registry_filters.profile_class,
+    'profile_state': profile_registry_filters.state
+} %}
+<section id="{{ registry_id }}" class="{{ table_ui.block_classes() }}" aria-labelledby="resource-profile-registry-heading">
+    {% set header_actions %}
+        {% if profile_registry_filters.search or profile_registry_filters.profile_class or profile_registry_filters.state %}
+            {{ registry_ui.clear_filters_link(
+                'tenant.resource_profiles',
+                registry_id,
+                loading_id,
+                profile_pagination.per_page,
+                table_ui.action_classes(),
+                query_params={'view': 'profiles'}
+            ) }}
+        {% endif %}
+    {% endset %}
+    {{ table_ui.inventory_block_header(
+        'library-big',
+        'Resource Profile Registry',
+        'Committed reusable contracts used by governed Namespace provisioning.',
+        loading_id,
+        'Refreshing Resource Profile Registry',
+        none,
+        none,
+        header_actions=header_actions
+    ) }}
+
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% call registry_ui.filter_form(
+            'tenant.resource_profiles',
+            registry_id,
+            loading_id,
+            profile_pagination.per_page
+        ) %}
+            <input type="hidden" name="view" value="profiles">
             <div>
-                <h2 id="resource-profile-registry-heading" class="{{ table_ui.block_title_classes() }}">Resource Profile Registry</h2>
-                <p class="{{ table_ui.block_description_classes() }}">Committed reusable contracts used by governed Namespace provisioning.</p>
+                <label for="resource-profile-class" class="{{ table_ui.filter_label_classes() }}">Class</label>
+                <select id="resource-profile-class" name="profile_class" class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Classes</option>
+                    {% for item in profile_class_filter_options %}
+                        <option value="{{ item }}" {% if profile_registry_filters.profile_class == item %}selected{% endif %}>{{ item|title }}</option>
+                    {% endfor %}
+                </select>
             </div>
-        </div>
-    </header>
+            <div>
+                <label for="resource-profile-state" class="{{ table_ui.filter_label_classes() }}">State</label>
+                <select id="resource-profile-state" name="profile_state" class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All States</option>
+                    <option value="enabled" {% if profile_registry_filters.state == 'enabled' %}selected{% endif %}>Enabled</option>
+                    <option value="disabled" {% if profile_registry_filters.state == 'disabled' %}selected{% endif %}>Disabled</option>
+                </select>
+            </div>
+            <div>
+                <label for="resource-profile-search" class="{{ table_ui.filter_label_classes() }}">Search Profiles</label>
+                {{ table_ui.search_field('profile_search', profile_registry_filters.search, 'Search profile name or description', id='resource-profile-search') }}
+            </div>
+        {% endcall %}
+    </div>
 
     <div class="overflow-x-auto">
         <table class="{{ table_ui.table_classes('min-w-[1040px]') }}">
@@ -41,16 +93,16 @@
                             </div>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
-                            <p class="text-sm font-semibold text-content-primary">{{ (profile.quota_hard_json.get('requests.cpu') or 'Unbounded') }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ (profile.quota_hard_json.get('requests.memory') or 'Unbounded') }} memory</p>
+                            <p class="text-sm font-semibold text-content-primary">{{ profile.quota_hard_json.get('requests.cpu') or 'Unbounded' }} CPU</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ profile.quota_hard_json.get('requests.memory') or 'Unbounded' }} memory</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
-                            <p class="text-xs font-semibold text-content-primary">{{ (profile.quota_hard_json.get('pods') or 'Unbounded') }} pods · {{ (profile.quota_hard_json.get('persistentvolumeclaims') or 'Unbounded') }} PVCs</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ (profile.quota_hard_json.get('requests.storage') or 'Unbounded') }} storage</p>
+                            <p class="text-xs font-semibold text-content-primary">{{ profile.quota_hard_json.get('pods') or 'Unbounded' }} pods · {{ profile.quota_hard_json.get('persistentvolumeclaims') or 'Unbounded' }} PVCs</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ profile.quota_hard_json.get('requests.storage') or 'Unbounded' }} storage</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
-                            <p class="text-xs font-semibold text-content-primary">{{ (default_requests.get('cpu') or '—') }} / {{ (default_requests.get('memory') or '—') }}</p>
-                            <p class="mt-1 text-xs text-content-muted">limits {{ (defaults.get('cpu') or '—') }} / {{ (defaults.get('memory') or '—') }}</p>
+                            <p class="text-xs font-semibold text-content-primary">{{ default_requests.get('cpu') or '—' }} / {{ default_requests.get('memory') or '—' }}</p>
+                            <p class="mt-1 text-xs text-content-muted">limits {{ defaults.get('cpu') or '—' }} / {{ defaults.get('memory') or '—' }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
                             {% if profile.profile_class == 'custom' and profile.base_preset_class %}
@@ -69,8 +121,8 @@
                     <tr>
                         <td colspan="6" class="p-0">
                             {% set empty_state_icon = 'layers-3' %}
-                            {% set empty_state_title = 'No Resource Profiles' %}
-                            {% set empty_state_description = 'Create the first reusable allocation contract before provisioning a Tenant namespace.' %}
+                            {% set empty_state_title = 'No Resource Profiles Found' %}
+                            {% set empty_state_description = 'Adjust filters or create a reusable allocation contract above.' %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
@@ -79,11 +131,17 @@
         </table>
     </div>
 
-    {% if profile_pagination.total > 0 %}
-        {% set pagination_state = profile_pagination %}
-        {% set pagination_resource = "resource profiles" %}
-        {% set pagination_endpoint = "tenant.resource_profiles" %}
-        {% set pagination_id = "tenant-profile-registry" %}
-        {% include "kubernetes/tenant/partials/_pagination_footer.html" %}
+    {% if profile_pagination.total_items > 0 %}
+        {{ registry_ui.footer(
+            'tenant.resource_profiles',
+            registry_id,
+            loading_id,
+            profile_pagination,
+            query_params,
+            profile_pagination.allowed_per_page,
+            resource_label='Resource Profiles',
+            rows_aria_label='Resource Profile rows per page',
+            control_name='resource-profile'
+        ) }}
     {% endif %}
 </section>

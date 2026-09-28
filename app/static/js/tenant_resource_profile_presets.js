@@ -37,13 +37,15 @@
         }
     }
 
-    const profileForm = document.querySelector('[data-tenant-resource-profile-form]')
-    if (profileForm) {
+    const initProfileForm = (form) => {
+        if (!(form instanceof HTMLFormElement) || form.dataset.kaoriInitialized === 'true') return
+        form.dataset.kaoriInitialized = 'true'
+
         const presets = readJson('tenant-resource-profile-presets')
-        const classSelect = profileForm.querySelector('[data-tenant-profile-class]')
-        const basePreset = profileForm.querySelector('[data-tenant-base-preset]')
-        const basePresetWrapper = profileForm.querySelector('[data-tenant-base-preset-wrapper]')
-        const fields = collectFields(profileForm, 'data-tenant-resource-field')
+        const classSelect = form.querySelector('[data-tenant-profile-class]')
+        const basePreset = form.querySelector('[data-tenant-base-preset]')
+        const basePresetWrapper = form.querySelector('[data-tenant-base-preset-wrapper]')
+        const fields = collectFields(form, 'data-tenant-resource-field')
 
         const applyProfileMode = () => {
             const profileClass = classSelect?.value || ''
@@ -75,19 +77,41 @@
         applyProfileMode()
     }
 
-    const allocationChangeForm = document.querySelector('[data-tenant-allocation-change-form]')
-    if (allocationChangeForm) {
+    const initCapacityPolicyForm = (form) => {
+        if (!(form instanceof HTMLFormElement) || form.dataset.kaoriInitialized === 'true') return
+        form.dataset.kaoriInitialized = 'true'
+
+        const policies = readJson('tenant-capacity-policy-state')
+        const cluster = form.querySelector('[data-capacity-policy-cluster]')
+        const fields = collectFields(form, 'data-capacity-policy-field')
+
+        const applyPolicy = () => {
+            const policy = policies[cluster?.value] || null
+            for (const [name, input] of Object.entries(fields)) {
+                const fallback = input.dataset.defaultValue ?? ''
+                input.value = policy?.[name] ?? fallback
+            }
+        }
+
+        cluster?.addEventListener('change', applyPolicy)
+        applyPolicy()
+    }
+
+    const initAllocationChangeForm = (form) => {
+        if (!(form instanceof HTMLFormElement) || form.dataset.kaoriInitialized === 'true') return
+        form.dataset.kaoriInitialized = 'true'
+
         const profiles = readJson('tenant-namespace-allocation-profiles')
         const namespaces = readJson('tenant-namespace-allocation-state')
-        const namespaceSelect = allocationChangeForm.querySelector('[data-tenant-allocation-change-namespace]')
-        const profileSelect = allocationChangeForm.querySelector('[data-tenant-allocation-change-profile]')
+        const namespaceSelect = form.querySelector('[data-tenant-allocation-change-namespace]')
+        const profileSelect = form.querySelector('[data-tenant-allocation-change-profile]')
 
-        const currentProfile = allocationChangeForm.querySelector('[data-tenant-allocation-current-profile]')
-        const currentCpu = allocationChangeForm.querySelector('[data-tenant-allocation-current-cpu]')
-        const currentMemory = allocationChangeForm.querySelector('[data-tenant-allocation-current-memory]')
-        const proposedProfile = allocationChangeForm.querySelector('[data-tenant-allocation-proposed-profile]')
-        const proposedCpu = allocationChangeForm.querySelector('[data-tenant-allocation-proposed-cpu]')
-        const proposedMemory = allocationChangeForm.querySelector('[data-tenant-allocation-proposed-memory]')
+        const currentProfile = form.querySelector('[data-tenant-allocation-current-profile]')
+        const currentCpu = form.querySelector('[data-tenant-allocation-current-cpu]')
+        const currentMemory = form.querySelector('[data-tenant-allocation-current-memory]')
+        const proposedProfile = form.querySelector('[data-tenant-allocation-proposed-profile]')
+        const proposedCpu = form.querySelector('[data-tenant-allocation-proposed-cpu]')
+        const proposedMemory = form.querySelector('[data-tenant-allocation-proposed-memory]')
 
         const requestValue = (valueSet, resource) => valueSet?.quota?.[`requests.${resource}`] || 'Unbounded'
 
@@ -103,7 +127,6 @@
             }
             if (currentCpu) currentCpu.textContent = current ? requestValue(current, 'cpu') : '—'
             if (currentMemory) currentMemory.textContent = current ? requestValue(current, 'memory') : '—'
-
             if (proposedProfile) proposedProfile.textContent = proposed ? proposedLabel : '—'
             if (proposedCpu) proposedCpu.textContent = proposed ? requestValue(proposed, 'cpu') : '—'
             if (proposedMemory) proposedMemory.textContent = proposed ? requestValue(proposed, 'memory') : '—'
@@ -114,18 +137,29 @@
         renderAllocationChange()
     }
 
-    const namespaceForm = document.querySelector('[data-tenant-namespace-allocation-form]')
-    if (namespaceForm) {
+    const initNamespaceForm = (form) => {
+        if (!(form instanceof HTMLFormElement) || form.dataset.kaoriInitialized === 'true') return
+        form.dataset.kaoriInitialized = 'true'
+
         const profiles = readJson('tenant-namespace-allocation-profiles')
-        const select = namespaceForm.querySelector('[data-tenant-namespace-profile]')
-        const fields = collectFields(namespaceForm, 'data-tenant-namespace-resource-field')
+        const select = form.querySelector('[data-tenant-namespace-profile]')
+        const fields = collectFields(form, 'data-tenant-namespace-resource-field')
         setReadonly(fields, true)
 
-        const applyNamespaceProfile = () => {
-            applyValues(fields, profiles[select?.value] || null)
-        }
-
+        const applyNamespaceProfile = () => applyValues(fields, profiles[select?.value] || null)
         select?.addEventListener('change', applyNamespaceProfile)
         applyNamespaceProfile()
     }
+
+    const init = (root = document) => {
+        const scope = root instanceof Element || root instanceof Document ? root : document
+        scope.querySelectorAll('[data-tenant-resource-profile-form]').forEach(initProfileForm)
+        scope.querySelectorAll('[data-tenant-capacity-policy-form]').forEach(initCapacityPolicyForm)
+        scope.querySelectorAll('[data-tenant-allocation-change-form]').forEach(initAllocationChangeForm)
+        scope.querySelectorAll('[data-tenant-namespace-allocation-form]').forEach(initNamespaceForm)
+    }
+
+    document.addEventListener('htmx:afterSwap', (event) => init(event.target))
+    window.addEventListener('pageshow', () => init())
+    init()
 })()

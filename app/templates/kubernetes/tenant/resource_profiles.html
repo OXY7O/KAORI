@@ -1,130 +1,65 @@
 {% extends "kubernetes/tenant/base.html" %}
-{% import "components/operational_flow_steps.html" as operational_flow_steps %}
+{% import "components/content_tabs.html" as content_tabs %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% import "components/operational_section_card.html" as operational_section_card %}
-{% import "components/section_intro.html" as section_intro %}
 {% block tenant_content %}
     {% set can_manage = current_user.has_permission('tenant.manage') %}
-    {% set profile_flow = [[
-        ('layers-3', 'Profile Contract', 'Choose a locked KAORI preset or define an explicit Custom contract.'),
-        ('shield-check', 'Capacity Guardrail', 'Evaluate request commitment against the governed cluster allocation budget.'),
-        ('boxes', 'Provision Namespace', 'Apply the selected profile as a frozen namespace allocation snapshot.'),
-        ('badge-check', 'Verify Evidence', 'Confirm Namespace, ResourceQuota, LimitRange, and committed provider evidence.')
-    ]] %}
+    {% set resource_profile_tabs = [
+        ('profiles', 'Profile Library', 'layers-3', url_for('tenant.resource_profiles', view='profiles'), profile_count),
+        ('capacity', 'Capacity Governance', 'gauge', url_for('tenant.resource_profiles', view='capacity'), ready_clusters|length),
+        ('workflow', 'Workflow Guide', 'route', url_for('tenant.resource_profiles', view='workflow'))
+    ] %}
 
-    <section class="space-y-4" aria-labelledby="resource-profile-workflow-heading">
-        {{ section_intro.render(
-            'Allocation Workflow',
-            'Prepare a reusable allocation contract and capacity guardrail before provisioning a Tenant namespace.',
-            'resource-profile-workflow-heading'
-        ) }}
-        {% call operational_section_card.render(
-            'Resource Profile Flow',
-            'Resource Profiles define reusable intent; namespace provisioning freezes the selected effective allocation.',
-            'workflow',
-            body_classes='p-5',
-            aria_label='Resource Profile allocation workflow'
-        ) %}
-            <div class="space-y-4">
-                {{ operational_flow_steps.render(profile_flow, aria_label='Resource Profile to Namespace flow') }}
-                <div class="grid gap-3 md:grid-cols-3">
-                    <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
-                        <div class="flex items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                  aria-hidden="true">
-                                <i data-lucide="lock-keyhole" class="h-4 w-4"></i>
-                            </span>
-                            <div>
-                                <p class="text-xs font-semibold text-content-primary">Preset Contract</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Small, Standard, and Large are KAORI-owned and locked in normal workflows.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
-                        <div class="flex items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                  aria-hidden="true">
-                                <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
-                            </span>
-                            <div>
-                                <p class="text-xs font-semibold text-content-primary">Custom Contract</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Custom may start from a preset, then diverge with retained base lineage.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
-                        <div class="flex items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                  aria-hidden="true">
-                                <i data-lucide="camera" class="h-4 w-4"></i>
-                            </span>
-                            <div>
-                                <p class="text-xs font-semibold text-content-primary">Frozen Allocation</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Existing namespaces retain their committed snapshot until an explicit governed allocation change.</p>
-                            </div>
-                        </div>
-                    </div>
+    <section id="resource-profile-workspace"
+             class="{{ operational_section_card.shell_classes() }}"
+             aria-labelledby="resource-profile-workspace-title">
+        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="panels-top-left" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 id="resource-profile-workspace-title"
+                        class="text-base font-semibold text-content-primary">Resource Profile Workspace</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">
+                        Manage reusable allocation contracts, capacity admission, and the path into Namespace provisioning.
+                    </p>
                 </div>
             </div>
-        {% endcall %}
-    </section>
+            {{ loading_bar.render('resource-profile-workspace-loading', label='Loading Resource Profile Workspace') }}
+        </header>
 
-    <section class="space-y-4" aria-labelledby="resource-profile-library-heading">
-        {{ section_intro.render(
-            'Profile Library',
-            'Create reusable allocation contracts, then review their effective quota, container defaults, and lineage.',
-            'resource-profile-library-heading'
+        {{ content_tabs.render_links(
+            'resource-profile',
+            resource_profile_tabs,
+            active_resource_profile_view,
+            'Resource Profile Workspace',
+            embedded=true,
+            data_namespace='resource-profile',
+            hx_target='#resource-profile-workspace',
+            hx_select='#resource-profile-workspace',
+            hx_swap='outerHTML show:none focus-scroll:false',
+            hx_push_url='true',
+            hx_indicator='#resource-profile-workspace-loading',
+            nowrap=true,
+            hx_sync='this:replace'
         ) }}
-        {% include "kubernetes/tenant/partials/_resource_profile_form.html" %}
-        {% include "kubernetes/tenant/partials/_resource_profile_registry.html" %}
-    </section>
 
-    <section class="space-y-4" aria-labelledby="resource-profile-capacity-heading">
-        {{ section_intro.render(
-            'Capacity Governance',
-            'Define cluster request-budget policy and verify headroom before positive namespace allocation.',
-            'resource-profile-capacity-heading'
-        ) }}
-        {% include "kubernetes/tenant/partials/_capacity_governance.html" %}
-    </section>
+        <div class="space-y-5 p-4 sm:p-5">
+            {% if active_resource_profile_view == 'capacity' %}
+                {% include "kubernetes/tenant/partials/_capacity_governance.html" %}
+            {% elif active_resource_profile_view == 'workflow' %}
+                {% include "kubernetes/tenant/partials/_resource_profile_workflow.html" %}
+            {% else %}
+                {% include "kubernetes/tenant/partials/_resource_profile_form.html" %}
+                {% include "kubernetes/tenant/partials/_resource_profile_registry.html" %}
+            {% endif %}
+        </div>
 
-    <section class="space-y-4" aria-labelledby="resource-profile-next-step-heading">
-        {{ section_intro.render(
-            'Ready for Namespace',
-            'Continue only after the allocation contract and required capacity evidence are understood.',
-            'resource-profile-next-step-heading'
-        ) }}
-        {% call operational_section_card.render(
-            'Namespace Provisioning Readiness',
-            'Namespace provisioning binds Tenant + Environment + Resource Profile and runs capacity admission before provider reconciliation.',
-            'boxes',
-            action_href=url_for('tenant.namespace_provisioning'),
-            action_label='Continue to Namespace',
-            action_icon='arrow-right',
-            body_classes='p-5',
-            aria_label='Namespace provisioning readiness'
-        ) %}
-            <div class="grid gap-3 md:grid-cols-3">
-                {% for icon, title, description in [
-                    ('building-2', 'Tenant Ready', 'Select a Ready Tenant environment on an admitted Native Kubernetes cluster.'),
-                    ('layers-3', 'Profile Selected', 'Use one enabled Resource Profile; built-in values remain locked and Custom values remain explicit.'),
-                    ('shield-check', 'Capacity Admitted', 'Positive request allocation requires fresh committed capacity evidence and an allowed preflight decision.')
-                ] %}
-                    <div class="flex gap-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                              aria-hidden="true">
-                            <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                        </span>
-                        <div>
-                            <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endcall %}
+        <script type="application/json" id="tenant-resource-profile-presets">{{ resource_profile_presets|tojson }}</script>
+        <script type="application/json" id="tenant-capacity-policy-state">{{ capacity_policy_state|tojson }}</script>
     </section>
-
-    <script type="application/json" id="tenant-resource-profile-presets">{{ resource_profile_presets|tojson }}</script>
 {% endblock tenant_content %}
 {% block tenant_scripts %}
     <script defer

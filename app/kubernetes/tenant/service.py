@@ -728,13 +728,53 @@ def get_tenant_registry_context(
     }
 
 
-def get_resource_profile_registry_context(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
-    items, pagination = _paged_context(
-        TenantResourceProfile.query.order_by(TenantResourceProfile.created_at.desc()),
+def get_resource_profile_registry_context(
+    *,
+    page: int = 1,
+    per_page: int = 5,
+    search: str = '',
+    profile_class: str = '',
+    state: str = '',
+) -> dict[str, Any]:
+    normalized_search = search.strip()
+    normalized_class = profile_class.strip().lower()
+    normalized_state = state.strip().lower()
+
+    query = TenantResourceProfile.query
+    if normalized_search:
+        pattern = f'%{normalized_search.lower()}%'
+        query = query.filter(
+            or_(
+                func.lower(TenantResourceProfile.name).like(pattern),
+                func.lower(func.coalesce(TenantResourceProfile.description, '')).like(pattern),
+            )
+        )
+    if normalized_class in _ALLOWED_PROFILE_CLASSES:
+        query = query.filter(TenantResourceProfile.profile_class == normalized_class)
+    else:
+        normalized_class = ''
+    if normalized_state == 'enabled':
+        query = query.filter(TenantResourceProfile.enabled.is_(True))
+    elif normalized_state == 'disabled':
+        query = query.filter(TenantResourceProfile.enabled.is_(False))
+    else:
+        normalized_state = ''
+
+    items, pagination = paginate_query(
+        query.order_by(TenantResourceProfile.created_at.desc(), TenantResourceProfile.name.asc()),
         page=page,
         per_page=per_page,
     )
-    return {'profiles': items, 'profile_pagination': pagination}
+    return {
+        'profiles': items,
+        'profile_pagination': pagination,
+        'profile_registry_filters': {
+            'search': normalized_search,
+            'profile_class': normalized_class,
+            'state': normalized_state,
+        },
+        'profile_class_filter_options': [item.value for item in TenantResourceProfileClass],
+    }
 
 
 def get_namespace_registry_context(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
@@ -809,6 +849,11 @@ def get_tenant_context() -> dict[str, Any]:
         'environment_options': environment_options,
         'ready_clusters': ready_clusters,
         'capacity_governance': capacity_governance,
+        'capacity_policy_state': {
+            str(item['cluster'].id): item['policy']
+            for item in capacity_governance
+            if item.get('policy') is not None
+        },
         'capacity_decisions': capacity_decisions,
         'tenant_count': Tenant.query.filter(
             Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value

@@ -130,8 +130,13 @@ def test_tenant_registry_pages_use_shared_default_five_pagination() -> None:
         ROOT / 'app/templates/kubernetes/tenant/partials/_resource_profile_registry.html'
     ).read_text(encoding='utf-8')
     assert '_resource_profile_registry.html' in resource_profiles
+    assert 'components/content_tabs.html' in resource_profiles
+    assert 'content_tabs.render_links' in resource_profiles
     assert 'profile_pagination' in resource_profile_registry
-    assert 'partials/_pagination_footer.html' in resource_profile_registry
+    assert 'components/table_registry.html' in resource_profile_registry
+    assert 'registry_ui.filter_form' in resource_profile_registry
+    assert 'registry_ui.footer' in resource_profile_registry
+    assert 'partials/_pagination_footer.html' not in resource_profile_registry
 
     namespace_template = (
         ROOT / 'app/templates/kubernetes/tenant/namespace_provisioning.html'
