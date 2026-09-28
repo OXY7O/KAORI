@@ -63,5 +63,6 @@
 {% block scripts %}
     {{ super() }}
     {% block tenant_scripts %}
+        <script src="{{ url_for('static', filename='js/destructive_confirmation_modal.js') }}"></script>
     {% endblock tenant_scripts %}
 {% endblock scripts %}
