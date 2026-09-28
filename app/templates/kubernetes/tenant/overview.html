@@ -47,7 +47,7 @@
             'tenant-attention-heading'
         ) }}
 
-        <div class="grid gap-5 xl:grid-cols-12 xl:items-start">
+        <div class="grid gap-5 xl:grid-cols-12 xl:items-stretch">
             <div class="xl:col-span-7">
                 {% call operational_section_card.render(
                     'Needs Attention',
@@ -56,7 +56,8 @@
                     action_href=url_for('intelligence.recommendations'),
                     action_label='Open Intelligence',
                     action_icon='arrow-right',
-                    body_classes='p-0',
+                    body_classes='flex-1 p-0',
+                    extra_classes='flex h-full flex-col',
                     aria_label='Tenant needs attention'
                 ) %}
                     <div class="divide-y divide-outline-subtle">
@@ -96,6 +97,9 @@
                             </div>
                         {% endfor %}
                     </div>
+                    <footer class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs text-content-muted">
+                        Showing {{ tenant_attention_rows|length }} prioritized condition{{ '' if tenant_attention_rows|length == 1 else 's' }}.
+                    </footer>
                 {% endcall %}
             </div>
 
@@ -107,7 +111,8 @@
                     action_href=url_for('tenant.operations', tab='activity'),
                     action_label='Open Activity',
                     action_icon='arrow-right',
-                    body_classes='p-0',
+                    body_classes='flex-1 p-0',
+                    extra_classes='flex h-full flex-col',
                     aria_label='Recent Tenant activity'
                 ) %}
                     {% if tenant_recent_activity_rows %}
