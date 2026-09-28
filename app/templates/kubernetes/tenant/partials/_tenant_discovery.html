@@ -38,7 +38,8 @@
                 'Blocked — adoption fails closed until eligibility is resolved.',
                 'Provider Missing — KAORI ownership exists but the provider object is absent.'
             ],
-            button_text='Status Guide'
+            button_text='Status Guide',
+            button_classes=table_ui.action_classes()
         ) }}
     {% endset %}
     {{ table_ui.inventory_block_header(
