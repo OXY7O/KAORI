@@ -137,7 +137,7 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
 
     assert 'id="access-grant-form"' in workspace
     assert 'xl:col-span-5' in workspace
-    assert 'grid h-full gap-5 xl:col-span-7 xl:grid-rows-2' in workspace
+    assert 'grid h-full gap-5 xl:col-span-7 xl:grid-rows-[auto_1fr]' in workspace
     assert 'Access Grant Flow' in workspace
     assert 'Access scope guide' in workspace
     assert 'Namespace Scope' in workspace
@@ -285,13 +285,13 @@ def test_access_grant_uses_tenant_setup_two_card_composition() -> None:
 
     assert 'xl:grid-cols-12' in workspace
     assert 'xl:col-span-5' in workspace
-    assert 'grid h-full gap-5 xl:col-span-7 xl:grid-rows-2' in workspace
+    assert 'grid h-full gap-5 xl:col-span-7 xl:grid-rows-[auto_1fr]' in workspace
     assert 'Access Grant Flow' in workspace
     assert 'Access Boundaries' in workspace
     assert 'Tenant uses no target. Environment or Namespace requires exactly one matching target.' in workspace
     assert 'Provider Authority' in workspace
     assert 'Secret Boundary' in workspace
-    assert 'KAORI validates Tenant ownership and scope before committing the Access Grant intent.' in workspace
+    assert 'Tenant and scope are validated before commit.' in workspace
 
 
 
