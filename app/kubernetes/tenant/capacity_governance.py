@@ -424,6 +424,7 @@ def _committed_evidence_reason(
         )
     return None
 
+
 def _budget(policy: TenantCapacityPolicy, capacity: CapacityVector) -> TenantAllocationBudget:
     return build_tenant_allocation_budget(
         allocatable=capacity,
