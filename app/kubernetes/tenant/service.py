@@ -922,18 +922,77 @@ def get_resource_profile_registry_context(
     }
 
 
-def get_namespace_registry_context(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
-    namespace_query = TenantNamespace.query.order_by(TenantNamespace.created_at.desc())
-    items, pagination = _paged_context(namespace_query, page=page, per_page=per_page)
-    namespace_options = namespace_query.all()
+def get_namespace_registry_context(
+    *,
+    page: int = 1,
+    per_page: int = 5,
+    search: str = '',
+    tenant_id: str = '',
+    environment: str = '',
+    status: str = '',
+) -> dict[str, Any]:
+    normalized_search = search.strip()
+    normalized_tenant_id = tenant_id.strip()
+    normalized_environment = environment.strip().lower()
+    normalized_status = status.strip().lower()
+    allowed_statuses = {item.value for item in TenantNamespaceProvisioningStatus}
+
+    query = (
+        TenantNamespace.query.join(
+            TenantEnvironment,
+            TenantNamespace.tenant_environment_id == TenantEnvironment.id,
+        )
+        .join(Tenant, TenantEnvironment.tenant_id == Tenant.id)
+    )
+    if normalized_search:
+        pattern = f'%{normalized_search.lower()}%'
+        query = query.filter(
+            or_(
+                func.lower(TenantNamespace.namespace).like(pattern),
+                func.lower(Tenant.name).like(pattern),
+                func.lower(Tenant.slug).like(pattern),
+            )
+        )
+    if normalized_tenant_id:
+        query = query.filter(Tenant.id == normalized_tenant_id)
+    if normalized_environment in _ALLOWED_ENVIRONMENTS:
+        query = query.filter(TenantEnvironment.environment == normalized_environment)
+    else:
+        normalized_environment = ''
+    if normalized_status in allowed_statuses:
+        query = query.filter(TenantNamespace.provisioning_status == normalized_status)
+    else:
+        normalized_status = ''
+
+    items, pagination = paginate_query(
+        query.order_by(TenantNamespace.created_at.desc(), TenantNamespace.id.desc()),
+        page=page,
+        per_page=per_page,
+    )
+
+    namespace_options = TenantNamespace.query.order_by(TenantNamespace.created_at.desc()).all()
     profile_options = (
         TenantResourceProfile.query.filter_by(enabled=True).order_by(TenantResourceProfile.name.asc()).all()
+    )
+    tenant_options = (
+        Tenant.query.filter(Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value)
+        .order_by(Tenant.name.asc())
+        .all()
     )
     return {
         'namespaces': items,
         'namespace_options': namespace_options,
         'profiles': profile_options,
         'namespace_pagination': pagination,
+        'namespace_registry_filters': {
+            'search': normalized_search,
+            'tenant_id': normalized_tenant_id,
+            'environment': normalized_environment,
+            'status': normalized_status,
+        },
+        'namespace_registry_tenant_options': tenant_options,
+        'namespace_status_filter_options': [item.value for item in TenantNamespaceProvisioningStatus],
+        'namespace_environment_filter_options': sorted(_ALLOWED_ENVIRONMENTS),
         'namespace_allocation_state': {
             str(record.id): {
                 'namespace': record.namespace,
@@ -967,7 +1026,6 @@ def get_namespace_registry_context(*, page: int = 1, per_page: int = 5) -> dict[
             for profile in profile_options
         },
     }
-
 
 def get_tenant_context() -> dict[str, Any]:
     tenants = Tenant.query.order_by(Tenant.created_at.desc()).limit(5).all()
