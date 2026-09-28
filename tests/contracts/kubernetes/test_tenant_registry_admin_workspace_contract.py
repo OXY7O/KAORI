@@ -132,7 +132,7 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
 
     assert 'id="access-grant-form"' in workspace
     assert 'xl:col-span-5' in workspace
-    assert 'space-y-5 xl:col-span-7' in workspace
+    assert 'grid h-full gap-5 xl:col-span-7 xl:grid-rows-2' in workspace
     assert 'Access Grant Flow' in workspace
     assert 'Access Boundaries' in workspace
     assert 'components/info_tip.html' in workspace
@@ -269,7 +269,7 @@ def test_access_grant_uses_tenant_setup_two_card_composition() -> None:
     assert 'Tenant uses no target. Environment or Namespace requires exactly one matching target.' in workspace
     assert 'Provider Authority' in workspace
     assert 'Secret Boundary' in workspace
-    assert 'Governed reconciliation.' in workspace
+    assert 'KAORI validates Tenant ownership and scope before committing the Access Grant intent.' in workspace
 
 
 
@@ -316,15 +316,17 @@ def test_cluster_estate_uses_compact_fixed_row_geometry() -> None:
     estate = read('app/templates/kubernetes/tenant/partials/_cluster_estate.html')
 
     assert "table_ui.table_classes('min-w-[940px] table-fixed')" in estate
-    for width in ('w-[31%]', 'w-[11%]', 'w-[13%]', 'w-[17%]', 'w-[18%]', 'w-[10%]'):
+    for width in ('w-[29%]', 'w-[11%]', 'w-[13%]', 'w-[16%]', 'w-[17%]', 'w-[14%]'):
         assert width in estate
     assert estate.count('align-middle') >= 6
+    assert '>Actions</th>' in estate
     assert 'header_cell_classes(action=true)' in estate
     assert 'Open Capacity' in estate
-    assert 'ml-auto inline-flex' in estate
+    assert 'table_ui.action_classes()' in estate
+    assert 'whitespace-nowrap' in estate
+    assert 'chart-no-axes-combined' in estate
     assert 'Governed Tenants' in estate
     assert 'Managed Namespaces' in estate
-    assert 'ml-auto' not in estate
 
 
 def test_tenant_access_grant_links_namespace_creation_and_keeps_guidance_neutral() -> None:
@@ -481,10 +483,11 @@ def test_destructive_modal_supports_structured_impact_summary() -> None:
 
 
 
-def test_live_tenant_collection_snapshot_is_provider_probe_only() -> None:
+def test_live_tenant_collection_snapshot_is_shared_below_hero_and_provider_probe_only() -> None:
     routes = read('app/kubernetes/tenant/routes.py')
     service = read('app/kubernetes/tenant/live_connection.py')
     partial = read('app/templates/kubernetes/tenant/partials/_live_connection_snapshot.html')
+    base = read('app/templates/kubernetes/tenant/base.html')
     admin = read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
     namespace_page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
     overview = read('app/templates/kubernetes/tenant/overview.html')
@@ -493,43 +496,77 @@ def test_live_tenant_collection_snapshot_is_provider_probe_only() -> None:
     assert "version_api().get_code(_request_timeout=3)" in service
     assert "title='Tenant Collection Snapshot'" in partial
     assert "source_label=tenant_live_connection.source_label" in partial
-    assert "No inventory synchronization is performed here" in partial
-    assert '_live_connection_snapshot.html' in admin
-    assert '_live_connection_snapshot.html' in namespace_page
+    assert 'No worker schedule or inventory synchronization' in partial
+    assert 'page request or operation response' in partial
+    assert 'tenant-live-connection-snapshot' in partial
+    assert 'hx-swap-oob="true"' in partial
+
+    assert "tenant_page != 'overview'" in base
+    assert '_live_connection_snapshot.html' in base
+    assert '_live_connection_snapshot.html' not in admin
+    assert '_live_connection_snapshot.html' not in namespace_page
     assert '_live_connection_snapshot.html' not in overview
     assert '_sync_workspace.html' in overview
 
+    assert "context.update(get_live_tenant_connection_context())" in routes
+    assert "tenant_live_connection_oob=True" in routes
 
 
-def test_tenant_discovery_is_live_read_only_and_provider_classified() -> None:
+
+def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_preflight() -> None:
     routes = read('app/kubernetes/tenant/routes.py')
     admin = read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
     service = read('app/kubernetes/tenant/discovery_service.py')
     template = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    modal_js = read('app/static/js/tenant_adoption_modal.js')
 
     assert "'discovery'" in routes
     assert 'get_tenant_discovery_context' in routes
+    assert 'adopt_discovered_tenant_committed' in routes
     assert "('discovery', 'Discovery', 'radar'" in admin
     assert '_tenant_discovery.html' in admin
 
     assert 'list_namespace(_request_timeout=5)' in service
     assert "list_cluster_custom_object(" in service
+    assert "get_cluster_custom_object(" in service
     assert "'capsule.clastix.io'" in service
     assert "'native_kubernetes'" in service
     assert "'Discovered'" in service
     assert "'Managed'" in service
     assert "'Blocked'" in service
-    assert 'create_' not in service
-    assert 'patch_' not in service
-    assert 'delete_' not in service
+
+    # Discovery/adoption may create KAORI database records, but it must never
+    # create, patch, or delete provider objects.
+    for provider_mutation in (
+        'create_namespace(',
+        'patch_namespace(',
+        'delete_namespace(',
+        'create_cluster_custom_object(',
+        'patch_cluster_custom_object(',
+        'delete_cluster_custom_object(',
+    ):
+        assert provider_mutation not in service
+    assert "'provider_mutation_performed': False" in service
+    assert 'TenantOwnershipStatus.ADOPTED.value' in service
 
     assert 'Tenant Discovery' in template
     assert 'Live Status' in template
     assert 'KAORI Classification' in template
     assert 'Governed Tenant' in template
-    assert 'discovery itself is read-only' in template
+    assert 'Adoption Preflight' in template
+    assert 'Provider &amp; Live Context' in template
+    assert 'Proposed KAORI Mapping' in template
+    assert 'Governance Checks' in template
+    assert 'Human confirmation.' in template
+    assert 'Adopt into KAORI' in template
+    assert 'data-tenant-adoption-open' in template
+    assert 'data-tenant-adoption-modal' in template
     assert "page_param='discovery_page'" in template
     assert "per_page_param='discovery_per_page'" in template
+
+    assert 'data-tenant-adoption-open' in modal_js
+    assert 'data-tenant-adoption-close' in modal_js
+    assert 'htmx:afterRequest' in modal_js
 
 
 
