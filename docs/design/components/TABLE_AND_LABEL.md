@@ -133,6 +133,8 @@ A compact icon + border treatment is an explicit exception for a special posture
 
 Labels remain brief, such as `Ready`, `Degraded`, `Pending`, `Not Observed`, or `Disabled`. Longer evidence belongs outside the label.
 
+For registries with a shared status vocabulary, keep each row to the semantic label and explain the vocabulary once with the existing `info_tip` in the **block header action area**. Do not repeat generic `Details`/info controls beside every status label. This keeps status columns scannable and keeps tooltip content outside the table scroll container. A row-level detail action is reserved for genuinely row-specific operational evidence that cannot be represented by the shared status glossary.
+
 ## 10. Table actions
 
 Table actions are compact navigation or utility controls, not page-level mutation buttons.
