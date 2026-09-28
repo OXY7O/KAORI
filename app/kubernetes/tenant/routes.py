@@ -58,6 +58,7 @@ from app.kubernetes.tenant.job_adapter import (
     dispatch_tenant_decommission,
     get_visible_tenant_sync_job,
 )
+from app.kubernetes.tenant.live_connection import get_live_tenant_connection_context
 from app.kubernetes.tenant.overview import dispatch_tenant_inventory_sync
 from app.kubernetes.tenant.service import (
     TenantStateConflictError,
@@ -339,14 +340,17 @@ def inventory_sync_status(public_id: str):
 
 def _tenant_active_section_context(section: str) -> dict[str, Any]:
     if section == 'registry':
-        return get_tenant_registry_context(
-            page=request.args.get('page', 1, type=int) or 1,
-            per_page=request.args.get('per_page', 5, type=int) or 5,
-            search=str(request.args.get('search') or ''),
-            cluster_id=str(request.args.get('cluster_id') or ''),
-            environment=str(request.args.get('environment') or ''),
-            lifecycle_status=str(request.args.get('lifecycle_status') or ''),
-        )
+        return {
+            **get_live_tenant_connection_context(),
+            **get_tenant_registry_context(
+                page=request.args.get('page', 1, type=int) or 1,
+                per_page=request.args.get('per_page', 5, type=int) or 5,
+                search=str(request.args.get('search') or ''),
+                cluster_id=str(request.args.get('cluster_id') or ''),
+                environment=str(request.args.get('environment') or ''),
+                lifecycle_status=str(request.args.get('lifecycle_status') or ''),
+            ),
+        }
     if section == 'memberships':
         return {
             **get_membership_registry_context(
@@ -366,24 +370,30 @@ def _tenant_active_section_context(section: str) -> dict[str, Any]:
             ),
         }
     if section == 'access-grants':
-        return get_access_grant_registry_context(
-            page=request.args.get('grant_page', 1, type=int) or 1,
-            per_page=request.args.get('grant_per_page', 5, type=int) or 5,
-            tenant_id=str(request.args.get('grant_tenant_id') or ''),
-            status=str(request.args.get('grant_status') or ''),
-            reconciliation_status=str(request.args.get('grant_reconciliation_status') or ''),
-            scope_type=str(request.args.get('grant_scope_type') or ''),
-            search=str(request.args.get('grant_search') or ''),
-        )
+        return {
+            **get_live_tenant_connection_context(),
+            **get_access_grant_registry_context(
+                page=request.args.get('grant_page', 1, type=int) or 1,
+                per_page=request.args.get('grant_per_page', 5, type=int) or 5,
+                tenant_id=str(request.args.get('grant_tenant_id') or ''),
+                status=str(request.args.get('grant_status') or ''),
+                reconciliation_status=str(request.args.get('grant_reconciliation_status') or ''),
+                scope_type=str(request.args.get('grant_scope_type') or ''),
+                search=str(request.args.get('grant_search') or ''),
+            ),
+        }
     if section == 'credentials':
-        return get_credential_registry_context(
-            page=request.args.get('credential_page', 1, type=int) or 1,
-            per_page=request.args.get('credential_per_page', 5, type=int) or 5,
-            tenant_id=str(request.args.get('credential_tenant_id') or ''),
-            credential_type=str(request.args.get('credential_type') or ''),
-            status=str(request.args.get('credential_status') or ''),
-            search=str(request.args.get('credential_search') or ''),
-        )
+        return {
+            **get_live_tenant_connection_context(),
+            **get_credential_registry_context(
+                page=request.args.get('credential_page', 1, type=int) or 1,
+                per_page=request.args.get('credential_per_page', 5, type=int) or 5,
+                tenant_id=str(request.args.get('credential_tenant_id') or ''),
+                credential_type=str(request.args.get('credential_type') or ''),
+                status=str(request.args.get('credential_status') or ''),
+                search=str(request.args.get('credential_search') or ''),
+            ),
+        }
     if section == 'namespace-access':
         return get_namespace_access_registry_context(
             page=request.args.get('namespace_access_page', 1, type=int) or 1,
@@ -436,6 +446,7 @@ def resource_profiles():
 @any_permission_required('tenant.view', 'tenant.manage')
 def namespace_provisioning():
     context = _tenant_workspace_context()
+    context.update(get_live_tenant_connection_context())
     context.update(
         get_namespace_registry_context(
             page=request.args.get('page', 1, type=int) or 1,

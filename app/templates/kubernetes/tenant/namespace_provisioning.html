@@ -2,6 +2,11 @@
 {% import "components/table_label.html" as table_label %}
 {% block tenant_content %}
     {% set can_manage = current_user.has_permission('tenant.manage') %}
+    {% if tenant_live_connection is defined %}
+        <div class="mb-5">
+            {% include "kubernetes/tenant/partials/_live_connection_snapshot.html" %}
+        </div>
+    {% endif %}
     <section class="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]"
              aria-label="Namespace provisioning">
         {% include "kubernetes/tenant/partials/_namespace_form.html" %}

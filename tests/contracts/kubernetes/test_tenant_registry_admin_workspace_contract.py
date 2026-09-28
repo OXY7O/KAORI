@@ -261,9 +261,10 @@ def test_access_grant_uses_tenant_setup_two_card_composition() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
 
     assert 'xl:grid-cols-12' in workspace
-    assert 'xl:col-span-7' in workspace
     assert 'xl:col-span-5' in workspace
-    assert 'Access Grant Guidance' in workspace
+    assert 'space-y-5 xl:col-span-7' in workspace
+    assert 'Access Grant Flow' in workspace
+    assert 'Access Boundaries' in workspace
     assert 'Tenant uses no target. Environment or Namespace requires exactly one matching target.' in workspace
     assert 'Provider Authority' in workspace
     assert 'Secret Boundary' in workspace
@@ -313,10 +314,13 @@ def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None
 def test_cluster_estate_uses_compact_fixed_row_geometry() -> None:
     estate = read('app/templates/kubernetes/tenant/partials/_cluster_estate.html')
 
-    assert "table_ui.table_classes('min-w-[860px] table-fixed')" in estate
-    for width in ('w-[34%]', 'w-[12%]', 'w-[14%]', 'w-[18%]', 'w-[22%]'):
+    assert "table_ui.table_classes('min-w-[940px] table-fixed')" in estate
+    for width in ('w-[31%]', 'w-[11%]', 'w-[13%]', 'w-[17%]', 'w-[18%]', 'w-[10%]'):
         assert width in estate
-    assert estate.count('align-middle') >= 5
+    assert estate.count('align-middle') >= 6
+    assert 'header_cell_classes(action=true)' in estate
+    assert 'Open Capacity' in estate
+    assert 'ml-auto inline-flex' in estate
     assert 'Governed Tenants' in estate
     assert 'Managed Namespaces' in estate
     assert 'ml-auto' not in estate
@@ -328,7 +332,7 @@ def test_tenant_access_grant_links_namespace_creation_and_keeps_guidance_neutral
     assert "Create Namespace" in workspace
     assert "url_for('tenant.namespace_provisioning')" in workspace
     assert "Tenant uses no target. Environment or Namespace requires exactly one matching target." in workspace
-    assert "Access Grant Guidance" in workspace
+    assert "Access Boundaries" in workspace
     assert "bg-status-info-soft" not in workspace
 
 
@@ -473,3 +477,23 @@ def test_destructive_modal_supports_structured_impact_summary() -> None:
     assert 'data-destructive-modal-title' in component
     assert 'data-destructive-detail' in component
     assert 'data-destructive-action-label' in component
+
+
+
+def test_live_tenant_collection_snapshot_is_provider_probe_only() -> None:
+    routes = read('app/kubernetes/tenant/routes.py')
+    service = read('app/kubernetes/tenant/live_connection.py')
+    partial = read('app/templates/kubernetes/tenant/partials/_live_connection_snapshot.html')
+    admin = read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
+    namespace_page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
+    overview = read('app/templates/kubernetes/tenant/overview.html')
+
+    assert 'get_live_tenant_connection_context' in routes
+    assert "version_api().get_code(_request_timeout=3)" in service
+    assert "title='Tenant Collection Snapshot'" in partial
+    assert "source_label=tenant_live_connection.source_label" in partial
+    assert "No inventory synchronization is performed here" in partial
+    assert '_live_connection_snapshot.html' in admin
+    assert '_live_connection_snapshot.html' in namespace_page
+    assert '_live_connection_snapshot.html' not in overview
+    assert '_sync_workspace.html' in overview
