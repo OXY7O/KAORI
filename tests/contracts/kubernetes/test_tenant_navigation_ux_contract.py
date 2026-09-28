@@ -102,7 +102,6 @@ def test_tenant_primary_navigation_preserves_provider_neutral_boundary() -> None
 
 def test_tenant_registry_pages_use_shared_default_five_pagination() -> None:
     service = (ROOT / 'app/kubernetes/tenant/service.py').read_text(encoding='utf-8')
-    footer = (ROOT / 'app/templates/kubernetes/tenant/partials/_pagination_footer.html').read_text(encoding='utf-8')
     tenant_registry = (ROOT / 'app/templates/kubernetes/tenant/partials/_tenant_registry.html').read_text(
         encoding='utf-8'
     )
@@ -114,10 +113,6 @@ def test_tenant_registry_pages_use_shared_default_five_pagination() -> None:
         'get_namespace_registry_context',
     ):
         assert f'def {helper}(' in service
-
-    assert 'components/pagination.html' in footer
-    assert 'pagination_ui.numeric_pages' in footer
-    assert 'pagination_ui.page_size_classes' in footer
 
     assert 'tenant_pagination' in tenant_registry
     assert 'components/table_registry.html' in tenant_registry
@@ -138,12 +133,22 @@ def test_tenant_registry_pages_use_shared_default_five_pagination() -> None:
     assert 'registry_ui.footer' in resource_profile_registry
     assert 'partials/_pagination_footer.html' not in resource_profile_registry
 
-    namespace_template = (
+    namespace_page = (
         ROOT / 'app/templates/kubernetes/tenant/namespace_provisioning.html'
     ).read_text(encoding='utf-8')
-    assert 'namespace_pagination' in namespace_template
-    assert 'partials/_pagination_footer.html' in namespace_template
-
+    namespace_registry = (
+        ROOT / 'app/templates/kubernetes/tenant/partials/_namespace_registry.html'
+    ).read_text(encoding='utf-8')
+    assert '_namespace_registry.html' in namespace_page
+    assert 'namespace_pagination' in namespace_registry
+    assert 'components/table_registry.html' in namespace_registry
+    assert 'registry_ui.filter_form' in namespace_registry
+    assert 'registry_ui.footer' in namespace_registry
+    assert 'namespace_search' in namespace_registry
+    assert 'namespace_tenant_id' in namespace_registry
+    assert 'namespace_environment' in namespace_registry
+    assert 'namespace_status' in namespace_registry
+    assert '_pagination_footer.html' not in namespace_page
 
 def test_namespace_allocation_selector_is_not_limited_by_visible_page() -> None:
     service = (ROOT / 'app/kubernetes/tenant/service.py').read_text(encoding='utf-8')
