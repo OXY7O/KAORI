@@ -89,10 +89,13 @@ Tenant identity is immutable after creation in the normal operator workflow.
 - **Create** — create the Tenant ownership boundary and initial environment.
 - **Read** — Tenant Registry is the committed-state source for operator reads.
 - **Update** — no inline Tenant identity update is exposed. Name/slug identity, cluster placement, provider authority, and reconciliation authority are intentionally locked.
-- **Lifecycle removal** — provider-aware teardown is tracked by #735. The admitted flow must revoke access/credentials, deprovision managed namespaces, verify Native/Capsule cleanup, preserve historical evidence, and only then commit final decommission state.
+- **Lifecycle removal** — #735 owns governed teardown. The current review candidate exposes an asynchronous **Decommission** action from Tenant Registry and executes the Native sequence: freeze new Tenant mutations → revoke credentials → revoke Access Grants → retire memberships/groups → remove admitted managed resources → deprovision KAORI-managed namespaces → retire reservation/exposure state → verify Native provider absence → commit `decommissioned`.
+- **Provider verification** — a successful Kubernetes `DELETE` request is not completion. KAORI observes the Namespace until Kubernetes returns absence; `Terminating`, timeout, and remaining finalizers are committed as blockers and leave the Tenant frozen for explicit retry. KAORI never strips Namespace finalizers automatically in this path.
+- **Capsule authority** — a Capsule-authoritative Tenant fails closed unless an admitted Capsule teardown adapter owns the deletion. The current candidate deliberately does **not** bypass Capsule with direct Native deletion; Capsule E2E teardown remains an acceptance dependency for #735 when Capsule authority is qualified.
+- **Historical identity** — decommission retains the historical Tenant row, evidence, memberships, grants, credentials, and correlation lineage. Re-creating the same cluster+slug creates the next Tenant generation rather than overwriting history.
 - **Structural change** — when immutable identity or placement must change, use governed teardown + recreation rather than mutating the Tenant in place.
 
-#734 must not present a database-only lifecycle flag change as successful provider decommission.
+#734 still prohibits a database-only lifecycle flag change from being presented as provider decommission; the final lifecycle transition now occurs only after the #735 provider verification path succeeds.
 
 Tenant workspace mutations that are progressively enhanced with HTMX render operational feedback as an out-of-band KAORI toast in the same response. Success and failure feedback therefore appears immediately without requiring a full-page reload; persisted Notification Deck evidence remains synchronized through the standard toast notification-refresh contract.
 
@@ -138,7 +141,8 @@ Native-provider acceptance is mandatory. Final UAT must exercise, as applicable:
 8. Managed-resource, policy, provider-state, Activity, and Kubernetes audit evidence inspection.
 9. Tenant Governance findings and capacity admission evidence.
 10. Representative Tenant Governance PDF/XLSX/CSV generation and human artifact review.
-11. Light/dark, responsive, loading/empty/error/degraded, keyboard/focus, and normal KAORI not-found behavior for unsupported Tenant URLs.
+11. Native Tenant decommission end-to-end: freeze mutations, revoke credentials/grants/memberships, remove managed state, observe each namespace absent (including a controlled Terminating/finalizer blocker case), verify final provider cleanup, and recreate the same cluster+slug as a new generation while historical evidence remains queryable.
+12. Light/dark, responsive, loading/empty/error/degraded, keyboard/focus, and normal KAORI not-found behavior for unsupported Tenant URLs.
 
 Capsule UAT is capability-conditional and must record the exact compatible Capsule evidence when available. Fixture-only Capsule state is not acceptance evidence.
 

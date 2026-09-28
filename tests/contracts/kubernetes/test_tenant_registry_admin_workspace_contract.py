@@ -405,8 +405,9 @@ def test_governed_tenant_decommission_is_async_provider_verified_and_fail_closed
         "stage = 'credentials'",
         "stage = 'access_grants'",
         "stage = 'memberships'",
-        "stage = 'policy_cleanup'",
+        "stage = 'managed_resources'",
         "stage = 'namespaces'",
+        "stage = 'policy_cleanup'",
         "stage = 'provider_verification'",
         "stage = 'finalize'",
     ]
@@ -420,10 +421,17 @@ def test_governed_tenant_decommission_is_async_provider_verified_and_fail_closed
     assert 'api.delete_namespace(name=record.namespace)' in provisioning
     assert '_namespace_delete_observation' in provisioning
     assert 'Finalizers:' in provisioning
-    assert 'force' not in provisioning[provisioning.index('def deprovision_native_namespace('):provisioning.index('def deprovision_native_namespace_committed(')]
+    teardown = provisioning[
+        provisioning.index('def deprovision_native_namespace('):
+        provisioning.index('def deprovision_native_namespace_committed(')
+    ]
+    assert "api.delete_namespace(name=record.namespace)" in teardown
+    assert "finalizers = []" not in teardown
+    assert "patch_namespace" not in teardown
 
     assert "name='app.kubernetes.tenant.tasks.decommission_tenant'" in tasks
     assert 'dispatch_tenant_decommission' in adapter
+    assert "require_registered_worker=True" in adapter
     assert "workload_class=WORKLOAD_RUNTIME" in adapter
     assert "INTEGRATION_RUNTIME_CELERY_QUEUE" in adapter
     assert "'app.kubernetes.tenant.tasks.decommission_tenant'" in config

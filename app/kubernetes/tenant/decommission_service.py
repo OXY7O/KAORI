@@ -396,8 +396,11 @@ def execute_tenant_decommission(
 
         stage = 'namespaces'
         namespaces = (
-            TenantNamespace.query.join(TenantNamespace.environment)
-            .filter(TenantNamespace.environment.has(tenant_id=tenant.id))
+            TenantNamespace.query.join(
+                TenantEnvironment,
+                TenantNamespace.tenant_environment_id == TenantEnvironment.id,
+            )
+            .filter(TenantEnvironment.tenant_id == tenant.id)
             .order_by(TenantNamespace.id.asc())
             .all()
         )
