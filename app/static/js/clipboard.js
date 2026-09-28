@@ -58,6 +58,29 @@
     }
 
     document.addEventListener('click', async (event) => {
+        const downloadButton = event.target.closest('[data-kaori-download-button]')
+        if (downloadButton) {
+            const root = downloadButton.closest('[data-kaori-copy-root]')
+            const source = root?.querySelector('[data-kaori-copy-source]')
+            const text = source?.textContent ?? ''
+            const filename = downloadButton.dataset.downloadName || 'kaori-material.txt'
+            if (!text) {
+                return
+            }
+
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+            const url = URL.createObjectURL(blob)
+            const anchor = document.createElement('a')
+            anchor.href = url
+            anchor.download = filename
+            anchor.rel = 'noopener'
+            document.body.appendChild(anchor)
+            anchor.click()
+            anchor.remove()
+            window.setTimeout(() => URL.revokeObjectURL(url), 0)
+            return
+        }
+
         const button = event.target.closest('[data-kaori-copy-button]')
         if (!button) {
             return
