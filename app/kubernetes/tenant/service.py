@@ -411,13 +411,10 @@ def update_resource_profile(profile_id: int, source: Mapping[str, Any]) -> tuple
     name = _text(source, 'profile_name')
     if not name or len(name) > 120:
         raise ValueError('Resource Profile name is required and must be at most 120 characters.')
-    duplicate = (
-        TenantResourceProfile.query.filter(
-            func.lower(TenantResourceProfile.name) == name.lower(),
-            TenantResourceProfile.id != profile.id,
-        )
-        .first()
-    )
+    duplicate = TenantResourceProfile.query.filter(
+        func.lower(TenantResourceProfile.name) == name.lower(),
+        TenantResourceProfile.id != profile.id,
+    ).first()
     if duplicate is not None:
         raise ValueError('A Resource Profile with this name already exists.')
 
@@ -469,8 +466,8 @@ def delete_resource_profile(profile_id: int) -> dict[str, Any]:
     if dependencies['total']:
         raise ValueError(
             'Delete blocked: release all Resource Profile dependencies first. '
-            f"{dependencies['namespaces']} Namespace reference(s) and "
-            f"{dependencies['capacity_decisions']} Capacity Decision reference(s) remain."
+            f'{dependencies["namespaces"]} Namespace reference(s) and '
+            f'{dependencies["capacity_decisions"]} Capacity Decision reference(s) remain.'
         )
 
     snapshot = {
@@ -529,10 +526,13 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
         for item in prior_namespace_generations
     ):
         raise ValueError('This namespace is already active in Tenant Management on the selected cluster.')
-    namespace_generation = max(
-        (int(item.generation or 1) for item in prior_namespace_generations),
-        default=0,
-    ) + 1
+    namespace_generation = (
+        max(
+            (int(item.generation or 1) for item in prior_namespace_generations),
+            default=0,
+        )
+        + 1
+    )
 
     quota, limits, customized = _namespace_allocation_values(profile)
     capacity_decision = enforce_namespace_allocation_preflight(
@@ -785,9 +785,7 @@ def get_tenant_registry_context(
             .group_by(TenantEnvironment.tenant_id)
             .all()
         )
-        namespace_history_count_map.update(
-            {str(tenant_id): int(count) for tenant_id, count in namespace_history_rows}
-        )
+        namespace_history_count_map.update({str(tenant_id): int(count) for tenant_id, count in namespace_history_rows})
 
         namespace_rows = (
             db.session.query(TenantEnvironment.tenant_id, func.count(TenantNamespace.id))
@@ -802,10 +800,11 @@ def get_tenant_registry_context(
         namespace_count_map.update({str(tenant_id): int(count) for tenant_id, count in namespace_rows})
 
     cluster_ids = {item.cluster_id for item in items}
-    cluster_map = {
-        str(cluster.id): cluster
-        for cluster in Cluster.query.filter(Cluster.id.in_(cluster_ids)).all()
-    } if cluster_ids else {}
+    cluster_map = (
+        {str(cluster.id): cluster for cluster in Cluster.query.filter(Cluster.id.in_(cluster_ids)).all()}
+        if cluster_ids
+        else {}
+    )
 
     from app.kubernetes.tenant.decommission_service import build_tenant_decommission_preflight
 
@@ -937,13 +936,10 @@ def get_namespace_registry_context(
     normalized_status = status.strip().lower()
     allowed_statuses = {item.value for item in TenantNamespaceProvisioningStatus}
 
-    query = (
-        TenantNamespace.query.join(
-            TenantEnvironment,
-            TenantNamespace.tenant_environment_id == TenantEnvironment.id,
-        )
-        .join(Tenant, TenantEnvironment.tenant_id == Tenant.id)
-    )
+    query = TenantNamespace.query.join(
+        TenantEnvironment,
+        TenantNamespace.tenant_environment_id == TenantEnvironment.id,
+    ).join(Tenant, TenantEnvironment.tenant_id == Tenant.id)
     if normalized_search:
         pattern = f'%{normalized_search.lower()}%'
         query = query.filter(
@@ -1027,6 +1023,7 @@ def get_namespace_registry_context(
         },
     }
 
+
 def get_tenant_context() -> dict[str, Any]:
     tenants = Tenant.query.order_by(Tenant.created_at.desc()).limit(5).all()
     profiles = TenantResourceProfile.query.order_by(TenantResourceProfile.created_at.desc()).limit(5).all()
@@ -1042,9 +1039,7 @@ def get_tenant_context() -> dict[str, Any]:
         {'cluster': cluster, **build_capacity_governance_summary(cluster.id)} for cluster in ready_clusters
     ]
     capacity_decisions = TenantCapacityDecision.query.order_by(TenantCapacityDecision.created_at.desc()).limit(5).all()
-    namespace_count = TenantNamespace.query.filter(
-        TenantNamespace.provisioning_status != 'deprovisioned'
-    ).count()
+    namespace_count = TenantNamespace.query.filter(TenantNamespace.provisioning_status != 'deprovisioned').count()
     profile_count = TenantResourceProfile.query.count()
     enabled_profile_count = TenantResourceProfile.query.filter_by(enabled=True).count()
     custom_profile_count = TenantResourceProfile.query.filter_by(
@@ -1062,9 +1057,7 @@ def get_tenant_context() -> dict[str, Any]:
         'ready_clusters': ready_clusters,
         'capacity_governance': capacity_governance,
         'capacity_policy_state': {
-            str(item['cluster'].id): item['policy']
-            for item in capacity_governance
-            if item.get('policy') is not None
+            str(item['cluster'].id): item['policy'] for item in capacity_governance if item.get('policy') is not None
         },
         'capacity_decisions': capacity_decisions,
         'tenant_count': Tenant.query.filter(
