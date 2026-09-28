@@ -247,7 +247,6 @@ def compensate_capsule_tenant_create(
         return False
 
 
-
 def delete_capsule_tenant_verified(
     *,
     cluster: Cluster,
