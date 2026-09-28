@@ -4,7 +4,7 @@ import json
 from collections.abc import Callable
 from typing import Any, cast
 
-from flask import Blueprint, abort, current_app, make_response, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, g, make_response, redirect, render_template, request, url_for
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
 from kubernetes.client.rest import ApiException
@@ -90,9 +90,10 @@ def _record(
     message: str,
     metadata: dict[str, Any],
     detail: str | None = None,
-    queue_feedback: bool = True,
+    queue_feedback: bool | None = None,
 ) -> dict[str, Any]:
-    return record_operational_activity(
+    is_htmx = request.headers.get('HX-Request') == 'true'
+    feedback = record_operational_activity(
         user_id=int(current_user.id),
         event_type=event_type,
         status=status,
@@ -103,8 +104,10 @@ def _record(
         action_label='Open Tenant',
         action_icon='building-2',
         metadata={**metadata, 'operation_domain': 'kubernetes_tenant', 'feedback_delivery': 'toast'},
-        queue_feedback=queue_feedback,
+        queue_feedback=(not is_htmx) if queue_feedback is None else queue_feedback,
     )
+    g.tenant_operational_feedback = feedback
+    return feedback
 
 
 def _tenant_workspace_context() -> dict[str, Any]:
@@ -131,7 +134,30 @@ def _tenant_admin_section(value: str | None) -> str:
 
 
 def _tenant_section_redirect(section: str):
-    return redirect(url_for('tenant.tenants', section=_tenant_admin_section(section)))
+    resolved_section = _tenant_admin_section(section)
+    if request.headers.get('HX-Request') != 'true':
+        return redirect(url_for('tenant.tenants', section=resolved_section))
+
+    context = _tenant_workspace_context()
+    context.update(get_tenant_summary_context())
+    context.update(_tenant_active_section_context(resolved_section))
+    rendered = render_template(
+        'kubernetes/tenant/partials/_tenant_admin_workspace.html',
+        active_tenant_section=resolved_section,
+        can_manage=current_user.has_permission('tenant.manage'),
+        **context,
+    )
+    feedback = getattr(g, 'tenant_operational_feedback', None)
+    if feedback:
+        rendered += render_template(
+            'components/operational_toast.html',
+            **feedback,
+            toast_oob=True,
+        )
+    response = make_response(rendered)
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    return response
 
 
 @tenant_bp.get('/')
