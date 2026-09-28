@@ -260,3 +260,8 @@ A table is compliant when:
 ## 18. Design judgment and exceptions
 
 The table standard is a consistency system, not a requirement to decorate every value. Designers and implementers must prioritize scanability, information density, and semantic meaning. When choosing between icon + text, label, or plain text, use the least visually heavy representation that still communicates the value correctly. Any exception must preserve the shared typography scale, alignment, spacing, interaction states, and accessibility contract.
+
+
+### Dense action groups
+
+When a registry row exposes several icon-only actions, do not rely on `flex-wrap` because the controls can fall into asymmetric layouts as column width changes. Use the shared `table_ui.action_grid_classes(2)` primitive for a compact two-column action block. Keep individual controls on `table_ui.action_classes()` so size, border, hover, focus, disabled, and destructive states remain canonical.
