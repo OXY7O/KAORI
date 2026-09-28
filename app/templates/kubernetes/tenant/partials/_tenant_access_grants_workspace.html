@@ -113,11 +113,17 @@
                 </select>
             </label>
             <div class="flex items-end">
-                <div class="w-full rounded-lg border border-outline-subtle bg-surface-subtle p-3">
-                    <p class="text-xs font-semibold text-content-secondary">Scope Rule</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">
-                        Tenant scope uses neither target. Environment and Namespace scopes require exactly one matching target.
-                    </p>
+                <div class="flex w-full gap-3 rounded-lg border border-status-info-border bg-status-info-soft p-3 text-status-info-text">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-surface-card/70"
+                          aria-hidden="true">
+                        <i data-lucide="scope" class="h-4 w-4"></i>
+                    </span>
+                    <div>
+                        <p class="text-xs font-semibold">Scope Rule</p>
+                        <p class="mt-1 text-xs leading-5">
+                            Tenant: no target. Environment/Namespace: select one target.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
