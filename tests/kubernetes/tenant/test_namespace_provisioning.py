@@ -134,7 +134,6 @@ def test_desired_contract_can_use_frozen_allocation_snapshot() -> None:
     assert desired['limits'] == {}
 
 
-
 def test_namespace_delete_observation_surfaces_terminating_finalizers() -> None:
     api = FakeCoreApi()
     api.namespaces['payments-dev'] = SimpleNamespace(
