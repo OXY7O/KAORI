@@ -1,19 +1,37 @@
-<section class="grid gap-5 xl:grid-cols-3"
+{% import "components/action_button.html" as action_button %}
+{% import "components/form_field.html" as form_field %}
+{% import "components/info_tip.html" as info_tip %}
+{% import "components/table_label.html" as table_label %}
+<section class="grid gap-5 xl:grid-cols-12 xl:items-stretch"
          aria-label="Tenant Capacity Governance">
     <form method="post"
           action="{{ url_for('tenant.update_capacity_policy_route') }}"
-          class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+          class="flex h-full flex-col overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm xl:col-span-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="mb-5 flex items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
-                <i data-lucide="shield-check" class="h-5 w-5"></i>
-            </span>
-            <div>
-                <h2 class="text-base font-semibold text-content-primary">Tenant Capacity Policy</h2>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Configure the request-budget inputs used before namespace allocation.</p>
+        <header class="flex items-start justify-between gap-4 rounded-t-xl border-b border-outline-subtle px-5 py-4">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="shield-check" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-semibold text-content-primary">Capacity Policy</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Define request-budget inputs used before positive namespace allocation.</p>
+                </div>
             </div>
-        </div>
-        <div class="space-y-4">
+            {{ info_tip.render(
+                'tenant-capacity-policy-tip',
+                'Capacity policy',
+                'Capacity Governance consumes committed cluster capacity evidence and configured request commitments.',
+                [
+                    'Reserve and unmanaged values are commitments, not observed utilization.',
+                    'Safety headroom preserves operational margin.',
+                    'Unknown or stale required evidence fails positive allocation safely.'
+                ]
+            ) }}
+        </header>
+
+        <div class="flex-1 space-y-4 p-5">
             <label class="block">
                 {{ form_field.label_row("Cluster") }}
                 <select name="capacity_cluster_id"
@@ -25,6 +43,7 @@
                     {% endfor %}
                 </select>
             </label>
+
             <div class="grid gap-4 sm:grid-cols-2">
                 <label class="block">
                     {{ form_field.label_row("Platform Reserve CPU") }}
@@ -49,6 +68,7 @@
                            min="0"
                            max="99"
                            required
+                           value="10"
                            placeholder="10"
                            class="{{ form_field.input_classes() }}">
                 </label>
@@ -69,52 +89,101 @@
                            class="{{ form_field.input_classes() }}">
                 </label>
             </div>
-            {{ form_field.help("Reserve and unmanaged values are request commitments, not observed utilization. Fresh committed Capacity Analytics evidence is required before positive allocation.") }}
+
+            <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3.5 py-3 text-xs leading-5 text-content-muted">
+                ResourceQuota remains an enforcement primitive. Capacity policy controls admission of committed request allocation; it does not claim physical reservation.
+            </div>
         </div>
-        <button type="submit"
-                {% if not can_manage or not native_available %}disabled aria-disabled="true"{% endif %}
-                class="mt-5 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
-            <i data-lucide="save" class="h-4 w-4"></i>Save Capacity Policy
-        </button>
+
+        <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-xs leading-5 text-content-muted">Policy applies per cluster and is evaluated with fresh committed Capacity Analytics evidence.</p>
+            <button type="submit"
+                    {% if not can_manage or not native_available %}disabled aria-disabled="true"{% endif %}
+                    class="{{ action_button.classes('primary') }}">
+                <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
+                Save Policy
+            </button>
+        </footer>
     </form>
-    <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm xl:col-span-2">
-        <header class="border-b border-outline-subtle px-5 py-4">
-            <h2 class="text-base font-semibold text-content-primary">Allocation Budget</h2>
-            <p class="mt-1 text-xs text-content-muted">Committed Ready-worker capacity evidence minus reserve, safety headroom, and unmanaged request commitments.</p>
+
+    <section class="flex h-full flex-col overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm xl:col-span-8"
+             aria-labelledby="tenant-allocation-budget-heading">
+        <header class="flex items-start justify-between gap-4 border-b border-outline-subtle px-5 py-4">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="chart-no-axes-combined" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 id="tenant-allocation-budget-heading" class="text-base font-semibold text-content-primary">Allocation Budget</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Budget, committed request allocation, and remaining headroom from committed capacity evidence.</p>
+                </div>
+            </div>
+            {{ info_tip.render(
+                'tenant-allocation-budget-tip',
+                'Allocation budget',
+                'Budget = committed allocatable capacity minus platform reserve, safety headroom, and known unmanaged request commitments.'
+            ) }}
         </header>
-        <div class="divide-y divide-outline-subtle">
+
+        <div class="flex-1 divide-y divide-outline-subtle">
             {% for item in capacity_governance %}
                 {% set state_tone = 'normal' if item.state == 'Healthy' else ('warning' if item.state in ['Near Capacity', 'Unknown'] else 'critical') %}
-                <div class="px-5 py-4">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <p class="font-semibold text-content-primary">{{ item.cluster.name }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ item.snapshot_state|title }} capacity evidence · {{ item.committed_namespace_count }} committed namespaces</p>
+                <article class="p-5">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-elevated text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="server" class="h-4 w-4"></i>
+                            </span>
+                            <div>
+                                <p class="font-semibold text-content-primary">{{ item.cluster.name }}</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ item.snapshot_state|title }} capacity evidence · {{ item.committed_namespace_count }} committed namespace{{ '' if item.committed_namespace_count == 1 else 's' }}</p>
+                            </div>
                         </div>
-                        {{ table_label.status_label(item.state, state_tone) }}
+                        <div class="flex items-center gap-1.5">
+                            {{ table_label.status_label(item.state, state_tone) }}
+                            {{ info_tip.render(
+                                'tenant-capacity-state-' ~ loop.index,
+                                item.state ~ ' capacity state',
+                                item.reason
+                            ) }}
+                        </div>
                     </div>
+
                     <div class="mt-4 grid gap-3 sm:grid-cols-3">
-                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Budget</p>
-                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ item.display.budget.cpu }}</p>
-                            <p class="text-xs text-content-muted">{{ item.display.budget.memory }}</p>
-                        </div>
-                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Committed</p>
-                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ item.display.committed.cpu }}</p>
-                            <p class="text-xs text-content-muted">{{ item.display.committed.memory }}</p>
-                        </div>
-                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Headroom</p>
-                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ item.display.headroom.cpu }}</p>
-                            <p class="text-xs text-content-muted">{{ item.display.headroom.memory }}</p>
-                        </div>
+                        {% for label, values, icon in [
+                            ('Budget', item.display.budget, 'wallet-cards'),
+                            ('Committed', item.display.committed, 'layers-3'),
+                            ('Headroom', item.display.headroom, 'gauge')
+                        ] %}
+                            <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+                                </div>
+                                <p class="mt-2 text-sm font-semibold text-content-primary">{{ values.cpu }} CPU</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ values.memory }} memory</p>
+                            </div>
+                        {% endfor %}
                     </div>
-                    <p class="mt-3 text-xs leading-5 text-content-muted">{{ item.reason }}</p>
-                </div>
+                </article>
             {% else %}
-                <p class="px-5 py-6 text-sm text-content-muted">No Ready Kubernetes cluster is available for Tenant Capacity Governance.</p>
+                <div class="flex items-start gap-3 p-5">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-elevated text-content-muted"
+                          aria-hidden="true">
+                        <i data-lucide="server-off" class="h-4 w-4"></i>
+                    </span>
+                    <div>
+                        <p class="text-sm font-semibold text-content-primary">No Ready cluster</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Register and validate a Native Kubernetes cluster before configuring Tenant Capacity Governance.</p>
+                    </div>
+                </div>
             {% endfor %}
         </div>
-    </div>
+
+        <footer class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs leading-5 text-content-muted">
+            Positive allocation is admitted only from fresh committed evidence; reductions remain possible when recovering from overcommit.
+        </footer>
+    </section>
 </section>

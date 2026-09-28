@@ -1,37 +1,129 @@
 {% extends "kubernetes/tenant/base.html" %}
-{% import "components/table_label.html" as table_label %}
+{% import "components/operational_flow_steps.html" as operational_flow_steps %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/section_intro.html" as section_intro %}
 {% block tenant_content %}
     {% set can_manage = current_user.has_permission('tenant.manage') %}
-    <section class="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)]"
-             aria-label="Tenant Resource Profiles">
-        {% include "kubernetes/tenant/partials/_resource_profile_form.html" %}
-        <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
-            <header class="border-b border-outline-subtle px-5 py-4">
-                <h2 class="text-base font-semibold text-content-primary">Resource Profiles</h2>
-                <p class="mt-1 text-sm text-content-secondary">Review profile class, lineage, and effective allocation contracts.</p>
-            </header>
-            <div class="divide-y divide-outline-subtle">
-                {% for profile in profiles %}
-                    <article class="px-5 py-4">
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="font-semibold text-content-primary">{{ profile.name }}</span>
-                            {{ table_label.status_label(profile.profile_class|title, 'info') }}
+    {% set profile_flow = [[
+        ('layers-3', 'Profile Contract', 'Choose a locked KAORI preset or define an explicit Custom contract.'),
+        ('shield-check', 'Capacity Guardrail', 'Evaluate request commitment against the governed cluster allocation budget.'),
+        ('boxes', 'Provision Namespace', 'Apply the selected profile as a frozen namespace allocation snapshot.'),
+        ('badge-check', 'Verify Evidence', 'Confirm Namespace, ResourceQuota, LimitRange, and committed provider evidence.')
+    ]] %}
+
+    <section class="space-y-4" aria-labelledby="resource-profile-workflow-heading">
+        {{ section_intro.render(
+            'Allocation Workflow',
+            'Prepare a reusable allocation contract and capacity guardrail before provisioning a Tenant namespace.',
+            'resource-profile-workflow-heading'
+        ) }}
+        {% call operational_section_card.render(
+            'Resource Profile Flow',
+            'Resource Profiles define reusable intent; namespace provisioning freezes the selected effective allocation.',
+            'workflow',
+            body_classes='p-5',
+            aria_label='Resource Profile allocation workflow'
+        ) %}
+            <div class="space-y-4">
+                {{ operational_flow_steps.render(profile_flow, aria_label='Resource Profile to Namespace flow') }}
+                <div class="grid gap-3 md:grid-cols-3">
+                    <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="lock-keyhole" class="h-4 w-4"></i>
+                            </span>
+                            <div>
+                                <p class="text-xs font-semibold text-content-primary">Preset Contract</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Small, Standard, and Large are KAORI-owned and locked in normal workflows.</p>
+                            </div>
                         </div>
-                        <p class="mt-1 text-xs text-content-muted">v{{ profile.version }} · {{ 'Enabled' if profile.enabled else 'Disabled' }}</p>
-                        <p class="mt-2 text-xs text-content-muted">{{ profile.quota_hard_json.get('requests.cpu', '—') }} CPU · {{ profile.quota_hard_json.get('requests.memory', '—') }} memory</p>
-                    </article>
-                {% else %}
-                    <p class="px-5 py-8 text-sm text-content-muted">No Resource Profiles yet.</p>
+                    </div>
+                    <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
+                            </span>
+                            <div>
+                                <p class="text-xs font-semibold text-content-primary">Custom Contract</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Custom may start from a preset, then diverge with retained base lineage.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="camera" class="h-4 w-4"></i>
+                            </span>
+                            <div>
+                                <p class="text-xs font-semibold text-content-primary">Frozen Allocation</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Existing namespaces retain their committed snapshot until an explicit governed allocation change.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endcall %}
+    </section>
+
+    <section class="space-y-4" aria-labelledby="resource-profile-library-heading">
+        {{ section_intro.render(
+            'Profile Library',
+            'Create reusable allocation contracts, then review their effective quota, container defaults, and lineage.',
+            'resource-profile-library-heading'
+        ) }}
+        {% include "kubernetes/tenant/partials/_resource_profile_form.html" %}
+        {% include "kubernetes/tenant/partials/_resource_profile_registry.html" %}
+    </section>
+
+    <section class="space-y-4" aria-labelledby="resource-profile-capacity-heading">
+        {{ section_intro.render(
+            'Capacity Governance',
+            'Define cluster request-budget policy and verify headroom before positive namespace allocation.',
+            'resource-profile-capacity-heading'
+        ) }}
+        {% include "kubernetes/tenant/partials/_capacity_governance.html" %}
+    </section>
+
+    <section class="space-y-4" aria-labelledby="resource-profile-next-step-heading">
+        {{ section_intro.render(
+            'Ready for Namespace',
+            'Continue only after the allocation contract and required capacity evidence are understood.',
+            'resource-profile-next-step-heading'
+        ) }}
+        {% call operational_section_card.render(
+            'Namespace Provisioning Readiness',
+            'Namespace provisioning binds Tenant + Environment + Resource Profile and runs capacity admission before provider reconciliation.',
+            'boxes',
+            action_href=url_for('tenant.namespace_provisioning'),
+            action_label='Continue to Namespace',
+            action_icon='arrow-right',
+            body_classes='p-5',
+            aria_label='Namespace provisioning readiness'
+        ) %}
+            <div class="grid gap-3 md:grid-cols-3">
+                {% for icon, title, description in [
+                    ('building-2', 'Tenant Ready', 'Select a Ready Tenant environment on an admitted Native Kubernetes cluster.'),
+                    ('layers-3', 'Profile Selected', 'Use one enabled Resource Profile; built-in values remain locked and Custom values remain explicit.'),
+                    ('shield-check', 'Capacity Admitted', 'Positive request allocation requires fresh committed capacity evidence and an allowed preflight decision.')
+                ] %}
+                    <div class="flex gap-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                        </span>
+                        <div>
+                            <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                        </div>
+                    </div>
                 {% endfor %}
             </div>
-            {% set pagination_state = profile_pagination %}
-            {% set pagination_resource = "resource profiles" %}
-            {% set pagination_endpoint = "tenant.resource_profiles" %}
-            {% set pagination_id = "tenant-profile-registry" %}
-            {% include "kubernetes/tenant/partials/_pagination_footer.html" %}
-        </div>
+        {% endcall %}
     </section>
-    {% include "kubernetes/tenant/partials/_capacity_governance.html" %}
+
     <script type="application/json" id="tenant-resource-profile-presets">{{ resource_profile_presets|tojson }}</script>
 {% endblock tenant_content %}
 {% block tenant_scripts %}

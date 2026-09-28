@@ -1,0 +1,89 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+<section class="{{ table_ui.block_classes() }}" aria-labelledby="resource-profile-registry-heading">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex items-start gap-3">
+            <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                <i data-lucide="library-big" class="h-5 w-5"></i>
+            </span>
+            <div>
+                <h2 id="resource-profile-registry-heading" class="{{ table_ui.block_title_classes() }}">Resource Profile Registry</h2>
+                <p class="{{ table_ui.block_description_classes() }}">Committed reusable contracts used by governed Namespace provisioning.</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[1040px]') }}">
+            <caption class="sr-only">Committed Tenant Resource Profile contracts.</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Profile</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Contract</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Requests</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Namespace Quota</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Container Defaults</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Lineage</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for profile in profiles %}
+                    {% set defaults = profile.limit_defaults_json.get('default', {}) if profile.limit_defaults_json else {} %}
+                    {% set default_requests = profile.limit_defaults_json.get('default_request', {}) if profile.limit_defaults_json else {} %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} align-middle">
+                            {{ table_ui.title_cell(profile.name, profile.description or profile.public_id, 'layers-3') }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} align-middle">
+                            <div class="space-y-1">
+                                {{ table_label.status_label(profile.profile_class|title, 'info' if profile.profile_class == 'custom' else 'normal') }}
+                                <p class="text-xs text-content-muted">v{{ profile.version }} · {{ 'Enabled' if profile.enabled else 'Disabled' }}</p>
+                            </div>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} align-middle">
+                            <p class="text-sm font-semibold text-content-primary">{{ profile.quota_hard_json.get('requests.cpu', 'Unbounded') }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ profile.quota_hard_json.get('requests.memory', 'Unbounded') }} memory</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} align-middle">
+                            <p class="text-xs font-semibold text-content-primary">{{ profile.quota_hard_json.get('pods', 'Unbounded') }} pods · {{ profile.quota_hard_json.get('persistentvolumeclaims', 'Unbounded') }} PVCs</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ profile.quota_hard_json.get('requests.storage', 'Unbounded') }} storage</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} align-middle">
+                            <p class="text-xs font-semibold text-content-primary">{{ default_requests.get('cpu', '—') }} / {{ default_requests.get('memory', '—') }}</p>
+                            <p class="mt-1 text-xs text-content-muted">limits {{ defaults.get('cpu', '—') }} / {{ defaults.get('memory', '—') }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} align-middle">
+                            {% if profile.profile_class == 'custom' and profile.base_preset_class %}
+                                <p class="text-xs font-semibold text-content-primary">Based on {{ profile.base_preset_class|title }}</p>
+                                <p class="mt-1 text-xs text-content-muted">Preset v{{ profile.base_preset_version or '—' }} · Custom contract</p>
+                            {% elif profile.profile_class == 'custom' %}
+                                <p class="text-xs font-semibold text-content-primary">Independent Custom</p>
+                                <p class="mt-1 text-xs text-content-muted">No preset lineage</p>
+                            {% else %}
+                                <p class="text-xs font-semibold text-content-primary">KAORI Preset</p>
+                                <p class="mt-1 text-xs text-content-muted">Locked · versioned</p>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="p-0">
+                            {% set empty_state_icon = 'layers-3' %}
+                            {% set empty_state_title = 'No Resource Profiles' %}
+                            {% set empty_state_description = 'Create the first reusable allocation contract before provisioning a Tenant namespace.' %}
+                            {% include 'components/states/_empty_state.html' %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if profile_pagination.total > 0 %}
+        {% set pagination_state = profile_pagination %}
+        {% set pagination_resource = "resource profiles" %}
+        {% set pagination_endpoint = "tenant.resource_profiles" %}
+        {% set pagination_id = "tenant-profile-registry" %}
+        {% include "kubernetes/tenant/partials/_pagination_footer.html" %}
+    {% endif %}
+</section>
