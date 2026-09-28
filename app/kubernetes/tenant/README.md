@@ -95,7 +95,7 @@ Tenant Setup supports two direct-create provider paths while retaining one provi
 
 `Access Grants` keeps one full-width multi-column form above the canonical Access Grant Registry. The registry owns all committed/effective RBAC evidence, filters, pagination, and Inspect/Reconcile/Revoke actions.
 
-`Credentials` presents Human and CI/CD issuance as symmetric peer forms. Credential Lifecycle is a canonical registry table with filters, pagination, validity, reconciliation state, and lifecycle actions. Desktop layout uses a compact fixed-width column contract so normal KAORI desktop widths do not require horizontal scrolling; narrow viewports may still use controlled table overflow. Secret material is never rendered.
+`Credentials` presents Human and CI/CD issuance as symmetric peer forms. Credential Lifecycle is a canonical registry table with filters, pagination, validity, reconciliation state, lifecycle actions, and protected material-generation actions. Desktop layout uses a compact fixed-width column contract so normal KAORI desktop widths do not require horizontal scrolling; narrow viewports may still use controlled table overflow. Routine registry/detail surfaces never render secret material. Explicit material generation opens a non-cacheable one-time view; KAORI does not persist the returned token or kubeconfig body.
 
 `Namespace Access` is a derived non-secret read model presented as a canonical registry with Tenant/Environment/Credential filters and pagination.
 
@@ -141,9 +141,13 @@ The routine UI may show non-secret access metadata such as:
 - renewal/review and validity times;
 - rotate/suspend/resume/revoke actions.
 
-Routine Tenant pages must never render bearer tokens, generated kubeconfig content, certificate/private-key material, or registry Secret material.
+Routine Tenant inventory, registry, detail, report, Activity, and Namespace Access surfaces must never render bearer tokens, generated kubeconfig content, certificate/private-key material, or registry Secret material.
 
-Human access issuance uses the admitted #115 service and binds an individually owned reconciled User Access Grant to a non-secret JumpServer reference. CI/CD issuance uses the admitted #116 Deployer service and creates a namespace-scoped machine principal/grant/credential lineage.
+Explicit credential delivery is the bounded exception. An authorized operator may request one-time material from an Active/Ready credential and target Namespace. KAORI uses Kubernetes TokenRequest-backed ServiceAccount material, returns it only in a non-cacheable one-time response, records issuance metadata without plaintext secret content, and does not persist the token or generated kubeconfig body.
+
+Material lifetime is independent from the longer credential entitlement/review lifecycle. Current KAORI policy offers operator-selectable lifetimes bounded by target environment: **Development up to 24 hours**, **Staging up to 8 hours**, and **Production up to 1 hour**. Kubernetes remains authoritative for the actual expiration timestamp and may return a shorter lifetime than requested.
+
+Human access issuance uses the admitted #115 service and binds an individually owned reconciled User Access Grant to a non-secret JumpServer reference. The one-time Human action mints a ServiceAccount token for manual placement into the referenced JumpServer credential until direct JumpServer integration exists. CI/CD issuance uses the admitted #116 Deployer service and creates a namespace-scoped machine principal/grant/credential lineage. Its one-time action returns both kubeconfig YAML and a Base64 representation suitable for short-lived GitHub Actions UAT; long-running recurring delivery should later obtain fresh material at runtime rather than treating the governance entitlement as a static bearer-token lifetime.
 
 ## Intelligence and reporting
 
