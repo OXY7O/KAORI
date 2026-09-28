@@ -86,9 +86,14 @@ def test_tenant_uat_pages_preserve_current_admitted_workflows() -> None:
     assert 'Operational Control' in operations
     assert 'content_tabs.render_links' in operations
     assert "hx_target='#tenant-operations-workspace'" in operations
-    assert 'Kubernetes Audit Evidence' in operations
-    assert 'Managed Resources &amp; Policies' in operations
-    assert 'Namespace Provider Drift' in operations
+    for partial in (
+        '_operations_namespace_registry.html',
+        '_operations_evidence_registry.html',
+        '_operations_drift_registry.html',
+        '_operations_provider_registry.html',
+        '_operations_access_reconciliation_registry.html',
+    ):
+        assert partial in operations
 
 def test_tenant_uat_surface_separates_platform_permission_from_tenant_membership() -> None:
     registry = _read('app/definitions/catalogs/access/rbac/access.yaml')
