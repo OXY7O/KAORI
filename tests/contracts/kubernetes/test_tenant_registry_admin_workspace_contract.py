@@ -295,6 +295,10 @@ def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None
     assert 'Decommission' in registry
     assert 'destructive_confirmation_modal.html' in registry
     assert 'data-destructive-modal-open' in registry
+    assert 'Freeze Mutations' in registry
+    assert 'Remove Namespaces' in registry
+    assert 'Verify & Retain' in registry
+    assert 'Terminating' in registry
 
     assert 'g.tenant_operational_feedback = feedback' in routes
     assert 'toast_oob=True' in routes
@@ -446,3 +450,26 @@ def test_governed_tenant_decommission_is_async_provider_verified_and_fail_closed
     assert "DEPROVISIONED = 'deprovisioned'" in models
     assert 'generation: Mapped[int]' in models
     assert 'uq_tenants_cluster_slug_generation' in migration
+
+
+
+def test_tenant_registry_distinguishes_active_namespaces_from_retained_history() -> None:
+    service = read('app/kubernetes/tenant/service.py')
+    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+
+    assert 'namespace_history_count_map' in service
+    assert "TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value" in service
+    assert "'namespace_history_count': namespace_history_count_map.get(item.id, 0)" in service
+    assert 'historical namespace record' in registry
+    assert 'Active managed namespaces' in registry
+
+
+def test_destructive_modal_supports_structured_impact_summary() -> None:
+    component = read('app/templates/components/destructive_confirmation_modal.html')
+
+    assert 'impact_items=none' in component
+    assert 'warning=none' in component
+    assert 'What will happen' in component
+    assert 'data-destructive-modal-title' in component
+    assert 'data-destructive-detail' in component
+    assert 'data-destructive-action-label' in component

@@ -127,7 +127,14 @@
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
                             <p class="text-sm font-semibold text-content-primary">{{ row.namespace_count }}</p>
-                            <p class="mt-1 text-xs text-content-muted">Governed namespaces</p>
+                            {% set historical_namespace_count = row.namespace_history_count - row.namespace_count %}
+                            <p class="mt-1 text-xs text-content-muted">
+                                {% if historical_namespace_count > 0 %}
+                                    {{ historical_namespace_count }} historical namespace record{{ '' if historical_namespace_count == 1 else 's' }} retained
+                                {% else %}
+                                    Active managed namespaces
+                                {% endif %}
+                            </p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
                             <p class="text-sm font-semibold text-content-primary">{{ tenant.provider_key|replace('_', ' ')|title }}</p>
@@ -137,7 +144,7 @@
                             <div class="space-y-1.5">
                                 {{ table_label.status_label(
                                     tenant.lifecycle_status|replace('_', ' ')|title,
-                                    'normal' if tenant.lifecycle_status == 'ready' else ('critical' if tenant.lifecycle_status in ['degraded', 'decommissioning'] else 'warning')
+                                    'normal' if tenant.lifecycle_status == 'ready' else ('critical' if tenant.lifecycle_status in ['degraded', 'decommissioning'] else 'unknown')
                                 ) }}
                                 <span class="block text-xs text-content-muted">{{ tenant.ownership_status|replace('_', ' ')|title }} · Gen {{ tenant.generation }} · Immutable</span>
                             </div>
@@ -217,9 +224,16 @@
     'tenant-decommission-modal',
     'Decommission Tenant',
     'Selected Tenant',
-    'KAORI will freeze new mutations, revoke credentials, revoke Access Grants, retire memberships, deprovision every KAORI-managed namespace, verify provider absence, and only then commit the Tenant as Decommissioned. Historical audit evidence is retained.',
+    'Final state is committed only after the effective provider cleanup is verified. The Tenant record, correlation lineage, and audit evidence remain available as history.',
     'tenant-decommission-submit',
     action_label='Start Decommission',
-    notice='This is a governed asynchronous teardown. Kubernetes namespace deletion must be observed complete before finalization.',
-    scope_value='Governed Tenant boundary'
+    notice='Governed asynchronous teardown with fail-closed provider verification.',
+    scope_value='Governed Tenant boundary',
+    impact_items=[
+        ('snowflake', 'Freeze Mutations', 'Block new Tenant access, credential, allocation, and provider-authority mutations.'),
+        ('key-round', 'Revoke Access', 'Revoke credentials and Access Grants before retiring memberships and groups.'),
+        ('boxes', 'Remove Namespaces', 'Deprovision every KAORI-managed namespace and wait until Kubernetes reports absence.'),
+        ('shield-check', 'Verify & Retain', 'Verify provider cleanup, then commit Decommissioned while retaining historical evidence.')
+    ],
+    warning='If Kubernetes remains Terminating or finalizers block deletion, KAORI stops fail-closed and keeps the Tenant in Decommissioning for operator retry.'
 ) }}

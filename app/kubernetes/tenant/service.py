@@ -27,6 +27,7 @@ from app.models.tenant import (
     TenantEnvironmentName,
     TenantLifecycleStatus,
     TenantNamespace,
+    TenantNamespaceProvisioningStatus,
     TenantResourceProfile,
     TenantResourceProfileClass,
 )
@@ -502,6 +503,7 @@ def get_tenant_registry_context(
     tenant_ids = [item.id for item in items]
     environment_map: dict[str, list[str]] = {tenant_id: [] for tenant_id in tenant_ids}
     namespace_count_map: dict[str, int] = {tenant_id: 0 for tenant_id in tenant_ids}
+    namespace_history_count_map: dict[str, int] = {tenant_id: 0 for tenant_id in tenant_ids}
 
     if tenant_ids:
         environment_rows = (
@@ -512,10 +514,24 @@ def get_tenant_registry_context(
         for row in environment_rows:
             environment_map.setdefault(row.tenant_id, []).append(row.environment)
 
-        namespace_rows = (
+        namespace_history_rows = (
             db.session.query(TenantEnvironment.tenant_id, func.count(TenantNamespace.id))
             .join(TenantNamespace, TenantNamespace.tenant_environment_id == TenantEnvironment.id)
             .filter(TenantEnvironment.tenant_id.in_(tenant_ids))
+            .group_by(TenantEnvironment.tenant_id)
+            .all()
+        )
+        namespace_history_count_map.update(
+            {str(tenant_id): int(count) for tenant_id, count in namespace_history_rows}
+        )
+
+        namespace_rows = (
+            db.session.query(TenantEnvironment.tenant_id, func.count(TenantNamespace.id))
+            .join(TenantNamespace, TenantNamespace.tenant_environment_id == TenantEnvironment.id)
+            .filter(
+                TenantEnvironment.tenant_id.in_(tenant_ids),
+                TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+            )
             .group_by(TenantEnvironment.tenant_id)
             .all()
         )
@@ -535,6 +551,7 @@ def get_tenant_registry_context(
             'cluster': cluster_map.get(str(item.cluster_id)),
             'environments': environment_map.get(item.id, []),
             'namespace_count': namespace_count_map.get(item.id, 0),
+            'namespace_history_count': namespace_history_count_map.get(item.id, 0),
             'decommission_preflight': build_tenant_decommission_preflight(item.id),
         }
         for item in items
