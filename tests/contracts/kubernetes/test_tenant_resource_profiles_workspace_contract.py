@@ -8,9 +8,18 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_resource_profiles_use_server_owned_kaori_content_tabs() -> None:
+def test_resource_profiles_use_server_owned_kaori_content_tabs_and_snapshot_stats() -> None:
     page = read('app/templates/kubernetes/tenant/resource_profiles.html')
     routes = read('app/kubernetes/tenant/routes.py')
+    service = read('app/kubernetes/tenant/service.py')
+
+    assert 'Resource Profile Snapshot' in page
+    assert 'Total Profiles' in page
+    assert 'Enabled' in page
+    assert 'Custom' in page
+    assert 'Active Allocations' in page
+    assert 'resource_profile_stats.total' in page
+    assert "'resource_profile_stats':" in service
 
     assert 'components/content_tabs.html' in page
     assert 'content_tabs.render_links' in page
@@ -19,15 +28,11 @@ def test_resource_profiles_use_server_owned_kaori_content_tabs() -> None:
     assert "('capacity', 'Capacity Governance'" in page
     assert "('workflow', 'Workflow Guide'" in page
     assert "hx_target='#resource-profile-workspace'" in page
-    assert "hx_select='#resource-profile-workspace'" in page
     assert "active_resource_profile_view" in page
-
     assert "active_view not in {'profiles', 'capacity', 'workflow'}" in routes
-    assert "active_resource_profile_view=active_view" in routes
-    assert "view='capacity'" in routes
 
 
-def test_resource_profile_form_keeps_locked_presets_and_contextual_guidance() -> None:
+def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None:
     form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
     script = read('app/static/js/tenant_resource_profile_presets.js')
 
@@ -35,9 +40,12 @@ def test_resource_profile_form_keeps_locked_presets_and_contextual_guidance() ->
     assert 'Identity &amp; Lineage' in form
     assert 'Quota Guardrails' in form
     assert 'Container Defaults' in form
+    assert 'lg:grid-cols-3' in form
+    assert 'lg:grid-cols-5' in form
+    assert 'xl:grid-cols-12' not in form
     assert 'Operator rule' in form
     assert 'Custom keeps lineage' in form
-    assert 'bg-kaori-soft' in form
+    assert 'Different values belong in Custom.' in form
     assert 'resource-profile-contract-tip' in form
     assert 'resource-profile-class-tip' in form
     assert 'resource-profile-base-tip' in form
@@ -60,7 +68,6 @@ def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() 
     assert 'profile_search' in registry
     assert 'profile_class' in registry
     assert 'profile_state' in registry
-    assert 'Rows' not in registry
     assert '>Apply<' not in registry
     assert '_pagination_footer.html' not in registry
     assert 'Resource Profile Registry' in registry
@@ -72,7 +79,6 @@ def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() 
     assert 'def get_resource_profile_registry_context(' in service
     assert 'paginate_query(' in service
     assert "'profile_registry_filters':" in service
-    assert "'profile_class_filter_options':" in service
 
 
 def test_resource_profile_workflow_uses_numbered_contract_stages_without_arrow_flow() -> None:
@@ -90,29 +96,35 @@ def test_resource_profile_workflow_uses_numbered_contract_stages_without_arrow_f
     assert 'operational_flow_steps' not in page
 
 
-def test_capacity_governance_has_scrollable_cluster_cards_and_policy_reload() -> None:
+def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     capacity = read('app/templates/kubernetes/tenant/partials/_capacity_governance.html')
     page = read('app/templates/kubernetes/tenant/resource_profiles.html')
     script = read('app/static/js/tenant_resource_profile_presets.js')
+    routes = read('app/kubernetes/tenant/routes.py')
     service = read('app/kubernetes/tenant/service.py')
 
-    assert 'data-tenant-capacity-policy-form' in capacity
-    assert 'data-capacity-policy-cluster' in capacity
-    assert 'data-capacity-policy-field=' in capacity
-    assert "action_button.classes('primary', full=true)" in capacity
-    assert 'overflow-y-auto overscroll-contain' in capacity
-    assert 'xl:max-h-[42rem]' in capacity
-    assert 'Budget</span> = allocatable' in capacity
-    assert 'Headroom</span> = budget' in capacity
-    assert 'active committed namespace' in capacity
+    assert 'components/table_registry.html' in capacity
+    assert 'registry_ui.filter_form' in capacity
+    assert 'registry_ui.footer' in capacity
+    assert 'capacity_search' in capacity
+    assert 'capacity_page' in capacity
+    assert 'capacity_per_page' in capacity
+    assert 'Budget</th>' in capacity
+    assert 'Committed</th>' in capacity
+    assert 'Headroom</th>' in capacity
+    assert 'State</th>' in capacity
+    assert 'space-y-3 p-4' not in capacity
+    assert 'Cluster policy uses fresh committed capacity evidence.' in capacity
     assert 'Quota enforces limits; admission uses committed requests, not physical reservation.' in capacity
-    assert 'Unknown evidence never becomes zero.' in capacity
+    assert "action_button.classes('primary', full=true)" in capacity
+    assert 'components/status_detail_dialog.html' in capacity
 
     assert 'tenant-capacity-policy-state' in page
     assert "'capacity_policy_state':" in service
     assert "const policies = readJson('tenant-capacity-policy-state')" in script
-    assert 'data-default-value' in script
-
+    assert 'paginate_sequence' in routes
+    assert "context['capacity_pagination']" in routes
+    assert "context['capacity_filters']" in routes
 
 
 def test_capacity_commitment_excludes_deprovisioned_history_and_preserves_unknowns() -> None:

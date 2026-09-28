@@ -842,6 +842,15 @@ def get_tenant_context() -> dict[str, Any]:
     namespace_count = TenantNamespace.query.filter(
         TenantNamespace.provisioning_status != 'deprovisioned'
     ).count()
+    profile_count = TenantResourceProfile.query.count()
+    enabled_profile_count = TenantResourceProfile.query.filter_by(enabled=True).count()
+    custom_profile_count = TenantResourceProfile.query.filter_by(
+        profile_class=TenantResourceProfileClass.CUSTOM.value
+    ).count()
+    active_profile_allocation_count = TenantNamespace.query.filter(
+        TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+        TenantNamespace.resource_profile_id.isnot(None),
+    ).count()
     return {
         'tenants': tenants,
         'profiles': profiles,
@@ -858,7 +867,13 @@ def get_tenant_context() -> dict[str, Any]:
         'tenant_count': Tenant.query.filter(
             Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value
         ).count(),
-        'profile_count': TenantResourceProfile.query.count(),
+        'profile_count': profile_count,
+        'resource_profile_stats': {
+            'total': profile_count,
+            'enabled': enabled_profile_count,
+            'custom': custom_profile_count,
+            'active_allocations': active_profile_allocation_count,
+        },
         'namespace_count': namespace_count,
         'ready_namespace_count': TenantNamespace.query.filter_by(provisioning_status='ready').count(),
         'namespace_drift_rows': (

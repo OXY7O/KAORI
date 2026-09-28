@@ -11,6 +11,7 @@ from kubernetes.client.rest import ApiException
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import any_permission_required, permission_required
+from app.common.pagination import paginate_sequence
 from app.kubernetes.tenant.admin_workspace import (
     get_access_grant_registry_context,
     get_credential_registry_context,
@@ -463,6 +464,26 @@ def resource_profiles():
             state=str(request.args.get('profile_state') or ''),
         )
     )
+
+    capacity_search = str(request.args.get('capacity_search') or '').strip()
+    capacity_rows = list(context.get('capacity_governance') or [])
+    if capacity_search:
+        needle = capacity_search.lower()
+        capacity_rows = [
+            item
+            for item in capacity_rows
+            if needle in str(item['cluster'].name).lower()
+            or needle in str(item['cluster'].environment).lower()
+        ]
+    capacity_items, capacity_pagination = paginate_sequence(
+        capacity_rows,
+        page=request.args.get('capacity_page', 1, type=int) or 1,
+        per_page=request.args.get('capacity_per_page', 5, type=int) or 5,
+    )
+    context['capacity_governance'] = capacity_items
+    context['capacity_pagination'] = capacity_pagination
+    context['capacity_filters'] = {'search': capacity_search}
+
     return render_template(
         'kubernetes/tenant/resource_profiles.html',
         tenant_page='resource_profiles',

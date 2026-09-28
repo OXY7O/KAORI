@@ -10,6 +10,40 @@
         ('workflow', 'Workflow Guide', 'route', url_for('tenant.resource_profiles', view='workflow'))
     ] %}
 
+    <section class="mb-5 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+             aria-labelledby="resource-profile-snapshot-heading">
+        <header class="border-b border-outline-subtle px-5 py-3.5 sm:px-6">
+            <div class="flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                    <i data-lucide="chart-no-axes-column-increasing" class="h-4 w-4"></i>
+                </span>
+                <div>
+                    <h2 id="resource-profile-snapshot-heading" class="text-sm font-semibold text-content-primary">Resource Profile Snapshot</h2>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Current reusable allocation contracts and active Namespace adoption.</p>
+                </div>
+            </div>
+        </header>
+        <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+            {% for icon, label, value, helper in [
+                ('layers-3', 'Total Profiles', resource_profile_stats.total, 'All committed profile contracts'),
+                ('badge-check', 'Enabled', resource_profile_stats.enabled, 'Selectable for new allocations'),
+                ('sliders-horizontal', 'Custom', resource_profile_stats.custom, 'Operator-managed contracts'),
+                ('boxes', 'Active Allocations', resource_profile_stats.active_allocations, 'Namespaces bound to a profile')
+            ] %}
+                <div class="flex items-center gap-3 bg-surface-card px-5 py-4">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-medium text-content-muted">{{ label }}</p>
+                        <p class="mt-0.5 text-xl font-semibold text-content-primary">{{ value }}</p>
+                        <p class="mt-0.5 truncate text-[11px] text-content-muted">{{ helper }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
     <section id="resource-profile-workspace"
              class="{{ operational_section_card.shell_classes() }}"
              aria-labelledby="resource-profile-workspace-title">
@@ -62,6 +96,5 @@
     </section>
 {% endblock tenant_content %}
 {% block tenant_scripts %}
-    <script defer
-            src="{{ url_for('static', filename='js/tenant_resource_profile_presets.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/tenant_resource_profile_presets.js') }}"></script>
 {% endblock tenant_scripts %}

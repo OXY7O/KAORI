@@ -8,8 +8,7 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <header class="flex items-start justify-between gap-4 rounded-t-xl border-b border-outline-subtle px-5 py-4">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                  aria-hidden="true">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                 <i data-lucide="layers-3" class="h-5 w-5"></i>
             </span>
             <div>
@@ -30,160 +29,134 @@
         ) }}
     </header>
 
-    <div class="space-y-5 p-5">
-        <div class="grid gap-5 xl:grid-cols-12">
-            <section class="space-y-4 rounded-xl border border-outline-subtle bg-surface-elevated p-4 xl:col-span-4"
-                     aria-labelledby="resource-profile-identity-heading">
-                <div>
-                    <h3 id="resource-profile-identity-heading" class="text-sm font-semibold text-content-primary">Identity &amp; Lineage</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Name the reusable contract and choose whether it remains a locked preset or becomes Custom.</p>
-                </div>
-
+    <div class="space-y-4 p-5">
+        <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4"
+                 aria-labelledby="resource-profile-identity-heading">
+            <div>
+                <h3 id="resource-profile-identity-heading" class="text-sm font-semibold text-content-primary">Identity &amp; Lineage</h3>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Name the reusable contract and keep preset/custom lineage explicit.</p>
+            </div>
+            <div class="mt-4 grid gap-4 lg:grid-cols-3">
                 <label class="block">
                     {{ form_field.label_row("Profile Name") }}
-                    <input name="profile_name"
-                           required
-                           autocomplete="off"
-                           placeholder="Platform Standard"
-                           class="{{ form_field.input_classes() }}">
+                    <input name="profile_name" required autocomplete="off" placeholder="Platform Standard" class="{{ form_field.input_classes() }}">
                 </label>
 
-                <label class="block">
-                    <span class="inline-flex min-h-6 items-center gap-1.5">
-                        <span class="text-xs font-semibold text-content-primary">Class</span>
-                        {{ info_tip.render(
-                            'resource-profile-class-tip',
-                            'Profile class',
-                            'Built-in classes use server-authoritative values. Choose Custom when the allocation must differ.',
-                            [
-                                'Small / Standard / Large — locked versioned presets.',
-                                'Custom — operator-managed validated values.'
-                            ],
-                            placement='right'
-                        ) }}
-                    </span>
-                    <select name="profile_class"
-                            required
-                            data-tenant-profile-class
-                            class="{{ form_field.select_classes() }}">
-                        <option value="small">Small</option>
-                        <option value="standard" selected>Standard</option>
-                        <option value="large">Large</option>
-                        <option value="custom">Custom</option>
-                    </select>
-                </label>
-
-                <label class="block"
-                       data-tenant-base-preset-wrapper
-                       hidden>
-                    <span class="inline-flex min-h-6 items-center gap-1.5">
-                        <span class="text-xs font-semibold text-content-primary">Base Preset</span>
-                        {{ info_tip.render(
-                            'resource-profile-base-tip',
-                            'Custom base preset',
-                            'Optional starting values for a Custom profile. KAORI retains the preset class/version as lineage evidence.',
-                            placement='right'
-                        ) }}
-                    </span>
-                    <select name="base_preset_class"
-                            data-tenant-base-preset
-                            disabled
-                            class="{{ form_field.select_classes() }}">
-                        <option value="">Start empty</option>
-                        <option value="small">Small</option>
-                        <option value="standard">Standard</option>
-                        <option value="large">Large</option>
-                    </select>
-                </label>
+                <div class="space-y-3">
+                    <label class="block">
+                        <span class="inline-flex min-h-6 items-center gap-1.5">
+                            <span class="text-xs font-semibold text-content-primary">Class</span>
+                            {{ info_tip.render(
+                                'resource-profile-class-tip',
+                                'Profile class',
+                                'Built-in classes use server-authoritative values. Choose Custom when the allocation must differ.',
+                                ['Small / Standard / Large — locked versioned presets.', 'Custom — operator-managed validated values.'],
+                                placement='right'
+                            ) }}
+                        </span>
+                        <select name="profile_class" required data-tenant-profile-class class="{{ form_field.select_classes() }}">
+                            <option value="small">Small</option>
+                            <option value="standard" selected>Standard</option>
+                            <option value="large">Large</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </label>
+                    <label class="block" data-tenant-base-preset-wrapper hidden>
+                        <span class="inline-flex min-h-6 items-center gap-1.5">
+                            <span class="text-xs font-semibold text-content-primary">Base Preset</span>
+                            {{ info_tip.render(
+                                'resource-profile-base-tip',
+                                'Custom base preset',
+                                'Optional starting values for a Custom profile. KAORI retains the preset class/version as lineage evidence.',
+                                placement='right'
+                            ) }}
+                        </span>
+                        <select name="base_preset_class" data-tenant-base-preset disabled class="{{ form_field.select_classes() }}">
+                            <option value="">Start empty</option>
+                            <option value="small">Small</option>
+                            <option value="standard">Standard</option>
+                            <option value="large">Large</option>
+                        </select>
+                    </label>
+                </div>
 
                 <label class="block">
                     {{ form_field.label_row("Description") }}
-                    <input name="profile_description"
-                           autocomplete="off"
-                           placeholder="Optional allocation intent"
-                           class="{{ form_field.input_classes() }}">
+                    <input name="profile_description" autocomplete="off" placeholder="Optional allocation intent" class="{{ form_field.input_classes() }}">
                 </label>
+            </div>
 
-                <div class="space-y-3 pt-1">
-                    <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-3.5 py-3">
-                        <div class="flex items-start gap-2.5">
-                            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
-                                  aria-hidden="true">
-                                <i data-lucide="lock-keyhole" class="h-3.5 w-3.5"></i>
-                            </span>
-                            <div>
-                                <p class="text-xs font-semibold text-content-primary">Operator rule</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Keep Small, Standard, and Large truthful. If values must differ, create a Custom profile instead of relabeling a preset.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="rounded-xl border border-outline-subtle bg-surface-hover px-3.5 py-3">
-                        <div class="flex items-start gap-2.5">
-                            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
-                                  aria-hidden="true">
-                                <i data-lucide="git-branch" class="h-3.5 w-3.5"></i>
-                            </span>
-                            <div>
-                                <p class="text-xs font-semibold text-content-primary">Custom keeps lineage</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Start from a preset when useful; KAORI retains the base preset/version while the Custom values remain explicit.</p>
-                            </div>
+            <div class="mt-4 grid gap-3 lg:grid-cols-2">
+                <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-3.5 py-3">
+                    <div class="flex items-start gap-2.5">
+                        <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary" aria-hidden="true">
+                            <i data-lucide="lock-keyhole" class="h-3.5 w-3.5"></i>
+                        </span>
+                        <div>
+                            <p class="text-xs font-semibold text-content-primary">Operator rule</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Keep Small, Standard, and Large truthful. Different values belong in Custom.</p>
                         </div>
                     </div>
                 </div>
-            </section>
-
-            <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4 xl:col-span-8"
-                     aria-labelledby="resource-profile-quota-heading">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <h3 id="resource-profile-quota-heading" class="text-sm font-semibold text-content-primary">Quota Guardrails</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Namespace-level ResourceQuota values. Requests feed Capacity Governance; quota is not a physical reservation.</p>
+                <div class="rounded-xl border border-outline-subtle bg-surface-hover px-3.5 py-3">
+                    <div class="flex items-start gap-2.5">
+                        <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary" aria-hidden="true">
+                            <i data-lucide="git-branch" class="h-3.5 w-3.5"></i>
+                        </span>
+                        <div>
+                            <p class="text-xs font-semibold text-content-primary">Custom keeps lineage</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">A Custom profile may start from a preset while retaining explicit base class/version evidence.</p>
+                        </div>
                     </div>
-                    {{ info_tip.render(
-                        'resource-profile-quota-tip',
-                        'Quota semantics',
-                        'These values become the reusable quota contract for the selected profile.',
-                        [
-                            'CPU/memory requests are the baseline capacity-admission commitment dimensions.',
-                            'PVC/storage remains quota evidence; physical storage admission requires separate capability evidence.',
-                            'Built-in preset values are read-only in normal workflows.'
-                        ]
-                    ) }}
                 </div>
+            </div>
+        </section>
 
-                <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
-                    {% for field, label, placeholder in [
-                        ('requests_cpu', 'CPU Requests', '2'),
-                        ('limits_cpu', 'CPU Limits', '4'),
-                        ('requests_memory', 'Memory Requests', '4Gi'),
-                        ('limits_memory', 'Memory Limits', '8Gi'),
-                        ('pods', 'Pods', '20'),
-                        ('persistentvolumeclaims', 'PVCs', '10'),
-                        ('requests_storage', 'Storage', '100Gi'),
-                        ('services', 'Services', '10'),
-                        ('configmaps', 'ConfigMaps', '50'),
-                        ('secrets', 'Secrets', '50')
-                    ] %}
-                        <label class="block">
-                            {{ form_field.label_row(label) }}
-                            <input name="{{ field }}"
-                                   placeholder="{{ placeholder }}"
-                                   data-tenant-resource-field="{{ field }}"
-                                   readonly
-                                   aria-readonly="true"
-                                   class="{{ form_field.input_classes() }}">
-                        </label>
-                    {% endfor %}
+        <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4"
+                 aria-labelledby="resource-profile-quota-heading">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h3 id="resource-profile-quota-heading" class="text-sm font-semibold text-content-primary">Quota Guardrails</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Namespace ResourceQuota contract; CPU/memory requests feed Capacity Governance.</p>
                 </div>
-            </section>
-        </div>
+                {{ info_tip.render(
+                    'resource-profile-quota-tip',
+                    'Quota semantics',
+                    'These values become the reusable quota contract for the selected profile.',
+                    [
+                        'CPU/memory requests are the baseline capacity-admission commitment dimensions.',
+                        'PVC/storage remains quota evidence; physical storage admission requires separate capability evidence.',
+                        'Built-in preset values are read-only in normal workflows.'
+                    ]
+                ) }}
+            </div>
+            <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                {% for field, label, placeholder in [
+                    ('requests_cpu', 'CPU Requests', '2'),
+                    ('limits_cpu', 'CPU Limits', '4'),
+                    ('requests_memory', 'Memory Requests', '4Gi'),
+                    ('limits_memory', 'Memory Limits', '8Gi'),
+                    ('pods', 'Pods', '20'),
+                    ('persistentvolumeclaims', 'PVCs', '10'),
+                    ('requests_storage', 'Storage', '100Gi'),
+                    ('services', 'Services', '10'),
+                    ('configmaps', 'ConfigMaps', '50'),
+                    ('secrets', 'Secrets', '50')
+                ] %}
+                    <label class="block">
+                        {{ form_field.label_row(label) }}
+                        <input name="{{ field }}" placeholder="{{ placeholder }}" data-tenant-resource-field="{{ field }}" readonly aria-readonly="true" class="{{ form_field.input_classes() }}">
+                    </label>
+                {% endfor %}
+            </div>
+        </section>
 
         <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4"
                  aria-labelledby="resource-profile-container-heading">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <h3 id="resource-profile-container-heading" class="text-sm font-semibold text-content-primary">Container Defaults</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">LimitRange defaults applied when a container omits its own request/limit values.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">LimitRange defaults used only when a container omits its own request/limit values.</p>
                 </div>
                 {{ info_tip.render(
                     'resource-profile-limitrange-tip',
@@ -200,12 +173,7 @@
                 ] %}
                     <label class="block">
                         {{ form_field.label_row(label) }}
-                        <input name="{{ field }}"
-                               placeholder="{{ placeholder }}"
-                               data-tenant-resource-field="{{ field }}"
-                               readonly
-                               aria-readonly="true"
-                               class="{{ form_field.input_classes() }}">
+                        <input name="{{ field }}" placeholder="{{ placeholder }}" data-tenant-resource-field="{{ field }}" readonly aria-readonly="true" class="{{ form_field.input_classes() }}">
                     </label>
                 {% endfor %}
             </div>
@@ -213,10 +181,8 @@
     </div>
 
     <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <p class="max-w-2xl text-xs leading-5 text-content-muted">Profile creation commits reusable intent only. Namespace provisioning performs capacity preflight and provider reconciliation separately.</p>
-        <button type="submit"
-                {% if not can_manage %}disabled aria-disabled="true"{% endif %}
-                class="{{ action_button.classes('primary') }}">
+        <p class="max-w-2xl text-xs leading-5 text-content-muted">Profile intent is reusable; Namespace allocation is admitted and reconciled separately.</p>
+        <button type="submit" {% if not can_manage %}disabled aria-disabled="true"{% endif %} class="{{ action_button.classes('primary') }}">
             <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
             Create Profile
         </button>
