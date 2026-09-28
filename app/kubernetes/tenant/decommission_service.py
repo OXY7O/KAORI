@@ -131,9 +131,7 @@ def build_tenant_decommission_preflight(tenant_id: str) -> dict[str, Any]:
     access_grant_count = _active_grant_count(tenant.id)
     membership_count = _active_membership_count(tenant.id)
     namespace_count = sum(
-        1
-        for item in namespaces
-        if item.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value
+        1 for item in namespaces if item.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value
     )
     managed_resource_count = TenantManagedResourceIntent.query.filter(
         TenantManagedResourceIntent.tenant_id == tenant.id,
@@ -178,9 +176,7 @@ def build_tenant_decommission_preflight(tenant_id: str) -> dict[str, Any]:
                 'through an admitted provider path first.'
             )
         if managed_resource_count:
-            blockers.append(
-                'Baseline Capsule teardown requires Tenant-managed provider resources to be cleared first.'
-            )
+            blockers.append('Baseline Capsule teardown requires Tenant-managed provider resources to be cleared first.')
     elif (
         tenant.provider_key != 'native_kubernetes'
         or tenant.provider_state != 'native'
@@ -278,10 +274,14 @@ def _actor(actor_user_id: int | None) -> User | None:
 
 def _remove_managed_resources(tenant: Tenant, *, actor: User | None) -> int:
     removed = 0
-    managed_resources = TenantManagedResourceIntent.query.filter(
-        TenantManagedResourceIntent.tenant_id == tenant.id,
-        TenantManagedResourceIntent.status != TenantManagedResourceStatus.DISABLED.value,
-    ).order_by(TenantManagedResourceIntent.id.asc()).all()
+    managed_resources = (
+        TenantManagedResourceIntent.query.filter(
+            TenantManagedResourceIntent.tenant_id == tenant.id,
+            TenantManagedResourceIntent.status != TenantManagedResourceStatus.DISABLED.value,
+        )
+        .order_by(TenantManagedResourceIntent.id.asc())
+        .all()
+    )
     for intent in managed_resources:
         remove_managed_resource_committed(intent_id=intent.id, actor=actor)
         removed += 1
@@ -292,18 +292,26 @@ def _release_policy_state(tenant: Tenant, *, actor: User | None) -> dict[str, in
     reservations_revoked = 0
     exposure_disabled = 0
 
-    reservations = TenantDomainReservation.query.filter_by(
-        tenant_id=tenant.id,
-        status=TenantDomainReservationStatus.ACTIVE.value,
-    ).order_by(TenantDomainReservation.id.asc()).all()
+    reservations = (
+        TenantDomainReservation.query.filter_by(
+            tenant_id=tenant.id,
+            status=TenantDomainReservationStatus.ACTIVE.value,
+        )
+        .order_by(TenantDomainReservation.id.asc())
+        .all()
+    )
     for reservation in reservations:
         reservation.status = TenantDomainReservationStatus.REVOKED.value
         reservations_revoked += 1
 
-    policies = TenantExposurePolicy.query.filter_by(
-        tenant_id=tenant.id,
-        status=TenantExposurePolicyStatus.ACTIVE.value,
-    ).order_by(TenantExposurePolicy.id.asc()).all()
+    policies = (
+        TenantExposurePolicy.query.filter_by(
+            tenant_id=tenant.id,
+            status=TenantExposurePolicyStatus.ACTIVE.value,
+        )
+        .order_by(TenantExposurePolicy.id.asc())
+        .all()
+    )
     for policy in policies:
         policy.status = TenantExposurePolicyStatus.DISABLED.value
         exposure_disabled += 1
@@ -317,8 +325,7 @@ def _release_policy_state(tenant: Tenant, *, actor: User | None) -> dict[str, in
             outcome='success',
             stage='policy_cleanup',
             detail=(
-                f'{reservations_revoked} domain reservations revoked; '
-                f'{exposure_disabled} exposure policies disabled.'
+                f'{reservations_revoked} domain reservations revoked; {exposure_disabled} exposure policies disabled.'
             ),
         )
         db.session.commit()
@@ -327,6 +334,7 @@ def _release_policy_state(tenant: Tenant, *, actor: User | None) -> dict[str, in
         'domain_reservations_revoked': reservations_revoked,
         'exposure_policies_disabled': exposure_disabled,
     }
+
 
 def _verify_terminal_state(tenant: Tenant) -> None:
     blockers: list[str] = []
@@ -377,28 +385,40 @@ def execute_tenant_decommission(
         _progress(progress, 5, 'Tenant frozen; validating provider authority.')
 
         stage = 'credentials'
-        credentials = TenantCredential.query.filter(
-            TenantCredential.tenant_id == tenant.id,
-            TenantCredential.status != TenantCredentialStatus.REVOKED.value,
-        ).order_by(TenantCredential.id.asc()).all()
+        credentials = (
+            TenantCredential.query.filter(
+                TenantCredential.tenant_id == tenant.id,
+                TenantCredential.status != TenantCredentialStatus.REVOKED.value,
+            )
+            .order_by(TenantCredential.id.asc())
+            .all()
+        )
         for credential in credentials:
             revoke_credential_committed(credential_id=credential.id, actor=actor)
         _progress(progress, 20, 'Credentials revoked and provider access removed.')
 
         stage = 'access_grants'
-        grants = TenantAccessGrant.query.filter_by(
-            tenant_id=tenant.id,
-            status=TenantAccessGrantStatus.ACTIVE.value,
-        ).order_by(TenantAccessGrant.id.asc()).all()
+        grants = (
+            TenantAccessGrant.query.filter_by(
+                tenant_id=tenant.id,
+                status=TenantAccessGrantStatus.ACTIVE.value,
+            )
+            .order_by(TenantAccessGrant.id.asc())
+            .all()
+        )
         for grant in grants:
             revoke_access_grant_committed(grant_id=grant.id, actor=actor)
         _progress(progress, 35, 'Access Grants revoked and Kubernetes RBAC cleanup verified.')
 
         stage = 'memberships'
-        memberships = TenantMembership.query.filter_by(
-            tenant_id=tenant.id,
-            status=TenantMembershipStatus.ACTIVE.value,
-        ).order_by(TenantMembership.id.asc()).all()
+        memberships = (
+            TenantMembership.query.filter_by(
+                tenant_id=tenant.id,
+                status=TenantMembershipStatus.ACTIVE.value,
+            )
+            .order_by(TenantMembership.id.asc())
+            .all()
+        )
         for membership in memberships:
             revoke_membership_committed(membership_id=membership.id, actor=actor)
         tenant = db.session.get(Tenant, tenant_id)
