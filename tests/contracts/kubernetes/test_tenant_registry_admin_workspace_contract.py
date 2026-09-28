@@ -496,8 +496,8 @@ def test_live_tenant_collection_snapshot_is_shared_below_hero_and_provider_probe
     assert "version_api().get_code(_request_timeout=3)" in service
     assert "title='Tenant Collection Snapshot'" in partial
     assert "source_label=tenant_live_connection.source_label" in partial
-    assert 'No worker schedule or inventory synchronization' in partial
-    assert 'page request or operation response' in partial
+    assert 'No worker sync' in partial
+    assert 'Checked on page load or operation' in partial
     assert 'tenant-live-connection-snapshot' in partial
     assert 'hx-swap-oob="true"' in partial
 
