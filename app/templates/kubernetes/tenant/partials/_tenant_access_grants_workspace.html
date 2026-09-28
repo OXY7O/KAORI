@@ -210,7 +210,7 @@
                 <div class="grid flex-1 gap-px bg-outline-subtle sm:grid-cols-2">
                     {% for icon, title, description in [
                         ('scope', 'Scope Rule', 'Tenant uses no target. Environment or Namespace requires exactly one matching target.'),
-                        ('shield', 'Least Privilege', 'Use the narrowest profile and scope required by the principal.'),
+                        ('shield', 'Least Privilege', 'Choose the least-privilege profile and narrowest scope that satisfies the principal’s operational responsibility; expand access only when the workflow requires it.'),
                         ('git-compare-arrows', 'Provider Authority', 'Kubernetes RBAC remains authoritative for effective access after reconciliation.'),
                         ('lock-keyhole', 'Secret Boundary', 'Authorization metadata is committed here; credential secret material is issued separately.')
                     ] %}
