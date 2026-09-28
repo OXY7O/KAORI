@@ -197,6 +197,27 @@ def test_namespace_access_is_a_paginated_non_secret_registry() -> None:
 
 
 
+
+
+def test_tenant_registry_shortcuts_use_local_anchors_without_page_reload() -> None:
+    memberships = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
+    membership_registry = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
+    group_registry = read('app/templates/kubernetes/tenant/partials/_group_registry.html')
+    grant_registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+    credential_registry = read('app/templates/kubernetes/tenant/partials/_credential_registry.html')
+
+    assert 'id="add-user-membership-form"' in memberships
+    assert 'id="create-tenant-group-form"' in memberships
+    assert 'id="add-group-membership-form"' in memberships
+
+    assert "'#add-user-membership-form'" in membership_registry
+    assert "'#create-tenant-group-form'" in group_registry
+    assert "'#access-grant-form'" in grant_registry
+    assert "'#credential-issuance'" in credential_registry
+
+    for template in (membership_registry, group_registry, grant_registry, credential_registry):
+        assert "~ '#" not in template
+
 def test_tenant_workspace_mutations_preserve_nested_scroll_and_do_not_push_history() -> None:
     partials = (
         'app/templates/kubernetes/tenant/partials/_tenant_form.html',
