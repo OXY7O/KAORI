@@ -1,10 +1,10 @@
 {% import "components/numbered_governance_steps.html" as numbered_steps %}
 {% set setup_flow = [
-    ('building-2', 'Create Tenant', 'Bind ownership to one Ready cluster and initial environment.'),
-    ('boxes', 'Provision Namespace', 'Apply Resource Profile, capacity guardrails, quota, and evidence.'),
-    ('users-round', 'Add Membership', 'Commit a user or Kubernetes group as a Tenant principal.'),
-    ('shield-check', 'Apply Access Grant', 'Select a versioned profile and the narrowest required scope.'),
-    ('key-round', 'Issue Credential', 'Create human or machine access only after grant readiness.')
+    ('building-2', 'Create Tenant', 'Bind owner to one Ready cluster and environment.'),
+    ('boxes', 'Provision Namespace', 'Apply profile, capacity guardrails, quota, and evidence.'),
+    ('users-round', 'Add Membership', 'Bind a user or Kubernetes group to the Tenant.'),
+    ('shield-check', 'Apply Access Grant', 'Choose a versioned profile and least-privilege scope.'),
+    ('key-round', 'Issue Credential', 'Issue human or machine access after grant readiness.')
 ] %}
 <div class="grid gap-5 xl:grid-cols-12 xl:items-stretch">
     <div class="h-full xl:col-span-5">
@@ -23,7 +23,7 @@
                         <h3 id="tenant-setup-flow-heading"
                             class="text-base font-semibold text-content-primary">Tenant Governance Flow</h3>
                         <p class="mt-1 text-sm leading-6 text-content-secondary">
-                            Create the ownership boundary first, then progress through namespace, identity, access, and credential governance.
+                            Create the Tenant boundary, then progress through namespace, identity, access, and credentials.
                         </p>
                     </div>
                 </div>
@@ -51,7 +51,7 @@
                     <div>
                         <p class="text-xs font-semibold text-content-primary">Provider Authority</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">
-                            Native Kubernetes and compatible Capsule clusters support direct Tenant Setup creation. Existing Capsule Tenant CRs still enter through Discovery and governed Adoption.
+                            Native Kubernetes and supported Capsule clusters allow direct creation. Existing Capsule Tenant CRs use Discovery → Adoption.
                         </p>
                     </div>
                 </div>
