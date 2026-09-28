@@ -29,13 +29,15 @@ def test_resource_profiles_use_server_owned_kaori_content_tabs_and_snapshot_stat
     assert 'components/content_tabs.html' in page
     assert 'content_tabs.render_links' in page
     assert 'id="resource-profile-workspace"' in page
-    assert "('profiles', 'Profile Library'" in page
-    assert "('capacity', 'Capacity Governance'" in page
+    assert "('profiles', 'Profile Library', 'layers-3', url_for('tenant.resource_profiles', view='profiles'))" in page
+    assert "('capacity', 'Capacity Governance', 'gauge', url_for('tenant.resource_profiles', view='capacity'))" in page
     assert "('workflow', 'Workflow Guide'" in page
+    assert "profile_count)," not in page
+    assert "ready_clusters|length)," not in page
     assert "hx_target='#resource-profile-workspace'" in page
     assert "active_resource_profile_view" in page
     assert "active_view not in {'profiles', 'capacity', 'workflow'}" in routes
-
+    assert 'destructive_confirmation_modal.js' in page
 
 def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None:
     form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
@@ -45,7 +47,7 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'Identity &amp; Lineage' in form
     assert 'Quota Guardrails' in form
     assert 'Container Defaults' in form
-    assert 'lg:grid-cols-3' in form
+    assert 'lg:grid-cols-4' in form
     assert 'lg:grid-cols-5' in form
     assert 'xl:grid-cols-12' not in form
     assert 'Operator rule' in form
@@ -55,12 +57,12 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'resource-profile-class-tip' in form
     assert 'resource-profile-base-tip' in form
     assert 'data-tenant-profile-class' in form
+    assert 'data-tenant-base-preset-wrapper hidden' in form
     assert 'data-tenant-base-preset' in form
     assert 'data-tenant-resource-field="{{ field }}"' in form
     assert 'setReadonly(fields, true)' in script
     assert "classSelect?.value === 'custom'" in script
     assert "document.addEventListener('htmx:afterSwap'" in script
-
 
 def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_resource_profile_registry.html')
@@ -76,21 +78,22 @@ def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() 
     assert '>Apply<' not in registry
     assert '_pagination_footer.html' not in registry
     assert 'Resource Profile Registry' in registry
+    assert 'Allocation' in registry
     assert 'Usage' in registry
-    assert 'Actions' in registry
-    assert 'resource-profile-edit-' in registry
-    assert 'delete_resource_profile_route' in registry
-    assert "special_label('Locked', 'unknown', 'lock-keyhole')" in registry
+    assert '>Action</th>' in registry
+    assert "table_ui.table_classes('min-w-[900px]')" in registry
+    assert 'resource-profile-manage-' in registry
+    assert "{{ 'Manage' if profile.profile_class == 'custom' else 'View' }}" in registry
     assert '_resource_profile_management_dialogs.html' in registry
-    assert 'Requests' in registry
-    assert 'Namespace Quota' in registry
-    assert 'Container Defaults' in registry
-    assert 'Lineage' in registry
+    assert 'Requests</th>' not in registry
+    assert 'Namespace Quota</th>' not in registry
+    assert 'Container Defaults</th>' not in registry
+    assert 'Lineage</th>' not in registry
+    assert "special_label('Locked'" not in registry
 
     assert 'def get_resource_profile_registry_context(' in service
     assert 'paginate_query(' in service
     assert "'profile_registry_filters':" in service
-
 
 def test_resource_profile_workflow_uses_numbered_contract_stages_without_arrow_flow() -> None:
     workflow = read('app/templates/kubernetes/tenant/partials/_resource_profile_workflow.html')
@@ -195,14 +198,20 @@ def test_resource_profile_registry_context_exposes_dependency_counts_for_actions
 
 
 
-def test_resource_profile_custom_management_dialogs_expose_edit_and_guarded_delete() -> None:
+def test_resource_profile_management_dialogs_explain_preset_lock_and_govern_custom_lifecycle() -> None:
     dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
 
     assert 'data-kaori-native-dialog' in dialogs
-    assert 'Edit {{ profile.name }}' in dialogs
+    assert 'resource-profile-manage-{{ profile.id }}' in dialogs
+    assert 'KAORI Built-in Preset' in dialogs
+    assert 'Why this preset is locked' in dialogs
+    assert 'same preset identity mean different resources over time' in dialogs
+    assert 'Create a Custom profile from this preset' in dialogs
     assert "url_for('tenant.update_resource_profile_route'" in dialogs
+    assert 'resource-profile-update-form-{{ profile.id }}' in dialogs
     assert 'profile_enabled' in dialogs
     assert 'Existing Namespace allocations keep their committed source version' in dialogs
     assert 'resource-profile-delete-modal' in dialogs
     assert 'zero Namespace and zero Capacity Decision references remain' in dialogs
     assert 'KAORI does not detach historical evidence automatically.' in dialogs
+
