@@ -86,6 +86,7 @@ from app.kubernetes.tenant.service import (
 )
 from app.kubernetes.tenant.workspace import (
     get_tenant_cluster_estate_context,
+    get_tenant_operations_evidence_context,
     get_tenant_overview_context,
     get_tenant_sync_workspace_context,
     get_tenant_workspace_context,
@@ -531,8 +532,94 @@ def operations():
     active_tab = str(request.args.get('tab') or 'provisioning')
     if active_tab not in {'provisioning', 'runs-evidence', 'drift-reconcile', 'activity'}:
         active_tab = 'provisioning'
+
     context = _tenant_workspace_context()
     context.update(get_live_tenant_connection_context())
+
+    if active_tab == 'provisioning':
+        namespace_context = get_namespace_registry_context(
+            page=request.args.get('ops_namespace_page', 1, type=int) or 1,
+            per_page=request.args.get('ops_namespace_per_page', 5, type=int) or 5,
+            search=str(request.args.get('ops_namespace_search') or ''),
+            tenant_id=str(request.args.get('ops_namespace_tenant_id') or ''),
+            environment=str(request.args.get('ops_namespace_environment') or ''),
+            status=str(request.args.get('ops_namespace_status') or ''),
+        )
+        context.update(
+            {
+                'operations_namespace_rows': namespace_context['namespaces'],
+                'operations_namespace_pagination': namespace_context['namespace_pagination'],
+                'operations_namespace_filters': namespace_context['namespace_registry_filters'],
+                'operations_namespace_tenant_options': namespace_context['namespace_registry_tenant_options'],
+                'operations_namespace_environment_options': namespace_context[
+                    'namespace_environment_filter_options'
+                ],
+                'operations_namespace_status_options': namespace_context['namespace_status_filter_options'],
+            }
+        )
+    elif active_tab == 'runs-evidence':
+        context.update(
+            get_tenant_operations_evidence_context(
+                page=request.args.get('ops_evidence_page', 1, type=int) or 1,
+                per_page=request.args.get('ops_evidence_per_page', 5, type=int) or 5,
+                evidence_type=str(request.args.get('ops_evidence_type') or 'audit'),
+                tenant_id=str(request.args.get('ops_evidence_tenant_id') or ''),
+                search=str(request.args.get('ops_evidence_search') or ''),
+            )
+        )
+    elif active_tab == 'drift-reconcile':
+        drift_context = get_namespace_registry_context(
+            page=request.args.get('ops_drift_page', 1, type=int) or 1,
+            per_page=request.args.get('ops_drift_per_page', 5, type=int) or 5,
+            search=str(request.args.get('ops_drift_search') or ''),
+            tenant_id=str(request.args.get('ops_drift_tenant_id') or ''),
+            environment=str(request.args.get('ops_drift_environment') or ''),
+            status='drifted',
+        )
+        provider_context = get_tenant_registry_context(
+            page=request.args.get('ops_provider_page', 1, type=int) or 1,
+            per_page=request.args.get('ops_provider_per_page', 5, type=int) or 5,
+            search=str(request.args.get('ops_provider_search') or ''),
+            cluster_id=str(request.args.get('ops_provider_cluster_id') or ''),
+            environment=str(request.args.get('ops_provider_environment') or ''),
+            lifecycle_status=str(request.args.get('ops_provider_lifecycle') or ''),
+        )
+        access_context = get_access_grant_registry_context(
+            page=request.args.get('ops_access_page', 1, type=int) or 1,
+            per_page=request.args.get('ops_access_per_page', 5, type=int) or 5,
+            tenant_id=str(request.args.get('ops_access_tenant_id') or ''),
+            status=str(request.args.get('ops_access_status') or ''),
+            reconciliation_status=str(request.args.get('ops_access_reconciliation') or ''),
+            scope_type=str(request.args.get('ops_access_scope') or ''),
+            search=str(request.args.get('ops_access_search') or ''),
+        )
+        context.update(
+            {
+                'operations_drift_rows': drift_context['namespaces'],
+                'operations_drift_pagination': drift_context['namespace_pagination'],
+                'operations_drift_filters': drift_context['namespace_registry_filters'],
+                'operations_drift_tenant_options': drift_context['namespace_registry_tenant_options'],
+                'operations_drift_environment_options': drift_context['namespace_environment_filter_options'],
+                'operations_provider_rows': provider_context['tenant_rows'],
+                'operations_provider_pagination': provider_context['tenant_pagination'],
+                'operations_provider_filters': provider_context['tenant_registry_filters'],
+                'operations_provider_cluster_options': provider_context['tenant_cluster_options'],
+                'operations_provider_environment_options': provider_context[
+                    'tenant_environment_filter_options'
+                ],
+                'operations_provider_lifecycle_options': provider_context['tenant_lifecycle_filter_options'],
+                'operations_access_rows': access_context['access_grant_rows'],
+                'operations_access_pagination': access_context['access_grant_pagination'],
+                'operations_access_filters': access_context['access_grant_filters'],
+                'operations_access_tenant_options': access_context['access_grant_tenant_options'],
+                'operations_access_status_options': access_context['access_grant_status_options'],
+                'operations_access_reconciliation_options': access_context[
+                    'access_grant_reconciliation_options'
+                ],
+                'operations_access_scope_options': access_context['access_grant_scope_options'],
+            }
+        )
+
     return render_template(
         'kubernetes/tenant/operations.html',
         tenant_page='operations',
