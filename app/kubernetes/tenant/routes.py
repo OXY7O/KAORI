@@ -1551,10 +1551,11 @@ def _credential_feedback(
 def generate_credential_material_route(credential_id: int):
     try:
         _csrf()
+        requested_seconds = _required_int('requested_seconds')
         material = generate_credential_material_committed(
             credential_id=credential_id,
             namespace_id=_required_int('namespace_id'),
-            requested_seconds=_required_int('requested_seconds'),
+            requested_seconds=requested_seconds,
             actor=cast(User, current_user),
         )
     except (ValueError, ApiException, TenantCredentialStateConflictError) as exc:
@@ -1601,6 +1602,7 @@ def generate_credential_material_route(credential_id: int):
             material_base64=material_base64,
             material_namespace=material.namespace,
             material_expires_at=material.expires_at,
+            material_requested_seconds=requested_seconds,
             material_access_package=material.access_package,
             delivery_label=delivery_label,
             **context,
@@ -1609,6 +1611,8 @@ def generate_credential_material_route(credential_id: int):
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
+    response.headers['Referrer-Policy'] = 'no-referrer'
+    response.headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive'
     return response
 
 
