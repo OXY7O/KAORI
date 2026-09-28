@@ -9,10 +9,11 @@ from app.kubernetes.tenant.access_service import (
     revoke_access_grant_committed,
     revoke_membership_committed,
 )
+from app.kubernetes.tenant.capsule_tenant import delete_capsule_tenant_verified
 from app.kubernetes.tenant.credential_service import revoke_credential_committed
 from app.kubernetes.tenant.managed_resource_service import remove_managed_resource_committed
 from app.kubernetes.tenant.provisioning import deprovision_native_namespace_committed
-from app.models import AuditEvent, User
+from app.models import AuditEvent, Cluster, User
 from app.models.tenant import (
     Tenant,
     TenantAccessGrant,
@@ -126,6 +127,19 @@ def build_tenant_decommission_preflight(tenant_id: str) -> dict[str, Any]:
         TenantAdvancedCapabilityIntent.tenant_id == tenant.id,
         TenantAdvancedCapabilityIntent.status != TenantAdvancedCapabilityStatus.DISABLED.value,
     ).count()
+    credential_count = _active_credential_count(tenant.id)
+    access_grant_count = _active_grant_count(tenant.id)
+    membership_count = _active_membership_count(tenant.id)
+    namespace_count = sum(
+        1
+        for item in namespaces
+        if item.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value
+    )
+    managed_resource_count = TenantManagedResourceIntent.query.filter(
+        TenantManagedResourceIntent.tenant_id == tenant.id,
+        TenantManagedResourceIntent.status != TenantManagedResourceStatus.DISABLED.value,
+    ).count()
+    provider_evidence = dict(tenant.provider_evidence_json or {})
 
     blockers: list[str] = []
     if tenant.lifecycle_status == TenantLifecycleStatus.DECOMMISSIONED.value:
@@ -138,10 +152,35 @@ def build_tenant_decommission_preflight(tenant_id: str) -> dict[str, Any]:
         blockers.append(f'Tenant lifecycle {tenant.lifecycle_status!r} is not eligible for decommission.')
 
     if tenant.provider_key == 'capsule' or tenant.reconciliation_authority == 'capsule':
-        blockers.append(
-            'Capsule is authoritative for this Tenant. The baseline Capsule teardown adapter is not admitted; '
-            'KAORI will not bypass Capsule with direct Native Kubernetes deletion.'
-        )
+        if tenant.provider_key != 'capsule' or tenant.reconciliation_authority != 'capsule':
+            blockers.append('Capsule teardown requires committed Capsule provider and reconciliation authority.')
+        elif tenant.provider_state != 'capsule':
+            blockers.append('Capsule provider is degraded; teardown fails closed until authority is healthy.')
+        if tenant.ownership_status != TenantOwnershipStatus.MANAGED.value or not bool(
+            provider_evidence.get('created_by_kaori')
+        ):
+            blockers.append(
+                'Baseline Capsule teardown is limited to KAORI-created managed Tenant CRs; '
+                'adopted/foreign provider objects remain fail-closed.'
+            )
+        if not str(provider_evidence.get('provider_api_version') or '').strip():
+            blockers.append('Capsule teardown requires committed provider API-version evidence.')
+        if not str(provider_evidence.get('provider_reference') or tenant.provider_reference or '').strip():
+            blockers.append('Capsule teardown requires a committed provider reference.')
+        if namespace_count:
+            blockers.append(
+                'Baseline Capsule teardown requires zero active Tenant namespace records; '
+                'Capsule namespace teardown is not admitted in this slice.'
+            )
+        if access_grant_count or credential_count:
+            blockers.append(
+                'Baseline Capsule teardown requires active Access Grants and credentials to be cleared '
+                'through an admitted provider path first.'
+            )
+        if managed_resource_count:
+            blockers.append(
+                'Baseline Capsule teardown requires Tenant-managed provider resources to be cleared first.'
+            )
     elif (
         tenant.provider_key != 'native_kubernetes'
         or tenant.provider_state != 'native'
@@ -170,19 +209,12 @@ def build_tenant_decommission_preflight(tenant_id: str) -> dict[str, Any]:
         'provider_state': tenant.provider_state,
         'reconciliation_authority': tenant.reconciliation_authority,
         'lifecycle_status': tenant.lifecycle_status,
-        'credential_count': _active_credential_count(tenant.id),
-        'access_grant_count': _active_grant_count(tenant.id),
-        'membership_count': _active_membership_count(tenant.id),
+        'credential_count': credential_count,
+        'access_grant_count': access_grant_count,
+        'membership_count': membership_count,
         'group_count': sum(1 for item in tenant.groups if item.enabled),
-        'namespace_count': sum(
-            1
-            for item in namespaces
-            if item.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value
-        ),
-        'managed_resource_count': TenantManagedResourceIntent.query.filter(
-            TenantManagedResourceIntent.tenant_id == tenant.id,
-            TenantManagedResourceIntent.status != TenantManagedResourceStatus.DISABLED.value,
-        ).count(),
+        'namespace_count': namespace_count,
+        'managed_resource_count': managed_resource_count,
         'domain_reservation_count': TenantDomainReservation.query.filter_by(
             tenant_id=tenant.id,
             status=TenantDomainReservationStatus.ACTIVE.value,
@@ -330,7 +362,7 @@ def execute_tenant_decommission(
     actor_user_id: int | None,
     progress: ProgressCallback | None = None,
 ) -> dict[str, Any]:
-    """Execute idempotent Native Tenant teardown while preserving audit history."""
+    """Execute idempotent provider-aware Tenant teardown while preserving audit history."""
 
     actor = _actor(actor_user_id)
     stage = 'preflight'
@@ -419,11 +451,36 @@ def execute_tenant_decommission(
         tenant = db.session.get(Tenant, tenant_id)
         if tenant is None:
             raise TenantDecommissionBlocked('Tenant disappeared before final provider verification.')
+        provider_cleanup: dict[str, object]
         if (
-            tenant.provider_key != 'native_kubernetes'
-            or tenant.provider_state != 'native'
-            or tenant.reconciliation_authority != 'native_kubernetes'
+            tenant.provider_key == 'native_kubernetes'
+            and tenant.provider_state == 'native'
+            and tenant.reconciliation_authority == 'native_kubernetes'
         ):
+            provider_cleanup = {
+                'provider': 'native_kubernetes',
+                'provider_verified_absent': True,
+                'tenant_object_required': False,
+                'secret_material_persisted': False,
+            }
+        elif (
+            tenant.provider_key == 'capsule'
+            and tenant.provider_state == 'capsule'
+            and tenant.reconciliation_authority == 'capsule'
+        ):
+            cluster = db.session.get(Cluster, tenant.cluster_id)
+            if cluster is None:
+                raise TenantDecommissionBlocked('Tenant cluster disappeared before Capsule provider verification.')
+            provider_evidence = dict(tenant.provider_evidence_json or {})
+            provider_cleanup = delete_capsule_tenant_verified(
+                cluster=cluster,
+                api_version=str(provider_evidence.get('provider_api_version') or '').strip(),
+                tenant_name=str(provider_evidence.get('provider_reference') or tenant.provider_reference or '').strip(),
+                kaori_tenant_id=tenant.id,
+                generation=int(tenant.generation or 1),
+                expected_uid=str(provider_evidence.get('provider_uid') or '').strip() or None,
+            )
+        else:
             raise TenantDecommissionBlocked('Provider authority changed during teardown; final state fails closed.')
         _verify_terminal_state(tenant)
 
@@ -436,6 +493,7 @@ def execute_tenant_decommission(
             'provider_key': tenant.provider_key,
             'reconciliation_authority': tenant.reconciliation_authority,
             'provider_verified_absent': True,
+            'provider_cleanup': provider_cleanup,
             'namespaces': deprovisioned_namespaces,
             'tenant_generation': tenant.generation,
             'secret_material_persisted': False,
@@ -462,6 +520,7 @@ def execute_tenant_decommission(
             'lifecycle_status': tenant.lifecycle_status,
             'namespaces_deprovisioned': deprovisioned_namespaces,
             'managed_resources_removed': managed_resources_removed,
+            'provider_cleanup': provider_cleanup,
             **release_counts,
         }
     except Exception as exc:

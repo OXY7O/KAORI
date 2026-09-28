@@ -461,9 +461,25 @@ def test_governed_tenant_decommission_is_async_provider_verified_and_fail_closed
     offsets = [decommission.index(marker) for marker in ordered_markers]
     assert offsets == sorted(offsets)
 
-    assert 'Capsule is authoritative for this Tenant.' in decommission
-    assert 'will not bypass Capsule with direct Native Kubernetes deletion' in decommission
+    capsule = read('app/kubernetes/tenant/capsule_tenant.py')
+
+    assert 'delete_capsule_tenant_verified' in decommission
+    assert "tenant.provider_state == 'capsule'" in decommission
+    assert "tenant.reconciliation_authority == 'capsule'" in decommission
+    assert "provider_evidence.get('created_by_kaori')" in decommission
+    assert 'Baseline Capsule teardown requires zero active Tenant namespace records' in decommission
+    assert 'Baseline Capsule teardown requires active Access Grants and credentials to be cleared' in decommission
+    assert 'Baseline Capsule teardown requires Tenant-managed provider resources to be cleared first.' in decommission
     assert "tenant.provider_key != 'native_kubernetes'" in provisioning
+
+    assert 'def delete_capsule_tenant_verified(' in capsule
+    assert "labels.get(_MANAGED_BY_KEY) != _MANAGED_BY_VALUE" in capsule
+    assert "labels.get(_TENANT_ID_KEY) != kaori_tenant_id" in capsule
+    assert "_TENANT_GENERATION_KEY" in capsule
+    assert 'expected_uid and current_uid and current_uid != expected_uid' in capsule
+    assert "V1DeleteOptions(propagation_policy='Foreground')" in capsule
+    assert 'for _ in range(10)' in capsule
+    assert "'provider_verified_absent': True" in capsule
     assert "tenant.reconciliation_authority != 'native_kubernetes'" in provisioning
     assert 'api.delete_namespace(name=record.namespace)' in provisioning
     assert '_namespace_delete_observation' in provisioning
@@ -833,3 +849,29 @@ def test_access_grant_form_filters_targets_and_profiles_from_selected_membership
     # Browser filtering is operator guidance only; server-side Tenant boundary validation remains authoritative.
     assert 'Environment scope cannot cross Tenant boundaries.' in service
     assert 'Namespace scope cannot cross Tenant boundaries.' in service
+
+
+
+def test_baseline_capsule_decommission_is_authority_safe_and_residue_gated() -> None:
+    service = read('app/kubernetes/tenant/decommission_service.py')
+    capsule = read('app/kubernetes/tenant/capsule_tenant.py')
+    readme = read('app/kubernetes/tenant/README.md')
+
+    assert "tenant.ownership_status != TenantOwnershipStatus.MANAGED.value" in service
+    assert "provider_evidence.get('created_by_kaori')" in service
+    assert "tenant.provider_state != 'capsule'" in service
+    assert 'namespace_count' in service
+    assert 'access_grant_count or credential_count' in service
+    assert 'managed_resource_count' in service
+    assert 'delete_capsule_tenant_verified(' in service
+    assert "'provider_cleanup': provider_cleanup" in service
+
+    assert 'Capsule Tenant API is unavailable' in capsule
+    assert 'Capsule Tenant ownership label does not match committed KAORI Tenant identity.' in capsule
+    assert 'Capsule Tenant generation no longer matches committed KAORI intent.' in capsule
+    assert 'Capsule Tenant UID changed' in capsule
+    assert 'provider absence was not verified before timeout' in capsule
+
+    assert 'baseline Capsule teardown is admitted only' in readme
+    assert 'KAORI never falls back to Native deletion' in readme
+    assert 'Baseline Capsule decommission:' in readme
