@@ -64,7 +64,8 @@
         </div>
 
         <div class="grid gap-5 xl:grid-cols-3 xl:items-stretch">
-            <form method="post"
+            <form id="add-user-membership-form"
+                  method="post"
                   action="{{ url_for('tenant.add_user_membership_route') }}"
                   hx-post="{{ url_for('tenant.add_user_membership_route') }}"
                   hx-target="#tenant-admin-workspace"
@@ -131,7 +132,8 @@
                 </button>
             </form>
 
-            <form method="post"
+            <form id="create-tenant-group-form"
+                  method="post"
                   action="{{ url_for('tenant.create_group_route') }}"
                   hx-post="{{ url_for('tenant.create_group_route') }}"
                   hx-target="#tenant-admin-workspace"
@@ -197,7 +199,8 @@
                 </button>
             </form>
 
-            <form method="post"
+            <form id="add-group-membership-form"
+                  method="post"
                   action="{{ url_for('tenant.add_group_membership_route') }}"
                   hx-post="{{ url_for('tenant.add_group_membership_route') }}"
                   hx-target="#tenant-admin-workspace"
