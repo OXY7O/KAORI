@@ -479,8 +479,7 @@ def resource_profiles():
         capacity_rows = [
             item
             for item in capacity_rows
-            if needle in str(item['cluster'].name).lower()
-            or needle in str(item['cluster'].environment).lower()
+            if needle in str(item['cluster'].name).lower() or needle in str(item['cluster'].environment).lower()
         ]
     capacity_items, capacity_pagination = paginate_sequence(
         capacity_rows,
@@ -555,9 +554,7 @@ def operations():
                 'operations_namespace_pagination': namespace_context['namespace_pagination'],
                 'operations_namespace_filters': namespace_context['namespace_registry_filters'],
                 'operations_namespace_tenant_options': namespace_context['namespace_registry_tenant_options'],
-                'operations_namespace_environment_options': namespace_context[
-                    'namespace_environment_filter_options'
-                ],
+                'operations_namespace_environment_options': namespace_context['namespace_environment_filter_options'],
                 'operations_namespace_status_options': namespace_context['namespace_status_filter_options'],
             }
         )
@@ -608,18 +605,14 @@ def operations():
                 'operations_provider_pagination': provider_context['tenant_pagination'],
                 'operations_provider_filters': provider_context['tenant_registry_filters'],
                 'operations_provider_cluster_options': provider_context['tenant_cluster_options'],
-                'operations_provider_environment_options': provider_context[
-                    'tenant_environment_filter_options'
-                ],
+                'operations_provider_environment_options': provider_context['tenant_environment_filter_options'],
                 'operations_provider_lifecycle_options': provider_context['tenant_lifecycle_filter_options'],
                 'operations_access_rows': access_context['access_grant_rows'],
                 'operations_access_pagination': access_context['access_grant_pagination'],
                 'operations_access_filters': access_context['access_grant_filters'],
                 'operations_access_tenant_options': access_context['access_grant_tenant_options'],
                 'operations_access_status_options': access_context['access_grant_status_options'],
-                'operations_access_reconciliation_options': access_context[
-                    'access_grant_reconciliation_options'
-                ],
+                'operations_access_reconciliation_options': access_context['access_grant_reconciliation_options'],
                 'operations_access_scope_options': access_context['access_grant_scope_options'],
             }
         )
@@ -765,7 +758,11 @@ def reactivate_tenant_group_route(group_id: int):
             status='success',
             title='Tenant Group Reactivated',
             message=f'{group.name} is enabled for future Tenant Membership use.',
-            metadata={'tenant_id': group.tenant_id, 'group_id': group.public_id, 'operation': 'reactivate_tenant_group'},
+            metadata={
+                'tenant_id': group.tenant_id,
+                'group_id': group.public_id,
+                'operation': 'reactivate_tenant_group',
+            },
         )
     return _tenant_section_redirect('memberships')
 
@@ -1149,10 +1146,10 @@ def decommission_tenant_route(tenant_id: str):
             title='Tenant Decommission Queued' if dispatch.created else 'Tenant Decommission Already Active',
             message=dispatch.message,
             detail=(
-                f"Generation {preflight['tenant_generation']} · "
-                f"{preflight['credential_count']} credentials · "
-                f"{preflight['access_grant_count']} grants · "
-                f"{preflight['namespace_count']} namespaces"
+                f'Generation {preflight["tenant_generation"]} · '
+                f'{preflight["credential_count"]} credentials · '
+                f'{preflight["access_grant_count"]} grants · '
+                f'{preflight["namespace_count"]} namespaces'
             ),
             metadata={
                 'tenant_id': tenant_id,
@@ -1275,8 +1272,8 @@ def delete_resource_profile_route(profile_id: int):
             event_type='kubernetes_tenant_resource_profile_deleted',
             status='success',
             title='Resource Profile Deleted',
-            message=f"{deleted['name']} was deleted after dependency verification.",
-            detail=f"Custom · v{deleted['version']}",
+            message=f'{deleted["name"]} was deleted after dependency verification.',
+            detail=f'Custom · v{deleted["version"]}',
             metadata={
                 'resource_profile_id': deleted['public_id'],
                 'profile_class': deleted['profile_class'],
