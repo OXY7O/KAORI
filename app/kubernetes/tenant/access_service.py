@@ -508,6 +508,7 @@ def reconcile_access_grant_committed(*, grant_id: int, actor: User | None = None
     grant = db.session.get(TenantAccessGrant, grant_id)
     if grant is None:
         raise ValueError('Selected Tenant Access Grant no longer exists.')
+    _require_ready_tenant(grant.tenant)
     try:
         reconcile_native_access_grant(grant)
         _record_grant_event(

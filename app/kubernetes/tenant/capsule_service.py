@@ -94,6 +94,8 @@ def begin_native_recovery_committed(
     tenant = db.session.get(Tenant, tenant_id)
     if tenant is None:
         raise ValueError('Selected Tenant no longer exists.')
+    if tenant.lifecycle_status in {'decommissioning', 'decommissioned'}:
+        raise ValueError('Provider authority transition is frozen during Tenant decommission.')
     if tenant.provider_key != TenantProviderKey.CAPSULE.value:
         raise ValueError('Native Recovery requires Capsule to be the current provider authority.')
     if tenant.provider_state != TenantProviderState.CAPSULE_DEGRADED.value:
@@ -141,6 +143,8 @@ def complete_native_recovery_committed(
     tenant = db.session.get(Tenant, tenant_id)
     if tenant is None:
         raise ValueError('Selected Tenant no longer exists.')
+    if tenant.lifecycle_status in {'decommissioning', 'decommissioned'}:
+        raise ValueError('Provider authority transition is frozen during Tenant decommission.')
     if tenant.provider_key != TenantProviderKey.CAPSULE.value:
         raise ValueError('Native Recovery completion requires Capsule to remain current authority.')
     if tenant.provider_state != TenantProviderState.NATIVE_RECOVERY.value:

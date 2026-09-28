@@ -365,6 +365,8 @@ def change_native_namespace_allocation(source: Mapping[str, Any]) -> TenantNames
         raise ValueError('Selected Tenant namespace no longer exists.')
     if profile is None or not profile.enabled:
         raise ValueError('Selected Resource Profile is unavailable.')
+    if record.environment.tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
+        raise ValueError('Tenant is not Ready; namespace allocation changes are frozen during decommission.')
     if record.environment.tenant.provider_key != 'native_kubernetes':
         raise ValueError('This UAT slice can change only Native Kubernetes Tenant allocations.')
 

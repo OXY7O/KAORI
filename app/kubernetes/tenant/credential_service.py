@@ -420,6 +420,8 @@ def renew_credential_committed(
     credential = db.session.get(TenantCredential, credential_id)
     if credential is None:
         raise ValueError('Selected Tenant credential no longer exists.')
+    if credential.tenant.lifecycle_status != 'ready':
+        raise ValueError('Tenant is not Ready; credential renewal is frozen during decommission.')
     if credential.status == TenantCredentialStatus.REVOKED.value:
         raise ValueError('Revoked Tenant credentials cannot be renewed.')
 
@@ -497,6 +499,8 @@ def resume_credential_committed(*, credential_id: int, actor: User | None = None
     credential = db.session.get(TenantCredential, credential_id)
     if credential is None:
         raise ValueError('Selected Tenant credential no longer exists.')
+    if credential.tenant.lifecycle_status != 'ready':
+        raise ValueError('Tenant is not Ready; credential resume is frozen during decommission.')
     if credential.status != TenantCredentialStatus.SUSPENDED.value:
         raise ValueError('Only a suspended Tenant credential can be resumed.')
 
