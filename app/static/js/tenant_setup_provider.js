@@ -3,8 +3,7 @@
         const select =
             root.querySelector?.('#tenant-provider-select') || document.querySelector('#tenant-provider-select')
         const fields =
-            root.querySelector?.('[data-capsule-owner-fields]') ||
-            document.querySelector('[data-capsule-owner-fields]')
+            root.querySelector?.('[data-capsule-owner-fields]') || document.querySelector('[data-capsule-owner-fields]')
         if (!(select instanceof HTMLSelectElement) || !(fields instanceof HTMLElement)) return
 
         const capsule = select.value === 'capsule'
