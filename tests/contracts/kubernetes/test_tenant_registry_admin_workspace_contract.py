@@ -157,7 +157,7 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'Namespace needs one target; broader scopes reconcile as namespaces become available.' in workspace
     assert 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3' in workspace
     assert 'Start from one active Membership that identifies the principal and fixes its Tenant boundary.' in workspace
-    assert 'Choose the least-privilege profile and narrowest scope that satisfies the principal’s operational responsibility' in workspace
+    assert 'Use the least-privilege profile and narrowest scope that meets the principal’s operational need.' in workspace
     assert 'Environment/Tenant scope may stay Pending until a namespace exists.' in workspace
     assert 'Access Boundaries' in workspace
     assert 'components/info_tip.html' in workspace
