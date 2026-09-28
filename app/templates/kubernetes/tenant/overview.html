@@ -13,15 +13,22 @@
         ('key-round', 'Credentials', tenant_credential_count, 'Human & machine identities', 'info'),
         ('shield-alert', 'Findings', tenant_governance_finding_count, 'Active Tenant Governance findings', 'warning' if tenant_governance_finding_count else 'normal')
     ] %}
-    {% call operational_section_card.render(
-        'Tenant Estate',
-        'Committed governance scope across the Kubernetes fleet.',
-        'layout-grid',
-        body_classes='p-0',
-        aria_label='Tenant estate summary'
-    ) %}
-        {{ resource_posture_grid.render(estate_metrics, columns=5) }}
-    {% endcall %}
+    <section class="space-y-4" aria-labelledby="tenant-governance-scope-heading">
+        {{ section_intro.render(
+            'Governance Scope',
+            'Committed Tenant, namespace, cluster, credential, and finding posture across the Kubernetes estate.',
+            'tenant-governance-scope-heading'
+        ) }}
+        {% call operational_section_card.render(
+            'Tenant Estate',
+            'Committed governance scope across the Kubernetes fleet.',
+            'layout-grid',
+            body_classes='p-0',
+            aria_label='Tenant estate summary'
+        ) %}
+            {{ resource_posture_grid.render(estate_metrics, columns=5) }}
+        {% endcall %}
+    </section>
 
     <section class="space-y-4" aria-labelledby="tenant-multicluster-heading">
         {{ section_intro.render(
