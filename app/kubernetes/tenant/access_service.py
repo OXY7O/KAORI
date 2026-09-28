@@ -544,7 +544,15 @@ def get_tenant_access_context() -> dict[str, object]:
         .order_by(User.username.asc())
         .all()
     )
-    group_options = TenantGroup.query.filter_by(enabled=True).order_by(TenantGroup.name.asc()).all()
+    group_options = (
+        TenantGroup.query.join(Tenant, Tenant.id == TenantGroup.tenant_id)
+        .filter(
+            TenantGroup.enabled.is_(True),
+            Tenant.lifecycle_status == TenantLifecycleStatus.READY.value,
+        )
+        .order_by(TenantGroup.name.asc())
+        .all()
+    )
     membership_options = (
         TenantMembership.query.join(Tenant, Tenant.id == TenantMembership.tenant_id)
         .filter(
@@ -563,7 +571,10 @@ def get_tenant_access_context() -> dict[str, object]:
     namespace_options = (
         TenantNamespace.query.join(TenantEnvironment, TenantEnvironment.id == TenantNamespace.tenant_environment_id)
         .join(Tenant, Tenant.id == TenantEnvironment.tenant_id)
-        .filter(Tenant.lifecycle_status == TenantLifecycleStatus.READY.value)
+        .filter(
+            Tenant.lifecycle_status == TenantLifecycleStatus.READY.value,
+            TenantNamespace.provisioning_status == 'ready',
+        )
         .order_by(Tenant.name.asc(), TenantNamespace.namespace.asc())
         .all()
     )

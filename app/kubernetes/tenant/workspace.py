@@ -51,7 +51,10 @@ def _cluster_tenant_counts() -> dict[str, int]:
     return {
         str(cluster_id): int(count)
         for cluster_id, count in (
-            Tenant.query.with_entities(Tenant.cluster_id, func.count(Tenant.id)).group_by(Tenant.cluster_id).all()
+            Tenant.query.filter(Tenant.lifecycle_status != 'decommissioned')
+            .with_entities(Tenant.cluster_id, func.count(Tenant.id))
+            .group_by(Tenant.cluster_id)
+            .all()
         )
     }
 
@@ -65,6 +68,10 @@ def _cluster_namespace_counts() -> dict[str, int]:
                 TenantNamespace.tenant_environment_id == TenantEnvironment.id,
             )
             .join(Tenant, TenantEnvironment.tenant_id == Tenant.id)
+            .filter(
+                Tenant.lifecycle_status != 'decommissioned',
+                TenantNamespace.provisioning_status != 'deprovisioned',
+            )
             .with_entities(Tenant.cluster_id, func.count(TenantNamespace.id))
             .group_by(Tenant.cluster_id)
             .all()

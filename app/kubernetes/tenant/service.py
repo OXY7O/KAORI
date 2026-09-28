@@ -624,7 +624,9 @@ def get_tenant_context() -> dict[str, Any]:
         {'cluster': cluster, **build_capacity_governance_summary(cluster.id)} for cluster in ready_clusters
     ]
     capacity_decisions = TenantCapacityDecision.query.order_by(TenantCapacityDecision.created_at.desc()).limit(5).all()
-    namespace_count = TenantNamespace.query.count()
+    namespace_count = TenantNamespace.query.filter(
+        TenantNamespace.provisioning_status != 'deprovisioned'
+    ).count()
     return {
         'tenants': tenants,
         'profiles': profiles,
@@ -633,7 +635,9 @@ def get_tenant_context() -> dict[str, Any]:
         'ready_clusters': ready_clusters,
         'capacity_governance': capacity_governance,
         'capacity_decisions': capacity_decisions,
-        'tenant_count': Tenant.query.count(),
+        'tenant_count': Tenant.query.filter(
+            Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value
+        ).count(),
         'profile_count': TenantResourceProfile.query.count(),
         'namespace_count': namespace_count,
         'ready_namespace_count': TenantNamespace.query.filter_by(provisioning_status='ready').count(),
