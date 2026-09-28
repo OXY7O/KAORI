@@ -219,7 +219,6 @@ def _effective_contract(api, desired: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-
 def _namespace_delete_observation(api, name: str) -> tuple[bool, dict[str, Any]]:
     current = _read_or_none(api.read_namespace, name)
     if current is None:
@@ -241,7 +240,9 @@ def _namespace_delete_observation(api, name: str) -> tuple[bool, dict[str, Any]]
         'namespace': name,
         'observed_absent': False,
         'phase': phase,
-        'deletion_timestamp': deletion_timestamp.isoformat() if hasattr(deletion_timestamp, 'isoformat') else str(deletion_timestamp or ''),
+        'deletion_timestamp': deletion_timestamp.isoformat()
+        if hasattr(deletion_timestamp, 'isoformat')
+        else str(deletion_timestamp or ''),
         'finalizers': [str(item) for item in finalizers],
     }
 
