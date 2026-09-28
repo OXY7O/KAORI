@@ -111,3 +111,32 @@ def test_membership_revocation_is_fail_closed_for_dependent_grants() -> None:
     assert 'reconcile_native_access_grant(grant)' in service
     assert "action='tenant_access_grant.membership_revoked'" in service
     assert 'one or more Kubernetes RoleBindings require operator attention' in service
+
+
+
+def test_revoked_membership_reactivation_preserves_grant_history_and_fails_closed() -> None:
+    service = read('app/kubernetes/tenant/access_service.py')
+    routes = read('app/kubernetes/tenant/routes.py')
+    registry = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
+    docs = read('docs/architecture/kubernetes-tenant-access-governance.md')
+
+    assert 'def reactivate_membership_committed(*, membership_id: int' in service
+    assert 'TenantMembershipStatus.ACTIVE.value' in service
+    assert 'grant.reconciliation_status != TenantAccessReconciliationStatus.REVOKED.value' in service
+    assert 'previous Access Grants remain revoked' in service
+    assert 'Membership reactivation currently supports User and Tenant Group principals only.' in service
+    assert 'Reactivate it from the Membership Registry.' in service
+
+    assert "@tenant_bp.post('/memberships/<int:membership_id>/reactivate')" in routes
+    assert 'reactivate_membership_by_id_committed' in routes
+    assert "operation': 'reactivate_membership'" in routes
+    assert 'Previous Access Grants remain revoked.' in routes
+    assert 'Apply a new Access Grant when access should be restored.' in routes
+
+    assert "url_for('tenant.reactivate_membership_route', membership_id=membership.id)" in registry
+    assert 'Reactivate' in registry
+    assert 'old grants stay revoked' in workspace
+
+    assert 'Previous Access Grants remain revoked permanently' in docs
+    assert 'new Access Grant' in docs

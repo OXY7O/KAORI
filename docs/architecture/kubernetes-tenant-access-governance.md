@@ -252,7 +252,9 @@ Revoke Tenant Membership:
 
 This is the stronger action because the principal is no longer an active member of the Tenant.
 
-Current #114 implementation does not expose a supported reactivation/rejoin transition for the same User Principal or Tenant Group after Tenant Membership revocation. The existing persistence uniqueness and create guard also prevent treating the same principal as a brand-new duplicate Membership. Until an explicit reactivation contract is implemented, operators should treat Tenant Membership revocation as terminal rather than as a temporary disable action.
+A revoked User Principal or Tenant Group may be explicitly **Reactivated** using the same Membership record after provider cleanup for every previous Access Grant is proven complete. Reactivation preserves the Membership correlation/audit lineage and changes only the Membership back to active. Previous Access Grants remain revoked permanently; restoring authorization requires a **new Access Grant**. KAORI must not silently reactivate old grants or create a duplicate Membership for the same principal.
+
+Reactivation fails closed when the linked KAORI user is inactive, the linked Tenant Group is disabled, the Tenant is not Ready, or any prior grant has not reached provider-verified `Revoked` reconciliation state.
 
 ## Reconciliation and drift
 
@@ -282,6 +284,7 @@ At minimum:
 - when Scope is Namespace, require only a Namespace target;
 - filter Environment/Namespace target choices to the Tenant of the selected Membership;
 - explain Revoke Access Grant versus Revoke Tenant Membership before destructive confirmation;
+- for a revoked User/Tenant Group Membership, expose Reactivate and explain that prior grants remain revoked and a new grant is required;
 - translate internal scope invariants into actionable operator messages, for example: `Choose one managed Namespace for Namespace Scope`;
 - where integration evidence exists, distinguish a verified external group subject from an unverified/free-form subject.
 

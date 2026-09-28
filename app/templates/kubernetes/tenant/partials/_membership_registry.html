@@ -141,7 +141,23 @@
                                     </button>
                                 </form>
                             {% else %}
-                                <span class="text-xs text-content-muted">No action</span>
+                                <form method="post"
+                                      action="{{ url_for('tenant.reactivate_membership_route', membership_id=membership.id) }}"
+                                      hx-post="{{ url_for('tenant.reactivate_membership_route', membership_id=membership.id) }}"
+                                      hx-target="#tenant-admin-workspace"
+                                      hx-select="#tenant-admin-workspace"
+                                      hx-swap="outerHTML show:none focus-scroll:false"
+                                      hx-indicator="#tenant-admin-loading"
+                                      hx-disabled-elt="find button"
+                                      class="flex justify-end">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit"
+                                            {% if not can_manage or membership.principal_type not in ['user', 'group'] %}disabled aria-disabled="true"{% endif %}
+                                            class="{{ table_ui.action_classes() }}">
+                                        <i data-lucide="user-check" class="h-4 w-4" aria-hidden="true"></i>
+                                        Reactivate
+                                    </button>
+                                </form>
                             {% endif %}
                         </td>
                     </tr>

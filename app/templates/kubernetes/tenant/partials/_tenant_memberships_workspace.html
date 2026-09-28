@@ -49,7 +49,7 @@
             <div class="bg-surface-card p-4">
                 <p class="text-xs font-semibold text-content-primary">Revocation Impact</p>
                 <p class="mt-1 text-xs leading-5 text-content-muted">
-                    Revoking membership disables dependent Access Grants; review downstream credential impact first.
+                    Revoke disables dependent grants. Reactivation restores membership only; old grants stay revoked.
                 </p>
             </div>
         </div>
@@ -93,6 +93,7 @@
                         [
                             'The KAORI user remains the ownership anchor.',
                             'Kubernetes Subject is optional and defaults to the KAORI username.',
+                            'If this principal was revoked earlier, use Reactivate in the Membership Registry.',
                             'Membership alone does not grant Kubernetes RBAC.'
                         ]
                     ) }}

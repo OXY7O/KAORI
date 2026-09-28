@@ -28,6 +28,7 @@ from app.kubernetes.tenant.access_service import (
     get_tenant_access_context,
     inspect_access_grant_by_id_committed,
     reconcile_access_grant_by_id_committed,
+    reactivate_membership_by_id_committed,
     revoke_access_grant_by_id_committed,
     revoke_membership_by_id_committed,
 )
@@ -600,6 +601,39 @@ def add_group_membership_route():
                 'tenant_id': membership.tenant_id,
                 'membership_id': membership.id,
                 'operation': 'add_group_membership',
+            },
+        )
+    return _tenant_section_redirect('memberships')
+
+
+@tenant_bp.post('/memberships/<int:membership_id>/reactivate')
+@permission_required('tenant.manage')
+def reactivate_membership_route(membership_id: int):
+    try:
+        _csrf()
+        membership = reactivate_membership_by_id_committed(
+            membership_id=membership_id,
+            actor_user_id=int(current_user.id),
+        )
+    except (ValueError, TenantAccessStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_membership_reactivate_failed',
+            status='error',
+            title='Tenant Membership Reactivation Failed',
+            message=str(exc),
+            metadata={'membership_id': membership_id, 'operation': 'reactivate_membership'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_membership_reactivated',
+            status='success',
+            title='Tenant Membership Reactivated',
+            message=f'{membership.subject_name} is active again. Previous Access Grants remain revoked.',
+            detail='Apply a new Access Grant when access should be restored.',
+            metadata={
+                'membership_id': membership.id,
+                'tenant_id': membership.tenant_id,
+                'operation': 'reactivate_membership',
             },
         )
     return _tenant_section_redirect('memberships')

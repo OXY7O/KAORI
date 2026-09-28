@@ -695,7 +695,11 @@ def test_tenant_setup_enables_capability_gated_capsule_direct_create() -> None:
     assert '<option value="capsule">Capsule</option>' in form
     assert 'capability checked on submit' not in form
     assert 'capsule-owner-kind-tip' in form
+    assert 'capsule-owner-subject-tip' in form
     assert 'Owner Subject is required for every Owner Kind.' in form
+    assert 'User example — alice@example.com' in form
+    assert 'Group example — oidc:org:platform-team' in form
+    assert 'ServiceAccount example — system:serviceaccount:platform:deployer' in form
     assert 'Required for Capsule provider ownership; separate from KAORI Memberships.' in form
     assert 'Existing Capsule Tenant? Use Discovery → Adoption.' in form
     assert 'Capsule capability and admission are validated when Add Tenant is submitted.' in form
@@ -739,3 +743,12 @@ def test_adoption_modal_uses_wide_review_geometry_and_compact_live_copy() -> Non
     assert 'max-w-5xl' in discovery
     assert 'md:grid-cols-2 xl:grid-cols-3' in discovery
     assert "description = 'Live Kubernetes API is reachable.'" in live
+
+
+
+def test_tenant_setup_uses_compact_cross_tenant_boundary_copy() -> None:
+    setup = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
+
+    assert 'Cross-Tenant references are blocked.' in setup
+    assert 'Identity, scope, grants, and credentials stay within one Tenant.' in setup
+    assert 'Tenant ownership, namespace scope, identity, Access Grants, and credential delivery' not in setup

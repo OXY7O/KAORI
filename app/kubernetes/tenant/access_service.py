@@ -77,8 +77,13 @@ def add_user_membership(*, tenant: Tenant, user: User, subject_name: str | None 
     _require_ready_tenant(tenant)
     if not user.is_active:
         raise ValueError('Only an active KAORI user can become a Tenant member.')
-    if TenantMembership.query.filter_by(tenant_id=tenant.id, user_id=user.id).first() is not None:
-        raise ValueError('This user is already a member of the selected Tenant.')
+    existing = TenantMembership.query.filter_by(tenant_id=tenant.id, user_id=user.id).first()
+    if existing is not None:
+        if existing.status == TenantMembershipStatus.REVOKED.value:
+            raise ValueError(
+                'This user already has a revoked Tenant membership. Reactivate it from the Membership Registry.'
+            )
+        raise ValueError('This user is already an active member of the selected Tenant.')
 
     membership = TenantMembership()
     membership.tenant = tenant
@@ -97,8 +102,13 @@ def add_group_membership(*, tenant: Tenant, group: TenantGroup) -> TenantMembers
         raise ValueError('Tenant Group membership cannot cross Tenant boundaries.')
     if not group.enabled:
         raise ValueError('Only an enabled Tenant Group can become a Tenant member.')
-    if TenantMembership.query.filter_by(tenant_id=tenant.id, group_id=group.id).first() is not None:
-        raise ValueError('This group is already a member of the selected Tenant.')
+    existing = TenantMembership.query.filter_by(tenant_id=tenant.id, group_id=group.id).first()
+    if existing is not None:
+        if existing.status == TenantMembershipStatus.REVOKED.value:
+            raise ValueError(
+                'This Tenant Group already has a revoked membership. Reactivate it from the Membership Registry.'
+            )
+        raise ValueError('This Tenant Group is already an active member of the selected Tenant.')
 
     membership = TenantMembership()
     membership.tenant = tenant
@@ -411,6 +421,14 @@ def revoke_membership_by_id_committed(
     return revoke_membership_committed(membership_id=membership_id, actor=_actor_by_id(actor_user_id))
 
 
+def reactivate_membership_by_id_committed(
+    *,
+    membership_id: int,
+    actor_user_id: int | None = None,
+) -> TenantMembership:
+    return reactivate_membership_committed(membership_id=membership_id, actor=_actor_by_id(actor_user_id))
+
+
 def _record_membership_event(
     *,
     actor: User | None,
@@ -482,6 +500,50 @@ def revoke_membership_committed(*, membership_id: int, actor: User | None = None
             'Tenant membership is revoked in KAORI, but one or more Kubernetes RoleBindings require operator attention.'
         )
     return membership
+
+
+def reactivate_membership_committed(*, membership_id: int, actor: User | None = None) -> TenantMembership:
+    membership = db.session.get(TenantMembership, membership_id)
+    if membership is None:
+        raise ValueError('Selected Tenant membership no longer exists.')
+    if membership.status == TenantMembershipStatus.ACTIVE.value:
+        return membership
+
+    _require_ready_tenant(membership.tenant)
+    if membership.principal_type == TenantMembershipPrincipalType.USER.value:
+        if membership.user is None or not membership.user.is_active:
+            raise ValueError('The linked KAORI user is not active; reactivate the user before Tenant membership.')
+    elif membership.principal_type == TenantMembershipPrincipalType.GROUP.value:
+        if membership.group is None or not membership.group.enabled:
+            raise ValueError('The linked Tenant Group is disabled; enable the group before membership reactivation.')
+    else:
+        raise ValueError('Membership reactivation currently supports User and Tenant Group principals only.')
+
+    unresolved_grants = [
+        grant
+        for grant in membership.access_grants
+        if grant.status != TenantAccessGrantStatus.REVOKED.value
+        or grant.reconciliation_status != TenantAccessReconciliationStatus.REVOKED.value
+    ]
+    if unresolved_grants:
+        raise ValueError(
+            'Resolve provider cleanup for all previous Access Grants before reactivating this membership.'
+        )
+
+    membership.status = TenantMembershipStatus.ACTIVE.value
+    _record_membership_event(
+        actor=actor,
+        membership=membership,
+        action='tenant_membership.reactivated',
+        summary='Tenant membership was reactivated; previous Access Grants remain revoked.',
+        outcome='success',
+    )
+    try:
+        db.session.commit()
+        return membership
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
 
 
 def inspect_access_grant_committed(*, grant_id: int, actor: User | None = None) -> TenantAccessGrant:
