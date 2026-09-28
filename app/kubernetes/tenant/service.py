@@ -147,13 +147,20 @@ def create_tenant(source: Mapping[str, Any]) -> tuple[Tenant, TenantEnvironment]
     if cluster is None:
         raise ValueError('Select a connected Kubernetes cluster with Ready integration capability.')
 
-    if Tenant.query.filter_by(cluster_id=cluster.id, slug=slug).first() is not None:
-        raise ValueError('A Tenant with this slug already exists on the selected cluster.')
+    prior_generations = (
+        Tenant.query.filter_by(cluster_id=cluster.id, slug=slug)
+        .order_by(Tenant.generation.desc(), Tenant.created_at.desc())
+        .all()
+    )
+    if any(item.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value for item in prior_generations):
+        raise ValueError('An active Tenant with this slug already exists on the selected cluster.')
+    generation = max((int(item.generation or 1) for item in prior_generations), default=0) + 1
 
     tenant = Tenant()
     tenant.cluster_id = cluster.id
     tenant.name = name
     tenant.slug = slug
+    tenant.generation = generation
     tenant.description = _text(source, 'description') or None
     tenant.lifecycle_status = TenantLifecycleStatus.READY.value
     tenant.provider_key = 'native_kubernetes'
@@ -606,7 +613,7 @@ def get_tenant_context() -> dict[str, Any]:
     namespaces = TenantNamespace.query.order_by(TenantNamespace.created_at.desc()).limit(5).all()
     environment_options = (
         TenantEnvironment.query.join(Tenant, Tenant.id == TenantEnvironment.tenant_id)
-        .filter(Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value)
+        .filter(Tenant.lifecycle_status == TenantLifecycleStatus.READY.value)
         .order_by(Tenant.name.asc(), TenantEnvironment.environment.asc())
         .all()
     )

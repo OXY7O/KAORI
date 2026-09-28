@@ -46,7 +46,13 @@ def normalize_group_slug(value: str) -> str:
     return slug
 
 
+def _require_ready_tenant(tenant: Tenant) -> None:
+    if tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
+        raise ValueError('Tenant is not Ready; new access mutations are frozen during decommission.')
+
+
 def create_tenant_group(*, tenant: Tenant, name: str, subject_name: str | None = None) -> TenantGroup:
+    _require_ready_tenant(tenant)
     display_name = name.strip()
     if not display_name or len(display_name) > 120:
         raise ValueError('Tenant Group name is required and must be at most 120 characters.')
@@ -68,6 +74,7 @@ def create_tenant_group(*, tenant: Tenant, name: str, subject_name: str | None =
 
 
 def add_user_membership(*, tenant: Tenant, user: User, subject_name: str | None = None) -> TenantMembership:
+    _require_ready_tenant(tenant)
     if not user.is_active:
         raise ValueError('Only an active KAORI user can become a Tenant member.')
     if TenantMembership.query.filter_by(tenant_id=tenant.id, user_id=user.id).first() is not None:
@@ -85,6 +92,7 @@ def add_user_membership(*, tenant: Tenant, user: User, subject_name: str | None 
 
 
 def add_group_membership(*, tenant: Tenant, group: TenantGroup) -> TenantMembership:
+    _require_ready_tenant(tenant)
     if group.tenant_id != tenant.id:
         raise ValueError('Tenant Group membership cannot cross Tenant boundaries.')
     if not group.enabled:
@@ -172,6 +180,7 @@ def create_access_grant_committed(
     membership = db.session.get(TenantMembership, membership_id)
     if membership is None or membership.status != TenantMembershipStatus.ACTIVE.value:
         raise ValueError('Select an active Tenant membership.')
+    _require_ready_tenant(membership.tenant)
     profile = get_access_profile(access_profile)
     environment, namespace = _grant_scope(
         membership=membership,
@@ -525,7 +534,7 @@ def reconcile_access_grant_committed(*, grant_id: int, actor: User | None = None
 
 def get_tenant_access_context() -> dict[str, object]:
     tenant_options = (
-        Tenant.query.filter(Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value)
+        Tenant.query.filter(Tenant.lifecycle_status == TenantLifecycleStatus.READY.value)
         .order_by(Tenant.name.asc())
         .all()
     )
@@ -536,20 +545,24 @@ def get_tenant_access_context() -> dict[str, object]:
     )
     group_options = TenantGroup.query.filter_by(enabled=True).order_by(TenantGroup.name.asc()).all()
     membership_options = (
-        TenantMembership.query.filter_by(status=TenantMembershipStatus.ACTIVE.value)
+        TenantMembership.query.join(Tenant, Tenant.id == TenantMembership.tenant_id)
+        .filter(
+            TenantMembership.status == TenantMembershipStatus.ACTIVE.value,
+            Tenant.lifecycle_status == TenantLifecycleStatus.READY.value,
+        )
         .order_by(TenantMembership.created_at.desc())
         .all()
     )
     environment_options = (
         TenantEnvironment.query.join(Tenant, Tenant.id == TenantEnvironment.tenant_id)
-        .filter(Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value)
+        .filter(Tenant.lifecycle_status == TenantLifecycleStatus.READY.value)
         .order_by(Tenant.name.asc(), TenantEnvironment.environment.asc())
         .all()
     )
     namespace_options = (
         TenantNamespace.query.join(TenantEnvironment, TenantEnvironment.id == TenantNamespace.tenant_environment_id)
         .join(Tenant, Tenant.id == TenantEnvironment.tenant_id)
-        .filter(Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value)
+        .filter(Tenant.lifecycle_status == TenantLifecycleStatus.READY.value)
         .order_by(Tenant.name.asc(), TenantNamespace.namespace.asc())
         .all()
     )

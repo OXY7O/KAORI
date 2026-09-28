@@ -87,6 +87,8 @@ def create_deployer_credential_committed(
     tenant = db.session.get(Tenant, namespace.environment.tenant_id)
     if tenant is None:
         raise ValueError('Tenant namespace no longer has a Tenant.')
+    if tenant.lifecycle_status != 'ready':
+        raise ValueError('Tenant is not Ready; credential issuance is frozen during decommission.')
     application_name = normalize_deployer_application(request.application_name)
     environment = namespace.environment.environment
     purpose = normalize_credential_purpose(f'{request.purpose}-{application_name}-{environment}')

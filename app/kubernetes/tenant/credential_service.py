@@ -202,6 +202,8 @@ def create_human_credential_committed(
     owner = db.session.get(User, owner_user_id)
     if grant is None:
         raise ValueError('Select an active Tenant Access Grant.')
+    if grant.tenant.lifecycle_status != 'ready':
+        raise ValueError('Tenant is not Ready; credential issuance is frozen during decommission.')
     if owner is None or not owner.is_active:
         raise ValueError('Select an active credential owner.')
     if grant.reconciliation_status != TenantAccessReconciliationStatus.READY.value:
@@ -296,6 +298,8 @@ def create_admin_credential_committed(
     namespace = db.session.get(TenantNamespace, anchor_namespace_id)
     if tenant is None:
         raise ValueError('Select a Tenant.')
+    if tenant.lifecycle_status != 'ready':
+        raise ValueError('Tenant is not Ready; credential issuance is frozen during decommission.')
     if owner is None or not owner.is_active or not owner.is_admin_level:
         raise ValueError('Administrative kubeconfig ownership requires an active KAORI administrator.')
     if namespace is None:

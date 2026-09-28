@@ -21,7 +21,7 @@ def get_tenant_summary_context() -> dict[str, int]:
     """Return bounded page-level Tenant governance counters from committed KAORI state."""
 
     return {
-        'tenant_summary_tenant_count': Tenant.query.filter(Tenant.lifecycle_status != 'decommissioned').count(),
+        'tenant_summary_tenant_count': Tenant.query.filter(Tenant.lifecycle_status == 'ready').count(),
         'tenant_summary_environment_count': (
             TenantEnvironment.query.join(Tenant, Tenant.id == TenantEnvironment.tenant_id)
             .filter(Tenant.lifecycle_status != 'decommissioned')
@@ -38,7 +38,7 @@ def get_tenant_summary_context() -> dict[str, int]:
 
 def _tenant_options() -> list[Tenant]:
     return (
-        Tenant.query.filter(Tenant.lifecycle_status != 'decommissioned')
+        Tenant.query.filter(Tenant.lifecycle_status == 'ready')
         .order_by(Tenant.name.asc())
         .all()
     )
