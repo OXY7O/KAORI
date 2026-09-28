@@ -27,6 +27,7 @@ from app.models.tenant import (
     TenantCapacityPolicy,
     TenantEnvironment,
     TenantNamespace,
+    TenantNamespaceProvisioningStatus,
     TenantResourceProfile,
 )
 
@@ -146,11 +147,12 @@ def build_capacity_governance_summary(cluster_id: str) -> dict[str, Any]:
         }
 
     budget = _budget(policy, capacity)
-    state = classify_capacity_state(budget=budget.available, committed=committed)
+    commitment_reason = _committed_evidence_reason(committed)
+    state = 'Unknown' if commitment_reason else classify_capacity_state(budget=budget.available, committed=committed)
     return {
         'cluster_id': cluster_id,
         'state': state,
-        'reason': _state_reason(state),
+        'reason': commitment_reason or _state_reason(state),
         'policy': _policy_json(policy),
         'snapshot_state': snapshot_result.state,
         'data_cutoff': _snapshot_cutoff(snapshot_result),
@@ -381,7 +383,10 @@ def _capacity_vector(result: SnapshotResult) -> tuple[CapacityVector | None, str
 
 
 def _committed_tenant_allocation(cluster_id: str) -> tuple[CapacityVector, int]:
-    rows = TenantNamespace.query.filter_by(cluster_id=cluster_id).all()
+    rows = TenantNamespace.query.filter(
+        TenantNamespace.cluster_id == cluster_id,
+        TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+    ).all()
     cpu_total: Decimal | None = _ZERO
     memory_total: Decimal | None = _ZERO
 
@@ -393,6 +398,15 @@ def _committed_tenant_allocation(cluster_id: str) -> tuple[CapacityVector, int]:
             memory_total = memory_total + vector.memory_bytes if vector.memory_bytes is not None else None
 
     return CapacityVector(cpu=cpu_total, memory_bytes=memory_total), len(rows)
+
+
+def _committed_evidence_reason(committed: CapacityVector) -> str | None:
+    if committed.cpu is None or committed.memory_bytes is None:
+        return (
+            'At least one active Tenant namespace has an unbounded or missing CPU/memory request commitment; '
+            'Committed and Headroom cannot be proven until the allocation contract is bounded.'
+        )
+    return None
 
 
 def _budget(policy: TenantCapacityPolicy, capacity: CapacityVector) -> TenantAllocationBudget:

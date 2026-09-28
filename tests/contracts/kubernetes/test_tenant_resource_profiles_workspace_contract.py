@@ -101,6 +101,7 @@ def test_capacity_governance_has_scrollable_cluster_cards_and_policy_reload() ->
     assert 'data-capacity-policy-field=' in capacity
     assert "action_button.classes('primary', full=true)" in capacity
     assert 'overflow-y-auto overscroll-contain' in capacity
+    assert 'xl:max-h-[42rem]' in capacity
     assert 'Budget</span> = allocatable' in capacity
     assert 'Headroom</span> = budget' in capacity
     assert 'active committed namespace' in capacity
@@ -111,3 +112,14 @@ def test_capacity_governance_has_scrollable_cluster_cards_and_policy_reload() ->
     assert "'capacity_policy_state':" in service
     assert "const policies = readJson('tenant-capacity-policy-state')" in script
     assert 'data-default-value' in script
+
+
+
+def test_capacity_commitment_excludes_deprovisioned_history_and_preserves_unknowns() -> None:
+    governance = read('app/kubernetes/tenant/capacity_governance.py')
+
+    assert 'TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in governance
+    assert 'def _committed_evidence_reason(committed: CapacityVector)' in governance
+    assert 'At least one active Tenant namespace has an unbounded or missing CPU/memory request commitment' in governance
+    assert "state = 'Unknown' if commitment_reason" in governance
+    assert 'commitment_reason or _state_reason(state)' in governance
