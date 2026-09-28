@@ -1018,3 +1018,25 @@ def test_info_tip_supports_standard_header_buttons_and_mobile_top_layer() -> Non
     assert 'button_classes=table_ui.action_classes()' in groups
     assert 'native `<dialog>` top layer' in docs
 
+
+
+def test_credential_issuance_binds_transient_objects_to_tenant_before_validation() -> None:
+    human = read('app/kubernetes/tenant/credential_service.py')
+    deployer = read('app/kubernetes/tenant/deployer_credential_service.py')
+
+    human_tenant_fk = human.index('credential.tenant_id = grant.tenant_id')
+    human_tenant_relationship = human.index('credential.tenant = grant.tenant')
+    human_validation = human.index('validate_credential_contract(credential)', human_tenant_relationship)
+    assert human_tenant_fk < human_validation
+    assert human_tenant_relationship < human_validation
+
+    deployer_membership_fk = deployer.index('membership.tenant_id = tenant.id')
+    deployer_grant_fk = deployer.index('grant.tenant_id = tenant.id')
+    deployer_credential_fk = deployer.index('credential.tenant_id = tenant.id')
+    deployer_grant_validation = deployer.index('validate_active_grant(grant)', deployer_credential_fk)
+    deployer_credential_validation = deployer.index('validate_credential_contract(credential)', deployer_grant_validation)
+
+    assert deployer_membership_fk < deployer_grant_validation
+    assert deployer_grant_fk < deployer_grant_validation
+    assert deployer_credential_fk < deployer_credential_validation
+    assert 'credential.tenant = tenant' in deployer
