@@ -35,7 +35,6 @@
                     <p class="mt-1 break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ notice }}</p>
                 </div>
             </header>
-
             <div class="space-y-5 p-5">
                 <dl class="grid gap-3 sm:grid-cols-2">
                     <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
@@ -53,7 +52,6 @@
                         </dd>
                     </div>
                 </dl>
-
                 {% if impact_items %}
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">What will happen</p>
@@ -73,10 +71,8 @@
                         </div>
                     </div>
                 {% endif %}
-
                 <p data-destructive-detail
                    class="break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ consequence }}</p>
-
                 {% if warning %}
                     <div class="flex items-start gap-3 rounded-lg border border-status-critical-border bg-status-critical-soft px-4 py-3 text-status-critical-text">
                         <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-card/70"
@@ -87,7 +83,6 @@
                     </div>
                 {% endif %}
             </div>
-
             <footer class="flex flex-col-reverse gap-2 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:justify-end">
                 <button type="button"
                         data-destructive-modal-close
