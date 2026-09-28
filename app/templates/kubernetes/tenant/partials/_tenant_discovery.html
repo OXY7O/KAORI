@@ -139,19 +139,24 @@
                         <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
                             <div class="ml-auto flex w-fit items-center justify-end">
                                 {% if row.management_status == 'Managed' %}
-                                    <span class="text-xs font-semibold text-status-normal-text">Managed</span>
+                                    <span title="Already governed by KAORI; adoption is not required.">
+                                        {{ table_label.special_label('Already Managed', 'normal', 'shield-check') }}
+                                    </span>
                                 {% elif row.management_status == 'Discovered' and can_manage %}
                                     <button type="button"
                                             data-tenant-adoption-open
                                             data-tenant-adoption-modal-id="tenant-adoption-modal-{{ row.provider_reference }}"
-                                            class="{{ table_ui.action_classes() }}">
+                                            class="{{ table_ui.action_classes() }}"
+                                            title="Review provider authority and KAORI mapping before adoption.">
                                         <i data-lucide="clipboard-check" class="h-4 w-4" aria-hidden="true"></i>
-                                        Review
+                                        Review Adoption
                                     </button>
                                 {% elif row.management_status == 'Discovered' %}
-                                    <span class="text-xs font-semibold text-kaori-primary">Candidate</span>
+                                    {{ table_label.special_label('Candidate', 'info', 'radar') }}
                                 {% else %}
-                                    <span class="text-xs font-semibold text-content-muted" title="{{ row.eligibility }}">Blocked</span>
+                                    <span title="{{ row.eligibility }}">
+                                        {{ table_label.special_label('Blocked', 'critical', 'shield-alert') }}
+                                    </span>
                                 {% endif %}
                             </div>
                         </td>
