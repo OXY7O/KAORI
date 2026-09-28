@@ -6,9 +6,7 @@
          class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
          aria-labelledby="tls-inventory-operations-heading">
     <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-        <div class="min-w-0 flex-1">
-            {% include "kubernetes/governance/tls_certificates/partials/_sync_live_state.html" %}
-        </div>
+        <div class="min-w-0 flex-1">{% include "kubernetes/governance/tls_certificates/partials/_sync_live_state.html" %}</div>
         <div class="flex shrink-0 flex-wrap items-center gap-2">
             {% if can_sync %}
                 <form method="post"

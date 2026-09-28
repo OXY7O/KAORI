@@ -6,19 +6,15 @@
     {% else %}
         {% include "kubernetes/inventory/components/_data_freshness.html" %}
         <section class="space-y-4" aria-labelledby="ingresses-posture-heading">
-            {{ section_intro.render(
-                'Operational Posture',
-                'Review Ingress publication, TLS reference, and routing evidence.',
-                'ingresses-posture-heading'
-            ) }}
+            {{ section_intro.render('Operational Posture',
+                        'Review Ingress publication, TLS reference, and routing evidence.',
+                        'ingresses-posture-heading') }}
             {% include "kubernetes/inventory/ingresses/partials/_summary_cards.html" %}
         </section>
         <section class="space-y-4" aria-labelledby="ingresses-records-heading">
-            {{ section_intro.render(
-                'Inventory Records',
-                'Browse committed Ingress records for the active inventory scope.',
-                'ingresses-records-heading'
-            ) }}
+            {{ section_intro.render('Inventory Records',
+                        'Browse committed Ingress records for the active inventory scope.',
+                        'ingresses-records-heading') }}
             {% include "kubernetes/inventory/ingresses/partials/_table_card.html" %}
         </section>
     {% endif %}

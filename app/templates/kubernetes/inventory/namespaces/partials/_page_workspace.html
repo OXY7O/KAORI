@@ -6,19 +6,15 @@
     {% else %}
         {% include "kubernetes/inventory/components/_data_freshness.html" %}
         <section class="space-y-4" aria-labelledby="namespaces-posture-heading">
-            {{ section_intro.render(
-                'Operational Posture',
-                'Review namespace lifecycle, resource-control, and security evidence.',
-                'namespaces-posture-heading'
-            ) }}
+            {{ section_intro.render('Operational Posture',
+                        'Review namespace lifecycle, resource-control, and security evidence.',
+                        'namespaces-posture-heading') }}
             {% include "kubernetes/inventory/namespaces/partials/_summary_cards.html" %}
         </section>
         <section class="space-y-4" aria-labelledby="namespaces-records-heading">
-            {{ section_intro.render(
-                'Inventory Records',
-                'Browse committed namespace records for the active inventory scope.',
-                'namespaces-records-heading'
-            ) }}
+            {{ section_intro.render('Inventory Records',
+                        'Browse committed namespace records for the active inventory scope.',
+                        'namespaces-records-heading') }}
             {% include "kubernetes/inventory/namespaces/partials/_table_card.html" %}
         </section>
     {% endif %}

@@ -10,19 +10,15 @@
         {% else %}
             {% include "kubernetes/inventory/components/_data_freshness.html" %}
             <section class="space-y-4" aria-labelledby="inventory-assets-heading">
-                {{ section_intro.render(
-                    'Inventory Assets',
-                    'Open an asset inventory from the current committed Kubernetes snapshots.',
-                    'inventory-assets-heading'
-                ) }}
+                {{ section_intro.render('Inventory Assets',
+                                'Open an asset inventory from the current committed Kubernetes snapshots.',
+                                'inventory-assets-heading') }}
                 {% include "kubernetes/inventory/overview/partials/_kpi_cards.html" %}
             </section>
             <section class="space-y-4" aria-labelledby="inventory-multicluster-heading">
-                {{ section_intro.render(
-                    'Multi-Cluster Inventory',
-                    'Compare cluster coverage, snapshot state, and inventory signals across the fleet.',
-                    'inventory-multicluster-heading'
-                ) }}
+                {{ section_intro.render('Multi-Cluster Inventory',
+                                'Compare cluster coverage, snapshot state, and inventory signals across the fleet.',
+                                'inventory-multicluster-heading') }}
                 {% include "kubernetes/inventory/overview/partials/_resources_by_cluster.html" %}
             </section>
         {% endif %}
