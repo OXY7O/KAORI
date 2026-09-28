@@ -31,7 +31,9 @@
     }
 
     const syncProfiles = (form, principalType) => {
-        const normalizedPrincipalType = String(principalType || '').trim().toLowerCase()
+        const normalizedPrincipalType = String(principalType || '')
+            .trim()
+            .toLowerCase()
         const profile = form.querySelector('[data-access-profile]')
         const guidance = form.querySelector('[data-access-profile-guidance]')
         if (!(profile instanceof HTMLSelectElement)) return
@@ -79,7 +81,9 @@
         const membershipOption = selectedOption(membership)
         const tenantId = membershipOption?.dataset.tenantId || ''
         const tenantName = membershipOption?.dataset.tenantName || 'the selected Tenant'
-        const providerKey = String(membershipOption?.dataset.providerKey || '').trim().toLowerCase()
+        const providerKey = String(membershipOption?.dataset.providerKey || '')
+            .trim()
+            .toLowerCase()
         const principalType = membershipOption?.dataset.principalType || ''
         const scopeValue = scope.value
 
@@ -120,19 +124,19 @@
                 'Select Membership first. KAORI will restrict targets to that Membership’s Tenant.'
         } else if (!providerSupported) {
             scopeGuidance.textContent =
-                tenantName + ' uses Capsule authority. Access Grant provider reconciliation remains fail-closed until the Capsule access adapter is admitted.'
+                tenantName +
+                ' uses Capsule authority. Access Grant provider reconciliation remains fail-closed until the Capsule access adapter is admitted.'
         } else if (scopeValue === 'namespace' && namespaceCount === 0) {
             scopeGuidance.textContent =
-                'No governed namespace exists in ' + tenantName + '. Provision Namespace first, then return to Namespace scope.'
+                'No governed namespace exists in ' +
+                tenantName +
+                '. Provision Namespace first, then return to Namespace scope.'
         } else if (scopeValue === 'tenant') {
-            scopeGuidance.textContent =
-                `Tenant scope — applies the profile across all governed namespaces in ${tenantName}. No target selection is required.`
+            scopeGuidance.textContent = `Tenant scope — applies the profile across all governed namespaces in ${tenantName}. No target selection is required.`
         } else if (scopeValue === 'environment') {
-            scopeGuidance.textContent =
-                `Environment scope — choose one environment from ${tenantName}; all governed namespaces in that environment are targeted.`
+            scopeGuidance.textContent = `Environment scope — choose one environment from ${tenantName}; all governed namespaces in that environment are targeted.`
         } else {
-            scopeGuidance.textContent =
-                `Namespace scope — choose exactly one namespace from ${tenantName}; this is the narrowest authorization boundary.`
+            scopeGuidance.textContent = `Namespace scope — choose exactly one namespace from ${tenantName}; this is the narrowest authorization boundary.`
         }
     }
 
