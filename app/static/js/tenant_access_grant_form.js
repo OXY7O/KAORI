@@ -6,8 +6,7 @@
         deployer: 'Deployer — automation-only profile for ServiceAccount memberships.',
     }
 
-    const selectedOption = (select) =>
-        select instanceof HTMLSelectElement ? select.selectedOptions[0] || null : null
+    const selectedOption = (select) => select instanceof HTMLSelectElement ? select.selectedOptions[0] || null : null
 
     const clearSelect = (select) => {
         if (!(select instanceof HTMLSelectElement)) return
@@ -31,9 +30,7 @@
     }
 
     const syncProfiles = (form, principalType) => {
-        const normalizedPrincipalType = String(principalType || '')
-            .trim()
-            .toLowerCase()
+        const normalizedPrincipalType = String(principalType || '').trim().toLowerCase()
         const profile = form.querySelector('[data-access-profile]')
         const guidance = form.querySelector('[data-access-profile-guidance]')
         if (!(profile instanceof HTMLSelectElement)) return
@@ -81,9 +78,7 @@
         const membershipOption = selectedOption(membership)
         const tenantId = membershipOption?.dataset.tenantId || ''
         const tenantName = membershipOption?.dataset.tenantName || 'the selected Tenant'
-        const providerKey = String(membershipOption?.dataset.providerKey || '')
-            .trim()
-            .toLowerCase()
+        const providerKey = String(membershipOption?.dataset.providerKey || '').trim().toLowerCase()
         const principalType = membershipOption?.dataset.principalType || ''
         const scopeValue = scope.value
 
