@@ -238,8 +238,16 @@ def get_credential_registry_context(
         page=page,
         per_page=per_page,
     )
+    delivery_targets: dict[str, list[TenantNamespace]] = {}
+    for credential in items:
+        try:
+            delivery_targets[str(credential.id)] = credential_target_namespaces(credential)
+        except ValueError:
+            delivery_targets[str(credential.id)] = []
+
     return {
         'credential_rows': items,
+        'credential_delivery_targets': delivery_targets,
         'credential_pagination': pagination,
         'credential_filters': {
             'tenant_id': normalized_tenant_id,
