@@ -2,6 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/destructive_confirmation_modal.html" as destructive_modal %}
+{% import "components/info_tip.html" as info_tip %}
 {% set registry_id = 'tenant-registry-card' %}
 {% set loading_id = 'tenant-registry-loading' %}
 {% set query_params = {
@@ -182,15 +183,14 @@
                                 {% elif tenant.lifecycle_status == 'decommissioned' %}
                                     {{ table_label.special_label('History Retained', 'unknown', 'archive') }}
                                 {% elif decommission.blockers %}
-                                    <div class="max-w-[15rem] space-y-1 text-right" title="{{ decommission.blockers|join(' ') }}">
+                                    <div class="flex items-center justify-end gap-1.5">
                                         {{ table_label.special_label('Blocked', 'critical', 'shield-alert') }}
-                                        <p class="text-[11px] leading-4 text-content-muted">
-                                            {% if tenant.provider_key == 'capsule' or tenant.reconciliation_authority == 'capsule' %}
-                                                Capsule teardown not admitted
-                                            {% else %}
-                                                {{ decommission.blockers[0] }}
-                                            {% endif %}
-                                        </p>
+                                        {{ info_tip.render(
+                                            'tenant-decommission-blocked-' ~ tenant.id,
+                                            'Decommission blocked',
+                                            'The Tenant is still valid. This destructive action is fail-closed until an authority-safe teardown path is available.',
+                                            decommission.blockers
+                                        ) }}
                                     </div>
                                 {% else %}
                                     {{ table_label.special_label('Unavailable', 'unknown', 'circle-slash-2') }}

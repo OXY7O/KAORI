@@ -90,8 +90,9 @@ def test_tenant_setup_uses_a_static_governance_flow_not_expandable_guidance() ->
     tenant_form = read('app/templates/kubernetes/tenant/partials/_tenant_form.html')
     assert 'components/info_tip.html' in tenant_form
     assert 'tenant-setup-form-tip' in tenant_form
-    assert 'flex h-full flex-col' in tenant_form
-    assert 'class="mt-auto pt-5"' in tenant_form
+    assert 'flex h-full flex-col overflow-visible' in tenant_form
+    assert 'Create the Tenant boundary first; namespace and access follow.' in tenant_form
+    assert 'rounded-b-xl border-t border-outline-subtle bg-surface-hover' in tenant_form
     assert 'Optional. KAORI derives a lowercase slug' not in tenant_form
 
 
@@ -138,6 +139,14 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'xl:col-span-5' in workspace
     assert 'grid h-full gap-5 xl:col-span-7 xl:grid-rows-2' in workspace
     assert 'Access Grant Flow' in workspace
+    assert 'Access scope guide' in workspace
+    assert 'Namespace Scope' in workspace
+    assert 'Environment Scope' in workspace
+    assert 'Tenant Scope' in workspace
+    assert 'Membership fixes the Tenant boundary.' in workspace
+    assert 'Targets are filtered automatically.' in workspace
+    assert 'Tenant and scope are validated before commit.' in workspace
+    assert 'Environment/Tenant scope may stay Pending until a namespace exists.' in workspace
     assert 'Access Boundaries' in workspace
     assert 'components/info_tip.html' in workspace
     assert 'access-grant-form-tip' in workspace
@@ -647,7 +656,9 @@ def test_tenant_status_actions_use_semantic_labels() -> None:
 
     assert "special_label('History Retained', 'unknown', 'archive')" in registry
     assert "special_label('Blocked', 'critical', 'shield-alert')" in registry
-    assert 'Capsule teardown not admitted' in registry
+    assert 'tenant-decommission-blocked-' in registry
+    assert 'The Tenant is still valid. This destructive action is fail-closed' in registry
+    assert 'components/info_tip.html' in registry
     assert "special_label('Unavailable', 'unknown', 'circle-slash-2')" in registry
 
 
@@ -815,6 +826,8 @@ def test_access_grant_form_filters_targets_and_profiles_from_selected_membership
     assert 'namespace.required = showNamespace && Boolean(tenantId)' in scope_js
     assert 'No target selection is required.' in scope_js
     assert 'incompatible profiles are filtered automatically.' in scope_js
+    assert 'normalizedPrincipalType' in scope_js
+    assert "window.addEventListener('pageshow'" in scope_js
     assert 'htmx:afterSwap' in scope_js
 
     # Browser filtering is operator guidance only; server-side Tenant boundary validation remains authoritative.

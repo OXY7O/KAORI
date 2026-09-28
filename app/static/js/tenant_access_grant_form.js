@@ -28,14 +28,18 @@
     }
 
     const syncProfiles = (form, principalType) => {
+        const normalizedPrincipalType = String(principalType || '').trim().toLowerCase()
         const profile = form.querySelector('[data-access-profile]')
         const guidance = form.querySelector('[data-access-profile-guidance]')
         if (!(profile instanceof HTMLSelectElement)) return
 
         let selectedStillValid = false
         for (const option of profile.options) {
-            const types = (option.dataset.principalTypes || '').split(',').filter(Boolean)
-            const eligible = !principalType || types.includes(principalType)
+            const types = (option.dataset.principalTypes || '')
+                .split(',')
+                .map((value) => value.trim().toLowerCase())
+                .filter(Boolean)
+            const eligible = !normalizedPrincipalType || types.includes(normalizedPrincipalType)
             option.hidden = !eligible
             option.disabled = !eligible
             if (eligible && option.selected) selectedStillValid = true
@@ -48,7 +52,7 @@
 
         const current = selectedOption(profile)
         if (guidance) {
-            guidance.textContent = principalType
+            guidance.textContent = normalizedPrincipalType
                 ? profileCopy[current?.value] || 'Choose the least-privilege profile required by this principal.'
                 : 'Select Membership first; incompatible profiles are filtered automatically.'
         }
@@ -131,5 +135,6 @@
     })
 
     document.addEventListener('htmx:afterSwap', (event) => init(event.target))
+    window.addEventListener('pageshow', () => init())
     init()
 })()

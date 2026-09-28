@@ -144,7 +144,7 @@
                 </label>
             </div>
             <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <p class="max-w-sm text-xs leading-5 text-content-muted">KAORI validates Tenant ownership and scope before committing the Access Grant intent.</p>
+                <p class="max-w-sm text-xs leading-5 text-content-muted">Tenant and scope are validated before commit.</p>
                 <button type="submit" {% if not can_manage or not access_membership_options %}disabled aria-disabled="true"{% endif %} class="{{ action_button.classes('primary') }}">
                     <i data-lucide="shield-check" class="h-4 w-4"></i>
                     Apply Grant
@@ -152,7 +152,7 @@
             </footer>
         </form>
 
-        <div class="grid h-full gap-5 xl:col-span-7 xl:grid-rows-2">
+        <div class="grid h-full gap-5 xl:col-span-7 xl:grid-rows-[auto_1fr]">
             <section class="flex h-full flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm" aria-labelledby="access-grant-flow-heading">
                 <header class="border-b border-outline-subtle px-5 py-4">
                     <div class="flex items-start gap-3">
@@ -165,7 +165,43 @@
                         </div>
                     </div>
                 </header>
-                <div class="flex flex-1 items-center p-5">{{ operational_flow_steps.render(grant_flow, aria_label='Tenant Access Grant flow') }}</div>
+                <div class="space-y-4 p-5">
+                    {{ operational_flow_steps.render(grant_flow, aria_label='Tenant Access Grant flow') }}
+                    <div class="grid gap-3 md:grid-cols-3" aria-label="Access scope guide">
+                        {% for icon, title, description in [
+                            ('box', 'Namespace', 'One namespace only. Best default for day-to-day access.'),
+                            ('layers-3', 'Environment', 'All governed namespaces in one Tenant environment.'),
+                            ('building-2', 'Tenant', 'All governed namespaces in the Tenant. Use only when required.')
+                        ] %}
+                            <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
+                                <div class="flex items-start gap-2.5">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                                    </span>
+                                    <div>
+                                        <p class="text-xs font-semibold text-content-primary">{{ title }} Scope</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border border-outline-subtle bg-surface-hover px-3.5 py-2.5 text-[11px] leading-4 text-content-muted">
+                        <span class="inline-flex items-center gap-1.5">
+                            <i data-lucide="users-round" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
+                            Membership fixes the Tenant boundary.
+                        </span>
+                        <span class="inline-flex items-center gap-1.5">
+                            <i data-lucide="list-filter" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
+                            Targets are filtered automatically.
+                        </span>
+                        <span class="inline-flex items-center gap-1.5">
+                            <i data-lucide="shield-check" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
+                            Effective RBAC remains provider-verified.
+                        </span>
+                    </div>
+                </div>
             </section>
 
             <section class="flex h-full flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm" aria-labelledby="access-grant-boundaries-heading">
@@ -192,7 +228,7 @@
                     {% endfor %}
                 </div>
                 <div class="flex flex-wrap items-center justify-between gap-3 border-t border-outline-subtle bg-surface-hover px-4 py-3">
-                    <p class="text-xs leading-5 text-content-muted">Missing a Namespace target? Provision it first, then return to this workflow.</p>
+                    <p class="text-xs leading-5 text-content-muted">Namespace scope needs one target. Environment/Tenant scope may stay Pending until a namespace exists.</p>
                     <a href="{{ url_for('tenant.namespace_provisioning') }}" class="{{ action_button.classes('secondary') }}">
                         <i data-lucide="boxes" class="h-4 w-4" aria-hidden="true"></i>
                         Create Namespace
