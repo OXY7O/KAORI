@@ -184,6 +184,7 @@
                 <div class="space-y-4 p-5">
                     {{ numbered_steps.render(grant_flow, 'Tenant Access Grant flow', columns=3) }}
                     <div class="grid gap-3 md:grid-cols-3" aria-label="Access scope guide">
+                        <span class="sr-only">Namespace Scope · Environment Scope · Tenant Scope</span>
                         {% for icon, title, description in [
                             ('box', 'Namespace', 'One namespace only. Best default for day-to-day access.'),
                             ('layers-3', 'Environment', 'All governed namespaces in one Tenant environment.'),
