@@ -36,7 +36,8 @@
                 'Reactivate restores a retired binding for future use.',
                 'Routine hard delete is intentionally absent so Membership, Access Grant, and audit lineage remain queryable.'
             ],
-            button_text='Group Guide'
+            button_text='Group Guide',
+            button_classes=table_ui.action_classes()
         ) }}
     {% endset %}
     {{ table_ui.inventory_block_header(
