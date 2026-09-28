@@ -13,14 +13,6 @@ from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import any_permission_required, permission_required
 from app.common.pagination import paginate_sequence
-from app.kubernetes.tenant.admin_workspace import (
-    get_access_grant_registry_context,
-    get_credential_registry_context,
-    get_group_registry_context,
-    get_membership_registry_context,
-    get_namespace_access_registry_context,
-    get_tenant_summary_context,
-)
 from app.kubernetes.tenant.access_service import (
     TenantAccessStateConflictError,
     TenantGroupReconciliationError,
@@ -30,14 +22,23 @@ from app.kubernetes.tenant.access_service import (
     create_tenant_group_by_id_committed,
     get_tenant_access_context,
     inspect_access_grant_by_id_committed,
-    reconcile_access_grant_by_id_committed,
     reactivate_membership_by_id_committed,
     reactivate_tenant_group_by_id_committed,
+    reconcile_access_grant_by_id_committed,
     retire_tenant_group_by_id_committed,
     revoke_access_grant_by_id_committed,
     revoke_membership_by_id_committed,
     update_tenant_group_by_id_committed,
 )
+from app.kubernetes.tenant.admin_workspace import (
+    get_access_grant_registry_context,
+    get_credential_registry_context,
+    get_group_registry_context,
+    get_membership_registry_context,
+    get_namespace_access_registry_context,
+    get_tenant_summary_context,
+)
+from app.kubernetes.tenant.audit import record_tenant_sync_dispatch_audit
 from app.kubernetes.tenant.capacity_governance import (
     TenantCapacityStateConflictError,
     upsert_capacity_policy_committed,
@@ -54,6 +55,10 @@ from app.kubernetes.tenant.credential_service import (
     revoke_credential_committed,
     suspend_credential_committed,
 )
+from app.kubernetes.tenant.decommission_service import (
+    TenantDecommissionBlocked,
+    request_tenant_decommission_committed,
+)
 from app.kubernetes.tenant.deployer_credential_service import (
     DeployerCredentialIssueRequest,
     create_deployer_credential_committed,
@@ -61,11 +66,6 @@ from app.kubernetes.tenant.deployer_credential_service import (
 from app.kubernetes.tenant.discovery_service import (
     adopt_discovered_tenant_committed,
     get_tenant_discovery_context,
-)
-from app.kubernetes.tenant.audit import record_tenant_sync_dispatch_audit
-from app.kubernetes.tenant.decommission_service import (
-    TenantDecommissionBlocked,
-    request_tenant_decommission_committed,
 )
 from app.kubernetes.tenant.job_adapter import (
     build_tenant_sync_state,
