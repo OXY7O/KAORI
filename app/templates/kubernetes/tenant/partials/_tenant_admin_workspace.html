@@ -62,5 +62,8 @@
         {% else %}
             {% include "kubernetes/tenant/partials/_tenant_setup_workspace.html" %}
         {% endif %}
+        {% if tenant_live_connection_oob|default(false) %}
+            {% include "kubernetes/tenant/partials/_live_connection_snapshot.html" %}
+        {% endif %}
     </div>
 </section>
