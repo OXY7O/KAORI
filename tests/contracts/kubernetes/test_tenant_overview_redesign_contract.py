@@ -57,9 +57,7 @@ def test_tenant_sync_matches_tls_background_behavior() -> None:
     sync_workspace = (ROOT / 'app/templates/kubernetes/tenant/partials/_sync_workspace.html').read_text(
         encoding='utf-8'
     )
-    live_state = (ROOT / 'app/templates/kubernetes/tenant/partials/_sync_live_state.html').read_text(
-        encoding='utf-8'
-    )
+    live_state = (ROOT / 'app/templates/kubernetes/tenant/partials/_sync_live_state.html').read_text(encoding='utf-8')
 
     assert 'hx-post="{{ url_for(\'tenant.inventory_sync\') }}"' in sync_workspace
     assert 'hx-target="#tenant-sync-workspace"' in sync_workspace
@@ -67,18 +65,18 @@ def test_tenant_sync_matches_tls_background_behavior() -> None:
     assert 'hx-trigger="every 1s"' in live_state
     assert "'tenantInventorySyncFinished': True" in routes
     assert "'kaori:notifications-changed': True" in routes
-    assert "if is_htmx:" in routes
+    assert 'if is_htmx:' in routes
     assert 'queue_transient_feedback(' in routes
     assert 'create_notification(' in task
     assert "'Tenant Sync Completed'" in task
     assert "'Tenant Sync Completed With Exceptions'" in task
-    assert "notification_deck_user_ids" in task
+    assert 'notification_deck_user_ids' in task
 
 
 def test_tenant_sync_workspace_context_is_constructed_from_sync_state() -> None:
     workspace = (ROOT / 'app/kubernetes/tenant/workspace.py').read_text(encoding='utf-8')
 
-    assert "def get_tenant_sync_workspace_context() -> dict[str, Any]:" in workspace
+    assert 'def get_tenant_sync_workspace_context() -> dict[str, Any]:' in workspace
     assert "'tenant_collection_snapshot': _tenant_collection_snapshot(sync_state)" in workspace
     assert "'tenant_sync_state': sync_state" in workspace
     broken_helper = """def get_tenant_sync_workspace_context() -> dict[str, Any]:
@@ -94,9 +92,7 @@ def test_tenant_overview_uses_tls_style_collection_snapshot_and_contextual_sync_
     sync_workspace = (ROOT / 'app/templates/kubernetes/tenant/partials/_sync_workspace.html').read_text(
         encoding='utf-8'
     )
-    live_state = (ROOT / 'app/templates/kubernetes/tenant/partials/_sync_live_state.html').read_text(
-        encoding='utf-8'
-    )
+    live_state = (ROOT / 'app/templates/kubernetes/tenant/partials/_sync_live_state.html').read_text(encoding='utf-8')
 
     assert 'kubernetes/tenant/partials/_sync_workspace.html' in overview
     assert 'components/snapshot_context_bar.html' in sync_workspace
@@ -135,10 +131,10 @@ def test_tenant_overview_keeps_multicluster_posture_compact_and_canonical() -> N
     assert 'table_ui.cluster_identity(row.name, row.environment)' in cluster_estate
     assert 'pagination_ui.footer_classes()' in cluster_estate
     assert 'pagination.allowed_per_page' in cluster_estate
-    assert "hx-get=\"{{ url_for('tenant.cluster_estate') }}\"" in cluster_estate
+    assert 'hx-get="{{ url_for(\'tenant.cluster_estate\') }}"' in cluster_estate
     assert "endpoint='tenant.cluster_estate'" in cluster_estate
     assert "href_endpoint='tenant.index'" in cluster_estate
-    assert "def get_tenant_cluster_estate_context(*, page: int = 1, per_page: int = 5)" in workspace
+    assert 'def get_tenant_cluster_estate_context(*, page: int = 1, per_page: int = 5)' in workspace
     assert 'paginate_sequence(' in workspace
     assert "@tenant_bp.get('/overview/cluster-estate')" in routes
     assert 'Committed Allocation' not in cluster_estate
