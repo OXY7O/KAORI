@@ -131,7 +131,9 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'Quota enforces limits; admission uses committed requests, not physical reservation.' in capacity
     assert "action_button.classes('primary')" in capacity
     assert "action_button.classes('primary', full=true)" not in capacity
-    assert 'components/status_detail_dialog.html' in capacity
+    assert 'components/info_tip.html' in capacity
+    assert 'allocation-budget-status-tip' in capacity
+    assert 'status_detail_dialog' not in capacity
 
     assert 'tenant-capacity-policy-state' in page
     assert "'capacity_policy_state':" in service
