@@ -97,6 +97,10 @@ Tenant identity is immutable after creation in the normal operator workflow.
 
 #734 still prohibits a database-only lifecycle flag change from being presented as provider decommission; the final lifecycle transition now occurs only after the #735 provider verification path succeeds.
 
+### Provider Discovery and Adoption
+
+#736 owns the two-way Tenant Registry path. The first admitted review slice is **live and read-only**: KAORI reads Native Kubernetes namespaces and Capsule Tenant CRs, shows their live provider status, correlates objects already governed by KAORI, and classifies unowned candidates as Managed, Adoptable, or Blocked. Discovery never mutates provider state. Explicit governed adoption remains a separate mutation step under #736.
+
 Tenant workspace mutations that are progressively enhanced with HTMX render operational feedback as an out-of-band KAORI toast in the same response. Success and failure feedback therefore appears immediately without requiring a full-page reload; persisted Notification Deck evidence remains synchronized through the standard toast notification-refresh contract.
 
 The former monolithic UAT-only Members & Access and Credential Management partials are retired. Final UX does not expose `Functional UAT Surface` copy or render all administration forms simultaneously.

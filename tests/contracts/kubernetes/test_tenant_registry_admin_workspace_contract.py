@@ -497,3 +497,33 @@ def test_live_tenant_collection_snapshot_is_provider_probe_only() -> None:
     assert '_live_connection_snapshot.html' in namespace_page
     assert '_live_connection_snapshot.html' not in overview
     assert '_sync_workspace.html' in overview
+
+
+
+def test_tenant_discovery_is_live_read_only_and_provider_classified() -> None:
+    routes = read('app/kubernetes/tenant/routes.py')
+    admin = read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
+    service = read('app/kubernetes/tenant/discovery_service.py')
+    template = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+
+    assert "'discovery'" in routes
+    assert 'get_tenant_discovery_context' in routes
+    assert "('discovery', 'Discovery', 'radar'" in admin
+    assert '_tenant_discovery.html' in admin
+
+    assert 'list_namespace(_request_timeout=5)' in service
+    assert "list_cluster_custom_object(" in service
+    assert "'capsule.clastix.io'" in service
+    assert "'native_kubernetes'" in service
+    assert "'Adoptable'" in service
+    assert "'Managed'" in service
+    assert "'Blocked'" in service
+    assert 'create_' not in service
+    assert 'patch_' not in service
+    assert 'delete_' not in service
+
+    assert 'Tenant Discovery' in template
+    assert 'Live Status' in template
+    assert 'KAORI Classification' in template
+    assert 'Governed Tenant' in template
+    assert 'discovery itself is read-only' in template

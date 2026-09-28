@@ -48,6 +48,7 @@ from app.kubernetes.tenant.deployer_credential_service import (
     DeployerCredentialIssueRequest,
     create_deployer_credential_committed,
 )
+from app.kubernetes.tenant.discovery_service import get_tenant_discovery_context
 from app.kubernetes.tenant.audit import record_tenant_sync_dispatch_audit
 from app.kubernetes.tenant.decommission_service import (
     TenantDecommissionBlocked,
@@ -129,6 +130,7 @@ def _tenant_workspace_context() -> dict[str, Any]:
 
 _TENANT_ADMIN_SECTIONS = {
     'registry',
+    'discovery',
     'tenant-setup',
     'memberships',
     'access-grants',
@@ -349,6 +351,18 @@ def _tenant_active_section_context(section: str) -> dict[str, Any]:
                 cluster_id=str(request.args.get('cluster_id') or ''),
                 environment=str(request.args.get('environment') or ''),
                 lifecycle_status=str(request.args.get('lifecycle_status') or ''),
+            ),
+        }
+    if section == 'discovery':
+        return {
+            **get_live_tenant_connection_context(),
+            **get_tenant_discovery_context(
+                page=request.args.get('discovery_page', 1, type=int) or 1,
+                per_page=request.args.get('discovery_per_page', 5, type=int) or 5,
+                cluster_id=str(request.args.get('discovery_cluster_id') or ''),
+                provider=str(request.args.get('discovery_provider') or ''),
+                management=str(request.args.get('discovery_management') or ''),
+                search=str(request.args.get('discovery_search') or ''),
             ),
         }
     if section == 'memberships':
