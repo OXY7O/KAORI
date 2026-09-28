@@ -741,9 +741,7 @@ def reactivate_membership_committed(*, membership_id: int, actor: User | None = 
         or grant.reconciliation_status != TenantAccessReconciliationStatus.REVOKED.value
     ]
     if unresolved_grants:
-        raise ValueError(
-            'Resolve provider cleanup for all previous Access Grants before reactivating this membership.'
-        )
+        raise ValueError('Resolve provider cleanup for all previous Access Grants before reactivating this membership.')
 
     membership.status = TenantMembershipStatus.ACTIVE.value
     _record_membership_event(
@@ -807,8 +805,7 @@ def reconcile_access_grants_for_namespace_committed(
                 grant=grant,
                 action='tenant_access_grant.namespace_scope_expanded',
                 summary=(
-                    f'Tenant Access Grant reconciled after namespace {namespace.namespace} '
-                    'entered its committed scope.'
+                    f'Tenant Access Grant reconciled after namespace {namespace.namespace} entered its committed scope.'
                 ),
                 outcome='success',
             )
