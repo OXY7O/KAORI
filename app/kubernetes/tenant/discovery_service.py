@@ -4,13 +4,23 @@ from datetime import UTC, datetime
 from typing import Any
 
 from kubernetes.client.rest import ApiException
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
+from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
 from app.models import Cluster
 from app.models.kubernetes import KubernetesConnection
-from app.models.tenant import Tenant, TenantEnvironment, TenantNamespace
+from app.models.tenant import (
+    Tenant,
+    TenantEnvironment,
+    TenantEnvironmentName,
+    TenantLifecycleStatus,
+    TenantNamespace,
+    TenantNamespaceProvisioningStatus,
+    TenantOwnershipStatus,
+)
 
 _SYSTEM_NAMESPACES = frozenset({'default', 'kube-system', 'kube-public', 'kube-node-lease'})
 _CAPSULE_GROUP = 'capsule.clastix.io'
@@ -168,11 +178,15 @@ def get_tenant_discovery_context(
                 continue
             labels = dict(getattr(metadata, 'labels', None) or {})
             managed_record = managed_namespaces.get((cluster_key, name))
+            provider_status = _namespace_phase(item)
             management_status, eligibility = _native_management(
                 namespace=name,
                 labels=labels,
                 managed_record=managed_record,
             )
+            if managed_record is None and provider_status == 'Terminating':
+                management_status = 'Blocked'
+                eligibility = 'Namespace is terminating and cannot enter governed adoption.'
             tenant = managed_record.environment.tenant if managed_record is not None else None
             rows.append({
                 'cluster': cluster,
@@ -181,10 +195,10 @@ def get_tenant_discovery_context(
                 'provider_label': 'Native Kubernetes',
                 'resource_kind': 'Namespace',
                 'resource_name': name,
-                'provider_status': _namespace_phase(item),
-                'provider_tone': _tone(_namespace_phase(item)),
+                'provider_status': provider_status,
+                'provider_tone': _tone(provider_status),
                 'management_status': management_status,
-                'management_tone': 'normal' if management_status == 'Managed' else ('info' if management_status == 'Adoptable' else 'warning'),
+                'management_tone': 'normal' if management_status == 'Managed' else ('info' if management_status == 'Discovered' else 'warning'),
                 'tenant_name': tenant.name if tenant is not None else None,
                 'tenant_id': tenant.id if tenant is not None else None,
                 'eligibility': eligibility,
@@ -208,7 +222,7 @@ def get_tenant_discovery_context(
                 continue
             tenant = managed_capsule.get((cluster_key, name))
             status = _capsule_phase(item)
-            management_status = 'Managed' if tenant is not None else 'Discovered'
+            management_status = 'Managed' if tenant is not None else ('Blocked' if status == 'Terminating' else 'Discovered')
             rows.append({
                 'cluster': cluster,
                 'cluster_id': cluster_key,
@@ -219,13 +233,20 @@ def get_tenant_discovery_context(
                 'provider_status': status,
                 'provider_tone': _tone(status),
                 'management_status': management_status,
-                'management_tone': 'normal' if management_status == 'Managed' else 'info',
+                'management_tone': (
+                    'normal' if management_status == 'Managed'
+                    else ('info' if management_status == 'Discovered' else 'warning')
+                ),
                 'tenant_name': tenant.name if tenant is not None else None,
                 'tenant_id': tenant.id if tenant is not None else None,
                 'eligibility': (
                     'Already governed by KAORI.'
                     if tenant is not None
-                    else 'Candidate for governed Capsule adoption preflight; provider authority remains Capsule.'
+                    else (
+                        'Capsule Tenant is terminating and cannot be adopted.'
+                        if management_status == 'Blocked'
+                        else 'Candidate for governed Capsule adoption preflight; provider authority remains Capsule.'
+                    )
                 ),
                 'provider_reference': str(metadata.get('uid') or name),
                 'provider_api_version': capsule_version,
@@ -272,3 +293,226 @@ def get_tenant_discovery_context(
         'tenant_discovery_errors': errors,
         'tenant_discovery_total': len(rows),
     }
+
+
+
+def _adoption_environment(value: str) -> str:
+    normalized = str(value or '').strip().lower()
+    allowed = {item.value for item in TenantEnvironmentName}
+    if normalized not in allowed:
+        raise ValueError('Select a supported Tenant environment for adoption.')
+    return normalized
+
+
+def _next_tenant_generation(*, cluster_id: str, slug: str) -> int:
+    prior = (
+        Tenant.query.filter_by(cluster_id=cluster_id, slug=slug)
+        .order_by(Tenant.generation.desc(), Tenant.created_at.desc())
+        .all()
+    )
+    if any(item.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value for item in prior):
+        raise ValueError('An active KAORI Tenant with this name/slug already exists on the selected cluster.')
+    return max((int(item.generation or 1) for item in prior), default=0) + 1
+
+
+def _next_namespace_generation(*, cluster_id: str, namespace: str) -> int:
+    prior = (
+        TenantNamespace.query.filter_by(cluster_id=cluster_id, namespace=namespace)
+        .order_by(TenantNamespace.generation.desc(), TenantNamespace.created_at.desc())
+        .all()
+    )
+    if any(
+        item.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value
+        for item in prior
+    ):
+        raise ValueError('This namespace is already represented by an active KAORI Tenant record.')
+    return max((int(item.generation or 1) for item in prior), default=0) + 1
+
+
+def _read_capsule_tenant(client, name: str) -> tuple[str, dict[str, Any]]:
+    api = client.custom_objects_api()
+    for version in _CAPSULE_VERSIONS:
+        try:
+            item = api.get_cluster_custom_object(
+                _CAPSULE_GROUP,
+                version,
+                'tenants',
+                name,
+                _request_timeout=5,
+            )
+        except ApiException as exc:
+            if exc.status == 404:
+                continue
+            raise
+        if isinstance(item, dict):
+            return version, item
+    raise ValueError('The Capsule Tenant is no longer present in the provider.')
+
+
+def adopt_discovered_tenant_committed(source: dict[str, Any]) -> tuple[Tenant, TenantEnvironment, TenantNamespace | None]:
+    """Adopt an existing provider object without mutating Kubernetes or Capsule."""
+
+    cluster_id = str(source.get('cluster_id') or '').strip()
+    provider_key = str(source.get('provider_key') or '').strip().lower()
+    resource_name = str(source.get('resource_name') or '').strip()
+    tenant_name = str(source.get('tenant_name') or resource_name).strip()
+    environment_name = _adoption_environment(str(source.get('environment') or ''))
+
+    if provider_key not in {'native_kubernetes', 'capsule'}:
+        raise ValueError('Unsupported Tenant discovery provider.')
+    if not resource_name:
+        raise ValueError('Select a discovered provider object.')
+    if not tenant_name or len(tenant_name) > 120:
+        raise ValueError('Tenant name is required and must be at most 120 characters.')
+
+    cluster = (
+        Cluster.query.join(KubernetesConnection, KubernetesConnection.cluster_id == Cluster.id)
+        .filter(Cluster.id == cluster_id)
+        .first()
+    )
+    if cluster is None:
+        raise ValueError('The selected Kubernetes cluster is no longer available for Tenant adoption.')
+
+    client = runtime_adapter.build_client(cluster)
+    now = datetime.now(UTC)
+
+    # Import here to reuse the canonical KAORI slug contract without making
+    # discovery a provider-specific clone of Tenant creation logic.
+    from app.kubernetes.tenant.service import normalize_tenant_slug
+
+    slug = normalize_tenant_slug(str(source.get('tenant_slug') or tenant_name))
+    tenant_generation = _next_tenant_generation(cluster_id=str(cluster.id), slug=slug)
+
+    tenant = Tenant()
+    tenant.cluster_id = cluster.id
+    tenant.name = tenant_name
+    tenant.slug = slug
+    tenant.generation = tenant_generation
+    tenant.description = f'Adopted from live {provider_key.replace("_", " ")} discovery.'
+    tenant.lifecycle_status = TenantLifecycleStatus.READY.value
+    tenant.ownership_status = TenantOwnershipStatus.ADOPTED.value
+
+    namespace_record: TenantNamespace | None = None
+
+    if provider_key == 'native_kubernetes':
+        try:
+            item = client.core_api().read_namespace(resource_name, _request_timeout=5)
+        except ApiException as exc:
+            if exc.status == 404:
+                raise ValueError('The discovered namespace is no longer present in Kubernetes.') from exc
+            raise
+
+        metadata = getattr(item, 'metadata', None)
+        labels = dict(getattr(metadata, 'labels', None) or {})
+        provider_status = _namespace_phase(item)
+        management_status, reason = _native_management(
+            namespace=resource_name,
+            labels=labels,
+            managed_record=_managed_namespace_map([str(cluster.id)]).get((str(cluster.id), resource_name)),
+        )
+        if provider_status == 'Terminating':
+            raise ValueError('The discovered namespace is terminating and cannot be adopted.')
+        if management_status != 'Discovered':
+            raise ValueError(reason)
+
+        namespace_generation = _next_namespace_generation(
+            cluster_id=str(cluster.id),
+            namespace=resource_name,
+        )
+        provider_uid = str(getattr(metadata, 'uid', None) or resource_name)
+        resource_version = str(getattr(metadata, 'resource_version', None) or '')
+
+        tenant.provider_key = 'native_kubernetes'
+        tenant.provider_state = 'native'
+        tenant.reconciliation_authority = 'native_kubernetes'
+        tenant.provider_reference = resource_name
+        tenant.provider_evidence_json = {
+            'source': 'tenant_discovery_adoption',
+            'provider': 'native_kubernetes',
+            'resource_kind': 'Namespace',
+            'resource_name': resource_name,
+            'provider_uid': provider_uid,
+            'resource_version': resource_version,
+            'adopted_at': now.isoformat(),
+            'provider_mutation_performed': False,
+            'secret_material_persisted': False,
+        }
+
+        db.session.add(tenant)
+        db.session.flush()
+
+        environment = TenantEnvironment()
+        environment.tenant_id = tenant.id
+        environment.environment = environment_name
+        db.session.add(environment)
+        db.session.flush()
+
+        namespace_record = TenantNamespace()
+        namespace_record.tenant_environment_id = environment.id
+        namespace_record.cluster_id = cluster.id
+        namespace_record.namespace = resource_name
+        namespace_record.generation = namespace_generation
+        namespace_record.ownership_status = TenantOwnershipStatus.ADOPTED.value
+        namespace_record.provisioning_status = TenantNamespaceProvisioningStatus.READY.value
+        namespace_record.provisioning_message = 'Existing Kubernetes namespace adopted without provider mutation.'
+        namespace_record.provider_reference = provider_uid
+        namespace_record.last_reconciled_at = now
+        namespace_record.provisioning_evidence_json = {
+            'source': 'tenant_discovery_adoption',
+            'provider': 'native_kubernetes',
+            'provider_uid': provider_uid,
+            'resource_version': resource_version,
+            'observed_present': True,
+            'adopted_at': now.isoformat(),
+            'provider_mutation_performed': False,
+            'secret_material_persisted': False,
+        }
+        db.session.add(namespace_record)
+
+    else:
+        capsule_version, item = _read_capsule_tenant(client, resource_name)
+        status = _capsule_phase(item)
+        if status == 'Terminating':
+            raise ValueError('The Capsule Tenant is terminating and cannot be adopted.')
+        if _managed_capsule_map([str(cluster.id)]).get((str(cluster.id), resource_name)) is not None:
+            raise ValueError('This Capsule Tenant is already governed by KAORI.')
+
+        metadata = item.get('metadata') or {}
+        provider_uid = str(metadata.get('uid') or resource_name)
+        resource_version = str(metadata.get('resourceVersion') or '')
+
+        tenant.provider_key = 'capsule'
+        tenant.provider_state = 'capsule'
+        tenant.reconciliation_authority = 'capsule'
+        tenant.provider_reference = resource_name
+        tenant.provider_evidence_json = {
+            'source': 'tenant_discovery_adoption',
+            'provider': 'capsule',
+            'provider_api_version': capsule_version,
+            'resource_kind': 'Tenant',
+            'resource_name': resource_name,
+            'provider_uid': provider_uid,
+            'resource_version': resource_version,
+            'provider_status': status,
+            'adopted_at': now.isoformat(),
+            'provider_mutation_performed': False,
+            'secret_material_persisted': False,
+        }
+
+        db.session.add(tenant)
+        db.session.flush()
+
+        environment = TenantEnvironment()
+        environment.tenant_id = tenant.id
+        environment.environment = environment_name
+        db.session.add(environment)
+
+    try:
+        db.session.commit()
+        return tenant, environment, namespace_record
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise ValueError('Tenant adoption conflicted with committed KAORI state. Refresh Discovery and retry.') from exc
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
