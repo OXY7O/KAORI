@@ -5,7 +5,12 @@ from typing import Any
 from sqlalchemy import func, or_
 
 from app.common.pagination import paginate_query, paginate_sequence
-from app.kubernetes.tenant.credential import build_namespace_access_package, credential_target_namespaces
+from app.kubernetes.tenant.credential import (
+    build_namespace_access_package,
+    credential_material_ttl_choices,
+    credential_material_ttl_policy,
+    credential_target_namespaces,
+)
 from app.models.tenant import (
     Tenant,
     TenantAccessGrant,
@@ -239,15 +244,23 @@ def get_credential_registry_context(
         per_page=per_page,
     )
     delivery_targets: dict[str, list[TenantNamespace]] = {}
+    delivery_policies: dict[str, dict[str, dict[str, object]]] = {}
     for credential in items:
         try:
-            delivery_targets[str(credential.id)] = credential_target_namespaces(credential)
+            targets = credential_target_namespaces(credential)
         except ValueError:
-            delivery_targets[str(credential.id)] = []
+            targets = []
+        delivery_targets[str(credential.id)] = targets
+        delivery_policies[str(credential.id)] = {
+            str(namespace.id): credential_material_ttl_policy(namespace.environment.environment)
+            for namespace in targets
+        }
 
     return {
         'credential_rows': items,
         'credential_delivery_targets': delivery_targets,
+        'credential_delivery_policies': delivery_policies,
+        'credential_material_ttl_choices': credential_material_ttl_choices(),
         'credential_pagination': pagination,
         'credential_filters': {
             'tenant_id': normalized_tenant_id,
