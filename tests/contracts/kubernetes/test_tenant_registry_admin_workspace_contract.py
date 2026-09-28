@@ -634,10 +634,10 @@ def test_tenant_setup_explains_capsule_adoption_boundary() -> None:
     form = read('app/templates/kubernetes/tenant/partials/_tenant_form.html')
     setup = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
 
-    assert 'Native Kubernetes — create in KAORI' in form
-    assert 'Capsule — use Discovery → Adoption' in form
-    assert 'Existing Capsule Tenant CRs are onboarded through Discovery → Adoption.' in form
-    assert 'Existing Capsule Tenant CRs enter KAORI through Discovery and governed Adoption.' in setup
+    assert '<option value="native_kubernetes" selected>Native Kubernetes</option>' in form
+    assert '<option value="capsule">Capsule</option>' in form
+    assert 'Existing Capsule Tenant CRs use Discovery → Adoption.' in form
+    assert 'Existing Capsule Tenant CRs still enter through Discovery and governed Adoption.' in setup
 
 
 
