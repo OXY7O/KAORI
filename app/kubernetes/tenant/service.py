@@ -325,8 +325,20 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
         raise ValueError('This UAT slice can provision only Native Kubernetes Tenant bindings.')
 
     namespace = _text(source, 'namespace')
-    if TenantNamespace.query.filter_by(cluster_id=tenant.cluster_id, namespace=namespace).first() is not None:
-        raise ValueError('This namespace is already tracked by Tenant Management on the selected cluster.')
+    prior_namespace_generations = (
+        TenantNamespace.query.filter_by(cluster_id=tenant.cluster_id, namespace=namespace)
+        .order_by(TenantNamespace.generation.desc(), TenantNamespace.created_at.desc())
+        .all()
+    )
+    if any(
+        item.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value
+        for item in prior_namespace_generations
+    ):
+        raise ValueError('This namespace is already active in Tenant Management on the selected cluster.')
+    namespace_generation = max(
+        (int(item.generation or 1) for item in prior_namespace_generations),
+        default=0,
+    ) + 1
 
     quota, limits, customized = _namespace_allocation_values(profile)
     capacity_decision = enforce_namespace_allocation_preflight(
@@ -344,6 +356,7 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
         allocation_customized=customized,
     )
     record.capacity_decision_id = capacity_decision.id
+    record.generation = namespace_generation
     try:
         reconcile_native_namespace(record)
     except (ApiException, ValueError):

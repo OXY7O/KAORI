@@ -349,6 +349,7 @@ class TenantNamespace(db.Model):
     allocation_limit_defaults_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     allocation_customized: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     namespace: Mapped[str] = mapped_column(String(253), nullable=False)
+    generation: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     ownership_status: Mapped[str] = mapped_column(
         String(30), nullable=False, default=TenantOwnershipStatus.MANAGED.value
     )
@@ -382,8 +383,14 @@ class TenantNamespace(db.Model):
     )
 
     __table_args__ = (
-        UniqueConstraint('cluster_id', 'namespace', name='uq_tenant_namespaces_cluster_namespace'),
+        UniqueConstraint(
+            'cluster_id',
+            'namespace',
+            'generation',
+            name='uq_tenant_namespaces_cluster_namespace_generation',
+        ),
         UniqueConstraint('correlation_id', name='uq_tenant_namespaces_correlation_id'),
+        CheckConstraint('generation >= 1', name='ck_tenant_namespaces_generation'),
         CheckConstraint(
             "ownership_status IN ('managed', 'discovered', 'adopted')", name='ck_tenant_namespaces_ownership_status'
         ),

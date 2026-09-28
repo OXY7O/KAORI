@@ -527,3 +527,29 @@ def test_tenant_discovery_is_live_read_only_and_provider_classified() -> None:
     assert 'KAORI Classification' in template
     assert 'Governed Tenant' in template
     assert 'discovery itself is read-only' in template
+
+
+
+def test_decommissioned_tenant_and_namespace_identity_can_be_recreated_as_new_generation() -> None:
+    models = read('app/models/tenant.py')
+    service = read('app/kubernetes/tenant/service.py')
+    migration = read('migrations/versions/20260928_tenant_namespace_generation.py')
+
+    assert "UniqueConstraint('cluster_id', 'slug', 'generation'" in models
+    assert 'prior_generations' in service
+    assert 'TenantLifecycleStatus.DECOMMISSIONED.value' in service
+    assert 'generation = max(' in service
+
+    assert 'generation: Mapped[int]' in models
+    assert 'prior_namespace_generations' in service
+    assert 'TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in service
+    assert 'record.generation = namespace_generation' in service
+    assert 'uq_tenant_namespaces_cluster_namespace_generation' in migration
+
+
+def test_same_tenant_slug_is_scoped_by_cluster() -> None:
+    models = read('app/models/tenant.py')
+    service = read('app/kubernetes/tenant/service.py')
+
+    assert "UniqueConstraint('cluster_id', 'slug', 'generation'" in models
+    assert "Tenant.query.filter_by(cluster_id=cluster.id, slug=slug)" in service
