@@ -232,10 +232,26 @@
         {{ status_detail_dialog.render(
             'tenant-decommission-blocked-' ~ tenant.id,
             'Tenant Registry',
-            'Decommission blocked',
-            'The Tenant is still valid. This action remains fail-closed until an authority-safe teardown path is available.',
+            tenant.name ~ ' · Decommission blocked',
+            'Blocked is a destructive-action readiness state, not a broken Tenant lifecycle. KAORI keeps the Tenant valid and refuses teardown until every authority and residue check is safe.',
             decommission.blockers,
-            icon='shield-alert'
+            icon='shield-alert',
+            facts=[
+                ('Tenant', tenant.name, tenant.slug),
+                ('Cluster', row.cluster.name if row.cluster else tenant.cluster_id, row.cluster.environment|title if row.cluster else 'Cluster reference only'),
+                ('Provider', tenant.provider_key|replace('_', ' ')|title, 'Authority: ' ~ tenant.reconciliation_authority|replace('_', ' ')|title),
+                ('Lifecycle', tenant.lifecycle_status|replace('_', ' ')|title, tenant.ownership_status|replace('_', ' ')|title ~ ' · Gen ' ~ tenant.generation),
+                ('Namespaces', decommission.namespace_count, decommission.managed_resource_count ~ ' managed resource intent(s)'),
+                ('Access State', decommission.access_grant_count ~ ' grant(s)', decommission.credential_count ~ ' credential(s) · ' ~ decommission.membership_count ~ ' membership(s)')
+            ],
+            stages=[
+                ('Freeze', 'Stop new Tenant mutations.'),
+                ('Revoke', 'Revoke credentials, grants, and active memberships.'),
+                ('Remove', 'Remove admitted managed resources and namespaces.'),
+                ('Verify', 'Confirm provider-authoritative absence and no residue.'),
+                ('Retain', 'Commit Decommissioned while preserving audit history.')
+            ],
+            note='Resolve the listed blockers first, then run Decommission again. KAORI never bypasses provider authority to make this action appear successful.'
         ) }}
     {% endif %}
 {% endfor %}

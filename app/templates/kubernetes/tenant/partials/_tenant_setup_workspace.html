@@ -1,14 +1,10 @@
-{% import "components/operational_flow_steps.html" as operational_flow_steps %}
+{% import "components/numbered_governance_steps.html" as numbered_steps %}
 {% set setup_flow = [
-    [
-        ('building-2', 'Create Tenant', 'Bind ownership to one Ready cluster and initial environment.'),
-        ('boxes', 'Provision Namespace', 'Apply Resource Profile, capacity guardrails, quota, and evidence.'),
-        ('users-round', 'Add Membership', 'Commit a user or Kubernetes group as a Tenant principal.')
-    ],
-    [
-        ('shield-check', 'Apply Access Grant', 'Select a versioned profile and the narrowest required scope.'),
-        ('key-round', 'Issue Credential', 'Create individual human or machine access only after grant readiness.')
-    ]
+    ('building-2', 'Create Tenant', 'Bind ownership to one Ready cluster and initial environment.'),
+    ('boxes', 'Provision Namespace', 'Apply Resource Profile, capacity guardrails, quota, and evidence.'),
+    ('users-round', 'Add Membership', 'Commit a user or Kubernetes group as a Tenant principal.'),
+    ('shield-check', 'Apply Access Grant', 'Select a versioned profile and the narrowest required scope.'),
+    ('key-round', 'Issue Credential', 'Create human or machine access only after grant readiness.')
 ] %}
 <div class="grid gap-5 xl:grid-cols-12 xl:items-stretch">
     <div class="h-full xl:col-span-5">
@@ -33,7 +29,7 @@
                 </div>
             </header>
             <div class="p-5">
-                {{ operational_flow_steps.render(setup_flow, aria_label='Tenant setup governance flow') }}
+                {{ numbered_steps.render(setup_flow, 'Tenant setup governance flow', columns=5) }}
             </div>
         </section>
 

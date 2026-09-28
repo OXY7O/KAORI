@@ -15,7 +15,12 @@
     const openDialog = (control) => {
         const dialog = resolveDialog(control)
         if (!dialog || dialog.open) return
-        dialog.showModal()
+        try {
+            if (typeof dialog.showModal === 'function') dialog.showModal()
+            else dialog.setAttribute('open', '')
+        } catch {
+            dialog.setAttribute('open', '')
+        }
         requestAnimationFrame(() => {
             const autofocus = dialog.querySelector('[autofocus]')
             const focusable = dialog.querySelector(

@@ -1,16 +1,12 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/form_field.html" as form_field %}
 {% import "components/info_tip.html" as info_tip %}
-{% import "components/operational_flow_steps.html" as operational_flow_steps %}
+{% import "components/numbered_governance_steps.html" as numbered_steps %}
 {% set membership_flow = [
-    [
-        ('user-round', 'Choose Principal', 'Use an active KAORI user or an enabled Kubernetes group subject.'),
-        ('users-round', 'Commit Membership', 'Bind that principal to exactly one Tenant ownership boundary.')
-    ],
-    [
-        ('shield-check', 'Apply Access Grant', 'Authorize the principal with a versioned profile and explicit scope.'),
-        ('key-round', 'Issue Credential', 'Create governed delivery only after access reconciliation is ready.')
-    ]
+    ('user-round', 'Choose Principal', 'Use an active KAORI user or an enabled Kubernetes group subject.'),
+    ('users-round', 'Commit Membership', 'Bind that principal to exactly one Tenant ownership boundary.'),
+    ('shield-check', 'Apply Access Grant', 'Authorize the principal with a versioned profile and explicit scope.'),
+    ('key-round', 'Issue Credential', 'Create governed delivery only after access reconciliation is ready.')
 ] %}
 <div class="space-y-5">
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
@@ -31,7 +27,7 @@
             </div>
         </header>
         <div class="p-5">
-            {{ operational_flow_steps.render(membership_flow, aria_label='Tenant membership governance flow') }}
+            {{ numbered_steps.render(membership_flow, 'Tenant membership governance flow', columns=4) }}
         </div>
         <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle md:grid-cols-3">
             <div class="bg-surface-card p-4">

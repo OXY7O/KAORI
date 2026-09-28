@@ -919,3 +919,51 @@ def test_status_detail_dialog_keeps_long_registry_evidence_out_of_table_overflow
 
     assert "const openSelector = '[data-kaori-dialog-open]'" in native_dialogs
     assert 'dialog.showModal()' in native_dialogs
+
+
+
+def test_governance_flows_use_shared_numbered_sequence_without_arrow_connectors() -> None:
+    setup = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
+    memberships = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
+    grants = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    component = read('app/templates/components/numbered_governance_steps.html')
+
+    for template in (setup, memberships, grants):
+        assert 'components/numbered_governance_steps.html' in template
+        assert 'operational_flow_steps' not in template
+
+    assert '0{{ loop.index }}' in component
+    assert 'bg-outline-subtle' in component
+    assert 'xl:grid-cols-5' in component
+    assert 'xl:grid-cols-4' in component
+    assert 'xl:grid-cols-3' in component
+
+
+def test_tenant_registry_blocker_dialog_explains_state_snapshot_and_teardown_flow() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    component = read('app/templates/components/status_detail_dialog.html')
+
+    assert 'Blocked is a destructive-action readiness state, not a broken Tenant lifecycle.' in registry
+    assert "('Provider', tenant.provider_key" in registry
+    assert "('Access State', decommission.access_grant_count" in registry
+    assert "('Freeze', 'Stop new Tenant mutations.')" in registry
+    assert "('Verify', 'Confirm provider-authoritative absence and no residue.')" in registry
+    assert 'Resolve the listed blockers first' in registry
+
+    assert 'Current Snapshot' in component
+    assert 'Governed Flow' in component
+    assert 'Why this state appears' in component
+    assert 'data-status-detail-trigger' in component
+    assert 'max-w-3xl' in component
+
+
+def test_tenant_discovery_status_dialogs_are_clickable_and_context_rich() -> None:
+    discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    native = read('app/static/js/native_dialogs.js')
+
+    assert "('Object', row.resource_name, row.resource_kind)" in discovery
+    assert "('Cluster', row.cluster.name, row.cluster.environment|title)" in discovery
+    assert "('Observe', 'Read provider state without mutation.')" in discovery
+    assert 'Discovery is read-only.' in discovery
+    assert "typeof dialog.showModal === 'function'" in native
+    assert "dialog.setAttribute('open', '')" in native

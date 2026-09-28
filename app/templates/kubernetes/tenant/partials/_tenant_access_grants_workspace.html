@@ -1,12 +1,12 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/form_field.html" as form_field %}
 {% import "components/info_tip.html" as info_tip %}
-{% import "components/operational_flow_steps.html" as operational_flow_steps %}
-{% set grant_flow = [[
+{% import "components/numbered_governance_steps.html" as numbered_steps %}
+{% set grant_flow = [
     ('users-round', 'Membership', 'Start from one active Tenant principal.'),
     ('shield-check', 'Profile', 'Choose a versioned least-privilege access contract.'),
     ('scope', 'Scope', 'Target Tenant, environment, or namespace explicitly.')
-]] %}
+] %}
 <div class="space-y-5">
     <div class="grid gap-5 xl:grid-cols-12 xl:items-stretch">
         <form id="access-grant-form"
@@ -178,7 +178,7 @@
                     </div>
                 </header>
                 <div class="space-y-4 p-5">
-                    {{ operational_flow_steps.render(grant_flow, aria_label='Tenant Access Grant flow') }}
+                    {{ numbered_steps.render(grant_flow, 'Tenant Access Grant flow', columns=3) }}
                     <div class="grid gap-3 md:grid-cols-3" aria-label="Access scope guide">
                         {% for icon, title, description in [
                             ('box', 'Namespace', 'One namespace only. Best default for day-to-day access.'),
