@@ -1,6 +1,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
+{% import "components/action_button.html" as action_button %}
 {% set registry_id = 'tenant-discovery-card' %}
 {% set loading_id = 'tenant-discovery-loading' %}
 {% set pagination = tenant_discovery_pagination %}
@@ -29,7 +30,7 @@
     {{ table_ui.inventory_block_header(
         'radar',
         'Tenant Discovery',
-        'Live, read-only provider discovery. Native namespaces and Capsule Tenant CRs are classified before any KAORI adoption.',
+        'Live, read-only provider discovery. Review a candidate before explicitly adopting it into KAORI governance.',
         loading_id,
         'Reading live Tenant provider state',
         none,
@@ -90,7 +91,7 @@
     {% if tenant_discovery_errors %}
         <div class="border-b border-status-warning-border bg-status-warning-soft px-5 py-3 text-xs text-status-warning-text">
             <span class="font-semibold">{{ tenant_discovery_errors|length }} provider read exception{{ '' if tenant_discovery_errors|length == 1 else 's' }}.</span>
-            Unreachable clusters are not inferred from stale data; review the live connection snapshot above.
+            Unreachable clusters are not inferred from stale data; review Tenant Collection Snapshot above.
         </div>
     {% endif %}
 
@@ -119,14 +120,13 @@
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
                             <p class="text-sm font-semibold text-content-primary">{{ row.provider_label }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ row.provider_reference }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ 'Provider authority' if row.provider_key == 'capsule' else 'Kubernetes namespace' }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
                             {{ table_label.status_label(row.provider_status, row.provider_tone) }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
                             {{ table_label.status_label(row.management_status, row.management_tone) }}
-                            <p class="mt-1 max-w-xs text-xs leading-5 text-content-muted">{{ row.eligibility }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
                             {% if row.tenant_name %}
@@ -137,13 +137,21 @@
                             {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
-                            <div class="ml-auto w-fit text-right">
+                            <div class="ml-auto flex w-fit items-center justify-end">
                                 {% if row.management_status == 'Managed' %}
                                     <span class="text-xs font-semibold text-status-normal-text">Managed</span>
+                                {% elif row.management_status == 'Discovered' and can_manage %}
+                                    <button type="button"
+                                            data-tenant-adoption-open
+                                            data-tenant-adoption-modal-id="tenant-adoption-modal-{{ loop.index }}"
+                                            class="{{ table_ui.action_classes() }}">
+                                        <i data-lucide="clipboard-check" class="h-4 w-4" aria-hidden="true"></i>
+                                        Review
+                                    </button>
                                 {% elif row.management_status == 'Discovered' %}
-                                    <span class="text-xs font-semibold text-kaori-primary" title="Governed adoption preflight is the next #736 step; discovery itself is read-only.">Candidate</span>
+                                    <span class="text-xs font-semibold text-kaori-primary">Candidate</span>
                                 {% else %}
-                                    <span class="text-xs font-semibold text-content-muted">Review Required</span>
+                                    <span class="text-xs font-semibold text-content-muted" title="{{ row.eligibility }}">Blocked</span>
                                 {% endif %}
                             </div>
                         </td>
@@ -178,3 +186,198 @@
         ) }}
     {% endif %}
 </section>
+
+{% for row in tenant_discovery_rows if row.management_status == 'Discovered' and can_manage %}
+    <div id="tenant-adoption-modal-{{ loop.index }}"
+         data-tenant-adoption-modal
+         class="fixed inset-0 z-[90] hidden items-center justify-center p-3 sm:p-5"
+         aria-hidden="true">
+        <button type="button"
+                data-tenant-adoption-close
+                class="absolute inset-0 bg-surface-overlay/75 backdrop-blur-sm"
+                aria-label="Close Tenant Adoption Preflight"></button>
+        <section role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="tenant-adoption-title-{{ loop.index }}"
+                 tabindex="-1"
+                 class="relative flex max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-2xl">
+            <header class="shrink-0 border-b border-outline-subtle px-5 py-4 sm:px-6">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="radar" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 id="tenant-adoption-title-{{ loop.index }}"
+                                class="text-lg font-semibold text-content-primary">Adoption Preflight</h2>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">
+                                Review live provider identity, authority, and the KAORI mapping before adopting this candidate.
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button"
+                            data-tenant-adoption-close
+                            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary"
+                            aria-label="Close Adoption Preflight">
+                        <i data-lucide="x" class="h-4 w-4"></i>
+                    </button>
+                </div>
+            </header>
+
+            <form method="post"
+                  action="{{ url_for('tenant.adopt_discovered_tenant_route') }}"
+                  hx-post="{{ url_for('tenant.adopt_discovered_tenant_route') }}"
+                  hx-target="#tenant-admin-workspace"
+                  hx-select="#tenant-admin-workspace"
+                  hx-swap="outerHTML show:none focus-scroll:false"
+                  hx-indicator="#tenant-admin-loading"
+                  hx-disabled-elt="find button"
+                  class="min-h-0 flex-1 overflow-y-auto">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="cluster_id" value="{{ row.cluster_id }}">
+                <input type="hidden" name="provider_key" value="{{ row.provider_key }}">
+                <input type="hidden" name="resource_name" value="{{ row.resource_name }}">
+
+                <div class="space-y-5 p-5 sm:p-6">
+                    <section>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Candidate Summary</p>
+                        <div class="mt-2 flex items-center gap-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="{{ 'boxes' if row.provider_key == 'native_kubernetes' else 'waypoints' }}" class="h-5 w-5"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <p class="text-sm font-semibold text-content-primary">{{ row.resource_name }}</p>
+                                    {{ table_label.status_label(row.resource_kind, 'info') }}
+                                </div>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.eligibility }}</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Provider &amp; Live Context</p>
+                        <dl class="mt-2 grid overflow-hidden rounded-xl border border-outline-subtle sm:grid-cols-2 lg:grid-cols-3">
+                            <div class="border-b border-outline-subtle p-4 sm:border-r lg:border-b">
+                                <dt class="text-xs text-content-muted">Cluster</dt>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ row.cluster.name }}</dd>
+                                <dd class="mt-1 text-xs text-content-muted">{{ row.cluster.environment|environment_name }}</dd>
+                            </div>
+                            <div class="border-b border-outline-subtle p-4 lg:border-r lg:border-b">
+                                <dt class="text-xs text-content-muted">Provider</dt>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ row.provider_label }}</dd>
+                                <dd class="mt-1 break-all text-xs text-content-muted">{{ row.provider_reference }}</dd>
+                            </div>
+                            <div class="border-b border-outline-subtle p-4 sm:border-r lg:border-r-0 lg:border-b">
+                                <dt class="text-xs text-content-muted">Resource Kind</dt>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ row.resource_kind }}</dd>
+                            </div>
+                            <div class="border-b border-outline-subtle p-4 lg:border-b-0 lg:border-r">
+                                <dt class="text-xs text-content-muted">Live Status</dt>
+                                <dd class="mt-2">{{ table_label.status_label(row.provider_status, row.provider_tone) }}</dd>
+                            </div>
+                            <div class="border-b border-outline-subtle p-4 sm:border-r sm:border-b-0 lg:border-r">
+                                <dt class="text-xs text-content-muted">Provider Authority</dt>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ 'Capsule' if row.provider_key == 'capsule' else 'Native Kubernetes' }}</dd>
+                                <dd class="mt-1 text-xs leading-5 text-content-muted">Authority remains with the provider after adoption.</dd>
+                            </div>
+                            <div class="p-4">
+                                <dt class="text-xs text-content-muted">Current Ownership</dt>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">Not governed</dd>
+                                <dd class="mt-1 text-xs leading-5 text-content-muted">Observed live; no KAORI mutation yet.</dd>
+                            </div>
+                        </dl>
+                    </section>
+
+                    <section>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Proposed KAORI Mapping</p>
+                        <div class="mt-2 grid gap-4 rounded-xl border border-outline-subtle p-4 sm:grid-cols-2">
+                            <label class="block">
+                                <span class="text-xs font-semibold text-content-primary">Tenant Name</span>
+                                <input type="text"
+                                       name="tenant_name"
+                                       maxlength="120"
+                                       required
+                                       value="{{ row.resource_name }}"
+                                       class="mt-2 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-outline-focus">
+                            </label>
+                            <label class="block">
+                                <span class="text-xs font-semibold text-content-primary">Environment</span>
+                                <select name="environment"
+                                        required
+                                        class="mt-2 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-outline-focus">
+                                    {% for environment in ('development', 'staging', 'production') %}
+                                        <option value="{{ environment }}"
+                                                {% if row.cluster.environment|string|lower == environment %}selected{% endif %}>
+                                            {{ environment|title }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                            <div class="sm:col-span-2 grid gap-3 sm:grid-cols-2">
+                                <div class="rounded-lg bg-surface-elevated p-3">
+                                    <p class="text-xs font-medium text-content-muted">Provider Mapping</p>
+                                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ row.provider_label }} · {{ row.resource_kind }}</p>
+                                </div>
+                                <div class="rounded-lg bg-surface-elevated p-3">
+                                    <p class="text-xs font-medium text-content-muted">Adoption Effect</p>
+                                    <p class="mt-1 text-sm font-semibold text-content-primary">
+                                        {{ 'Reference existing namespace' if row.provider_key == 'native_kubernetes' else 'Register existing Capsule Tenant' }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Governance Checks</p>
+                        <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                            {% for title, detail in [
+                                ('Provider object exists', 'Observed from the live provider on this request.'),
+                                ('No active KAORI owner', 'Discovery classified this object as Discovered, not Managed.'),
+                                ('Provider authority preserved', 'Adoption records governance state without replacing the external authority.'),
+                                ('Fail-closed revalidation', 'KAORI rechecks provider state and conflicts again when Adopt is submitted.')
+                            ] %}
+                                <div class="flex gap-3 rounded-lg border border-status-normal-border bg-status-normal-soft p-3">
+                                    <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-card text-status-normal-text"
+                                          aria-hidden="true">
+                                        <i data-lucide="check" class="h-3.5 w-3.5"></i>
+                                    </span>
+                                    <div>
+                                        <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ detail }}</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </section>
+
+                    <div class="flex items-start gap-3 rounded-xl border border-status-warning-border bg-status-warning-soft p-4 text-status-warning-text">
+                        <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-card"
+                              aria-hidden="true">
+                            <i data-lucide="info" class="h-4 w-4"></i>
+                        </span>
+                        <p class="text-xs leading-5">
+                            <span class="font-semibold">Human confirmation.</span>
+                            Adoption creates committed KAORI governance records for this existing provider object.
+                            It does not create, patch, delete, restart, or relocate Kubernetes/Capsule resources.
+                        </p>
+                    </div>
+                </div>
+
+                <footer class="sticky bottom-0 flex flex-col-reverse gap-2 border-t border-outline-subtle bg-surface-card px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+                    <button type="button"
+                            data-tenant-adoption-close
+                            class="{{ action_button.classes('secondary') }}">Cancel</button>
+                    <button type="submit"
+                            class="{{ action_button.classes('primary') }}">
+                        <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
+                        Adopt into KAORI
+                    </button>
+                </footer>
+            </form>
+        </section>
+    </div>
+{% endfor %}
