@@ -73,8 +73,8 @@
                 ) }}
             </div>
         </header>
-        <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
-            <label class="block">
+        <div class="grid gap-x-5 gap-y-4 p-5 md:grid-cols-2 xl:grid-cols-6">
+            <label class="block xl:col-span-2">
                 {{ form_field.label_row("Membership") }}
                 <select name="membership_id" required class="{{ form_field.select_classes() }}">
                     <option value="">Select active membership</option>
@@ -85,7 +85,7 @@
                     {% endfor %}
                 </select>
             </label>
-            <label class="block">
+            <label class="block xl:col-span-2">
                 {{ form_field.label_row("Access Profile") }}
                 <select name="access_profile" required class="{{ form_field.select_classes() }}">
                     {% for profile in access_profiles %}
@@ -93,7 +93,7 @@
                     {% endfor %}
                 </select>
             </label>
-            <label class="block">
+            <label class="block xl:col-span-2">
                 {{ form_field.label_row("Scope") }}
                 <select name="scope_type" required class="{{ form_field.select_classes() }}">
                     <option value="namespace" selected>Namespace</option>
@@ -101,7 +101,7 @@
                     <option value="tenant">Tenant</option>
                 </select>
             </label>
-            <label class="block">
+            <label class="block xl:col-span-3">
                 {{ form_field.label_row('Environment Target', 'Environment scope only', 'info') }}
                 <select name="tenant_environment_id" class="{{ form_field.select_classes() }}">
                     <option value="">No environment target</option>
@@ -110,7 +110,7 @@
                     {% endfor %}
                 </select>
             </label>
-            <label class="block">
+            <label class="block xl:col-span-3">
                 {{ form_field.label_row('Namespace Target', 'Namespace scope only', 'info') }}
                 <select name="tenant_namespace_id" class="{{ form_field.select_classes() }}">
                     <option value="">No namespace target</option>
@@ -119,30 +119,30 @@
                     {% endfor %}
                 </select>
             </label>
-            <div class="flex items-end">
-                <div class="flex w-full gap-3 rounded-lg border border-kaori-primary/20 bg-kaori-soft p-3 text-kaori-primary-dark dark:text-kaori-accent">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-surface-card/70"
+            <div class="md:col-span-2 xl:col-span-6">
+                <div class="flex items-start gap-2.5 rounded-lg border border-outline-subtle bg-surface-elevated px-3.5 py-3">
+                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
                           aria-hidden="true">
-                        <i data-lucide="scope" class="h-4 w-4"></i>
+                        <i data-lucide="scope" class="h-3.5 w-3.5"></i>
                     </span>
-                    <div>
-                        <p class="text-xs font-semibold">Scope Rule</p>
-                        <p class="mt-1 text-xs leading-5">
-                            Tenant: no target. Environment/Namespace: select one target.
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-content-primary">Scope Rule</p>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">
+                            Tenant scope uses no target. Environment or Namespace scope requires exactly one matching target.
                         </p>
                     </div>
                 </div>
             </div>
         </div>
-        <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex min-w-0 items-start gap-2.5 text-status-info-text">
-                <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-status-info-soft"
+        <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-elevated px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-start gap-2.5 text-content-secondary">
+                <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
                       aria-hidden="true">
-                    <i data-lucide="info" class="h-4 w-4"></i>
+                    <i data-lucide="shield-check" class="h-4 w-4"></i>
                 </span>
                 <p class="max-w-3xl text-xs leading-5">
-                    <span class="font-semibold">Governance note.</span>
-                    KAORI validates Tenant ownership and scope before creating intent; effective access is authoritative only after Kubernetes RBAC reconciliation succeeds.
+                    <span class="font-semibold text-content-primary">Governed reconciliation.</span>
+                    KAORI validates Tenant ownership and scope before committing intent. Kubernetes RBAC remains authoritative for effective access.
                 </p>
             </div>
             <button type="submit"

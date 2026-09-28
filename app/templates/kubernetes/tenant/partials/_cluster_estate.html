@@ -17,14 +17,14 @@
     aria_label='Multi-cluster Tenant estate'
     ) %}
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[900px] table-fixed') }}">
+        <table class="{{ table_ui.table_classes('min-w-[860px] table-fixed') }}">
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th class="{{ table_ui.header_cell_classes() }} w-[32%]">Cluster</th>
+                    <th class="{{ table_ui.header_cell_classes() }} w-[34%]">Cluster</th>
                     <th class="{{ table_ui.header_cell_classes() }} w-[12%]">Tenants</th>
                     <th class="{{ table_ui.header_cell_classes() }} w-[14%]">Namespaces</th>
                     <th class="{{ table_ui.header_cell_classes() }} w-[18%]">Snapshot</th>
-                    <th class="{{ table_ui.header_cell_classes(action=true) }} w-[24%]">Capacity</th>
+                    <th class="{{ table_ui.header_cell_classes() }} w-[22%]">Capacity</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -32,24 +32,28 @@
                     {% for row in tenant_overview_clusters %}
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }} align-middle">
-                                <div class="min-w-0">
-                                    {{ table_ui.cluster_identity(row.name, row.environment) }}
-                                    <div class="mt-1.5 flex items-center gap-2 pl-10">
-                                        {{ table_label.status_indicator_label(row.provider_status|title, row.provider_tone) }}
+                                <div class="flex min-w-[15rem] items-center gap-3">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="server" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-semibold leading-5 text-content-primary"
+                                           title="{{ row.name }}">{{ row.name }}</p>
+                                        <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                                            <span class="text-xs leading-4 text-content-muted">{{ row.environment|environment_name }}</span>
+                                            {{ table_label.status_indicator_label(row.provider_status|title, row.provider_tone) }}
+                                        </div>
                                     </div>
                                 </div>
                             </td>
                             <td class="{{ table_ui.cell_classes() }} align-middle">
-                                <div class="flex flex-col justify-center">
-                                    <p class="text-base font-semibold leading-5 text-content-primary">{{ row.tenant_count }}</p>
-                                    <p class="mt-1 text-xs leading-4 text-content-muted">Governed</p>
-                                </div>
+                                <p class="text-base font-semibold tabular-nums leading-5 text-content-primary">{{ row.tenant_count }}</p>
+                                <p class="mt-1 text-xs leading-4 text-content-muted">Governed Tenants</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }} align-middle">
-                                <div class="flex flex-col justify-center">
-                                    <p class="text-base font-semibold leading-5 text-content-primary">{{ row.namespace_count }}</p>
-                                    <p class="mt-1 text-xs leading-4 text-content-muted">Managed</p>
-                                </div>
+                                <p class="text-base font-semibold tabular-nums leading-5 text-content-primary">{{ row.namespace_count }}</p>
+                                <p class="mt-1 text-xs leading-4 text-content-muted">Managed Namespaces</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }} align-middle">
                                 <div class="space-y-1.5">
@@ -57,11 +61,11 @@
                                         'Current' if row.snapshot_coverage_complete else ('Not Collected' if row.snapshot_coverage_label == 'Not Collected' else 'Needs Review'),
                                         'normal' if row.snapshot_coverage_complete else 'warning'
                                     ) }}
-                                    <p class="text-xs leading-4 text-content-muted">{{ row.snapshot_coverage_label }}</p>
+                                    <p class="text-xs leading-4 text-content-muted">{{ row.snapshot_coverage_label }} coverage</p>
                                 </div>
                             </td>
-                            <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
-                                <div class="ml-auto min-w-0 max-w-[13rem] space-y-1.5 text-left">
+                            <td class="{{ table_ui.cell_classes() }} align-middle">
+                                <div class="space-y-1.5">
                                     {% if row.capacity_available %}
                                         {{ table_label.status_label(row.capacity_state, row.capacity_tone) }}
                                     {% elif row.capacity_snapshot_state == 'Stale' %}
