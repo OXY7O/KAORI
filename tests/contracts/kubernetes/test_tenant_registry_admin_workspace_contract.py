@@ -896,3 +896,26 @@ def test_baseline_capsule_decommission_is_authority_safe_and_residue_gated() -> 
     assert 'baseline Capsule teardown is admitted only' in readme
     assert 'KAORI never falls back to Native deletion' in readme
     assert 'Baseline Capsule decommission:' in readme
+
+
+
+def test_status_detail_dialog_keeps_long_registry_evidence_out_of_table_overflow() -> None:
+    component = read('app/templates/components/status_detail_dialog.html')
+    docs = read('docs/design/components/STATUS_DETAIL_DIALOG.md')
+    native_dialogs = read('app/static/js/native_dialogs.js')
+
+    assert 'macro trigger(dialog_id' in component
+    assert 'macro render(dialog_id' in component
+    assert 'data-kaori-dialog-open' in component
+    assert 'data-dialog-target="{{ dialog_id }}"' in component
+    assert 'data-kaori-native-dialog' in component
+    assert 'aria-haspopup="dialog"' in component
+    assert 'data-kaori-dialog-close' in component
+
+    assert 'table status needs multi-line explanation' in docs
+    assert 'outside the table scroll container' in docs
+    assert 'phantom vertical scrollbars' in docs
+    assert 'multi-line status/blocker evidence → Status Detail Dialog' in docs
+
+    assert "const openSelector = '[data-kaori-dialog-open]'" in native_dialogs
+    assert 'dialog.showModal()' in native_dialogs
