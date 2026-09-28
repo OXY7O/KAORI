@@ -1,8 +1,8 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
-{% set registry_id = 'tenant-namespace-access-registry' %}
-{% set loading_id = 'tenant-namespace-access-registry-loading' %}
+{% set registry_id = "tenant-namespace-access-registry" %}
+{% set loading_id = "tenant-namespace-access-registry-loading" %}
 {% set query_params = {
     'section': 'namespace-access',
     'namespace_access_tenant_id': namespace_access_filters.tenant_id,
@@ -13,29 +13,26 @@
 <section id="{{ registry_id }}" class="{{ table_ui.block_classes() }}">
     {% set header_actions %}
         {% if namespace_access_filters.tenant_id or namespace_access_filters.environment or namespace_access_filters.credential_status or namespace_access_filters.search %}
-            {{ registry_ui.clear_filters_link(
-                'tenant.tenants',
-                registry_id,
-                loading_id,
-                namespace_access_pagination.per_page,
-                table_ui.action_classes(),
-                query_params={'section': 'namespace-access'},
-                page_param='namespace_access_page',
-                per_page_param='namespace_access_per_page'
+            {{ registry_ui.clear_filters_link('tenant.tenants',
+                        registry_id,
+                        loading_id,
+                        namespace_access_pagination.per_page,
+                        table_ui.action_classes() ,
+            query_params={'section': 'namespace-access'},
+            page_param='namespace_access_page',
+            per_page_param='namespace_access_per_page'
             ) }}
         {% endif %}
     {% endset %}
-    {{ table_ui.inventory_block_header(
-        'route',
+    {{ table_ui.inventory_block_header('route',
         'Namespace Access Registry',
         'Effective non-secret access packages derived from committed grants and credential lifecycle state.',
         loading_id,
         'Refreshing Namespace Access Registry',
-        url_for('tenant.operations', tab='activity'),
-        'Open Activity',
-        header_actions=header_actions
+        url_for('tenant.operations', tab='activity') ,
+    'Open Activity',
+    header_actions=header_actions
     ) }}
-
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
             'tenant.tenants',
@@ -44,10 +41,11 @@
             namespace_access_pagination.per_page,
             page_param='namespace_access_page',
             per_page_param='namespace_access_per_page'
-        ) %}
+            ) %}
             <input type="hidden" name="section" value="namespace-access">
             <div>
-                <label for="namespace-access-tenant-filter" class="{{ table_ui.filter_label_classes() }}">Tenant</label>
+                <label for="namespace-access-tenant-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Tenant</label>
                 <select id="namespace-access-tenant-filter"
                         name="namespace_access_tenant_id"
                         class="{{ table_ui.filter_select_classes() }}">
@@ -59,7 +57,8 @@
                 </select>
             </div>
             <div>
-                <label for="namespace-access-environment-filter" class="{{ table_ui.filter_label_classes() }}">Environment</label>
+                <label for="namespace-access-environment-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Environment</label>
                 <select id="namespace-access-environment-filter"
                         name="namespace_access_environment"
                         class="{{ table_ui.filter_select_classes() }}">
@@ -71,24 +70,25 @@
                 </select>
             </div>
             <div>
-                <label for="namespace-access-status-filter" class="{{ table_ui.filter_label_classes() }}">Credential Status</label>
+                <label for="namespace-access-status-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Credential Status</label>
                 <select id="namespace-access-status-filter"
                         name="namespace_access_status"
                         class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Lifecycle States</option>
                     {% for status in namespace_access_status_options %}
                         <option value="{{ status }}"
-                                {% if namespace_access_filters.credential_status == status %}selected{% endif %}>{{ status|replace('_', ' ')|title }}</option>
+                                {% if namespace_access_filters.credential_status == status %}selected{% endif %}>{{ status|replace('_', ' ') |title }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
-                <label for="namespace-access-search-filter" class="{{ table_ui.filter_label_classes() }}">Search</label>
+                <label for="namespace-access-search-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Search</label>
                 {{ table_ui.search_field('namespace_access_search', namespace_access_filters.search, 'Namespace, identity, cluster, Tenant', id='namespace-access-search-filter') }}
             </div>
         {% endcall %}
     </div>
-
     <div class="overflow-x-auto">
         <table class="{{ table_ui.table_classes('min-w-[1120px]') }}">
             <caption class="sr-only">Tenant namespace access registry.</caption>
@@ -108,13 +108,13 @@
                     {% if access.get('error') %}
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_ui.title_cell(access.get('service_account_name'), 'Access evidence unavailable', 'triangle-alert') }}
+                                {{ table_ui.title_cell(access.get('service_account_name') , 'Access evidence unavailable', 'triangle-alert') }}
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-sm font-semibold text-content-primary">{{ access.get('tenant_name') }}</p>
+                                <p class="text-sm font-semibold text-content-primary">{{ access.get("tenant_name") }}</p>
                             </td>
                             <td colspan="4" class="{{ table_ui.cell_classes() }}">
-                                <p class="text-xs leading-5 text-content-muted">{{ access.get('error') }}</p>
+                                <p class="text-xs leading-5 text-content-muted">{{ access.get("error") }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes(action=true) }}">
                                 {{ table_label.status_label('Evidence Unavailable', 'warning') }}
@@ -123,42 +123,40 @@
                     {% else %}
                         {% set credential_tone = 'normal' if access.get('credential_status') in ['active', 'renewal_due'] else ('warning' if access.get('credential_status') in ['rotating', 'suspended'] else 'critical') %}
                         <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }}">{{ table_ui.namespace_identity(access.get('namespace') ) }}</td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_ui.namespace_identity(access.get('namespace')) }}
+                                <p class="text-sm font-semibold text-content-primary">{{ access.get("tenant_name") }}</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ access.get("environment") |title }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-sm font-semibold text-content-primary">{{ access.get('tenant_name') }}</p>
-                                <p class="mt-1 text-xs text-content-muted">{{ access.get('environment')|title }}</p>
+                                <p class="text-sm font-semibold text-content-primary">{{ access.get("cluster_name") }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-sm font-semibold text-content-primary">{{ access.get('cluster_name') }}</p>
+                                <p class="text-sm font-semibold text-content-primary">{{ access.get("service_account_name") }}</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ access.get("credential_type") |replace('_', ' ')|title }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-sm font-semibold text-content-primary">{{ access.get('service_account_name') }}</p>
-                                <p class="mt-1 text-xs text-content-muted">{{ access.get('credential_type')|replace('_', ' ')|title }}</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_label.metadata_label(access.get('access_profile')|replace('_', ' ')|title) }}
+                                {{ table_label.metadata_label(access.get('access_profile') |replace('_', ' ')|title) }}
                                 <p class="mt-1 text-xs text-content-muted">
-                                    {{ access.get('approved_access_methods')|join(', ')|replace('_', ' ')|title }}
+                                    {{ access.get("approved_access_methods") |join(', ')|replace('_', ' ')|title }}
                                 </p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_label.status_label(access.get('credential_status')|replace('_', ' ')|title, credential_tone) }}
-                                <p class="mt-1 text-xs text-content-muted">{{ access.get('purpose') }}</p>
+                                {{ table_label.status_label(access.get('credential_status') |replace('_', ' ')|title, credential_tone) }}
+                                <p class="mt-1 text-xs text-content-muted">{{ access.get("purpose") }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes(action=true) }}">
-                                <p class="text-xs font-semibold text-content-secondary">Review {{ access.get('renewal_due_at')|user_datetime }}</p>
-                                <p class="mt-1 text-xs text-content-muted">Valid until {{ access.get('valid_until')|user_datetime }}</p>
+                                <p class="text-xs font-semibold text-content-secondary">Review {{ access.get("renewal_due_at") |user_datetime }}</p>
+                                <p class="mt-1 text-xs text-content-muted">Valid until {{ access.get("valid_until") |user_datetime }}</p>
                             </td>
                         </tr>
                     {% endif %}
                 {% else %}
                     <tr>
                         <td colspan="7" class="p-0">
-                            {% set empty_state_icon = 'route' %}
-                            {% set empty_state_title = 'No Namespace Access Found' %}
-                            {% set empty_state_description = 'Namespace access appears after eligible grants and credentials are committed.' %}
+                            {% set empty_state_icon = "route" %}
+                            {% set empty_state_title = "No Namespace Access Found" %}
+                            {% set empty_state_description = "Namespace access appears after eligible grants and credentials are committed." %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
@@ -166,20 +164,17 @@
             </tbody>
         </table>
     </div>
-
     {% if namespace_access_pagination.total_items > 0 %}
-        {{ registry_ui.footer(
-            'tenant.tenants',
-            registry_id,
-            loading_id,
-            namespace_access_pagination,
-            query_params,
-            namespace_access_pagination.allowed_per_page,
-            resource_label='Access Packages',
-            rows_aria_label='Namespace access rows per page',
-            control_name='tenant-namespace-access',
-            page_param='namespace_access_page',
-            per_page_param='namespace_access_per_page'
-        ) }}
+        {{ registry_ui.footer('tenant.tenants',
+                registry_id,
+                loading_id,
+                namespace_access_pagination,
+                query_params,
+                namespace_access_pagination.allowed_per_page,
+                resource_label='Access Packages',
+                rows_aria_label='Namespace access rows per page',
+                control_name='tenant-namespace-access',
+                page_param='namespace_access_page',
+                per_page_param='namespace_access_per_page') }}
     {% endif %}
 </section>

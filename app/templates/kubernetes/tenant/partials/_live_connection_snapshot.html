@@ -1,8 +1,7 @@
 {% import "components/snapshot_context_bar.html" as snapshot_context %}
 <div id="tenant-live-connection-snapshot"
      {% if tenant_live_connection_oob|default(false) %}hx-swap-oob="true"{% endif %}>
-    {{ snapshot_context.render(
-        source_label=tenant_live_connection.source_label,
+    {{ snapshot_context.render(source_label=tenant_live_connection.source_label,
         status=tenant_live_connection.status,
         tone=tenant_live_connection.tone,
         description=tenant_live_connection.description,
@@ -21,6 +20,5 @@
         latest_label='Live Check',
         scope_metric_label='Live Scope',
         coverage_metric_label='API Reachability',
-        exceptions_metric_label='Connection Exceptions'
-    ) }}
+        exceptions_metric_label='Connection Exceptions') }}
 </div>

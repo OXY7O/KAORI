@@ -2,8 +2,8 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/info_tip.html" as info_tip %}
-{% set registry_id = 'tenant-membership-registry' %}
-{% set loading_id = 'tenant-membership-registry-loading' %}
+{% set registry_id = "tenant-membership-registry" %}
+{% set loading_id = "tenant-membership-registry-loading" %}
 {% set query_params = {
     'section': 'memberships',
     'membership_tenant_id': membership_filters.tenant_id,
@@ -14,42 +14,37 @@
 <section id="{{ registry_id }}" class="{{ table_ui.block_classes() }}">
     {% set header_actions %}
         {% if membership_filters.tenant_id or membership_filters.principal_type or membership_filters.status or membership_filters.search %}
-            {{ registry_ui.clear_filters_link(
-                'tenant.tenants',
-                registry_id,
-                loading_id,
-                membership_pagination.per_page,
-                table_ui.action_classes(),
-                query_params={'section': 'memberships'},
-                page_param='membership_page',
-                per_page_param='membership_per_page'
+            {{ registry_ui.clear_filters_link('tenant.tenants',
+                        registry_id,
+                        loading_id,
+                        membership_pagination.per_page,
+                        table_ui.action_classes() ,
+            query_params={'section': 'memberships'},
+            page_param='membership_page',
+            per_page_param='membership_per_page'
             ) }}
         {% endif %}
-        {{ info_tip.render(
-            'tenant-membership-lifecycle-tip',
-            'Membership lifecycle',
-            'Membership registers one principal inside one Tenant; authorization remains a separate Access Grant.',
-            [
+        {{ info_tip.render('tenant-membership-lifecycle-tip',
+                'Membership lifecycle',
+                'Membership registers one principal inside one Tenant; authorization remains a separate Access Grant.',
+                [
                 'Active — the principal may receive new Access Grants.',
                 'Revoke — dependent active grants are revoked and provider cleanup is reconciled.',
                 'Reactivate — restores Membership only; previous grants stay revoked and require a new grant.',
                 'Routine hard delete is not exposed because Membership and grant history remain audit evidence.'
-            ],
-            button_text='Membership Guide',
-            button_classes=table_ui.action_classes()
+                ],
+                button_text='Membership Guide',
+                button_classes=table_ui.action_classes() 
         ) }}
     {% endset %}
-    {{ table_ui.inventory_block_header(
-        'users-round',
+    {{ table_ui.inventory_block_header('users-round',
         'Membership Registry',
         'Committed principals. Revoke/Reactivate preserves authorization history; routine hard delete is not supported.',
         loading_id,
         'Refreshing Membership Registry',
         '#add-user-membership-form',
         'Add Membership',
-        header_actions=header_actions
-    ) }}
-
+        header_actions=header_actions) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
             'tenant.tenants',
@@ -58,10 +53,11 @@
             membership_pagination.per_page,
             page_param='membership_page',
             per_page_param='membership_per_page'
-        ) %}
+            ) %}
             <input type="hidden" name="section" value="memberships">
             <div>
-                <label for="membership-tenant-filter" class="{{ table_ui.filter_label_classes() }}">Tenant</label>
+                <label for="membership-tenant-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Tenant</label>
                 <select id="membership-tenant-filter"
                         name="membership_tenant_id"
                         class="{{ table_ui.filter_select_classes() }}">
@@ -73,19 +69,21 @@
                 </select>
             </div>
             <div>
-                <label for="membership-principal-filter" class="{{ table_ui.filter_label_classes() }}">Principal Type</label>
+                <label for="membership-principal-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Principal Type</label>
                 <select id="membership-principal-filter"
                         name="membership_principal_type"
                         class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Principals</option>
                     {% for principal in membership_principal_options %}
                         <option value="{{ principal }}"
-                                {% if membership_filters.principal_type == principal %}selected{% endif %}>{{ principal|replace('_', ' ')|title }}</option>
+                                {% if membership_filters.principal_type == principal %}selected{% endif %}>{{ principal|replace('_', ' ') |title }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
-                <label for="membership-status-filter" class="{{ table_ui.filter_label_classes() }}">Status</label>
+                <label for="membership-status-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Status</label>
                 <select id="membership-status-filter"
                         name="membership_status"
                         class="{{ table_ui.filter_select_classes() }}">
@@ -97,12 +95,12 @@
                 </select>
             </div>
             <div>
-                <label for="membership-search-filter" class="{{ table_ui.filter_label_classes() }}">Search</label>
+                <label for="membership-search-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Search</label>
                 {{ table_ui.search_field('membership_search', membership_filters.search, 'Subject or Tenant', id='membership-search-filter') }}
             </div>
         {% endcall %}
     </div>
-
     <div class="overflow-x-auto">
         <table class="{{ table_ui.table_classes('min-w-[920px]') }}">
             <caption class="sr-only">Tenant membership registry.</caption>
@@ -120,14 +118,14 @@
                 {% for membership in membership_rows %}
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }}">
-                            {{ table_ui.title_cell(membership.subject_name, membership.user.username if membership.user else (membership.group.name if membership.group else 'Managed principal'), 'user-round') }}
+                            {{ table_ui.title_cell(membership.subject_name, membership.user.username if membership.user else (membership.group.name if membership.group else 'Managed principal') , 'user-round') }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             <p class="text-sm font-semibold text-content-primary">{{ membership.tenant.name }}</p>
                             <p class="mt-1 text-xs text-content-muted">{{ membership.tenant.slug }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            {{ table_label.metadata_label(membership.principal_type|replace('_', ' ')|title) }}
+                            {{ table_label.metadata_label(membership.principal_type|replace('_', ' ') |title) }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             {{ table_label.status_label(membership.status|title, 'normal' if membership.status == 'active' else 'critical') }}
@@ -178,9 +176,9 @@
                 {% else %}
                     <tr>
                         <td colspan="6" class="p-0">
-                            {% set empty_state_icon = 'users-round' %}
-                            {% set empty_state_title = 'No Memberships Found' %}
-                            {% set empty_state_description = 'Adjust filters or add a user/group membership above.' %}
+                            {% set empty_state_icon = "users-round" %}
+                            {% set empty_state_title = "No Memberships Found" %}
+                            {% set empty_state_description = "Adjust filters or add a user/group membership above." %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
@@ -188,20 +186,17 @@
             </tbody>
         </table>
     </div>
-
     {% if membership_pagination.total_items > 0 %}
-        {{ registry_ui.footer(
-            'tenant.tenants',
-            registry_id,
-            loading_id,
-            membership_pagination,
-            query_params,
-            membership_pagination.allowed_per_page,
-            resource_label='Memberships',
-            rows_aria_label='Membership rows per page',
-            control_name='tenant-memberships',
-            page_param='membership_page',
-            per_page_param='membership_per_page'
-        ) }}
+        {{ registry_ui.footer('tenant.tenants',
+                registry_id,
+                loading_id,
+                membership_pagination,
+                query_params,
+                membership_pagination.allowed_per_page,
+                resource_label='Memberships',
+                rows_aria_label='Membership rows per page',
+                control_name='tenant-memberships',
+                page_param='membership_page',
+                per_page_param='membership_per_page') }}
     {% endif %}
 </section>

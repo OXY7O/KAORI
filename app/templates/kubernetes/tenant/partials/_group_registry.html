@@ -4,8 +4,8 @@
 {% import "components/form_field.html" as form_field %}
 {% import "components/destructive_confirmation_modal.html" as destructive_modal %}
 {% import "components/info_tip.html" as info_tip %}
-{% set registry_id = 'tenant-group-registry' %}
-{% set loading_id = 'tenant-group-registry-loading' %}
+{% set registry_id = "tenant-group-registry" %}
+{% set loading_id = "tenant-group-registry-loading" %}
 {% set query_params = {
     'section': 'memberships',
     'group_tenant_id': group_filters.tenant_id,
@@ -15,41 +15,37 @@
 <section id="{{ registry_id }}" class="{{ table_ui.block_classes() }}">
     {% set header_actions %}
         {% if group_filters.tenant_id or group_filters.enabled or group_filters.search %}
-            {{ registry_ui.clear_filters_link(
-                'tenant.tenants',
-                registry_id,
-                loading_id,
-                group_pagination.per_page,
-                table_ui.action_classes(),
-                query_params={'section': 'memberships'},
-                page_param='group_page',
-                per_page_param='group_per_page'
+            {{ registry_ui.clear_filters_link('tenant.tenants',
+                        registry_id,
+                        loading_id,
+                        group_pagination.per_page,
+                        table_ui.action_classes() ,
+            query_params={'section': 'memberships'},
+            page_param='group_page',
+            per_page_param='group_per_page'
             ) }}
         {% endif %}
-        {{ info_tip.render(
-            'tenant-group-lifecycle-tip',
-            'Tenant Group lifecycle',
-            'KAORI stores a Tenant binding to an externally asserted Kubernetes Group subject.',
-            [
+        {{ info_tip.render('tenant-group-lifecycle-tip',
+                'Tenant Group lifecycle',
+                'KAORI stores a Tenant binding to an externally asserted Kubernetes Group subject.',
+                [
                 'Edit corrects the display name or Kubernetes Group Subject; IdP membership is unchanged.',
                 'Retire removes the binding from future Membership use after dependent access cleanup.',
                 'Reactivate restores a retired binding for future use.',
                 'Routine hard delete is intentionally absent so Membership, Access Grant, and audit lineage remain queryable.'
-            ],
-            button_text='Group Guide',
-            button_classes=table_ui.action_classes()
+                ],
+                button_text='Group Guide',
+                button_classes=table_ui.action_classes() 
         ) }}
     {% endset %}
-    {{ table_ui.inventory_block_header(
-        'users',
+    {{ table_ui.inventory_block_header('users',
         'Tenant Group Registry',
         'Registered Kubernetes Group subjects. Use Edit for mistakes; Retire removes future use while preserving history.',
         loading_id,
         'Refreshing Tenant Group Registry',
         '#create-tenant-group-form',
         'Create Group',
-        header_actions=header_actions
-    ) }}
+        header_actions=header_actions) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
             'tenant.tenants',
@@ -58,11 +54,14 @@
             group_pagination.per_page,
             page_param='group_page',
             per_page_param='group_per_page'
-        ) %}
+            ) %}
             <input type="hidden" name="section" value="memberships">
             <div>
-                <label for="group-tenant-filter" class="{{ table_ui.filter_label_classes() }}">Tenant</label>
-                <select id="group-tenant-filter" name="group_tenant_id" class="{{ table_ui.filter_select_classes() }}">
+                <label for="group-tenant-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Tenant</label>
+                <select id="group-tenant-filter"
+                        name="group_tenant_id"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Tenants</option>
                     {% for tenant in group_tenant_options %}
                         <option value="{{ tenant.id }}"
@@ -71,8 +70,11 @@
                 </select>
             </div>
             <div>
-                <label for="group-enabled-filter" class="{{ table_ui.filter_label_classes() }}">State</label>
-                <select id="group-enabled-filter" name="group_enabled" class="{{ table_ui.filter_select_classes() }}">
+                <label for="group-enabled-filter"
+                       class="{{ table_ui.filter_label_classes() }}">State</label>
+                <select id="group-enabled-filter"
+                        name="group_enabled"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All States</option>
                     {% for state in group_enabled_options %}
                         <option value="{{ state }}"
@@ -81,7 +83,8 @@
                 </select>
             </div>
             <div class="lg:col-span-2">
-                <label for="group-search-filter" class="{{ table_ui.filter_label_classes() }}">Search</label>
+                <label for="group-search-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Search</label>
                 {{ table_ui.search_field('group_search', group_filters.search, 'Group, subject, or Tenant', id='group-search-filter') }}
             </div>
         {% endcall %}
@@ -102,9 +105,7 @@
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for group in group_rows %}
                     <tr class="{{ table_ui.row_classes() }}">
-                        <td class="{{ table_ui.cell_classes() }}">
-                            {{ table_ui.title_cell(group.name, group.slug, 'users') }}
-                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(group.name, group.slug, 'users') }}</td>
                         <td class="{{ table_ui.cell_classes() }}">
                             <p class="text-sm font-semibold text-content-primary">{{ group.tenant.name }}</p>
                         </td>
@@ -184,9 +185,9 @@
                 {% else %}
                     <tr>
                         <td colspan="6" class="p-0">
-                            {% set empty_state_icon = 'users' %}
-                            {% set empty_state_title = 'No Tenant Groups Found' %}
-                            {% set empty_state_description = 'Adjust filters or create a governed group above.' %}
+                            {% set empty_state_icon = "users" %}
+                            {% set empty_state_title = "No Tenant Groups Found" %}
+                            {% set empty_state_description = "Adjust filters or create a governed group above." %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
@@ -195,23 +196,19 @@
         </table>
     </div>
     {% if group_pagination.total_items > 0 %}
-        {{ registry_ui.footer(
-            'tenant.tenants',
-            registry_id,
-            loading_id,
-            group_pagination,
-            query_params,
-            group_pagination.allowed_per_page,
-            resource_label='Groups',
-            rows_aria_label='Tenant group rows per page',
-            control_name='tenant-groups',
-            page_param='group_page',
-            per_page_param='group_per_page'
-        ) }}
+        {{ registry_ui.footer('tenant.tenants',
+                registry_id,
+                loading_id,
+                group_pagination,
+                query_params,
+                group_pagination.allowed_per_page,
+                resource_label='Groups',
+                rows_aria_label='Tenant group rows per page',
+                control_name='tenant-groups',
+                page_param='group_page',
+                per_page_param='group_per_page') }}
     {% endif %}
 </section>
-
-
 <div id="tenant-group-edit-modal"
      data-tenant-group-edit-modal
      class="fixed inset-0 z-[90] hidden items-center justify-center p-4"
@@ -240,9 +237,8 @@
                     <i data-lucide="pencil-line" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
-                    <h2 id="tenant-group-edit-title" class="text-lg font-semibold leading-6 text-content-primary">
-                        Edit Tenant Group
-                    </h2>
+                    <h2 id="tenant-group-edit-title"
+                        class="text-lg font-semibold leading-6 text-content-primary">Edit Tenant Group</h2>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">
                         Correct KAORI's Tenant binding. This does not edit the external IdP group.
                     </p>
@@ -252,11 +248,17 @@
                 <dl class="grid gap-3 sm:grid-cols-2">
                     <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
                         <dt class="text-xs font-medium text-content-muted">Tenant</dt>
-                        <dd data-tenant-group-edit-tenant class="mt-1 text-sm font-semibold text-content-primary">—</dd>
+                        <dd data-tenant-group-edit-tenant
+                            class="mt-1 text-sm font-semibold text-content-primary">
+                            —
+                        </dd>
                     </div>
                     <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
                         <dt class="text-xs font-medium text-content-muted">Stable Group Slug</dt>
-                        <dd data-tenant-group-edit-slug class="mt-1 font-mono text-xs font-medium text-content-secondary">—</dd>
+                        <dd data-tenant-group-edit-slug
+                            class="mt-1 font-mono text-xs font-medium text-content-secondary">
+                            —
+                        </dd>
                     </div>
                 </dl>
                 <label class="block">
@@ -302,20 +304,18 @@
         </form>
     </section>
 </div>
-
-{{ destructive_modal.render(
-    'tenant-group-retire-modal',
-    'Retire Tenant Group',
-    'Selected Tenant Group',
-    'The group remains in KAORI as historical evidence and can be reactivated later. No external IdP group is deleted.',
-    'tenant-group-retire-submit',
-    action_label='Retire Group',
-    notice='Retire removes this group from future Membership selection without hard-deleting its history.',
-    scope_value='Tenant Group binding',
-    impact_items=[
-        ('user-round-x', 'Stop New Membership', 'The retired group is no longer selectable for a new Tenant Membership.'),
-        ('history', 'Retain History', 'Existing revoked Membership, Access Grant, correlation, and audit evidence remains queryable.'),
-        ('external-link', 'Leave IdP Untouched', 'KAORI does not delete or modify the authoritative external Identity Group.')
-    ],
-    warning='Active Membership or incomplete Access Grant cleanup blocks Retire. Revoke and reconcile access first.'
+{{ destructive_modal.render('tenant-group-retire-modal',
+'Retire Tenant Group',
+'Selected Tenant Group',
+'The group remains in KAORI as historical evidence and can be reactivated later. No external IdP group is deleted.',
+'tenant-group-retire-submit',
+action_label='Retire Group',
+notice='Retire removes this group from future Membership selection without hard-deleting its history.',
+scope_value='Tenant Group binding',
+impact_items=[
+('user-round-x', 'Stop New Membership', 'The retired group is no longer selectable for a new Tenant Membership.') ,
+('history', 'Retain History', 'Existing revoked Membership, Access Grant, correlation, and audit evidence remains queryable.'),
+('external-link', 'Leave IdP Untouched', 'KAORI does not delete or modify the authoritative external Identity Group.')
+],
+warning='Active Membership or incomplete Access Grant cleanup blocks Retire. Revoke and reconcile access first.'
 ) }}
