@@ -155,7 +155,6 @@ def get_tenant_discovery_context(
     cluster_ids = [str(cluster.id) for cluster in clusters]
     managed_namespaces = _managed_namespace_map(cluster_ids)
     managed_capsule = _managed_capsule_map(cluster_ids)
-
     rows: list[dict[str, Any]] = []
     errors: list[dict[str, str]] = []
     checked_at = datetime.now(UTC)
