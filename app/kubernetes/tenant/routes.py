@@ -74,6 +74,7 @@ from app.kubernetes.tenant.service import (
     get_tenant_context,
     get_tenant_registry_context,
     provision_native_namespace_committed,
+    reconcile_managed_native_namespace_committed,
 )
 from app.kubernetes.tenant.workspace import (
     get_tenant_cluster_estate_context,
@@ -493,6 +494,7 @@ def operations():
         tenant_page_title='Operations',
         tenant_page_icon='activity',
         active_tab=active_tab,
+        can_manage=current_user.has_permission('tenant.manage'),
         **context,
     )
 
@@ -1055,6 +1057,41 @@ def provision_namespace_route():
             },
         )
     return redirect(url_for('tenant.namespace_provisioning'))
+
+
+@tenant_bp.post('/namespaces/<int:namespace_id>/reconcile')
+@permission_required('tenant.manage')
+def reconcile_namespace_route(namespace_id: int):
+    try:
+        _csrf()
+        record = reconcile_managed_native_namespace_committed(namespace_id=namespace_id)
+    except (ValueError, ApiException, TenantStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_namespace_reconcile_failed',
+            status='error',
+            title='Namespace Reconciliation Failed',
+            message=str(exc),
+            metadata={
+                'tenant_namespace_id': namespace_id,
+                'operation': 'reconcile_namespace',
+            },
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_namespace_reconciled',
+            status='success' if record.provisioning_status == 'ready' else 'warning',
+            title='Namespace Reconciled',
+            message=f'{record.namespace} was restored from committed Tenant intent.',
+            detail=record.provisioning_message,
+            metadata={
+                'tenant_namespace_id': record.id,
+                'cluster_id': record.cluster_id,
+                'namespace': record.namespace,
+                'provisioning_status': record.provisioning_status,
+                'operation': 'reconcile_namespace',
+            },
+        )
+    return redirect(url_for('tenant.operations', tab='drift-reconcile'))
 
 
 @tenant_bp.post('/credentials/human')

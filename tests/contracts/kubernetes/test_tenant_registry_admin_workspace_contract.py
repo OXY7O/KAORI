@@ -644,6 +644,8 @@ def test_tenant_setup_explains_capsule_adoption_boundary() -> None:
 def test_tenant_sync_marks_fresh_missing_namespaces_as_observational_drift() -> None:
     sync = read('app/kubernetes/tenant/sync_service.py')
     tasks = read('app/kubernetes/tenant/tasks.py')
+    service = read('app/kubernetes/tenant/service.py')
+    routes = read('app/kubernetes/tenant/routes.py')
     operations = read('app/templates/kubernetes/tenant/operations.html')
 
     assert 'def apply_missing_namespace_drift_from_inventory()' in sync
@@ -659,8 +661,21 @@ def test_tenant_sync_marks_fresh_missing_namespaces_as_observational_drift() -> 
 
     assert 'apply_missing_namespace_drift_from_inventory()' in tasks
     assert "snapshot['drifted_namespace_count']" in tasks
+
+    assert 'def reconcile_managed_native_namespace_committed(*, namespace_id: int)' in service
+    assert 'record.ownership_status != TenantOwnershipStatus.MANAGED.value' in service
+    assert "tenant.reconciliation_authority != 'native_kubernetes'" in service
+    assert 'reconcile_native_namespace(record)' in service
+
+    assert "@tenant_bp.post('/namespaces/<int:namespace_id>/reconcile')" in routes
+    assert 'reconcile_managed_native_namespace_committed(namespace_id=namespace_id)' in routes
+    assert "operation': 'reconcile_namespace'" in routes
+
     assert 'Namespace Provider Drift' in operations
     assert "special_label('Drifted', 'warning', 'triangle-alert')" in operations
+    assert "url_for('tenant.reconcile_namespace_route', namespace_id=item.id)" in operations
+    assert 'Sync remains observation-only' in operations
+    assert 'Reconcile' in operations
 
 
 
@@ -677,6 +692,13 @@ def test_tenant_setup_enables_capability_gated_capsule_direct_create() -> None:
     assert 'Capsule Initial Owner' in form
     assert 'name="capsule_owner_kind"' in form
     assert 'name="capsule_owner_subject"' in form
+    assert '<option value="capsule">Capsule</option>' in form
+    assert 'capability checked on submit' not in form
+    assert 'capsule-owner-kind-tip' in form
+    assert 'Owner Subject is required for every Owner Kind.' in form
+    assert 'Required for Capsule provider ownership; separate from KAORI Memberships.' in form
+    assert 'Existing Capsule Tenant? Use Discovery → Adoption.' in form
+    assert 'Capsule capability and admission are validated when Add Tenant is submitted.' in form
     assert 'tenant_setup_provider.js' in page
 
     assert "_ALLOWED_TENANT_PROVIDERS = {'native_kubernetes', 'capsule'}" in service

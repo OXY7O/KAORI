@@ -32,6 +32,7 @@ from app.models.tenant import (
     TenantLifecycleStatus,
     TenantNamespace,
     TenantNamespaceProvisioningStatus,
+    TenantOwnershipStatus,
     TenantResourceProfile,
     TenantResourceProfileClass,
 )
@@ -523,6 +524,42 @@ def provision_native_namespace_committed(source: Mapping[str, Any]) -> TenantNam
     except (ApiException, ValueError):
         db.session.rollback()
         raise
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+
+
+def reconcile_managed_native_namespace_committed(*, namespace_id: int) -> TenantNamespace:
+    record = db.session.get(TenantNamespace, namespace_id)
+    if record is None:
+        raise ValueError('Selected Tenant namespace no longer exists.')
+
+    tenant = record.environment.tenant
+    if tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
+        raise ValueError('Tenant is not Ready; namespace reconciliation is unavailable during teardown.')
+    if record.provisioning_status != TenantNamespaceProvisioningStatus.DRIFTED.value:
+        raise ValueError('Namespace must be in Drifted state before explicit provider reconciliation.')
+    if record.ownership_status != TenantOwnershipStatus.MANAGED.value:
+        raise ValueError(
+            'Only KAORI-managed namespaces can be recreated from committed intent. '
+            'Adopted namespaces require provider restoration or governed review.'
+        )
+    if tenant.provider_key != 'native_kubernetes' or tenant.reconciliation_authority != 'native_kubernetes':
+        raise ValueError('Explicit namespace recreation requires Native Kubernetes reconciliation authority.')
+
+    try:
+        reconcile_native_namespace(record)
+        db.session.commit()
+        return record
+    except (ApiException, ValueError):
+        # Preserve reconciliation evidence emitted by the provider adapter.
+        db.session.commit()
+        raise
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise TenantStateConflictError(
+            'Committed Tenant namespace state changed during reconciliation. Refresh and retry.'
+        ) from exc
     except SQLAlchemyError:
         db.session.rollback()
         raise
