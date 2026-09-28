@@ -25,7 +25,7 @@
     {{ table_ui.inventory_block_header(
         'library-big',
         'Resource Profile Registry',
-        'Committed reusable contracts used by governed Namespace provisioning.',
+        'Committed reusable contracts. Built-ins are locked; Custom profiles support governed Edit/Delete.',
         loading_id,
         'Refreshing Resource Profile Registry',
         none,
@@ -66,7 +66,7 @@
     </div>
 
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1040px]') }}">
+        <table class="{{ table_ui.table_classes('min-w-[1320px]') }}">
             <caption class="sr-only">Committed Tenant Resource Profile contracts.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
@@ -76,12 +76,15 @@
                     <th scope="col" class="{{ table_ui.header_cell_classes() }}">Namespace Quota</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }}">Container Defaults</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }}">Lineage</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Usage</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for profile in profiles %}
                     {% set defaults = profile.limit_defaults_json.get('default', {}) if profile.limit_defaults_json else {} %}
                     {% set default_requests = profile.limit_defaults_json.get('default_request', {}) if profile.limit_defaults_json else {} %}
+                    {% set usage = profile_dependencies.get(profile.id) %}
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }} align-middle">
                             {{ table_ui.title_cell(profile.name, profile.description or 'Reusable allocation contract', 'layers-3') }}
@@ -116,10 +119,52 @@
                                 <p class="mt-1 text-xs text-content-muted">Locked · versioned</p>
                             {% endif %}
                         </td>
+                        <td class="{{ table_ui.cell_classes() }} align-middle">
+                            <p class="text-xs font-semibold text-content-primary">{{ usage.namespaces }} Namespace ref{{ '' if usage.namespaces == 1 else 's' }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ usage.capacity_decisions }} Capacity Decision{{ '' if usage.capacity_decisions == 1 else 's' }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
+                            <div class="ml-auto flex w-fit items-center gap-2">
+                                {% if profile.profile_class == 'custom' %}
+                                    <button type="button"
+                                            data-kaori-dialog-open
+                                            data-dialog-target="resource-profile-edit-{{ profile.id }}"
+                                            {% if not can_manage %}disabled aria-disabled="true"{% endif %}
+                                            class="{{ table_ui.action_classes() }}">
+                                        <i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>
+                                        Edit
+                                    </button>
+                                    <form method="post"
+                                          action="{{ url_for('tenant.delete_resource_profile_route', profile_id=profile.id) }}"
+                                          class="inline-flex">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button id="resource-profile-delete-submit-{{ profile.id }}"
+                                                type="submit"
+                                                class="hidden"
+                                                aria-hidden="true"
+                                                tabindex="-1">Delete Resource Profile</button>
+                                        <button type="button"
+                                                data-destructive-modal-open
+                                                data-destructive-modal-id="resource-profile-delete-modal"
+                                                data-destructive-submit-button-id="resource-profile-delete-submit-{{ profile.id }}"
+                                                data-destructive-target="{{ profile.name }}"
+                                                data-destructive-scope="Custom · v{{ profile.version }}"
+                                                {% if not can_manage or usage.total %}disabled aria-disabled="true"{% endif %}
+                                                title="{{ 'Release all Namespace and Capacity Decision references before Delete.' if usage.total else 'Delete unused Custom Resource Profile' }}"
+                                                class="{{ table_ui.action_classes(true) }}">
+                                            <i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>
+                                            Delete
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    {{ table_label.special_label('Locked', 'unknown', 'lock-keyhole') }}
+                                {% endif %}
+                            </div>
+                        </td>
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="6" class="p-0">
+                        <td colspan="8" class="p-0">
                             {% set empty_state_icon = 'layers-3' %}
                             {% set empty_state_title = 'No Resource Profiles Found' %}
                             {% set empty_state_description = 'Adjust filters or create a reusable allocation contract above.' %}
@@ -144,4 +189,6 @@
             control_name='resource-profile'
         ) }}
     {% endif %}
+
+    {% include "kubernetes/tenant/partials/_resource_profile_management_dialogs.html" %}
 </section>

@@ -967,3 +967,13 @@ def test_tenant_discovery_status_dialogs_are_clickable_and_context_rich() -> Non
     assert 'Discovery is read-only.' in discovery
     assert "typeof dialog.showModal === 'function'" in native
     assert "dialog.setAttribute('open', '')" in native
+
+
+
+def test_status_detail_trigger_is_a_table_friendly_details_button() -> None:
+    component = read('app/templates/components/status_detail_dialog.html')
+
+    assert "button_text='Details'" in component
+    assert '<span>{{ button_text }}</span>' in component
+    assert 'gap-1.5' in component
+    assert 'h-8 w-8' not in component

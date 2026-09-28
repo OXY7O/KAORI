@@ -1,7 +1,8 @@
 {% extends "kubernetes/tenant/base.html" %}
 {% import "components/content_tabs.html" as content_tabs %}
-{% import "components/loading_bar.html" as loading_bar %}
 {% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/resource_posture_grid.html" as resource_posture_grid %}
+{% import "components/section_intro.html" as section_intro %}
 {% block tenant_content %}
     {% set can_manage = current_user.has_permission('tenant.manage') %}
     {% set resource_profile_tabs = [
@@ -9,90 +10,76 @@
         ('capacity', 'Capacity Governance', 'gauge', url_for('tenant.resource_profiles', view='capacity'), ready_clusters|length),
         ('workflow', 'Workflow Guide', 'route', url_for('tenant.resource_profiles', view='workflow'))
     ] %}
+    {% set profile_metrics = [
+        ('layers-3', 'Total Profiles', resource_profile_stats.total, 'Committed reusable allocation contracts', 'info'),
+        ('badge-check', 'Enabled', resource_profile_stats.enabled, 'Selectable for new Namespace allocations', 'normal'),
+        ('sliders-horizontal', 'Custom', resource_profile_stats.custom, 'Operator-managed allocation contracts', 'info'),
+        ('boxes', 'Active Allocations', resource_profile_stats.active_allocations, 'Namespaces currently bound to a profile', 'info')
+    ] %}
 
-    <section class="mb-5 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
-             aria-labelledby="resource-profile-snapshot-heading">
-        <header class="border-b border-outline-subtle px-5 py-3.5 sm:px-6">
-            <div class="flex items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                    <i data-lucide="chart-no-axes-column-increasing" class="h-4 w-4"></i>
-                </span>
-                <div>
-                    <h2 id="resource-profile-snapshot-heading" class="text-sm font-semibold text-content-primary">Resource Profile Snapshot</h2>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Current reusable allocation contracts and active Namespace adoption.</p>
-                </div>
-            </div>
-        </header>
-        <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-            {% for icon, label, value, helper in [
-                ('layers-3', 'Total Profiles', resource_profile_stats.total, 'All committed profile contracts'),
-                ('badge-check', 'Enabled', resource_profile_stats.enabled, 'Selectable for new allocations'),
-                ('sliders-horizontal', 'Custom', resource_profile_stats.custom, 'Operator-managed contracts'),
-                ('boxes', 'Active Allocations', resource_profile_stats.active_allocations, 'Namespaces bound to a profile')
-            ] %}
-                <div class="flex items-center gap-3 bg-surface-card px-5 py-4">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <p class="text-xs font-medium text-content-muted">{{ label }}</p>
-                        <p class="mt-0.5 text-xl font-semibold text-content-primary">{{ value }}</p>
-                        <p class="mt-0.5 truncate text-[11px] text-content-muted">{{ helper }}</p>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
+    <section class="space-y-4" aria-labelledby="resource-profile-snapshot-heading">
+        {{ section_intro.render(
+            'Resource Profile Snapshot',
+            'Reusable allocation-contract posture and current Namespace adoption.',
+            'resource-profile-snapshot-heading'
+        ) }}
+        {% call operational_section_card.render(
+            'Profile Estate',
+            'Committed Resource Profile posture used by Tenant Namespace governance.',
+            'layout-grid',
+            body_classes='p-0',
+            aria_label='Resource Profile estate summary'
+        ) %}
+            {{ resource_posture_grid.render(profile_metrics, columns=4) }}
+        {% endcall %}
     </section>
 
-    <section id="resource-profile-workspace"
-             class="{{ operational_section_card.shell_classes() }}"
-             aria-labelledby="resource-profile-workspace-title">
-        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true">
-                    <i data-lucide="panels-top-left" class="h-5 w-5"></i>
-                </span>
-                <div class="min-w-0">
-                    <h2 id="resource-profile-workspace-title"
-                        class="text-base font-semibold text-content-primary">Resource Profile Workspace</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">
-                        Manage reusable allocation contracts, capacity admission, and the path into Namespace provisioning.
-                    </p>
-                </div>
-            </div>
-            {{ loading_bar.render('resource-profile-workspace-loading', label='Loading Resource Profile Workspace') }}
-        </header>
-
-        {{ content_tabs.render_links(
-            'resource-profile',
-            resource_profile_tabs,
-            active_resource_profile_view,
+    <section class="space-y-4" aria-labelledby="resource-profile-workspace-heading">
+        {{ section_intro.render(
             'Resource Profile Workspace',
-            embedded=true,
-            data_namespace='resource-profile',
-            hx_target='#resource-profile-workspace',
-            hx_select='#resource-profile-workspace',
-            hx_swap='outerHTML show:none focus-scroll:false',
-            hx_push_url='true',
-            hx_indicator='#resource-profile-workspace-loading',
-            nowrap=true,
-            hx_sync='this:replace'
+            'Manage profile contracts, capacity admission, and the governed handoff into Namespace provisioning.',
+            'resource-profile-workspace-heading'
         ) }}
+        {% call operational_section_card.render(
+            'Profile Administration',
+            'Choose a workspace view without mixing profile lifecycle, capacity policy, and operator guidance.',
+            'panels-top-left',
+            id='resource-profile-workspace',
+            loading_bar_id='resource-profile-workspace-loading',
+            loading_bar_label='Loading Resource Profile Workspace',
+            body_classes='p-0',
+            aria_label='Resource Profile Workspace'
+        ) %}
+            {{ content_tabs.render_links(
+                'resource-profile',
+                resource_profile_tabs,
+                active_resource_profile_view,
+                'Resource Profile Workspace',
+                embedded=true,
+                data_namespace='resource-profile',
+                hx_target='#resource-profile-workspace',
+                hx_select='#resource-profile-workspace',
+                hx_swap='outerHTML show:none focus-scroll:false',
+                hx_push_url='true',
+                hx_indicator='#resource-profile-workspace-loading',
+                nowrap=true,
+                hx_sync='this:replace'
+            ) }}
 
-        <div class="space-y-5 p-4 sm:p-5">
-            {% if active_resource_profile_view == 'capacity' %}
-                {% include "kubernetes/tenant/partials/_capacity_governance.html" %}
-            {% elif active_resource_profile_view == 'workflow' %}
-                {% include "kubernetes/tenant/partials/_resource_profile_workflow.html" %}
-            {% else %}
-                {% include "kubernetes/tenant/partials/_resource_profile_form.html" %}
-                {% include "kubernetes/tenant/partials/_resource_profile_registry.html" %}
-            {% endif %}
-        </div>
+            <div class="space-y-5 p-4 sm:p-5">
+                {% if active_resource_profile_view == 'capacity' %}
+                    {% include "kubernetes/tenant/partials/_capacity_governance.html" %}
+                {% elif active_resource_profile_view == 'workflow' %}
+                    {% include "kubernetes/tenant/partials/_resource_profile_workflow.html" %}
+                {% else %}
+                    {% include "kubernetes/tenant/partials/_resource_profile_form.html" %}
+                    {% include "kubernetes/tenant/partials/_resource_profile_registry.html" %}
+                {% endif %}
+            </div>
 
-        <script type="application/json" id="tenant-resource-profile-presets">{{ resource_profile_presets|tojson }}</script>
-        <script type="application/json" id="tenant-capacity-policy-state">{{ capacity_policy_state|tojson }}</script>
+            <script type="application/json" id="tenant-resource-profile-presets">{{ resource_profile_presets|tojson }}</script>
+            <script type="application/json" id="tenant-capacity-policy-state">{{ capacity_policy_state|tojson }}</script>
+        {% endcall %}
     </section>
 {% endblock tenant_content %}
 {% block tenant_scripts %}

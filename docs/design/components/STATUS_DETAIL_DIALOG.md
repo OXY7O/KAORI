@@ -4,7 +4,7 @@
 
 `components/status_detail_dialog.html` is the compact detail pattern for status, blocker, and eligibility explanations that are too long for a registry/table row.
 
-The row keeps only the semantic status label plus a small neutral detail trigger. The explanation opens in the browser native `<dialog>` top layer through the existing global `native_dialogs.js` controller.
+The row keeps only the semantic status label plus a compact **Details** button. The explanation opens in the browser native `<dialog>` top layer through the existing global `native_dialogs.js` controller.
 
 ## Use
 

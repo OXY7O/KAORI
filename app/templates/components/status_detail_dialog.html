@@ -4,7 +4,7 @@
   Dense registry rows keep only status + trigger. Multi-line state explanation,
   facts, lifecycle flow, and blockers live in the browser native-dialog top layer.
 #}
-{% macro trigger(dialog_id, label='View status details') -%}
+{% macro trigger(dialog_id, label='View status details', button_text='Details') -%}
     <button type="button"
             data-kaori-dialog-open
             data-status-detail-trigger
@@ -12,8 +12,9 @@
             aria-haspopup="dialog"
             aria-controls="{{ dialog_id }}"
             aria-label="{{ label }}"
-            class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-muted shadow-sm transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-        <i data-lucide="circle-help" class="h-4 w-4" aria-hidden="true"></i>
+            class="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs font-semibold text-content-secondary shadow-sm transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+        <i data-lucide="circle-help" class="h-3.5 w-3.5" aria-hidden="true"></i>
+        <span>{{ button_text }}</span>
     </button>
 {%- endmacro %}
 

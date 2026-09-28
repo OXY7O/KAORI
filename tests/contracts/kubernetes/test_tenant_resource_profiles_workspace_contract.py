@@ -13,7 +13,12 @@ def test_resource_profiles_use_server_owned_kaori_content_tabs_and_snapshot_stat
     routes = read('app/kubernetes/tenant/routes.py')
     service = read('app/kubernetes/tenant/service.py')
 
+    assert 'components/section_intro.html' in page
+    assert 'components/resource_posture_grid.html' in page
     assert 'Resource Profile Snapshot' in page
+    assert 'Profile Estate' in page
+    assert 'Resource Profile Workspace' in page
+    assert 'Profile Administration' in page
     assert 'Total Profiles' in page
     assert 'Enabled' in page
     assert 'Custom' in page
@@ -71,6 +76,12 @@ def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() 
     assert '>Apply<' not in registry
     assert '_pagination_footer.html' not in registry
     assert 'Resource Profile Registry' in registry
+    assert 'Usage' in registry
+    assert 'Actions' in registry
+    assert 'resource-profile-edit-' in registry
+    assert 'delete_resource_profile_route' in registry
+    assert "special_label('Locked', 'unknown', 'lock-keyhole')" in registry
+    assert '_resource_profile_management_dialogs.html' in registry
     assert 'Requests' in registry
     assert 'Namespace Quota' in registry
     assert 'Container Defaults' in registry
@@ -114,9 +125,12 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'Headroom</th>' in capacity
     assert 'State</th>' in capacity
     assert 'space-y-3 p-4' not in capacity
-    assert 'Cluster policy uses fresh committed capacity evidence.' in capacity
+    assert 'section class="space-y-5"' in capacity
+    assert 'xl:grid-cols-12' not in capacity
+    assert 'Uses fresh committed capacity evidence.' in capacity
     assert 'Quota enforces limits; admission uses committed requests, not physical reservation.' in capacity
-    assert "action_button.classes('primary', full=true)" in capacity
+    assert "action_button.classes('primary')" in capacity
+    assert "action_button.classes('primary', full=true)" not in capacity
     assert 'components/status_detail_dialog.html' in capacity
 
     assert 'tenant-capacity-policy-state' in page
@@ -174,3 +188,17 @@ def test_resource_profile_registry_context_exposes_dependency_counts_for_actions
     assert "'profile_dependencies': profile_dependencies" in service
     assert 'namespace_counts.get(profile.id, 0)' in service
     assert 'capacity_decision_counts.get(profile.id, 0)' in service
+
+
+
+def test_resource_profile_custom_management_dialogs_expose_edit_and_guarded_delete() -> None:
+    dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
+
+    assert 'data-kaori-native-dialog' in dialogs
+    assert 'Edit {{ profile.name }}' in dialogs
+    assert "url_for('tenant.update_resource_profile_route'" in dialogs
+    assert 'profile_enabled' in dialogs
+    assert 'Existing Namespace allocations keep their committed source version' in dialogs
+    assert 'resource-profile-delete-modal' in dialogs
+    assert 'zero Namespace or Capacity Decision reference remains' in dialogs
+    assert 'KAORI does not detach historical evidence automatically.' in dialogs
