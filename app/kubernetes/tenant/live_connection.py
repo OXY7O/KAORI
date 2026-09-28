@@ -67,7 +67,7 @@ def get_live_tenant_connection_context() -> dict[str, Any]:
             'checked_at_label': present_user_datetime(checked_at),
             'scope_label': f'{reachable} / {total} Clusters',
             'coverage_label': f'{reachable} Reachable',
-            'coverage_supporting': 'Live API probe, not committed inventory sync',
+            'coverage_supporting': 'Live API reachability',
             'coverage_tone': 'normal' if failures == 0 and total else 'warning',
             'exception_label': 'No Exceptions' if failures == 0 else f'{failures} Connection Exception' + ('' if failures == 1 else 's'),
             'exceptions_tone': 'normal' if failures == 0 else 'warning',
