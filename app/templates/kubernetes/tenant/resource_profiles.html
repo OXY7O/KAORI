@@ -6,8 +6,8 @@
 {% block tenant_content %}
     {% set can_manage = current_user.has_permission('tenant.manage') %}
     {% set resource_profile_tabs = [
-        ('profiles', 'Profile Library', 'layers-3', url_for('tenant.resource_profiles', view='profiles'), profile_count),
-        ('capacity', 'Capacity Governance', 'gauge', url_for('tenant.resource_profiles', view='capacity'), ready_clusters|length),
+        ('profiles', 'Profile Library', 'layers-3', url_for('tenant.resource_profiles', view='profiles')),
+        ('capacity', 'Capacity Governance', 'gauge', url_for('tenant.resource_profiles', view='capacity')),
         ('workflow', 'Workflow Guide', 'route', url_for('tenant.resource_profiles', view='workflow'))
     ] %}
     {% set profile_metrics = [
@@ -84,4 +84,5 @@
 {% endblock tenant_content %}
 {% block tenant_scripts %}
     <script defer src="{{ url_for('static', filename='js/tenant_resource_profile_presets.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/destructive_confirmation_modal.js') }}"></script>
 {% endblock tenant_scripts %}
