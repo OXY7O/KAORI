@@ -516,7 +516,7 @@ def test_tenant_discovery_is_live_read_only_and_provider_classified() -> None:
     assert "list_cluster_custom_object(" in service
     assert "'capsule.clastix.io'" in service
     assert "'native_kubernetes'" in service
-    assert "'Adoptable'" in service
+    assert "'Discovered'" in service
     assert "'Managed'" in service
     assert "'Blocked'" in service
     assert 'create_' not in service
@@ -528,6 +528,8 @@ def test_tenant_discovery_is_live_read_only_and_provider_classified() -> None:
     assert 'KAORI Classification' in template
     assert 'Governed Tenant' in template
     assert 'discovery itself is read-only' in template
+    assert "page_param='discovery_page'" in template
+    assert "per_page_param='discovery_per_page'" in template
 
 
 

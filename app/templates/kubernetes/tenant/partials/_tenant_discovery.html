@@ -20,7 +20,9 @@
                 loading_id,
                 pagination.per_page,
                 table_ui.action_classes(),
-                query_params={'section': 'discovery'}
+                query_params={'section': 'discovery'},
+                page_param='discovery_page',
+                per_page_param='discovery_per_page'
             ) }}
         {% endif %}
     {% endset %}
@@ -43,7 +45,14 @@
     </div>
 
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
-        {% call registry_ui.filter_form('tenant.tenants', registry_id, loading_id, pagination.per_page) %}
+        {% call registry_ui.filter_form(
+            'tenant.tenants',
+            registry_id,
+            loading_id,
+            pagination.per_page,
+            page_param='discovery_page',
+            per_page_param='discovery_per_page'
+        ) %}
             <input type="hidden" name="section" value="discovery">
             <div>
                 <label for="tenant-discovery-cluster" class="{{ table_ui.filter_label_classes() }}">Cluster</label>
@@ -66,7 +75,7 @@
                 <label for="tenant-discovery-management" class="{{ table_ui.filter_label_classes() }}">Classification</label>
                 <select id="tenant-discovery-management" name="discovery_management" class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All States</option>
-                    {% for state in ('Managed', 'Adoptable', 'Blocked') %}
+                    {% for state in ('Managed', 'Discovered', 'Blocked') %}
                         <option value="{{ state|lower }}" {% if tenant_discovery_filters.management == state|lower %}selected{% endif %}>{{ state }}</option>
                     {% endfor %}
                 </select>
@@ -131,8 +140,8 @@
                             <div class="ml-auto w-fit text-right">
                                 {% if row.management_status == 'Managed' %}
                                     <span class="text-xs font-semibold text-status-normal-text">Managed</span>
-                                {% elif row.management_status == 'Adoptable' %}
-                                    <span class="text-xs font-semibold text-kaori-primary" title="Governed adoption is the next #736 slice; discovery itself is read-only.">Eligible</span>
+                                {% elif row.management_status == 'Discovered' %}
+                                    <span class="text-xs font-semibold text-kaori-primary" title="Governed adoption preflight is the next #736 step; discovery itself is read-only.">Candidate</span>
                                 {% else %}
                                     <span class="text-xs font-semibold text-content-muted">Review Required</span>
                                 {% endif %}
@@ -163,7 +172,9 @@
             pagination.allowed_per_page,
             resource_label='Provider Objects',
             rows_aria_label='Tenant discovery rows per page',
-            control_name='tenant-discovery'
+            control_name='tenant-discovery',
+            page_param='discovery_page',
+            per_page_param='discovery_per_page'
         ) }}
     {% endif %}
 </section>

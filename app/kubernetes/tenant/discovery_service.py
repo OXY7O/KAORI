@@ -67,7 +67,7 @@ def _native_management(
     external_manager = str(labels.get('app.kubernetes.io/managed-by') or '').strip()
     if external_manager and external_manager.lower() != 'kaori':
         return 'Blocked', f'Provider resource declares external manager {external_manager}.'
-    return 'Adoptable', 'Eligible for governed adoption preflight; no provider mutation has occurred.'
+    return 'Discovered', 'Candidate for governed adoption preflight; no provider mutation has occurred.'
 
 
 def _managed_namespace_map(cluster_ids: list[str]) -> dict[tuple[str, str], TenantNamespace]:
@@ -208,7 +208,7 @@ def get_tenant_discovery_context(
                 continue
             tenant = managed_capsule.get((cluster_key, name))
             status = _capsule_phase(item)
-            management_status = 'Managed' if tenant is not None else 'Adoptable'
+            management_status = 'Managed' if tenant is not None else 'Discovered'
             rows.append({
                 'cluster': cluster,
                 'cluster_id': cluster_key,
@@ -225,7 +225,7 @@ def get_tenant_discovery_context(
                 'eligibility': (
                     'Already governed by KAORI.'
                     if tenant is not None
-                    else 'Eligible for governed Capsule adoption preflight; provider authority remains Capsule.'
+                    else 'Candidate for governed Capsule adoption preflight; provider authority remains Capsule.'
                 ),
                 'provider_reference': str(metadata.get('uid') or name),
                 'provider_api_version': capsule_version,
@@ -246,7 +246,7 @@ def get_tenant_discovery_context(
 
     rows.sort(
         key=lambda row: (
-            0 if row['management_status'] == 'Adoptable' else 1,
+            0 if row['management_status'] == 'Discovered' else 1,
             str(row['cluster'].name).lower(),
             str(row['provider_label']).lower(),
             str(row['resource_name']).lower(),
