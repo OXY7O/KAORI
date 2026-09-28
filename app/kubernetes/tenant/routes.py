@@ -56,11 +56,14 @@ from app.kubernetes.tenant.service import (
     change_native_namespace_allocation_committed,
     create_resource_profile_committed,
     create_tenant_committed,
+    decommission_tenant_committed,
     get_namespace_registry_context,
     get_resource_profile_registry_context,
     get_tenant_context,
+    get_tenant_maintenance_context,
     get_tenant_registry_context,
     provision_native_namespace_committed,
+    update_tenant_metadata_committed,
 )
 from app.kubernetes.tenant.workspace import (
     get_tenant_cluster_estate_context,
@@ -385,6 +388,8 @@ def _tenant_active_section_context(section: str) -> dict[str, Any]:
             credential_status=str(request.args.get('namespace_access_status') or ''),
             search=str(request.args.get('namespace_access_search') or ''),
         )
+    if section == 'tenant-setup':
+        return get_tenant_maintenance_context(str(request.args.get('edit_tenant_id') or ''))
     return {}
 
 
@@ -755,6 +760,56 @@ def create_tenant_route():
             },
         )
     return _tenant_section_redirect('tenant-setup')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/metadata')
+@permission_required('tenant.manage')
+def update_tenant_metadata_route(tenant_id: str):
+    try:
+        _csrf()
+        tenant = update_tenant_metadata_committed(tenant_id, request.form)
+    except (ValueError, TenantStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_metadata_update_failed',
+            status='error',
+            title='Tenant Update Failed',
+            message=str(exc),
+            metadata={'tenant_id': tenant_id, 'operation': 'update_tenant_metadata'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_metadata_updated',
+            status='success',
+            title='Tenant Updated',
+            message=f'{tenant.name} metadata was committed successfully.',
+            metadata={'tenant_id': tenant.id, 'operation': 'update_tenant_metadata'},
+        )
+    return _tenant_section_redirect('tenant-setup')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/decommission')
+@permission_required('tenant.manage')
+def decommission_tenant_route(tenant_id: str):
+    try:
+        _csrf()
+        tenant = decommission_tenant_committed(tenant_id)
+    except (ValueError, TenantStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_decommission_failed',
+            status='error',
+            title='Tenant Decommission Failed',
+            message=str(exc),
+            metadata={'tenant_id': tenant_id, 'operation': 'decommission_tenant'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_decommissioned',
+            status='success',
+            title='Tenant Decommissioned',
+            message=f'{tenant.name} is retained as historical governed evidence and is no longer active.',
+            metadata={'tenant_id': tenant.id, 'operation': 'decommission_tenant'},
+        )
+    return _tenant_section_redirect('registry')
 
 
 @tenant_bp.post('/resource-profiles')
