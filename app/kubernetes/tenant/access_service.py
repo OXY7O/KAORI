@@ -38,6 +38,10 @@ class TenantAccessStateConflictError(RuntimeError):
     """Committed Tenant access state changed while a mutation was applying."""
 
 
+class TenantGroupReconciliationError(RuntimeError):
+    """Tenant Group desired identity was committed but dependent RBAC reconciliation needs attention."""
+
+
 def normalize_group_slug(value: str) -> str:
     slug = _GROUP_SLUG_RE.sub('-', value.strip().lower().replace('_', '-').replace(' ', '-'))
     slug = re.sub(r'-+', '-', slug).strip('-')
@@ -293,6 +297,185 @@ def create_tenant_group_committed(*, tenant: Tenant, name: str, subject_name: st
         raise
 
 
+def _record_group_event(
+    *,
+    actor: User | None,
+    group: TenantGroup,
+    action: str,
+    summary: str,
+    outcome: str,
+    previous_name: str | None = None,
+    previous_subject_name: str | None = None,
+) -> None:
+    event = AuditEvent()
+    event.actor_user_id = actor.id if actor is not None else None
+    event.target_type = 'tenant_group'
+    event.target_id = group.public_id
+    event.action = action
+    event.summary = summary
+    event.metadata_json = {
+        'tenant_id': group.tenant_id,
+        'group_name': group.name,
+        'group_slug': group.slug,
+        'subject_name': group.subject_name,
+        'enabled': group.enabled,
+        'previous_name': previous_name,
+        'previous_subject_name': previous_subject_name,
+        'outcome': outcome,
+        'correlation_id': group.correlation_id,
+    }
+    db.session.add(event)
+
+
+def update_tenant_group_committed(
+    *,
+    group_id: int,
+    name: str,
+    subject_name: str,
+    actor: User | None = None,
+) -> TenantGroup:
+    group = db.session.get(TenantGroup, group_id)
+    if group is None:
+        raise ValueError('Selected Tenant Group no longer exists.')
+    _require_ready_tenant(group.tenant)
+
+    display_name = name.strip()
+    subject = subject_name.strip()
+    if not display_name or len(display_name) > 120:
+        raise ValueError('Tenant Group name is required and must be at most 120 characters.')
+    if not subject or len(subject) > 253:
+        raise ValueError('Kubernetes Group Subject is required and must be at most 253 characters.')
+
+    duplicate_subject = TenantGroup.query.filter(
+        TenantGroup.tenant_id == group.tenant_id,
+        TenantGroup.id != group.id,
+        TenantGroup.subject_name == subject,
+    ).first()
+    if duplicate_subject is not None:
+        raise ValueError('Another Tenant Group already uses this Kubernetes Group Subject in the selected Tenant.')
+
+    previous_name = group.name
+    previous_subject = group.subject_name
+    subject_changed = subject != previous_subject
+
+    group.name = display_name
+    group.subject_name = subject
+    if subject_changed:
+        for membership in group.memberships:
+            membership.subject_name = subject
+
+    _record_group_event(
+        actor=actor,
+        group=group,
+        action='tenant_group.updated',
+        summary=(
+            'Tenant Group display metadata and Kubernetes Group Subject were updated.'
+            if subject_changed
+            else 'Tenant Group display name was updated.'
+        ),
+        outcome='pending' if subject_changed else 'success',
+        previous_name=previous_name,
+        previous_subject_name=previous_subject,
+    )
+    try:
+        db.session.commit()
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise TenantAccessStateConflictError(
+            'Committed Tenant Group identity changed while this request was being applied. Refresh and retry.'
+        ) from exc
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+
+    if not subject_changed:
+        return group
+
+    reconciliation_errors: list[str] = []
+    active_grants = [
+        grant
+        for membership in group.memberships
+        if membership.status == TenantMembershipStatus.ACTIVE.value
+        for grant in membership.access_grants
+        if grant.status == TenantAccessGrantStatus.ACTIVE.value
+    ]
+    for grant in sorted(active_grants, key=lambda item: item.id or 0):
+        try:
+            reconcile_access_grant_committed(grant_id=int(grant.id), actor=actor)
+        except (ApiException, ValueError) as exc:
+            reconciliation_errors.append(str(exc))
+
+    if reconciliation_errors:
+        raise TenantGroupReconciliationError(
+            'Tenant Group subject was updated, but one or more active Access Grants require Reconcile.'
+        )
+    return group
+
+
+def retire_tenant_group_committed(*, group_id: int, actor: User | None = None) -> TenantGroup:
+    group = db.session.get(TenantGroup, group_id)
+    if group is None:
+        raise ValueError('Selected Tenant Group no longer exists.')
+    if not group.enabled:
+        return group
+    _require_ready_tenant(group.tenant)
+
+    active_memberships = [
+        membership for membership in group.memberships if membership.status == TenantMembershipStatus.ACTIVE.value
+    ]
+    if active_memberships:
+        raise ValueError('Revoke the active Tenant Group membership before retiring this group.')
+
+    unresolved_grants = [
+        grant
+        for membership in group.memberships
+        for grant in membership.access_grants
+        if grant.status != TenantAccessGrantStatus.REVOKED.value
+        or grant.reconciliation_status != TenantAccessReconciliationStatus.REVOKED.value
+    ]
+    if unresolved_grants:
+        raise ValueError('Resolve provider cleanup for previous Access Grants before retiring this Tenant Group.')
+
+    group.enabled = False
+    _record_group_event(
+        actor=actor,
+        group=group,
+        action='tenant_group.retired',
+        summary='Tenant Group was retired while its historical membership and grant evidence were retained.',
+        outcome='success',
+    )
+    try:
+        db.session.commit()
+        return group
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+
+
+def reactivate_tenant_group_committed(*, group_id: int, actor: User | None = None) -> TenantGroup:
+    group = db.session.get(TenantGroup, group_id)
+    if group is None:
+        raise ValueError('Selected Tenant Group no longer exists.')
+    if group.enabled:
+        return group
+    _require_ready_tenant(group.tenant)
+
+    group.enabled = True
+    _record_group_event(
+        actor=actor,
+        group=group,
+        action='tenant_group.reactivated',
+        summary='Tenant Group was reactivated for future Tenant Membership use.',
+        outcome='success',
+    )
+    try:
+        db.session.commit()
+        return group
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+
+
 def add_user_membership_committed(
     *,
     tenant: Tenant,
@@ -347,6 +530,37 @@ def create_tenant_group_by_id_committed(
     if tenant is None:
         raise ValueError('Select a Tenant.')
     return create_tenant_group_committed(tenant=tenant, name=name, subject_name=subject_name)
+
+
+def update_tenant_group_by_id_committed(
+    *,
+    group_id: int,
+    name: str,
+    subject_name: str,
+    actor_user_id: int | None = None,
+) -> TenantGroup:
+    return update_tenant_group_committed(
+        group_id=group_id,
+        name=name,
+        subject_name=subject_name,
+        actor=_actor_by_id(actor_user_id),
+    )
+
+
+def retire_tenant_group_by_id_committed(
+    *,
+    group_id: int,
+    actor_user_id: int | None = None,
+) -> TenantGroup:
+    return retire_tenant_group_committed(group_id=group_id, actor=_actor_by_id(actor_user_id))
+
+
+def reactivate_tenant_group_by_id_committed(
+    *,
+    group_id: int,
+    actor_user_id: int | None = None,
+) -> TenantGroup:
+    return reactivate_tenant_group_committed(group_id=group_id, actor=_actor_by_id(actor_user_id))
 
 
 def add_user_membership_by_id_committed(

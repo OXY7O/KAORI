@@ -21,6 +21,7 @@ from app.kubernetes.tenant.admin_workspace import (
 )
 from app.kubernetes.tenant.access_service import (
     TenantAccessStateConflictError,
+    TenantGroupReconciliationError,
     add_group_membership_by_id_committed,
     add_user_membership_by_id_committed,
     create_access_grant_by_id_committed,
@@ -29,8 +30,11 @@ from app.kubernetes.tenant.access_service import (
     inspect_access_grant_by_id_committed,
     reconcile_access_grant_by_id_committed,
     reactivate_membership_by_id_committed,
+    reactivate_tenant_group_by_id_committed,
+    retire_tenant_group_by_id_committed,
     revoke_access_grant_by_id_committed,
     revoke_membership_by_id_committed,
+    update_tenant_group_by_id_committed,
 )
 from app.kubernetes.tenant.capacity_governance import (
     TenantCapacityStateConflictError,
@@ -537,6 +541,100 @@ def create_group_route():
             title='Tenant Group Created',
             message=f'{group.name} is available as a Tenant membership principal.',
             metadata={'tenant_id': group.tenant_id, 'group_id': group.public_id, 'operation': 'create_tenant_group'},
+        )
+    return _tenant_section_redirect('memberships')
+
+
+@tenant_bp.post('/groups/<int:group_id>/edit')
+@permission_required('tenant.manage')
+def edit_tenant_group_route(group_id: int):
+    try:
+        _csrf()
+        group = update_tenant_group_by_id_committed(
+            group_id=group_id,
+            name=str(request.form.get('name') or ''),
+            subject_name=str(request.form.get('subject_name') or ''),
+            actor_user_id=int(current_user.id),
+        )
+    except TenantGroupReconciliationError as exc:
+        _record(
+            event_type='kubernetes_tenant_group_update_reconcile_attention',
+            status='warning',
+            title='Tenant Group Updated with Reconciliation Attention',
+            message=str(exc),
+            metadata={'group_id': group_id, 'operation': 'update_tenant_group'},
+        )
+    except (ValueError, TenantAccessStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_group_update_failed',
+            status='error',
+            title='Tenant Group Update Failed',
+            message=str(exc),
+            metadata={'group_id': group_id, 'operation': 'update_tenant_group'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_group_updated',
+            status='success',
+            title='Tenant Group Updated',
+            message=f'{group.name} now binds Kubernetes subject {group.subject_name}.',
+            metadata={'tenant_id': group.tenant_id, 'group_id': group.public_id, 'operation': 'update_tenant_group'},
+        )
+    return _tenant_section_redirect('memberships')
+
+
+@tenant_bp.post('/groups/<int:group_id>/retire')
+@permission_required('tenant.manage')
+def retire_tenant_group_route(group_id: int):
+    try:
+        _csrf()
+        group = retire_tenant_group_by_id_committed(
+            group_id=group_id,
+            actor_user_id=int(current_user.id),
+        )
+    except (ValueError, TenantAccessStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_group_retire_failed',
+            status='error',
+            title='Tenant Group Retire Failed',
+            message=str(exc),
+            metadata={'group_id': group_id, 'operation': 'retire_tenant_group'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_group_retired',
+            status='success',
+            title='Tenant Group Retired',
+            message=f'{group.name} is retired. Historical membership and grant evidence remain retained.',
+            metadata={'tenant_id': group.tenant_id, 'group_id': group.public_id, 'operation': 'retire_tenant_group'},
+        )
+    return _tenant_section_redirect('memberships')
+
+
+@tenant_bp.post('/groups/<int:group_id>/reactivate')
+@permission_required('tenant.manage')
+def reactivate_tenant_group_route(group_id: int):
+    try:
+        _csrf()
+        group = reactivate_tenant_group_by_id_committed(
+            group_id=group_id,
+            actor_user_id=int(current_user.id),
+        )
+    except (ValueError, TenantAccessStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_group_reactivate_failed',
+            status='error',
+            title='Tenant Group Reactivation Failed',
+            message=str(exc),
+            metadata={'group_id': group_id, 'operation': 'reactivate_tenant_group'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_group_reactivated',
+            status='success',
+            title='Tenant Group Reactivated',
+            message=f'{group.name} is enabled for future Tenant Membership use.',
+            metadata={'tenant_id': group.tenant_id, 'group_id': group.public_id, 'operation': 'reactivate_tenant_group'},
         )
     return _tenant_section_redirect('memberships')
 
