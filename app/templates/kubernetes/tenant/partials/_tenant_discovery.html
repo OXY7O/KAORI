@@ -143,7 +143,7 @@
                                 {% elif row.management_status == 'Discovered' and can_manage %}
                                     <button type="button"
                                             data-tenant-adoption-open
-                                            data-tenant-adoption-modal-id="tenant-adoption-modal-{{ loop.index }}"
+                                            data-tenant-adoption-modal-id="tenant-adoption-modal-{{ row.provider_reference }}"
                                             class="{{ table_ui.action_classes() }}">
                                         <i data-lucide="clipboard-check" class="h-4 w-4" aria-hidden="true"></i>
                                         Review
@@ -188,7 +188,7 @@
 </section>
 
 {% for row in tenant_discovery_rows if row.management_status == 'Discovered' and can_manage %}
-    <div id="tenant-adoption-modal-{{ loop.index }}"
+    <div id="tenant-adoption-modal-{{ row.provider_reference }}"
          data-tenant-adoption-modal
          class="fixed inset-0 z-[90] hidden items-center justify-center p-3 sm:p-5"
          aria-hidden="true">
