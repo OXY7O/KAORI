@@ -719,7 +719,7 @@ def get_tenant_context() -> dict[str, Any]:
         'ready_clusters': ready_clusters,
         'capacity_governance': capacity_governance,
         'capacity_decisions': capacity_decisions,
-        'tenant_count': Tenant.query.count(),
+        'tenant_count': Tenant.query.filter(Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value).count(),
         'profile_count': TenantResourceProfile.query.count(),
         'namespace_count': namespace_count,
         'ready_namespace_count': TenantNamespace.query.filter_by(provisioning_status='ready').count(),
