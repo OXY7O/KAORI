@@ -707,3 +707,13 @@ def test_live_discovery_surfaces_missing_managed_provider_objects() -> None:
     assert 'observed_capsule_names' in service
     assert 'authoritative Capsule Tenant CR is missing' in service
     assert "special_label('Provider Missing', 'critical', 'triangle-alert')" in template
+
+
+
+def test_adoption_modal_uses_wide_review_geometry_and_compact_live_copy() -> None:
+    discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    live = read('app/kubernetes/tenant/live_connection.py')
+
+    assert 'max-w-5xl' in discovery
+    assert 'md:grid-cols-2 xl:grid-cols-3' in discovery
+    assert "description = 'Live Kubernetes API is reachable.'" in live
