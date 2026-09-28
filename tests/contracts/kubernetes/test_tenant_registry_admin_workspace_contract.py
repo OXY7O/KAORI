@@ -125,17 +125,18 @@ def test_memberships_use_symmetric_actions_and_scalable_registries() -> None:
     assert 'paginate_query(' in read_model
 
 
-def test_access_grants_use_wide_form_and_full_registry() -> None:
+def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
     registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
     read_model = read('app/kubernetes/tenant/admin_workspace.py')
 
-    assert 'Access Grant Model' in workspace
     assert 'id="access-grant-form"' in workspace
-    assert 'md:grid-cols-2 xl:grid-cols-3' in workspace
+    assert 'xl:col-span-5' in workspace
+    assert 'space-y-5 xl:col-span-7' in workspace
+    assert 'Access Grant Flow' in workspace
+    assert 'Access Boundaries' in workspace
     assert 'components/info_tip.html' in workspace
     assert 'access-grant-form-tip' in workspace
-    assert 'Governance note.' in workspace
     assert 'hx-target="#tenant-admin-workspace"' in workspace
     assert '_access_grant_registry.html' in workspace
     assert "'Access Grant Registry'" in registry
