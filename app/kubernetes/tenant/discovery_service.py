@@ -166,11 +166,13 @@ def get_tenant_discovery_context(
             client = runtime_adapter.build_client(cluster)
             namespace_items = client.core_api().list_namespace(_request_timeout=5).items or []
         except Exception:
-            errors.append({
-                'cluster_id': cluster_key,
-                'cluster_name': cluster.name,
-                'message': 'Live Kubernetes namespace discovery failed.',
-            })
+            errors.append(
+                {
+                    'cluster_id': cluster_key,
+                    'cluster_name': cluster.name,
+                    'message': 'Live Kubernetes namespace discovery failed.',
+                }
+            )
             continue
 
         observed_native_names: set[str] = set()
@@ -192,55 +194,63 @@ def get_tenant_discovery_context(
                 management_status = 'Blocked'
                 eligibility = 'Namespace is terminating and cannot enter governed adoption.'
             tenant = managed_record.environment.tenant if managed_record is not None else None
-            rows.append({
-                'cluster': cluster,
-                'cluster_id': cluster_key,
-                'provider_key': 'native_kubernetes',
-                'provider_label': 'Native Kubernetes',
-                'resource_kind': 'Namespace',
-                'resource_name': name,
-                'provider_status': provider_status,
-                'provider_tone': _tone(provider_status),
-                'management_status': management_status,
-                'management_tone': 'normal' if management_status == 'Managed' else ('info' if management_status == 'Discovered' else 'warning'),
-                'tenant_name': tenant.name if tenant is not None else None,
-                'tenant_id': tenant.id if tenant is not None else None,
-                'eligibility': eligibility,
-                'provider_reference': str(getattr(metadata, 'uid', None) or name),
-            })
+            rows.append(
+                {
+                    'cluster': cluster,
+                    'cluster_id': cluster_key,
+                    'provider_key': 'native_kubernetes',
+                    'provider_label': 'Native Kubernetes',
+                    'resource_kind': 'Namespace',
+                    'resource_name': name,
+                    'provider_status': provider_status,
+                    'provider_tone': _tone(provider_status),
+                    'management_status': management_status,
+                    'management_tone': 'normal'
+                    if management_status == 'Managed'
+                    else ('info' if management_status == 'Discovered' else 'warning'),
+                    'tenant_name': tenant.name if tenant is not None else None,
+                    'tenant_id': tenant.id if tenant is not None else None,
+                    'eligibility': eligibility,
+                    'provider_reference': str(getattr(metadata, 'uid', None) or name),
+                }
+            )
 
         for (managed_cluster_id, namespace_name), managed_record in managed_namespaces.items():
             if managed_cluster_id != cluster_key or namespace_name in observed_native_names:
                 continue
             tenant = managed_record.environment.tenant
-            rows.append({
-                'cluster': cluster,
-                'cluster_id': cluster_key,
-                'provider_key': 'native_kubernetes',
-                'provider_label': 'Native Kubernetes',
-                'resource_kind': 'Namespace',
-                'resource_name': namespace_name,
-                'provider_status': 'Missing',
-                'provider_tone': 'critical',
-                'management_status': 'Managed',
-                'management_tone': 'critical',
-                'tenant_name': tenant.name,
-                'tenant_id': tenant.id,
-                'eligibility': (
-                    'Committed KAORI ownership exists, but the Namespace is missing from the live provider. '
-                    'Adoption is not applicable; review drift, restore/reconcile, or decommission.'
-                ),
-                'provider_reference': managed_record.provider_reference or namespace_name,
-            })
+            rows.append(
+                {
+                    'cluster': cluster,
+                    'cluster_id': cluster_key,
+                    'provider_key': 'native_kubernetes',
+                    'provider_label': 'Native Kubernetes',
+                    'resource_kind': 'Namespace',
+                    'resource_name': namespace_name,
+                    'provider_status': 'Missing',
+                    'provider_tone': 'critical',
+                    'management_status': 'Managed',
+                    'management_tone': 'critical',
+                    'tenant_name': tenant.name,
+                    'tenant_id': tenant.id,
+                    'eligibility': (
+                        'Committed KAORI ownership exists, but the Namespace is missing from the live provider. '
+                        'Adoption is not applicable; review drift, restore/reconcile, or decommission.'
+                    ),
+                    'provider_reference': managed_record.provider_reference or namespace_name,
+                }
+            )
 
         try:
             capsule_version, capsule_items = _capsule_items(client)
         except Exception:
-            errors.append({
-                'cluster_id': cluster_key,
-                'cluster_name': cluster.name,
-                'message': 'Live Capsule Tenant discovery failed.',
-            })
+            errors.append(
+                {
+                    'cluster_id': cluster_key,
+                    'cluster_name': cluster.name,
+                    'message': 'Live Capsule Tenant discovery failed.',
+                }
+            )
             capsule_version, capsule_items = None, []
 
         observed_capsule_names: set[str] = set()
@@ -252,35 +262,40 @@ def get_tenant_discovery_context(
             observed_capsule_names.add(name)
             tenant = managed_capsule.get((cluster_key, name))
             status = _capsule_phase(item)
-            management_status = 'Managed' if tenant is not None else ('Blocked' if status == 'Terminating' else 'Discovered')
-            rows.append({
-                'cluster': cluster,
-                'cluster_id': cluster_key,
-                'provider_key': 'capsule',
-                'provider_label': 'Capsule',
-                'resource_kind': 'Tenant CR',
-                'resource_name': name,
-                'provider_status': status,
-                'provider_tone': _tone(status),
-                'management_status': management_status,
-                'management_tone': (
-                    'normal' if management_status == 'Managed'
-                    else ('info' if management_status == 'Discovered' else 'warning')
-                ),
-                'tenant_name': tenant.name if tenant is not None else None,
-                'tenant_id': tenant.id if tenant is not None else None,
-                'eligibility': (
-                    'Already governed by KAORI.'
-                    if tenant is not None
-                    else (
-                        'Capsule Tenant is terminating and cannot be adopted.'
-                        if management_status == 'Blocked'
-                        else 'Candidate for governed Capsule adoption preflight; provider authority remains Capsule.'
-                    )
-                ),
-                'provider_reference': str(metadata.get('uid') or name),
-                'provider_api_version': capsule_version,
-            })
+            management_status = (
+                'Managed' if tenant is not None else ('Blocked' if status == 'Terminating' else 'Discovered')
+            )
+            rows.append(
+                {
+                    'cluster': cluster,
+                    'cluster_id': cluster_key,
+                    'provider_key': 'capsule',
+                    'provider_label': 'Capsule',
+                    'resource_kind': 'Tenant CR',
+                    'resource_name': name,
+                    'provider_status': status,
+                    'provider_tone': _tone(status),
+                    'management_status': management_status,
+                    'management_tone': (
+                        'normal'
+                        if management_status == 'Managed'
+                        else ('info' if management_status == 'Discovered' else 'warning')
+                    ),
+                    'tenant_name': tenant.name if tenant is not None else None,
+                    'tenant_id': tenant.id if tenant is not None else None,
+                    'eligibility': (
+                        'Already governed by KAORI.'
+                        if tenant is not None
+                        else (
+                            'Capsule Tenant is terminating and cannot be adopted.'
+                            if management_status == 'Blocked'
+                            else 'Candidate for governed Capsule adoption preflight; provider authority remains Capsule.'
+                        )
+                    ),
+                    'provider_reference': str(metadata.get('uid') or name),
+                    'provider_api_version': capsule_version,
+                }
+            )
 
         managed_capsule_tenants = {
             tenant.id: tenant
@@ -292,26 +307,28 @@ def get_tenant_discovery_context(
             if not reference or reference in observed_capsule_names:
                 continue
             evidence = tenant.provider_evidence_json or {}
-            rows.append({
-                'cluster': cluster,
-                'cluster_id': cluster_key,
-                'provider_key': 'capsule',
-                'provider_label': 'Capsule',
-                'resource_kind': 'Tenant CR',
-                'resource_name': reference,
-                'provider_status': 'Missing',
-                'provider_tone': 'critical',
-                'management_status': 'Managed',
-                'management_tone': 'critical',
-                'tenant_name': tenant.name,
-                'tenant_id': tenant.id,
-                'eligibility': (
-                    'KAORI still governs this Tenant, but the authoritative Capsule Tenant CR is missing. '
-                    'Adoption is not applicable; restore provider state or use governed recovery/decommission.'
-                ),
-                'provider_reference': reference,
-                'provider_api_version': str(evidence.get('provider_api_version') or '') or capsule_version,
-            })
+            rows.append(
+                {
+                    'cluster': cluster,
+                    'cluster_id': cluster_key,
+                    'provider_key': 'capsule',
+                    'provider_label': 'Capsule',
+                    'resource_kind': 'Tenant CR',
+                    'resource_name': reference,
+                    'provider_status': 'Missing',
+                    'provider_tone': 'critical',
+                    'management_status': 'Managed',
+                    'management_tone': 'critical',
+                    'tenant_name': tenant.name,
+                    'tenant_id': tenant.id,
+                    'eligibility': (
+                        'KAORI still governs this Tenant, but the authoritative Capsule Tenant CR is missing. '
+                        'Adoption is not applicable; restore provider state or use governed recovery/decommission.'
+                    ),
+                    'provider_reference': reference,
+                    'provider_api_version': str(evidence.get('provider_api_version') or '') or capsule_version,
+                }
+            )
 
     if normalized_provider:
         rows = [row for row in rows if row['provider_key'] == normalized_provider]
@@ -356,7 +373,6 @@ def get_tenant_discovery_context(
     }
 
 
-
 def _adoption_environment(value: str) -> str:
     normalized = str(value or '').strip().lower()
     allowed = {item.value for item in TenantEnvironmentName}
@@ -382,10 +398,7 @@ def _next_namespace_generation(*, cluster_id: str, namespace: str) -> int:
         .order_by(TenantNamespace.generation.desc(), TenantNamespace.created_at.desc())
         .all()
     )
-    if any(
-        item.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value
-        for item in prior
-    ):
+    if any(item.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value for item in prior):
         raise ValueError('This namespace is already represented by an active KAORI Tenant record.')
     return max((int(item.generation or 1) for item in prior), default=0) + 1
 
@@ -410,7 +423,9 @@ def _read_capsule_tenant(client, name: str) -> tuple[str, dict[str, Any]]:
     raise ValueError('The Capsule Tenant is no longer present in the provider.')
 
 
-def adopt_discovered_tenant_committed(source: Mapping[str, Any]) -> tuple[Tenant, TenantEnvironment, TenantNamespace | None]:
+def adopt_discovered_tenant_committed(
+    source: Mapping[str, Any],
+) -> tuple[Tenant, TenantEnvironment, TenantNamespace | None]:
     """Adopt an existing provider object without mutating Kubernetes or Capsule."""
 
     cluster_id = str(source.get('cluster_id') or '').strip()
