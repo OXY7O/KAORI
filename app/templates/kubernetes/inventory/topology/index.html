@@ -9,11 +9,9 @@
         {% else %}
             {% include "kubernetes/inventory/components/_data_freshness.html" %}
             <section class="space-y-4" aria-labelledby="inventory-relationships-heading">
-                {{ section_intro.render(
-                    'Inventory Relationships',
-                    'Explore committed resource relationships across clusters and namespaces.',
-                    'inventory-relationships-heading'
-                ) }}
+                {{ section_intro.render('Inventory Relationships',
+                                'Explore committed resource relationships across clusters and namespaces.',
+                                'inventory-relationships-heading') }}
                 {% include "kubernetes/inventory/topology/partials/_workspace.html" %}
             </section>
         {% endif %}

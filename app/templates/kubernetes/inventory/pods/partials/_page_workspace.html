@@ -6,19 +6,15 @@
     {% else %}
         {% include "kubernetes/inventory/components/_data_freshness.html" %}
         <section class="space-y-4" aria-labelledby="pods-posture-heading">
-            {{ section_intro.render(
-                'Operational Posture',
-                'Review Pod runtime, readiness, ownership, and placement evidence.',
-                'pods-posture-heading'
-            ) }}
+            {{ section_intro.render('Operational Posture',
+                        'Review Pod runtime, readiness, ownership, and placement evidence.',
+                        'pods-posture-heading') }}
             {% include "kubernetes/inventory/pods/partials/_summary_cards.html" %}
         </section>
         <section class="space-y-4" aria-labelledby="pods-records-heading">
-            {{ section_intro.render(
-                'Inventory Records',
-                'Browse committed Pod records for the active inventory scope.',
-                'pods-records-heading'
-            ) }}
+            {{ section_intro.render('Inventory Records',
+                        'Browse committed Pod records for the active inventory scope.',
+                        'pods-records-heading') }}
             {% include "kubernetes/inventory/pods/partials/_table_card.html" %}
         </section>
     {% endif %}

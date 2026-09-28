@@ -6,19 +6,15 @@
     {% else %}
         {% include "kubernetes/inventory/components/_data_freshness.html" %}
         <section class="space-y-4" aria-labelledby="workloads-posture-heading">
-            {{ section_intro.render(
-                'Operational Posture',
-                'Review workload delivery, replica, runtime, and placement evidence.',
-                'workloads-posture-heading'
-            ) }}
+            {{ section_intro.render('Operational Posture',
+                        'Review workload delivery, replica, runtime, and placement evidence.',
+                        'workloads-posture-heading') }}
             {% include "kubernetes/inventory/workloads/partials/_summary_cards.html" %}
         </section>
         <section class="space-y-4" aria-labelledby="workloads-records-heading">
-            {{ section_intro.render(
-                'Inventory Records',
-                'Browse committed workload records for the active inventory scope.',
-                'workloads-records-heading'
-            ) }}
+            {{ section_intro.render('Inventory Records',
+                        'Browse committed workload records for the active inventory scope.',
+                        'workloads-records-heading') }}
             {% include "kubernetes/inventory/workloads/partials/_table_card.html" %}
         </section>
     {% endif %}

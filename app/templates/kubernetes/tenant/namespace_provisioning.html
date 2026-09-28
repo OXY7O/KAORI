@@ -10,40 +10,34 @@
     {% set namespace_drifted = namespace_options|selectattr('provisioning_status', 'equalto', 'drifted')|list|length %}
     {% set namespace_attention = namespace_total - namespace_ready %}
     {% set namespace_tabs = [
-        ('provision', 'Provision Namespace', 'boxes', url_for('tenant.namespace_provisioning', view='provision')),
-        ('allocation', 'Allocation Change', 'refresh-cw', url_for('tenant.namespace_provisioning', view='allocation')),
-        ('decisions', 'Capacity Decisions', 'shield-check', url_for('tenant.namespace_provisioning', view='decisions'))
-    ] %}
+            ('provision', 'Provision Namespace', 'boxes', url_for('tenant.namespace_provisioning', view='provision')),
+            ('allocation', 'Allocation Change', 'refresh-cw', url_for('tenant.namespace_provisioning', view='allocation')),
+            ('decisions', 'Capacity Decisions', 'shield-check', url_for('tenant.namespace_provisioning', view='decisions'))
+        ] %}
     {% set namespace_metrics = [
-        ('folder-tree', 'Managed Namespaces', namespace_total, 'Committed Namespace records retained by KAORI', 'info'),
-        ('circle-check', 'Ready', namespace_ready, 'Provider reconciliation currently verified', 'normal'),
-        ('triangle-alert', 'Drifted', namespace_drifted, 'Committed intent differs from provider observation', 'warning' if namespace_drifted else 'normal'),
-        ('activity', 'Needs Attention', namespace_attention, 'Pending, drifted, failed, or teardown states', 'warning' if namespace_attention else 'normal')
-    ] %}
-
+            ('folder-tree', 'Managed Namespaces', namespace_total, 'Committed Namespace records retained by KAORI', 'info'),
+            ('circle-check', 'Ready', namespace_ready, 'Provider reconciliation currently verified', 'normal'),
+            ('triangle-alert', 'Drifted', namespace_drifted, 'Committed intent differs from provider observation', 'warning' if namespace_drifted else 'normal'),
+            ('activity', 'Needs Attention', namespace_attention, 'Pending, drifted, failed, or teardown states', 'warning' if namespace_attention else 'normal')
+        ] %}
     <section class="space-y-4" aria-labelledby="namespace-snapshot-heading">
-        {{ section_intro.render(
-            'Namespace Provisioning Snapshot',
-            'Committed Namespace allocation and reconciliation posture across governed Tenants.',
-            'namespace-snapshot-heading'
-        ) }}
+        {{ section_intro.render('Namespace Provisioning Snapshot',
+                'Committed Namespace allocation and reconciliation posture across governed Tenants.',
+                'namespace-snapshot-heading') }}
         {% call operational_section_card.render(
             'Namespace Estate',
             'Review managed Namespace state before provisioning or changing allocation.',
             'folder-tree',
             body_classes='p-0',
             aria_label='Namespace provisioning summary'
-        ) %}
+            ) %}
             {{ resource_posture_grid.render(namespace_metrics, columns=4) }}
         {% endcall %}
     </section>
-
     <section class="space-y-4" aria-labelledby="namespace-workspace-heading">
-        {{ section_intro.render(
-            'Namespace Provisioning Workspace',
-            'Use one governed workflow at a time: provision a Namespace, change its frozen allocation, or inspect admission decisions.',
-            'namespace-workspace-heading'
-        ) }}
+        {{ section_intro.render('Namespace Provisioning Workspace',
+                'Use one governed workflow at a time: provision a Namespace, change its frozen allocation, or inspect admission decisions.',
+                'namespace-workspace-heading') }}
         {% call operational_section_card.render(
             'Namespace Administration',
             'Tenant ownership, Resource Profile intent, capacity admission, and provider reconciliation remain explicit at every step.',
@@ -53,23 +47,20 @@
             loading_bar_label='Loading Namespace Provisioning Workspace',
             body_classes='p-0',
             aria_label='Namespace Provisioning Workspace'
-        ) %}
-            {{ content_tabs.render_links(
-                'namespace-provisioning',
-                namespace_tabs,
-                active_namespace_view,
-                'Namespace Provisioning Workspace',
-                embedded=true,
-                data_namespace='namespace-provisioning',
-                hx_target='#namespace-provisioning-workspace',
-                hx_select='#namespace-provisioning-workspace',
-                hx_swap='outerHTML show:none focus-scroll:false',
-                hx_push_url='true',
-                hx_indicator='#namespace-provisioning-workspace-loading',
-                nowrap=true,
-                hx_sync='this:replace'
-            ) }}
-
+            ) %}
+            {{ content_tabs.render_links('namespace-provisioning',
+                        namespace_tabs,
+                        active_namespace_view,
+                        'Namespace Provisioning Workspace',
+                        embedded=true,
+                        data_namespace='namespace-provisioning',
+                        hx_target='#namespace-provisioning-workspace',
+                        hx_select='#namespace-provisioning-workspace',
+                        hx_swap='outerHTML show:none focus-scroll:false',
+                        hx_push_url='true',
+                        hx_indicator='#namespace-provisioning-workspace-loading',
+                        nowrap=true,
+                        hx_sync='this:replace') }}
             <div class="space-y-5 p-4 sm:p-5">
                 {% if active_namespace_view == 'allocation' %}
                     {% include "kubernetes/tenant/partials/_allocation_change.html" %}
@@ -80,7 +71,6 @@
                     {% include "kubernetes/tenant/partials/_namespace_registry.html" %}
                 {% endif %}
             </div>
-
             <script type="application/json" id="tenant-resource-profile-presets">{{ resource_profile_presets|tojson }}</script>
             <script type="application/json" id="tenant-namespace-allocation-profiles">{{ namespace_allocation_profiles|tojson }}</script>
             <script type="application/json" id="tenant-namespace-allocation-state">{{ namespace_allocation_state|tojson }}</script>
@@ -88,5 +78,6 @@
     </section>
 {% endblock tenant_content %}
 {% block tenant_scripts %}
-    <script defer src="{{ url_for('static', filename='js/tenant_resource_profile_presets.js') }}"></script>
+    <script defer
+            src="{{ url_for('static', filename='js/tenant_resource_profile_presets.js') }}"></script>
 {% endblock tenant_scripts %}

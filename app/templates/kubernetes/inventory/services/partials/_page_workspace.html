@@ -6,19 +6,15 @@
     {% else %}
         {% include "kubernetes/inventory/components/_data_freshness.html" %}
         <section class="space-y-4" aria-labelledby="services-posture-heading">
-            {{ section_intro.render(
-                'Operational Posture',
-                'Review Service exposure, backend registration, and access evidence.',
-                'services-posture-heading'
-            ) }}
+            {{ section_intro.render('Operational Posture',
+                        'Review Service exposure, backend registration, and access evidence.',
+                        'services-posture-heading') }}
             {% include "kubernetes/inventory/services/partials/_summary_cards.html" %}
         </section>
         <section class="space-y-4" aria-labelledby="services-records-heading">
-            {{ section_intro.render(
-                'Inventory Records',
-                'Browse committed Service records for the active inventory scope.',
-                'services-records-heading'
-            ) }}
+            {{ section_intro.render('Inventory Records',
+                        'Browse committed Service records for the active inventory scope.',
+                        'services-records-heading') }}
             {% include "kubernetes/inventory/services/partials/_table_card.html" %}
         </section>
     {% endif %}
