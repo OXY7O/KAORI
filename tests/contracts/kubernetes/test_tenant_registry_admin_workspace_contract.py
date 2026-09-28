@@ -259,6 +259,66 @@ def test_access_grant_scope_rule_is_short_and_semantically_distinct() -> None:
     assert 'border-status-info-border' in workspace
     assert 'Tenant scope uses neither target.' not in workspace
 
+
+
+def test_tenant_actions_cover_update_decommission_and_htmx_toast_feedback() -> None:
+    routes = read('app/kubernetes/tenant/routes.py')
+    service = read('app/kubernetes/tenant/service.py')
+    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    maintenance = read('app/templates/kubernetes/tenant/partials/_tenant_maintenance.html')
+    modal = read('app/templates/kubernetes/tenant/partials/_tenant_decommission_modal.html')
+
+    assert "def update_tenant_metadata_route(" in routes
+    assert "def decommission_tenant_route(" in routes
+    assert "def update_tenant_metadata_committed(" in service
+    assert "def decommission_tenant_committed(" in service
+    assert "TenantLifecycleStatus.DECOMMISSIONED.value" in service
+    assert "Tenant cannot be decommissioned while dependent governed state remains:" in service
+
+    assert "square-pen" in registry
+    assert "Decommission" in registry
+    assert "tenant-decommission-modal" in registry
+    assert "_tenant_decommission_modal.html" in registry
+    assert "data-destructive-dynamic-form" in modal
+    assert "outerHTML show:none focus-scroll:false" in modal
+
+    assert "Update Tenant Metadata" in maintenance
+    assert "Tenant slug remains stable after creation." in maintenance
+    assert "Save Tenant" in maintenance
+
+    assert "g.tenant_operational_feedback = feedback" in routes
+    assert "toast_oob=True" in routes
+    assert "components/operational_toast.html" in routes
+    assert "queue_feedback=(not is_htmx)" in routes
+
+
+def test_tenant_access_grant_links_namespace_creation_and_uses_violet_guidance() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+
+    assert "Create Namespace" in workspace
+    assert "url_for('tenant.namespace_provisioning')" in workspace
+    assert "Tenant: no target. Environment/Namespace: select one target." in workspace
+    assert "bg-kaori-soft" in workspace
+    assert "bg-status-info-soft" not in workspace
+
+
+def test_namespace_access_security_boundary_uses_kaori_violet() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_namespace_access_workspace.html')
+
+    assert "Security Boundary" in workspace
+    assert "bg-kaori-soft" in workspace
+    assert "bg-status-info-soft" not in workspace
+
+
+def test_operational_attention_peer_cards_are_geometry_symmetric() -> None:
+    overview = read('app/templates/kubernetes/tenant/overview.html')
+
+    assert "xl:items-stretch" in overview
+    assert overview.count("extra_classes='flex h-full flex-col'") >= 2
+    assert overview.count("body_classes='flex flex-1 flex-col p-0'") >= 2
+    assert "Showing {{ tenant_attention_rows|length }} prioritized condition" in overview
+    assert "Showing {{ tenant_recent_activity_rows|length }} latest committed event" in overview
+
 def test_kaori_info_tip_is_a_reusable_hover_and_focus_standard() -> None:
     component = read('app/templates/components/info_tip.html')
     docs = read('docs/design/components/INFO_TIP.md')
