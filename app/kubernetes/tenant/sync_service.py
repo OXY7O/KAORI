@@ -48,10 +48,7 @@ def build_tenant_inventory_snapshot() -> dict[str, Any]:
         .all()
     )
 
-    observed_namespaces = {
-        (str(item.cluster_id), item.namespace): item
-        for item in NamespaceInventory.query.all()
-    }
+    observed_namespaces = {(str(item.cluster_id), item.namespace): item for item in NamespaceInventory.query.all()}
     # Cluster inventory can retain more than one generation. Keep the newest
     # committed cutoff for each cluster without querying the provider here.
     normalized_cutoffs: dict[str, datetime] = {}
@@ -143,7 +140,6 @@ def build_tenant_inventory_snapshot() -> dict[str, Any]:
     }
 
 
-
 def _as_utc(value: datetime | None) -> datetime | None:
     if value is None:
         return None
@@ -158,10 +154,7 @@ def apply_missing_namespace_drift_from_inventory() -> list[int]:
     provider reconciliation verifies the full effective contract.
     """
 
-    observed = {
-        (str(item.cluster_id), item.namespace)
-        for item in NamespaceInventory.query.all()
-    }
+    observed = {(str(item.cluster_id), item.namespace) for item in NamespaceInventory.query.all()}
     latest_cutoffs: dict[str, datetime] = {}
     for cluster_id, collected_at in (
         ClusterInventory.query.with_entities(
