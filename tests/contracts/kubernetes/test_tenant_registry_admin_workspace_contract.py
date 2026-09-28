@@ -421,10 +421,9 @@ def test_governed_tenant_decommission_is_async_provider_verified_and_fail_closed
     assert 'api.delete_namespace(name=record.namespace)' in provisioning
     assert '_namespace_delete_observation' in provisioning
     assert 'Finalizers:' in provisioning
-    teardown = provisioning[
-        provisioning.index('def deprovision_native_namespace('):
-        provisioning.index('def deprovision_native_namespace_committed(')
-    ]
+    teardown_start = provisioning.index('def deprovision_native_namespace(')
+    teardown_end = provisioning.index('def deprovision_native_namespace_committed(')
+    teardown = provisioning[teardown_start:teardown_end]
     assert "api.delete_namespace(name=record.namespace)" in teardown
     assert "finalizers = []" not in teardown
     assert "patch_namespace" not in teardown
