@@ -69,8 +69,7 @@
                   hx-post="{{ url_for('tenant.add_user_membership_route') }}"
                   hx-target="#tenant-admin-workspace"
                   hx-select="#tenant-admin-workspace"
-                  hx-swap="outerHTML"
-                  hx-push-url="{{ url_for('tenant.tenants', section='memberships') }}"
+                  hx-swap="outerHTML show:none focus-scroll:false"
                   hx-indicator="#tenant-admin-loading"
                   hx-disabled-elt="find button"
                   class="flex h-full flex-col rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
@@ -137,8 +136,7 @@
                   hx-post="{{ url_for('tenant.create_group_route') }}"
                   hx-target="#tenant-admin-workspace"
                   hx-select="#tenant-admin-workspace"
-                  hx-swap="outerHTML"
-                  hx-push-url="{{ url_for('tenant.tenants', section='memberships') }}"
+                  hx-swap="outerHTML show:none focus-scroll:false"
                   hx-indicator="#tenant-admin-loading"
                   hx-disabled-elt="find button"
                   class="flex h-full flex-col rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
@@ -204,8 +202,7 @@
                   hx-post="{{ url_for('tenant.add_group_membership_route') }}"
                   hx-target="#tenant-admin-workspace"
                   hx-select="#tenant-admin-workspace"
-                  hx-swap="outerHTML"
-                  hx-push-url="{{ url_for('tenant.tenants', section='memberships') }}"
+                  hx-swap="outerHTML show:none focus-scroll:false"
                   hx-indicator="#tenant-admin-loading"
                   hx-disabled-elt="find button"
                   class="flex h-full flex-col rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
