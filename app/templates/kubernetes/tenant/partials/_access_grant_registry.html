@@ -152,8 +152,7 @@
                                       hx-post="{{ url_for('tenant.inspect_access_grant_route', grant_id=grant.id) }}"
                                       hx-target="#tenant-admin-workspace"
                                       hx-select="#tenant-admin-workspace"
-                                      hx-swap="outerHTML"
-                                      hx-push-url="{{ url_for('tenant.tenants', section='access-grants') }}"
+                                      hx-swap="outerHTML show:none focus-scroll:false"
                                       hx-indicator="#tenant-admin-loading"
                                       hx-disabled-elt="find button">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -170,8 +169,7 @@
                                       hx-post="{{ url_for('tenant.reconcile_access_grant_route', grant_id=grant.id) }}"
                                       hx-target="#tenant-admin-workspace"
                                       hx-select="#tenant-admin-workspace"
-                                      hx-swap="outerHTML"
-                                      hx-push-url="{{ url_for('tenant.tenants', section='access-grants') }}"
+                                      hx-swap="outerHTML show:none focus-scroll:false"
                                       hx-indicator="#tenant-admin-loading"
                                       hx-disabled-elt="find button">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -187,8 +185,7 @@
                                       hx-post="{{ url_for('tenant.revoke_access_grant_route', grant_id=grant.id) }}"
                                       hx-target="#tenant-admin-workspace"
                                       hx-select="#tenant-admin-workspace"
-                                      hx-swap="outerHTML"
-                                      hx-push-url="{{ url_for('tenant.tenants', section='access-grants') }}"
+                                      hx-swap="outerHTML show:none focus-scroll:false"
                                       hx-indicator="#tenant-admin-loading"
                                       hx-disabled-elt="find button">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
