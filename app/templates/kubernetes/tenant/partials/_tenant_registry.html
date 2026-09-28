@@ -35,7 +35,8 @@
                 'History Retained — decommission is complete and audit history remains.',
                 'Unavailable — no admitted lifecycle action is available.'
             ],
-            button_text='Status Guide'
+            button_text='Status Guide',
+            button_classes=table_ui.action_classes()
         ) }}
     {% endset %}
     {{ table_ui.inventory_block_header(
