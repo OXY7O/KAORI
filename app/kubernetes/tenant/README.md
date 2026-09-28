@@ -14,6 +14,16 @@ The approved Tenant destinations are:
 - **Namespace Provisioning** — namespace creation, allocation changes, ResourceQuota/LimitRange evidence, and capacity decisions.
 - **Operations** — provisioning status, runs/evidence, drift/reconciliation, and Activity through internal Content Tabs.
 
+### Resource Profile lifecycle
+
+Resource Profile administration preserves the approved #113 allocation authority:
+
+- **Small / Standard / Large** are KAORI-owned locked presets. Normal operator workflows do not edit or delete them.
+- **Custom** profiles are operator-managed. Edit may change name, description, enabled state, quota, and Container LimitRange values.
+- A Custom allocation-contract change increments the profile version. Existing Namespace allocations keep their already committed source version and frozen effective allocation snapshot until an explicit governed allocation change.
+- **Hard Delete** is limited to Custom profiles with **zero Namespace references and zero Capacity Decision references**. Both active and historical references count as dependencies so deletion cannot break committed allocation/audit lineage.
+- Disable is available through Custom Edit to stop future selection without removing the profile record.
+
 Operations task views stay inside the page so the sidebar remains exactly two interactive levels. Only the five approved Tenant destinations are supported; superseded workspace routes are not retained.
 
 ## Evidence and provider authority

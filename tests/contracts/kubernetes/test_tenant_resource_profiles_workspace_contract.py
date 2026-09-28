@@ -135,3 +135,42 @@ def test_capacity_commitment_excludes_deprovisioned_history_and_preserves_unknow
     assert 'At least one active Tenant namespace has an unbounded or missing CPU/memory request commitment' in governance
     assert "state = 'Unknown' if commitment_reason" in governance
     assert 'commitment_reason or _state_reason(state)' in governance
+
+
+
+def test_custom_resource_profile_crud_preserves_preset_and_dependency_authority() -> None:
+    service = read('app/kubernetes/tenant/service.py')
+    routes = read('app/kubernetes/tenant/routes.py')
+    model = read('app/models/tenant.py')
+    readme = read('app/kubernetes/tenant/README.md')
+
+    assert 'def update_resource_profile(profile_id: int' in service
+    assert "profile.profile_class != TenantResourceProfileClass.CUSTOM.value" in service
+    assert 'Built-in Resource Profiles are locked.' in service
+    assert "enabled_value not in {'enabled', 'disabled'}" in service
+    assert 'contract_changed = quota !=' in service
+    assert 'profile.version = int(profile.version or 1) + 1' in service
+
+    assert 'def delete_resource_profile(profile_id: int)' in service
+    assert 'def _resource_profile_dependency_counts(profile_id: int)' in service
+    assert "TenantNamespace.query.filter_by(resource_profile_id=profile_id).count()" in service
+    assert "TenantCapacityDecision.query.filter_by(resource_profile_id=profile_id).count()" in service
+    assert "if dependencies['total']:" in service
+    assert 'release all Resource Profile dependencies first' in service
+
+    assert "@tenant_bp.post('/resource-profiles/<int:profile_id>/edit')" in routes
+    assert "@tenant_bp.post('/resource-profiles/<int:profile_id>/delete')" in routes
+    assert 'update_resource_profile_committed' in routes
+    assert 'delete_resource_profile_committed' in routes
+
+    assert "ForeignKey('tenant_resource_profiles.id', ondelete='RESTRICT')" in model
+    assert 'Hard Delete' in readme
+    assert 'zero Namespace references and zero Capacity Decision references' in readme
+
+
+def test_resource_profile_registry_context_exposes_dependency_counts_for_actions() -> None:
+    service = read('app/kubernetes/tenant/service.py')
+
+    assert "'profile_dependencies': profile_dependencies" in service
+    assert 'namespace_counts.get(profile.id, 0)' in service
+    assert 'capacity_decision_counts.get(profile.id, 0)' in service

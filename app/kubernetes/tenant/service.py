@@ -391,6 +391,115 @@ def create_resource_profile_committed(source: Mapping[str, Any]) -> TenantResour
         raise
 
 
+def _resource_profile_dependency_counts(profile_id: int) -> dict[str, int]:
+    namespace_count = TenantNamespace.query.filter_by(resource_profile_id=profile_id).count()
+    capacity_decision_count = TenantCapacityDecision.query.filter_by(resource_profile_id=profile_id).count()
+    return {
+        'namespaces': namespace_count,
+        'capacity_decisions': capacity_decision_count,
+        'total': namespace_count + capacity_decision_count,
+    }
+
+
+def update_resource_profile(profile_id: int, source: Mapping[str, Any]) -> tuple[TenantResourceProfile, bool]:
+    profile = db.session.get(TenantResourceProfile, profile_id)
+    if profile is None:
+        raise ValueError('Selected Resource Profile no longer exists.')
+    if profile.profile_class != TenantResourceProfileClass.CUSTOM.value:
+        raise ValueError('Built-in Resource Profiles are locked. Create or edit a Custom profile instead.')
+
+    name = _text(source, 'profile_name')
+    if not name or len(name) > 120:
+        raise ValueError('Resource Profile name is required and must be at most 120 characters.')
+    duplicate = (
+        TenantResourceProfile.query.filter(
+            func.lower(TenantResourceProfile.name) == name.lower(),
+            TenantResourceProfile.id != profile.id,
+        )
+        .first()
+    )
+    if duplicate is not None:
+        raise ValueError('A Resource Profile with this name already exists.')
+
+    enabled_value = _text(source, 'profile_enabled').lower()
+    if enabled_value not in {'enabled', 'disabled'}:
+        raise ValueError('Select whether the Custom Resource Profile is Enabled or Disabled.')
+
+    quota, limits = _profile_values(source)
+    contract_changed = quota != (profile.quota_hard_json or {}) or limits != (profile.limit_defaults_json or {})
+
+    profile.name = name
+    profile.description = _text(source, 'profile_description') or None
+    profile.quota_hard_json = quota
+    profile.limit_defaults_json = limits
+    profile.enabled = enabled_value == 'enabled'
+    if contract_changed:
+        profile.version = int(profile.version or 1) + 1
+
+    db.session.flush()
+    return profile, contract_changed
+
+
+def update_resource_profile_committed(
+    profile_id: int,
+    source: Mapping[str, Any],
+) -> tuple[TenantResourceProfile, bool]:
+    try:
+        result = update_resource_profile(profile_id, source)
+        db.session.commit()
+        return result
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise TenantStateConflictError(
+            'Committed Resource Profile state changed while this update was being applied. Refresh and retry.'
+        ) from exc
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+
+
+def delete_resource_profile(profile_id: int) -> dict[str, Any]:
+    profile = db.session.get(TenantResourceProfile, profile_id)
+    if profile is None:
+        raise ValueError('Selected Resource Profile no longer exists.')
+    if profile.profile_class != TenantResourceProfileClass.CUSTOM.value:
+        raise ValueError('Built-in Resource Profiles are KAORI-owned and cannot be deleted.')
+
+    dependencies = _resource_profile_dependency_counts(profile.id)
+    if dependencies['total']:
+        raise ValueError(
+            'Delete blocked: release all Resource Profile dependencies first. '
+            f"{dependencies['namespaces']} Namespace reference(s) and "
+            f"{dependencies['capacity_decisions']} Capacity Decision reference(s) remain."
+        )
+
+    snapshot = {
+        'id': profile.id,
+        'public_id': profile.public_id,
+        'name': profile.name,
+        'profile_class': profile.profile_class,
+        'version': profile.version,
+    }
+    db.session.delete(profile)
+    db.session.flush()
+    return snapshot
+
+
+def delete_resource_profile_committed(profile_id: int) -> dict[str, Any]:
+    try:
+        result = delete_resource_profile(profile_id)
+        db.session.commit()
+        return result
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise TenantStateConflictError(
+            'Resource Profile dependencies changed while deletion was being applied. Refresh and retry.'
+        ) from exc
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+
+
 def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
     try:
         environment_id = int(_text(source, 'tenant_environment_id'))
@@ -765,8 +874,44 @@ def get_resource_profile_registry_context(
         page=page,
         per_page=per_page,
     )
+
+    profile_ids = [profile.id for profile in items]
+    namespace_counts: dict[int, int] = {}
+    capacity_decision_counts: dict[int, int] = {}
+    if profile_ids:
+        namespace_counts = {
+            int(profile_id): int(count)
+            for profile_id, count in (
+                db.session.query(TenantNamespace.resource_profile_id, func.count(TenantNamespace.id))
+                .filter(TenantNamespace.resource_profile_id.in_(profile_ids))
+                .group_by(TenantNamespace.resource_profile_id)
+                .all()
+            )
+            if profile_id is not None
+        }
+        capacity_decision_counts = {
+            int(profile_id): int(count)
+            for profile_id, count in (
+                db.session.query(TenantCapacityDecision.resource_profile_id, func.count(TenantCapacityDecision.id))
+                .filter(TenantCapacityDecision.resource_profile_id.in_(profile_ids))
+                .group_by(TenantCapacityDecision.resource_profile_id)
+                .all()
+            )
+            if profile_id is not None
+        }
+
+    profile_dependencies = {
+        profile.id: {
+            'namespaces': namespace_counts.get(profile.id, 0),
+            'capacity_decisions': capacity_decision_counts.get(profile.id, 0),
+            'total': namespace_counts.get(profile.id, 0) + capacity_decision_counts.get(profile.id, 0),
+        }
+        for profile in items
+    }
+
     return {
         'profiles': items,
+        'profile_dependencies': profile_dependencies,
         'profile_pagination': pagination,
         'profile_registry_filters': {
             'search': normalized_search,

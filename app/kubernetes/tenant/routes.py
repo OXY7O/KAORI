@@ -75,12 +75,14 @@ from app.kubernetes.tenant.service import (
     change_native_namespace_allocation_committed,
     create_resource_profile_committed,
     create_tenant_committed,
+    delete_resource_profile_committed,
     get_namespace_registry_context,
     get_resource_profile_registry_context,
     get_tenant_context,
     get_tenant_registry_context,
     provision_native_namespace_committed,
     reconcile_managed_native_namespace_committed,
+    update_resource_profile_committed,
 )
 from app.kubernetes.tenant.workspace import (
     get_tenant_cluster_estate_context,
@@ -1095,6 +1097,91 @@ def create_resource_profile_route():
                 'resource_profile_id': profile.public_id,
                 'profile_class': profile.profile_class,
                 'operation': 'create_resource_profile',
+            },
+        )
+    return redirect(url_for('tenant.resource_profiles', view='profiles'))
+
+
+@tenant_bp.post('/resource-profiles/<int:profile_id>/edit')
+@permission_required('tenant.manage')
+def update_resource_profile_route(profile_id: int):
+    try:
+        _csrf()
+        profile, contract_changed = update_resource_profile_committed(profile_id, request.form)
+    except ValueError as exc:
+        _record(
+            event_type='kubernetes_tenant_resource_profile_update_failed',
+            status='error',
+            title='Resource Profile Update Failed',
+            message=str(exc),
+            metadata={'resource_profile_id': profile_id, 'operation': 'update_resource_profile'},
+        )
+    except TenantStateConflictError as exc:
+        current_app.logger.exception('Tenant Resource Profile update conflicted with committed state.')
+        _record(
+            event_type='kubernetes_tenant_resource_profile_update_failed',
+            status='error',
+            title='Resource Profile Update Failed',
+            message=str(exc),
+            metadata={'resource_profile_id': profile_id, 'operation': 'update_resource_profile'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_resource_profile_updated',
+            status='success',
+            title='Resource Profile Updated',
+            message=(
+                f'{profile.name} contract updated to v{profile.version}. Existing Namespace snapshots are unchanged.'
+                if contract_changed
+                else f'{profile.name} metadata/state updated. Allocation contract remains v{profile.version}.'
+            ),
+            detail='Custom Resource Profile',
+            metadata={
+                'resource_profile_id': profile.public_id,
+                'profile_class': profile.profile_class,
+                'resource_profile_version': profile.version,
+                'contract_changed': contract_changed,
+                'operation': 'update_resource_profile',
+            },
+        )
+    return redirect(url_for('tenant.resource_profiles', view='profiles'))
+
+
+@tenant_bp.post('/resource-profiles/<int:profile_id>/delete')
+@permission_required('tenant.manage')
+def delete_resource_profile_route(profile_id: int):
+    try:
+        _csrf()
+        deleted = delete_resource_profile_committed(profile_id)
+    except ValueError as exc:
+        _record(
+            event_type='kubernetes_tenant_resource_profile_delete_failed',
+            status='error',
+            title='Resource Profile Delete Blocked',
+            message=str(exc),
+            metadata={'resource_profile_id': profile_id, 'operation': 'delete_resource_profile'},
+        )
+    except TenantStateConflictError as exc:
+        current_app.logger.exception('Tenant Resource Profile deletion conflicted with committed state.')
+        _record(
+            event_type='kubernetes_tenant_resource_profile_delete_failed',
+            status='error',
+            title='Resource Profile Delete Failed',
+            message=str(exc),
+            metadata={'resource_profile_id': profile_id, 'operation': 'delete_resource_profile'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_resource_profile_deleted',
+            status='success',
+            title='Resource Profile Deleted',
+            message=f"{deleted['name']} was deleted after dependency verification.",
+            detail=f"Custom · v{deleted['version']}",
+            metadata={
+                'resource_profile_id': deleted['public_id'],
+                'profile_class': deleted['profile_class'],
+                'resource_profile_version': deleted['version'],
+                'operation': 'delete_resource_profile',
             },
         )
     return redirect(url_for('tenant.resource_profiles', view='profiles'))
