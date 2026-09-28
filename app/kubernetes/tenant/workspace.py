@@ -3,9 +3,9 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
-from app.common.pagination import paginate_sequence
+from app.common.pagination import paginate_query, paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.intelligence.service import get_active_recommendation_findings
 from app.kubernetes.tenant.capacity_governance import build_capacity_governance_summary
@@ -455,4 +455,130 @@ def get_tenant_workspace_context(*, limit: int = 20) -> dict[str, Any]:
         'advanced_intents': _recent(TenantAdvancedCapabilityIntent, limit=limit),
         'tenant_governance_findings': findings[:limit],
         'tenant_governance_finding_count': len(findings),
+    }
+
+
+_OPERATIONS_EVIDENCE_TYPES = ('audit', 'managed-resource', 'domain-reservation', 'exposure-policy')
+
+
+def get_tenant_operations_evidence_context(
+    *,
+    page: int = 1,
+    per_page: int = 5,
+    evidence_type: str = 'audit',
+    tenant_id: str = '',
+    search: str = '',
+) -> dict[str, Any]:
+    """Return one canonical, server-paginated Operations evidence family.
+
+    Operations deliberately selects one evidence family at a time. This keeps
+    the routine read bounded as evidence volume grows instead of materializing
+    every audit/resource/policy record into one in-memory feed.
+    """
+
+    normalized_type = evidence_type.strip().lower()
+    if normalized_type not in _OPERATIONS_EVIDENCE_TYPES:
+        normalized_type = 'audit'
+    normalized_tenant_id = tenant_id.strip()
+    normalized_search = search.strip()
+    pattern = f'%{normalized_search.lower()}%' if normalized_search else ''
+
+    if normalized_type == 'managed-resource':
+        query = TenantManagedResourceIntent.query
+        if normalized_tenant_id:
+            query = query.filter(TenantManagedResourceIntent.tenant_id == normalized_tenant_id)
+        if pattern:
+            query = query.filter(
+                or_(
+                    func.lower(TenantManagedResourceIntent.resource_name).like(pattern),
+                    func.lower(TenantManagedResourceIntent.resource_kind).like(pattern),
+                    func.lower(TenantManagedResourceIntent.mode).like(pattern),
+                    func.lower(TenantManagedResourceIntent.status).like(pattern),
+                )
+            )
+        rows, pagination = paginate_query(
+            query.order_by(
+                TenantManagedResourceIntent.updated_at.desc(),
+                TenantManagedResourceIntent.id.desc(),
+            ),
+            page=page,
+            per_page=per_page,
+        )
+    elif normalized_type == 'domain-reservation':
+        query = TenantDomainReservation.query
+        if normalized_tenant_id:
+            query = query.filter(TenantDomainReservation.tenant_id == normalized_tenant_id)
+        if pattern:
+            query = query.filter(
+                or_(
+                    func.lower(TenantDomainReservation.hostname_pattern).like(pattern),
+                    func.lower(TenantDomainReservation.match_mode).like(pattern),
+                    func.lower(TenantDomainReservation.status).like(pattern),
+                )
+            )
+        rows, pagination = paginate_query(
+            query.order_by(
+                TenantDomainReservation.updated_at.desc(),
+                TenantDomainReservation.id.desc(),
+            ),
+            page=page,
+            per_page=per_page,
+        )
+    elif normalized_type == 'exposure-policy':
+        query = TenantExposurePolicy.query.join(
+            TenantNamespace,
+            TenantNamespace.id == TenantExposurePolicy.tenant_namespace_id,
+        )
+        if normalized_tenant_id:
+            query = query.filter(TenantExposurePolicy.tenant_id == normalized_tenant_id)
+        if pattern:
+            query = query.filter(
+                or_(
+                    func.lower(TenantNamespace.namespace).like(pattern),
+                    func.lower(TenantExposurePolicy.profile_key).like(pattern),
+                    func.lower(TenantExposurePolicy.status).like(pattern),
+                )
+            )
+        rows, pagination = paginate_query(
+            query.order_by(
+                TenantExposurePolicy.updated_at.desc(),
+                TenantExposurePolicy.id.desc(),
+            ),
+            page=page,
+            per_page=per_page,
+        )
+    else:
+        query = TenantAuditEvidence.query
+        if normalized_tenant_id:
+            query = query.filter(TenantAuditEvidence.tenant_id == normalized_tenant_id)
+        if pattern:
+            query = query.filter(
+                or_(
+                    func.lower(TenantAuditEvidence.principal_username).like(pattern),
+                    func.lower(TenantAuditEvidence.verb).like(pattern),
+                    func.lower(TenantAuditEvidence.resource).like(pattern),
+                    func.lower(TenantAuditEvidence.resource_name).like(pattern),
+                    func.lower(TenantAuditEvidence.kubernetes_namespace).like(pattern),
+                    func.lower(TenantAuditEvidence.correlation_status).like(pattern),
+                )
+            )
+        rows, pagination = paginate_query(
+            query.order_by(
+                TenantAuditEvidence.event_at.desc(),
+                TenantAuditEvidence.id.desc(),
+            ),
+            page=page,
+            per_page=per_page,
+        )
+
+    return {
+        'operations_evidence_rows': rows,
+        'operations_evidence_pagination': pagination,
+        'operations_evidence_filters': {
+            'evidence_type': normalized_type,
+            'tenant_id': normalized_tenant_id,
+            'search': normalized_search,
+        },
+        'operations_evidence_type_options': _OPERATIONS_EVIDENCE_TYPES,
+        'operations_evidence_tenant_options': Tenant.query.order_by(Tenant.name.asc()).all(),
     }
