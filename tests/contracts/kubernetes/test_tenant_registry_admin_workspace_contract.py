@@ -263,7 +263,7 @@ def test_access_grant_uses_tenant_setup_two_card_composition() -> None:
 
     assert 'xl:grid-cols-12' in workspace
     assert 'xl:col-span-5' in workspace
-    assert 'space-y-5 xl:col-span-7' in workspace
+    assert 'grid h-full gap-5 xl:col-span-7 xl:grid-rows-2' in workspace
     assert 'Access Grant Flow' in workspace
     assert 'Access Boundaries' in workspace
     assert 'Tenant uses no target. Environment or Namespace requires exactly one matching target.' in workspace
