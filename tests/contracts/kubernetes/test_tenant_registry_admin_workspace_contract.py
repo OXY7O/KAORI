@@ -1064,6 +1064,10 @@ def test_credential_material_delivery_is_one_time_non_cached_and_not_routine_inv
     assert 'data-kaori-sensitive-material' not in registry
     assert 'material_value' not in registry
     assert 'data-kaori-sensitive-material' in component
+    assert 'csrf_token_value' in component
+    assert 'value="{{ csrf_token_value }}"' in component
+    assert 'csrf_token()' not in component
+    assert 'csrf_token(),' in registry
     assert 'One-Time Credential Material' in material
     assert 'JumpServer ServiceAccount Token' in material
     assert 'Namespace-Scoped Kubeconfig' in material
