@@ -499,12 +499,20 @@ def resource_profiles():
 @tenant_bp.get('/namespace-provisioning')
 @any_permission_required('tenant.view', 'tenant.manage')
 def namespace_provisioning():
+    active_view = str(request.args.get('view') or 'provision')
+    if active_view not in {'provision', 'allocation', 'decisions'}:
+        active_view = 'provision'
+
     context = _tenant_workspace_context()
     context.update(get_live_tenant_connection_context())
     context.update(
         get_namespace_registry_context(
             page=request.args.get('page', 1, type=int) or 1,
             per_page=request.args.get('per_page', 5, type=int) or 5,
+            search=str(request.args.get('namespace_search') or ''),
+            tenant_id=str(request.args.get('namespace_tenant_id') or ''),
+            environment=str(request.args.get('namespace_environment') or ''),
+            status=str(request.args.get('namespace_status') or ''),
         )
     )
     return render_template(
@@ -512,6 +520,7 @@ def namespace_provisioning():
         tenant_page='namespace_provisioning',
         tenant_page_title='Namespace Provisioning',
         tenant_page_icon='boxes',
+        active_namespace_view=active_view,
         **context,
     )
 
