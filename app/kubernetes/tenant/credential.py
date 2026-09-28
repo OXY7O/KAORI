@@ -354,7 +354,10 @@ def token_ttl_seconds(
         raise ValueError('Credential material lifetime must be at least 5 minutes.')
 
     policy = credential_material_ttl_policy(environment)
-    max_seconds = int(policy['max_seconds'])
+    raw_max_seconds = policy['max_seconds']
+    if not isinstance(raw_max_seconds, int):
+        raise ValueError('Credential material TTL policy returned an invalid maximum lifetime.')
+    max_seconds = raw_max_seconds
     if requested > max_seconds:
         environment_label = str(policy['environment']).replace('_', ' ').title()
         raise ValueError(
