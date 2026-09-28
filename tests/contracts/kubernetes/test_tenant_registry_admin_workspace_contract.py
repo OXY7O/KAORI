@@ -367,9 +367,16 @@ def test_kaori_info_tip_is_a_reusable_hover_and_focus_standard() -> None:
     assert 'group-hover:visible' in component
     assert 'group-focus-within:visible' in component
     assert 'focus-visible:ring-2' in component
+    assert 'h-6 w-6' in component
+    assert 'circle-help' in component
+    assert 'w-80' in component
+    assert 'bg-kaori-soft' in component
+    assert 'h-8 w-8 cursor-help' not in component
 
     assert 'compact guidance pattern' in docs
     assert 'pointer hover and keyboard/touch focus' in docs
+    assert 'inline beside the field label' in docs
+    assert 'Avoid oversized circular triggers' in docs
     assert 'Do **not** hide validation errors' in docs
 
 def test_tenant_administration_retires_monolithic_uat_partials() -> None:
@@ -752,3 +759,21 @@ def test_tenant_setup_uses_compact_cross_tenant_boundary_copy() -> None:
     assert 'Cross-Tenant references are blocked.' in setup
     assert 'Identity, scope, grants, and credentials stay within one Tenant.' in setup
     assert 'Tenant ownership, namespace scope, identity, Access Grants, and credential delivery' not in setup
+
+
+
+def test_tenant_group_registry_uses_governed_lifecycle_actions_without_hard_delete() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_group_registry.html')
+    tenants = read('app/templates/kubernetes/tenant/tenants.html')
+    membership_registry = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
+
+    assert '>Actions</th>' in registry
+    assert 'data-tenant-group-edit-open' in registry
+    assert "url_for('tenant.retire_tenant_group_route', group_id=group.id)" in registry
+    assert "url_for('tenant.reactivate_tenant_group_route', group_id=group.id)" in registry
+    assert 'Edit Tenant Group' in registry
+    assert 'Retire Tenant Group' in registry
+    assert 'tenant_group_modal.js' in tenants
+    assert 'Delete Tenant Group' not in registry
+    assert 'hard-delete' not in membership_registry.lower()
+    assert 'Revoke/Reactivate' in membership_registry

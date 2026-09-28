@@ -3,6 +3,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 
 
+def read(path: str) -> str:
+    return (ROOT / path).read_text(encoding='utf-8')
+
+
 def test_tenant_access_governance_keeps_application_and_kubernetes_rbac_separate() -> None:
     model_source = (ROOT / 'app/models/tenant.py').read_text(encoding='utf-8')
     access_source = (ROOT / 'app/kubernetes/tenant/access.py').read_text(encoding='utf-8')
@@ -69,6 +73,9 @@ def test_tenant_members_access_uat_surface_uses_canonical_access_services() -> N
 
     for route in (
         "@tenant_bp.post('/groups')",
+        "@tenant_bp.post('/groups/<int:group_id>/edit')",
+        "@tenant_bp.post('/groups/<int:group_id>/retire')",
+        "@tenant_bp.post('/groups/<int:group_id>/reactivate')",
         "@tenant_bp.post('/memberships/users')",
         "@tenant_bp.post('/memberships/groups')",
         "@tenant_bp.post('/memberships/<int:membership_id>/revoke')",
@@ -81,6 +88,9 @@ def test_tenant_members_access_uat_surface_uses_canonical_access_services() -> N
 
     for mutation in (
         'create_tenant_group_by_id_committed',
+        'update_tenant_group_by_id_committed',
+        'retire_tenant_group_by_id_committed',
+        'reactivate_tenant_group_by_id_committed',
         'add_user_membership_by_id_committed',
         'add_group_membership_by_id_committed',
         'create_access_grant_by_id_committed',
@@ -143,3 +153,39 @@ def test_revoked_membership_reactivation_preserves_grant_history_and_fails_close
 
     assert 'Previous Access Grants remain revoked permanently' in docs
     assert 'new Access Grant' in docs
+
+
+
+def test_tenant_group_edit_retire_and_reactivate_preserve_identity_history() -> None:
+    service = read('app/kubernetes/tenant/access_service.py')
+    routes = read('app/kubernetes/tenant/routes.py')
+    registry = read('app/templates/kubernetes/tenant/partials/_group_registry.html')
+    modal_js = read('app/static/js/tenant_group_modal.js')
+    architecture = read('docs/architecture/kubernetes-tenant-access-governance.md')
+
+    assert 'def update_tenant_group_committed(' in service
+    assert 'group.slug' in service
+    assert 'membership.subject_name = subject' in service
+    assert 'reconcile_access_grant_committed(grant_id=int(grant.id), actor=actor)' in service
+    assert 'def retire_tenant_group_committed(' in service
+    assert 'Revoke the active Tenant Group membership before retiring this group.' in service
+    assert 'def reactivate_tenant_group_committed(' in service
+    assert "action='tenant_group.retired'" in service
+    assert "action='tenant_group.reactivated'" in service
+
+    assert "@tenant_bp.post('/groups/<int:group_id>/edit')" in routes
+    assert "@tenant_bp.post('/groups/<int:group_id>/retire')" in routes
+    assert "@tenant_bp.post('/groups/<int:group_id>/reactivate')" in routes
+    assert "/groups/<int:group_id>/delete" not in routes
+
+    assert 'Edit Tenant Group' in registry
+    assert 'Retire' in registry
+    assert 'Reactivate' in registry
+    assert 'data-tenant-group-edit-open' in registry
+    assert 'tenant-group-retire-modal' in registry
+    assert 'No external IdP group is deleted.' in registry
+    assert 'data-tenant-group-edit-modal' in modal_js
+    assert 'htmx:afterRequest' in modal_js
+
+    assert 'Routine Tenant UI does not hard-delete Tenant Group records' in architecture
+    assert 'stable KAORI identity key' in architecture

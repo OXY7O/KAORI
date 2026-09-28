@@ -77,6 +77,22 @@ Payment Platform -> platform-developers -> Operator -> Development
 
 KAORI does not maintain the Alice/Bob/Doni membership list in this v1 flow. If KAORI later owns local group membership, that requires a separate identity-projection/authentication contract capable of making those group memberships authoritative to Kubernetes; a database-only group list is insufficient.
 
+## Tenant Group lifecycle
+
+A Tenant Group is KAORI's registration/binding of one Kubernetes Group subject to one Tenant. It does not copy or manage the external IdP membership list.
+
+The normal operator lifecycle is:
+
+- **Edit** corrects the display name or Kubernetes Group Subject while retaining the stable Tenant Group slug and correlation lineage.
+- A Kubernetes Group Subject change is security-relevant: KAORI updates the bound Group Membership subject and reconciles every active dependent Access Grant to the new subject.
+- If provider reconciliation cannot complete, the new subject remains committed desired state and the affected grant surfaces reconciliation attention for explicit recovery.
+- **Retire** replaces routine hard delete. Retire is allowed only after active Membership is revoked and previous Access Grant cleanup is provider-verified.
+- **Reactivate** returns a retired Tenant Group to future Membership selection.
+- Routine Tenant UI does not hard-delete Tenant Group records that may participate in membership, grant, or audit history.
+- Editing or retiring a Tenant Group in KAORI never edits or deletes the authoritative external IdP/Identity Group.
+
+The Tenant Group slug is a stable KAORI identity key and is not regenerated when the display name is corrected.
+
 ## Built-in Access Profiles
 
 Viewer, Operator, Tenant Admin, and Deployer are code-owned versioned security contracts.
