@@ -1,15 +1,17 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 <section class="{{ table_ui.block_classes() }}" aria-label="Tenant capacity decisions">
-    {{ table_ui.inventory_block_header(
-        'shield-check',
-        'Capacity Decisions',
-        'Recent committed allocation-admission evidence. Allow or Block reflects the decision made before Namespace allocation mutation.',
-        none,
-        'Loading Capacity Decisions',
-        none,
-        none
-    ) }}
+    <header class="border-b border-outline-subtle px-5 py-4">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                <i data-lucide="shield-check" class="h-5 w-5"></i>
+            </span>
+            <div>
+                <h2 class="{{ table_ui.block_title_classes() }}">Capacity Decisions</h2>
+                <p class="{{ table_ui.block_description_classes() }}">Recent committed allocation-admission evidence. Allow or Block reflects the decision made before Namespace allocation mutation.</p>
+            </div>
+        </div>
+    </header>
     <div class="overflow-x-auto">
         <table class="{{ table_ui.table_classes('min-w-[760px]') }}">
             <caption class="sr-only">Recent Tenant capacity decisions.</caption>
