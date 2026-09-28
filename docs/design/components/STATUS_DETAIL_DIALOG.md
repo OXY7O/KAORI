@@ -58,3 +58,10 @@ When the registry state represents a governed decision such as `Blocked`, the di
 4. operator guidance that preserves provider authority.
 
 The dialog remains read-only. It explains the state; it must not hide a mutation behind a status-detail trigger.
+
+
+## Tenant registry exception
+
+Tenant Registry, Tenant Discovery, and Allocation Budget do **not** use a repeated per-row Status Detail trigger for generic status vocabulary. Those tables keep the row to semantic labels and place shared status guidance in one `info_tip` in the block header action area. This avoids visual noise and keeps tooltip content outside the table scroll container.
+
+Use Status Detail Dialog only when a row carries genuinely row-specific evidence that cannot be represented by the shared glossary or a normal workflow action.
