@@ -62,12 +62,8 @@ def test_tenant_members_access_uat_surface_uses_canonical_access_services() -> N
             (ROOT / 'app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html').read_text(
                 encoding='utf-8'
             ),
-            (ROOT / 'app/templates/kubernetes/tenant/partials/_membership_registry.html').read_text(
-                encoding='utf-8'
-            ),
-            (ROOT / 'app/templates/kubernetes/tenant/partials/_access_grant_registry.html').read_text(
-                encoding='utf-8'
-            ),
+            (ROOT / 'app/templates/kubernetes/tenant/partials/_membership_registry.html').read_text(encoding='utf-8'),
+            (ROOT / 'app/templates/kubernetes/tenant/partials/_access_grant_registry.html').read_text(encoding='utf-8'),
         ]
     )
 
@@ -123,7 +119,6 @@ def test_membership_revocation_is_fail_closed_for_dependent_grants() -> None:
     assert 'one or more Kubernetes RoleBindings require operator attention' in service
 
 
-
 def test_revoked_membership_reactivation_preserves_grant_history_and_fails_closed() -> None:
     service = read('app/kubernetes/tenant/access_service.py')
     routes = read('app/kubernetes/tenant/routes.py')
@@ -155,7 +150,6 @@ def test_revoked_membership_reactivation_preserves_grant_history_and_fails_close
     assert 'new Access Grant' in docs
 
 
-
 def test_tenant_group_edit_retire_and_reactivate_preserve_identity_history() -> None:
     service = read('app/kubernetes/tenant/access_service.py')
     routes = read('app/kubernetes/tenant/routes.py')
@@ -176,7 +170,7 @@ def test_tenant_group_edit_retire_and_reactivate_preserve_identity_history() -> 
     assert "@tenant_bp.post('/groups/<int:group_id>/edit')" in routes
     assert "@tenant_bp.post('/groups/<int:group_id>/retire')" in routes
     assert "@tenant_bp.post('/groups/<int:group_id>/reactivate')" in routes
-    assert "/groups/<int:group_id>/delete" not in routes
+    assert '/groups/<int:group_id>/delete' not in routes
 
     assert 'Edit Tenant Group' in registry
     assert 'Retire' in registry
@@ -189,7 +183,6 @@ def test_tenant_group_edit_retire_and_reactivate_preserve_identity_history() -> 
 
     assert 'Routine Tenant UI does not hard-delete Tenant Group records' in architecture
     assert 'stable KAORI identity key' in architecture
-
 
 
 def test_namespace_provisioning_reconciles_matching_broad_scope_grants_after_commit() -> None:
@@ -209,8 +202,12 @@ def test_namespace_provisioning_reconciles_matching_broad_scope_grants_after_com
     provision_start = tenant_service.index('def provision_native_namespace(')
     provision_end = tenant_service.index('def change_native_namespace_allocation(')
     provision = tenant_service[provision_start:provision_end]
-    assert provision.index('db.session.commit()') < provision.index('reconcile_access_grants_for_namespace_committed(namespace=record)')
-    assert 'from app.kubernetes.tenant.access_service import reconcile_access_grants_for_namespace_committed' in provision
+    assert provision.index('db.session.commit()') < provision.index(
+        'reconcile_access_grants_for_namespace_committed(namespace=record)'
+    )
+    assert (
+        'from app.kubernetes.tenant.access_service import reconcile_access_grants_for_namespace_committed' in provision
+    )
     assert "evidence['access_grant_followup']" in provision
     assert "'trigger': 'explicit_namespace_provision'" in provision
     assert 'Access Grant follow-up:' in provision
