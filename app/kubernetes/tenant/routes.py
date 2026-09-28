@@ -48,7 +48,10 @@ from app.kubernetes.tenant.deployer_credential_service import (
     DeployerCredentialIssueRequest,
     create_deployer_credential_committed,
 )
-from app.kubernetes.tenant.discovery_service import get_tenant_discovery_context
+from app.kubernetes.tenant.discovery_service import (
+    adopt_discovered_tenant_committed,
+    get_tenant_discovery_context,
+)
 from app.kubernetes.tenant.audit import record_tenant_sync_dispatch_audit
 from app.kubernetes.tenant.decommission_service import (
     TenantDecommissionBlocked,
@@ -752,6 +755,50 @@ def revoke_access_grant_route(grant_id: int):
             metadata={'grant_id': grant.public_id, 'tenant_id': grant.tenant_id, 'operation': 'revoke_access_grant'},
         )
     return _tenant_section_redirect('access-grants')
+
+
+@tenant_bp.post('/discovery/adopt')
+@permission_required('tenant.manage')
+def adopt_discovered_tenant_route():
+    try:
+        _csrf()
+        tenant, environment, namespace = adopt_discovered_tenant_committed(request.form)
+    except (ValueError, ApiException) as exc:
+        _record(
+            event_type='kubernetes_tenant_discovery_adoption_failed',
+            status='error',
+            title='Tenant Adoption Requires Attention',
+            message=str(exc),
+            detail='Discovery adoption is fail-closed and never changes provider resources on validation failure.',
+            metadata={
+                'cluster_id': request.form.get('cluster_id'),
+                'provider_key': request.form.get('provider_key'),
+                'resource_name': request.form.get('resource_name'),
+                'operation': 'adopt_discovered_tenant',
+            },
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_discovery_adopted',
+            status='success',
+            title='Tenant Adopted',
+            message=f'{tenant.name} is now governed by KAORI.',
+            detail=(
+                f'{environment.environment.title()} · '
+                f'{tenant.provider_key.replace("_", " ").title()} · '
+                f'Generation {tenant.generation}'
+            ),
+            metadata={
+                'tenant_id': tenant.id,
+                'cluster_id': tenant.cluster_id,
+                'provider_key': tenant.provider_key,
+                'tenant_generation': tenant.generation,
+                'namespace_id': namespace.id if namespace is not None else None,
+                'operation': 'adopt_discovered_tenant',
+                'provider_mutation_performed': False,
+            },
+        )
+    return _tenant_section_redirect('discovery')
 
 
 @tenant_bp.post('/tenants')
