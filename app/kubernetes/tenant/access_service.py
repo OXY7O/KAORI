@@ -541,6 +541,11 @@ def reactivate_membership_committed(*, membership_id: int, actor: User | None = 
     try:
         db.session.commit()
         return membership
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise TenantAccessStateConflictError(
+            'Committed Tenant membership state changed during reactivation. Refresh and retry.'
+        ) from exc
     except SQLAlchemyError:
         db.session.rollback()
         raise

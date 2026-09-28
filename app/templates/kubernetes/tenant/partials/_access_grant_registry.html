@@ -163,7 +163,7 @@
                                         Inspect
                                     </button>
                                 </form>
-                                {% if grant.status == 'active' %}
+                                {% if grant.status == 'active' or grant.reconciliation_status != 'revoked' %}
                                     <form method="post"
                                       action="{{ url_for('tenant.reconcile_access_grant_route', grant_id=grant.id) }}"
                                       hx-post="{{ url_for('tenant.reconcile_access_grant_route', grant_id=grant.id) }}"
@@ -180,6 +180,8 @@
                                             Reconcile
                                         </button>
                                     </form>
+                                {% endif %}
+                                {% if grant.status == 'active' %}
                                     <form method="post"
                                       action="{{ url_for('tenant.revoke_access_grant_route', grant_id=grant.id) }}"
                                       hx-post="{{ url_for('tenant.revoke_access_grant_route', grant_id=grant.id) }}"

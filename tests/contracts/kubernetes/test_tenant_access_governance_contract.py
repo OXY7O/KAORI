@@ -118,6 +118,7 @@ def test_revoked_membership_reactivation_preserves_grant_history_and_fails_close
     service = read('app/kubernetes/tenant/access_service.py')
     routes = read('app/kubernetes/tenant/routes.py')
     registry = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
+    grant_registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
     docs = read('docs/architecture/kubernetes-tenant-access-governance.md')
 
@@ -136,6 +137,8 @@ def test_revoked_membership_reactivation_preserves_grant_history_and_fails_close
 
     assert "url_for('tenant.reactivate_membership_route', membership_id=membership.id)" in registry
     assert 'Reactivate' in registry
+    assert "grant.status == 'active' or grant.reconciliation_status != 'revoked'" in grant_registry
+    assert "url_for('tenant.reconcile_access_grant_route', grant_id=grant.id)" in grant_registry
     assert 'old grants stay revoked' in workspace
 
     assert 'Previous Access Grants remain revoked permanently' in docs
