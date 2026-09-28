@@ -67,7 +67,7 @@ def test_tenant_registry_uses_canonical_server_registry_contract() -> None:
 def test_tenant_setup_uses_a_static_governance_flow_not_expandable_guidance() -> None:
     setup = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
 
-    assert 'components/operational_flow_steps.html' in setup
+    assert 'components/numbered_governance_steps.html' in setup
     assert 'Tenant Governance Flow' in setup
     for label in ('Create Tenant', 'Provision Namespace', 'Add Membership', 'Apply Access Grant', 'Issue Credential'):
         assert label in setup
@@ -95,7 +95,6 @@ def test_tenant_setup_uses_a_static_governance_flow_not_expandable_guidance() ->
     assert 'rounded-b-xl border-t border-outline-subtle bg-surface-hover' in tenant_form
     assert 'Optional. KAORI derives a lowercase slug' not in tenant_form
 
-
 def test_memberships_use_symmetric_actions_and_scalable_registries() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
     memberships = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
@@ -103,7 +102,7 @@ def test_memberships_use_symmetric_actions_and_scalable_registries() -> None:
     read_model = read('app/kubernetes/tenant/admin_workspace.py')
 
     assert 'Membership Model' in workspace
-    assert 'components/operational_flow_steps.html' in workspace
+    assert 'components/numbered_governance_steps.html' in workspace
     assert 'xl:grid-cols-3' in workspace
     for label in ('Add User Membership', 'Create Tenant Group', 'Add Group Membership'):
         assert label in workspace
@@ -129,7 +128,6 @@ def test_memberships_use_symmetric_actions_and_scalable_registries() -> None:
     assert 'def get_group_registry_context(' in read_model
     assert 'paginate_query(' in read_model
 
-
 def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
     registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
@@ -143,10 +141,13 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'Namespace Scope' in workspace
     assert 'Environment Scope' in workspace
     assert 'Tenant Scope' in workspace
-    assert 'Membership fixes the Tenant boundary.' in workspace
-    assert 'Targets are filtered automatically.' in workspace
+    assert 'Membership fixes the Tenant boundary.' not in workspace
+    assert 'Targets are filtered automatically.' not in workspace
+    assert 'Effective RBAC remains provider-verified.' not in workspace
     assert 'Tenant and scope are validated before commit.' in workspace
-    assert 'Namespace scope requires one target. Environment and Tenant scopes reconcile as governed namespaces become available.' in workspace
+    assert 'Namespace needs one target; broader scopes reconcile as namespaces become available.' in workspace
+    assert 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3' in workspace
+    assert 'Start from one active Membership that identifies the principal and fixes its Tenant boundary.' in workspace
     assert 'Environment/Tenant scope may stay Pending until a namespace exists.' in workspace
     assert 'Access Boundaries' in workspace
     assert 'components/info_tip.html' in workspace
@@ -169,7 +170,6 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'Reconcile' in registry
     assert 'Revoke' in registry
     assert 'def get_access_grant_registry_context(' in read_model
-
 
 def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_credentials_workspace.html')
@@ -821,6 +821,10 @@ def test_tenant_group_registry_uses_governed_lifecycle_actions_without_hard_dele
     membership_registry = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
 
     assert '>Actions</th>' in registry
+    assert 'components/info_tip.html' in registry
+    assert 'tenant-group-lifecycle-tip' in registry
+    assert "button_text='Group Guide'" in registry
+    assert 'Use Edit for mistakes; Retire removes future use while preserving history.' in registry
     assert 'data-tenant-group-edit-open' in registry
     assert "url_for('tenant.retire_tenant_group_route', group_id=group.id)" in registry
     assert "url_for('tenant.reactivate_tenant_group_route', group_id=group.id)" in registry
@@ -830,8 +834,6 @@ def test_tenant_group_registry_uses_governed_lifecycle_actions_without_hard_dele
     assert 'Delete Tenant Group' not in registry
     assert 'hard-delete' not in membership_registry.lower()
     assert 'Revoke/Reactivate' in membership_registry
-
-
 
 def test_access_grant_form_filters_targets_and_profiles_from_selected_membership() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
@@ -927,12 +929,10 @@ def test_governance_flows_use_shared_numbered_sequence_without_arrow_connectors(
         assert 'operational_flow_steps' not in template
 
     assert '0{{ loop.index }}' in component
-    assert 'grid gap-3' in component
-    assert 'rounded-xl border border-outline-subtle bg-surface-elevated' in component
-    assert 'flex items-center gap-2.5' in component
-    assert 'xl:grid-cols-5' in component
-    assert 'xl:grid-cols-4' in component
-    assert 'xl:grid-cols-3' in component
+    assert 'divide-y divide-outline-subtle' in component
+    assert 'grid-cols-[auto_auto_minmax(0,1fr)]' in component
+    assert 'items-start gap-3 px-4 py-3.5' in component
+    assert 'xl:grid-cols-5' not in component
 
 def test_tenant_registry_blocked_state_uses_shared_header_guidance() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
@@ -977,3 +977,19 @@ def test_tenant_setup_and_membership_guidance_use_compact_uat_copy() -> None:
 
     assert 'Revoke disables grants; reactivation does not restore them.' in memberships
     assert 'Reactivation restores membership only; old grants stay revoked.' not in memberships
+
+
+def test_info_tip_supports_header_button_and_mobile_safe_surface() -> None:
+    component = read('app/templates/components/info_tip.html')
+    docs = read('docs/design/components/INFO_TIP.md')
+    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+
+    assert 'button_text=None' in component
+    assert '{% if button_text %}' in component
+    assert 'fixed inset-x-4 bottom-4 z-[100]' in component
+    assert 'sm:absolute' in component
+    assert 'max-h-[min(70dvh,28rem)]' in component
+    assert "button_text='Status Guide'" in registry
+    assert "button_text='Status Guide'" in discovery
+    assert 'viewport-safe fixed bottom sheet' in docs
