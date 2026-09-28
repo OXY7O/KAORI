@@ -17,43 +17,51 @@
     aria_label='Multi-cluster Tenant estate'
     ) %}
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[900px]') }}">
+        <table class="{{ table_ui.table_classes('min-w-[900px] table-fixed') }}">
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th class="{{ table_ui.header_cell_classes() }}">Cluster</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Tenants</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Namespaces</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Snapshot</th>
-                    <th class="{{ table_ui.header_cell_classes(action=true) }}">Capacity</th>
+                    <th class="{{ table_ui.header_cell_classes() }} w-[32%]">Cluster</th>
+                    <th class="{{ table_ui.header_cell_classes() }} w-[12%]">Tenants</th>
+                    <th class="{{ table_ui.header_cell_classes() }} w-[14%]">Namespaces</th>
+                    <th class="{{ table_ui.header_cell_classes() }} w-[18%]">Snapshot</th>
+                    <th class="{{ table_ui.header_cell_classes(action=true) }} w-[24%]">Capacity</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
                 {% if tenant_overview_clusters %}
                     {% for row in tenant_overview_clusters %}
                         <tr class="{{ table_ui.row_classes() }}">
-                            <td class="{{ table_ui.cell_classes() }} align-top">
-                                {{ table_ui.cluster_identity(row.name, row.environment) }}
-                                <div class="mt-2 pl-10">
-                                    {{ table_label.status_indicator_label(row.provider_status|title, row.provider_tone) }}
+                            <td class="{{ table_ui.cell_classes() }} align-middle">
+                                <div class="min-w-0">
+                                    {{ table_ui.cluster_identity(row.name, row.environment) }}
+                                    <div class="mt-1.5 flex items-center gap-2 pl-10">
+                                        {{ table_label.status_indicator_label(row.provider_status|title, row.provider_tone) }}
+                                    </div>
                                 </div>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }} align-top">
-                                <p class="text-sm font-semibold text-content-primary">{{ row.tenant_count }}</p>
-                                <p class="mt-1 text-xs text-content-muted">Governed Tenants</p>
+                            <td class="{{ table_ui.cell_classes() }} align-middle">
+                                <div class="flex flex-col justify-center">
+                                    <p class="text-base font-semibold leading-5 text-content-primary">{{ row.tenant_count }}</p>
+                                    <p class="mt-1 text-xs leading-4 text-content-muted">Governed</p>
+                                </div>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }} align-top">
-                                <p class="text-sm font-semibold text-content-primary">{{ row.namespace_count }}</p>
-                                <p class="mt-1 text-xs text-content-muted">Managed Namespaces</p>
+                            <td class="{{ table_ui.cell_classes() }} align-middle">
+                                <div class="flex flex-col justify-center">
+                                    <p class="text-base font-semibold leading-5 text-content-primary">{{ row.namespace_count }}</p>
+                                    <p class="mt-1 text-xs leading-4 text-content-muted">Managed</p>
+                                </div>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }} align-top">
-                                {{ table_label.status_label(
-                                    'Current' if row.snapshot_coverage_complete else ('Not Collected' if row.snapshot_coverage_label == 'Not Collected' else 'Needs Review'),
-                                    'normal' if row.snapshot_coverage_complete else 'warning'
-                                ) }}
-                                <p class="mt-1 text-xs text-content-muted">{{ row.snapshot_coverage_label }}</p>
+                            <td class="{{ table_ui.cell_classes() }} align-middle">
+                                <div class="space-y-1.5">
+                                    {{ table_label.status_label(
+                                        'Current' if row.snapshot_coverage_complete else ('Not Collected' if row.snapshot_coverage_label == 'Not Collected' else 'Needs Review'),
+                                        'normal' if row.snapshot_coverage_complete else 'warning'
+                                    ) }}
+                                    <p class="text-xs leading-4 text-content-muted">{{ row.snapshot_coverage_label }}</p>
+                                </div>
                             </td>
-                            <td class="{{ table_ui.cell_classes(action=true) }} align-top">
-                                <div class="ml-auto w-fit min-w-[9rem] text-left">
+                            <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
+                                <div class="ml-auto min-w-0 max-w-[13rem] space-y-1.5 text-left">
                                     {% if row.capacity_available %}
                                         {{ table_label.status_label(row.capacity_state, row.capacity_tone) }}
                                     {% elif row.capacity_snapshot_state == 'Stale' %}
@@ -61,10 +69,10 @@
                                     {% else %}
                                         {{ table_label.status_label('Unavailable', 'unknown') }}
                                     {% endif %}
-                                    <p class="mt-1 text-xs text-content-muted">{{ row.capacity_data_cutoff }}</p>
+                                    <p class="text-xs leading-4 text-content-muted">{{ row.capacity_data_cutoff }}</p>
                                     {% if not row.capacity_available and current_user.has_permission('analytics.view') %}
                                         <a href="{{ url_for('analytics.capacity', cluster_id=row.id, time_range='24h') }}"
-                                           class="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:underline">
+                                           class="inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:underline">
                                             Open Capacity
                                             <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                         </a>
