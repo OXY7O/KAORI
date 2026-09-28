@@ -146,7 +146,7 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'Membership fixes the Tenant boundary.' in workspace
     assert 'Targets are filtered automatically.' in workspace
     assert 'Tenant and scope are validated before commit.' in workspace
-    assert 'Namespace requires one target. Broader scopes reconcile as governed namespaces become available.' in workspace
+    assert 'Namespace scope requires one target. Environment and Tenant scopes reconcile as governed namespaces become available.' in workspace
     assert 'Environment/Tenant scope may stay Pending until a namespace exists.' in workspace
     assert 'Access Boundaries' in workspace
     assert 'components/info_tip.html' in workspace
