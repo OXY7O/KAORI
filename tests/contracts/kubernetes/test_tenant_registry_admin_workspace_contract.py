@@ -208,6 +208,15 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     assert 'Owner / Delivery' not in registry
     for action in ('Renew', 'Suspend', 'Resume', 'Revoke'):
         assert action in registry
+    assert 'components/one_time_secret.html' in registry
+    assert 'data-credential-material-open' in registry
+    assert 'Reveal Token' in registry
+    assert 'Generate Kubeconfig' in registry
+    assert 'data-credential-material-namespace' in registry
+    assert 'data-credential-material-ttl' in registry
+    assert 'credential_delivery_targets' in read_model
+    assert 'credential_delivery_policies' in read_model
+    assert 'credential_material_ttl_choices' in read_model
     assert 'def get_credential_registry_context(' in read_model
 
 
@@ -1040,3 +1049,35 @@ def test_credential_issuance_binds_transient_objects_to_tenant_before_validation
     assert deployer_grant_fk < deployer_grant_validation
     assert deployer_credential_fk < deployer_credential_validation
     assert 'credential.tenant = tenant' in deployer
+
+
+def test_credential_material_delivery_is_one_time_non_cached_and_not_routine_inventory() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_credential_registry.html')
+    material = read('app/templates/kubernetes/tenant/credential_material.html')
+    component = read('app/templates/components/one_time_secret.html')
+    routes = read('app/kubernetes/tenant/routes.py')
+    service = read('app/kubernetes/tenant/credential_service.py')
+    script = read('app/static/js/tenant_credential_material.js')
+    clipboard = read('app/static/js/clipboard.js')
+
+    assert "generate_credential_material_route" in registry
+    assert 'data-kaori-sensitive-material' not in registry
+    assert 'material_value' not in registry
+    assert 'data-kaori-sensitive-material' in component
+    assert 'One-Time Credential Material' in material
+    assert 'JumpServer ServiceAccount Token' in material
+    assert 'Namespace-Scoped Kubeconfig' in material
+    assert 'GitHub Actions Secret (Base64)' in material
+    assert 'KAORI does not persist this bearer token or kubeconfig body.' in material
+
+    assert "@tenant_bp.post('/credentials/<int:credential_id>/material')" in routes
+    assert "Cache-Control'] = 'no-store, no-cache, must-revalidate, private'" in routes
+    assert "Referrer-Policy'] = 'no-referrer'" in routes
+    assert "X-Robots-Tag'] = 'noindex, nofollow, noarchive'" in routes
+    assert 'generate_credential_material_committed(' in service
+
+    assert 'data-credential-material-namespace' in script
+    assert 'data-credential-material-ttl' in script
+    assert 'Kubernetes may return a shorter actual expiry.' in script
+    assert 'pagehide' in script
+    assert 'data-kaori-download-button' in clipboard
