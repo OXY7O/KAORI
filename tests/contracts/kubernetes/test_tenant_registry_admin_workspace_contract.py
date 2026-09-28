@@ -608,14 +608,14 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'Governance Checks' in template
     assert 'Human confirmation.' in template
     assert 'Adopt into KAORI' in template
-    assert 'components/status_detail_dialog.html' in template
-    assert 'components/info_tip.html' not in template
-    assert 'tenant-discovery-live-' in template
-    assert 'tenant-discovery-classification-' in template
-    assert 'tenant-discovery-action-' in template
-    assert 'Live provider status' in template
-    assert 'KAORI classification' in template
-    assert 'Adoption blocked' in template
+    assert 'components/info_tip.html' in template
+    assert 'components/status_detail_dialog.html' not in template
+    assert 'tenant-discovery-status-tip' in template
+    assert 'tenant-discovery-live-' not in template
+    assert 'tenant-discovery-classification-' not in template
+    assert 'tenant-discovery-action-' not in template
+    assert 'Discovery status' in template
+    assert 'Provider Missing' in template
     assert 'data-tenant-adoption-open' in template
     assert 'data-tenant-adoption-modal' in template
     assert "page_param='discovery_page'" in template
@@ -681,15 +681,15 @@ def test_tenant_status_actions_use_semantic_labels() -> None:
     assert 'Review Adoption' in discovery
     assert "special_label('Candidate', 'info', 'radar')" in discovery
     assert "special_label('Blocked', 'critical', 'shield-alert')" in discovery
+    assert 'tenant-discovery-status-tip' in discovery
+    assert 'status_detail_dialog' not in discovery
 
     assert "special_label('History Retained', 'unknown', 'archive')" in registry
     assert "special_label('Blocked', 'critical', 'shield-alert')" in registry
-    assert 'tenant-decommission-blocked-' in registry
-    assert 'The Tenant is still valid. This action remains fail-closed' in registry
-    assert 'components/status_detail_dialog.html' in registry
-    assert 'components/info_tip.html' not in registry
+    assert 'tenant-registry-status-tip' in registry
+    assert 'Blocked — Tenant stays valid; teardown fails closed until blockers clear.' in registry
+    assert 'status_detail_dialog' not in registry
     assert "special_label('Unavailable', 'unknown', 'circle-slash-2')" in registry
-
 
 def test_tenant_setup_explains_capsule_adoption_boundary() -> None:
     form = read('app/templates/kubernetes/tenant/partials/_tenant_form.html')
@@ -698,9 +698,8 @@ def test_tenant_setup_explains_capsule_adoption_boundary() -> None:
     assert '<option value="native_kubernetes" selected>Native Kubernetes</option>' in form
     assert '<option value="capsule">Capsule</option>' in form
     assert 'Existing Capsule Tenant CRs use Discovery → Adoption.' in form
-    assert 'Existing Capsule Tenant CRs still enter through Discovery and governed Adoption.' in setup
-
-
+    assert 'Native Kubernetes and supported Capsule clusters allow direct creation.' in setup
+    assert 'Existing Capsule Tenant CRs use Discovery → Adoption.' in setup
 
 def test_tenant_sync_marks_fresh_missing_namespaces_as_observational_drift() -> None:
     sync = read('app/kubernetes/tenant/sync_service.py')
@@ -899,28 +898,23 @@ def test_baseline_capsule_decommission_is_authority_safe_and_residue_gated() -> 
 
 
 
-def test_status_detail_dialog_keeps_long_registry_evidence_out_of_table_overflow() -> None:
-    component = read('app/templates/components/status_detail_dialog.html')
-    docs = read('docs/design/components/STATUS_DETAIL_DIALOG.md')
-    native_dialogs = read('app/static/js/native_dialogs.js')
+def test_tenant_status_guidance_stays_in_block_header_not_table_rows() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    capacity = read('app/templates/kubernetes/tenant/partials/_capacity_governance.html')
+    table_standard = read('docs/design/components/TABLE_AND_LABEL.md')
+    status_dialog_standard = read('docs/design/components/STATUS_DETAIL_DIALOG.md')
 
-    assert 'macro trigger(dialog_id' in component
-    assert 'macro render(dialog_id' in component
-    assert 'data-kaori-dialog-open' in component
-    assert 'data-dialog-target="{{ dialog_id }}"' in component
-    assert 'data-kaori-native-dialog' in component
-    assert 'aria-haspopup="dialog"' in component
-    assert 'data-kaori-dialog-close' in component
+    for template in (registry, discovery, capacity):
+        assert 'components/info_tip.html' in template
+        assert 'status_detail_dialog' not in template
 
-    assert 'table status needs multi-line explanation' in docs
-    assert 'outside the table scroll container' in docs
-    assert 'phantom vertical scrollbars' in docs
-    assert 'multi-line status/blocker evidence → Status Detail Dialog' in docs
-
-    assert "const openSelector = '[data-kaori-dialog-open]'" in native_dialogs
-    assert 'dialog.showModal()' in native_dialogs
-
-
+    assert 'tenant-registry-status-tip' in registry
+    assert 'tenant-discovery-status-tip' in discovery
+    assert 'allocation-budget-status-tip' in capacity
+    assert 'Do not repeat generic' in table_standard
+    assert 'outside the table scroll container' in table_standard
+    assert 'do **not** use a repeated per-row Status Detail trigger' in status_dialog_standard
 
 def test_governance_flows_use_shared_numbered_sequence_without_arrow_connectors() -> None:
     setup = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
@@ -933,47 +927,53 @@ def test_governance_flows_use_shared_numbered_sequence_without_arrow_connectors(
         assert 'operational_flow_steps' not in template
 
     assert '0{{ loop.index }}' in component
-    assert 'bg-outline-subtle' in component
+    assert 'grid gap-3' in component
+    assert 'rounded-xl border border-outline-subtle bg-surface-elevated' in component
+    assert 'flex items-center gap-2.5' in component
     assert 'xl:grid-cols-5' in component
     assert 'xl:grid-cols-4' in component
     assert 'xl:grid-cols-3' in component
 
-
-def test_tenant_registry_blocker_dialog_explains_state_snapshot_and_teardown_flow() -> None:
+def test_tenant_registry_blocked_state_uses_shared_header_guidance() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
-    component = read('app/templates/components/status_detail_dialog.html')
 
-    assert 'Blocked is a destructive-action readiness state, not a broken Tenant lifecycle.' in registry
-    assert "('Provider', tenant.provider_key" in registry
-    assert "('Access State', decommission.access_grant_count" in registry
-    assert "('Freeze', 'Stop new Tenant mutations.')" in registry
-    assert "('Verify', 'Confirm provider-authoritative absence and no residue.')" in registry
-    assert 'Resolve the listed blockers first' in registry
+    assert 'tenant-registry-status-tip' in registry
+    assert 'Lifecycle describes committed Tenant state' in registry
+    assert 'Blocked — Tenant stays valid; teardown fails closed until blockers clear.' in registry
+    assert "special_label('Blocked', 'critical', 'shield-alert')" in registry
+    assert 'tenant-decommission-blocked-' not in registry
+    assert 'Current Snapshot' not in registry
+    assert 'Governed Flow' not in registry
 
-    assert 'Current Snapshot' in component
-    assert 'Governed Flow' in component
-    assert 'Why this state appears' in component
-    assert 'data-status-detail-trigger' in component
-    assert 'max-w-3xl' in component
-
-
-def test_tenant_discovery_status_dialogs_are_clickable_and_context_rich() -> None:
+def test_tenant_discovery_statuses_use_shared_header_guidance() -> None:
     discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
-    native = read('app/static/js/native_dialogs.js')
 
-    assert "('Object', row.resource_name, row.resource_kind)" in discovery
-    assert "('Cluster', row.cluster.name, row.cluster.environment|title)" in discovery
-    assert "('Observe', 'Read provider state without mutation.')" in discovery
-    assert 'Discovery is read-only.' in discovery
-    assert "typeof dialog.showModal === 'function'" in native
-    assert "dialog.setAttribute('open', '')" in native
+    assert 'tenant-discovery-status-tip' in discovery
+    assert 'Discovery is live and read-only' in discovery
+    assert 'Live Status — current provider observation.' in discovery
+    assert 'Discovered — candidate for explicit governed Adoption.' in discovery
+    assert 'Provider Missing — KAORI ownership exists but the provider object is absent.' in discovery
+    assert 'status_detail_dialog' not in discovery
+    assert 'data-status-detail-trigger' not in discovery
+
+def test_tenant_status_rows_do_not_repeat_generic_details_buttons() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    capacity = read('app/templates/kubernetes/tenant/partials/_capacity_governance.html')
+
+    for template in (registry, discovery, capacity):
+        assert 'status_detail_dialog.trigger' not in template
+        assert 'data-status-detail-trigger' not in template
 
 
 
-def test_status_detail_trigger_is_a_table_friendly_details_button() -> None:
-    component = read('app/templates/components/status_detail_dialog.html')
+def test_tenant_setup_and_membership_guidance_use_compact_uat_copy() -> None:
+    setup = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
+    memberships = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
 
-    assert "button_text='Details'" in component
-    assert '<span>{{ button_text }}</span>' in component
-    assert 'gap-1.5' in component
-    assert 'h-8 w-8' not in component
+    assert 'Native Kubernetes and supported Capsule clusters allow direct creation.' in setup
+    assert 'Existing Capsule Tenant CRs use Discovery → Adoption.' in setup
+    assert 'compatible Capsule clusters support direct Tenant Setup creation' not in setup
+
+    assert 'Revoke disables grants; reactivation does not restore them.' in memberships
+    assert 'Reactivation restores membership only; old grants stay revoked.' not in memberships
