@@ -36,49 +36,48 @@
                 <h3 id="resource-profile-identity-heading" class="text-sm font-semibold text-content-primary">Identity &amp; Lineage</h3>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Name the reusable contract and keep preset/custom lineage explicit.</p>
             </div>
-            <div class="mt-4 grid gap-4 lg:grid-cols-3">
+            <div class="mt-4 grid gap-4 lg:grid-cols-4">
                 <label class="block">
                     {{ form_field.label_row("Profile Name") }}
                     <input name="profile_name" required autocomplete="off" placeholder="Platform Standard" class="{{ form_field.input_classes() }}">
                 </label>
 
-                <div class="space-y-3">
-                    <label class="block">
-                        <span class="inline-flex min-h-6 items-center gap-1.5">
-                            <span class="text-xs font-semibold text-content-primary">Class</span>
-                            {{ info_tip.render(
-                                'resource-profile-class-tip',
-                                'Profile class',
-                                'Built-in classes use server-authoritative values. Choose Custom when the allocation must differ.',
-                                ['Small / Standard / Large — locked versioned presets.', 'Custom — operator-managed validated values.'],
-                                placement='right'
-                            ) }}
-                        </span>
-                        <select name="profile_class" required data-tenant-profile-class class="{{ form_field.select_classes() }}">
-                            <option value="small">Small</option>
-                            <option value="standard" selected>Standard</option>
-                            <option value="large">Large</option>
-                            <option value="custom">Custom</option>
-                        </select>
-                    </label>
-                    <label class="block" data-tenant-base-preset-wrapper hidden>
-                        <span class="inline-flex min-h-6 items-center gap-1.5">
-                            <span class="text-xs font-semibold text-content-primary">Base Preset</span>
-                            {{ info_tip.render(
-                                'resource-profile-base-tip',
-                                'Custom base preset',
-                                'Optional starting values for a Custom profile. KAORI retains the preset class/version as lineage evidence.',
-                                placement='right'
-                            ) }}
-                        </span>
-                        <select name="base_preset_class" data-tenant-base-preset disabled class="{{ form_field.select_classes() }}">
-                            <option value="">Start empty</option>
-                            <option value="small">Small</option>
-                            <option value="standard">Standard</option>
-                            <option value="large">Large</option>
-                        </select>
-                    </label>
-                </div>
+                <label class="block">
+                    <span class="inline-flex min-h-6 items-center gap-1.5">
+                        <span class="text-xs font-semibold text-content-primary">Class</span>
+                        {{ info_tip.render(
+                            'resource-profile-class-tip',
+                            'Profile class',
+                            'Built-in classes use server-authoritative values. Choose Custom when the allocation must differ.',
+                            ['Small / Standard / Large — locked versioned presets.', 'Custom — operator-managed validated values.'],
+                            placement='right'
+                        ) }}
+                    </span>
+                    <select name="profile_class" required data-tenant-profile-class class="{{ form_field.select_classes() }}">
+                        <option value="small">Small</option>
+                        <option value="standard" selected>Standard</option>
+                        <option value="large">Large</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </label>
+
+                <label class="block" data-tenant-base-preset-wrapper hidden>
+                    <span class="inline-flex min-h-6 items-center gap-1.5">
+                        <span class="text-xs font-semibold text-content-primary">Base Preset</span>
+                        {{ info_tip.render(
+                            'resource-profile-base-tip',
+                            'Custom base preset',
+                            'Optional starting values for a Custom profile. KAORI retains the preset class/version as lineage evidence.',
+                            placement='right'
+                        ) }}
+                    </span>
+                    <select name="base_preset_class" data-tenant-base-preset disabled class="{{ form_field.select_classes() }}">
+                        <option value="">Start empty</option>
+                        <option value="small">Small</option>
+                        <option value="standard">Standard</option>
+                        <option value="large">Large</option>
+                    </select>
+                </label>
 
                 <label class="block">
                     {{ form_field.label_row("Description") }}
