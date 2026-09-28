@@ -197,10 +197,8 @@ def _tenant_attention_rows(findings: list[dict[str, Any]], *, limit: int = 3) ->
 
     credentials = (
         TenantCredential.query.filter(
-            (
-                TenantCredential.status.in_(('renewal_due', 'rotating', 'suspended', 'expired'))
-                | TenantCredential.reconciliation_status.in_(('pending', 'drifted', 'failed'))
-            )
+            TenantCredential.status.in_(('renewal_due', 'rotating', 'suspended', 'expired'))
+            | TenantCredential.reconciliation_status.in_(('pending', 'drifted', 'failed'))
         )
         .order_by(TenantCredential.updated_at.desc())
         .limit(limit)
