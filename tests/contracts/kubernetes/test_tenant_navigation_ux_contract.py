@@ -125,13 +125,19 @@ def test_tenant_registry_pages_use_shared_default_five_pagination() -> None:
     assert 'registry_ui.footer' in tenant_registry
     assert "'tenant.tenants'" in tenant_registry
 
-    for path, state in (
-        ('resource_profiles.html', 'profile_pagination'),
-        ('namespace_provisioning.html', 'namespace_pagination'),
-    ):
-        template = (ROOT / 'app/templates/kubernetes/tenant' / path).read_text(encoding='utf-8')
-        assert state in template
-        assert 'partials/_pagination_footer.html' in template
+    resource_profiles = (ROOT / 'app/templates/kubernetes/tenant/resource_profiles.html').read_text(encoding='utf-8')
+    resource_profile_registry = (
+        ROOT / 'app/templates/kubernetes/tenant/partials/_resource_profile_registry.html'
+    ).read_text(encoding='utf-8')
+    assert '_resource_profile_registry.html' in resource_profiles
+    assert 'profile_pagination' in resource_profile_registry
+    assert 'partials/_pagination_footer.html' in resource_profile_registry
+
+    namespace_template = (
+        ROOT / 'app/templates/kubernetes/tenant/namespace_provisioning.html'
+    ).read_text(encoding='utf-8')
+    assert 'namespace_pagination' in namespace_template
+    assert 'partials/_pagination_footer.html' in namespace_template
 
 
 def test_namespace_allocation_selector_is_not_limited_by_visible_page() -> None:

@@ -32,7 +32,7 @@
                     {% set default_requests = profile.limit_defaults_json.get('default_request', {}) if profile.limit_defaults_json else {} %}
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }} align-middle">
-                            {{ table_ui.title_cell(profile.name, profile.description or profile.public_id, 'layers-3') }}
+                            {{ table_ui.title_cell(profile.name, profile.description or 'Reusable allocation contract', 'layers-3') }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
                             <div class="space-y-1">
@@ -41,16 +41,16 @@
                             </div>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
-                            <p class="text-sm font-semibold text-content-primary">{{ profile.quota_hard_json.get('requests.cpu', 'Unbounded') }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ profile.quota_hard_json.get('requests.memory', 'Unbounded') }} memory</p>
+                            <p class="text-sm font-semibold text-content-primary">{{ (profile.quota_hard_json.get('requests.cpu') or 'Unbounded') }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ (profile.quota_hard_json.get('requests.memory') or 'Unbounded') }} memory</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
-                            <p class="text-xs font-semibold text-content-primary">{{ profile.quota_hard_json.get('pods', 'Unbounded') }} pods · {{ profile.quota_hard_json.get('persistentvolumeclaims', 'Unbounded') }} PVCs</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ profile.quota_hard_json.get('requests.storage', 'Unbounded') }} storage</p>
+                            <p class="text-xs font-semibold text-content-primary">{{ (profile.quota_hard_json.get('pods') or 'Unbounded') }} pods · {{ (profile.quota_hard_json.get('persistentvolumeclaims') or 'Unbounded') }} PVCs</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ (profile.quota_hard_json.get('requests.storage') or 'Unbounded') }} storage</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
-                            <p class="text-xs font-semibold text-content-primary">{{ default_requests.get('cpu', '—') }} / {{ default_requests.get('memory', '—') }}</p>
-                            <p class="mt-1 text-xs text-content-muted">limits {{ defaults.get('cpu', '—') }} / {{ defaults.get('memory', '—') }}</p>
+                            <p class="text-xs font-semibold text-content-primary">{{ (default_requests.get('cpu') or '—') }} / {{ (default_requests.get('memory') or '—') }}</p>
+                            <p class="mt-1 text-xs text-content-muted">limits {{ (defaults.get('cpu') or '—') }} / {{ (defaults.get('memory') or '—') }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
                             {% if profile.profile_class == 'custom' and profile.base_preset_class %}

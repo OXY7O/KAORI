@@ -43,7 +43,24 @@ def test_resource_profile_form_separates_identity_quota_and_container_contracts(
     assert 'resource-profile-limitrange-tip' in form
     assert 'data-tenant-profile-class' in form
     assert 'data-tenant-base-preset' in form
-    assert form.count('data-tenant-resource-field=') == 14
+    assert 'data-tenant-resource-field="{{ field }}"' in form
+    for field_name in (
+        'requests_cpu',
+        'limits_cpu',
+        'requests_memory',
+        'limits_memory',
+        'pods',
+        'persistentvolumeclaims',
+        'requests_storage',
+        'services',
+        'configmaps',
+        'secrets',
+        'default_request_cpu',
+        'default_cpu',
+        'default_request_memory',
+        'default_memory',
+    ):
+        assert field_name in form
     assert 'Profile creation commits reusable intent only.' in form
     assert 'Create Profile' in form
 
@@ -81,3 +98,4 @@ def test_capacity_governance_uses_policy_budget_and_state_guidance() -> None:
     assert 'ResourceQuota remains an enforcement primitive.' in capacity
     assert 'fresh committed evidence' in capacity
     assert 'Save Policy' in capacity
+    assert 'value="10"' not in capacity
