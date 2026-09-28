@@ -29,9 +29,7 @@
         </div>
         {{ loading_bar.render('tenant-admin-loading', label='Loading Tenant Workspace') }}
     </header>
-
-    {{ content_tabs.render_links(
-        'tenant-admin',
+    {{ content_tabs.render_links('tenant-admin',
         tenant_admin_tabs,
         active_tenant_section,
         'Tenant Workspace',
@@ -43,9 +41,7 @@
         hx_push_url='true',
         hx_indicator='#tenant-admin-loading',
         nowrap=true,
-        hx_sync='this:replace'
-    ) }}
-
+        hx_sync='this:replace') }}
     <div class="space-y-5 p-4 sm:p-5">
         {% if active_tenant_section == 'registry' %}
             {% include "kubernetes/tenant/partials/_tenant_registry.html" %}

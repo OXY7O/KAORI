@@ -9,9 +9,7 @@
           hx-target="#tenant-sync-workspace"
           hx-swap="outerHTML"
           hx-indicator="this"></span>
-
-    {{ snapshot_context.render(
-        source_label=tenant_collection_snapshot.source_label,
+    {{ snapshot_context.render(source_label=tenant_collection_snapshot.source_label,
         status=tenant_collection_snapshot.status,
         tone=tenant_collection_snapshot.tone,
         description=tenant_collection_snapshot.description,
@@ -26,15 +24,11 @@
         coverage_supporting=tenant_collection_snapshot.coverage_supporting,
         exceptions_supporting='Committed Tenant snapshot evidence',
         coverage_tone=tenant_collection_snapshot.coverage_tone,
-        exceptions_tone=tenant_collection_snapshot.exceptions_tone
-    ) }}
-
+        exceptions_tone=tenant_collection_snapshot.exceptions_tone) }}
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
              aria-labelledby="tenant-inventory-operations-heading">
         <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-            <div class="min-w-0 flex-1">
-                {% include "kubernetes/tenant/partials/_sync_live_state.html" %}
-            </div>
+            <div class="min-w-0 flex-1">{% include "kubernetes/tenant/partials/_sync_live_state.html" %}</div>
             <div class="flex shrink-0 flex-wrap items-center gap-2">
                 {% if current_user.has_permission('tenant.manage') %}
                     <form method="post"
