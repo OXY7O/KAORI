@@ -45,7 +45,9 @@ jobs:
   default_interval_minutes: 60
   minimum_interval_minutes: 15
   maximum_interval_minutes: 1440
-  safety_summary: Tenant sync materializes correlation from canonical KAORI Tenant state and committed Kubernetes inventory without provider mutation.
+  safety_summary: >-
+    Tenant sync materializes correlation from canonical KAORI Tenant state and committed Kubernetes inventory
+    without provider mutation.
   execution_summary: Refresh the Tenant collection snapshot on the inventory worker and monitor the canonical execution.
   recent_execution_summary: Latest scheduled and manual Tenant inventory synchronization runs.
   legacy_module: kubernetes_tenant_sync
