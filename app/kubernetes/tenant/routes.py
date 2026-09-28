@@ -160,14 +160,10 @@ def _tenant_section_redirect(section: str):
         'kubernetes/tenant/partials/_tenant_admin_workspace.html',
         active_tenant_section=resolved_section,
         can_manage=current_user.has_permission('tenant.manage'),
-        **context,
-    )
-    feedback = getattr(g, 'tenant_operational_feedback', None)
-    rendered += render_template(
-        'kubernetes/tenant/partials/_live_connection_snapshot.html',
         tenant_live_connection_oob=True,
         **context,
     )
+    feedback = getattr(g, 'tenant_operational_feedback', None)
     if feedback:
         rendered += render_template(
             'components/operational_toast.html',
