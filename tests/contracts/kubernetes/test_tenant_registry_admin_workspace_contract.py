@@ -15,8 +15,9 @@ def test_tenants_page_keeps_summary_above_the_tabbed_workspace() -> None:
     assert "'Multi-Cluster Posture'" in page
     assert "'Tenant Estate'" in page
     assert 'tenant_summary_metrics' in page
-    assert page.index("'Multi-Cluster Posture'") < page.index("'Tenant Workspace'")
-    assert page.index("'Tenant Workspace'") < page.index('partials/_tenant_admin_workspace.html')
+    assert "'Governed Administration'" in page
+    assert page.index("'Multi-Cluster Posture'") < page.index("'Governed Administration'")
+    assert page.index("'Governed Administration'") < page.index('partials/_tenant_admin_workspace.html')
 
     assert 'components/content_tabs.html' in admin
     assert 'content_tabs.render_links' in admin
