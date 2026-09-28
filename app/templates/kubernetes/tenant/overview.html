@@ -56,11 +56,11 @@
                     action_href=url_for('intelligence.recommendations'),
                     action_label='Open Intelligence',
                     action_icon='arrow-right',
-                    body_classes='flex-1 p-0',
+                    body_classes='flex flex-1 flex-col p-0',
                     extra_classes='flex h-full flex-col',
                     aria_label='Tenant needs attention'
                 ) %}
-                    <div class="divide-y divide-outline-subtle">
+                    <div class="flex-1 divide-y divide-outline-subtle">
                         {% for item in tenant_attention_rows %}
                             <article class="flex min-h-[7.5rem] items-start gap-3 px-5 py-4">
                                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-subtle text-kaori-primary"
@@ -111,12 +111,12 @@
                     action_href=url_for('tenant.operations', tab='activity'),
                     action_label='Open Activity',
                     action_icon='arrow-right',
-                    body_classes='flex-1 p-0',
+                    body_classes='flex flex-1 flex-col p-0',
                     extra_classes='flex h-full flex-col',
                     aria_label='Recent Tenant activity'
                 ) %}
                     {% if tenant_recent_activity_rows %}
-                        <ol class="relative">
+                        <ol class="relative flex-1">
                             {% for item in tenant_recent_activity_rows %}
                                 <li class="relative flex min-h-[7.5rem] gap-3 px-5 py-4 {% if not loop.last %}border-b border-outline-subtle{% endif %}">
                                     <div class="relative flex w-9 shrink-0 justify-center">
