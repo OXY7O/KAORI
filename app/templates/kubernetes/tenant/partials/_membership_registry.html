@@ -1,6 +1,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
+{% import "components/info_tip.html" as info_tip %}
 {% set registry_id = 'tenant-membership-registry' %}
 {% set loading_id = 'tenant-membership-registry-loading' %}
 {% set query_params = {
@@ -24,6 +25,19 @@
                 per_page_param='membership_per_page'
             ) }}
         {% endif %}
+        {{ info_tip.render(
+            'tenant-membership-lifecycle-tip',
+            'Membership lifecycle',
+            'Membership registers one principal inside one Tenant; authorization remains a separate Access Grant.',
+            [
+                'Active — the principal may receive new Access Grants.',
+                'Revoke — dependent active grants are revoked and provider cleanup is reconciled.',
+                'Reactivate — restores Membership only; previous grants stay revoked and require a new grant.',
+                'Routine hard delete is not exposed because Membership and grant history remain audit evidence.'
+            ],
+            button_text='Membership Guide',
+            button_classes=table_ui.action_classes()
+        ) }}
     {% endset %}
     {{ table_ui.inventory_block_header(
         'users-round',
