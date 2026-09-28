@@ -103,7 +103,7 @@
                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">State</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Updated</th>
                     </tr>
-                {% else %}
+                {% elif operations_evidence_filters.evidence_type == 'exposure-policy' %}
                     <tr>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Namespace</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant</th>
@@ -173,7 +173,7 @@
                                 <p class="text-xs text-content-secondary">{{ item.updated_at|user_datetime }}</p>
                             </td>
                         </tr>
-                    {% else %}
+                    {% elif operations_evidence_filters.evidence_type == 'exposure-policy' %}
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.namespace.namespace, 'Exposure policy', 'network') }}</td>
                             <td class="{{ table_ui.cell_classes() }}">
