@@ -84,12 +84,15 @@ Hero
 
 All tabs reuse the Analytics-derived `components/content_tabs.html` server-link mode. Every tab retains a real URL fallback while HTMX replaces only the Tenant Workspace. Mutation routes return operators to the relevant section.
 
-Tenant lifecycle administration now follows a governed CRUD contract:
+Tenant identity is immutable after creation in the normal operator workflow.
 
 - **Create** — create the Tenant ownership boundary and initial environment.
 - **Read** — Tenant Registry is the committed-state source for operator reads.
-- **Update** — routine edits are limited to mutable operator metadata (name and description). Slug, cluster placement, provider authority, and reconciliation authority are not mutated inline.
-- **Delete semantics** — routine UI uses **Decommission**, not hard delete. Decommission preserves audit evidence and is blocked while managed namespaces, active memberships, active Access Grants, or active credentials remain. Decommissioned Tenants are excluded from active summary counters but remain queryable as historical registry evidence.
+- **Update** — no inline Tenant identity update is exposed. Name/slug identity, cluster placement, provider authority, and reconciliation authority are intentionally locked.
+- **Lifecycle removal** — provider-aware teardown is tracked by #735. The admitted flow must revoke access/credentials, deprovision managed namespaces, verify Native/Capsule cleanup, preserve historical evidence, and only then commit final decommission state.
+- **Structural change** — when immutable identity or placement must change, use governed teardown + recreation rather than mutating the Tenant in place.
+
+#734 must not present a database-only lifecycle flag change as successful provider decommission.
 
 Tenant workspace mutations that are progressively enhanced with HTMX render operational feedback as an out-of-band KAORI toast in the same response. Success and failure feedback therefore appears immediately without requiring a full-page reload; persisted Notification Deck evidence remains synchronized through the standard toast notification-refresh contract.
 
