@@ -182,7 +182,8 @@ def get_tenant_discovery_context(
             if not name:
                 continue
             observed_native_names.add(name)
-            labels = dict(getattr(metadata, 'labels', None) or {})
+            raw_labels = getattr(metadata, 'labels', None)
+            labels = dict(raw_labels) if isinstance(raw_labels, Mapping) else {}
             managed_record = managed_namespaces.get((cluster_key, name))
             provider_status = _namespace_phase(item)
             management_status, eligibility = _native_management(
