@@ -14,7 +14,7 @@
         </button>
         <span id="{{ id }}"
               role="tooltip"
-              class="pointer-events-none invisible absolute top-8 z-50 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-outline-default bg-surface-elevated text-left shadow-xl opacity-0 transition duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 {% if placement == 'right' %}left-0{% else %}right-0{% endif %}">
+              class="pointer-events-none absolute top-8 z-50 hidden w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-outline-default bg-surface-elevated text-left shadow-xl group-hover:block group-focus-within:block {% if placement == 'right' %}left-0{% else %}right-0{% endif %}">
             <span class="flex items-start gap-2.5 border-b border-outline-subtle bg-surface-hover px-3.5 py-3">
                 <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                       aria-hidden="true">

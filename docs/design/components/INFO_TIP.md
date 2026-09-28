@@ -4,7 +4,7 @@
 
 `components/info_tip.html` is the canonical compact guidance pattern for dense forms and operational controls where permanent helper copy would make the interface unnecessarily tall.
 
-The trigger is a compact 24px neutral help affordance placed beside the content it explains. Violet is reserved for hover/focus emphasis. The guidance bubble appears on pointer hover and keyboard/touch focus.
+The trigger is a compact 24px neutral help affordance placed beside the content it explains. Violet is reserved for hover/focus emphasis. The guidance bubble appears on pointer hover and keyboard/touch focus. While inactive, the bubble is removed from layout/scroll overflow so hidden tips inside horizontally scrollable registries do not create phantom vertical scrollbars.
 
 ## Use
 

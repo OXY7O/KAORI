@@ -386,8 +386,11 @@ def test_kaori_info_tip_is_a_reusable_hover_and_focus_standard() -> None:
     assert 'macro render(id, title, text=' in component
     assert 'aria-describedby="{{ id }}"' in component
     assert 'role="tooltip"' in component
-    assert 'group-hover:visible' in component
-    assert 'group-focus-within:visible' in component
+    assert 'group-hover:block' in component
+    assert 'group-focus-within:block' in component
+    assert 'hidden w-80' in component
+    assert 'group-hover:visible' not in component
+    assert 'group-focus-within:visible' not in component
     assert 'focus-visible:ring-2' in component
     assert 'h-6 w-6' in component
     assert 'circle-help' in component
@@ -604,6 +607,13 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'Governance Checks' in template
     assert 'Human confirmation.' in template
     assert 'Adopt into KAORI' in template
+    assert 'components/info_tip.html' in template
+    assert 'tenant-discovery-live-' in template
+    assert 'tenant-discovery-classification-' in template
+    assert 'tenant-discovery-action-' in template
+    assert 'Live provider status' in template
+    assert 'KAORI classification' in template
+    assert 'Adoption blocked' in template
     assert 'data-tenant-adoption-open' in template
     assert 'data-tenant-adoption-modal' in template
     assert "page_param='discovery_page'" in template
