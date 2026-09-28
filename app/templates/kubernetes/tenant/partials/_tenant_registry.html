@@ -86,7 +86,7 @@
     </div>
 
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1080px]') }}">
+        <table class="{{ table_ui.table_classes('min-w-[980px]') }}">
             <caption class="sr-only">Tenant Registry from committed KAORI Tenant state.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
@@ -95,8 +95,7 @@
                     <th scope="col" class="{{ table_ui.header_cell_classes() }}">Environment</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }}">Namespaces</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }}">Provider Authority</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Lifecycle</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Lifecycle</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -132,52 +131,19 @@
                             <p class="text-sm font-semibold text-content-primary">{{ tenant.provider_key|replace('_', ' ')|title }}</p>
                             <p class="mt-1 text-xs text-content-muted">{{ tenant.reconciliation_authority|replace('_', ' ')|title }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }} align-middle">
-                            <div class="flex w-fit flex-col items-start gap-1.5">
+                        <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
+                            <div class="ml-auto flex w-fit flex-col items-end gap-1.5">
                                 {{ table_label.status_label(
                                     tenant.lifecycle_status|replace('_', ' ')|title,
                                     'normal' if tenant.lifecycle_status == 'ready' else ('critical' if tenant.lifecycle_status in ['degraded', 'decommissioning'] else 'warning')
                                 ) }}
-                                <span class="text-xs text-content-muted">{{ tenant.ownership_status|replace('_', ' ')|title }}</span>
-                            </div>
-                        </td>
-                        <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
-                            <div class="flex min-w-[11rem] justify-end gap-2">
-                                {% if can_manage and tenant.lifecycle_status != 'decommissioned' %}
-                                    <a href="{{ url_for('tenant.tenants', section='tenant-setup', edit_tenant_id=tenant.id) }}#tenant-maintenance"
-                                       hx-get="{{ url_for('tenant.tenants', section='tenant-setup', edit_tenant_id=tenant.id) }}"
-                                       hx-target="#tenant-admin-workspace"
-                                       hx-select="#tenant-admin-workspace"
-                                       hx-swap="outerHTML show:none focus-scroll:false"
-                                       hx-push-url="true"
-                                       hx-indicator="#tenant-admin-loading"
-                                       class="{{ table_ui.action_classes() }}">
-                                        <i data-lucide="square-pen" class="h-4 w-4" aria-hidden="true"></i>
-                                        Edit
-                                    </a>
-                                    <button type="button"
-                                            data-destructive-modal-open
-                                            data-destructive-modal-id="tenant-decommission-modal"
-                                            data-delete-url="{{ url_for('tenant.decommission_tenant_route', tenant_id=tenant.id) }}"
-                                            data-delete-title="Decommission Tenant"
-                                            data-delete-name="{{ tenant.name }}"
-                                            data-delete-detail="KAORI preserves the Tenant record for audit. Decommission is blocked while managed namespaces, active memberships, Access Grants, or credentials remain."
-                                            data-delete-action-label="Decommission"
-                                            class="{{ table_ui.action_classes(true) }}">
-                                        <i data-lucide="archive-x" class="h-4 w-4" aria-hidden="true"></i>
-                                        Decommission
-                                    </button>
-                                {% elif tenant.lifecycle_status == 'decommissioned' %}
-                                    <span class="text-xs text-content-muted">Historical evidence</span>
-                                {% else %}
-                                    <span class="text-xs text-content-muted">View only</span>
-                                {% endif %}
+                                <span class="text-xs text-content-muted">{{ tenant.ownership_status|replace('_', ' ')|title }} · Immutable identity</span>
                             </div>
                         </td>
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="7" class="p-0">
+                        <td colspan="6" class="p-0">
                             {% set empty_state_icon = 'building-2' %}
                             {% set empty_state_title = 'No Tenants Found' %}
                             {% set empty_state_description = 'Adjust filters or open Tenant Setup to create the first governed Tenant.' %}
@@ -188,8 +154,6 @@
             </tbody>
         </table>
     </div>
-
-    {% include "kubernetes/tenant/partials/_tenant_decommission_modal.html" %}
 
     {% if tenant_pagination.total_items > 0 %}
         {{ registry_ui.footer(
