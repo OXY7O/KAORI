@@ -27,7 +27,8 @@
             [
                 'Slug is derived from the Tenant name when omitted.',
                 'Only Ready clusters are eligible for creation.',
-                'Native Kubernetes is the admitted provider baseline.',
+                'Native Kubernetes is the direct-create provider in Tenant Setup.',
+                'Existing Capsule Tenant CRs are onboarded through Discovery → Adoption.',
                 'Namespace, membership, access, and credentials are governed in later workflow steps.'
             ]
         ) }}
@@ -66,10 +67,10 @@
             </select>
         </label>
         <label class="block">
-            {{ form_field.label_row('Provider', 'Baseline', 'normal', 'shield-check') }}
+            {{ form_field.label_row('Provider', 'Direct create', 'normal', 'shield-check') }}
             <select disabled class="{{ form_field.select_classes() }}">
-                <option>Native Kubernetes</option>
-                <option>Capsule — available after capability qualification</option>
+                <option>Native Kubernetes — create in KAORI</option>
+                <option>Capsule — use Discovery → Adoption</option>
             </select>
             <input type="hidden" name="provider_key" value="native_kubernetes">
         </label>
