@@ -47,9 +47,6 @@
     ) }}
 
     <div class="space-y-5 p-4 sm:p-5">
-        {% if tenant_live_connection is defined %}
-            {% include "kubernetes/tenant/partials/_live_connection_snapshot.html" %}
-        {% endif %}
         {% if active_tenant_section == 'registry' %}
             {% include "kubernetes/tenant/partials/_tenant_registry.html" %}
         {% elif active_tenant_section == 'discovery' %}
