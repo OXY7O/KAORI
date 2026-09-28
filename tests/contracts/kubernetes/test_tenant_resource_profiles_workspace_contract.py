@@ -133,6 +133,7 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert "action_button.classes('primary', full=true)" not in capacity
     assert 'components/info_tip.html' in capacity
     assert 'allocation-budget-status-tip' in capacity
+    assert "button_text='Status Guide'" in capacity
     assert 'status_detail_dialog' not in capacity
 
     assert 'tenant-capacity-policy-state' in page
