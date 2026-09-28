@@ -74,7 +74,7 @@ def test_tls_accepted_dispatch_stays_inline_and_refreshes_notification_deck_on_t
 
     assert 'sync_progress=' not in routes
     assert '_sync_progress_toast.html' not in scope
-    assert "return _render_sync_response(filter_args=filter_args)" in routes
+    assert 'return _render_sync_response(filter_args=filter_args)' in routes
     assert "if not sync['is_active']:" in routes
     assert "'tlsInventorySyncFinished': True" in routes
     assert "'kaori:notifications-changed': True" in routes
