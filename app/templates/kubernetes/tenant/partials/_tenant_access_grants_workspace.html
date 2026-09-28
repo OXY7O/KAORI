@@ -39,9 +39,9 @@
           hx-swap="outerHTML show:none focus-scroll:false"
           hx-indicator="#tenant-admin-loading"
           hx-disabled-elt="find button"
-          class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+          class="overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <header class="flex items-start justify-between gap-4 border-b border-outline-subtle px-5 py-4">
+        <header class="flex items-start justify-between gap-4 rounded-t-xl border-b border-outline-subtle bg-surface-card px-5 py-4">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                       aria-hidden="true">
@@ -127,7 +127,7 @@
                 </div>
             </div>
         </div>
-        <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-2.5 text-status-info-text">
                 <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-status-info-soft"
                       aria-hidden="true">
