@@ -4,7 +4,7 @@
 
 `components/info_tip.html` is the canonical compact guidance pattern for dense forms and operational controls where permanent helper copy would make the interface unnecessarily tall.
 
-The trigger is a compact 24px neutral help affordance placed beside the content it explains. Violet is reserved for hover/focus emphasis. The guidance bubble appears on pointer hover and keyboard/touch focus. While inactive, the bubble is removed from layout/scroll overflow so hidden tips inside horizontally scrollable registries do not create phantom vertical scrollbars.
+The default trigger is the existing compact icon-only affordance. A block header may use the same component with a short text trigger such as **Status Guide** or **Group Guide** when an isolated help icon would look ambiguous beside other header actions. Violet remains the interaction emphasis.
 
 ## Use
 
@@ -14,21 +14,32 @@ Use an Info Tip for contextual guidance that is helpful but not required to iden
 - scope rules;
 - ownership or provider boundaries;
 - non-secret delivery behavior;
+- shared status vocabulary;
 - consequences that are already enforced server-side.
 
 Do **not** hide validation errors, destructive confirmation, security incidents, stale evidence, or required workflow state inside an Info Tip. Those remain persistent callouts.
 
 ## Placement
 
-For a field, place the trigger inline beside the field label rather than at the far edge of the control. For a form/card header, upper-right placement remains appropriate. This keeps the relationship between trigger and content obvious without adding permanent helper paragraphs.
+For a field, place the icon trigger inline beside the field label. For a form/card header, upper-right placement remains appropriate.
+
+For a registry with a shared status vocabulary, place one compact text-trigger Info Tip in the **block header action area**, outside the horizontal table scroll container. Keep the table rows to semantic labels; do not repeat a generic help control beside every row status.
+
+## Responsive behavior
+
+Desktop keeps the anchored hover/focus bubble.
+
+On narrow/touch layouts, the guidance surface becomes a viewport-safe fixed bottom sheet with left/right viewport inset and bounded height. This prevents the tooltip from being clipped by card/table overflow or rendering partly outside the mobile viewport. Keyboard/touch focus continues to expose the same content.
+
+The tooltip must not reserve layout space while inactive.
 
 ## Content
 
-Use a compact card with one short title, one concise explanation, and at most a few supporting points. Avoid oversized circular triggers, heavy blue treatment, or floating icons disconnected from the label. The bubble supplements field labels; it does not replace clear labels.
+Use one short title, one concise explanation, and only a few supporting points. Avoid oversized triggers, heavy blue treatment, or floating icons disconnected from their context.
 
 ## Accessibility
 
-The trigger is keyboard-focusable, references the tooltip with `aria-describedby`, and the tooltip is exposed on `group-focus-within` as well as hover.
+The trigger is keyboard-focusable, references the tooltip with `aria-describedby`, and exposes guidance on `group-focus-within` as well as pointer hover. Text-trigger variants retain the same focus ring and semantic help icon.
 
 ## Example
 
@@ -36,18 +47,17 @@ The trigger is keyboard-focusable, references the tooltip with `aria-describedby
 {% import "components/info_tip.html" as info_tip %}
 
 {{ info_tip.render(
-    'tenant-setup-tip',
-    'Tenant setup',
-    'Create the ownership boundary before namespace and access workflows.',
+    'tenant-registry-status-tip',
+    'Tenant Registry status',
+    'Lifecycle is committed Tenant state; Actions show current operation readiness.',
     [
-        'Slug is derived from the Tenant name when omitted.',
-        'Only Ready clusters are eligible.',
-        'Native Kubernetes is the admitted baseline.'
-    ]
+        'Ready — Tenant governance is active.',
+        'Blocked — the Tenant stays valid while an action fails closed.'
+    ],
+    button_text='Status Guide'
 ) }}
 ```
 
+## Dense registry boundary
 
-## Dense registry exception
-
-Do not use an Info Tip for multi-line status or blocker detail inside an `overflow-x` table container. Even a visually hidden absolutely positioned tooltip can create clipping or scroll-growth problems when opened. Keep the table row compact and open the explanation in the canonical native-dialog top layer instead. Info Tips remain appropriate for forms and non-scrollable dense controls.
+Do not place a multi-line Info Tip **inside a table row or its overflow-x container**. A shared table glossary belongs in the block header. Genuinely row-specific operational evidence may use the existing top-layer detail/dialog pattern when that evidence cannot be summarized by the shared vocabulary.
