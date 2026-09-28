@@ -12,6 +12,7 @@ from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
 from app.models import Cluster
+from app.models.cluster import ClusterStatus
 from app.models.kubernetes import KubernetesConnection
 from app.models.tenant import (
     Tenant,
@@ -368,7 +369,11 @@ def adopt_discovered_tenant_committed(source: Mapping[str, Any]) -> tuple[Tenant
 
     cluster = (
         Cluster.query.join(KubernetesConnection, KubernetesConnection.cluster_id == Cluster.id)
-        .filter(Cluster.id == cluster_id)
+        .filter(
+            Cluster.id == cluster_id,
+            Cluster.status == ClusterStatus.CONNECTED.value,
+            KubernetesConnection.readiness_status == 'ready',
+        )
         .first()
     )
     if cluster is None:
@@ -440,16 +445,14 @@ def adopt_discovered_tenant_committed(source: Mapping[str, Any]) -> tuple[Tenant
         }
 
         db.session.add(tenant)
-        db.session.flush()
 
         environment = TenantEnvironment()
-        environment.tenant_id = tenant.id
+        environment.tenant = tenant
         environment.environment = environment_name
         db.session.add(environment)
-        db.session.flush()
 
         namespace_record = TenantNamespace()
-        namespace_record.tenant_environment_id = environment.id
+        namespace_record.environment = environment
         namespace_record.cluster_id = cluster.id
         namespace_record.namespace = resource_name
         namespace_record.generation = namespace_generation
@@ -501,10 +504,9 @@ def adopt_discovered_tenant_committed(source: Mapping[str, Any]) -> tuple[Tenant
         }
 
         db.session.add(tenant)
-        db.session.flush()
 
         environment = TenantEnvironment()
-        environment.tenant_id = tenant.id
+        environment.tenant = tenant
         environment.environment = environment_name
         db.session.add(environment)
 
