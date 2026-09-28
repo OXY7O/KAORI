@@ -78,8 +78,8 @@
             </select>
         </label>
         <div data-capsule-owner-fields
-             class="hidden space-y-4 rounded-xl border border-outline-subtle bg-surface-elevated p-4"
-             aria-hidden="true">
+             class="space-y-4 rounded-xl border border-outline-subtle bg-surface-elevated p-4"
+             aria-hidden="false">
             <div class="flex items-start gap-3">
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                       aria-hidden="true">
@@ -96,7 +96,6 @@
                 {{ form_field.label_row("Owner Kind") }}
                 <select name="capsule_owner_kind"
                         data-capsule-owner-control
-                        disabled
                         class="{{ form_field.select_classes() }}">
                     <option value="User">User</option>
                     <option value="Group" selected>Group</option>
