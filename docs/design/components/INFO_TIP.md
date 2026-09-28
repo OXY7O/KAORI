@@ -4,7 +4,9 @@
 
 `components/info_tip.html` is the canonical compact guidance pattern for dense forms and operational controls where permanent helper copy would make the interface unnecessarily tall.
 
-The default trigger is the existing compact icon-only affordance. A block header may use the same component with a short text trigger such as **Status Guide** or **Group Guide** when an isolated help icon would look ambiguous beside other header actions. Violet remains the interaction emphasis.
+The default field trigger remains the compact icon-only affordance. A block header may use a short text trigger such as **Status Guide**, **Membership Guide**, or **Group Guide** when an isolated icon would be ambiguous beside operational actions.
+
+A text trigger must reuse the owning surface's existing button primitive. For canonical registries, pass `table_ui.action_classes()`; do not introduce page-local button styling.
 
 ## Use
 
@@ -15,7 +17,7 @@ Use an Info Tip for contextual guidance that is helpful but not required to iden
 - ownership or provider boundaries;
 - non-secret delivery behavior;
 - shared status vocabulary;
-- consequences that are already enforced server-side.
+- lifecycle explanation already enforced server-side.
 
 Do **not** hide validation errors, destructive confirmation, security incidents, stale evidence, or required workflow state inside an Info Tip. Those remain persistent callouts.
 
@@ -23,23 +25,26 @@ Do **not** hide validation errors, destructive confirmation, security incidents,
 
 For a field, place the icon trigger inline beside the field label. For a form/card header, upper-right placement remains appropriate.
 
-For a registry with a shared status vocabulary, place one compact text-trigger Info Tip in the **block header action area**, outside the horizontal table scroll container. Keep the table rows to semantic labels; do not repeat a generic help control beside every row status.
+For a registry with shared status or lifecycle vocabulary, place one text-trigger Info Tip in the **block header action area**, outside the horizontal table scroll container. Keep table rows to semantic labels and real actions.
 
-## Responsive behavior
+## Interaction and responsive behavior
 
-Desktop keeps the anchored hover/focus bubble.
+Info Tip uses two existing browser interaction paths rather than trying to position one hover surface everywhere:
 
-On narrow/touch layouts, the guidance surface becomes a viewport-safe fixed bottom sheet with left/right viewport inset and bounded height. This prevents the tooltip from being clipped by card/table overflow or rendering partly outside the mobile viewport. Keyboard/touch focus continues to expose the same content.
+- **desktop pointer hover** — show the compact anchored preview bubble;
+- **click, touch, or keyboard activation** — open the same guidance in the browser native `<dialog>` top layer through KAORI's existing `native_dialogs.js` contract.
 
-The tooltip must not reserve layout space while inactive.
+The hover preview is enabled only at the desktop breakpoint. Mobile does not depend on sticky `:hover`, focus-within positioning, transformed ancestors, or table/card overflow. The native dialog owns mobile/touch placement, viewport containment, focus, dismissal, and top-layer stacking.
+
+Inactive guidance must not reserve document or table layout space.
 
 ## Content
 
-Use one short title, one concise explanation, and only a few supporting points. Avoid oversized triggers, heavy blue treatment, or floating icons disconnected from their context.
+Use one short title, one concise explanation, and only a few supporting points. Avoid oversized triggers, heavy blue treatment, or floating icons disconnected from context.
 
 ## Accessibility
 
-The trigger is keyboard-focusable, references the tooltip with `aria-describedby`, and exposes guidance on `group-focus-within` as well as pointer hover. Text-trigger variants retain the same focus ring and semantic help icon.
+The trigger is a real button with `aria-haspopup="dialog"` and `aria-controls`. Keyboard activation opens the native dialog, which provides an explicit Close action. Pointer users retain a non-blocking desktop hover preview.
 
 ## Example
 
@@ -54,10 +59,11 @@ The trigger is keyboard-focusable, references the tooltip with `aria-describedby
         'Ready — Tenant governance is active.',
         'Blocked — the Tenant stays valid while an action fails closed.'
     ],
-    button_text='Status Guide'
+    button_text='Status Guide',
+    button_classes=table_ui.action_classes()
 ) }}
 ```
 
 ## Dense registry boundary
 
-Do not place a multi-line Info Tip **inside a table row or its overflow-x container**. A shared table glossary belongs in the block header. Genuinely row-specific operational evidence may use the existing top-layer detail/dialog pattern when that evidence cannot be summarized by the shared vocabulary.
+Do not place a multi-line Info Tip **inside a table row or its overflow-x container**. A shared glossary belongs in the block header. Genuinely row-specific operational evidence may use the existing native-dialog detail pattern when that evidence cannot be summarized by the shared vocabulary.
