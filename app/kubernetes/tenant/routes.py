@@ -49,7 +49,15 @@ from app.kubernetes.tenant.deployer_credential_service import (
     create_deployer_credential_committed,
 )
 from app.kubernetes.tenant.audit import record_tenant_sync_dispatch_audit
-from app.kubernetes.tenant.job_adapter import build_tenant_sync_state, get_visible_tenant_sync_job
+from app.kubernetes.tenant.decommission_service import (
+    TenantDecommissionBlocked,
+    request_tenant_decommission_committed,
+)
+from app.kubernetes.tenant.job_adapter import (
+    build_tenant_sync_state,
+    dispatch_tenant_decommission,
+    get_visible_tenant_sync_job,
+)
 from app.kubernetes.tenant.overview import dispatch_tenant_inventory_sync
 from app.kubernetes.tenant.service import (
     TenantStateConflictError,
@@ -755,6 +763,59 @@ def create_tenant_route():
             },
         )
     return _tenant_section_redirect('tenant-setup')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/decommission')
+@permission_required('tenant.manage')
+def decommission_tenant_route(tenant_id: str):
+    try:
+        _csrf()
+        preflight = request_tenant_decommission_committed(
+            tenant_id=tenant_id,
+            actor=cast(User, current_user),
+        )
+        dispatch = dispatch_tenant_decommission(
+            tenant_id=tenant_id,
+            requested_by_user_id=int(current_user.id),
+        )
+    except (ValueError, TenantDecommissionBlocked) as exc:
+        _record(
+            event_type='kubernetes_tenant_decommission_blocked',
+            status='error',
+            title='Tenant Decommission Blocked',
+            message=str(exc),
+            detail='No provider-authority bypass was performed.',
+            metadata={'tenant_id': tenant_id, 'operation': 'decommission_tenant'},
+        )
+    except Exception as exc:
+        current_app.logger.exception('Tenant decommission dispatch failed.')
+        _record(
+            event_type='kubernetes_tenant_decommission_dispatch_failed',
+            status='error',
+            title='Tenant Decommission Queue Failed',
+            message=str(exc),
+            detail='The Tenant remains frozen in Decommissioning state; retry after restoring the runtime worker.',
+            metadata={'tenant_id': tenant_id, 'operation': 'decommission_tenant'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_decommission_queued',
+            status='success' if dispatch.created else 'info',
+            title='Tenant Decommission Queued' if dispatch.created else 'Tenant Decommission Already Active',
+            message=dispatch.message,
+            detail=(
+                f"Generation {preflight['tenant_generation']} · "
+                f"{preflight['credential_count']} credentials · "
+                f"{preflight['access_grant_count']} grants · "
+                f"{preflight['namespace_count']} namespaces"
+            ),
+            metadata={
+                'tenant_id': tenant_id,
+                'job_public_id': dispatch.job.public_id,
+                'operation': 'decommission_tenant',
+            },
+        )
+    return _tenant_section_redirect('registry')
 
 
 @tenant_bp.post('/resource-profiles')

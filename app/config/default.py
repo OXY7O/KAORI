@@ -387,6 +387,9 @@ class Config:
             'app.kubernetes.tenant.tasks.sync_tenant_inventory': {
                 'queue': 'inventory',
             },
+            'app.kubernetes.tenant.tasks.decommission_tenant': {
+                'queue': INTEGRATION_RUNTIME_CELERY_QUEUE,
+            },
             'app.platform_operations.data_lifecycle.retention.tasks.run_domain_retention': {
                 'queue': _retention_queue_name(),
             },

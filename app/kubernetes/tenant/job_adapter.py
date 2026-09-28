@@ -3,14 +3,15 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from flask import current_app
 from sqlalchemy import or_
 
 from app.common.job_execution_presentation import present_job_execution
 from app.common.presentation import present_user_datetime
 from app.kubernetes.tenant.sync_service import build_tenant_inventory_snapshot
-from app.kubernetes.tenant.tasks import sync_tenant_inventory_task
+from app.kubernetes.tenant.tasks import decommission_tenant_task, sync_tenant_inventory_task
 from app.models.job import JobExecution, JobExecutionSubscriber, JobPolicy
-from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES, WORKLOAD_STANDARD
+from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES, WORKLOAD_RUNTIME, WORKLOAD_STANDARD
 from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchResult
 from app.platform_operations.jobs.dispatcher import enqueue_canonical_job
 from app.platform_operations.jobs.policies.presentation import present_interval
@@ -21,6 +22,9 @@ TENANT_SYNC_JOB_TYPE = 'kubernetes_tenant_inventory'
 TENANT_SYNC_OPERATION = 'sync_kubernetes_tenant_inventory'
 TENANT_SYNC_QUEUE = 'inventory'
 _SUCCESS_STATUSES = ('succeeded', 'partially_succeeded')
+
+TENANT_DECOMMISSION_JOB_TYPE = 'kubernetes_tenant_decommission'
+TENANT_DECOMMISSION_OPERATION = 'decommission_kubernetes_tenant'
 
 
 def get_visible_tenant_sync_job(*, public_id: str, user_id: int) -> JobExecution | None:
@@ -83,6 +87,44 @@ def dispatch_tenant_sync(
         created=created,
     )
 
+
+
+def dispatch_tenant_decommission(
+    *,
+    tenant_id: str,
+    requested_by_user_id: int | None,
+) -> RegisteredJobDispatchResult:
+    queue_name = current_app.config['INTEGRATION_RUNTIME_CELERY_QUEUE']
+    job, created = enqueue_canonical_job(
+        task=decommission_tenant_task,
+        task_kwargs={
+            'tenant_id': tenant_id,
+            'requested_by_user_id': requested_by_user_id,
+        },
+        job_type=TENANT_DECOMMISSION_JOB_TYPE,
+        operation=TENANT_DECOMMISSION_OPERATION,
+        queue_name=queue_name,
+        workload_class=WORKLOAD_RUNTIME,
+        requested_by_user_id=requested_by_user_id,
+        integration_type='container_orchestrator',
+        integration_instance_id=None,
+        scope_type='kubernetes_tenant',
+        scope_key=tenant_id,
+        resource_group=f'kubernetes-tenant:{tenant_id}',
+        parameters={'tenant_id': tenant_id},
+        payload={'tenant_id': tenant_id, 'operation': 'decommission'},
+        max_attempts=3,
+    )
+    return RegisteredJobDispatchResult(
+        status='queued' if created else 'reused',
+        message=(
+            'Tenant decommission was queued in the integration runtime worker.'
+            if created
+            else 'The request joined the active Tenant decommission execution.'
+        ),
+        job=job,
+        created=created,
+    )
 
 def _as_utc(value: datetime | None) -> datetime | None:
     if value is None:

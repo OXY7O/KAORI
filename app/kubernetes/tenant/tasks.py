@@ -7,6 +7,7 @@ from celery import shared_task
 
 from app.extensions.db import db
 from app.kubernetes.tenant.audit import record_tenant_sync_terminal_audit
+from app.kubernetes.tenant.decommission_service import execute_tenant_decommission
 from app.kubernetes.tenant.sync_service import build_tenant_inventory_snapshot
 from app.models.job import JobExecution
 from app.platform_operations.jobs.execution import JobCancellationRequested, JobExecutionContext
@@ -245,4 +246,144 @@ def sync_tenant_inventory_task(
             db.session.commit()
         context.fail(exc, error_code='kubernetes_tenant_inventory_sync_failed')
         logger.exception('Tenant inventory synchronization failed unexpectedly.')
+        raise
+
+
+
+def _notify_decommission_requesters(
+    *,
+    job_execution_id: int | None,
+    fallback_user_id: int | None,
+    result: dict[str, Any],
+    terminal_status: str,
+    error_message: str | None = None,
+) -> set[int]:
+    job = _job_for_execution(job_execution_id)
+    user_ids: set[int] = set()
+    if job is not None:
+        user_ids.update(subscriber_user_ids(job))
+    if fallback_user_id is not None:
+        user_ids.add(int(fallback_user_id))
+
+    tenant_name = str(result.get('tenant_name') or result.get('tenant_id') or 'Tenant')
+    if terminal_status == 'succeeded':
+        status = 'success'
+        title = 'Tenant Decommission Completed'
+        message = f'{tenant_name} finished governed teardown.'
+        detail = 'Native Kubernetes provider absence was verified before the final lifecycle state was committed.'
+    elif terminal_status == 'canceled':
+        status = 'warning'
+        title = 'Tenant Decommission Canceled'
+        message = f'{tenant_name} remains frozen in Decommissioning state.'
+        detail = 'Review committed teardown evidence before retrying the decommission job.'
+    else:
+        status = 'error'
+        title = 'Tenant Decommission Requires Attention'
+        message = f'{tenant_name} remains frozen because governed teardown did not complete.'
+        detail = error_message or 'Review Jobs & Executions and the committed Tenant teardown evidence before retrying.'
+
+    persisted: set[int] = set()
+    for user_id in sorted(user_ids):
+        try:
+            create_notification(
+                user_id=user_id,
+                event_type='kubernetes_tenant_decommission',
+                status=status,
+                title=title,
+                message=message,
+                detail=detail,
+                action_url='/kubernetes/tenant/tenants?section=registry',
+                metadata={
+                    'job_execution_id': job.id if job is not None else None,
+                    'job_public_id': job.public_id if job is not None else None,
+                    'tenant_id': result.get('tenant_id'),
+                    'tenant_generation': result.get('tenant_generation'),
+                    'provider_key': result.get('provider_key'),
+                    'terminal_status': terminal_status,
+                },
+            )
+            persisted.add(user_id)
+        except Exception:
+            db.session.rollback()
+            logger.exception('Could not persist Tenant decommission notification for user %s.', user_id)
+    return persisted
+
+
+@shared_task(
+    bind=True,
+    name='app.kubernetes.tenant.tasks.decommission_tenant',
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
+def decommission_tenant_task(
+    self,
+    *,
+    tenant_id: str,
+    requested_by_user_id: int | None,
+    job_execution_id: int | None = None,
+) -> dict[str, Any]:
+    """Execute provider-aware Tenant teardown outside the web request."""
+
+    context = JobExecutionContext(
+        task_id=str(self.request.id),
+        job_execution_id=job_execution_id,
+    )
+    context.start(message='Preparing governed Tenant decommission.', total=100)
+    result: dict[str, Any] = {'tenant_id': tenant_id}
+    try:
+        result = execute_tenant_decommission(
+            tenant_id=tenant_id,
+            actor_user_id=requested_by_user_id,
+            progress=lambda percent, message: context.checkpoint(
+                current=percent,
+                total=100,
+                message=message,
+            ),
+        )
+        result['notification_deck_user_ids'] = sorted(
+            _notify_decommission_requesters(
+                job_execution_id=job_execution_id,
+                fallback_user_id=requested_by_user_id,
+                result=result,
+                terminal_status='succeeded',
+            )
+        )
+        context.succeed(
+            result_summary=result,
+            result_type='kubernetes_tenant_decommission',
+        )
+        return result
+    except JobCancellationRequested:
+        result['notification_deck_user_ids'] = sorted(
+            _notify_decommission_requesters(
+                job_execution_id=job_execution_id,
+                fallback_user_id=requested_by_user_id,
+                result=result,
+                terminal_status='canceled',
+            )
+        )
+        job = _job_for_execution(job_execution_id)
+        if job is not None:
+            job.result_summary_json = result
+            db.session.commit()
+        context.canceled(message='Tenant decommission was canceled; the Tenant remains frozen.')
+        raise
+    except Exception as exc:
+        db.session.rollback()
+        result['error'] = str(exc)[:1000]
+        result['notification_deck_user_ids'] = sorted(
+            _notify_decommission_requesters(
+                job_execution_id=job_execution_id,
+                fallback_user_id=requested_by_user_id,
+                result=result,
+                terminal_status='failed',
+                error_message=result['error'],
+            )
+        )
+        job = _job_for_execution(job_execution_id)
+        if job is not None:
+            job.result_summary_json = result
+            db.session.commit()
+        context.fail(exc, error_code='kubernetes_tenant_decommission_failed')
+        logger.exception('Tenant decommission failed and remains fail-closed.')
         raise
