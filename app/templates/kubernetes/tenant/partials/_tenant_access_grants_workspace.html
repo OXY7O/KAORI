@@ -8,151 +8,202 @@
     ('scope', 'Scope', 'Target Tenant, environment, or namespace explicitly.')
 ]] %}
 <div class="space-y-5">
-    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
-             aria-labelledby="access-grant-model-heading">
-        <header class="border-b border-outline-subtle px-5 py-4">
-            <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true">
-                    <i data-lucide="shield-check" class="h-5 w-5"></i>
-                </span>
-                <div>
-                    <h3 id="access-grant-model-heading"
-                        class="text-base font-semibold text-content-primary">Access Grant Model</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">
-                        KAORI commits authorization intent, then reconciles and verifies effective Kubernetes RBAC evidence.
-                    </p>
+    <div class="grid gap-5 xl:grid-cols-12 xl:items-start">
+        <form id="access-grant-form"
+              method="post"
+              action="{{ url_for('tenant.create_access_grant_route') }}"
+              hx-post="{{ url_for('tenant.create_access_grant_route') }}"
+              hx-target="#tenant-admin-workspace"
+              hx-select="#tenant-admin-workspace"
+              hx-swap="outerHTML show:none focus-scroll:false"
+              hx-indicator="#tenant-admin-loading"
+              hx-disabled-elt="find button"
+              class="overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm xl:col-span-7">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <header class="flex items-start justify-between gap-4 rounded-t-xl border-b border-outline-subtle px-5 py-4">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="key-round" class="h-5 w-5"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-base font-semibold text-content-primary">Apply Access Grant</h3>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">
+                            Select one principal, one profile, and the narrowest required scope.
+                        </p>
+                    </div>
                 </div>
-            </div>
-        </header>
-        <div class="p-5">
-            {{ operational_flow_steps.render(grant_flow, aria_label='Tenant Access Grant flow') }}
-        </div>
-    </section>
-
-    <form id="access-grant-form"
-          method="post"
-          action="{{ url_for('tenant.create_access_grant_route') }}"
-          hx-post="{{ url_for('tenant.create_access_grant_route') }}"
-          hx-target="#tenant-admin-workspace"
-          hx-select="#tenant-admin-workspace"
-          hx-swap="outerHTML show:none focus-scroll:false"
-          hx-indicator="#tenant-admin-loading"
-          hx-disabled-elt="find button"
-          class="overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <header class="flex items-start justify-between gap-4 rounded-t-xl border-b border-outline-subtle bg-surface-card px-5 py-4">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true">
-                    <i data-lucide="key-round" class="h-5 w-5"></i>
-                </span>
-                <div>
-                    <h3 class="text-base font-semibold text-content-primary">Apply Access Grant</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">
-                        Select the principal, profile, and narrowest required scope.
-                    </p>
-                </div>
-            </div>
-            <div class="flex shrink-0 items-center gap-2">
-                <a href="{{ url_for('tenant.namespace_provisioning') }}"
-                   class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary">
-                    <i data-lucide="boxes" class="h-4 w-4" aria-hidden="true"></i>
-                    Create Namespace
-                </a>
                 {{ info_tip.render(
                     'access-grant-form-tip',
                     'Access Grant rules',
                     'An Access Grant binds one committed Tenant principal to one versioned access profile and explicit scope.',
                     [
                         'Built-in profiles are code-owned security contracts.',
-                        'Tenant scope uses no target.',
-                        'Environment or Namespace scope requires exactly one matching target.',
-                        'Cross-Tenant references are rejected before reconciliation.'
+                        'Cross-Tenant references fail closed.',
+                        'Effective access is verified from Kubernetes RBAC.'
                     ]
                 ) }}
+            </header>
+
+            <div class="grid gap-4 p-5 md:grid-cols-2">
+                <label class="block md:col-span-2">
+                    {{ form_field.label_row("Membership") }}
+                    <select name="membership_id" required class="{{ form_field.select_classes() }}">
+                        <option value="">Select active membership</option>
+                        {% for membership in access_membership_options %}
+                            <option value="{{ membership.id }}">
+                                {{ membership.tenant.name }} · {{ membership.subject_name }} · {{ membership.principal_type|title }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <label class="block">
+                    {{ form_field.label_row("Access Profile") }}
+                    <select name="access_profile" required class="{{ form_field.select_classes() }}">
+                        {% for profile in access_profiles %}
+                            <option value="{{ profile.key.value }}">{{ profile.label }} · v{{ profile.version }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <label class="block">
+                    {{ form_field.label_row("Scope") }}
+                    <select name="scope_type" required class="{{ form_field.select_classes() }}">
+                        <option value="namespace" selected>Namespace</option>
+                        <option value="environment">Environment</option>
+                        <option value="tenant">Tenant</option>
+                    </select>
+                </label>
+
+                <label class="block">
+                    {{ form_field.label_row('Environment Target', 'Environment scope only', 'info') }}
+                    <select name="tenant_environment_id" class="{{ form_field.select_classes() }}">
+                        <option value="">No environment target</option>
+                        {% for environment in access_environment_options %}
+                            <option value="{{ environment.id }}">{{ environment.tenant.name }} · {{ environment.environment|title }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <label class="block">
+                    {{ form_field.label_row('Namespace Target', 'Namespace scope only', 'info') }}
+                    <select name="tenant_namespace_id" class="{{ form_field.select_classes() }}">
+                        <option value="">No namespace target</option>
+                        {% for namespace in access_namespace_options %}
+                            <option value="{{ namespace.id }}">{{ namespace.environment.tenant.name }} · {{ namespace.namespace }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
             </div>
-        </header>
-        <div class="grid gap-x-5 gap-y-4 p-5 md:grid-cols-2 xl:grid-cols-6">
-            <label class="block xl:col-span-2">
-                {{ form_field.label_row("Membership") }}
-                <select name="membership_id" required class="{{ form_field.select_classes() }}">
-                    <option value="">Select active membership</option>
-                    {% for membership in access_membership_options %}
-                        <option value="{{ membership.id }}">
-                            {{ membership.tenant.name }} · {{ membership.subject_name }} · {{ membership.principal_type|title }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block xl:col-span-2">
-                {{ form_field.label_row("Access Profile") }}
-                <select name="access_profile" required class="{{ form_field.select_classes() }}">
-                    {% for profile in access_profiles %}
-                        <option value="{{ profile.key.value }}">{{ profile.label }} · v{{ profile.version }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block xl:col-span-2">
-                {{ form_field.label_row("Scope") }}
-                <select name="scope_type" required class="{{ form_field.select_classes() }}">
-                    <option value="namespace" selected>Namespace</option>
-                    <option value="environment">Environment</option>
-                    <option value="tenant">Tenant</option>
-                </select>
-            </label>
-            <label class="block xl:col-span-3">
-                {{ form_field.label_row('Environment Target', 'Environment scope only', 'info') }}
-                <select name="tenant_environment_id" class="{{ form_field.select_classes() }}">
-                    <option value="">No environment target</option>
-                    {% for environment in access_environment_options %}
-                        <option value="{{ environment.id }}">{{ environment.tenant.name }} · {{ environment.environment|title }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block xl:col-span-3">
-                {{ form_field.label_row('Namespace Target', 'Namespace scope only', 'info') }}
-                <select name="tenant_namespace_id" class="{{ form_field.select_classes() }}">
-                    <option value="">No namespace target</option>
-                    {% for namespace in access_namespace_options %}
-                        <option value="{{ namespace.id }}">{{ namespace.environment.tenant.name }} · {{ namespace.namespace }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <div class="md:col-span-2 xl:col-span-6">
-                <div class="flex items-start gap-2.5 rounded-lg border border-outline-subtle bg-surface-elevated px-3.5 py-3">
-                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+
+            <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex min-w-0 items-start gap-2.5 text-content-secondary">
+                    <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
                           aria-hidden="true">
-                        <i data-lucide="scope" class="h-3.5 w-3.5"></i>
+                        <i data-lucide="shield-check" class="h-4 w-4"></i>
                     </span>
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold text-content-primary">Scope Rule</p>
-                        <p class="mt-0.5 text-xs leading-5 text-content-muted">
-                            Tenant scope uses no target. Environment or Namespace scope requires exactly one matching target.
+                    <p class="max-w-xl text-xs leading-5">
+                        <span class="font-semibold text-content-primary">Governed reconciliation.</span>
+                        KAORI commits intent only after validating Tenant ownership and scope.
+                    </p>
+                </div>
+                <button type="submit"
+                        {% if not can_manage or not access_membership_options %}disabled aria-disabled="true"{% endif %}
+                        class="{{ action_button.classes('primary') }}">
+                    <i data-lucide="shield-check" class="h-4 w-4"></i>
+                    Apply Grant
+                </button>
+            </footer>
+        </form>
+
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm xl:col-span-5"
+                 aria-labelledby="access-grant-guidance-heading">
+            <header class="border-b border-outline-subtle px-5 py-4">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="route" class="h-5 w-5"></i>
+                    </span>
+                    <div>
+                        <h3 id="access-grant-guidance-heading"
+                            class="text-base font-semibold text-content-primary">Access Grant Guidance</h3>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">
+                            Keep principal, scope, and effective provider authority inside one governed Tenant boundary.
                         </p>
                     </div>
                 </div>
+            </header>
+
+            <div class="space-y-5 p-5">
+                {{ operational_flow_steps.render(grant_flow, aria_label='Tenant Access Grant flow') }}
+
+                <div class="overflow-hidden rounded-lg border border-outline-subtle">
+                    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                        <div class="flex gap-3 bg-surface-card p-4">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="scope" class="h-4 w-4"></i>
+                            </span>
+                            <div>
+                                <p class="text-xs font-semibold text-content-primary">Scope Rule</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">
+                                    Tenant uses no target. Environment or Namespace requires exactly one matching target.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex gap-3 bg-surface-card p-4">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="shield" class="h-4 w-4"></i>
+                            </span>
+                            <div>
+                                <p class="text-xs font-semibold text-content-primary">Least Privilege</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">
+                                    Choose the narrowest versioned profile and scope required by the principal.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex gap-3 bg-surface-card p-4">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="git-compare-arrows" class="h-4 w-4"></i>
+                            </span>
+                            <div>
+                                <p class="text-xs font-semibold text-content-primary">Provider Authority</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">
+                                    Kubernetes RBAC remains authoritative for effective access after reconciliation.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex gap-3 bg-surface-card p-4">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="lock-keyhole" class="h-4 w-4"></i>
+                            </span>
+                            <div>
+                                <p class="text-xs font-semibold text-content-primary">Secret Boundary</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">
+                                    This workflow commits authorization metadata only; secret material is issued separately.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-        <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-elevated px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex min-w-0 items-start gap-2.5 text-content-secondary">
-                <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true">
-                    <i data-lucide="shield-check" class="h-4 w-4"></i>
-                </span>
-                <p class="max-w-3xl text-xs leading-5">
-                    <span class="font-semibold text-content-primary">Governed reconciliation.</span>
-                    KAORI validates Tenant ownership and scope before committing intent. Kubernetes RBAC remains authoritative for effective access.
+
+            <footer class="flex flex-wrap items-center justify-between gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4">
+                <p class="text-xs leading-5 text-content-muted">
+                    Missing a namespace target? Provision it before applying namespace-scoped access.
                 </p>
-            </div>
-            <button type="submit"
-                    {% if not can_manage or not access_membership_options %}disabled aria-disabled="true"{% endif %}
-                    class="{{ action_button.classes('primary') }}">
-                <i data-lucide="shield-check" class="h-4 w-4"></i>
-                Apply Grant
-            </button>
-        </footer>
-    </form>
+                <a href="{{ url_for('tenant.namespace_provisioning') }}"
+                   class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary">
+                    <i data-lucide="boxes" class="h-4 w-4" aria-hidden="true"></i>
+                    Create Namespace
+                </a>
+            </footer>
+        </section>
+    </div>
 
     {% include "kubernetes/tenant/partials/_access_grant_registry.html" %}
 </div>

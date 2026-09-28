@@ -235,7 +235,7 @@ def _sort_time(value: datetime | None) -> float:
     return normalized.timestamp()
 
 
-def _tenant_recent_activity(*, limit: int = 5) -> list[dict[str, str]]:
+def _tenant_recent_activity(*, limit: int = 3) -> list[dict[str, str]]:
     rows: list[tuple[datetime | None, dict[str, str]]] = []
 
     for tenant in Tenant.query.order_by(Tenant.updated_at.desc()).limit(limit).all():

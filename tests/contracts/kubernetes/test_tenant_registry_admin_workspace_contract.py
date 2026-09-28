@@ -257,14 +257,16 @@ def test_overview_adds_section_hierarchy_above_tenant_estate() -> None:
     assert overview.index("'Governance Scope'") < overview.index("'Tenant Estate'")
 
 
-def test_access_grant_scope_rule_is_neutral_and_form_geometry_is_balanced() -> None:
+def test_access_grant_uses_tenant_setup_two_card_composition() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
 
-    assert 'Tenant scope uses no target. Environment or Namespace scope requires exactly one matching target.' in workspace
-    assert 'xl:grid-cols-6' in workspace
-    assert workspace.count('xl:col-span-2') >= 3
-    assert workspace.count('xl:col-span-3') >= 2
-    assert 'border-outline-subtle bg-surface-elevated' in workspace
+    assert 'xl:grid-cols-12' in workspace
+    assert 'xl:col-span-7' in workspace
+    assert 'xl:col-span-5' in workspace
+    assert 'Access Grant Guidance' in workspace
+    assert 'Tenant uses no target. Environment or Namespace requires exactly one matching target.' in workspace
+    assert 'Provider Authority' in workspace
+    assert 'Secret Boundary' in workspace
     assert 'Governed reconciliation.' in workspace
 
 
@@ -321,8 +323,8 @@ def test_tenant_access_grant_links_namespace_creation_and_keeps_guidance_neutral
 
     assert "Create Namespace" in workspace
     assert "url_for('tenant.namespace_provisioning')" in workspace
-    assert "Tenant scope uses no target. Environment or Namespace scope requires exactly one matching target." in workspace
-    assert "bg-surface-elevated" in workspace
+    assert "Tenant uses no target. Environment or Namespace requires exactly one matching target." in workspace
+    assert "Access Grant Guidance" in workspace
     assert "bg-status-info-soft" not in workspace
 
 
@@ -384,11 +386,16 @@ def test_tenant_mutations_return_to_the_relevant_administration_section() -> Non
 
 def test_overview_attention_and_activity_rows_share_peer_geometry() -> None:
     overview = read('app/templates/kubernetes/tenant/overview.html')
+    workspace = read('app/kubernetes/tenant/workspace.py')
 
     assert overview.count('min-h-[7.5rem]') >= 3
     assert 'Committed governance finding' in overview
     assert 'Recent Tenant Activity' in overview
     assert 'Needs Attention' in overview
+    assert "def _tenant_attention_rows(findings: list[dict[str, Any]], *, limit: int = 3)" in workspace
+    assert "def _tenant_recent_activity(*, limit: int = 3)" in workspace
+    assert 'h-[calc(100%+1rem)]' not in overview
+    assert '<ol class="flex-1 divide-y divide-outline-subtle">' in overview
 
 
 
