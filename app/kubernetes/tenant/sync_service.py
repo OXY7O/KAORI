@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
+from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.inventory import ClusterInventory, NamespaceInventory
 from app.models.tenant import (
