@@ -74,7 +74,10 @@ def _managed_namespace_map(cluster_ids: list[str]) -> dict[tuple[str, str], Tena
     if not cluster_ids:
         return {}
     rows = (
-        TenantNamespace.query.filter(TenantNamespace.cluster_id.in_(cluster_ids))
+        TenantNamespace.query.filter(
+            TenantNamespace.cluster_id.in_(cluster_ids),
+            TenantNamespace.provisioning_status != 'deprovisioned',
+        )
         .join(TenantEnvironment, TenantNamespace.tenant_environment_id == TenantEnvironment.id)
         .join(Tenant, TenantEnvironment.tenant_id == Tenant.id)
         .all()
@@ -109,7 +112,7 @@ def _capsule_items(client) -> tuple[str | None, list[dict[str, Any]]]:
                 _request_timeout=5,
             )
         except ApiException as exc:
-            if exc.status in {403, 404}:
+            if exc.status == 404:
                 continue
             raise
         items = payload.get('items') if isinstance(payload, dict) else None
