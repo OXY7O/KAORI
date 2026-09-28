@@ -73,9 +73,7 @@ def _select_version(snapshot) -> str:
     for version in _SUPPORTED_VERSIONS:
         if version in served:
             return version
-    raise ValueError(
-        'Capsule Tenant creation requires a served capsule.clastix.io/v1beta2 or v1beta1 Tenant API.'
-    )
+    raise ValueError('Capsule Tenant creation requires a served capsule.clastix.io/v1beta2 or v1beta1 Tenant API.')
 
 
 def _owner(kind: str, name: str) -> tuple[str, str]:
@@ -188,13 +186,9 @@ def create_capsule_tenant(
             raise ValueError(
                 'A Capsule Tenant with this name already exists. Use Tenant Discovery → Adoption.'
             ) from exc
-        raise ValueError(
-            f'Capsule Tenant provider rejected direct creation: {str(exc)[:700]}'
-        ) from exc
+        raise ValueError(f'Capsule Tenant provider rejected direct creation: {str(exc)[:700]}') from exc
     except Exception as exc:
-        raise ValueError(
-            f'Capsule Tenant capability preflight failed: {str(exc)[:700]}'
-        ) from exc
+        raise ValueError(f'Capsule Tenant capability preflight failed: {str(exc)[:700]}') from exc
 
     metadata = created.get('metadata') if isinstance(created, dict) else {}
     metadata = metadata if isinstance(metadata, dict) else {}
@@ -238,7 +232,6 @@ def compensate_capsule_tenant_create(
             return False
         if expected_uid and current_uid and current_uid != expected_uid:
             return False
-
         api.delete_cluster_custom_object(
             _CAPSULE_GROUP,
             api_version,
@@ -336,9 +329,7 @@ def delete_capsule_tenant_verified(
                 }
             sleep(0.5)
 
-        raise ValueError(
-            'Capsule Tenant deletion was requested, but provider absence was not verified before timeout.'
-        )
+        raise ValueError('Capsule Tenant deletion was requested, but provider absence was not verified before timeout.')
     except ValueError:
         raise
     except ApiException as exc:
