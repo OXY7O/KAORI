@@ -3,6 +3,7 @@
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/form_field.html" as form_field %}
 {% import "components/destructive_confirmation_modal.html" as destructive_modal %}
+{% import "components/info_tip.html" as info_tip %}
 {% set registry_id = 'tenant-group-registry' %}
 {% set loading_id = 'tenant-group-registry-loading' %}
 {% set query_params = {
@@ -25,11 +26,23 @@
                 per_page_param='group_per_page'
             ) }}
         {% endif %}
+        {{ info_tip.render(
+            'tenant-group-lifecycle-tip',
+            'Tenant Group lifecycle',
+            'KAORI stores a Tenant binding to an externally asserted Kubernetes Group subject.',
+            [
+                'Edit corrects the display name or Kubernetes Group Subject; IdP membership is unchanged.',
+                'Retire removes the binding from future Membership use after dependent access cleanup.',
+                'Reactivate restores a retired binding for future use.',
+                'Routine hard delete is intentionally absent so Membership, Access Grant, and audit lineage remain queryable.'
+            ],
+            button_text='Group Guide'
+        ) }}
     {% endset %}
     {{ table_ui.inventory_block_header(
         'users',
         'Tenant Group Registry',
-        'Registered Kubernetes Group subjects. Correct identity with Edit; use Retire instead of deleting history.',
+        'Registered Kubernetes Group subjects. Use Edit for mistakes; Retire removes future use while preserving history.',
         loading_id,
         'Refreshing Tenant Group Registry',
         '#create-tenant-group-form',
