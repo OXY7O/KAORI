@@ -32,9 +32,7 @@ def test_incomplete_active_commitment_remains_unknown_instead_of_zero() -> None:
 
 
 def test_bounded_active_commitment_has_no_unknown_reason() -> None:
-    assert _committed_evidence_reason(
-        CapacityVector(cpu=Decimal('2'), memory_bytes=Decimal('4096'))
-    ) is None
+    assert _committed_evidence_reason(CapacityVector(cpu=Decimal('2'), memory_bytes=Decimal('4096'))) is None
 
 
 def test_incomplete_commitment_reason_names_blocking_namespaces() -> None:
