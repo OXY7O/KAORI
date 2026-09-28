@@ -1,20 +1,19 @@
 {# Shared numbered governance sequence for compact, non-arrow operational flows. #}
 {% macro render(steps, aria_label, columns=4) -%}
-    {% set column_classes = 'xl:grid-cols-5' if columns == 5 else ('xl:grid-cols-3' if columns == 3 else 'xl:grid-cols-4') %}
-    <ol class="grid gap-3 sm:grid-cols-2 {{ column_classes }}"
+    <ol class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card divide-y divide-outline-subtle"
         aria-label="{{ aria_label }}">
         {% for step in steps %}
-            <li class="min-w-0 rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
-                <div class="flex items-center gap-2.5">
-                    <span class="inline-flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-[11px] font-semibold text-kaori-primary"
-                          aria-hidden="true">0{{ loop.index }}</span>
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
-                          aria-hidden="true">
-                        <i data-lucide="{{ step[0] }}" class="h-4 w-4"></i>
-                    </span>
-                    <p class="min-w-0 text-xs font-semibold leading-5 text-content-primary">{{ step[1] }}</p>
+            <li class="grid grid-cols-[auto_auto_minmax(0,1fr)] items-start gap-3 px-4 py-3.5">
+                <span class="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-kaori-soft px-2 text-xs font-semibold text-kaori-primary"
+                      aria-hidden="true">0{{ loop.index }}</span>
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-elevated text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="{{ step[0] }}" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0 pt-0.5">
+                    <p class="text-xs font-semibold leading-5 text-content-primary">{{ step[1] }}</p>
+                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ step[2] }}</p>
                 </div>
-                <p class="mt-2 text-xs leading-5 text-content-muted">{{ step[2] }}</p>
             </li>
         {% endfor %}
     </ol>
