@@ -373,7 +373,7 @@ def update_tenant_group_committed(
             if subject_changed
             else 'Tenant Group display name was updated.'
         ),
-        outcome='pending' if subject_changed else 'success',
+        outcome='success',
         previous_name=previous_name,
         previous_subject_name=previous_subject,
     )
@@ -402,7 +402,8 @@ def update_tenant_group_committed(
     for grant in sorted(active_grants, key=lambda item: item.id or 0):
         try:
             reconcile_access_grant_committed(grant_id=int(grant.id), actor=actor)
-        except (ApiException, ValueError) as exc:
+        except (ApiException, ValueError, SQLAlchemyError) as exc:
+            db.session.rollback()
             reconciliation_errors.append(str(exc))
 
     if reconciliation_errors:
