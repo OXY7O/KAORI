@@ -1,0 +1,94 @@
+{% import "components/action_button.html" as action_button %}
+{% import "components/form_field.html" as form_field %}
+{% import "components/info_tip.html" as info_tip %}
+<section id="tenant-maintenance"
+         class="overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+         aria-labelledby="tenant-maintenance-heading">
+    <header class="flex items-start justify-between gap-4 border-b border-outline-subtle px-5 py-4">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="square-pen" class="h-5 w-5"></i>
+            </span>
+            <div>
+                <h3 id="tenant-maintenance-heading"
+                    class="text-base font-semibold text-content-primary">Update Tenant Metadata</h3>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">
+                    Update operator-facing metadata without changing cluster placement, provider authority, or immutable slug identity.
+                </p>
+            </div>
+        </div>
+        {{ info_tip.render(
+            'tenant-maintenance-tip',
+            'Mutable Tenant metadata',
+            'KAORI intentionally limits routine Tenant updates to operator-facing metadata.',
+            [
+                'Tenant slug remains stable after creation.',
+                'Cluster placement and provider authority are not edited inline.',
+                'Use Decommission from Tenant Registry for lifecycle removal.'
+            ]
+        ) }}
+    </header>
+
+    {% if tenant_edit_target %}
+        <form method="post"
+              action="{{ url_for('tenant.update_tenant_metadata_route', tenant_id=tenant_edit_target.id) }}"
+              hx-post="{{ url_for('tenant.update_tenant_metadata_route', tenant_id=tenant_edit_target.id) }}"
+              hx-target="#tenant-admin-workspace"
+              hx-select="#tenant-admin-workspace"
+              hx-swap="outerHTML show:none focus-scroll:false"
+              hx-indicator="#tenant-admin-loading"
+              hx-disabled-elt="find button"
+              class="grid gap-4 p-5 md:grid-cols-2">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label class="block">
+                {{ form_field.label_row('Tenant Name') }}
+                <input name="name"
+                       required
+                       maxlength="120"
+                       value="{{ tenant_edit_target.name }}"
+                       class="{{ form_field.input_classes() }}">
+            </label>
+            <div>
+                {{ form_field.label_row('Tenant Slug') }}
+                <div class="{{ form_field.input_classes() }} flex items-center bg-surface-subtle text-content-muted"
+                     aria-label="Tenant slug is immutable">
+                    {{ tenant_edit_target.slug }}
+                </div>
+            </div>
+            <label class="block md:col-span-2">
+                {{ form_field.label_row('Description') }}
+                <input name="description"
+                       maxlength="500"
+                       value="{{ tenant_edit_target.description or '' }}"
+                       placeholder="Optional operator context"
+                       class="{{ form_field.input_classes() }}">
+            </label>
+            <div class="flex items-center justify-between gap-3 border-t border-outline-subtle pt-4 md:col-span-2">
+                <p class="text-xs leading-5 text-content-muted">
+                    {{ tenant_edit_target.lifecycle_status|replace('_', ' ')|title }} ·
+                    {{ tenant_edit_target.provider_key|replace('_', ' ')|title }}
+                </p>
+                <button type="submit"
+                        {% if not can_manage %}disabled aria-disabled="true"{% endif %}
+                        class="{{ action_button.classes('primary') }}">
+                    <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
+                    Save Tenant
+                </button>
+            </div>
+        </form>
+    {% else %}
+        <div class="flex items-start gap-3 p-5">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-subtle text-content-muted"
+                  aria-hidden="true">
+                <i data-lucide="mouse-pointer-click" class="h-4 w-4"></i>
+            </span>
+            <div>
+                <p class="text-sm font-semibold text-content-primary">Select a Tenant from Tenant Registry</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">
+                    Use the Edit action in Tenant Registry to load the selected Tenant into this metadata form.
+                </p>
+            </div>
+        </div>
+    {% endif %}
+</section>
