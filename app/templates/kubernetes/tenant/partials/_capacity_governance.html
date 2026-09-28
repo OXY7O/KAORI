@@ -121,7 +121,8 @@
                     'Overcommitted — commitments exceed the governed budget.',
                     'Unknown — required capacity evidence is incomplete or stale.'
                 ],
-                button_text='Status Guide'
+                button_text='Status Guide',
+                button_classes=table_ui.action_classes()
             ) }}
         {% endset %}
         {{ table_ui.inventory_block_header(
