@@ -182,9 +182,16 @@
                                 {% elif tenant.lifecycle_status == 'decommissioned' %}
                                     {{ table_label.special_label('History Retained', 'unknown', 'archive') }}
                                 {% elif decommission.blockers %}
-                                    <span title="{{ decommission.blockers|join(' ') }}">
+                                    <div class="max-w-[15rem] space-y-1 text-right" title="{{ decommission.blockers|join(' ') }}">
                                         {{ table_label.special_label('Blocked', 'critical', 'shield-alert') }}
-                                    </span>
+                                        <p class="text-[11px] leading-4 text-content-muted">
+                                            {% if tenant.provider_key == 'capsule' or tenant.reconciliation_authority == 'capsule' %}
+                                                Capsule teardown not admitted
+                                            {% else %}
+                                                {{ decommission.blockers[0] }}
+                                            {% endif %}
+                                        </p>
+                                    </div>
                                 {% else %}
                                     {{ table_label.special_label('Unavailable', 'unknown', 'circle-slash-2') }}
                                 {% endif %}
