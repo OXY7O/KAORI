@@ -15,6 +15,10 @@ from app.kubernetes.tenant.capacity_governance import (
     enforce_existing_namespace_allocation_preflight,
     enforce_namespace_allocation_preflight,
 )
+from app.kubernetes.tenant.capsule_tenant import (
+    compensate_capsule_tenant_create,
+    create_capsule_tenant,
+)
 from app.kubernetes.tenant.provisioning import create_namespace_intent, reconcile_native_namespace
 from app.kubernetes.tenant.validation import validate_profile_spec
 from app.models import Cluster
@@ -35,6 +39,7 @@ from app.models.tenant import (
 _TENANT_SLUG_RE = re.compile(r'[^a-z0-9-]+')
 _ALLOWED_ENVIRONMENTS = {item.value for item in TenantEnvironmentName}
 _ALLOWED_PROFILE_CLASSES = {item.value for item in TenantResourceProfileClass}
+_ALLOWED_TENANT_PROVIDERS = {'native_kubernetes', 'capsule'}
 
 RESOURCE_PROFILE_PRESETS: dict[str, dict[str, Any]] = {
     'small': {
@@ -135,6 +140,10 @@ def create_tenant(source: Mapping[str, Any]) -> tuple[Tenant, TenantEnvironment]
     if environment not in _ALLOWED_ENVIRONMENTS:
         raise ValueError('Select a supported Tenant environment.')
 
+    provider_key = _text(source, 'provider_key').lower() or 'native_kubernetes'
+    if provider_key not in _ALLOWED_TENANT_PROVIDERS:
+        raise ValueError('Select a supported Tenant provider.')
+
     cluster_id = _text(source, 'cluster_id')
     cluster = (
         Cluster.query.join(KubernetesConnection, KubernetesConnection.cluster_id == Cluster.id)
@@ -163,17 +172,13 @@ def create_tenant(source: Mapping[str, Any]) -> tuple[Tenant, TenantEnvironment]
     tenant.slug = slug
     tenant.generation = generation
     tenant.description = _text(source, 'description') or None
-    tenant.lifecycle_status = TenantLifecycleStatus.READY.value
-    tenant.provider_key = 'native_kubernetes'
-    tenant.provider_state = 'native'
-    tenant.reconciliation_authority = 'native_kubernetes'
-    tenant.provider_evidence_json = {
-        'provider': 'native_kubernetes',
-        'readiness': 'ready',
-        'connection_id': cluster.kubernetes_connection.id if cluster.kubernetes_connection else None,
-        'source': 'kubernetes_connection',
-    }
+    tenant.lifecycle_status = TenantLifecycleStatus.PENDING.value
+    tenant.provider_key = provider_key
+    tenant.provider_state = 'native' if provider_key == 'native_kubernetes' else 'capsule_degraded'
+    tenant.reconciliation_authority = 'native_kubernetes' if provider_key == 'native_kubernetes' else 'capsule'
     db.session.add(tenant)
+    # Flush uniqueness and integrity constraints before any external provider
+    # mutation. A failed flush therefore cannot orphan a Capsule Tenant CR.
     db.session.flush()
 
     tenant_environment = TenantEnvironment()
@@ -181,21 +186,97 @@ def create_tenant(source: Mapping[str, Any]) -> tuple[Tenant, TenantEnvironment]
     tenant_environment.environment = environment
     db.session.add(tenant_environment)
     db.session.flush()
+
+    if provider_key == 'native_kubernetes':
+        tenant.provider_state = 'native'
+        tenant.reconciliation_authority = 'native_kubernetes'
+        tenant.provider_reference = None
+        tenant.provider_evidence_json = {
+            'provider': 'native_kubernetes',
+            'readiness': 'ready',
+            'connection_id': cluster.kubernetes_connection.id if cluster.kubernetes_connection else None,
+            'source': 'kubernetes_connection',
+            'provider_mutation_performed': False,
+            'secret_material_persisted': False,
+        }
+    else:
+        result = create_capsule_tenant(
+            cluster=cluster,
+            tenant_name=slug,
+            kaori_tenant_id=tenant.id,
+            generation=generation,
+            owner_kind=_text(source, 'capsule_owner_kind'),
+            owner_name=_text(source, 'capsule_owner_subject'),
+        )
+        tenant.provider_state = result.provider_state
+        tenant.reconciliation_authority = 'capsule'
+        tenant.provider_reference = result.provider_reference
+        tenant.provider_evidence_json = result.evidence()
+
+    tenant.lifecycle_status = TenantLifecycleStatus.READY.value
+    db.session.flush()
     return tenant, tenant_environment
 
 
+def _capsule_create_cleanup_context(tenant: Tenant | None) -> dict[str, Any] | None:
+    if tenant is None or tenant.provider_key != 'capsule':
+        return None
+    evidence = tenant.provider_evidence_json or {}
+    if not bool(evidence.get('created_by_kaori')):
+        return None
+    api_version = str(evidence.get('provider_api_version') or '').strip()
+    reference = str(evidence.get('provider_reference') or tenant.provider_reference or '').strip()
+    if not api_version or not reference:
+        return None
+    return {
+        'cluster_id': str(tenant.cluster_id),
+        'api_version': api_version,
+        'tenant_name': reference,
+        'kaori_tenant_id': tenant.id,
+        'expected_uid': str(evidence.get('provider_uid') or '').strip() or None,
+    }
+
+
+def _compensate_capsule_create(context: dict[str, Any] | None) -> bool | None:
+    if context is None:
+        return None
+    cluster = db.session.get(Cluster, context['cluster_id'])
+    if cluster is None:
+        return False
+    return compensate_capsule_tenant_create(
+        cluster=cluster,
+        api_version=context['api_version'],
+        tenant_name=context['tenant_name'],
+        kaori_tenant_id=context['kaori_tenant_id'],
+        expected_uid=context['expected_uid'],
+    )
+
+
 def create_tenant_committed(source: Mapping[str, Any]) -> tuple[Tenant, TenantEnvironment]:
+    tenant: Tenant | None = None
     try:
         tenant, environment = create_tenant(source)
+        cleanup_context = _capsule_create_cleanup_context(tenant)
         db.session.commit()
         return tenant, environment
     except IntegrityError as exc:
+        cleanup_context = _capsule_create_cleanup_context(tenant)
         db.session.rollback()
+        cleaned = _compensate_capsule_create(cleanup_context)
+        detail = (
+            ' Capsule provider compensation succeeded.'
+            if cleaned is True
+            else ' Capsule provider compensation could not be verified.'
+            if cleaned is False
+            else ''
+        )
         raise TenantStateConflictError(
-            'Committed Tenant state changed while this request was being applied. Refresh and retry.'
+            'Committed Tenant state changed while this request was being applied. Refresh and retry.' + detail
         ) from exc
     except SQLAlchemyError:
+        cleanup_context = _capsule_create_cleanup_context(tenant)
         db.session.rollback()
+        _compensate_capsule_create(cleanup_context)
         raise
 
 
