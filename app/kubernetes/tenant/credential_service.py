@@ -239,6 +239,7 @@ def create_human_credential_committed(
     credential = TenantCredential()
     credential.public_id = public_id
     credential.tenant_id = grant.tenant_id
+    credential.tenant = grant.tenant
     credential.owner_user = owner
     credential.access_grant = grant
     credential.credential_type = TenantCredentialType.HUMAN_SERVICE_ACCOUNT.value
