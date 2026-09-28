@@ -1,89 +1,111 @@
+{% import "components/action_button.html" as action_button %}
+{% import "components/form_field.html" as form_field %}
+{% import "components/info_tip.html" as info_tip %}
 <form method="post"
       action="{{ url_for('tenant.change_namespace_allocation_route') }}"
       data-tenant-allocation-change-form
-      class="rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+      class="overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="flex flex-wrap items-start justify-between gap-4">
-        <div>
-            <h2 class="text-base font-semibold text-content-primary">Change Namespace Allocation</h2>
-            <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Compare the frozen current allocation with a proposed Resource Profile. KAORI runs Tenant Capacity Governance before changing committed intent or reconciling Kubernetes.</p>
+
+    <header class="flex items-start justify-between gap-4 border-b border-outline-subtle px-5 py-4">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                <i data-lucide="refresh-cw" class="h-5 w-5"></i>
+            </span>
+            <div>
+                <h2 class="text-base font-semibold text-content-primary">Change Namespace Allocation</h2>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Compare the frozen current allocation with a proposed Resource Profile before committing a governed change.</p>
+            </div>
         </div>
-        {{ table_label.status_label('Capacity Preflight', 'info') }}
-    </div>
-    <div class="mt-5 grid gap-4 md:grid-cols-2">
-        <label class="block">
-            {{ form_field.label_row("Managed Namespace") }}
-            <select name="tenant_namespace_id"
-                    required
-                    data-tenant-allocation-change-namespace
-                    class="{{ form_field.select_classes() }}">
-                <option value="">Select managed namespace</option>
-                {% for item in namespace_options %}
-                    <option value="{{ item.id }}">{{ item.namespace }} · {{ item.environment.tenant.name }}</option>
-                {% endfor %}
-            </select>
-        </label>
-        <label class="block">
-            {{ form_field.label_row("Proposed Resource Profile") }}
-            <select name="resource_profile_id"
-                    required
-                    data-tenant-allocation-change-profile
-                    class="{{ form_field.select_classes() }}">
-                <option value="">Select Resource Profile</option>
-                {% for profile in profiles if profile.enabled %}
-                    <option value="{{ profile.id }}">{{ profile.name }} · {{ profile.profile_class|title }} v{{ profile.version }}</option>
-                {% endfor %}
-            </select>
-        </label>
-    </div>
-    <div class="mt-5 grid gap-4 md:grid-cols-2">
-        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Current Allocation</p>
-            <p class="mt-2 text-sm font-semibold text-content-primary"
-               data-tenant-allocation-current-profile>—</p>
-            <dl class="mt-3 grid grid-cols-2 gap-3 text-sm">
-                <div>
-                    <dt class="text-xs text-content-muted">CPU requests</dt>
-                    <dd class="mt-1 font-medium text-content-primary"
-                        data-tenant-allocation-current-cpu>
-                        —
-                    </dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-content-muted">Memory requests</dt>
-                    <dd class="mt-1 font-medium text-content-primary"
-                        data-tenant-allocation-current-memory>
-                        —
-                    </dd>
-                </div>
-            </dl>
+        {{ info_tip.render(
+            'namespace-allocation-change-tip',
+            'Allocation change',
+            'Changing allocation is a new admitted intent, not an in-place rewrite of historical profile evidence.',
+            [
+                'Current allocation remains visible from its committed snapshot.',
+                'The proposed profile is evaluated against fresh committed capacity evidence.',
+                'Allow commits the new profile/version snapshot and reconciles provider resources.',
+                'Block leaves current Namespace allocation unchanged.'
+            ]
+        ) }}
+    </header>
+
+    <div class="space-y-5 p-5">
+        <div class="grid gap-4 md:grid-cols-2">
+            <label class="block">
+                {{ form_field.label_row("Managed Namespace") }}
+                <select name="tenant_namespace_id"
+                        required
+                        data-tenant-allocation-change-namespace
+                        class="{{ form_field.select_classes() }}">
+                    <option value="">Select managed namespace</option>
+                    {% for item in namespace_options %}
+                        <option value="{{ item.id }}">{{ item.namespace }} · {{ item.environment.tenant.name }} · {{ item.environment.environment|title }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="block">
+                {{ form_field.label_row("Proposed Resource Profile") }}
+                <select name="resource_profile_id"
+                        required
+                        data-tenant-allocation-change-profile
+                        class="{{ form_field.select_classes() }}">
+                    <option value="">Select Resource Profile</option>
+                    {% for profile in profiles if profile.enabled %}
+                        <option value="{{ profile.id }}">{{ profile.name }} · {{ profile.profile_class|title }} · v{{ profile.version }}</option>
+                    {% endfor %}
+                </select>
+            </label>
         </div>
-        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Proposed Allocation</p>
-            <p class="mt-2 text-sm font-semibold text-content-primary"
-               data-tenant-allocation-proposed-profile>—</p>
-            <dl class="mt-3 grid grid-cols-2 gap-3 text-sm">
-                <div>
-                    <dt class="text-xs text-content-muted">CPU requests</dt>
-                    <dd class="mt-1 font-medium text-content-primary"
-                        data-tenant-allocation-proposed-cpu>
-                        —
-                    </dd>
+
+        <div class="grid gap-4 md:grid-cols-2">
+            <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4" aria-label="Current Namespace allocation">
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Current Snapshot</p>
+                    <span class="inline-flex min-h-6 items-center rounded-md bg-surface-card px-2 text-[11px] font-semibold text-content-muted">Frozen</span>
                 </div>
-                <div>
-                    <dt class="text-xs text-content-muted">Memory requests</dt>
-                    <dd class="mt-1 font-medium text-content-primary"
-                        data-tenant-allocation-proposed-memory>
-                        —
-                    </dd>
+                <p class="mt-3 text-sm font-semibold text-content-primary" data-tenant-allocation-current-profile>—</p>
+                <dl class="mt-4 grid grid-cols-2 gap-3">
+                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                        <dt class="text-xs text-content-muted">CPU requests</dt>
+                        <dd class="mt-1 text-sm font-semibold text-content-primary" data-tenant-allocation-current-cpu>—</dd>
+                    </div>
+                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                        <dt class="text-xs text-content-muted">Memory requests</dt>
+                        <dd class="mt-1 text-sm font-semibold text-content-primary" data-tenant-allocation-current-memory>—</dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="rounded-xl border border-kaori-primary/20 bg-kaori-soft p-4" aria-label="Proposed Namespace allocation">
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Proposed Contract</p>
+                    <span class="inline-flex min-h-6 items-center rounded-md bg-surface-card px-2 text-[11px] font-semibold text-kaori-primary">Capacity preflight</span>
                 </div>
-            </dl>
+                <p class="mt-3 text-sm font-semibold text-content-primary" data-tenant-allocation-proposed-profile>—</p>
+                <dl class="mt-4 grid grid-cols-2 gap-3">
+                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                        <dt class="text-xs text-content-muted">CPU requests</dt>
+                        <dd class="mt-1 text-sm font-semibold text-content-primary" data-tenant-allocation-proposed-cpu>—</dd>
+                    </div>
+                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                        <dt class="text-xs text-content-muted">Memory requests</dt>
+                        <dd class="mt-1 text-sm font-semibold text-content-primary" data-tenant-allocation-proposed-memory>—</dd>
+                    </div>
+                </dl>
+            </section>
         </div>
+
+        <p class="text-xs leading-5 text-content-muted">CPU and memory requests are capacity-admission dimensions. Other ResourceQuota and LimitRange values still reconcile from the selected profile but are not treated as physical node reservations.</p>
     </div>
-    <p class="mt-4 text-xs leading-5 text-content-muted">CPU and memory requests are the Tenant Capacity Governance physical-capacity admission dimensions. Other ResourceQuota and LimitRange values still reconcile from the selected profile but are not represented as physical node reservations.</p>
-    <button type="submit"
-            {% if not can_manage or not namespace_options or not profiles %}disabled aria-disabled="true"{% endif %}
-            class="mt-5 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
-        <i data-lucide="refresh-cw" class="h-4 w-4"></i>Preflight &amp; Apply Allocation
-    </button>
+
+    <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <p class="max-w-2xl text-xs leading-5 text-content-muted">No committed allocation changes until preflight allows the request.</p>
+        <button type="submit"
+                {% if not can_manage or not namespace_options or not profiles %}disabled aria-disabled="true"{% endif %}
+                class="{{ action_button.classes('primary') }}">
+            <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
+            Preflight &amp; Apply
+        </button>
+    </footer>
 </form>
