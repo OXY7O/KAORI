@@ -805,3 +805,45 @@ def generate_kubeconfig_committed(
         access_package=package,
         kubeconfig=rendered,
     )
+
+
+def generate_credential_material_committed(
+    *,
+    credential_id: int,
+    namespace_id: int,
+    requested_seconds: int = DEFAULT_TOKEN_TTL_SECONDS,
+    actor: User | None = None,
+) -> GeneratedTokenMaterial | GeneratedKubeconfigMaterial:
+    """Mint one non-persisted delivery artifact from committed credential authority.
+
+    Human credentials receive a short-lived ServiceAccount token for manual
+    JumpServer delivery. Deployer/admin credentials receive a short-lived
+    kubeconfig embedding a TokenRequest token. Secret material is returned only
+    to the caller and is never persisted by KAORI.
+    """
+
+    credential = db.session.get(TenantCredential, credential_id)
+    if credential is None:
+        raise ValueError('Selected Tenant credential no longer exists.')
+
+    credential_type = TenantCredentialType(credential.credential_type)
+    if credential_type is TenantCredentialType.HUMAN_SERVICE_ACCOUNT:
+        return issue_jumpserver_token_committed(
+            credential_id=credential.id,
+            namespace_id=namespace_id,
+            requested_seconds=requested_seconds,
+            actor=actor,
+        )
+
+    if credential_type in {
+        TenantCredentialType.DEPLOYER_SERVICE_ACCOUNT,
+        TenantCredentialType.ADMIN_KUBECONFIG,
+    }:
+        return generate_kubeconfig_committed(
+            credential_id=credential.id,
+            namespace_id=namespace_id,
+            requested_seconds=requested_seconds,
+            actor=actor,
+        )
+
+    raise ValueError('This Tenant credential type has no approved material-delivery path.')
