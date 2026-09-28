@@ -37,6 +37,17 @@ def test_bounded_active_commitment_has_no_unknown_reason() -> None:
     ) is None
 
 
+def test_incomplete_commitment_reason_names_blocking_namespaces() -> None:
+    reason = _committed_evidence_reason(
+        CapacityVector(cpu=None, memory_bytes=None),
+        ['legacy-a', 'adopted-b'],
+    )
+
+    assert reason is not None
+    assert 'legacy-a, adopted-b' in reason
+    assert 'Apply a bounded Resource Profile allocation before positive changes.' in reason
+
+
 def test_budget_subtracts_reserve_headroom_and_unmanaged_commitments() -> None:
     gib = Decimal(1024**3)
 
