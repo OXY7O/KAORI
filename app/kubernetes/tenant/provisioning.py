@@ -240,9 +240,9 @@ def _namespace_delete_observation(api, name: str) -> tuple[bool, dict[str, Any]]
         'namespace': name,
         'observed_absent': False,
         'phase': phase,
-        'deletion_timestamp': deletion_timestamp.isoformat()
-        if hasattr(deletion_timestamp, 'isoformat')
-        else str(deletion_timestamp or ''),
+        'deletion_timestamp': (
+            deletion_timestamp.isoformat() if isinstance(deletion_timestamp, datetime) else str(deletion_timestamp or '')
+        ),
         'finalizers': [str(item) for item in finalizers],
     }
 
