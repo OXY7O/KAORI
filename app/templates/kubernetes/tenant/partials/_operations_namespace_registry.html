@@ -1,0 +1,148 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_registry.html" as registry_ui %}
+{% set registry_id = 'operations-namespace-registry' %}
+{% set loading_id = 'operations-namespace-registry-loading' %}
+{% set query_params = {
+    'tab': 'provisioning',
+    'ops_namespace_search': operations_namespace_filters.search,
+    'ops_namespace_tenant_id': operations_namespace_filters.tenant_id,
+    'ops_namespace_environment': operations_namespace_filters.environment,
+    'ops_namespace_status': operations_namespace_filters.status
+} %}
+<section id="{{ registry_id }}" class="{{ table_ui.block_classes() }}" aria-label="Namespace Provisioning Registry">
+    {% set header_actions %}
+        {% if operations_namespace_filters.search or operations_namespace_filters.tenant_id or operations_namespace_filters.environment or operations_namespace_filters.status %}
+            {{ registry_ui.clear_filters_link(
+                'tenant.operations',
+                registry_id,
+                loading_id,
+                operations_namespace_pagination.per_page,
+                table_ui.action_classes(),
+                query_params={'tab': 'provisioning'},
+                page_param='ops_namespace_page',
+                per_page_param='ops_namespace_per_page'
+            ) }}
+        {% endif %}
+        <a href="{{ url_for('tenant.namespace_provisioning', view='provision') }}" class="{{ table_ui.action_classes() }}">
+            <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+            Provision Namespace
+        </a>
+    {% endset %}
+    {{ table_ui.inventory_block_header(
+        'boxes',
+        'Namespace Provisioning Registry',
+        'Committed Namespace allocation and provider reconciliation evidence.',
+        loading_id,
+        'Refreshing Namespace Provisioning Registry',
+        none,
+        none,
+        header_actions=header_actions
+    ) }}
+
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% call registry_ui.filter_form(
+            'tenant.operations',
+            registry_id,
+            loading_id,
+            operations_namespace_pagination.per_page,
+            page_param='ops_namespace_page',
+            per_page_param='ops_namespace_per_page'
+        ) %}
+            <input type="hidden" name="tab" value="provisioning">
+            <div>
+                <label for="ops-namespace-tenant" class="{{ table_ui.filter_label_classes() }}">Tenant</label>
+                <select id="ops-namespace-tenant" name="ops_namespace_tenant_id" class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Tenants</option>
+                    {% for tenant in operations_namespace_tenant_options %}
+                        <option value="{{ tenant.id }}" {% if operations_namespace_filters.tenant_id == tenant.id|string %}selected{% endif %}>{{ tenant.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="ops-namespace-environment" class="{{ table_ui.filter_label_classes() }}">Environment</label>
+                <select id="ops-namespace-environment" name="ops_namespace_environment" class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Environments</option>
+                    {% for environment in operations_namespace_environment_options %}
+                        <option value="{{ environment }}" {% if operations_namespace_filters.environment == environment %}selected{% endif %}>{{ environment|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="ops-namespace-status" class="{{ table_ui.filter_label_classes() }}">State</label>
+                <select id="ops-namespace-status" name="ops_namespace_status" class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All States</option>
+                    {% for status in operations_namespace_status_options %}
+                        <option value="{{ status }}" {% if operations_namespace_filters.status == status %}selected{% endif %}>{{ status|replace('_', ' ')|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="ops-namespace-search" class="{{ table_ui.filter_label_classes() }}">Search</label>
+                {{ table_ui.search_field('ops_namespace_search', operations_namespace_filters.search, 'Namespace or Tenant', id='ops-namespace-search') }}
+            </div>
+        {% endcall %}
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[940px]') }}">
+            <caption class="sr-only">Tenant Namespace provisioning evidence.</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Namespace</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant / Environment</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Resource Profile</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Provider</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">State</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for item in operations_namespace_rows %}
+                    {% set state_tone = 'normal' if item.provisioning_status == 'ready' else ('critical' if item.provisioning_status == 'failed' else 'warning') %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.namespace, item.ownership_status|replace('_', ' ')|title ~ ' ownership', 'folder-tree') }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-sm font-semibold text-content-primary">{{ item.environment.tenant.name }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ item.environment.environment|title }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-sm font-semibold text-content-primary">{{ item.resource_profile.name if item.resource_profile else 'No profile' }}</p>
+                            <p class="mt-1 text-xs text-content-muted">Snapshot v{{ item.resource_profile_version or '—' }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-sm font-semibold text-content-primary">{{ item.environment.tenant.provider_key|replace('_', ' ')|title }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ item.environment.tenant.reconciliation_authority|replace('_', ' ')|title }} authority</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_label.status_label(item.provisioning_status|replace('_', ' ')|title, state_tone) }}
+                            <p class="mt-1 max-w-[300px] text-xs leading-5 text-content-muted">{{ item.provisioning_message or 'Awaiting reconciliation evidence.' }}</p>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5" class="p-0">
+                        {% set empty_state_icon = 'boxes' %}
+                        {% set empty_state_title = 'No Namespace Evidence Found' %}
+                        {% set empty_state_description = 'Adjust filters or provision a governed Namespace.' %}
+                        {% include 'components/states/_empty_state.html' %}
+                    </td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if operations_namespace_pagination.total_items > 0 %}
+        {{ registry_ui.footer(
+            'tenant.operations',
+            registry_id,
+            loading_id,
+            operations_namespace_pagination,
+            query_params,
+            operations_namespace_pagination.allowed_per_page,
+            resource_label='Namespaces',
+            rows_aria_label='Namespace rows per page',
+            control_name='operations-namespace',
+            page_param='ops_namespace_page',
+            per_page_param='ops_namespace_per_page'
+        ) }}
+    {% endif %}
+</section>
