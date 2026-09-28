@@ -200,5 +200,5 @@ def test_resource_profile_custom_management_dialogs_expose_edit_and_guarded_dele
     assert 'profile_enabled' in dialogs
     assert 'Existing Namespace allocations keep their committed source version' in dialogs
     assert 'resource-profile-delete-modal' in dialogs
-    assert 'zero Namespace or Capacity Decision reference remains' in dialogs
+    assert 'zero Namespace and zero Capacity Decision references remain' in dialogs
     assert 'KAORI does not detach historical evidence automatically.' in dialogs
