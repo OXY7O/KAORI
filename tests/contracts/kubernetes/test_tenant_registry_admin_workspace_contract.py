@@ -593,3 +593,48 @@ def test_same_tenant_slug_is_scoped_by_cluster() -> None:
 
     assert "UniqueConstraint('cluster_id', 'slug', 'generation'" in models
     assert "Tenant.query.filter_by(cluster_id=cluster.id, slug=slug)" in service
+
+
+
+def test_tenant_estate_header_does_not_repeat_pagination_summary() -> None:
+    estate = read('app/templates/kubernetes/tenant/partials/_cluster_estate.html')
+
+    assert "Committed Tenant posture by cluster." in estate
+    assert "Compact Tenant posture from committed evidence." not in estate
+
+
+def test_live_tenant_snapshot_uses_compact_supporting_copy() -> None:
+    partial = read('app/templates/kubernetes/tenant/partials/_live_connection_snapshot.html')
+    service = read('app/kubernetes/tenant/live_connection.py')
+
+    assert "Checked on page load or operation" in partial
+    assert "Kubernetes connections" in partial
+    assert "No worker sync" in partial
+    assert "Live API reachability" in service
+    assert "page request or operation response" not in partial
+    assert "No worker schedule or inventory synchronization" not in partial
+    assert "not committed inventory sync" not in service
+
+
+def test_tenant_status_actions_use_semantic_labels() -> None:
+    discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+
+    assert "special_label('Already Managed', 'normal', 'shield-check')" in discovery
+    assert 'Review Adoption' in discovery
+    assert "special_label('Candidate', 'info', 'radar')" in discovery
+    assert "special_label('Blocked', 'critical', 'shield-alert')" in discovery
+
+    assert "special_label('History Retained', 'unknown', 'archive')" in registry
+    assert "special_label('Blocked', 'critical', 'shield-alert')" in registry
+    assert "special_label('Unavailable', 'unknown', 'circle-slash-2')" in registry
+
+
+def test_tenant_setup_explains_capsule_adoption_boundary() -> None:
+    form = read('app/templates/kubernetes/tenant/partials/_tenant_form.html')
+    setup = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
+
+    assert 'Native Kubernetes — create in KAORI' in form
+    assert 'Capsule — use Discovery → Adoption' in form
+    assert 'Existing Capsule Tenant CRs are onboarded through Discovery → Adoption.' in form
+    assert 'Existing Capsule Tenant CRs enter KAORI through Discovery and governed Adoption.' in setup
