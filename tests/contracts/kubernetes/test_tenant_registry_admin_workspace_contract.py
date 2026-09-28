@@ -694,3 +694,16 @@ def test_tenant_setup_enables_capability_gated_capsule_direct_create() -> None:
 
     assert 'data-capsule-owner-fields' in provider_js
     assert 'data-capsule-owner-control' in provider_js
+
+
+
+def test_live_discovery_surfaces_missing_managed_provider_objects() -> None:
+    service = read('app/kubernetes/tenant/discovery_service.py')
+    template = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+
+    assert 'observed_native_names' in service
+    assert "provider_status': 'Missing'" in service
+    assert 'Committed KAORI ownership exists, but the Namespace is missing from the live provider.' in service
+    assert 'observed_capsule_names' in service
+    assert 'authoritative Capsule Tenant CR is missing' in service
+    assert "special_label('Provider Missing', 'critical', 'triangle-alert')" in template

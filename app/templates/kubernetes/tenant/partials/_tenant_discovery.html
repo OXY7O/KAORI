@@ -138,7 +138,11 @@
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
                             <div class="ml-auto flex w-fit items-center justify-end">
-                                {% if row.management_status == 'Managed' %}
+                                {% if row.management_status == 'Managed' and row.provider_status == 'Missing' %}
+                                    <span title="{{ row.eligibility }}">
+                                        {{ table_label.special_label('Provider Missing', 'critical', 'triangle-alert') }}
+                                    </span>
+                                {% elif row.management_status == 'Managed' %}
                                     <span title="Already governed by KAORI; adoption is not required.">
                                         {{ table_label.special_label('Already Managed', 'normal', 'shield-check') }}
                                     </span>
