@@ -16,16 +16,14 @@
                     </p>
                 </div>
             </div>
-            {{ info_tip.render(
-                'namespace-access-tip',
-                'Effective access evidence',
-                'This view explains who or what can access each governed namespace without exposing credentials.',
-                [
-                    'Access is derived from committed Tenant Access Grants and credential lifecycle state.',
-                    'Kubernetes remains authoritative for effective RBAC evidence.',
-                    'Token, kubeconfig, private key, certificate, and Secret material are never rendered.'
-                ]
-            ) }}
+            {{ info_tip.render('namespace-access-tip',
+                        'Effective access evidence',
+                        'This view explains who or what can access each governed namespace without exposing credentials.',
+                        [
+                        'Access is derived from committed Tenant Access Grants and credential lifecycle state.',
+                        'Kubernetes remains authoritative for effective RBAC evidence.',
+                        'Token, kubeconfig, private key, certificate, and Secret material are never rendered.'
+                        ]) }}
         </header>
         <div class="grid gap-px bg-outline-subtle md:grid-cols-3">
             <div class="flex gap-3 bg-surface-card p-4">
@@ -66,6 +64,5 @@
             </div>
         </div>
     </section>
-
     {% include "kubernetes/tenant/partials/_namespace_access_registry.html" %}
 </div>

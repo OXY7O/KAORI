@@ -6,40 +6,35 @@
 {% block tenant_content %}
     {% set can_manage = current_user.has_permission('tenant.manage') %}
     {% set resource_profile_tabs = [
-        ('profiles', 'Profile Library', 'layers-3', url_for('tenant.resource_profiles', view='profiles')),
-        ('capacity', 'Capacity Governance', 'gauge', url_for('tenant.resource_profiles', view='capacity')),
-        ('workflow', 'Workflow Guide', 'route', url_for('tenant.resource_profiles', view='workflow'))
-    ] %}
+            ('profiles', 'Profile Library', 'layers-3', url_for('tenant.resource_profiles', view='profiles')),
+            ('capacity', 'Capacity Governance', 'gauge', url_for('tenant.resource_profiles', view='capacity')),
+            ('workflow', 'Workflow Guide', 'route', url_for('tenant.resource_profiles', view='workflow'))
+        ] %}
     {% set profile_metrics = [
-        ('layers-3', 'Total Profiles', resource_profile_stats.total, 'Committed reusable allocation contracts', 'info'),
-        ('badge-check', 'Enabled', resource_profile_stats.enabled, 'Selectable for new Namespace allocations', 'normal'),
-        ('sliders-horizontal', 'Custom', resource_profile_stats.custom, 'Operator-managed allocation contracts', 'info'),
-        ('boxes', 'Active Allocations', resource_profile_stats.active_allocations, 'Namespaces currently bound to a profile', 'info')
-    ] %}
-
+            ('layers-3', 'Total Profiles', resource_profile_stats.total, 'Committed reusable allocation contracts', 'info'),
+            ('badge-check', 'Enabled', resource_profile_stats.enabled, 'Selectable for new Namespace allocations', 'normal'),
+            ('sliders-horizontal', 'Custom', resource_profile_stats.custom, 'Operator-managed allocation contracts', 'info'),
+            ('boxes', 'Active Allocations', resource_profile_stats.active_allocations, 'Namespaces currently bound to a profile', 'info')
+        ] %}
     <section class="space-y-4" aria-labelledby="resource-profile-snapshot-heading">
-        {{ section_intro.render(
-            'Resource Profile Snapshot',
-            'Reusable allocation-contract posture and current Namespace adoption.',
-            'resource-profile-snapshot-heading'
-        ) }}
+        {{ section_intro.render('Resource Profile Snapshot',
+                'Reusable allocation-contract posture and current Namespace adoption.',
+                'resource-profile-snapshot-heading') }}
         {% call operational_section_card.render(
             'Profile Estate',
             'Committed Resource Profile posture used by Tenant Namespace governance.',
             'layout-grid',
             body_classes='p-0',
             aria_label='Resource Profile estate summary'
-        ) %}
+            ) %}
             {{ resource_posture_grid.render(profile_metrics, columns=4) }}
         {% endcall %}
     </section>
-
-    <section class="space-y-4" aria-labelledby="resource-profile-workspace-heading">
-        {{ section_intro.render(
-            'Resource Profile Workspace',
-            'Manage profile contracts, capacity admission, and the governed handoff into Namespace provisioning.',
-            'resource-profile-workspace-heading'
-        ) }}
+    <section class="space-y-4"
+             aria-labelledby="resource-profile-workspace-heading">
+        {{ section_intro.render('Resource Profile Workspace',
+                'Manage profile contracts, capacity admission, and the governed handoff into Namespace provisioning.',
+                'resource-profile-workspace-heading') }}
         {% call operational_section_card.render(
             'Profile Administration',
             'Choose a workspace view without mixing profile lifecycle, capacity policy, and operator guidance.',
@@ -49,23 +44,20 @@
             loading_bar_label='Loading Resource Profile Workspace',
             body_classes='p-0',
             aria_label='Resource Profile Workspace'
-        ) %}
-            {{ content_tabs.render_links(
-                'resource-profile',
-                resource_profile_tabs,
-                active_resource_profile_view,
-                'Resource Profile Workspace',
-                embedded=true,
-                data_namespace='resource-profile',
-                hx_target='#resource-profile-workspace',
-                hx_select='#resource-profile-workspace',
-                hx_swap='outerHTML show:none focus-scroll:false',
-                hx_push_url='true',
-                hx_indicator='#resource-profile-workspace-loading',
-                nowrap=true,
-                hx_sync='this:replace'
-            ) }}
-
+            ) %}
+            {{ content_tabs.render_links('resource-profile',
+                        resource_profile_tabs,
+                        active_resource_profile_view,
+                        'Resource Profile Workspace',
+                        embedded=true,
+                        data_namespace='resource-profile',
+                        hx_target='#resource-profile-workspace',
+                        hx_select='#resource-profile-workspace',
+                        hx_swap='outerHTML show:none focus-scroll:false',
+                        hx_push_url='true',
+                        hx_indicator='#resource-profile-workspace-loading',
+                        nowrap=true,
+                        hx_sync='this:replace') }}
             <div class="space-y-5 p-4 sm:p-5">
                 {% if active_resource_profile_view == 'capacity' %}
                     {% include "kubernetes/tenant/partials/_capacity_governance.html" %}
@@ -76,13 +68,14 @@
                     {% include "kubernetes/tenant/partials/_resource_profile_registry.html" %}
                 {% endif %}
             </div>
-
             <script type="application/json" id="tenant-resource-profile-presets">{{ resource_profile_presets|tojson }}</script>
             <script type="application/json" id="tenant-capacity-policy-state">{{ capacity_policy_state|tojson }}</script>
         {% endcall %}
     </section>
 {% endblock tenant_content %}
 {% block tenant_scripts %}
-    <script defer src="{{ url_for('static', filename='js/tenant_resource_profile_presets.js') }}"></script>
-    <script defer src="{{ url_for('static', filename='js/destructive_confirmation_modal.js') }}"></script>
+    <script defer
+            src="{{ url_for('static', filename='js/tenant_resource_profile_presets.js') }}"></script>
+    <script defer
+            src="{{ url_for('static', filename='js/destructive_confirmation_modal.js') }}"></script>
 {% endblock tenant_scripts %}

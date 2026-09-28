@@ -3,8 +3,8 @@
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/info_tip.html" as info_tip %}
-{% set registry_id = 'tenant-discovery-card' %}
-{% set loading_id = 'tenant-discovery-loading' %}
+{% set registry_id = "tenant-discovery-card" %}
+{% set loading_id = "tenant-discovery-loading" %}
 {% set pagination = tenant_discovery_pagination %}
 {% set query_params = {
     'section': 'discovery',
@@ -16,50 +16,44 @@
 <section id="{{ registry_id }}" class="{{ table_ui.block_classes() }}">
     {% set header_actions %}
         {% if tenant_discovery_filters.cluster_id or tenant_discovery_filters.provider or tenant_discovery_filters.management or tenant_discovery_filters.search %}
-            {{ registry_ui.clear_filters_link(
-                'tenant.tenants',
-                registry_id,
-                loading_id,
-                pagination.per_page,
-                table_ui.action_classes(),
-                query_params={'section': 'discovery'},
-                page_param='discovery_page',
-                per_page_param='discovery_per_page'
+            {{ registry_ui.clear_filters_link('tenant.tenants',
+                        registry_id,
+                        loading_id,
+                        pagination.per_page,
+                        table_ui.action_classes() ,
+            query_params={'section': 'discovery'},
+            page_param='discovery_page',
+            per_page_param='discovery_per_page'
             ) }}
         {% endif %}
-        {{ info_tip.render(
-            'tenant-discovery-status-tip',
-            'Discovery status',
-            'Discovery is live and read-only; status labels do not mutate or adopt provider objects.',
-            [
+        {{ info_tip.render('tenant-discovery-status-tip',
+                'Discovery status',
+                'Discovery is live and read-only; status labels do not mutate or adopt provider objects.',
+                [
                 'Live Status — current provider observation.',
                 'Managed — already correlated to committed KAORI ownership.',
                 'Discovered — candidate for explicit governed Adoption.',
                 'Blocked — adoption fails closed until eligibility is resolved.',
                 'Provider Missing — KAORI ownership exists but the provider object is absent.'
-            ],
-            button_text='Status Guide',
-            button_classes=table_ui.action_classes()
+                ],
+                button_text='Status Guide',
+                button_classes=table_ui.action_classes() 
         ) }}
     {% endset %}
-    {{ table_ui.inventory_block_header(
-        'radar',
+    {{ table_ui.inventory_block_header('radar',
         'Tenant Discovery',
         'Live, read-only provider discovery. Review a candidate before explicitly adopting it into KAORI governance.',
         loading_id,
         'Reading live Tenant provider state',
         none,
         none,
-        header_actions=header_actions
-    ) }}
-
+        header_actions=header_actions) }}
     <div class="border-b border-outline-subtle bg-surface-hover px-5 py-3">
         <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-content-muted">
             <span>Live check: {{ tenant_discovery_checked_at }}</span>
             <span>{{ tenant_discovery_total }} provider object{{ '' if tenant_discovery_total == 1 else 's' }} in current filter scope</span>
         </div>
     </div>
-
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
             'tenant.tenants',
@@ -68,48 +62,60 @@
             pagination.per_page,
             page_param='discovery_page',
             per_page_param='discovery_per_page'
-        ) %}
+            ) %}
             <input type="hidden" name="section" value="discovery">
             <div>
-                <label for="tenant-discovery-cluster" class="{{ table_ui.filter_label_classes() }}">Cluster</label>
-                <select id="tenant-discovery-cluster" name="discovery_cluster_id" class="{{ table_ui.filter_select_classes() }}">
+                <label for="tenant-discovery-cluster"
+                       class="{{ table_ui.filter_label_classes() }}">Cluster</label>
+                <select id="tenant-discovery-cluster"
+                        name="discovery_cluster_id"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Clusters</option>
                     {% for cluster in tenant_discovery_cluster_options %}
-                        <option value="{{ cluster.id }}" {% if tenant_discovery_filters.cluster_id == cluster.id|string %}selected{% endif %}>{{ cluster.name }}</option>
+                        <option value="{{ cluster.id }}"
+                                {% if tenant_discovery_filters.cluster_id == cluster.id|string %}selected{% endif %}>{{ cluster.name }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
-                <label for="tenant-discovery-provider" class="{{ table_ui.filter_label_classes() }}">Provider</label>
-                <select id="tenant-discovery-provider" name="discovery_provider" class="{{ table_ui.filter_select_classes() }}">
+                <label for="tenant-discovery-provider"
+                       class="{{ table_ui.filter_label_classes() }}">Provider</label>
+                <select id="tenant-discovery-provider"
+                        name="discovery_provider"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Providers</option>
-                    <option value="native_kubernetes" {% if tenant_discovery_filters.provider == 'native_kubernetes' %}selected{% endif %}>Native Kubernetes</option>
-                    <option value="capsule" {% if tenant_discovery_filters.provider == 'capsule' %}selected{% endif %}>Capsule</option>
+                    <option value="native_kubernetes"
+                            {% if tenant_discovery_filters.provider == 'native_kubernetes' %}selected{% endif %}>Native Kubernetes</option>
+                    <option value="capsule"
+                            {% if tenant_discovery_filters.provider == 'capsule' %}selected{% endif %}>Capsule</option>
                 </select>
             </div>
             <div>
-                <label for="tenant-discovery-management" class="{{ table_ui.filter_label_classes() }}">Classification</label>
-                <select id="tenant-discovery-management" name="discovery_management" class="{{ table_ui.filter_select_classes() }}">
+                <label for="tenant-discovery-management"
+                       class="{{ table_ui.filter_label_classes() }}">Classification</label>
+                <select id="tenant-discovery-management"
+                        name="discovery_management"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All States</option>
                     {% for state in ('Managed', 'Discovered', 'Blocked') %}
-                        <option value="{{ state|lower }}" {% if tenant_discovery_filters.management == state|lower %}selected{% endif %}>{{ state }}</option>
+                        <option value="{{ state|lower }}"
+                                {% if tenant_discovery_filters.management == state|lower %}selected{% endif %}>{{ state }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
-                <label for="tenant-discovery-search" class="{{ table_ui.filter_label_classes() }}">Search</label>
+                <label for="tenant-discovery-search"
+                       class="{{ table_ui.filter_label_classes() }}">Search</label>
                 {{ table_ui.search_field('discovery_search', tenant_discovery_filters.search, 'Namespace, Tenant CR, or Tenant', id='tenant-discovery-search') }}
             </div>
         {% endcall %}
     </div>
-
     {% if tenant_discovery_errors %}
         <div class="border-b border-status-warning-border bg-status-warning-soft px-5 py-3 text-xs text-status-warning-text">
             <span class="font-semibold">{{ tenant_discovery_errors|length }} provider read exception{{ '' if tenant_discovery_errors|length == 1 else 's' }}.</span>
             Unreachable clusters are not inferred from stale data; review Tenant Collection Snapshot above.
         </div>
     {% endif %}
-
     <div class="overflow-x-auto">
         <table class="{{ table_ui.table_classes('min-w-[980px]') }}">
             <caption class="sr-only">Live read-only Tenant provider discovery.</caption>
@@ -177,9 +183,9 @@
                 {% else %}
                     <tr>
                         <td colspan="7" class="p-0">
-                            {% set empty_state_icon = 'radar' %}
-                            {% set empty_state_title = 'No Provider Tenant Candidates' %}
-                            {% set empty_state_description = 'No live Native namespace or Capsule Tenant object matched the current discovery filters.' %}
+                            {% set empty_state_icon = "radar" %}
+                            {% set empty_state_title = "No Provider Tenant Candidates" %}
+                            {% set empty_state_description = "No live Native namespace or Capsule Tenant object matched the current discovery filters." %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
@@ -187,25 +193,20 @@
             </tbody>
         </table>
     </div>
-
     {% if pagination.total_items > 0 %}
-        {{ registry_ui.footer(
-            'tenant.tenants',
-            registry_id,
-            loading_id,
-            pagination,
-            query_params,
-            pagination.allowed_per_page,
-            resource_label='Provider Objects',
-            rows_aria_label='Tenant discovery rows per page',
-            control_name='tenant-discovery',
-            page_param='discovery_page',
-            per_page_param='discovery_per_page'
-        ) }}
+        {{ registry_ui.footer('tenant.tenants',
+                registry_id,
+                loading_id,
+                pagination,
+                query_params,
+                pagination.allowed_per_page,
+                resource_label='Provider Objects',
+                rows_aria_label='Tenant discovery rows per page',
+                control_name='tenant-discovery',
+                page_param='discovery_page',
+                per_page_param='discovery_per_page') }}
     {% endif %}
 </section>
-
-
 {% for row in tenant_discovery_rows if row.management_status == 'Discovered' and can_manage %}
     <div id="tenant-adoption-modal-{{ row.provider_reference }}"
          data-tenant-adoption-modal
@@ -243,7 +244,6 @@
                     </button>
                 </div>
             </header>
-
             <form method="post"
                   action="{{ url_for('tenant.adopt_discovered_tenant_route') }}"
                   hx-post="{{ url_for('tenant.adopt_discovered_tenant_route') }}"
@@ -257,14 +257,14 @@
                 <input type="hidden" name="cluster_id" value="{{ row.cluster_id }}">
                 <input type="hidden" name="provider_key" value="{{ row.provider_key }}">
                 <input type="hidden" name="resource_name" value="{{ row.resource_name }}">
-
                 <div class="space-y-5 p-5 sm:p-6">
                     <section>
                         <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Candidate Summary</p>
                         <div class="mt-2 flex items-center gap-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
                             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                   aria-hidden="true">
-                                <i data-lucide="{{ 'boxes' if row.provider_key == 'native_kubernetes' else 'waypoints' }}" class="h-5 w-5"></i>
+                                <i data-lucide="{{ 'boxes' if row.provider_key == 'native_kubernetes' else 'waypoints' }}"
+                                   class="h-5 w-5"></i>
                             </span>
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
@@ -275,41 +275,59 @@
                             </div>
                         </div>
                     </section>
-
                     <section>
                         <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Provider &amp; Live Context</p>
                         <dl class="mt-2 grid overflow-hidden rounded-xl border border-outline-subtle md:grid-cols-2 xl:grid-cols-3">
                             <div class="border-b border-outline-subtle p-4 sm:border-r lg:border-b">
                                 <dt class="text-xs text-content-muted">Cluster</dt>
-                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ row.cluster.name }}</dd>
-                                <dd class="mt-1 text-xs text-content-muted">{{ row.cluster.environment|environment_name }}</dd>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                    {{ row.cluster.name }}
+                                </dd>
+                                <dd class="mt-1 text-xs text-content-muted">
+                                    {{ row.cluster.environment|environment_name }}
+                                </dd>
                             </div>
                             <div class="border-b border-outline-subtle p-4 lg:border-r lg:border-b">
                                 <dt class="text-xs text-content-muted">Provider</dt>
-                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ row.provider_label }}</dd>
-                                <dd class="mt-1 break-all text-xs text-content-muted">{{ row.provider_reference }}</dd>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                    {{ row.provider_label }}
+                                </dd>
+                                <dd class="mt-1 break-all text-xs text-content-muted">
+                                    {{ row.provider_reference }}
+                                </dd>
                             </div>
                             <div class="border-b border-outline-subtle p-4 sm:border-r lg:border-r-0 lg:border-b">
                                 <dt class="text-xs text-content-muted">Resource Kind</dt>
-                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ row.resource_kind }}</dd>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                    {{ row.resource_kind }}
+                                </dd>
                             </div>
                             <div class="border-b border-outline-subtle p-4 lg:border-b-0 lg:border-r">
                                 <dt class="text-xs text-content-muted">Live Status</dt>
-                                <dd class="mt-2">{{ table_label.status_label(row.provider_status, row.provider_tone) }}</dd>
+                                <dd class="mt-2">
+                                    {{ table_label.status_label(row.provider_status, row.provider_tone) }}
+                                </dd>
                             </div>
                             <div class="border-b border-outline-subtle p-4 sm:border-r sm:border-b-0 lg:border-r">
                                 <dt class="text-xs text-content-muted">Provider Authority</dt>
-                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ 'Capsule' if row.provider_key == 'capsule' else 'Native Kubernetes' }}</dd>
-                                <dd class="mt-1 text-xs leading-5 text-content-muted">Authority remains with the provider after adoption.</dd>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                    {{ 'Capsule' if row.provider_key == 'capsule' else 'Native Kubernetes' }}
+                                </dd>
+                                <dd class="mt-1 text-xs leading-5 text-content-muted">
+                                    Authority remains with the provider after adoption.
+                                </dd>
                             </div>
                             <div class="p-4">
                                 <dt class="text-xs text-content-muted">Current Ownership</dt>
-                                <dd class="mt-1 text-sm font-semibold text-content-primary">Not governed</dd>
-                                <dd class="mt-1 text-xs leading-5 text-content-muted">Observed live; no KAORI mutation yet.</dd>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                    Not governed
+                                </dd>
+                                <dd class="mt-1 text-xs leading-5 text-content-muted">
+                                    Observed live; no KAORI mutation yet.
+                                </dd>
                             </div>
                         </dl>
                     </section>
-
                     <section>
                         <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Proposed KAORI Mapping</p>
                         <div class="mt-2 grid gap-4 rounded-xl border border-outline-subtle p-4 md:grid-cols-2">
@@ -349,7 +367,6 @@
                             </div>
                         </div>
                     </section>
-
                     <section>
                         <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Governance Checks</p>
                         <div class="mt-2 grid gap-2 sm:grid-cols-2">
@@ -358,7 +375,7 @@
                                 ('No active KAORI owner', 'Discovery classified this object as Discovered, not Managed.'),
                                 ('Provider authority preserved', 'Adoption records governance state without replacing the external authority.'),
                                 ('Fail-closed revalidation', 'KAORI rechecks provider state and conflicts again when Adopt is submitted.')
-                            ] %}
+                                ] %}
                                 <div class="flex gap-3 rounded-lg border border-status-normal-border bg-status-normal-soft p-3">
                                     <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-card text-status-normal-text"
                                           aria-hidden="true">
@@ -372,7 +389,6 @@
                             {% endfor %}
                         </div>
                     </section>
-
                     <div class="flex items-start gap-3 rounded-xl border border-status-warning-border bg-status-warning-soft p-4 text-status-warning-text">
                         <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-card"
                               aria-hidden="true">
@@ -385,13 +401,11 @@
                         </p>
                     </div>
                 </div>
-
                 <footer class="sticky bottom-0 flex flex-col-reverse gap-2 border-t border-outline-subtle bg-surface-card px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
                     <button type="button"
                             data-tenant-adoption-close
                             class="{{ action_button.classes('secondary') }}">Cancel</button>
-                    <button type="submit"
-                            class="{{ action_button.classes('primary') }}">
+                    <button type="submit" class="{{ action_button.classes('primary') }}">
                         <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
                         Adopt into KAORI
                     </button>

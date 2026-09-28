@@ -1,15 +1,7 @@
 {% import "components/numbered_governance_steps.html" as numbered_steps %}
-{% set setup_flow = [
-    ('building-2', 'Create Tenant', 'Bind owner to one Ready cluster and environment.'),
-    ('boxes', 'Provision Namespace', 'Apply profile, capacity guardrails, quota, and evidence.'),
-    ('users-round', 'Add Membership', 'Bind a user or Kubernetes group to the Tenant.'),
-    ('shield-check', 'Apply Access Grant', 'Choose a versioned profile and least-privilege scope.'),
-    ('key-round', 'Issue Credential', 'Issue human or machine access after grant readiness.')
-] %}
+{% set setup_flow = [('building-2', 'Create Tenant', 'Bind owner to one Ready cluster and environment.'), ('boxes', 'Provision Namespace', 'Apply profile, capacity guardrails, quota, and evidence.'), ('users-round', 'Add Membership', 'Bind a user or Kubernetes group to the Tenant.'), ('shield-check', 'Apply Access Grant', 'Choose a versioned profile and least-privilege scope.'), ('key-round', 'Issue Credential', 'Issue human or machine access after grant readiness.')] %}
 <div class="grid gap-5 xl:grid-cols-12 xl:items-stretch">
-    <div class="h-full xl:col-span-5">
-        {% include "kubernetes/tenant/partials/_tenant_form.html" %}
-    </div>
+    <div class="h-full xl:col-span-5">{% include "kubernetes/tenant/partials/_tenant_form.html" %}</div>
     <div class="grid h-full gap-5 xl:col-span-7 xl:grid-rows-[auto_1fr]">
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
                  aria-labelledby="tenant-setup-flow-heading">
@@ -28,11 +20,8 @@
                     </div>
                 </div>
             </header>
-            <div class="p-5">
-                {{ numbered_steps.render(setup_flow, 'Tenant setup governance flow', columns=5) }}
-            </div>
+            <div class="p-5">{{ numbered_steps.render(setup_flow, 'Tenant setup governance flow', columns=5) }}</div>
         </section>
-
         <section class="flex h-full flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
                  aria-labelledby="tenant-setup-boundaries-heading">
             <header class="border-b border-outline-subtle px-5 py-4">
@@ -105,7 +94,6 @@
         </section>
     </div>
 </div>
-
 <section class="mt-5 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
          aria-labelledby="tenant-lifecycle-contract-heading">
     <header class="border-b border-outline-subtle px-5 py-4">

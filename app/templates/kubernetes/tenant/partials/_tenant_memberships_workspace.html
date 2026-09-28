@@ -2,12 +2,7 @@
 {% import "components/form_field.html" as form_field %}
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/numbered_governance_steps.html" as numbered_steps %}
-{% set membership_flow = [
-    ('user-round', 'Choose Principal', 'Use an active KAORI user or an enabled Kubernetes group subject.'),
-    ('users-round', 'Commit Membership', 'Bind that principal to exactly one Tenant ownership boundary.'),
-    ('shield-check', 'Apply Access Grant', 'Authorize the principal with a versioned profile and explicit scope.'),
-    ('key-round', 'Issue Credential', 'Create governed delivery only after access reconciliation is ready.')
-] %}
+{% set membership_flow = [('user-round', 'Choose Principal', 'Use an active KAORI user or an enabled Kubernetes group subject.'), ('users-round', 'Commit Membership', 'Bind that principal to exactly one Tenant ownership boundary.'), ('shield-check', 'Apply Access Grant', 'Authorize the principal with a versioned profile and explicit scope.'), ('key-round', 'Issue Credential', 'Create governed delivery only after access reconciliation is ready.')] %}
 <div class="space-y-5">
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
              aria-labelledby="membership-model-heading">
@@ -32,33 +27,28 @@
         <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle md:grid-cols-3">
             <div class="bg-surface-card p-4">
                 <p class="text-xs font-semibold text-content-primary">Use User Membership</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">
-                    Individual human access; the KAORI user remains the owner.
-                </p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Individual human access; the KAORI user remains the owner.</p>
             </div>
             <div class="bg-surface-card p-4">
                 <p class="text-xs font-semibold text-content-primary">Use Tenant Group</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">
-                    Shared Kubernetes group subject for multiple operators.
-                </p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Shared Kubernetes group subject for multiple operators.</p>
             </div>
             <div class="bg-surface-card p-4">
                 <p class="text-xs font-semibold text-content-primary">Revocation Impact</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">
-                    Revoke disables grants; reactivation does not restore them.
-                </p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Revoke disables grants; reactivation does not restore them.</p>
             </div>
         </div>
     </section>
-
-    <section id="membership-actions" class="space-y-4" aria-labelledby="membership-actions-heading">
+    <section id="membership-actions"
+             class="space-y-4"
+             aria-labelledby="membership-actions-heading">
         <div>
-            <h3 id="membership-actions-heading" class="text-base font-semibold text-content-primary">Membership Actions</h3>
+            <h3 id="membership-actions-heading"
+                class="text-base font-semibold text-content-primary">Membership Actions</h3>
             <p class="mt-1 text-sm leading-6 text-content-secondary">
                 Add a user, define a reusable Kubernetes group, or attach an existing group to a Tenant.
             </p>
         </div>
-
         <div class="grid gap-5 xl:grid-cols-3 xl:items-stretch">
             <form id="add-user-membership-form"
                   method="post"
@@ -82,17 +72,15 @@
                             <p class="mt-1 text-xs leading-5 text-content-muted">Bind one active KAORI user to one Tenant.</p>
                         </div>
                     </div>
-                    {{ info_tip.render(
-                        'membership-user-tip',
-                        'User membership',
-                        'Use this path for individually accountable human access.',
-                        [
-                            'The KAORI user remains the ownership anchor.',
-                            'Kubernetes Subject is optional and defaults to the KAORI username.',
-                            'If this principal was revoked earlier, use Reactivate in the Membership Registry.',
-                            'Membership alone does not grant Kubernetes RBAC.'
-                        ]
-                    ) }}
+                    {{ info_tip.render('membership-user-tip',
+                                        'User membership',
+                                        'Use this path for individually accountable human access.',
+                                        [
+                                        'The KAORI user remains the ownership anchor.',
+                                        'Kubernetes Subject is optional and defaults to the KAORI username.',
+                                        'If this principal was revoked earlier, use Reactivate in the Membership Registry.',
+                                        'Membership alone does not grant Kubernetes RBAC.'
+                                        ]) }}
                 </div>
                 <div class="flex-1 space-y-4">
                     <label class="block">
@@ -128,7 +116,6 @@
                     Add User
                 </button>
             </form>
-
             <form id="create-tenant-group-form"
                   method="post"
                   action="{{ url_for('tenant.create_group_route') }}"
@@ -151,16 +138,14 @@
                             <p class="mt-1 text-xs leading-5 text-content-muted">Define one reusable Kubernetes group subject.</p>
                         </div>
                     </div>
-                    {{ info_tip.render(
-                        'membership-group-tip',
-                        'Tenant Group',
-                        'Use a Tenant Group when one Kubernetes group subject represents several operators.',
-                        [
-                            'Group subject is derived by KAORI when omitted.',
-                            'The group remains owned by exactly one Tenant.',
-                            'Create the group first, then attach it as a membership principal.'
-                        ]
-                    ) }}
+                    {{ info_tip.render('membership-group-tip',
+                                        'Tenant Group',
+                                        'Use a Tenant Group when one Kubernetes group subject represents several operators.',
+                                        [
+                                        'Group subject is derived by KAORI when omitted.',
+                                        'The group remains owned by exactly one Tenant.',
+                                        'Create the group first, then attach it as a membership principal.'
+                                        ]) }}
                 </div>
                 <div class="flex-1 space-y-4">
                     <label class="block">
@@ -195,7 +180,6 @@
                     Create Group
                 </button>
             </form>
-
             <form id="add-group-membership-form"
                   method="post"
                   action="{{ url_for('tenant.add_group_membership_route') }}"
@@ -218,15 +202,13 @@
                             <p class="mt-1 text-xs leading-5 text-content-muted">Attach an enabled Tenant Group as a membership principal.</p>
                         </div>
                     </div>
-                    {{ info_tip.render(
-                        'membership-attach-group-tip',
-                        'Group membership',
-                        'Attach only a group owned by the selected Tenant.',
-                        [
-                            'Cross-Tenant group membership is rejected server-side.',
-                            'The group becomes a principal; permissions still require an Access Grant.'
-                        ]
-                    ) }}
+                    {{ info_tip.render('membership-attach-group-tip',
+                                        'Group membership',
+                                        'Attach only a group owned by the selected Tenant.',
+                                        [
+                                        'Cross-Tenant group membership is rejected server-side.',
+                                        'The group becomes a principal; permissions still require an Access Grant.'
+                                        ]) }}
                 </div>
                 <div class="flex-1 space-y-4">
                     <label class="block">
@@ -269,7 +251,6 @@
             </form>
         </div>
     </section>
-
     {% include "kubernetes/tenant/partials/_membership_registry.html" %}
     {% include "kubernetes/tenant/partials/_group_registry.html" %}
 </div>
