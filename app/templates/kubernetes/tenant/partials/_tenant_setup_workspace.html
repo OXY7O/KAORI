@@ -110,4 +110,57 @@
     </div>
 </div>
 
-{% include "kubernetes/tenant/partials/_tenant_maintenance.html" %}
+<section class="mt-5 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+         aria-labelledby="tenant-lifecycle-contract-heading">
+    <header class="border-b border-outline-subtle px-5 py-4">
+        <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="lock-keyhole" class="h-5 w-5"></i>
+            </span>
+            <div>
+                <h3 id="tenant-lifecycle-contract-heading"
+                    class="text-base font-semibold text-content-primary">Tenant Lifecycle Contract</h3>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">
+                    Tenant identity is intentionally immutable after creation. Structural changes use governed teardown and recreation instead of inline edits.
+                </p>
+            </div>
+        </div>
+    </header>
+    <div class="grid gap-px bg-outline-subtle md:grid-cols-4">
+        <div class="bg-surface-card p-4">
+            <p class="text-xs font-semibold text-content-primary">1 · Lock Identity</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">
+                Tenant name/slug, cluster placement, provider authority, and ownership boundary are not edited in place.
+            </p>
+        </div>
+        <div class="bg-surface-card p-4">
+            <p class="text-xs font-semibold text-content-primary">2 · Revoke Access</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">
+                Revoke credentials and Access Grants, then retire active memberships before teardown.
+            </p>
+        </div>
+        <div class="bg-surface-card p-4">
+            <p class="text-xs font-semibold text-content-primary">3 · Remove Namespaces</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">
+                Governed namespace deprovisioning must complete and provider evidence must confirm removal.
+            </p>
+        </div>
+        <div class="bg-surface-card p-4">
+            <p class="text-xs font-semibold text-content-primary">4 · Decommission</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">
+                Final Tenant decommission is allowed only after Native/Capsule authority reports no managed residue.
+            </p>
+        </div>
+    </div>
+    <div class="flex items-start gap-3 border-t border-kaori-primary/20 bg-kaori-soft px-4 py-3 text-kaori-primary-dark dark:text-kaori-accent">
+        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-card/70"
+              aria-hidden="true">
+            <i data-lucide="workflow" class="h-4 w-4"></i>
+        </span>
+        <p class="text-xs leading-5">
+            <span class="font-semibold">Change strategy:</span>
+            recreate the Tenant after governed teardown when immutable identity or provider placement must change.
+        </p>
+    </div>
+</section>
