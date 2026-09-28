@@ -3,7 +3,7 @@
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/numbered_governance_steps.html" as numbered_steps %}
 {% set grant_flow = [
-    ('users-round', 'Membership', 'Start from one active Tenant principal.'),
+    ('users-round', 'Membership', 'Start from one active Membership that identifies the principal and fixes its Tenant boundary.'),
     ('shield-check', 'Profile', 'Choose a versioned least-privilege access contract.'),
     ('scope', 'Scope', 'Target Tenant, environment, or namespace explicitly.')
 ] %}
@@ -199,20 +199,6 @@
                             </div>
                         {% endfor %}
                     </div>
-                    <div class="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border border-outline-subtle bg-surface-hover px-3.5 py-2.5 text-[11px] leading-4 text-content-muted">
-                        <span class="inline-flex items-center gap-1.5">
-                            <i data-lucide="users-round" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
-                            Membership fixes the Tenant boundary.
-                        </span>
-                        <span class="inline-flex items-center gap-1.5">
-                            <i data-lucide="list-filter" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
-                            Targets are filtered automatically.
-                        </span>
-                        <span class="inline-flex items-center gap-1.5">
-                            <i data-lucide="shield-check" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
-                            Effective RBAC remains provider-verified.
-                        </span>
-                    </div>
                 </div>
             </section>
 
@@ -239,8 +225,8 @@
                         </div>
                     {% endfor %}
                 </div>
-                <div class="flex flex-wrap items-center justify-between gap-3 border-t border-outline-subtle bg-surface-hover px-4 py-3">
-                    <p class="text-xs leading-5 text-content-muted">Namespace scope requires one target. Environment and Tenant scopes reconcile as governed namespaces become available.</p>
+                <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-t border-outline-subtle bg-surface-hover px-4 py-3">
+                    <p class="text-xs leading-5 text-content-muted">Namespace needs one target; broader scopes reconcile as namespaces become available.</p>
                     <a href="{{ url_for('tenant.namespace_provisioning') }}" class="{{ action_button.classes('secondary') }}">
                         <i data-lucide="boxes" class="h-4 w-4" aria-hidden="true"></i>
                         Create Namespace
