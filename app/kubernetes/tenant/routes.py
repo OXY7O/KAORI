@@ -1570,6 +1570,9 @@ def generate_credential_material_route(credential_id: int):
 
     context = _tenant_workspace_context()
     context.update(get_live_tenant_connection_context())
+    credential_record = TenantCredential.query.filter_by(id=credential_id).first()
+    if credential_record is None:
+        abort(404)
 
     if isinstance(material, GeneratedTokenMaterial):
         material_kind = 'token'
@@ -1604,6 +1607,7 @@ def generate_credential_material_route(credential_id: int):
             material_expires_at=material.expires_at,
             material_requested_seconds=requested_seconds,
             material_access_package=material.access_package,
+            material_credential_valid_until=credential_record.valid_until,
             delivery_label=delivery_label,
             **context,
         )
