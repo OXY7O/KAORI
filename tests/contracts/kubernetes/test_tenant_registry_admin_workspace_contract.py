@@ -661,3 +661,36 @@ def test_tenant_sync_marks_fresh_missing_namespaces_as_observational_drift() -> 
     assert "snapshot['drifted_namespace_count']" in tasks
     assert 'Namespace Provider Drift' in operations
     assert "special_label('Drifted', 'warning', 'triangle-alert')" in operations
+
+
+
+def test_tenant_setup_enables_capability_gated_capsule_direct_create() -> None:
+    form = read('app/templates/kubernetes/tenant/partials/_tenant_form.html')
+    service = read('app/kubernetes/tenant/service.py')
+    capsule = read('app/kubernetes/tenant/capsule_tenant.py')
+    page = read('app/templates/kubernetes/tenant/tenants.html')
+    provider_js = read('app/static/js/tenant_setup_provider.js')
+
+    assert 'name="provider_key"' in form
+    assert 'value="native_kubernetes"' in form
+    assert 'value="capsule"' in form
+    assert 'Capsule Initial Owner' in form
+    assert 'name="capsule_owner_kind"' in form
+    assert 'name="capsule_owner_subject"' in form
+    assert 'tenant_setup_provider.js' in page
+
+    assert "_ALLOWED_TENANT_PROVIDERS = {'native_kubernetes', 'capsule'}" in service
+    assert 'create_capsule_tenant(' in service
+    assert "tenant.reconciliation_authority = 'capsule'" in service
+    assert 'compensate_capsule_tenant_create' in service
+
+    assert "dry_run='All'" in capsule
+    assert 'discover_capsule(' in capsule
+    assert 'CapsuleTenantProvider' in capsule
+    assert 'TenantProviderState.CAPSULE' in capsule
+    assert "Use Tenant Discovery → Adoption" in capsule
+    assert "'created_by_kaori': True" in capsule
+    assert "'secret_material_persisted': False" in capsule
+
+    assert 'data-capsule-owner-fields' in provider_js
+    assert 'data-capsule-owner-control' in provider_js

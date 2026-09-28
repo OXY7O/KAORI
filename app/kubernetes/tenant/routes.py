@@ -818,21 +818,27 @@ def create_tenant_route():
             status='error',
             title='Tenant Creation Failed',
             message=str(exc),
-            detail='No provider mutation was performed by this failed request.',
+            detail='Capsule provider creation is compensated when this request created the provider object before the database conflict.',
             metadata={'cluster_id': request.form.get('cluster_id'), 'operation': 'create_tenant'},
         )
     else:
+        provider_label = 'Capsule' if tenant.provider_key == 'capsule' else 'Native Kubernetes'
         _record(
             event_type='kubernetes_tenant_created',
             status='success',
             title='Tenant Created',
-            message=f'{tenant.name} is ready for Native Kubernetes namespace provisioning.',
-            detail=f'{environment.environment.title()} · Native Kubernetes',
+            message=(
+                f'{tenant.name} is governed with Capsule provider authority.'
+                if tenant.provider_key == 'capsule'
+                else f'{tenant.name} is ready for Native Kubernetes namespace provisioning.'
+            ),
+            detail=f'{environment.environment.title()} · {provider_label}',
             metadata={
                 'tenant_id': tenant.id,
                 'cluster_id': tenant.cluster_id,
                 'environment': environment.environment,
                 'provider_key': tenant.provider_key,
+                'provider_reference': tenant.provider_reference,
                 'operation': 'create_tenant',
             },
         )
