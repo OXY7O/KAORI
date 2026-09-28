@@ -42,6 +42,7 @@ def test_tenant_uat_pages_preserve_current_admitted_workflows() -> None:
     tenants = _read('app/templates/kubernetes/tenant/tenants.html')
     profiles = _read('app/templates/kubernetes/tenant/resource_profiles.html')
     namespaces = _read('app/templates/kubernetes/tenant/namespace_provisioning.html')
+    namespace_registry = _read('app/templates/kubernetes/tenant/partials/_namespace_registry.html')
     operations = _read('app/templates/kubernetes/tenant/operations.html')
 
     assert "'Multi-Cluster Posture'" in tenants
@@ -63,16 +64,31 @@ def test_tenant_uat_pages_preserve_current_admitted_workflows() -> None:
     assert 'partials/_resource_profile_form.html' in profiles
     assert 'partials/_capacity_governance.html' in profiles
 
+    assert 'Namespace Provisioning Snapshot' in namespaces
+    assert 'Namespace Estate' in namespaces
+    assert 'Namespace Provisioning Workspace' in namespaces
+    assert 'Namespace Administration' in namespaces
+    assert 'content_tabs.render_links' in namespaces
+    assert "active_namespace_view" in namespaces
     assert 'partials/_namespace_form.html' in namespaces
+    assert 'partials/_namespace_registry.html' in namespaces
     assert 'partials/_allocation_change.html' in namespaces
     assert 'partials/_capacity_decisions.html' in namespaces
     assert 'id="tenant-namespace-allocation-profiles"' in namespaces
     assert 'id="tenant-namespace-allocation-state"' in namespaces
+    assert 'components/table_registry.html' in namespace_registry
+    assert 'registry_ui.filter_form' in namespace_registry
+    assert 'registry_ui.footer' in namespace_registry
 
+    assert 'Tenant Operations Snapshot' in operations
+    assert 'Operations Estate' in operations
+    assert 'Tenant Operations Workspace' in operations
+    assert 'Operational Control' in operations
     assert 'content_tabs.render_links' in operations
+    assert "hx_target='#tenant-operations-workspace'" in operations
     assert 'Kubernetes Audit Evidence' in operations
     assert 'Managed Resources &amp; Policies' in operations
-
+    assert 'Namespace Provider Drift' in operations
 
 def test_tenant_uat_surface_separates_platform_permission_from_tenant_membership() -> None:
     registry = _read('app/definitions/catalogs/access/rbac/access.yaml')
