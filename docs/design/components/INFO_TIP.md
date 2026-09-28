@@ -46,3 +46,8 @@ The trigger is keyboard-focusable, references the tooltip with `aria-describedby
     ]
 ) }}
 ```
+
+
+## Dense registry exception
+
+Do not use an Info Tip for multi-line status or blocker detail inside an `overflow-x` table container. Even a visually hidden absolutely positioned tooltip can create clipping or scroll-growth problems when opened. Keep the table row compact and open the explanation in the canonical native-dialog top layer instead. Info Tips remain appropriate for forms and non-scrollable dense controls.

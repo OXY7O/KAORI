@@ -2,7 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/action_button.html" as action_button %}
-{% import "components/info_tip.html" as info_tip %}
+{% import "components/status_detail_dialog.html" as status_detail_dialog %}
 {% set registry_id = 'tenant-discovery-card' %}
 {% set loading_id = 'tenant-discovery-loading' %}
 {% set pagination = tenant_discovery_pagination %}
@@ -126,34 +126,18 @@
                         <td class="{{ table_ui.cell_classes() }} align-middle">
                             <div class="flex items-center gap-1.5">
                                 {{ table_label.status_label(row.provider_status, row.provider_tone) }}
-                                {{ info_tip.render(
+                                {{ status_detail_dialog.trigger(
                                     'tenant-discovery-live-' ~ loop.index,
-                                    'Live provider status',
-                                    (
-                                        'The correlated provider object is absent from the current live provider read.'
-                                        if row.provider_status == 'Missing'
-                                        else 'This state is observed directly from the live provider during the current Discovery request.'
-                                    ),
-                                    [row.eligibility]
+                                    'View live provider status details for ' ~ row.resource_name
                                 ) }}
                             </div>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
                             <div class="flex items-center gap-1.5">
                                 {{ table_label.status_label(row.management_status, row.management_tone) }}
-                                {{ info_tip.render(
+                                {{ status_detail_dialog.trigger(
                                     'tenant-discovery-classification-' ~ loop.index,
-                                    'KAORI classification',
-                                    (
-                                        'A committed KAORI Tenant already owns this provider object.'
-                                        if row.management_status == 'Managed'
-                                        else (
-                                            'The provider object is observed but is not governed by KAORI yet.'
-                                            if row.management_status == 'Discovered'
-                                            else 'The provider object cannot enter governed adoption until its eligibility blocker is resolved.'
-                                        )
-                                    ),
-                                    [row.eligibility]
+                                    'View KAORI classification details for ' ~ row.resource_name
                                 ) }}
                             </div>
                         </td>
@@ -170,20 +154,17 @@
                                 {% if row.management_status == 'Managed' and row.provider_status == 'Missing' %}
                                     <div class="flex items-center gap-1.5">
                                         {{ table_label.special_label('Provider Missing', 'critical', 'triangle-alert') }}
-                                        {{ info_tip.render(
+                                        {{ status_detail_dialog.trigger(
                                             'tenant-discovery-action-' ~ loop.index,
-                                            'Provider object missing',
-                                            'KAORI still has committed governance correlation, but the authoritative provider object is absent.',
-                                            [row.eligibility]
+                                            'View Provider Missing details for ' ~ row.resource_name
                                         ) }}
                                     </div>
                                 {% elif row.management_status == 'Managed' %}
                                     <div class="flex items-center gap-1.5">
                                         {{ table_label.special_label('Already Managed', 'normal', 'shield-check') }}
-                                        {{ info_tip.render(
+                                        {{ status_detail_dialog.trigger(
                                             'tenant-discovery-action-' ~ loop.index,
-                                            'Already governed',
-                                            'This provider object is already correlated to a committed KAORI Tenant. Adoption is not required.'
+                                            'View managed-state details for ' ~ row.resource_name
                                         ) }}
                                     </div>
                                 {% elif row.management_status == 'Discovered' and can_manage %}
@@ -198,21 +179,17 @@
                                 {% elif row.management_status == 'Discovered' %}
                                     <div class="flex items-center gap-1.5">
                                         {{ table_label.special_label('Candidate', 'info', 'radar') }}
-                                        {{ info_tip.render(
+                                        {{ status_detail_dialog.trigger(
                                             'tenant-discovery-action-' ~ loop.index,
-                                            'Adoption candidate',
-                                            'The live provider object is eligible for governed adoption, but this session cannot perform the mutation.',
-                                            [row.eligibility]
+                                            'View adoption candidate details for ' ~ row.resource_name
                                         ) }}
                                     </div>
                                 {% else %}
                                     <div class="flex items-center gap-1.5">
                                         {{ table_label.special_label('Blocked', 'critical', 'shield-alert') }}
-                                        {{ info_tip.render(
+                                        {{ status_detail_dialog.trigger(
                                             'tenant-discovery-action-' ~ loop.index,
-                                            'Adoption blocked',
-                                            'KAORI fails closed until the discovery eligibility blocker is resolved.',
-                                            [row.eligibility]
+                                            'View adoption blocker details for ' ~ row.resource_name
                                         ) }}
                                     </div>
                                 {% endif %}
@@ -249,6 +226,67 @@
         ) }}
     {% endif %}
 </section>
+
+{% for row in tenant_discovery_rows %}
+    {{ status_detail_dialog.render(
+        'tenant-discovery-live-' ~ loop.index,
+        'Tenant Discovery',
+        'Live provider status · ' ~ row.provider_status,
+        (
+            'The correlated provider object is absent from the current live provider read.'
+            if row.provider_status == 'Missing'
+            else 'This status is observed directly from the provider during the current Discovery request.'
+        ),
+        [row.eligibility],
+        icon='activity'
+    ) }}
+    {{ status_detail_dialog.render(
+        'tenant-discovery-classification-' ~ loop.index,
+        'Tenant Discovery',
+        'KAORI classification · ' ~ row.management_status,
+        (
+            'A committed KAORI Tenant already owns this provider object.'
+            if row.management_status == 'Managed'
+            else (
+                'The provider object is observed but is not governed by KAORI yet.'
+                if row.management_status == 'Discovered'
+                else 'The object cannot enter governed adoption until its eligibility blocker is resolved.'
+            )
+        ),
+        [row.eligibility],
+        icon='shield-check'
+    ) }}
+    {% if not (row.management_status == 'Discovered' and can_manage) %}
+        {{ status_detail_dialog.render(
+            'tenant-discovery-action-' ~ loop.index,
+            'Tenant Discovery',
+            (
+                'Provider object missing'
+                if row.management_status == 'Managed' and row.provider_status == 'Missing'
+                else (
+                    'Already governed'
+                    if row.management_status == 'Managed'
+                    else ('Adoption candidate' if row.management_status == 'Discovered' else 'Adoption blocked')
+                )
+            ),
+            (
+                'KAORI retains the committed correlation, but the authoritative provider object is absent.'
+                if row.management_status == 'Managed' and row.provider_status == 'Missing'
+                else (
+                    'This provider object is already governed; adoption is not required.'
+                    if row.management_status == 'Managed'
+                    else (
+                        'The object is eligible for adoption, but this session cannot perform the mutation.'
+                        if row.management_status == 'Discovered'
+                        else 'KAORI fails closed until the eligibility blocker is resolved.'
+                    )
+                )
+            ),
+            [row.eligibility],
+            icon='info'
+        ) }}
+    {% endif %}
+{% endfor %}
 
 {% for row in tenant_discovery_rows if row.management_status == 'Discovered' and can_manage %}
     <div id="tenant-adoption-modal-{{ row.provider_reference }}"

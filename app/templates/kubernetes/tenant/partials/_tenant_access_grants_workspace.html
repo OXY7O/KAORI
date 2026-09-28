@@ -240,7 +240,7 @@
                     {% endfor %}
                 </div>
                 <div class="flex flex-wrap items-center justify-between gap-3 border-t border-outline-subtle bg-surface-hover px-4 py-3">
-                    <p class="text-xs leading-5 text-content-muted">Namespace scope needs one target. Environment/Tenant scope may stay Pending until a namespace exists.</p>
+                    <p class="text-xs leading-5 text-content-muted">Namespace requires one target. Broader scopes reconcile as governed namespaces become available.</p>
                     <a href="{{ url_for('tenant.namespace_provisioning') }}" class="{{ action_button.classes('secondary') }}">
                         <i data-lucide="boxes" class="h-4 w-4" aria-hidden="true"></i>
                         Create Namespace

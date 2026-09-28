@@ -2,7 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/destructive_confirmation_modal.html" as destructive_modal %}
-{% import "components/info_tip.html" as info_tip %}
+{% import "components/status_detail_dialog.html" as status_detail_dialog %}
 {% set registry_id = 'tenant-registry-card' %}
 {% set loading_id = 'tenant-registry-loading' %}
 {% set query_params = {
@@ -185,11 +185,9 @@
                                 {% elif decommission.blockers %}
                                     <div class="flex items-center justify-end gap-1.5">
                                         {{ table_label.special_label('Blocked', 'critical', 'shield-alert') }}
-                                        {{ info_tip.render(
+                                        {{ status_detail_dialog.trigger(
                                             'tenant-decommission-blocked-' ~ tenant.id,
-                                            'Decommission blocked',
-                                            'The Tenant is still valid. This destructive action is fail-closed until an authority-safe teardown path is available.',
-                                            decommission.blockers
+                                            'View decommission blocker details for ' ~ tenant.name
                                         ) }}
                                     </div>
                                 {% else %}
@@ -227,6 +225,20 @@
     {% endif %}
 </section>
 
+{% for row in tenant_rows %}
+    {% set tenant = row.tenant %}
+    {% set decommission = row.decommission_preflight %}
+    {% if decommission.blockers and tenant.lifecycle_status != 'decommissioned' %}
+        {{ status_detail_dialog.render(
+            'tenant-decommission-blocked-' ~ tenant.id,
+            'Tenant Registry',
+            'Decommission blocked',
+            'The Tenant is still valid. This action remains fail-closed until an authority-safe teardown path is available.',
+            decommission.blockers,
+            icon='shield-alert'
+        ) }}
+    {% endif %}
+{% endfor %}
 
 {{ destructive_modal.render(
     'tenant-decommission-modal',

@@ -1,0 +1,77 @@
+{#
+  KAORI compact status detail dialog.
+
+  Use for dense table/registry status explanations that are too long for the
+  row itself. The native <dialog> top layer avoids clipping and scroll growth
+  inside overflow-x table containers. Opening/closing is owned by the existing
+  global native_dialogs.js contract.
+#}
+{% macro trigger(dialog_id, label='View status details') -%}
+    <button type="button"
+            data-kaori-dialog-open
+            data-dialog-target="{{ dialog_id }}"
+            aria-haspopup="dialog"
+            aria-controls="{{ dialog_id }}"
+            aria-label="{{ label }}"
+            class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-transparent bg-transparent text-content-muted transition-colors hover:border-outline-default hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+        <i data-lucide="circle-help" class="h-3.5 w-3.5" aria-hidden="true"></i>
+    </button>
+{%- endmacro %}
+
+{% macro render(dialog_id, context_label, title, summary, items=None, icon='info') -%}
+    <dialog id="{{ dialog_id }}"
+            data-kaori-native-dialog
+            aria-labelledby="{{ dialog_id }}-title"
+            aria-describedby="{{ dialog_id }}-description"
+            class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
+        <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden" role="document">
+            <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-5 py-4">
+                <div class="flex min-w-0 items-start justify-between gap-4">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-kaori-primary/15 bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-kaori-primary">{{ context_label }}</p>
+                            <h2 id="{{ dialog_id }}-title"
+                                class="mt-1 break-words text-lg font-semibold leading-7 text-content-primary">{{ title }}</h2>
+                            <p id="{{ dialog_id }}-description"
+                               class="mt-1 text-xs leading-5 text-content-muted">{{ summary }}</p>
+                        </div>
+                    </div>
+                    <button type="button"
+                            data-kaori-dialog-close
+                            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:border-outline-focus hover:bg-kaori-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                            aria-label="Close {{ title }}">
+                        <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </header>
+            <div class="min-h-0 overflow-y-auto bg-surface-page px-5 py-5">
+                {% if items %}
+                    <div class="space-y-2">
+                        {% for item in items %}
+                            <div class="flex items-start gap-2.5 rounded-xl border border-outline-subtle bg-surface-card px-3.5 py-3">
+                                <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-kaori-primary/70" aria-hidden="true"></span>
+                                <p class="text-xs leading-5 text-content-secondary">{{ item }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="rounded-xl border border-outline-subtle bg-surface-card px-4 py-4 text-sm leading-6 text-content-secondary">
+                        {{ summary }}
+                    </div>
+                {% endif %}
+            </div>
+            <footer class="flex shrink-0 justify-end border-t border-outline-subtle bg-surface-card px-5 py-3">
+                <button type="button"
+                        data-kaori-dialog-close
+                        class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                    <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                    Close
+                </button>
+            </footer>
+        </section>
+    </dialog>
+{%- endmacro %}

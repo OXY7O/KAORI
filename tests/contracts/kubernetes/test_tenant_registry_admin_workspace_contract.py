@@ -146,6 +146,7 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'Membership fixes the Tenant boundary.' in workspace
     assert 'Targets are filtered automatically.' in workspace
     assert 'Tenant and scope are validated before commit.' in workspace
+    assert 'Namespace requires one target. Broader scopes reconcile as governed namespaces become available.' in workspace
     assert 'Environment/Tenant scope may stay Pending until a namespace exists.' in workspace
     assert 'Access Boundaries' in workspace
     assert 'components/info_tip.html' in workspace
@@ -607,7 +608,8 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'Governance Checks' in template
     assert 'Human confirmation.' in template
     assert 'Adopt into KAORI' in template
-    assert 'components/info_tip.html' in template
+    assert 'components/status_detail_dialog.html' in template
+    assert 'components/info_tip.html' not in template
     assert 'tenant-discovery-live-' in template
     assert 'tenant-discovery-classification-' in template
     assert 'tenant-discovery-action-' in template
@@ -683,8 +685,9 @@ def test_tenant_status_actions_use_semantic_labels() -> None:
     assert "special_label('History Retained', 'unknown', 'archive')" in registry
     assert "special_label('Blocked', 'critical', 'shield-alert')" in registry
     assert 'tenant-decommission-blocked-' in registry
-    assert 'The Tenant is still valid. This destructive action is fail-closed' in registry
-    assert 'components/info_tip.html' in registry
+    assert 'The Tenant is still valid. This action remains fail-closed' in registry
+    assert 'components/status_detail_dialog.html' in registry
+    assert 'components/info_tip.html' not in registry
     assert "special_label('Unavailable', 'unknown', 'circle-slash-2')" in registry
 
 
