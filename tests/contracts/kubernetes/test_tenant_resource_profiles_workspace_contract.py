@@ -31,12 +31,13 @@ def test_resource_profiles_use_server_owned_kaori_content_tabs_and_snapshot_stat
     assert "('profiles', 'Profile Library', 'layers-3', url_for('tenant.resource_profiles', view='profiles'))" in page
     assert "('capacity', 'Capacity Governance', 'gauge', url_for('tenant.resource_profiles', view='capacity'))" in page
     assert "('workflow', 'Workflow Guide'" in page
-    assert "profile_count)," not in page
-    assert "ready_clusters|length)," not in page
+    assert 'profile_count),' not in page
+    assert 'ready_clusters|length),' not in page
     assert "hx_target='#resource-profile-workspace'" in page
-    assert "active_resource_profile_view" in page
+    assert 'active_resource_profile_view' in page
     assert "active_view not in {'profiles', 'capacity', 'workflow'}" in routes
     assert 'destructive_confirmation_modal.js' in page
+
 
 def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None:
     form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
@@ -66,6 +67,7 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'read-only:bg-surface-disabled' in form_field
     assert 'read-only:text-content-muted' in form_field
     assert 'read-only:shadow-none' in form_field
+
 
 def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_resource_profile_registry.html')
@@ -97,6 +99,7 @@ def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() 
     assert 'def get_resource_profile_registry_context(' in service
     assert 'paginate_query(' in service
     assert "'profile_registry_filters':" in service
+
 
 def test_resource_profile_workflow_uses_numbered_contract_stages_without_arrow_flow() -> None:
     workflow = read('app/templates/kubernetes/tenant/partials/_resource_profile_workflow.html')
@@ -163,7 +166,6 @@ def test_capacity_commitment_excludes_deprovisioned_history_and_preserves_unknow
     assert 'commitment_reason or _state_reason(state)' in governance
 
 
-
 def test_custom_resource_profile_crud_preserves_preset_and_dependency_authority() -> None:
     service = read('app/kubernetes/tenant/service.py')
     routes = read('app/kubernetes/tenant/routes.py')
@@ -171,7 +173,7 @@ def test_custom_resource_profile_crud_preserves_preset_and_dependency_authority(
     readme = read('app/kubernetes/tenant/README.md')
 
     assert 'def update_resource_profile(profile_id: int' in service
-    assert "profile.profile_class != TenantResourceProfileClass.CUSTOM.value" in service
+    assert 'profile.profile_class != TenantResourceProfileClass.CUSTOM.value' in service
     assert 'Built-in Resource Profiles are locked.' in service
     assert "enabled_value not in {'enabled', 'disabled'}" in service
     assert 'contract_changed = quota !=' in service
@@ -179,8 +181,8 @@ def test_custom_resource_profile_crud_preserves_preset_and_dependency_authority(
 
     assert 'def delete_resource_profile(profile_id: int)' in service
     assert 'def _resource_profile_dependency_counts(profile_id: int)' in service
-    assert "TenantNamespace.query.filter_by(resource_profile_id=profile_id).count()" in service
-    assert "TenantCapacityDecision.query.filter_by(resource_profile_id=profile_id).count()" in service
+    assert 'TenantNamespace.query.filter_by(resource_profile_id=profile_id).count()' in service
+    assert 'TenantCapacityDecision.query.filter_by(resource_profile_id=profile_id).count()' in service
     assert "if dependencies['total']:" in service
     assert 'release all Resource Profile dependencies first' in service
 
@@ -202,7 +204,6 @@ def test_resource_profile_registry_context_exposes_dependency_counts_for_actions
     assert 'capacity_decision_counts.get(profile.id, 0)' in service
 
 
-
 def test_resource_profile_management_dialogs_explain_preset_lock_and_govern_custom_lifecycle() -> None:
     dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
 
@@ -219,4 +220,3 @@ def test_resource_profile_management_dialogs_explain_preset_lock_and_govern_cust
     assert 'resource-profile-delete-modal' in dialogs
     assert 'zero Namespace and zero Capacity Decision references remain' in dialogs
     assert 'KAORI does not detach historical evidence automatically.' in dialogs
-
