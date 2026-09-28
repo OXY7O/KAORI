@@ -76,6 +76,8 @@ Hero
 
 `Tenant Setup` combines the create form with a non-collapsible governance flow so the operator sees the required order: Tenant → Namespace → Membership → Access Grant → Credential. Important boundaries use icon-backed tiles plus a persistent warning row. Dense field guidance uses the shared `components/info_tip.html` hover/focus pattern instead of repeating helper paragraphs under controls.
 
+Direct creation in Tenant Setup currently uses the Native Kubernetes provider path. Capsule support is provider-capability aware, but the admitted operator path for an already-existing Capsule Tenant CR is **Discovery → Adoption**. KAORI does not pretend that selecting Capsule in the create form is equivalent to creating a Capsule Tenant CR; a direct Capsule-create mutation requires its own provider operation contract and UAT evidence.
+
 `Memberships` separates three peer actions (add user, create group, add group membership) from scalable registries. Successful administration mutations progressively refresh only the Tenant Workspace through HTMX rather than forcing a full-page navigation/scroll reset. Membership and Tenant Group data each use canonical filtered/paginated tables instead of fixed recent-item lists.
 
 `Access Grants` keeps one full-width multi-column form above the canonical Access Grant Registry. The registry owns all committed/effective RBAC evidence, filters, pagination, and Inspect/Reconcile/Revoke actions.
@@ -102,7 +104,7 @@ Tenant identity is immutable after creation in the normal operator workflow.
 
 ### Provider Discovery and Adoption
 
-#736 owns the two-way Tenant Registry path. Discovery reads Native Kubernetes namespaces and Capsule Tenant CRs live, shows provider status, correlates objects already governed by KAORI, and classifies candidates as **Managed**, **Discovered**, or **Blocked**. Discovery itself never mutates provider state.
+#736 owns the two-way Tenant Registry path. Discovery is an explicit live-provider exception to normal committed-state reads: it reads Native Kubernetes namespaces and Capsule Tenant CRs on the Discovery request, shows provider status, correlates objects already governed by KAORI, and classifies candidates as **Managed**, **Discovered**, or **Blocked**. It does not wait for the Overview inventory worker sync. Discovery itself never mutates provider state.
 
 Explicit adoption is a separate human-confirmed mutation over KAORI committed state. The Adoption Preflight shows provider identity, live status, provider authority, current ownership, proposed KAORI mapping, and governance checks. Submission revalidates the live provider object and conflicts before committing an **Adopted** Tenant. Native namespace adoption references the existing Namespace without creating/patching/deleting it; Capsule adoption registers the existing Capsule Tenant while Capsule remains reconciliation authority. Adoption evidence records `provider_mutation_performed=false`.
 
