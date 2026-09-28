@@ -24,23 +24,27 @@ def get_live_tenant_connection_context() -> dict[str, Any]:
         try:
             version = runtime_adapter.build_client(cluster).version_api().get_code(_request_timeout=3)
         except Exception:
-            rows.append({
+            rows.append(
+                {
+                    'cluster_id': str(cluster.id),
+                    'cluster_name': cluster.name,
+                    'environment': cluster.environment,
+                    'reachable': False,
+                    'version': connection.detected_version if connection is not None else None,
+                    'message': 'Live Kubernetes API probe failed.',
+                }
+            )
+            continue
+        rows.append(
+            {
                 'cluster_id': str(cluster.id),
                 'cluster_name': cluster.name,
                 'environment': cluster.environment,
-                'reachable': False,
-                'version': connection.detected_version if connection is not None else None,
-                'message': 'Live Kubernetes API probe failed.',
-            })
-            continue
-        rows.append({
-            'cluster_id': str(cluster.id),
-            'cluster_name': cluster.name,
-            'environment': cluster.environment,
-            'reachable': True,
-            'version': str(getattr(version, 'git_version', None) or connection.detected_version or 'Unknown'),
-            'message': 'Live Kubernetes API reachable.',
-        })
+                'reachable': True,
+                'version': str(getattr(version, 'git_version', None) or connection.detected_version or 'Unknown'),
+                'message': 'Live Kubernetes API reachable.',
+            }
+        )
 
     total = len(rows)
     reachable = sum(1 for row in rows if row['reachable'])
@@ -53,7 +57,9 @@ def get_live_tenant_connection_context() -> dict[str, Any]:
         description = 'Live Kubernetes API is reachable.'
     elif reachable:
         status, tone = 'Partial', 'warning'
-        description = 'Some Kubernetes clusters are unreachable; provider-backed Tenant operations fail closed per target.'
+        description = (
+            'Some Kubernetes clusters are unreachable; provider-backed Tenant operations fail closed per target.'
+        )
     else:
         status, tone = 'Unavailable', 'critical'
         description = 'Kubernetes API is unreachable for the current Tenant provider scope.'
@@ -69,7 +75,9 @@ def get_live_tenant_connection_context() -> dict[str, Any]:
             'coverage_label': f'{reachable} Reachable',
             'coverage_supporting': 'Live API reachability',
             'coverage_tone': 'normal' if failures == 0 and total else 'warning',
-            'exception_label': 'No Exceptions' if failures == 0 else f'{failures} Connection Exception' + ('' if failures == 1 else 's'),
+            'exception_label': 'No Exceptions'
+            if failures == 0
+            else f'{failures} Connection Exception' + ('' if failures == 1 else 's'),
             'exceptions_tone': 'normal' if failures == 0 else 'warning',
             'rows': rows,
         }
