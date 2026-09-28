@@ -20,12 +20,12 @@
         <table class="{{ table_ui.table_classes('min-w-[940px] table-fixed') }}">
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th class="{{ table_ui.header_cell_classes() }} w-[31%]">Cluster</th>
+                    <th class="{{ table_ui.header_cell_classes() }} w-[29%]">Cluster</th>
                     <th class="{{ table_ui.header_cell_classes() }} w-[11%]">Tenants</th>
                     <th class="{{ table_ui.header_cell_classes() }} w-[13%]">Namespaces</th>
-                    <th class="{{ table_ui.header_cell_classes() }} w-[17%]">Snapshot</th>
-                    <th class="{{ table_ui.header_cell_classes() }} w-[18%]">Capacity</th>
-                    <th class="{{ table_ui.header_cell_classes(action=true) }} w-[10%]"><span class="sr-only">Actions</span></th>
+                    <th class="{{ table_ui.header_cell_classes() }} w-[16%]">Snapshot</th>
+                    <th class="{{ table_ui.header_cell_classes() }} w-[17%]">Capacity</th>
+                    <th class="{{ table_ui.header_cell_classes(action=true) }} w-[14%]">Actions</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -80,9 +80,10 @@
                             <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
                                 {% if current_user.has_permission('analytics.view') %}
                                     <a href="{{ url_for('analytics.capacity', cluster_id=row.id, time_range='24h') }}"
-                                       class="ml-auto inline-flex min-h-9 w-fit items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary">
-                                        Open Capacity
-                                        <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                       class="{{ table_ui.action_classes() }} ml-auto whitespace-nowrap">
+                                        <i data-lucide="chart-no-axes-combined" class="h-4 w-4" aria-hidden="true"></i>
+                                        <span>Open Capacity</span>
+                                        <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                     </a>
                                 {% endif %}
                             </td>
