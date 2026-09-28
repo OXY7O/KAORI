@@ -113,3 +113,34 @@ def test_tenant_provider_scope_remains_provider_neutral_in_navigation() -> None:
     assert 'Provider Readiness' in base
     assert 'Native Kubernetes</span>' not in menu
     assert 'Capsule</span>' not in menu
+
+
+def test_tenant_operations_data_surfaces_are_canonical_paginated_registries() -> None:
+    routes = _read('app/kubernetes/tenant/routes.py')
+    workspace = _read('app/kubernetes/tenant/workspace.py')
+    partial_paths = (
+        'app/templates/kubernetes/tenant/partials/_operations_namespace_registry.html',
+        'app/templates/kubernetes/tenant/partials/_operations_evidence_registry.html',
+        'app/templates/kubernetes/tenant/partials/_operations_drift_registry.html',
+        'app/templates/kubernetes/tenant/partials/_operations_provider_registry.html',
+        'app/templates/kubernetes/tenant/partials/_operations_access_reconciliation_registry.html',
+    )
+
+    for partial_path in partial_paths:
+        partial = _read(partial_path)
+        assert 'components/table.html' in partial
+        assert 'components/table_registry.html' in partial
+        assert 'registry_ui.filter_form' in partial
+        assert 'registry_ui.footer' in partial
+
+    for key in (
+        'ops_namespace_per_page',
+        'ops_evidence_per_page',
+        'ops_drift_per_page',
+        'ops_provider_per_page',
+        'ops_access_per_page',
+    ):
+        assert key in routes
+    assert 'get_tenant_operations_evidence_context' in routes
+    assert '_OPERATIONS_EVIDENCE_TYPES' in workspace
+    assert 'paginate_query(' in workspace
