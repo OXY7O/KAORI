@@ -103,6 +103,7 @@ def test_memberships_use_symmetric_actions_and_scalable_registries() -> None:
 
     assert 'Membership Model' in workspace
     assert 'components/numbered_governance_steps.html' in workspace
+    assert "layout='compact-grid'" in workspace
     assert 'xl:grid-cols-3' in workspace
     for label in ('Add User Membership', 'Create Tenant Group', 'Add Group Membership'):
         assert label in workspace
@@ -123,6 +124,14 @@ def test_memberships_use_symmetric_actions_and_scalable_registries() -> None:
         assert 'components/table_registry.html' in table
         assert 'registry_ui.filter_form' in table
         assert 'registry_ui.footer' in table
+
+    assert 'components/info_tip.html' in memberships
+    assert 'tenant-membership-lifecycle-tip' in memberships
+    assert "button_text='Membership Guide'" in memberships
+    assert 'button_classes=table_ui.action_classes()' in memberships
+    assert 'tenant-group-lifecycle-tip' in groups
+    assert "button_text='Group Guide'" in groups
+    assert 'button_classes=table_ui.action_classes()' in groups
 
     assert 'def get_membership_registry_context(' in read_model
     assert 'def get_group_registry_context(' in read_model
@@ -148,6 +157,7 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'Namespace needs one target; broader scopes reconcile as namespaces become available.' in workspace
     assert 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3' in workspace
     assert 'Start from one active Membership that identifies the principal and fixes its Tenant boundary.' in workspace
+    assert 'Choose the least-privilege profile and narrowest scope that satisfies the principal’s operational responsibility' in workspace
     assert 'Environment/Tenant scope may stay Pending until a namespace exists.' in workspace
     assert 'Access Boundaries' in workspace
     assert 'components/info_tip.html' in workspace
@@ -380,29 +390,29 @@ def test_operational_attention_peer_cards_are_geometry_symmetric() -> None:
     assert "Showing {{ tenant_attention_rows|length }} prioritized condition" in overview
     assert "Showing {{ tenant_recent_activity_rows|length }} latest committed event" in overview
 
-def test_kaori_info_tip_is_a_reusable_hover_and_focus_standard() -> None:
+def test_kaori_info_tip_uses_desktop_hover_and_native_dialog_activation() -> None:
     component = read('app/templates/components/info_tip.html')
     docs = read('docs/design/components/INFO_TIP.md')
 
-    assert 'macro render(id, title, text=' in component
-    assert 'aria-describedby="{{ id }}"' in component
+    assert "macro render(id, title, text='', items=None, placement='left', button_text=None, button_classes=None)" in component
+    assert 'data-kaori-dialog-open' in component
+    assert 'data-dialog-target="{{ id }}-dialog"' in component
+    assert 'aria-haspopup="dialog"' in component
+    assert 'dialog id="{{ id }}-dialog"' in component
+    assert 'data-kaori-native-dialog' in component
     assert 'role="tooltip"' in component
-    assert 'group-hover:block' in component
-    assert 'group-focus-within:block' in component
-    assert 'hidden w-80' in component
-    assert 'group-hover:visible' not in component
-    assert 'group-focus-within:visible' not in component
+    assert 'sm:group-hover:block' in component
+    assert 'group-focus-within:block' not in component
+    assert 'fixed inset-x-4 bottom-4' not in component
+    assert 'button_classes if button_classes else action_button.classes' in component
     assert 'focus-visible:ring-2' in component
     assert 'h-6 w-6' in component
     assert 'circle-help' in component
-    assert 'w-80' in component
-    assert 'bg-kaori-soft' in component
-    assert 'h-8 w-8 cursor-help' not in component
 
-    assert 'compact guidance pattern' in docs
-    assert 'pointer hover and keyboard/touch focus' in docs
-    assert 'inline beside the field label' in docs
-    assert 'Avoid oversized circular triggers' in docs
+    assert 'desktop pointer hover' in docs
+    assert 'click, touch, or keyboard activation' in docs
+    assert 'native `<dialog>` top layer' in docs
+    assert 'table_ui.action_classes()' in docs
     assert 'Do **not** hide validation errors' in docs
 
 def test_tenant_administration_retires_monolithic_uat_partials() -> None:
@@ -824,6 +834,7 @@ def test_tenant_group_registry_uses_governed_lifecycle_actions_without_hard_dele
     assert 'components/info_tip.html' in registry
     assert 'tenant-group-lifecycle-tip' in registry
     assert "button_text='Group Guide'" in registry
+    assert 'button_classes=table_ui.action_classes()' in registry
     assert 'Use Edit for mistakes; Retire removes future use while preserving history.' in registry
     assert 'data-tenant-group-edit-open' in registry
     assert "url_for('tenant.retire_tenant_group_route', group_id=group.id)" in registry
@@ -929,10 +940,13 @@ def test_governance_flows_use_shared_numbered_sequence_without_arrow_connectors(
         assert 'operational_flow_steps' not in template
 
     assert '0{{ loop.index }}' in component
-    assert 'divide-y divide-outline-subtle' in component
+    assert "layout='list'" in component
+    assert "layout == 'compact-grid'" in component
+    assert 'md:grid-cols-2' in component
     assert 'grid-cols-[auto_auto_minmax(0,1fr)]' in component
-    assert 'items-start gap-3 px-4 py-3.5' in component
-    assert 'xl:grid-cols-5' not in component
+    assert "layout='compact-grid'" in memberships
+    assert "layout='compact-grid'" not in setup
+    assert "layout='compact-grid'" not in grants
 
 def test_tenant_registry_blocked_state_uses_shared_header_guidance() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
@@ -979,17 +993,28 @@ def test_tenant_setup_and_membership_guidance_use_compact_uat_copy() -> None:
     assert 'Reactivation restores membership only; old grants stay revoked.' not in memberships
 
 
-def test_info_tip_supports_header_button_and_mobile_safe_surface() -> None:
+def test_info_tip_supports_standard_header_buttons_and_mobile_top_layer() -> None:
     component = read('app/templates/components/info_tip.html')
     docs = read('docs/design/components/INFO_TIP.md')
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
     discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    memberships = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
+    groups = read('app/templates/kubernetes/tenant/partials/_group_registry.html')
 
-    assert 'button_text=None' in component
-    assert '{% if button_text %}' in component
-    assert 'fixed inset-x-4 bottom-4 z-[100]' in component
-    assert 'sm:absolute' in component
-    assert 'max-h-[min(70dvh,28rem)]' in component
-    assert "button_text='Status Guide'" in registry
-    assert "button_text='Status Guide'" in discovery
-    assert 'viewport-safe fixed bottom sheet' in docs
+    assert 'button_text=None, button_classes=None' in component
+    assert 'button_classes if button_classes else action_button.classes' in component
+    assert 'sm:group-hover:block' in component
+    assert 'data-kaori-native-dialog' in component
+    assert 'data-kaori-dialog-close' in component
+    assert 'fixed inset-x-4 bottom-4' not in component
+
+    for template in (registry, discovery):
+        assert "button_text='Status Guide'" in template
+        assert 'button_classes=table_ui.action_classes()' in template
+
+    assert "button_text='Membership Guide'" in memberships
+    assert 'button_classes=table_ui.action_classes()' in memberships
+    assert "button_text='Group Guide'" in groups
+    assert 'button_classes=table_ui.action_classes()' in groups
+    assert 'native `<dialog>` top layer' in docs
+
