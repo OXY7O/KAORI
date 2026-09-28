@@ -22,10 +22,13 @@ from app.models.cluster import ClusterStatus
 from app.models.kubernetes import KubernetesConnection
 from app.models.tenant import (
     Tenant,
+    TenantAccessGrant,
     TenantCapacityDecision,
+    TenantCredential,
     TenantEnvironment,
     TenantEnvironmentName,
     TenantLifecycleStatus,
+    TenantMembership,
     TenantNamespace,
     TenantResourceProfile,
     TenantResourceProfileClass,
@@ -189,6 +192,98 @@ def create_tenant_committed(source: Mapping[str, Any]) -> tuple[Tenant, TenantEn
     except SQLAlchemyError:
         db.session.rollback()
         raise
+
+
+def update_tenant_metadata_committed(tenant_id: str, source: Mapping[str, Any]) -> Tenant:
+    tenant = db.session.get(Tenant, tenant_id)
+    if tenant is None:
+        raise ValueError('Tenant was not found.')
+    if tenant.lifecycle_status == TenantLifecycleStatus.DECOMMISSIONED.value:
+        raise ValueError('Decommissioned Tenant metadata cannot be edited.')
+
+    name = _text(source, 'name')
+    if not name or len(name) > 120:
+        raise ValueError('Tenant name is required and must be at most 120 characters.')
+
+    tenant.name = name
+    tenant.description = _text(source, 'description') or None
+    try:
+        db.session.commit()
+        return tenant
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise TenantStateConflictError(
+            'Committed Tenant state changed while this metadata update was being applied. Refresh and retry.'
+        ) from exc
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+
+
+def decommission_tenant_committed(tenant_id: str) -> Tenant:
+    tenant = db.session.get(Tenant, tenant_id)
+    if tenant is None:
+        raise ValueError('Tenant was not found.')
+    if tenant.lifecycle_status == TenantLifecycleStatus.DECOMMISSIONED.value:
+        raise ValueError('Tenant is already decommissioned.')
+
+    namespace_count = (
+        TenantNamespace.query.join(TenantEnvironment, TenantEnvironment.id == TenantNamespace.tenant_environment_id)
+        .filter(TenantEnvironment.tenant_id == tenant.id)
+        .count()
+    )
+    active_grant_count = TenantAccessGrant.query.filter_by(tenant_id=tenant.id, status='active').count()
+    active_membership_count = TenantMembership.query.filter_by(tenant_id=tenant.id, status='active').count()
+    active_credential_count = (
+        TenantCredential.query.filter(
+            TenantCredential.tenant_id == tenant.id,
+            TenantCredential.status.notin_(('revoked', 'expired')),
+        ).count()
+    )
+
+    blockers: list[str] = []
+    if namespace_count:
+        blockers.append(f'{namespace_count} managed namespace(s)')
+    if active_membership_count:
+        blockers.append(f'{active_membership_count} active membership(s)')
+    if active_grant_count:
+        blockers.append(f'{active_grant_count} active Access Grant(s)')
+    if active_credential_count:
+        blockers.append(f'{active_credential_count} active credential(s)')
+    if blockers:
+        raise ValueError(
+            'Tenant cannot be decommissioned while dependent governed state remains: ' + ', '.join(blockers) + '.'
+        )
+
+    tenant.lifecycle_status = TenantLifecycleStatus.DECOMMISSIONED.value
+    evidence = dict(tenant.provider_evidence_json or {})
+    evidence['tenant_lifecycle'] = 'decommissioned'
+    evidence['decommission_mode'] = 'kaori_committed_state'
+    tenant.provider_evidence_json = evidence
+    try:
+        db.session.commit()
+        return tenant
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise TenantStateConflictError(
+            'Committed Tenant state changed while decommissioning. Refresh and retry.'
+        ) from exc
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+
+
+def get_tenant_maintenance_context(edit_tenant_id: str = '') -> dict[str, Any]:
+    normalized_id = edit_tenant_id.strip()
+    target = db.session.get(Tenant, normalized_id) if normalized_id else None
+    return {
+        'tenant_edit_target': target,
+        'tenant_maintenance_options': (
+            Tenant.query.filter(Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value)
+            .order_by(Tenant.name.asc())
+            .all()
+        ),
+    }
 
 
 def _profile_values(source: Mapping[str, Any]) -> tuple[dict[str, str], dict[str, dict[str, str]]]:
