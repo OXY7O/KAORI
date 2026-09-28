@@ -54,17 +54,24 @@
                     </p>
                 </div>
             </div>
-            {{ info_tip.render(
-                'access-grant-form-tip',
-                'Access Grant rules',
-                'An Access Grant binds one committed Tenant principal to one versioned access profile and explicit scope.',
-                [
-                    'Built-in profiles are code-owned security contracts.',
-                    'Tenant scope uses no target.',
-                    'Environment or Namespace scope requires exactly one matching target.',
-                    'Cross-Tenant references are rejected before reconciliation.'
-                ]
-            ) }}
+            <div class="flex shrink-0 items-center gap-2">
+                <a href="{{ url_for('tenant.namespace_provisioning') }}"
+                   class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary">
+                    <i data-lucide="boxes" class="h-4 w-4" aria-hidden="true"></i>
+                    Create Namespace
+                </a>
+                {{ info_tip.render(
+                    'access-grant-form-tip',
+                    'Access Grant rules',
+                    'An Access Grant binds one committed Tenant principal to one versioned access profile and explicit scope.',
+                    [
+                        'Built-in profiles are code-owned security contracts.',
+                        'Tenant scope uses no target.',
+                        'Environment or Namespace scope requires exactly one matching target.',
+                        'Cross-Tenant references are rejected before reconciliation.'
+                    ]
+                ) }}
+            </div>
         </header>
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
             <label class="block">
@@ -113,7 +120,7 @@
                 </select>
             </label>
             <div class="flex items-end">
-                <div class="flex w-full gap-3 rounded-lg border border-status-info-border bg-status-info-soft p-3 text-status-info-text">
+                <div class="flex w-full gap-3 rounded-lg border border-kaori-primary/20 bg-kaori-soft p-3 text-kaori-primary-dark dark:text-kaori-accent">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-surface-card/70"
                           aria-hidden="true">
                         <i data-lucide="scope" class="h-4 w-4"></i>
