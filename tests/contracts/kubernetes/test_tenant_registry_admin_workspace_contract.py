@@ -195,6 +195,48 @@ def test_namespace_access_is_a_paginated_non_secret_registry() -> None:
 
 
 
+
+
+def test_tenant_workspace_mutations_preserve_nested_scroll_and_do_not_push_history() -> None:
+    partials = (
+        'app/templates/kubernetes/tenant/partials/_tenant_form.html',
+        'app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html',
+        'app/templates/kubernetes/tenant/partials/_membership_registry.html',
+        'app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html',
+        'app/templates/kubernetes/tenant/partials/_access_grant_registry.html',
+        'app/templates/kubernetes/tenant/partials/_tenant_credentials_workspace.html',
+        'app/templates/kubernetes/tenant/partials/_credential_registry.html',
+    )
+
+    for path in partials:
+        template = read(path)
+        if 'hx-post=' not in template:
+            continue
+        assert 'hx-target="#tenant-admin-workspace"' in template
+        assert 'hx-select="#tenant-admin-workspace"' in template
+        assert 'outerHTML show:none focus-scroll:false' in template
+        assert 'hx-push-url=' not in template
+
+    admin = read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
+    assert "hx_swap='outerHTML show:none focus-scroll:false'" in admin
+
+
+def test_overview_adds_section_hierarchy_above_tenant_estate() -> None:
+    overview = read('app/templates/kubernetes/tenant/overview.html')
+
+    assert "'Governance Scope'" in overview
+    assert "'Tenant Estate'" in overview
+    assert overview.index("'Governance Scope'") < overview.index("'Tenant Estate'")
+
+
+def test_access_grant_scope_rule_is_short_and_semantically_distinct() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+
+    assert 'Tenant: no target. Environment/Namespace: select one target.' in workspace
+    assert 'bg-status-info-soft' in workspace
+    assert 'border-status-info-border' in workspace
+    assert 'Tenant scope uses neither target.' not in workspace
+
 def test_kaori_info_tip_is_a_reusable_hover_and_focus_standard() -> None:
     component = read('app/templates/components/info_tip.html')
     docs = read('docs/design/components/INFO_TIP.md')
