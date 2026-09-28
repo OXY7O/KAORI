@@ -766,6 +766,75 @@ def reactivate_membership_committed(*, membership_id: int, actor: User | None = 
         raise
 
 
+def reconcile_access_grants_for_namespace_committed(
+    *,
+    namespace: TenantNamespace,
+    actor: User | None = None,
+) -> dict[str, int]:
+    """Expand active Environment/Tenant grants after explicit namespace provisioning.
+
+    This is an operation follow-up, not an inventory/sync mutation path. Namespace
+    scope remains explicit and is never inferred automatically.
+    """
+
+    tenant = namespace.environment.tenant
+    if tenant.provider_key != 'native_kubernetes' or tenant.reconciliation_authority != 'native_kubernetes':
+        return {'matched': 0, 'reconciled': 0, 'failed': 0}
+
+    grants = (
+        TenantAccessGrant.query.filter(
+            TenantAccessGrant.tenant_id == tenant.id,
+            TenantAccessGrant.status == TenantAccessGrantStatus.ACTIVE.value,
+            (
+                (TenantAccessGrant.scope_type == TenantAccessScope.TENANT.value)
+                | (
+                    (TenantAccessGrant.scope_type == TenantAccessScope.ENVIRONMENT.value)
+                    & (TenantAccessGrant.tenant_environment_id == namespace.tenant_environment_id)
+                )
+            ),
+        )
+        .order_by(TenantAccessGrant.id.asc())
+        .all()
+    )
+
+    reconciled = 0
+    failed = 0
+    for grant in grants:
+        try:
+            reconcile_native_access_grant(grant)
+            _record_grant_event(
+                actor=actor,
+                grant=grant,
+                action='tenant_access_grant.namespace_scope_expanded',
+                summary=(
+                    f'Tenant Access Grant reconciled after namespace {namespace.namespace} '
+                    'entered its committed scope.'
+                ),
+                outcome='success',
+            )
+            db.session.commit()
+            reconciled += 1
+        except (ApiException, ValueError):
+            if grant.id is not None:
+                _record_grant_event(
+                    actor=actor,
+                    grant=grant,
+                    action='tenant_access_grant.namespace_scope_expand_failed',
+                    summary=(
+                        f'Namespace {namespace.namespace} entered the committed scope, '
+                        'but Access Grant reconciliation requires operator attention.'
+                    ),
+                    outcome='failed',
+                )
+                db.session.commit()
+            failed += 1
+        except SQLAlchemyError:
+            db.session.rollback()
+            failed += 1
+
+    return {'matched': len(grants), 'reconciled': reconciled, 'failed': failed}
+
+
 def inspect_access_grant_committed(*, grant_id: int, actor: User | None = None) -> TenantAccessGrant:
     grant = db.session.get(TenantAccessGrant, grant_id)
     if grant is None:
@@ -860,9 +929,11 @@ def get_tenant_access_context() -> dict[str, object]:
         .order_by(Tenant.name.asc(), TenantNamespace.namespace.asc())
         .all()
     )
+    profile_order = ('viewer', 'operator', 'tenant_admin', 'deployer')
     profiles = [
         ACCESS_PROFILE_CATALOG[(key, LATEST_ACCESS_PROFILE_VERSION[key])]
-        for key in sorted(LATEST_ACCESS_PROFILE_VERSION)
+        for key in profile_order
+        if key in LATEST_ACCESS_PROFILE_VERSION
     ]
     return {
         'access_tenant_options': tenant_options,

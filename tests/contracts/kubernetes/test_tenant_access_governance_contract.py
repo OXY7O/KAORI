@@ -189,3 +189,35 @@ def test_tenant_group_edit_retire_and_reactivate_preserve_identity_history() -> 
 
     assert 'Routine Tenant UI does not hard-delete Tenant Group records' in architecture
     assert 'stable KAORI identity key' in architecture
+
+
+
+def test_namespace_provisioning_reconciles_matching_broad_scope_grants_after_commit() -> None:
+    access_service = read('app/kubernetes/tenant/access_service.py')
+    tenant_service = read('app/kubernetes/tenant/service.py')
+    sync_service = read('app/kubernetes/tenant/sync_service.py')
+    architecture = read('docs/architecture/kubernetes-tenant-access-governance.md')
+
+    assert 'def reconcile_access_grants_for_namespace_committed(' in access_service
+    assert 'TenantAccessScope.TENANT.value' in access_service
+    assert 'TenantAccessScope.ENVIRONMENT.value' in access_service
+    assert 'TenantAccessGrant.tenant_environment_id == namespace.tenant_environment_id' in access_service
+    assert "action='tenant_access_grant.namespace_scope_expanded'" in access_service
+    assert "action='tenant_access_grant.namespace_scope_expand_failed'" in access_service
+    assert "return {'matched': len(grants), 'reconciled': reconciled, 'failed': failed}" in access_service
+
+    provision_start = tenant_service.index('def provision_native_namespace(')
+    provision_end = tenant_service.index('def change_native_namespace_allocation(')
+    provision = tenant_service[provision_start:provision_end]
+    assert provision.index('db.session.commit()') < provision.index('reconcile_access_grants_for_namespace_committed(namespace=record)')
+    assert 'from app.kubernetes.tenant.access_service import reconcile_access_grants_for_namespace_committed' in provision
+
+    assert 'reconcile_access_grants_for_namespace_committed' not in sync_service
+    assert 'sync remains observation-only' in architecture
+    assert 'never infer Namespace scope automatically' in architecture
+
+
+def test_access_profiles_render_in_least_privilege_operator_order() -> None:
+    service = read('app/kubernetes/tenant/access_service.py')
+
+    assert "profile_order = ('viewer', 'operator', 'tenant_admin', 'deployer')" in service

@@ -299,6 +299,9 @@ At minimum:
 - when Scope is Environment, require only an Environment target;
 - when Scope is Namespace, require only a Namespace target;
 - filter Environment/Namespace target choices to the Tenant of the selected Membership;
+- allow Environment/Tenant scope intent to remain `Pending` when no governed namespace exists yet;
+- after an explicit Native Namespace provisioning operation reaches committed Ready state, automatically reconcile active Environment/Tenant grants whose committed scope now includes that namespace;
+- never infer Namespace scope automatically, and never perform this RBAC mutation from inventory/Tenant sync; sync remains observation-only;
 - explain Revoke Access Grant versus Revoke Tenant Membership before destructive confirmation;
 - for a revoked User/Tenant Group Membership, expose Reactivate and explain that prior grants remain revoked and a new grant is required;
 - translate internal scope invariants into actionable operator messages, for example: `Choose one managed Namespace for Namespace Scope`;

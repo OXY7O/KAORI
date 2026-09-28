@@ -448,6 +448,13 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
         db.session.commit()
         raise
     db.session.commit()
+
+    # Explicit namespace provisioning may expand previously committed
+    # Environment/Tenant access scopes. Reconcile those grants after the
+    # namespace itself is safely committed; inventory/sync remains observation-only.
+    from app.kubernetes.tenant.access_service import reconcile_access_grants_for_namespace_committed
+
+    reconcile_access_grants_for_namespace_committed(namespace=record)
     return record
 
 
