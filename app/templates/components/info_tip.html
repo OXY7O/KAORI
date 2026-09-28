@@ -1,23 +1,31 @@
 {#
   KAORI Info Tip
 
-  Compact contextual guidance for forms and dense operational controls.
-  Icon-only by default; block headers may use a compact text trigger.
-  Mobile/touch guidance renders as a viewport-safe bottom sheet while desktop
-  keeps the familiar anchored hover/focus bubble.
+  Contextual guidance with two interaction paths:
+  - desktop pointer hover: anchored preview bubble;
+  - click/touch/keyboard activation: native-dialog top layer.
+
+  Header text triggers may receive an existing KAORI button primitive through
+  button_classes so the component never invents a parallel button style.
 #}
-{% macro render(id, title, text='', items=None, placement='left', button_text=None) -%}
+{% import "components/action_button.html" as action_button %}
+
+{% macro render(id, title, text='', items=None, placement='left', button_text=None, button_classes=None) -%}
     <span class="group relative inline-flex shrink-0 align-middle">
         <button type="button"
+                data-kaori-dialog-open
+                data-dialog-target="{{ id }}-dialog"
+                aria-haspopup="dialog"
+                aria-controls="{{ id }}-dialog"
                 aria-label="More information about {{ title }}"
-                aria-describedby="{{ id }}"
-                class="{% if button_text %}inline-flex min-h-8 cursor-help items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs font-semibold text-content-secondary shadow-sm transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary focus-visible:bg-kaori-soft focus-visible:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus{% else %}inline-flex h-6 w-6 cursor-help items-center justify-center rounded-md border border-transparent bg-transparent text-content-muted transition-colors hover:bg-kaori-soft hover:text-kaori-primary focus-visible:bg-kaori-soft focus-visible:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus{% endif %}">
+                class="{% if button_text %}{{ button_classes if button_classes else action_button.classes('secondary') }}{% else %}inline-flex h-6 w-6 cursor-help items-center justify-center rounded-md border border-transparent bg-transparent text-content-muted transition-colors hover:bg-kaori-soft hover:text-kaori-primary focus-visible:bg-kaori-soft focus-visible:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus{% endif %}">
             <i data-lucide="circle-help" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></i>
             {% if button_text %}<span>{{ button_text }}</span>{% endif %}
         </button>
-        <span id="{{ id }}"
+
+        <span id="{{ id }}-tooltip"
               role="tooltip"
-              class="fixed inset-x-4 bottom-4 z-[100] hidden max-h-[min(70dvh,28rem)] overflow-y-auto rounded-xl border border-outline-default bg-surface-elevated text-left shadow-2xl group-hover:block group-focus-within:block sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-9 sm:z-50 sm:w-80 sm:max-w-[calc(100vw-2rem)] sm:shadow-xl {% if placement == 'right' %}sm:left-0{% else %}sm:right-0{% endif %}">
+              class="pointer-events-none absolute top-8 z-50 hidden w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-outline-default bg-surface-elevated text-left shadow-xl sm:group-hover:block {% if placement == 'right' %}left-0{% else %}right-0{% endif %}">
             <span class="flex items-start gap-2.5 border-b border-outline-subtle bg-surface-hover px-3.5 py-3">
                 <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                       aria-hidden="true">
@@ -43,4 +51,58 @@
             {% endif %}
         </span>
     </span>
+
+    <dialog id="{{ id }}-dialog"
+            data-kaori-native-dialog
+            aria-labelledby="{{ id }}-dialog-title"
+            class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-md overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
+        <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden" role="document">
+            <header class="flex shrink-0 items-start justify-between gap-4 border-b border-outline-subtle bg-surface-card px-5 py-4">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="info" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h2 id="{{ id }}-dialog-title"
+                            class="text-base font-semibold leading-6 text-content-primary">{{ title }}</h2>
+                        {% if text %}
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ text }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <button type="button"
+                        data-kaori-dialog-close
+                        class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition-colors hover:bg-kaori-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                        aria-label="Close {{ title }}">
+                    <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                </button>
+            </header>
+
+            {% if items %}
+                <div class="min-h-0 overflow-y-auto bg-surface-page p-4">
+                    <div class="space-y-2">
+                        {% for item in items %}
+                            <div class="flex items-start gap-2.5 rounded-xl border border-outline-subtle bg-surface-card px-3.5 py-3">
+                                <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="check" class="h-3.5 w-3.5"></i>
+                                </span>
+                                <p class="text-xs leading-5 text-content-secondary">{{ item }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <footer class="flex shrink-0 justify-end border-t border-outline-subtle bg-surface-card px-5 py-3">
+                <button type="button"
+                        data-kaori-dialog-close
+                        class="{{ action_button.classes('secondary') }}">
+                    <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                    Close
+                </button>
+            </footer>
+        </section>
+    </dialog>
 {%- endmacro %}
