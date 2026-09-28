@@ -4,7 +4,7 @@
 
 `components/info_tip.html` is the canonical compact guidance pattern for dense forms and operational controls where permanent helper copy would make the interface unnecessarily tall.
 
-The trigger is a small circular information icon. The guidance bubble appears on pointer hover and keyboard/touch focus.
+The trigger is a compact 24px neutral help affordance placed beside the content it explains. Violet is reserved for hover/focus emphasis. The guidance bubble appears on pointer hover and keyboard/touch focus.
 
 ## Use
 
@@ -20,11 +20,11 @@ Do **not** hide validation errors, destructive confirmation, security incidents,
 
 ## Placement
 
-Prefer the upper-right area of a form/card header. This preserves vertical space and keeps guidance discoverable without repeating helper paragraphs below every input.
+For a field, place the trigger inline beside the field label rather than at the far edge of the control. For a form/card header, upper-right placement remains appropriate. This keeps the relationship between trigger and content obvious without adding permanent helper paragraphs.
 
 ## Content
 
-Keep one short title, one concise explanation, and at most a few compact supporting points. The bubble supplements the field labels; it does not replace clear labels.
+Use a compact card with one short title, one concise explanation, and at most a few supporting points. Avoid oversized circular triggers, heavy blue treatment, or floating icons disconnected from the label. The bubble supplements field labels; it does not replace clear labels.
 
 ## Accessibility
 

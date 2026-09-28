@@ -93,7 +93,7 @@
                 </div>
             </div>
             <label class="block">
-                <span class="flex min-h-8 items-center justify-between gap-2">
+                <span class="inline-flex min-h-6 items-center gap-1.5">
                     <span class="text-xs font-semibold text-content-primary">Owner Kind</span>
                     {{ info_tip.render(
                         'capsule-owner-kind-tip',
@@ -104,7 +104,8 @@
                             'Group — a shared identity-provider or Kubernetes group.',
                             'ServiceAccount — a Kubernetes service account identity.',
                             'Owner Subject is required for every Owner Kind.'
-                        ]
+                        ],
+                        placement='right'
                     ) }}
                 </span>
                 <select name="capsule_owner_kind"
@@ -117,7 +118,7 @@
                 </select>
             </label>
             <label class="block">
-                <span class="flex min-h-8 items-center justify-between gap-2">
+                <span class="inline-flex min-h-6 items-center gap-1.5">
                     <span class="text-xs font-semibold text-content-primary">Owner Subject</span>
                     {{ info_tip.render(
                         'capsule-owner-subject-tip',
@@ -128,7 +129,8 @@
                             'Group example — oidc:org:platform-team',
                             'ServiceAccount example — system:serviceaccount:platform:deployer',
                             'The value is required for every Owner Kind.'
-                        ]
+                        ],
+                        placement='right'
                     ) }}
                 </span>
                 <input name="capsule_owner_subject"

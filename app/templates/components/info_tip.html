@@ -5,25 +5,34 @@
   Visible on pointer hover and keyboard/touch focus without consuming permanent layout space.
 #}
 {% macro render(id, title, text='', items=None, placement='left') -%}
-    <span class="group relative inline-flex shrink-0">
+    <span class="group relative inline-flex shrink-0 align-middle">
         <button type="button"
                 aria-label="More information about {{ title }}"
                 aria-describedby="{{ id }}"
-                class="inline-flex h-8 w-8 cursor-help items-center justify-center rounded-full border border-outline-default bg-surface-card text-status-info-text shadow-sm transition-colors hover:border-status-info-border hover:bg-status-info-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-            <i data-lucide="info" class="h-4 w-4" aria-hidden="true"></i>
+                class="inline-flex h-6 w-6 cursor-help items-center justify-center rounded-md border border-transparent bg-transparent text-content-muted transition-colors hover:bg-kaori-soft hover:text-kaori-primary focus-visible:bg-kaori-soft focus-visible:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+            <i data-lucide="circle-help" class="h-3.5 w-3.5" aria-hidden="true"></i>
         </button>
         <span id="{{ id }}"
               role="tooltip"
-              class="pointer-events-none invisible absolute top-10 z-50 w-72 rounded-lg border border-outline-default bg-surface-elevated p-3 text-left shadow-lg opacity-0 transition duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 {% if placement == 'right' %}left-0{% else %}right-0{% endif %}">
-            <span class="block text-xs font-semibold text-content-primary">{{ title }}</span>
-            {% if text %}
-                <span class="mt-1 block text-xs leading-5 text-content-secondary">{{ text }}</span>
-            {% endif %}
+              class="pointer-events-none invisible absolute top-8 z-50 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-outline-default bg-surface-elevated text-left shadow-xl opacity-0 transition duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 {% if placement == 'right' %}left-0{% else %}right-0{% endif %}">
+            <span class="flex items-start gap-2.5 border-b border-outline-subtle bg-surface-hover px-3.5 py-3">
+                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="info" class="h-3.5 w-3.5"></i>
+                </span>
+                <span class="min-w-0">
+                    <span class="block text-xs font-semibold text-content-primary">{{ title }}</span>
+                    {% if text %}
+                        <span class="mt-0.5 block text-xs leading-5 text-content-secondary">{{ text }}</span>
+                    {% endif %}
+                </span>
+            </span>
             {% if items %}
-                <span class="mt-2 block space-y-1.5">
+                <span class="block space-y-1.5 px-3.5 py-3">
                     {% for item in items %}
                         <span class="flex gap-2 text-xs leading-5 text-content-muted">
-                            <span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-status-info" aria-hidden="true"></span>
+                            <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-kaori-primary/70"
+                                  aria-hidden="true"></span>
                             <span>{{ item }}</span>
                         </span>
                     {% endfor %}
