@@ -44,11 +44,7 @@ def get_tenant_summary_context() -> dict[str, int]:
 
 
 def _tenant_options() -> list[Tenant]:
-    return (
-        Tenant.query.filter(Tenant.lifecycle_status == 'ready')
-        .order_by(Tenant.name.asc())
-        .all()
-    )
+    return Tenant.query.filter(Tenant.lifecycle_status == 'ready').order_by(Tenant.name.asc()).all()
 
 
 def get_membership_registry_context(
@@ -156,9 +152,8 @@ def get_access_grant_registry_context(
     scope_type: str = '',
     search: str = '',
 ) -> dict[str, Any]:
-    query = (
-        TenantAccessGrant.query.join(Tenant, Tenant.id == TenantAccessGrant.tenant_id)
-        .join(TenantMembership, TenantMembership.id == TenantAccessGrant.membership_id)
+    query = TenantAccessGrant.query.join(Tenant, Tenant.id == TenantAccessGrant.tenant_id).join(
+        TenantMembership, TenantMembership.id == TenantAccessGrant.membership_id
     )
     normalized_search = search.strip()
     normalized_tenant_id = tenant_id.strip()
