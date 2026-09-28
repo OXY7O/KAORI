@@ -283,7 +283,11 @@ def deprovision_native_namespace(
 
     try:
         if current is not None:
-            api.delete_namespace(name=record.namespace)
+            try:
+                api.delete_namespace(name=record.namespace)
+            except ApiException as exc:
+                if exc.status != 404:
+                    raise
 
         deadline = time.monotonic() + max(float(timeout_seconds), 0.0)
         observed_absent, observation = _namespace_delete_observation(api, record.namespace)

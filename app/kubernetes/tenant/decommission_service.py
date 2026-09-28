@@ -19,6 +19,7 @@ from app.models.tenant import (
     TenantAccessGrantStatus,
     TenantCredential,
     TenantCredentialStatus,
+    TenantEnvironment,
     TenantLifecycleStatus,
     TenantMembership,
     TenantMembershipStatus,
@@ -107,8 +108,11 @@ def build_tenant_decommission_preflight(tenant_id: str) -> dict[str, Any]:
         raise ValueError('Selected Tenant no longer exists.')
 
     namespaces = (
-        TenantNamespace.query.join(TenantNamespace.environment)
-        .filter_by(tenant_id=tenant.id)
+        TenantNamespace.query.join(
+            TenantEnvironment,
+            TenantNamespace.tenant_environment_id == TenantEnvironment.id,
+        )
+        .filter(TenantEnvironment.tenant_id == tenant.id)
         .order_by(TenantNamespace.namespace.asc())
         .all()
     )
@@ -240,18 +244,21 @@ def _actor(actor_user_id: int | None) -> User | None:
     return db.session.get(User, actor_user_id)
 
 
-def _release_policy_state(tenant: Tenant, *, actor: User | None) -> dict[str, int]:
-    managed_removed = 0
-    reservations_revoked = 0
-    exposure_disabled = 0
-
+def _remove_managed_resources(tenant: Tenant, *, actor: User | None) -> int:
+    removed = 0
     managed_resources = TenantManagedResourceIntent.query.filter(
         TenantManagedResourceIntent.tenant_id == tenant.id,
         TenantManagedResourceIntent.status != TenantManagedResourceStatus.DISABLED.value,
     ).order_by(TenantManagedResourceIntent.id.asc()).all()
     for intent in managed_resources:
         remove_managed_resource_committed(intent_id=intent.id, actor=actor)
-        managed_removed += 1
+        removed += 1
+    return removed
+
+
+def _release_policy_state(tenant: Tenant, *, actor: User | None) -> dict[str, int]:
+    reservations_revoked = 0
+    exposure_disabled = 0
 
     reservations = TenantDomainReservation.query.filter_by(
         tenant_id=tenant.id,
@@ -285,11 +292,9 @@ def _release_policy_state(tenant: Tenant, *, actor: User | None) -> dict[str, in
         db.session.commit()
 
     return {
-        'managed_resources_removed': managed_removed,
         'domain_reservations_revoked': reservations_revoked,
         'exposure_policies_disabled': exposure_disabled,
     }
-
 
 def _verify_terminal_state(tenant: Tenant) -> None:
     blockers: list[str] = []
@@ -297,9 +302,12 @@ def _verify_terminal_state(tenant: Tenant) -> None:
     grant_count = _active_grant_count(tenant.id)
     membership_count = _active_membership_count(tenant.id)
     namespace_count = (
-        TenantNamespace.query.join(TenantNamespace.environment)
+        TenantNamespace.query.join(
+            TenantEnvironment,
+            TenantNamespace.tenant_environment_id == TenantEnvironment.id,
+        )
         .filter(
-            TenantNamespace.environment.has(tenant_id=tenant.id),
+            TenantEnvironment.tenant_id == tenant.id,
             TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
         )
         .count()
@@ -364,14 +372,27 @@ def execute_tenant_decommission(
         tenant = db.session.get(Tenant, tenant_id)
         if tenant is None:
             raise TenantDecommissionBlocked('Tenant disappeared during governed teardown.')
+        retired_groups = 0
         for group in tenant.groups:
-            group.enabled = False
+            if group.enabled:
+                group.enabled = False
+                retired_groups += 1
+        if retired_groups:
+            _record_event(
+                tenant=tenant,
+                actor=actor,
+                action='tenant.decommission_groups_retired',
+                summary='Tenant Groups were disabled after dependent memberships were revoked.',
+                outcome='success',
+                stage='memberships',
+                detail=f'{retired_groups} Tenant Groups disabled.',
+            )
         db.session.commit()
         _progress(progress, 48, 'Memberships retired and Tenant Groups disabled.')
 
-        stage = 'policy_cleanup'
-        release_counts = _release_policy_state(tenant, actor=actor)
-        _progress(progress, 58, 'Tenant-owned managed resource and policy state retired.')
+        stage = 'managed_resources'
+        managed_resources_removed = _remove_managed_resources(tenant, actor=actor)
+        _progress(progress, 56, 'Tenant-managed provider resources were removed before namespace teardown.')
 
         stage = 'namespaces'
         namespaces = (
@@ -385,7 +406,11 @@ def execute_tenant_decommission(
             if namespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value:
                 deprovision_native_namespace_committed(namespace_id=namespace.id)
             deprovisioned_namespaces.append(namespace.namespace)
-        _progress(progress, 88, 'Kubernetes confirmed managed namespaces are absent.')
+        _progress(progress, 82, 'Kubernetes confirmed managed namespaces are absent.')
+
+        stage = 'policy_cleanup'
+        release_counts = _release_policy_state(tenant, actor=actor)
+        _progress(progress, 90, 'Tenant-owned reservation and exposure state retired.')
 
         stage = 'provider_verification'
         tenant = db.session.get(Tenant, tenant_id)
@@ -433,6 +458,7 @@ def execute_tenant_decommission(
             'provider_key': tenant.provider_key,
             'lifecycle_status': tenant.lifecycle_status,
             'namespaces_deprovisioned': deprovisioned_namespaces,
+            'managed_resources_removed': managed_resources_removed,
             **release_counts,
         }
     except Exception as exc:

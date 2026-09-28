@@ -13,7 +13,7 @@ from app.kubernetes.tenant.tasks import decommission_tenant_task, sync_tenant_in
 from app.models.job import JobExecution, JobExecutionSubscriber, JobPolicy
 from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES, WORKLOAD_RUNTIME, WORKLOAD_STANDARD
 from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchResult
-from app.platform_operations.jobs.dispatcher import enqueue_canonical_job
+from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_canonical_job
 from app.platform_operations.jobs.policies.presentation import present_interval
 from app.platform_operations.jobs.policies.service import get_or_create_job_policy
 
@@ -114,6 +114,11 @@ def dispatch_tenant_decommission(
         parameters={'tenant_id': tenant_id},
         payload={'tenant_id': tenant_id, 'operation': 'decommission'},
         max_attempts=3,
+        dispatch_options=JobDispatchOptions(
+            require_registered_worker=True,
+            soft_time_limit_seconds=900,
+            hard_time_limit_seconds=1200,
+        ),
     )
     return RegisteredJobDispatchResult(
         status='queued' if created else 'reused',
