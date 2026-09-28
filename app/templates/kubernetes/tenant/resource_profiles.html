@@ -30,7 +30,8 @@
             {{ resource_posture_grid.render(profile_metrics, columns=4) }}
         {% endcall %}
     </section>
-    <section class="space-y-4"
+    <section id="resource-profile-workspace"
+             class="space-y-4"
              aria-labelledby="resource-profile-workspace-heading">
         {{ section_intro.render('Resource Profile Workspace',
                 'Manage profile contracts, capacity admission, and the governed handoff into Namespace provisioning.',
@@ -39,7 +40,6 @@
             'Profile Administration',
             'Choose a workspace view without mixing profile lifecycle, capacity policy, and operator guidance.',
             'panels-top-left',
-            id='resource-profile-workspace',
             loading_bar_id='resource-profile-workspace-loading',
             loading_bar_label='Loading Resource Profile Workspace',
             body_classes='p-0',
