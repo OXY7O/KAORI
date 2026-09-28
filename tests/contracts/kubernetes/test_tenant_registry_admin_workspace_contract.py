@@ -78,6 +78,12 @@ def test_tenant_setup_uses_a_static_governance_flow_not_expandable_guidance() ->
     assert 'bg-status-warning-soft' in setup
     assert 'context_guidance_card.html' not in setup
     assert 'open_by_default' not in setup
+    assert 'Tenant Lifecycle Contract' in setup
+    assert '1 · Lock Identity' in setup
+    assert '2 · Revoke Access' in setup
+    assert '3 · Remove Namespaces' in setup
+    assert '4 · Decommission' in setup
+    assert 'Change strategy:' in setup
 
     tenant_form = read('app/templates/kubernetes/tenant/partials/_tenant_form.html')
     assert 'components/info_tip.html' in tenant_form
@@ -261,35 +267,45 @@ def test_access_grant_scope_rule_is_short_and_semantically_distinct() -> None:
 
 
 
-def test_tenant_actions_cover_update_decommission_and_htmx_toast_feedback() -> None:
+def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None:
     routes = read('app/kubernetes/tenant/routes.py')
     service = read('app/kubernetes/tenant/service.py')
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
-    maintenance = read('app/templates/kubernetes/tenant/partials/_tenant_maintenance.html')
-    modal = read('app/templates/kubernetes/tenant/partials/_tenant_decommission_modal.html')
+    setup = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
+    readme = read('app/kubernetes/tenant/README.md')
 
-    assert "def update_tenant_metadata_route(" in routes
-    assert "def decommission_tenant_route(" in routes
-    assert "def update_tenant_metadata_committed(" in service
-    assert "def decommission_tenant_committed(" in service
-    assert "TenantLifecycleStatus.DECOMMISSIONED.value" in service
-    assert "Tenant cannot be decommissioned while dependent governed state remains:" in service
+    assert 'def update_tenant_metadata_route(' not in routes
+    assert 'def decommission_tenant_route(' not in routes
+    assert 'def update_tenant_metadata_committed(' not in service
+    assert 'def decommission_tenant_committed(' not in service
+    assert 'Update Tenant Metadata' not in setup
+    assert 'Tenant Lifecycle Contract' in setup
+    assert 'Tenant identity is intentionally immutable after creation.' in setup
+    assert 'governed namespace deprovisioning must complete' in setup.lower()
+    assert 'Immutable identity' in registry
+    assert 'square-pen' not in registry
+    assert 'Decommission' not in registry
 
-    assert "square-pen" in registry
-    assert "Decommission" in registry
-    assert "tenant-decommission-modal" in registry
-    assert "_tenant_decommission_modal.html" in registry
-    assert "data-destructive-dynamic-form" in modal
-    assert "outerHTML show:none focus-scroll:false" in modal
+    assert 'g.tenant_operational_feedback = feedback' in routes
+    assert 'toast_oob=True' in routes
+    assert 'components/operational_toast.html' in routes
+    assert 'queue_feedback=(not is_htmx)' in routes
 
-    assert "Update Tenant Metadata" in maintenance
-    assert "Tenant slug remains stable after creation." in maintenance
-    assert "Save Tenant" in maintenance
+    assert 'Tenant identity is immutable after creation' in readme
+    assert '#735' in readme
+    assert 'database-only lifecycle flag' in readme
 
-    assert "g.tenant_operational_feedback = feedback" in routes
-    assert "toast_oob=True" in routes
-    assert "components/operational_toast.html" in routes
-    assert "queue_feedback=(not is_htmx)" in routes
+
+def test_cluster_estate_uses_compact_fixed_row_geometry() -> None:
+    estate = read('app/templates/kubernetes/tenant/partials/_cluster_estate.html')
+
+    assert "table_ui.table_classes('min-w-[900px] table-fixed')" in estate
+    for width in ('w-[32%]', 'w-[12%]', 'w-[14%]', 'w-[18%]', 'w-[24%]'):
+        assert width in estate
+    assert estate.count('align-middle') >= 5
+    assert 'Governed</p>' in estate
+    assert 'Managed</p>' in estate
+    assert 'max-w-[13rem]' in estate
 
 
 def test_tenant_access_grant_links_namespace_creation_and_uses_violet_guidance() -> None:
