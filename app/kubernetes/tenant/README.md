@@ -18,7 +18,7 @@ Operations task views stay inside the page so the sidebar remains exactly two in
 
 ## Evidence and provider authority
 
-Normal Tenant workspace reads are composed from committed KAORI state. Live provider calls remain inside the owning mutation/reconciliation adapters.
+Normal Tenant workspace reads are composed from committed KAORI state. Live provider calls remain inside the owning mutation/reconciliation adapters, plus the explicitly live Tenant connection/discovery surfaces described below.
 
 Tenant Overview owns a registered **Tenant inventory correlation** job while Kubernetes remains authoritative for observed cluster resources:
 
@@ -34,6 +34,8 @@ KAORI Tenant state + committed Kubernetes inventory
 ```
 
 `kubernetes.tenant.sync` runs through the canonical Platform Operations registered-job scheduler and the existing `inventory` worker queue. It does not introduce a Tenant-specific scheduler framework and it does not perform Tenant reconciliation or provider mutation.
+
+Non-Overview Tenant pages use a shared **Tenant Collection Snapshot** directly below the page Hero. This is not the Overview worker-generated snapshot and has no cadence. It performs a short live Kubernetes API reachability probe on the page request. Tenant administration HTMX mutations also return an out-of-band refresh of this connection bar, so the displayed connection status can change immediately after a provider-backed operation. If the page stays idle, no polling or worker schedule runs; the displayed timestamp remains the last page/operation check.
 
 Overview actions follow the established operational sync pattern:
 
@@ -100,7 +102,9 @@ Tenant identity is immutable after creation in the normal operator workflow.
 
 ### Provider Discovery and Adoption
 
-#736 owns the two-way Tenant Registry path. The first admitted review slice is **live and read-only**: KAORI reads Native Kubernetes namespaces and Capsule Tenant CRs, shows their live provider status, correlates objects already governed by KAORI, and classifies unowned candidates as Managed, Adoptable, or Blocked. Discovery never mutates provider state. Explicit governed adoption remains a separate mutation step under #736.
+#736 owns the two-way Tenant Registry path. Discovery reads Native Kubernetes namespaces and Capsule Tenant CRs live, shows provider status, correlates objects already governed by KAORI, and classifies candidates as **Managed**, **Discovered**, or **Blocked**. Discovery itself never mutates provider state.
+
+Explicit adoption is a separate human-confirmed mutation over KAORI committed state. The Adoption Preflight shows provider identity, live status, provider authority, current ownership, proposed KAORI mapping, and governance checks. Submission revalidates the live provider object and conflicts before committing an **Adopted** Tenant. Native namespace adoption references the existing Namespace without creating/patching/deleting it; Capsule adoption registers the existing Capsule Tenant while Capsule remains reconciliation authority. Adoption evidence records `provider_mutation_performed=false`.
 
 Tenant workspace mutations that are progressively enhanced with HTMX render operational feedback as an out-of-band KAORI toast in the same response. Success and failure feedback therefore appears immediately without requiring a full-page reload; persisted Notification Deck evidence remains synchronized through the standard toast notification-refresh contract.
 
