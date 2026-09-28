@@ -5,40 +5,33 @@
 {% block tenant_content %}
     {% set can_manage = current_user.has_permission('tenant.manage') %}
     {% set tenant_summary_metrics = [
-        ('building-2', 'Tenants', tenant_summary_tenant_count, tenant_summary_environment_count ~ ' committed environments', 'info'),
-        ('boxes', 'Namespaces', tenant_summary_namespace_count, 'Governed namespace allocations', 'info'),
-        ('users-round', 'Memberships', tenant_summary_membership_count, 'Active user, group, and machine principals', 'normal'),
-        ('shield-check', 'Access Grants', tenant_summary_access_grant_count, 'Active versioned RBAC grants', 'normal'),
-        ('key-round', 'Credentials', tenant_summary_credential_count, 'Current governed credential records', 'info')
-    ] %}
-
+            ('building-2', 'Tenants', tenant_summary_tenant_count, tenant_summary_environment_count ~ ' committed environments', 'info'),
+            ('boxes', 'Namespaces', tenant_summary_namespace_count, 'Governed namespace allocations', 'info'),
+            ('users-round', 'Memberships', tenant_summary_membership_count, 'Active user, group, and machine principals', 'normal'),
+            ('shield-check', 'Access Grants', tenant_summary_access_grant_count, 'Active versioned RBAC grants', 'normal'),
+            ('key-round', 'Credentials', tenant_summary_credential_count, 'Current governed credential records', 'info')
+        ] %}
     <section class="space-y-4" aria-labelledby="tenant-summary-heading">
-        {{ section_intro.render(
-            'Multi-Cluster Posture',
-            'Review committed Tenant ownership, namespace, identity, access, and credential posture across the Kubernetes estate.',
-            'tenant-summary-heading'
-        ) }}
+        {{ section_intro.render('Multi-Cluster Posture',
+                'Review committed Tenant ownership, namespace, identity, access, and credential posture across the Kubernetes estate.',
+                'tenant-summary-heading') }}
         {% call operational_section_card.render(
             'Tenant Estate',
             'Committed Tenant scope across the current Kubernetes estate. Open the workspace below for registry and lifecycle administration.',
             'layout-dashboard',
             body_classes='p-0',
             aria_label='Tenant governance summary'
-        ) %}
+            ) %}
             {{ resource_posture_grid.render(tenant_summary_metrics, columns=5) }}
         {% endcall %}
     </section>
-
     <section class="space-y-4" aria-labelledby="tenant-workspace-heading">
-        {{ section_intro.render(
-            'Governed Administration',
-            'Use one focused workflow at a time while retaining the same committed Tenant context.',
-            'tenant-workspace-heading'
-        ) }}
+        {{ section_intro.render('Governed Administration',
+                'Use one focused workflow at a time while retaining the same committed Tenant context.',
+                'tenant-workspace-heading') }}
         {% include "kubernetes/tenant/partials/_tenant_admin_workspace.html" %}
     </section>
 {% endblock tenant_content %}
-
 {% block tenant_scripts %}
     <script src="{{ url_for('static', filename='js/destructive_confirmation_modal.js') }}"></script>
     <script src="{{ url_for('static', filename='js/tenant_adoption_modal.js') }}"></script>

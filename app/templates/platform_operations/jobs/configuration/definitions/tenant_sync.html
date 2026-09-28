@@ -10,7 +10,7 @@
     ('server', 'Tenant Clusters', selected_job.tenant_cluster_count ~ ' / ' ~ selected_job.registered_cluster_count, 'Clusters carrying Tenant ownership'),
     ('history', 'Latest Execution', selected_job.latest_job.status_label if selected_job.latest_job else 'No History', selected_job.latest_job.queued_at if selected_job.latest_job else 'No execution recorded')
 ] %}
-{% set overview_notice = 'Tenant sync correlates canonical KAORI Tenant state with committed Kubernetes inventory. It never reconciles or mutates provider resources.' %}
+{% set overview_notice = "Tenant sync correlates canonical KAORI Tenant state with committed Kubernetes inventory. It never reconciles or mutates provider resources." %}
 <div class="space-y-5">
     {% include "platform_operations/jobs/configuration/_job_overview.html" %}
     <section class="{{ operational_section.shell_classes() }}">
@@ -104,7 +104,9 @@
                         </div>
                         <div class="px-4 py-3">
                             <dt class="font-semibold text-content-muted">Policy Updated</dt>
-                            <dd class="mt-1 font-semibold text-content-primary">{{ policy.updated_at|user_datetime }}</dd>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ policy.updated_at|user_datetime }}
+                            </dd>
                         </div>
                     </dl>
                 </div>
