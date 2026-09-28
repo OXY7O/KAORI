@@ -204,6 +204,8 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     assert workspace.count('hx-target="#tenant-admin-workspace"') >= 2
     assert "table_ui.table_classes('min-w-[760px] table-fixed lg:min-w-0')" in registry
     assert 'min-w-[1180px]' not in registry
+    assert 'table_ui.action_grid_classes(2)' in registry
+    assert 'flex flex-wrap justify-end gap-1.5' not in registry
     assert 'Type / Delivery' in registry
     assert 'Owner / Delivery' not in registry
     for action in ('Renew', 'Suspend', 'Resume', 'Revoke'):
