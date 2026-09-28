@@ -51,6 +51,7 @@
                             <option value="{{ membership.id }}"
                                     data-tenant-id="{{ membership.tenant_id }}"
                                     data-tenant-name="{{ membership.tenant.name }}"
+                                    data-provider-key="{{ membership.tenant.provider_key }}"
                                     data-principal-type="{{ membership.principal_type }}">
                                 {{ membership.tenant.name }} · {{ membership.subject_name }} · {{ membership.principal_type|title }}
                             </option>
@@ -142,10 +143,21 @@
                         {% endfor %}
                     </select>
                 </label>
+                <div data-access-provider-warning
+                     hidden
+                     class="flex items-start gap-2.5 rounded-lg border border-status-warning-border bg-status-warning-soft px-3.5 py-3 text-status-warning-text">
+                    <i data-lucide="shield-alert" class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true"></i>
+                    <p class="text-xs leading-5">
+                        Capsule Access Grant reconciliation is not admitted yet. KAORI will not bypass Capsule authority with Native RBAC mutation.
+                    </p>
+                </div>
             </div>
             <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <p class="max-w-sm text-xs leading-5 text-content-muted">Tenant and scope are validated before commit.</p>
-                <button type="submit" {% if not can_manage or not access_membership_options %}disabled aria-disabled="true"{% endif %} class="{{ action_button.classes('primary') }}">
+                <button type="submit"
+                        data-access-submit
+                        {% if not can_manage or not access_membership_options %}disabled aria-disabled="true"{% endif %}
+                        class="{{ action_button.classes('primary') }}">
                     <i data-lucide="shield-check" class="h-4 w-4"></i>
                     Apply Grant
                 </button>

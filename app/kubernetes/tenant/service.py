@@ -454,7 +454,21 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
     # namespace itself is safely committed; inventory/sync remains observation-only.
     from app.kubernetes.tenant.access_service import reconcile_access_grants_for_namespace_committed
 
-    reconcile_access_grants_for_namespace_committed(namespace=record)
+    access_followup = reconcile_access_grants_for_namespace_committed(namespace=record)
+    evidence = dict(record.provisioning_evidence_json or {})
+    evidence['access_grant_followup'] = {
+        **access_followup,
+        'trigger': 'explicit_namespace_provision',
+        'namespace': record.namespace,
+    }
+    record.provisioning_evidence_json = evidence
+    if access_followup['matched']:
+        record.provisioning_message = (
+            f'{record.provisioning_message or ""} '
+            f'Access Grant follow-up: {access_followup["reconciled"]} reconciled'
+            f'; {access_followup["failed"]} require attention.'
+        ).strip()
+    db.session.commit()
     return record
 
 

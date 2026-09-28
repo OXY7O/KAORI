@@ -828,6 +828,10 @@ def test_access_grant_form_filters_targets_and_profiles_from_selected_membership
     service = read('app/kubernetes/tenant/access_service.py')
 
     assert 'data-principal-type="{{ membership.principal_type }}"' in workspace
+    assert 'data-provider-key="{{ membership.tenant.provider_key }}"' in workspace
+    assert 'data-access-provider-warning' in workspace
+    assert 'data-access-submit' in workspace
+    assert 'Capsule Access Grant reconciliation is not admitted yet.' in workspace
     assert 'data-principal-types="{{ \'service_account\' if profile.key.value == \'deployer\' else \'user,group\' }}"' in workspace
     assert 'Filtered by Membership Tenant' in workspace
     assert 'Tenant scope still uses namespaced RBAC' in workspace
@@ -840,6 +844,10 @@ def test_access_grant_form_filters_targets_and_profiles_from_selected_membership
     assert "scopeValue === 'namespace'" in scope_js
     assert 'environment.required = showEnvironment && Boolean(tenantId)' in scope_js
     assert 'namespace.required = showNamespace && Boolean(tenantId)' in scope_js
+    assert 'namespaceCount === 0' in scope_js
+    assert "providerKey === 'native_kubernetes'" in scope_js
+    assert 'submit.disabled = !enabled' in scope_js
+    assert 'Provision Namespace first' in scope_js
     assert 'No target selection is required.' in scope_js
     assert 'incompatible profiles are filtered automatically.' in scope_js
     assert 'normalizedPrincipalType' in scope_js

@@ -211,6 +211,9 @@ def test_namespace_provisioning_reconciles_matching_broad_scope_grants_after_com
     provision = tenant_service[provision_start:provision_end]
     assert provision.index('db.session.commit()') < provision.index('reconcile_access_grants_for_namespace_committed(namespace=record)')
     assert 'from app.kubernetes.tenant.access_service import reconcile_access_grants_for_namespace_committed' in provision
+    assert "evidence['access_grant_followup']" in provision
+    assert "'trigger': 'explicit_namespace_provision'" in provision
+    assert 'Access Grant follow-up:' in provision
 
     assert 'reconcile_access_grants_for_namespace_committed' not in sync_service
     assert 'sync remains observation-only' in architecture

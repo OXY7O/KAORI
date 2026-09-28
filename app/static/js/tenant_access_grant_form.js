@@ -15,16 +15,19 @@
     }
 
     const filterTenantOptions = (select, tenantId) => {
-        if (!(select instanceof HTMLSelectElement)) return
+        if (!(select instanceof HTMLSelectElement)) return 0
         let selectedStillValid = !select.value
+        let eligibleCount = 0
         for (const option of select.options) {
             if (!option.dataset.tenantId) continue
             const eligible = Boolean(tenantId) && option.dataset.tenantId === tenantId
             option.hidden = !eligible
             option.disabled = !eligible
+            if (eligible) eligibleCount += 1
             if (eligible && option.selected) selectedStillValid = true
         }
         if (!selectedStillValid) clearSelect(select)
+        return eligibleCount
     }
 
     const syncProfiles = (form, principalType) => {
@@ -68,18 +71,21 @@
         const environment = form.querySelector('[data-access-environment]')
         const namespace = form.querySelector('[data-access-namespace]')
         const scopeGuidance = form.querySelector('[data-access-scope-guidance]')
+        const providerWarning = form.querySelector('[data-access-provider-warning]')
+        const submit = form.querySelector('[data-access-submit]')
 
         if (!(membership instanceof HTMLSelectElement) || !(scope instanceof HTMLSelectElement)) return
 
         const membershipOption = selectedOption(membership)
         const tenantId = membershipOption?.dataset.tenantId || ''
         const tenantName = membershipOption?.dataset.tenantName || 'the selected Tenant'
+        const providerKey = String(membershipOption?.dataset.providerKey || '').trim().toLowerCase()
         const principalType = membershipOption?.dataset.principalType || ''
         const scopeValue = scope.value
 
         syncProfiles(form, principalType)
-        filterTenantOptions(environment, tenantId)
-        filterTenantOptions(namespace, tenantId)
+        const environmentCount = filterTenantOptions(environment, tenantId)
+        const namespaceCount = filterTenantOptions(namespace, tenantId)
 
         const showEnvironment = scopeValue === 'environment'
         const showNamespace = scopeValue === 'namespace'
@@ -98,10 +104,26 @@
             if (!showNamespace) clearSelect(namespace)
         }
 
+        const providerSupported = !providerKey || providerKey === 'native_kubernetes'
+        const namespaceReady = scopeValue !== 'namespace' || namespaceCount > 0
+        const environmentReady = scopeValue !== 'environment' || environmentCount > 0
+        if (providerWarning instanceof HTMLElement) providerWarning.hidden = providerSupported
+        if (submit instanceof HTMLButtonElement) {
+            const enabled = Boolean(tenantId) && providerSupported && namespaceReady && environmentReady
+            submit.disabled = !enabled
+            submit.setAttribute('aria-disabled', enabled ? 'false' : 'true')
+        }
+
         if (!scopeGuidance) return
         if (!tenantId) {
             scopeGuidance.textContent =
                 'Select Membership first. KAORI will restrict targets to that Membership’s Tenant.'
+        } else if (!providerSupported) {
+            scopeGuidance.textContent =
+                tenantName + ' uses Capsule authority. Access Grant provider reconciliation remains fail-closed until the Capsule access adapter is admitted.'
+        } else if (scopeValue === 'namespace' && namespaceCount === 0) {
+            scopeGuidance.textContent =
+                'No governed namespace exists in ' + tenantName + '. Provision Namespace first, then return to Namespace scope.'
         } else if (scopeValue === 'tenant') {
             scopeGuidance.textContent =
                 `Tenant scope — applies the profile across all governed namespaces in ${tenantName}. No target selection is required.`
