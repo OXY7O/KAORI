@@ -332,6 +332,34 @@ def deprovision_native_namespace(
         raise
 
 
+def deprovision_native_namespace_committed(
+    *,
+    namespace_id: int,
+    timeout_seconds: float = 120.0,
+    poll_interval_seconds: float = 2.0,
+) -> TenantNamespace:
+    record = db.session.get(TenantNamespace, namespace_id)
+    if record is None:
+        raise ValueError('Selected Tenant namespace no longer exists.')
+    if record.provisioning_status == TenantNamespaceProvisioningStatus.DEPROVISIONED.value:
+        return record
+
+    try:
+        deprovision_native_namespace(
+            record,
+            timeout_seconds=timeout_seconds,
+            poll_interval_seconds=poll_interval_seconds,
+        )
+        db.session.commit()
+        return record
+    except (ApiException, ValueError):
+        # Preserve fail-closed teardown evidence so retry/UAT can see the exact
+        # Terminating/finalizer or provider error instead of rolling it away.
+        if record.id is not None:
+            db.session.commit()
+        raise
+
+
 def reconcile_native_namespace(record: TenantNamespace) -> TenantNamespace:
     environment = record.environment
     tenant = environment.tenant
