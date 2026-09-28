@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 from collections.abc import Callable
 from typing import Any, cast
@@ -42,9 +43,12 @@ from app.kubernetes.tenant.capacity_governance import (
     upsert_capacity_policy_committed,
 )
 from app.kubernetes.tenant.credential_service import (
+    GeneratedKubeconfigMaterial,
+    GeneratedTokenMaterial,
     HumanCredentialIssueRequest,
     TenantCredentialStateConflictError,
     create_human_credential_from_grant_committed,
+    generate_credential_material_committed,
     renew_credential_committed,
     resume_credential_committed,
     revoke_credential_committed,
@@ -1540,6 +1544,72 @@ def _credential_feedback(
                 'operation': f'credential_{action}',
             },
         )
+
+
+@tenant_bp.post('/credentials/<int:credential_id>/material')
+@permission_required('tenant.manage')
+def generate_credential_material_route(credential_id: int):
+    try:
+        _csrf()
+        material = generate_credential_material_committed(
+            credential_id=credential_id,
+            namespace_id=_required_int('namespace_id'),
+            requested_seconds=_required_int('requested_seconds'),
+            actor=cast(User, current_user),
+        )
+    except (ValueError, ApiException, TenantCredentialStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_credential_material_failed',
+            status='error',
+            title='Credential Material Requires Attention',
+            message=str(exc),
+            metadata={'credential_id': credential_id, 'operation': 'credential_material_generate'},
+        )
+        return _tenant_section_redirect('credentials')
+
+    context = _tenant_workspace_context()
+    context.update(get_live_tenant_connection_context())
+
+    if isinstance(material, GeneratedTokenMaterial):
+        material_kind = 'token'
+        material_title = 'JumpServer ServiceAccount Token'
+        material_value = material.token
+        material_base64 = None
+        delivery_label = 'Manual JumpServer delivery'
+        page_title = 'One-Time Human Token'
+        page_icon = 'user-key'
+    elif isinstance(material, GeneratedKubeconfigMaterial):
+        material_kind = 'kubeconfig'
+        material_title = 'CI/CD Kubeconfig'
+        material_value = material.kubeconfig
+        material_base64 = base64.b64encode(material.kubeconfig.encode('utf-8')).decode('ascii')
+        delivery_label = 'GitHub Actions / Helm'
+        page_title = 'One-Time CI/CD Kubeconfig'
+        page_icon = 'git-branch'
+    else:
+        abort(500)
+
+    response = make_response(
+        render_template(
+            'kubernetes/tenant/credential_material.html',
+            tenant_page='tenants',
+            tenant_page_title=page_title,
+            tenant_page_icon=page_icon,
+            material_kind=material_kind,
+            material_title=material_title,
+            material_value=material_value,
+            material_base64=material_base64,
+            material_namespace=material.namespace,
+            material_expires_at=material.expires_at,
+            material_access_package=material.access_package,
+            delivery_label=delivery_label,
+            **context,
+        )
+    )
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 @tenant_bp.post('/credentials/<int:credential_id>/renew')
