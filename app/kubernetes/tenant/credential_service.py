@@ -625,7 +625,11 @@ def _request_short_lived_token(
     validate_credential_contract(credential)
     reconcile_native_credential(credential)
 
-    ttl = token_ttl_seconds(credential, requested_seconds=requested_seconds)
+    ttl = token_ttl_seconds(
+        credential,
+        requested_seconds=requested_seconds,
+        environment=namespace.environment.environment,
+    )
     cluster = db.session.get(Cluster, credential.tenant.cluster_id)
     if cluster is None:
         raise ValueError('Tenant cluster no longer exists.')
