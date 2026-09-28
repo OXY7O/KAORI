@@ -50,7 +50,7 @@ def get_live_tenant_connection_context() -> dict[str, Any]:
         description = 'No canonical Kubernetes connection is registered for live Tenant provider operations.'
     elif failures == 0:
         status, tone = 'Connected', 'normal'
-        description = 'Live Kubernetes API reachability is available for provider-backed Tenant operations.'
+        description = 'Live Kubernetes API is reachable.'
     elif reachable:
         status, tone = 'Partial', 'warning'
         description = 'Some Kubernetes clusters are unreachable; provider-backed Tenant operations fail closed per target.'
