@@ -258,7 +258,6 @@ def sync_tenant_inventory_task(
         raise
 
 
-
 def _notify_decommission_requesters(
     *,
     job_execution_id: int | None,
