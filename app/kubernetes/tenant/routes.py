@@ -1153,7 +1153,7 @@ def decommission_tenant_route(tenant_id: str):
             ),
             metadata={
                 'tenant_id': tenant_id,
-                'job_public_id': dispatch.job.public_id,
+                'job_public_id': dispatch.job.public_id if dispatch.job is not None else None,
                 'operation': 'decommission_tenant',
             },
         )
