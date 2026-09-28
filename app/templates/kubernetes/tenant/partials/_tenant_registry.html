@@ -143,7 +143,7 @@
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
                             <div class="flex min-w-[11rem] justify-end gap-2">
-                                {% if tenant.lifecycle_status != 'decommissioned' %}
+                                {% if can_manage and tenant.lifecycle_status != 'decommissioned' %}
                                     <a href="{{ url_for('tenant.tenants', section='tenant-setup', edit_tenant_id=tenant.id) }}#tenant-maintenance"
                                        hx-get="{{ url_for('tenant.tenants', section='tenant-setup', edit_tenant_id=tenant.id) }}"
                                        hx-target="#tenant-admin-workspace"
@@ -167,8 +167,10 @@
                                         <i data-lucide="archive-x" class="h-4 w-4" aria-hidden="true"></i>
                                         Decommission
                                     </button>
-                                {% else %}
+                                {% elif tenant.lifecycle_status == 'decommissioned' %}
                                     <span class="text-xs text-content-muted">Historical evidence</span>
+                                {% else %}
+                                    <span class="text-xs text-content-muted">View only</span>
                                 {% endif %}
                             </div>
                         </td>
