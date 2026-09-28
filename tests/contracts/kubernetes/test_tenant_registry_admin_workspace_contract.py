@@ -45,7 +45,7 @@ def test_tenant_registry_uses_canonical_server_registry_contract() -> None:
     assert 'registry_ui.filter_form' in registry
     assert 'registry_ui.footer' in registry
     assert 'tenant-registry-loading' in registry
-    assert "table_ui.table_classes('min-w-[980px]')" in registry
+    assert "table_ui.table_classes('min-w-[1120px]')" in registry
     assert 'tenant-registry-cluster' in registry
     assert 'tenant-registry-environment' in registry
     assert 'tenant-registry-lifecycle' in registry
@@ -257,13 +257,15 @@ def test_overview_adds_section_hierarchy_above_tenant_estate() -> None:
     assert overview.index("'Governance Scope'") < overview.index("'Tenant Estate'")
 
 
-def test_access_grant_scope_rule_is_short_and_semantically_distinct() -> None:
+def test_access_grant_scope_rule_is_neutral_and_form_geometry_is_balanced() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
 
-    assert 'Tenant: no target. Environment/Namespace: select one target.' in workspace
-    assert 'bg-status-info-soft' in workspace
-    assert 'border-status-info-border' in workspace
-    assert 'Tenant scope uses neither target.' not in workspace
+    assert 'Tenant scope uses no target. Environment or Namespace scope requires exactly one matching target.' in workspace
+    assert 'xl:grid-cols-6' in workspace
+    assert workspace.count('xl:col-span-2') >= 3
+    assert workspace.count('xl:col-span-3') >= 2
+    assert 'border-outline-subtle bg-surface-elevated' in workspace
+    assert 'Governed reconciliation.' in workspace
 
 
 
@@ -274,17 +276,23 @@ def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None
     setup = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
     readme = read('app/kubernetes/tenant/README.md')
 
+    decommission = read('app/kubernetes/tenant/decommission_service.py')
+
     assert 'def update_tenant_metadata_route(' not in routes
-    assert 'def decommission_tenant_route(' not in routes
     assert 'def update_tenant_metadata_committed(' not in service
-    assert 'def decommission_tenant_committed(' not in service
+    assert 'def decommission_tenant_route(' in routes
+    assert 'request_tenant_decommission_committed' in routes
+    assert 'execute_tenant_decommission' in decommission
+    assert "tenant.lifecycle_status = TenantLifecycleStatus.DECOMMISSIONING.value" in decommission
     assert 'Update Tenant Metadata' not in setup
     assert 'Tenant Lifecycle Contract' in setup
     assert 'Tenant identity is intentionally immutable after creation.' in setup
     assert 'governed namespace deprovisioning must complete' in setup.lower()
-    assert 'Immutable identity' in registry
+    assert 'Immutable' in registry
     assert 'square-pen' not in registry
-    assert 'Decommission' not in registry
+    assert 'Decommission' in registry
+    assert 'destructive_confirmation_modal.html' in registry
+    assert 'data-destructive-modal-open' in registry
 
     assert 'g.tenant_operational_feedback = feedback' in routes
     assert 'toast_oob=True' in routes
@@ -299,30 +307,31 @@ def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None
 def test_cluster_estate_uses_compact_fixed_row_geometry() -> None:
     estate = read('app/templates/kubernetes/tenant/partials/_cluster_estate.html')
 
-    assert "table_ui.table_classes('min-w-[900px] table-fixed')" in estate
-    for width in ('w-[32%]', 'w-[12%]', 'w-[14%]', 'w-[18%]', 'w-[24%]'):
+    assert "table_ui.table_classes('min-w-[860px] table-fixed')" in estate
+    for width in ('w-[34%]', 'w-[12%]', 'w-[14%]', 'w-[18%]', 'w-[22%]'):
         assert width in estate
     assert estate.count('align-middle') >= 5
-    assert 'Governed</p>' in estate
-    assert 'Managed</p>' in estate
-    assert 'max-w-[13rem]' in estate
+    assert 'Governed Tenants' in estate
+    assert 'Managed Namespaces' in estate
+    assert 'ml-auto' not in estate
 
 
-def test_tenant_access_grant_links_namespace_creation_and_uses_violet_guidance() -> None:
+def test_tenant_access_grant_links_namespace_creation_and_keeps_guidance_neutral() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
 
     assert "Create Namespace" in workspace
     assert "url_for('tenant.namespace_provisioning')" in workspace
-    assert "Tenant: no target. Environment/Namespace: select one target." in workspace
-    assert "bg-kaori-soft" in workspace
+    assert "Tenant scope uses no target. Environment or Namespace scope requires exactly one matching target." in workspace
+    assert "bg-surface-elevated" in workspace
     assert "bg-status-info-soft" not in workspace
 
 
-def test_namespace_access_security_boundary_uses_kaori_violet() -> None:
+def test_namespace_access_security_boundary_matches_peer_surface() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_namespace_access_workspace.html')
 
     assert "Security Boundary" in workspace
-    assert "bg-kaori-soft" in workspace
+    assert workspace.count('class="flex gap-3 bg-surface-card p-4"') >= 3
+    assert "text-content-muted" in workspace
     assert "bg-status-info-soft" not in workspace
 
 
@@ -380,3 +389,46 @@ def test_overview_attention_and_activity_rows_share_peer_geometry() -> None:
     assert 'Committed governance finding' in overview
     assert 'Recent Tenant Activity' in overview
     assert 'Needs Attention' in overview
+
+
+
+def test_governed_tenant_decommission_is_async_provider_verified_and_fail_closed() -> None:
+    decommission = read('app/kubernetes/tenant/decommission_service.py')
+    provisioning = read('app/kubernetes/tenant/provisioning.py')
+    tasks = read('app/kubernetes/tenant/tasks.py')
+    adapter = read('app/kubernetes/tenant/job_adapter.py')
+    config = read('app/config/default.py')
+    models = read('app/models/tenant.py')
+    migration = read('migrations/versions/20260928_tenant_decommission.py')
+
+    ordered_markers = [
+        "stage = 'credentials'",
+        "stage = 'access_grants'",
+        "stage = 'memberships'",
+        "stage = 'policy_cleanup'",
+        "stage = 'namespaces'",
+        "stage = 'provider_verification'",
+        "stage = 'finalize'",
+    ]
+    offsets = [decommission.index(marker) for marker in ordered_markers]
+    assert offsets == sorted(offsets)
+
+    assert 'Capsule is authoritative for this Tenant.' in decommission
+    assert 'will not bypass Capsule with direct Native Kubernetes deletion' in decommission
+    assert "tenant.provider_key != 'native_kubernetes'" in provisioning
+    assert "tenant.reconciliation_authority != 'native_kubernetes'" in provisioning
+    assert 'api.delete_namespace(name=record.namespace)' in provisioning
+    assert '_namespace_delete_observation' in provisioning
+    assert 'Finalizers:' in provisioning
+    assert 'force' not in provisioning[provisioning.index('def deprovision_native_namespace('):provisioning.index('def deprovision_native_namespace_committed(')]
+
+    assert "name='app.kubernetes.tenant.tasks.decommission_tenant'" in tasks
+    assert 'dispatch_tenant_decommission' in adapter
+    assert "workload_class=WORKLOAD_RUNTIME" in adapter
+    assert "INTEGRATION_RUNTIME_CELERY_QUEUE" in adapter
+    assert "'app.kubernetes.tenant.tasks.decommission_tenant'" in config
+
+    assert "DEPROVISIONING = 'deprovisioning'" in models
+    assert "DEPROVISIONED = 'deprovisioned'" in models
+    assert 'generation: Mapped[int]' in models
+    assert 'uq_tenants_cluster_slug_generation' in migration
