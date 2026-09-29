@@ -12,6 +12,7 @@ from tests.ui.visual_audit import (
     VisualAuditFinding,
     assert_document_fits_viewport,
     assert_hero_description_contract,
+    assert_locator_within_document_width,
     assert_primary_actions_visible,
     assert_visual_baseline,
     record_visual_audit_finding,
@@ -209,6 +210,59 @@ def test_welcome_visual_qa_light_and_dark(
                         evidence=evidence_name,
                     )
                 )
+
+
+def test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewports(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Exercise current Welcome content and catalog interaction across every canonical viewport."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+
+    with _browser_evidence(page, 'welcome-catalog-content-search', viewport_name):
+        _login(page, kaori_authenticated_base_url)
+
+        response = page.goto(f'{kaori_authenticated_base_url}/welcome', wait_until='networkidle')
+        assert response is not None
+        assert response.ok
+
+        expect(page.get_by_role('heading', name='Welcome to KAORI')).to_be_visible()
+        tenant_card = page.get_by_role('link', name='Open Tenant Management Workspace')
+        access_card = page.get_by_role('link', name='Open Access Workspace')
+        expect(tenant_card).to_be_visible()
+        expect(access_card).to_be_visible()
+        expect(tenant_card).to_contain_text('Governed Tenancy')
+        expect(tenant_card).to_contain_text('Namespace Provisioning')
+        expect(access_card).to_contain_text('Identity Providers')
+        expect(access_card).to_contain_text('directory-projected external identities')
+
+        assert_document_fits_viewport(page)
+        cards = page.locator('[data-workspace-card]')
+        assert cards.count() >= 2
+        for index in range(cards.count()):
+            card = cards.nth(index)
+            if card.is_visible():
+                assert_locator_within_document_width(page, card, label=f'Welcome workspace card #{index + 1}')
+
+        search = page.locator('[data-workspace-search]')
+        expect(search).to_be_visible()
+        page.keyboard.press('/')
+        expect(search).to_be_focused()
+        search.fill('tenant')
+
+        expect(tenant_card).to_be_visible()
+        expect(access_card).to_be_hidden()
+        expect(page.locator('[data-workspace-result-count]')).to_have_text('1 Workspace')
+        assert_document_fits_viewport(page)
+
+        page.keyboard.press('Escape')
+        expect(search).to_have_value('')
+        expect(search).not_to_be_focused()
+        expect(tenant_card).to_be_visible()
+        expect(access_card).to_be_visible()
+        assert_document_fits_viewport(page)
 
 
 def test_deterministic_visual_surface_catalog_light_and_dark(

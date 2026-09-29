@@ -89,3 +89,18 @@ def test_storage_workspace_metadata_requires_storage_specific_permissions(monkey
     assert 'Object Storage Analytics' in titles
     assert 'Kubernetes Inventory' not in titles
     assert 'Kubernetes Analytics' not in titles
+
+
+def test_tenant_workspace_metadata_requires_tenant_permission(monkeypatch: pytest.MonkeyPatch) -> None:
+    module = _load_shortcuts(monkeypatch, {'inventory.view'})
+    titles = {shortcut['title'] for shortcut in _flatten(module.build_welcome_workspace_groups())}
+
+    assert 'Tenant Management' not in titles
+
+    module = _load_shortcuts(monkeypatch, {'tenant.view'})
+    shortcuts = _flatten(module.build_welcome_workspace_groups())
+    titles = {shortcut['title'] for shortcut in shortcuts}
+    search_text = ' '.join(shortcut['search_text'] for shortcut in shortcuts)
+
+    assert 'Tenant Management' in titles
+    assert 'tenant.view' not in search_text

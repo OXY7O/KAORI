@@ -104,6 +104,10 @@ def test_authenticated_user_can_render_welcome_with_global_application_shell(
     assert 'Welcome to KAORI' in html
     assert 'Welcome to KAORI' in root_response.get_data(as_text=True)
     assert 'Choose a Workspace' in html
+    assert 'Tenant Management' in html
+    assert 'Governed Tenancy' in html
+    assert 'Identity Providers' in html
+    assert 'directory-projected external identities' in html
     assert 'Quick Actions' in html
     assert 'Notifications' in html
     assert 'Account Settings' in html
