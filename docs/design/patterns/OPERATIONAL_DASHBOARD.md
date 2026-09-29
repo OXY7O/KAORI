@@ -79,7 +79,8 @@ Kubernetes maps the health table to clusters and Object Storage maps it to regis
 - Use `components/workspace_tabs.html` with semantic key `integrated-workspace`.
 - Use `components/operational_section_card.html` for repeated section shells.
 - Use `components/peer_content_grid.html` for equal-height peer content.
-- Use `components/operational_flow_steps.html` for visible action and response flows.
+- Use `components/operational_flow_steps.html` for capacity, reporting, and other arrow-connected action flows.
+- Use `components/numbered_governance_steps.html` for **Alert Interpretation & Response**, reusing the same numbered, non-arrow sequence as Tenant Governance Flow.
 - Use `components/operational_callout.html` for interpretation/supporting guidance.
 - Use `components/forecast_projection_chart.html` for historical/projected utilization.
 - Use canonical table, label, empty-state, loading, and pagination components.
@@ -93,6 +94,10 @@ Identity → Scope → Indicators → Peer analysis → Interpretation → Actio
 ```
 
 The Hero establishes identity, evidence boundary, and readiness. Operational Signal Overview owns scope and high-level indicators. Tabs are peer perspectives of the same dashboard scope. Evidence precedes interpretation and action.
+
+### Alert response flow contract
+
+`Alert Interpretation & Response` keeps the shared six-step sequence `Validate → Triage → Investigate → Respond → Verify → Record`, rendered through `components/numbered_governance_steps.html`. This is the same visual grammar used by Tenant Governance Flow. Capacity and Reporting keep `components/operational_flow_steps.html` because those remain arrow-connected action flows.
 
 ## Data-boundary contract
 
@@ -149,7 +154,7 @@ Use consistent evidence terminology such as `Cluster Signals Available`, `Select
 
 - Kubernetes and Object Storage share the same Hero profile, four workspace tabs, outer `space-y-5` rhythm, Operational Signal Overview placement, peer-grid proportions, and section-card hierarchy.
 - Domain-specific wording changes nouns/evidence semantics only; it does not create a different visual grammar.
-- Future Server/VM, HCI, network, backup, and other operational dashboards begin from this pattern and the shared Hero profile.
+- Future capability dashboards—including Registry/Harbor and Source Control/GitHub, plus Server/VM, HCI, network, backup, and other operational domains—begin from this pattern and the shared Hero profile. Capability/domain naming remains primary; provider identity changes evidence and actions, not dashboard shell grammar.
 - Reusable layout changes happen through shared components/canonical structure and family-level contract tests.
 
 ## Maintainability and performance contract

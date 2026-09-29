@@ -38,7 +38,7 @@
 {% elif legacy_features %}
     {% set capability_next_action = 'Migrate ' ~ (legacy_features|length) ~ ' legacy API fallback' ~ ('' if legacy_features|length == 1 else 's') ~ ', then rerun Full Validation.' %}
 {% elif optional_blocked_features %}
-    {% set capability_next_action = "Review optional access only when needed." %}
+    {% set capability_next_action = "Review optional access only when an approved governed workflow requires it." %}
 {% else %}
     {% set capability_next_action = "Revalidate after Kubernetes upgrades, served-API changes, or RBAC policy changes." %}
 {% endif %}

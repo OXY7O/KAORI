@@ -82,9 +82,10 @@ def test_dashboard_sections_use_the_canonical_operational_section_card() -> None
     assert 'rounded-xl border border-outline-default bg-surface-card shadow-sm' in component
 
 
-def test_primary_and_peer_operational_flows_are_static() -> None:
+def test_primary_and_peer_operational_flows_are_static_and_alerts_reuse_governance_sequence() -> None:
     info_flow = read('app/templates/components/info_flow.html')
     flow_steps = read('app/templates/components/operational_flow_steps.html')
+    numbered_steps = read('app/templates/components/numbered_governance_steps.html')
     alert_guidance = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     reporting_guidance = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
     capacity = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
@@ -94,7 +95,10 @@ def test_primary_and_peer_operational_flows_are_static() -> None:
     assert '<details' not in info_flow
     assert '<summary' not in info_flow
     assert '<details' not in flow_steps
-    assert 'components/operational_flow_steps.html' in alert_guidance
+    assert '<details' not in numbered_steps
+    assert 'divide-y divide-outline-subtle' in numbered_steps
+    assert 'components/numbered_governance_steps.html' in alert_guidance
+    assert 'components/operational_flow_steps.html' not in alert_guidance
     assert 'components/operational_flow_steps.html' in reporting_guidance
     assert 'components/operational_flow_steps.html' in capacity
     assert 'components/context_guidance_card.html' not in alert_guidance

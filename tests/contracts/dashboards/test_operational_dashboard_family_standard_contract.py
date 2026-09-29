@@ -107,6 +107,10 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert 'Committed analytics available' in freshness
     assert 'Generated reports are retained artifacts, separate from current Kubernetes health.' in freshness
     assert 'No immediate scaling required.' in capacity
+    assert (
+        'Verify the selected cluster Metrics Source and kube-state-metrics node-role labels, then reload the snapshot.'
+        in capacity
+    )
     assert 'Worker-node CPU, memory, and pod headroom; control-plane nodes excluded.' in kubernetes_capacity
     assert 'Apply the approved capacity/workload change' in kubernetes_capacity
     assert 'KAORI Alert Intelligence case evidence is temporarily unavailable.' in kubernetes_alerts
@@ -164,15 +168,34 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
         assert token not in all_source
 
 
+def test_alert_response_flow_reuses_tenant_governance_sequence() -> None:
+    kubernetes = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
+    object_storage = read('app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html')
+    tenant = read(
+        'app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html'
+    )
+
+    assert 'Tenant Governance Flow' in tenant
+    assert 'components/numbered_governance_steps.html' in tenant
+    for source in (kubernetes, object_storage):
+        assert 'components/numbered_governance_steps.html' in source
+        assert 'components/operational_flow_steps.html' not in source
+        assert 'alert_response_steps' in source
+        for step in ('Validate', 'Triage', 'Investigate', 'Respond', 'Verify', 'Record'):
+            assert f"'{step}'" in source
+
+
 def test_operational_dashboard_standard_is_family_owned() -> None:
     standard = read('docs/design/patterns/OPERATIONAL_DASHBOARD.md')
-    audit = read('docs/design/audits/OPERATIONAL_DASHBOARD_FAMILY_ALIGNMENT_AUDIT_2026_08_24.md')
+    audit = read(
+        'docs/design/audits/OPERATIONAL_DASHBOARD_FAMILY_FAST_TRACK_ALIGNMENT_AUDIT_2026_09_29.md'
+    )
 
     assert '# KAORI Operational Dashboard Pattern v1.5' in standard
     assert 'Kubernetes Operations Dashboard and Object Storage Operations Dashboard' in standard
     assert 'Dashboard family consistency' in standard
-    assert (
-        'Future Server/VM, HCI, network, backup, and other operational dashboards begin from this pattern' in standard
-    )
+    assert 'Registry/Harbor and Source Control/GitHub' in standard
+    assert 'components/numbered_governance_steps.html' in standard
     assert 'same four workspace tabs' in audit
-    assert 'future operational dashboards' in audit
+    assert 'Registry/Harbor and Source Control/GitHub' in audit
+    assert 'Tenant Governance Flow' in audit

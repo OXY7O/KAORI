@@ -51,7 +51,7 @@
                         </div>
                         {{ integration_ui.palette_icon('boxes', 'normal' if operational_use.inventory_status == 'committed' else 'unknown', size='md') }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">Committed inventory captured at {{ operational_use.inventory_collected_at_display }}.</p>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">Committed inventory capture: {{ operational_use.inventory_collected_at_display }}. Review collection freshness before relying on this snapshot.</p>
                 </article>
                 <article class="bg-surface-card p-5">
                     <div class="flex items-start justify-between gap-3">

@@ -259,6 +259,8 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     assert "for case in posture['cases'][:3]" in service
     assert 'Alert Interpretation & Response' in response
     assert 'Controlled Response Flow' in response
+    assert 'components/numbered_governance_steps.html' in response
+    assert 'components/operational_flow_steps.html' not in response
     assert 'Recommended Actions' in actions
     assert 'dashboard-recommended-actions' in kubernetes_signals
     assert "dashboard['recommended_actions'] = _recommended_actions(selected)" in service

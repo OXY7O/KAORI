@@ -9,6 +9,7 @@ CONTENT = DASHBOARD_DIR / 'partials' / '_content.html'
 HERO = DASHBOARD_DIR / 'partials' / '_hero.html'
 ONBOARDING_BANNER = ROOT / 'app' / 'templates' / 'components' / 'cluster' / '_onboarding_banner.html'
 SIGNAL_OVERVIEW = DASHBOARD_DIR / 'partials' / '_signal_overview.html'
+ALERT_GUIDANCE = DASHBOARD_DIR / 'partials' / '_alert_response_guidance.html'
 REPORTING_GUIDANCE = DASHBOARD_DIR / 'partials' / '_reporting_guidance.html'
 OBJECT_DASHBOARD_DIR = ROOT / 'app' / 'templates' / 'storage' / 'object_storage' / 'dashboard'
 OBJECT_CONTENT = OBJECT_DASHBOARD_DIR / 'partials' / '_content.html'
@@ -19,6 +20,9 @@ OBJECT_REPORTING_GUIDANCE = OBJECT_DASHBOARD_DIR / 'partials' / '_reporting_guid
 PAGE_HERO = ROOT / 'app' / 'templates' / 'components' / 'page_hero.html'
 WORKSPACE_TABS = ROOT / 'app' / 'templates' / 'components' / 'workspace_tabs.html'
 METRIC_CARD = ROOT / 'app' / 'templates' / 'components' / 'operational_metric_card.html'
+TENANT_SETUP_WORKSPACE = (
+    ROOT / 'app' / 'templates' / 'kubernetes' / 'tenant' / 'partials' / '_tenant_setup_workspace.html'
+)
 KPI_CARDS = DASHBOARD_DIR / 'partials' / '_kpi_cards.html'
 TOP_CONSUMERS = DASHBOARD_DIR / 'partials' / '_top_consumers.html'
 ROUTES = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'routes.py'
@@ -186,6 +190,7 @@ def verify() -> None:
     hero = _read(HERO)
     onboarding_banner = _read(ONBOARDING_BANNER)
     signal_overview = _read(SIGNAL_OVERVIEW)
+    alert_guidance = _read(ALERT_GUIDANCE)
     reporting_guidance = _read(REPORTING_GUIDANCE)
     object_content = _read(OBJECT_CONTENT)
     object_hero = _read(OBJECT_HERO)
@@ -195,6 +200,7 @@ def verify() -> None:
     page_hero = _read(PAGE_HERO)
     workspace_tabs = _read(WORKSPACE_TABS)
     metric_card = _read(METRIC_CARD)
+    tenant_setup_workspace = _read(TENANT_SETUP_WORKSPACE)
     kpi_cards = _read(KPI_CARDS)
     top_consumers = _read(TOP_CONSUMERS)
     routes = _read(ROUTES)
@@ -327,6 +333,33 @@ def verify() -> None:
         ),
         'Object Storage dashboard scope and signal wording',
     )
+    _require(
+        tenant_setup_workspace,
+        ('Tenant Governance Flow', 'components/numbered_governance_steps.html'),
+        'Tenant Governance Flow shared numbered sequence',
+    )
+    for owner, source in (
+        ('Kubernetes alert response guidance', alert_guidance),
+        ('Object Storage alert response guidance', object_alert_guidance),
+    ):
+        _require(
+            source,
+            (
+                'components/numbered_governance_steps.html',
+                'alert_response_steps',
+                'Controlled Response Flow',
+                "'Validate'",
+                "'Triage'",
+                "'Investigate'",
+                "'Respond'",
+                "'Verify'",
+                "'Record'",
+            ),
+            owner,
+        )
+        if 'components/operational_flow_steps.html' in source:
+            raise AssertionError(f'{owner}: alert response must use the shared numbered governance sequence')
+
     _require(
         reporting_guidance,
         (
@@ -476,6 +509,9 @@ def verify() -> None:
             'Identity → Scope → Indicators → Peer analysis → Interpretation → Action',
             'Web requests read committed database rows and worker snapshots only',
             'Layered release evidence',
+            'Registry/Harbor',
+            'Source Control/GitHub',
+            'components/numbered_governance_steps.html',
         ),
         'operational dashboard standard',
     )
@@ -547,8 +583,8 @@ def verify() -> None:
     print(
         'KAORI operational dashboard standard passed: shared Hero profile parity, canonical composition, '
         'snapshot-only web boundary, authorization-first lazy sections, URL-backed keyboard-accessible tabs, '
-        'shared style ownership, format-neutral reporting guidance, behavioral release evidence, documentation, '
-        'and quality-gate enforcement match v1.5.'
+        'shared style ownership, numbered alert response guidance, format-neutral reporting guidance, '
+        'behavioral release evidence, documentation, and quality-gate enforcement match v1.5.'
     )
 
 
