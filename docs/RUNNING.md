@@ -49,6 +49,8 @@ For an existing development database after pulling migrations:
 flask --app run:app db upgrade
 ```
 
+On a fresh or migration-behind development database, the workspace remains usable while Celery workers and Beat wait for the exact current Alembic migration head. They do not dispatch or consume scheduled KAORI work before schema readiness and they do not run migrations themselves. After the migration step completes, the background services continue automatically without a manual restart.
+
 ### 4. Build or watch frontend assets
 
 For active UI development:

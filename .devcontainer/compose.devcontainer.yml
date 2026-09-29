@@ -63,6 +63,7 @@ services:
       POSTGRES_HOST: db
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
+      WAIT_FOR_SCHEMA: "true"
     command:
       - sh
       - -c
@@ -103,6 +104,7 @@ services:
       POSTGRES_HOST: db
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
+      WAIT_FOR_SCHEMA: "true"
     command:
       - sh
       - -c
@@ -142,6 +144,7 @@ services:
       POSTGRES_HOST: db
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
+      WAIT_FOR_SCHEMA: "true"
     command:
       - sh
       - -c
@@ -180,6 +183,7 @@ services:
       POSTGRES_HOST: db
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
+      WAIT_FOR_SCHEMA: "true"
     command:
       - sh
       - -c
@@ -218,6 +222,7 @@ services:
       POSTGRES_HOST: db
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
+      WAIT_FOR_SCHEMA: "true"
     command:
       - sh
       - -c
@@ -256,6 +261,7 @@ services:
       POSTGRES_HOST: db
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
+      WAIT_FOR_SCHEMA: "true"
     command:
       - sh
       - -c
@@ -295,6 +301,7 @@ services:
       POSTGRES_HOST: db
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
+      WAIT_FOR_SCHEMA: "true"
     command:
       - sh
       - -c
@@ -333,6 +340,7 @@ services:
       POSTGRES_HOST: db
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
+      WAIT_FOR_SCHEMA: "true"
     command:
       - sh
       - -c
@@ -371,6 +379,7 @@ services:
       POSTGRES_HOST: db
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
+      WAIT_FOR_SCHEMA: "true"
     command:
       - sh
       - -c
@@ -409,6 +418,7 @@ services:
       POSTGRES_HOST: db
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
+      WAIT_FOR_SCHEMA: "true"
     command:
       - sh
       - -c

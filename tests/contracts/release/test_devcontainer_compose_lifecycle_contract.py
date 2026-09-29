@@ -9,6 +9,7 @@ DEV_COMPOSE = ROOT / '.devcontainer' / 'compose.devcontainer.yml'
 DEVCONTAINER = ROOT / '.devcontainer' / 'devcontainer.json'
 ENSURE_FRONTEND = ROOT / '.devcontainer' / 'ensure-frontend.sh'
 VSCODE_TASKS = ROOT / '.vscode' / 'tasks.json'
+WAIT_FOR_DB_SCRIPT = ROOT / 'scripts' / 'wait_for_db.py'
 DOCKERFILE = ROOT / 'Dockerfile'
 DEV_REQUIREMENTS = ROOT / 'requirements' / 'dev.txt'
 
@@ -60,6 +61,38 @@ def test_devcontainer_starts_every_canonical_worker_and_beat() -> None:
 
     assert 'RESOLVER_EXECUTION_CELERY_QUEUE:-resolver-execution' in compose
     assert 'RESOLVER_MAINTENANCE_CELERY_QUEUE:-resolver-maintenance' in compose
+
+
+def test_devcontainer_workers_wait_for_current_migration_head_before_starting() -> None:
+    compose = read(DEV_COMPOSE)
+    wait_script = read(WAIT_FOR_DB_SCRIPT)
+    schema_gated_services = {
+        'inventory-worker',
+        'maintenance-worker',
+        'runtime-worker',
+        'validation-worker',
+        'analytics-worker',
+        'reports-worker',
+        'forecasting-worker',
+        'resolver-execution-worker',
+        'resolver-maintenance-worker',
+        'beat',
+    }
+
+    for service in schema_gated_services:
+        section = service_section(compose, service)
+        assert 'WAIT_FOR_DB: "true"' in section
+        assert 'WAIT_FOR_SCHEMA: "true"' in section
+
+    workspace = service_section(compose, 'workspace')
+    assert 'WAIT_FOR_DB: "false"' in workspace
+    assert 'WAIT_FOR_SCHEMA' not in workspace
+
+    assert "ScriptDirectory.from_config" in wait_script
+    assert "SELECT to_regclass('public.alembic_version')" in wait_script
+    assert "SELECT version_num FROM alembic_version" in wait_script
+    assert 'current_heads == expected_heads' in wait_script
+    assert "_env_bool('WAIT_FOR_SCHEMA')" in wait_script
 
 
 def test_devcontainer_workers_have_graceful_shutdown_windows() -> None:

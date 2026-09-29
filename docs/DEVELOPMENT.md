@@ -42,6 +42,8 @@ docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml down --r
 
 Do not use plain `docker compose down` to manage the Dev Container. The plain root Compose project is a separate `kaori` boundary; the supported development runtime is `kaori-dev` through the merged files above. To intentionally reset the development database and all development volumes, use the same merged command with `down --volumes --remove-orphans`.
 
+On a fresh or reset PostgreSQL volume, the workspace remains available immediately, while every Celery worker and Beat waits at the shared database entrypoint until the database reaches the current Alembic migration head. Run `bash scripts/init_db.sh --bootstrap-admin` from the workspace as usual; background services continue automatically after migration completes. Workers and Beat never own migration or RBAC/bootstrap mutation.
+
 Equivalent terminal launch inside the Dev Container:
 
 ```bash
