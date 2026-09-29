@@ -167,3 +167,29 @@ def test_tenant_blocked_state_reuses_general_kubernetes_prerequisite_family() ->
     blocked_hero = base[blocked_index:base.index('{% else %}', blocked_index)]
     assert "page_hero.context_card('Tenant context'" not in blocked_hero
     assert 'Open Cluster Integrations' not in blocked_hero
+
+def test_tenant_readiness_matches_runtime_fallback_and_blocker_distinguishes_validation() -> None:
+    service = (ROOT / 'app/kubernetes/tenant/service.py').read_text(encoding='utf-8')
+    base = (ROOT / 'app/templates/kubernetes/tenant/base.html').read_text(encoding='utf-8')
+    hero_blocker = (ROOT / 'app/templates/components/cluster/_hero_blocked_context.html').read_text(encoding='utf-8')
+    onboarding = (ROOT / 'app/templates/components/cluster/_onboarding_banner.html').read_text(encoding='utf-8')
+
+    assert 'def _native_connection_ready_filter()' in service
+    assert "KubernetesConnection.readiness_status == 'ready'" in service
+    assert 'KubernetesConnection.readiness_status.is_(None)' in service
+    assert service.count('_native_connection_ready_filter()') >= 3
+    assert 'Metrics Source' not in service
+    assert 'Alertmanager' not in service
+
+    assert 'registered_cluster_count = cluster_onboarding.cluster_count|default(0)' in base
+    assert 'Cluster Validation Required' in base
+    assert 'Registered Clusters' in base
+    assert 'Tenant requires a connected Ready integration' in base
+
+    assert 'blocked_cluster_value' in hero_blocker
+    assert 'blocked_cluster_supporting' in hero_blocker
+    assert 'Validate Your Kubernetes Cluster' in onboarding
+    assert 'Open Cluster Integrations' in onboarding
+    assert 'Validate Cluster' in onboarding
+    assert 'Confirm Ready' in onboarding
+

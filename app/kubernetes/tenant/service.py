@@ -119,12 +119,19 @@ def normalize_tenant_slug(value: str) -> str:
     return slug
 
 
+def _native_connection_ready_filter():
+    return or_(
+        KubernetesConnection.readiness_status == 'ready',
+        KubernetesConnection.readiness_status.is_(None),
+    )
+
+
 def get_ready_native_clusters() -> list[Cluster]:
     return (
         Cluster.query.join(KubernetesConnection, KubernetesConnection.cluster_id == Cluster.id)
         .filter(
             Cluster.status == ClusterStatus.CONNECTED.value,
-            KubernetesConnection.readiness_status == 'ready',
+            _native_connection_ready_filter(),
         )
         .order_by(Cluster.name.asc())
         .all()
@@ -151,7 +158,7 @@ def create_tenant(source: Mapping[str, Any]) -> tuple[Tenant, TenantEnvironment]
         .filter(
             Cluster.id == cluster_id,
             Cluster.status == ClusterStatus.CONNECTED.value,
-            KubernetesConnection.readiness_status == 'ready',
+            _native_connection_ready_filter(),
         )
         .first()
     )

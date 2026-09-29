@@ -32,9 +32,20 @@
                 {% if not native_available %}
                     <aside class="{{ page_hero.aside_classes() }}"
                            aria-label="Tenant availability">
+                        {% set registered_cluster_count = cluster_onboarding.cluster_count|default(0) %}
                         {% set cluster_blocked_scope = "Tenant Readiness" %}
-                        {% set cluster_blocked_title = "Cluster Setup Required" %}
-                        {% set cluster_blocked_info = "Add a Kubernetes cluster to activate Native Tenant workflows." %}
+                        {% if registered_cluster_count > 0 %}
+                            {% set cluster_blocked_title = "Cluster Validation Required" %}
+                            {% set cluster_blocked_info = "Validate the registered Kubernetes integration to activate Native Tenant workflows." %}
+                            {% set cluster_blocked_cluster_label = "Registered Clusters" %}
+                            {% set cluster_blocked_cluster_value = registered_cluster_count %}
+                            {% set cluster_blocked_cluster_supporting = "Registration exists; readiness requires review" %}
+                            {% set cluster_blocked_state_value = "Validation Required" %}
+                            {% set cluster_blocked_state_supporting = "Tenant requires a connected Ready integration" %}
+                        {% else %}
+                            {% set cluster_blocked_title = "Cluster Setup Required" %}
+                            {% set cluster_blocked_info = "Add a Kubernetes cluster to activate Native Tenant workflows." %}
+                        {% endif %}
                         {% include 'components/cluster/_hero_blocked_context.html' %}
                     </aside>
                 {% else %}
