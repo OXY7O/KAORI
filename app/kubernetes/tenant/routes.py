@@ -1570,7 +1570,6 @@ def generate_credential_material_route(credential_id: int):
     credential_record = get_credential(credential_id)
     if credential_record is None:
         abort(404)
-
     if isinstance(material, GeneratedTokenMaterial):
         material_kind = 'token'
         material_title = 'JumpServer ServiceAccount Token'
