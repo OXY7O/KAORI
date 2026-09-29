@@ -100,7 +100,7 @@ def main() -> int:
         'TLS background refresh must request the canonical workspace.',
         errors,
     )
-    require('_sync_progress_toast.html' in workspace, 'TLS workspace must own the canonical progress toast.', errors)
+    require('_sync_progress_toast.html' not in workspace, 'TLS workspace must keep progress inline and avoid duplicate progress-toast ownership.', errors)
     require(
         'components/operational_progress_toast.html' in progress,
         'TLS progress must reuse the global progress-toast component.',
