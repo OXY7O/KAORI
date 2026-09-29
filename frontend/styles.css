@@ -44,7 +44,6 @@
     --kaori-hero-tile: rgba(255, 255, 255, 0.08);
     --kaori-hero-chip: rgba(255, 255, 255, 0.08);
     --kaori-hero-outline: rgba(255, 255, 255, 0.16);
-    --kaori-brand-domain-panel: #5b21b6;
 
     --kaori-sidebar-content-muted: #d8d1e1;
     --kaori-sidebar-section: rgba(255, 255, 255, 0.48);
@@ -161,7 +160,6 @@
     --kaori-hero-tile: rgba(255, 255, 255, 0.065);
     --kaori-hero-chip: rgba(255, 255, 255, 0.075);
     --kaori-hero-outline: rgba(233, 228, 255, 0.16);
-    --kaori-brand-domain-panel: #2f1a4f;
 
     --kaori-sidebar-content-muted: #b9b1c4;
     --kaori-sidebar-section: #81788e;
@@ -350,10 +348,6 @@
 
 .kaori-hero-chip {
     background: var(--kaori-hero-chip);
-}
-
-.kaori-brand-domain-panel {
-    background: var(--kaori-brand-domain-panel);
 }
 
 .sidebar-parent-active {

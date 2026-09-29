@@ -131,3 +131,31 @@ def test_integrations_standard_documents_full_audit_contract() -> None:
     assert 'Kubernetes Integration' in audit
     assert 'Prometheus' in audit
     assert 'Alertmanager' in audit
+
+
+def test_related_workspace_card_uses_shared_soft_violet_surface() -> None:
+    card = read('app/templates/components/related_page_card.html')
+    styles = read('frontend/styles.css')
+    standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
+    ownership = read('docs/design/components/REUSABLE_COMPONENT_OWNERSHIP.md')
+
+    assert 'data-kaori-related-workspace-card' in card
+    assert 'bg-kaori-soft' in card
+    assert 'border-kaori-primary/20' in card
+    assert 'text-kaori-primary' in card
+    assert 'text-content-primary' in card
+    assert 'text-content-secondary' in card
+    assert 'bg-surface-card' in card
+    assert 'bg-kaori-primary' in card
+    assert 'kaori-brand-domain-panel' not in card
+    assert 'text-brand-foreground' not in card
+    assert '--kaori-brand-domain-panel' not in styles
+    assert '.kaori-brand-domain-panel' not in styles
+    assert 'soft Violet contextual-surface' in standard
+    assert 'components/related_page_card.html' in ownership
+
+    offenders: list[str] = []
+    for path in (ROOT / 'app/templates').rglob('*.html'):
+        if 'kaori-brand-domain-panel' in path.read_text(encoding='utf-8'):
+            offenders.append(path.relative_to(ROOT).as_posix())
+    assert offenders == []
