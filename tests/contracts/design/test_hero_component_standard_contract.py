@@ -296,3 +296,22 @@ def test_reports_and_integrations_hero_identity_follow_sidebar_vocabulary() -> N
     assert '{% set title = "Overview" %}' in integration_overview
     assert 'page_hero.intro(domain.icon, "Integrations", domain.icon)' in integration_domain
     assert '>{{ domain.label }}</h1>' in integration_domain
+
+
+    general = (
+        ROOT / 'app/templates/settings/general/partials/_hero.html'
+    ).read_text(encoding='utf-8')
+    account = (
+        ROOT / 'app/templates/settings/account/partials/_hero.html'
+    ).read_text(encoding='utf-8')
+    assert "page_hero.intro('settings-2', 'Settings'," in general
+    assert '>General</h1>' in general
+    assert "page_hero.intro('settings-2', 'Settings'," in account
+    assert '>Account</h1>' in account
+
+    object_storage_pages = (
+        ROOT / 'app/storage/object_storage/analytics/pages.py'
+    ).read_text(encoding='utf-8')
+    assert object_storage_pages.count("'Object Storage Analytics',") == 6
+    for title in ('Overview', 'Capacity & Usage', 'Performance', 'Forecast', 'Top Consumers', 'Alerts & Anomalies'):
+        assert f"        '{title}'," in object_storage_pages

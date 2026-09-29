@@ -172,6 +172,8 @@ KUBERNETES_ANALYTICS_HEROES = (
 OBJECT_STORAGE_ANALYTICS_HERO = TEMPLATES / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero.html'
 OBJECT_STORAGE_ANALYTICS_PAGES = ROOT / 'app' / 'storage' / 'object_storage' / 'analytics' / 'pages.py'
 OBJECT_STORAGE_ANALYTICS_PAGE_KEYS = {'overview', 'capacity', 'performance', 'forecast', 'top_consumers', 'alerts'}
+SETTINGS_GENERAL_HERO = TEMPLATES / 'settings' / 'general' / 'partials' / '_hero.html'
+SETTINGS_ACCOUNT_HERO = TEMPLATES / 'settings' / 'account' / 'partials' / '_hero.html'
 
 REMOVED_MACROS = (
     'context_posture_header',
@@ -369,6 +371,44 @@ def _verify_non_redundant_hero_identity() -> int:
     if not audited:
         raise AssertionError('Hero identity audit discovered no deterministic eyebrow/title pairs')
     return audited
+
+
+def _verify_dynamic_hero_identity_authorities() -> None:
+    general = _read(SETTINGS_GENERAL_HERO)
+    account = _read(SETTINGS_ACCOUNT_HERO)
+    object_storage_pages = _read(OBJECT_STORAGE_ANALYTICS_PAGES)
+
+    _require_tokens(
+        general,
+        (
+            "page_hero.intro('settings-2', 'Settings',",
+            '>General</h1>',
+        ),
+        'Settings General Hero identity',
+    )
+    _require_tokens(
+        account,
+        (
+            "page_hero.intro('settings-2', 'Settings',",
+            '>Account</h1>',
+        ),
+        'Settings Account Hero identity',
+    )
+
+    if object_storage_pages.count("'Object Storage Analytics',") != len(OBJECT_STORAGE_ANALYTICS_PAGE_KEYS):
+        raise AssertionError(
+            'Object Storage Analytics: every registered page must keep the common non-redundant eyebrow'
+        )
+    for title in (
+        'Overview',
+        'Capacity & Usage',
+        'Performance',
+        'Forecast',
+        'Top Consumers',
+        'Alerts & Anomalies',
+    ):
+        if f"        '{title}'," not in object_storage_pages:
+            raise AssertionError(f'Object Storage Analytics: missing canonical Hero title {title!r}')
 
 
 def _local_jinja_literal_values(source: str, variable: str) -> list[str]:
@@ -1049,6 +1089,7 @@ def verify() -> None:
         )
 
     identity_pairs = _verify_non_redundant_hero_identity()
+    _verify_dynamic_hero_identity_authorities()
     _verify_dashboard_profile()
     _verify_blocked_context_ownership()
     _verify_analytics_metadata_ownership()
