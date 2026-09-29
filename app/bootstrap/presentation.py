@@ -18,7 +18,11 @@ from app.common.timezone import (
     normalize_timezone_mode,
     normalize_timezone_name,
 )
-from app.common.workspace_navigation import build_capability_navigation, build_sidebar_navigation, build_workspace_navigation
+from app.common.workspace_navigation import (
+    build_capability_navigation,
+    build_sidebar_navigation,
+    build_workspace_navigation,
+)
 from app.integrations.navigation import build_integration_navigation_context, integration_endpoint_owner
 from app.kubernetes.cluster.constants import get_environment_label
 from app.kubernetes.cluster.onboarding import build_cluster_onboarding_context

@@ -131,7 +131,13 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         icon='brain-circuit',
         section='Insights',
         tabs=(
-            WorkspaceTabDefinition('overview', 'Overview', 'layout-dashboard', 'intelligence.index', ('intelligence.view',)),
+            WorkspaceTabDefinition(
+                'overview',
+                'Overview',
+                'layout-dashboard',
+                'intelligence.index',
+                ('intelligence.view',),
+            ),
             WorkspaceTabDefinition(
                 'recommendations', 'Recommendations', 'sparkles', 'intelligence.recommendations', ('intelligence.view',)
             ),
@@ -142,7 +148,13 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 'alert_intelligence.index',
                 ('intelligence.view',),
             ),
-            WorkspaceTabDefinition('catalog', 'Rule Catalog', 'list-checks', 'intelligence.catalog', ('intelligence.view',)),
+            WorkspaceTabDefinition(
+                'catalog',
+                'Rule Catalog',
+                'list-checks',
+                'intelligence.catalog',
+                ('intelligence.view',),
+            ),
             WorkspaceTabDefinition(
                 'automation_control',
                 'Automation Control',
@@ -159,7 +171,13 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         section='Insights',
         tabs=(
             WorkspaceTabDefinition('overview', 'Overview', 'layout-dashboard', 'reports.overview', ('reports.view',)),
-            WorkspaceTabDefinition('generate', 'Generate', 'file-plus-2', 'reports.generate_report', ('reports.generate',)),
+            WorkspaceTabDefinition(
+                'generate',
+                'Generate',
+                'file-plus-2',
+                'reports.generate_report',
+                ('reports.generate',),
+            ),
             WorkspaceTabDefinition('generated', 'Generated', 'files', 'reports.generated_reports', ('reports.view',)),
             WorkspaceTabDefinition(
                 'templates', 'Templates', 'layout-template', 'reports.report_templates', ('reports.manage_templates',)
@@ -206,7 +224,13 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         icon='blocks',
         section='Platform',
         tabs=(
-            WorkspaceTabDefinition('overview', 'Overview', 'layout-grid', 'integrations.overview', ('integrations.manage',)),
+            WorkspaceTabDefinition(
+                'overview',
+                'Overview',
+                'layout-grid',
+                'integrations.overview',
+                ('integrations.manage',),
+            ),
             WorkspaceTabDefinition(
                 'orchestration', 'Orchestration', 'workflow', 'integrations.orchestration', ('integrations.manage',)
             ),
@@ -229,7 +253,13 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         icon='shield-check',
         section='Administration',
         tabs=(
-            WorkspaceTabDefinition('overview', 'Overview', 'layout-dashboard', 'access.overview.index', _ACCESS_PERMISSIONS),
+            WorkspaceTabDefinition(
+                'overview',
+                'Overview',
+                'layout-dashboard',
+                'access.overview.index',
+                _ACCESS_PERMISSIONS,
+            ),
             WorkspaceTabDefinition('users', 'Users', 'users-round', 'users.index', ('users.view',)),
             WorkspaceTabDefinition(
                 'identity_providers',
@@ -239,7 +269,13 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 ('identity_providers.view',),
             ),
             WorkspaceTabDefinition('roles', 'Roles', 'badge-check', 'access.roles.index', ('roles.view',)),
-            WorkspaceTabDefinition('permissions', 'Permissions', 'key-round', 'access.permissions.index', ('roles.view',)),
+            WorkspaceTabDefinition(
+                'permissions',
+                'Permissions',
+                'key-round',
+                'access.permissions.index',
+                ('roles.view',),
+            ),
             WorkspaceTabDefinition(
                 'activity_audit',
                 'Activity Audit',
@@ -311,7 +347,13 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
         ),
     ),
     'kubernetes_governance': (
-        CapabilityViewDefinition('overview', 'Overview', 'layout-dashboard', 'governance.overview', ('governance.view',)),
+        CapabilityViewDefinition(
+            'overview',
+            'Overview',
+            'layout-dashboard',
+            'governance.overview',
+            ('governance.view',),
+        ),
         CapabilityViewDefinition(
             'tls_certificates',
             'TLS Certificates',
@@ -321,8 +363,20 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
         ),
     ),
     'kubernetes_tenant': (
-        CapabilityViewDefinition('overview', 'Overview', 'layout-dashboard', 'tenant.index', ('tenant.view', 'tenant.manage')),
-        CapabilityViewDefinition('tenants', 'Tenants', 'building-2', 'tenant.tenants', ('tenant.view', 'tenant.manage')),
+        CapabilityViewDefinition(
+            'overview',
+            'Overview',
+            'layout-dashboard',
+            'tenant.index',
+            ('tenant.view', 'tenant.manage'),
+        ),
+        CapabilityViewDefinition(
+            'tenants',
+            'Tenants',
+            'building-2',
+            'tenant.tenants',
+            ('tenant.view', 'tenant.manage'),
+        ),
         CapabilityViewDefinition(
             'resource_profiles',
             'Resource Profiles',
@@ -351,7 +405,13 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
             'consumers', 'Consumers', 'users', 'analytics.top_consumers', ('analytics.view',)
         ),
         CapabilityViewDefinition('forecast', 'Forecast', 'line-chart', 'analytics.forecast', ('analytics.view',)),
-        CapabilityViewDefinition('alerts', 'Alerts & Anomalies', 'triangle-alert', 'analytics.alerts', ('analytics.view',)),
+        CapabilityViewDefinition(
+            'alerts',
+            'Alerts & Anomalies',
+            'triangle-alert',
+            'analytics.alerts',
+            ('analytics.view',),
+        ),
     ),
     'object_storage_inventory': (
         CapabilityViewDefinition(
@@ -595,8 +655,6 @@ def build_capability_navigation(
     }
 
 
-
-
 def _has_any_permission(user: Any, permissions: tuple[str, ...]) -> bool:
     if not permissions:
         return True
@@ -636,7 +694,9 @@ def _workspace_key(endpoint: str) -> str | None:
         return 'reports'
     if endpoint.startswith(('jobs.', 'platform_operations.')):
         return 'operations_center'
-    if endpoint.startswith(('integrations.', 'notification_channels.', 'metrics.', 'alertmanager.', 'minio.', 'cluster.')):
+    if endpoint.startswith(
+        ('integrations.', 'notification_channels.', 'metrics.', 'alertmanager.', 'minio.', 'cluster.')
+    ):
         return 'integrations'
     if endpoint.startswith(('access.', 'users.', 'identity_providers.')):
         return 'access'
@@ -725,7 +785,11 @@ def _active_tab_key(workspace_key: str, endpoint: str) -> str:
             return 'observability'
         if endpoint.startswith('minio.') or endpoint == 'integrations.storage':
             return 'storage'
-        if endpoint.startswith('cluster.') or endpoint.startswith('integrations.kubernetes') or endpoint == 'integrations.orchestration':
+        if (
+            endpoint.startswith('cluster.')
+            or endpoint.startswith('integrations.kubernetes')
+            or endpoint == 'integrations.orchestration'
+        ):
             return 'orchestration'
         return 'overview'
 

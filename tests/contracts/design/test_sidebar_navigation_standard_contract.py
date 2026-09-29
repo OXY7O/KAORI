@@ -29,6 +29,9 @@ def test_sidebar_v2_and_domain_workspace_authorities_are_registered() -> None:
     workspace_standard = (
         ROOT / 'docs' / 'design' / 'components' / 'DOMAIN_WORKSPACE_NAVIGATION.md'
     ).read_text(encoding='utf-8')
+    ownership = (
+        ROOT / 'docs' / 'design' / 'components' / 'REUSABLE_COMPONENT_OWNERSHIP.md'
+    ).read_text(encoding='utf-8')
 
     assert 'locked application-shell navigation contract' in readme
     assert 'DOMAIN_WORKSPACE_NAVIGATION.md' in readme
@@ -37,6 +40,7 @@ def test_sidebar_v2_and_domain_workspace_authorities_are_registered() -> None:
     assert 'A third level in the global sidebar is prohibited.' in sidebar_standard
     assert 'KAORI Domain Workspace Navigation Standard v1.0' in workspace_standard
     assert 'workspace_tabs.render_navigation()' in workspace_standard
+    assert '`app/common/workspace_navigation.py`' in ownership
 
 
 def test_global_sidebar_is_workspace_only_and_future_domains_are_not_placeholders() -> None:
