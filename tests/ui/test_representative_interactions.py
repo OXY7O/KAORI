@@ -306,6 +306,21 @@ def test_sidebar_v2_and_domain_workspace_navigation_across_canonical_viewports(
         assert '\nSTORAGE\n' not in f'\n{sidebar_text}\n'
         assert '\nANALYTICS\n' not in f'\n{sidebar_text}\n'
 
+        if width >= 1024:
+            collapse = page.get_by_role('button', name='Collapse navigation')
+            expect(collapse).to_be_visible()
+            expanded_box = sidebar.bounding_box()
+            assert expanded_box is not None
+
+            collapse.click()
+            expect(page.get_by_role('button', name='Expand navigation')).to_be_visible()
+            collapsed_box = sidebar.bounding_box()
+            assert collapsed_box is not None
+            assert collapsed_box['width'] < expanded_box['width']
+
+            page.get_by_role('button', name='Expand navigation').click()
+            expect(page.get_by_role('button', name='Collapse navigation')).to_be_visible()
+
         kubernetes = sidebar.locator('[data-kaori-sidebar-workspace="kubernetes"]')
         kubernetes.click()
         page.wait_for_load_state('networkidle')
@@ -335,9 +350,42 @@ def test_sidebar_v2_and_domain_workspace_navigation_across_canonical_viewports(
         ):
             expect(capability.get_by_role('link', name=label, exact=True)).to_be_visible()
 
+        expect(page.locator('[data-kaori-sidebar-workspace="kubernetes"]')).to_have_attribute('aria-current', 'page')
+        expect(workspace.get_by_role('link', name='Inventory', exact=True)).to_have_attribute('aria-current', 'page')
+        expect(capability.get_by_role('link', name='Overview', exact=True)).to_have_attribute('aria-current', 'page')
         assert_document_fits_viewport(page)
         assert_locator_within_document_width(page, workspace, label='Kubernetes domain workspace navigation')
         assert_locator_within_document_width(page, capability, label='Kubernetes Inventory capability navigation')
+
+        response = page.goto(f'{kaori_authenticated_base_url}/dashboards/object-storage', wait_until='networkidle')
+        assert response is not None
+        assert response.ok
+
+        object_workspace = page.locator('[data-kaori-domain-workspace-nav="object_storage"]')
+        expect(object_workspace).to_be_visible()
+        for label in ('Overview', 'Inventory', 'Analytics'):
+            expect(object_workspace.get_by_role('link', name=label, exact=True)).to_be_visible()
+
+        object_workspace.get_by_role('link', name='Inventory', exact=True).click()
+        page.wait_for_load_state('networkidle')
+
+        object_capability = page.locator('[data-kaori-capability-navigation="object_storage_inventory"]')
+        expect(object_capability).to_be_visible()
+        for label in ('Overview', 'Systems', 'Buckets & Containers'):
+            expect(object_capability.get_by_role('link', name=label, exact=True)).to_be_visible()
+
+        expect(page.locator('[data-kaori-sidebar-workspace="object_storage"]')).to_have_attribute('aria-current', 'page')
+        expect(
+            page.locator('[data-kaori-domain-workspace-nav="object_storage"]').get_by_role(
+                'link', name='Inventory', exact=True
+            )
+        ).to_have_attribute('aria-current', 'page')
+        assert_document_fits_viewport(page)
+        assert_locator_within_document_width(
+            page,
+            object_capability,
+            label='Object Storage Inventory capability navigation',
+        )
 
 
 def test_deterministic_visual_surface_catalog_light_and_dark(
