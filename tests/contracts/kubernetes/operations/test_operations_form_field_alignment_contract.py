@@ -33,10 +33,15 @@ def test_configmap_and_secret_target_rows_use_shared_form_field_contract() -> No
     for relative in consumers:
         assert 'components/form_field.html' in read(relative), relative
 
+    shared_ui = read('app/templates/components/kubernetes_operation_ui.html')
     secret_create = read('app/templates/kubernetes/operations/secrets/create.html')
-    assert 'components/info_tip.html' in secret_create
-    assert 'secret-create-name-tip' in secret_create and 'Use a DNS-compatible Kubernetes resource name.' in secret_create
-    assert 'secret-create-mutability-tip' in secret_create and 'Mutable permits future governed updates' in secret_create
+    assert 'components/info_tip.html' in shared_ui
+    assert 'info_id=None' in shared_ui and 'info_items=None' in shared_ui
+    assert 'secret-create-guidance-tip' in secret_create
+    assert 'Secret Name must be DNS-compatible.' in secret_create
+    assert 'Mutable permits later governed replacement.' in secret_create
+    assert 'secret-create-name-tip' not in secret_create
+    assert 'secret-create-mutability-tip' not in secret_create
     assert 'form_field.help("DNS-compatible resource name")' not in secret_create
     assert 'form_field.help("Control future updates")' not in secret_create
 
@@ -63,26 +68,61 @@ def test_secret_reveal_step_up_aligns_password_and_verify_action() -> None:
         and 'Step-up is required only before consuming an approved reveal request.' in step_up
     )
 
-def test_operations_move_routine_field_guidance_to_info_tips_but_keep_required_state_visible() -> None:
-    reviewed = (
-        'app/templates/kubernetes/operations/configmaps/create.html',
+def test_operations_consolidate_routine_guidance_at_section_headers_but_keep_required_state_visible() -> None:
+    header_owners = {
+        'app/templates/kubernetes/operations/configmaps/create.html': 'configmap-create-guidance-tip',
+        'app/templates/kubernetes/operations/configmaps/update.html': 'configmap-update-guidance-tip',
+        'app/templates/kubernetes/operations/configmaps/delete.html': 'configmap-delete-guidance-tip',
+        'app/templates/kubernetes/operations/secrets/create.html': 'secret-create-guidance-tip',
+        'app/templates/kubernetes/operations/secrets/replace.html': 'secret-replace-target-guidance-tip',
+        'app/templates/kubernetes/operations/secrets/delete.html': 'secret-delete-target-guidance-tip',
+        'app/templates/kubernetes/operations/secrets/reveal.html': 'secret-reveal-target-guidance-tip',
+        'app/templates/kubernetes/operations/secrets/_replace_content_form.html': 'secret-replace-content-guidance-tip',
+    }
+    for relative, guidance_id in header_owners.items():
+        assert guidance_id in read(relative), relative
+
+    field_partials = (
         'app/templates/kubernetes/operations/configmaps/_namespace_options.html',
         'app/templates/kubernetes/operations/configmaps/_workspace.html',
         'app/templates/kubernetes/operations/configmaps/_editor.html',
-        'app/templates/kubernetes/operations/secrets/create.html',
         'app/templates/kubernetes/operations/secrets/_namespace_field.html',
-        'app/templates/kubernetes/operations/secrets/replace.html',
-        'app/templates/kubernetes/operations/secrets/delete.html',
-        'app/templates/kubernetes/operations/secrets/reveal.html',
         'app/templates/kubernetes/operations/secrets/_replace_target_workspace.html',
         'app/templates/kubernetes/operations/secrets/_delete_target_workspace.html',
         'app/templates/kubernetes/operations/secrets/_reveal_target_workspace.html',
-        'app/templates/kubernetes/operations/secrets/_replace_content_form.html',
     )
-    for relative in reviewed:
-        assert 'components/info_tip.html' in read(relative), relative
+    for relative in field_partials:
+        source = read(relative)
+        assert 'info_tip.render' not in source, relative
+        assert 'components/info_tip.html' not in source, relative
 
+    reviewed = tuple(header_owners) + field_partials
     combined = '\n'.join(read(relative) for relative in reviewed)
+    for retired_tip in (
+        'configmap-create-cluster-tip',
+        'configmap-create-namespace-tip',
+        'configmap-create-name-tip',
+        'configmap-target-cluster-tip',
+        'configmap-target-namespace-tip',
+        'configmap-target-object-tip',
+        'configmap-update-mode-tip',
+        'secret-create-cluster-tip',
+        'secret-create-namespace-tip',
+        'secret-create-name-tip',
+        'secret-create-mutability-tip',
+        'secret-replace-cluster-tip',
+        'secret-replace-target-namespace-tip',
+        'secret-replace-target-secret-tip',
+        'secret-delete-cluster-tip',
+        'secret-delete-target-namespace-tip',
+        'secret-delete-target-secret-tip',
+        'secret-reveal-cluster-tip',
+        'secret-reveal-target-namespace-tip',
+        'secret-reveal-target-secret-tip',
+        'secret-replace-basic-username-tip',
+    ):
+        assert retired_tip not in combined
+
     for retired_helper in (
         'form_field.help("Registered cluster for the target namespace.")',
         'form_field.help("Loaded from the selected Kubernetes API.")',

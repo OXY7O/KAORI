@@ -1,19 +1,12 @@
 {% import "components/live_lookup_notice.html" as live_lookup %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/form_field.html" as form_field %}
-{% import "components/info_tip.html" as info_tip %}
 <input type="hidden"
        name="workspace_mode"
        value="{{ workspace_mode|default('update') }}">
 <div class="grid gap-4 md:grid-cols-3">
     <label class="block min-w-0" for="configmap-cluster">
-        <span class="inline-flex min-h-6 items-center gap-1.5">
-            <span class="text-xs font-semibold text-content-primary">Cluster</span>
-            {{ info_tip.render('configmap-target-cluster-tip',
-                                'Cluster target',
-                                'Choose the registered Kubernetes connection that owns the live target.',
-                                placement='right') }}
-        </span>
+        <span class="text-xs font-semibold text-content-primary">Cluster</span>
         <select id="configmap-cluster"
                 name="cluster_id"
                 hx-get="{{ url_for('kubernetes_operations.configmap_workspace') }}"
@@ -29,13 +22,7 @@
         </select>
     </label>
     <label class="block min-w-0" for="configmap-namespace">
-        <span class="inline-flex min-h-6 items-center gap-1.5">
-            <span class="text-xs font-semibold text-content-primary">Namespace</span>
-            {{ info_tip.render('configmap-target-namespace-tip',
-                                'Namespace source',
-                                'Namespace choices are loaded from the selected live Kubernetes API.',
-                                placement='right') }}
-        </span>
+        <span class="text-xs font-semibold text-content-primary">Namespace</span>
         <select id="configmap-namespace"
                 name="namespace"
                 hx-get="{{ url_for('kubernetes_operations.configmap_workspace') }}"
@@ -65,13 +52,7 @@
     </label>
     <label class="block min-w-0" for="configmap-name">
         <span class="flex min-h-6 items-center justify-between gap-2">
-            <span class="inline-flex items-center gap-1.5">
-                <span class="text-xs font-semibold text-content-primary">ConfigMap</span>
-                {{ info_tip.render('configmap-target-object-tip',
-                                    'Live ConfigMap source',
-                                    'ConfigMap identity and immutable state are loaded from the selected live namespace.',
-                                    placement='right') }}
-            </span>
+            <span class="text-xs font-semibold text-content-primary">ConfigMap</span>
             {{ table_label.status_label('Live', 'normal', 'radio') }}
         </span>
         <select id="configmap-name"

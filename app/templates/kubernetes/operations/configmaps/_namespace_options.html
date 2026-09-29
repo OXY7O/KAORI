@@ -1,15 +1,8 @@
 {% import "components/live_lookup_notice.html" as live_lookup %}
 {% import "components/form_field.html" as form_field %}
-{% import "components/info_tip.html" as info_tip %}
 <div id="configmap-namespace-field">
     <label class="block min-w-0" for="namespace">
-        <span class="inline-flex min-h-6 items-center gap-1.5">
-            <span class="text-xs font-semibold text-content-primary">Namespace</span>
-            {{ info_tip.render('configmap-create-namespace-tip',
-                                'Namespace source',
-                                'Namespace choices are loaded from the selected live Kubernetes API.',
-                                placement='right') }}
-        </span>
+        <span class="text-xs font-semibold text-content-primary">Namespace</span>
         <select id="namespace"
                 name="namespace"
                 required

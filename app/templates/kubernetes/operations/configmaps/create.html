@@ -8,7 +8,6 @@
 {% import "components/information_guide_card.html" as information_guide_card %}
 {% import "components/form_with_context_rail.html" as form_context %}
 {% import "components/form_field.html" as form_field %}
-{% import "components/info_tip.html" as info_tip %}
 {% block title %}Create ConfigMap{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6"
@@ -47,17 +46,20 @@
             {% set configmap_main_classes = form_context.main_classes() %}
             <section class="{{ configmap_ui.surface_shell_classes(configmap_main_classes) }}"
                      data-kubernetes-operation-form="configmap-create">
-                <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
-                            <i data-lucide="file-plus-2" class="h-5 w-5" aria-hidden="true"></i>
-                        </span>
-                        <div class="min-w-0">
-                            <h2 class="text-base font-semibold text-content-primary">ConfigMap Definition</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">Choose the live target, define application configuration data, and validate the exact create-only object before persistence.</p>
-                        </div>
-                    </div>
-                </header>
+                {% set configmap_create_info = [
+                    'Cluster and Namespace are live Kubernetes targets; Namespace options are loaded from the selected registered cluster.',
+                    'ConfigMap Name must be DNS-compatible and stable. Create never overwrites an existing ConfigMap.',
+                    'Immutable prevents later mutation of this ConfigMap; changing immutable configuration requires a new object.'
+                ] %}
+                {{ configmap_ui.section_header(
+                    'file-plus-2',
+                    'ConfigMap Definition',
+                    'Choose the live target, define application configuration data, and validate the exact create-only object before persistence.',
+                    info_id='configmap-create-guidance-tip',
+                    info_title='ConfigMap creation guide',
+                    info_text='Target, identity, and lifecycle guidance for this create-only workflow.',
+                    info_items=configmap_create_info
+                ) }}
                 <div class="space-y-6 p-5 sm:p-6">
                     <section>
                         <div class="mb-4 flex items-start gap-3">
@@ -71,13 +73,7 @@
                         </div>
                         <div class="grid gap-5 lg:grid-cols-2">
                             <label class="block min-w-0">
-                                <span class="inline-flex min-h-6 items-center gap-1.5">
-                                    <span class="text-xs font-semibold text-content-primary">Cluster</span>
-                                    {{ info_tip.render('configmap-create-cluster-tip',
-                                                        'Cluster target',
-                                                        'Choose the registered Kubernetes connection that owns the live namespace target.',
-                                                        placement='right') }}
-                                </span>
+                                <span class="text-xs font-semibold text-content-primary">Cluster</span>
                                 <select name="cluster_id"
                                         required
                                         hx-get="{{ url_for('kubernetes_operations.configmap_namespace_options') }}"
@@ -94,13 +90,7 @@
                         </div>
                         <label class="mt-5 block min-w-0">
                             <span class="flex min-h-6 items-center justify-between gap-2">
-                                <span class="inline-flex items-center gap-1.5">
-                                    <span class="text-xs font-semibold text-content-primary">ConfigMap Name</span>
-                                    {{ info_tip.render('configmap-create-name-tip',
-                                                        'ConfigMap name',
-                                                        'Use a stable DNS-compatible name. This create-only workflow never overwrites an existing ConfigMap.',
-                                                        placement='right') }}
-                                </span>
+                                <span class="text-xs font-semibold text-content-primary">ConfigMap Name</span>
                                 {{ table_label.status_label('Create Only', 'normal', 'shield-check') }}
                             </span>
                             <input id="configmap-name"

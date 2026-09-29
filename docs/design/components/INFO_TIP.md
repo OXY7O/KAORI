@@ -23,9 +23,9 @@ Do **not** hide validation errors, destructive confirmation, security incidents,
 
 ## Placement
 
-For a field, place the icon trigger inline beside the field label. For a form/card header, upper-right placement remains appropriate.
+For genuinely field-specific guidance, the icon trigger may sit inline beside the field label. When two or more controls share the same source, ownership, naming, lifecycle, or selection semantics, prefer **one consolidated Info Tip in the owning form/card/section header** instead of repeating a trigger on each control.
 
-For a registry with shared status or lifecycle vocabulary, place one text-trigger Info Tip in the **block header action area**, outside the horizontal table scroll container. Keep table rows to semantic labels and real actions.
+For a form/card section, place the trigger beside the section title or in the header action area so the hover preview is outside dense control geometry. For a registry with shared status or lifecycle vocabulary, place one text-trigger Info Tip in the **block header action area**, outside the horizontal table scroll container. Keep table rows to semantic labels and real actions.
 
 ## Interaction and responsive behavior
 

@@ -2,18 +2,24 @@
 {% import "components/form_action_bar.html" as form_action_bar %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_point_flow.html" as point_flow %}
+{% import "components/info_tip.html" as info_tip %}
 {# Canonical KAORI primitives for guarded Kubernetes mutation workflows. #}
 {% macro surface_shell_classes(extra_classes='') -%}
     overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ extra_classes }}
 {%- endmacro %}
-{% macro section_header(icon, title, description, tone='brand') -%}
+{% macro section_header(icon, title, description, tone='brand', info_id=None, info_title=None, info_text='', info_items=None, info_placement='right') -%}
     <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6">
         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ 'bg-status-critical-soft text-status-critical-text' if tone == 'critical' else 'bg-kaori-soft text-kaori-primary' }}"
               aria-hidden="true">
             <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
         </span>
         <span class="min-w-0">
-            <span class="block break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ title }}</span>
+            <span class="inline-flex min-h-6 items-center gap-1.5">
+                <span class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ title }}</span>
+                {% if info_id and info_title %}
+                    {{ info_tip.render(info_id, info_title, info_text, info_items, placement=info_placement) }}
+                {% endif %}
+            </span>
             <span class="mt-1 block break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ description }}</span>
         </span>
     </header>
@@ -90,10 +96,10 @@
         </div>
     </div>
 {%- endmacro %}
-{% macro workspace_section(icon, title, description, tone='brand', body_classes='p-5 sm:p-6', marker=None) -%}
+{% macro workspace_section(icon, title, description, tone='brand', body_classes='p-5 sm:p-6', marker=None, info_id=None, info_title=None, info_text='', info_items=None, info_placement='right') -%}
     <section class="{{ surface_shell_classes() }}"
              {% if marker %}data-kubernetes-operation-section="{{ marker }}"{% endif %}>
-        {{ section_header(icon, title, description, tone) }}
+        {{ section_header(icon, title, description, tone, info_id, info_title, info_text, info_items, info_placement) }}
         <div class="{{ body_classes }}">{{ caller() }}</div>
     </section>
 {%- endmacro %}

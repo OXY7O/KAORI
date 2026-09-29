@@ -406,13 +406,73 @@ def main() -> int:
         'Shared Info Tip component is unavailable.',
         errors,
     )
-    for relative, source in operations_guidance_sources.items():
+    require(
+        'components/info_tip.html' in shared_ui
+        and 'info_id=None' in shared_ui
+        and 'info_items=None' in shared_ui,
+        'Kubernetes Operation UI must own section-level Info Tip composition.',
+        errors,
+    )
+    header_guidance = {
+        'app/templates/kubernetes/operations/configmaps/create.html': 'configmap-create-guidance-tip',
+        'app/templates/kubernetes/operations/configmaps/update.html': 'configmap-update-guidance-tip',
+        'app/templates/kubernetes/operations/configmaps/delete.html': 'configmap-delete-guidance-tip',
+        'app/templates/kubernetes/operations/secrets/create.html': 'secret-create-guidance-tip',
+        'app/templates/kubernetes/operations/secrets/replace.html': 'secret-replace-target-guidance-tip',
+        'app/templates/kubernetes/operations/secrets/delete.html': 'secret-delete-target-guidance-tip',
+        'app/templates/kubernetes/operations/secrets/reveal.html': 'secret-reveal-target-guidance-tip',
+        'app/templates/kubernetes/operations/secrets/_replace_content_form.html': 'secret-replace-content-guidance-tip',
+    }
+    for relative, guidance_id in header_guidance.items():
         require(
-            'components/info_tip.html' in source,
-            f'{relative} must reuse the shared Info Tip for routine field guidance.',
+            guidance_id in read(relative),
+            f'{relative} must expose consolidated section-level Info Tip guidance.',
+            errors,
+        )
+    for relative in (
+        'app/templates/kubernetes/operations/configmaps/_namespace_options.html',
+        'app/templates/kubernetes/operations/configmaps/_workspace.html',
+        'app/templates/kubernetes/operations/configmaps/_editor.html',
+        'app/templates/kubernetes/operations/secrets/_namespace_field.html',
+        'app/templates/kubernetes/operations/secrets/_replace_target_workspace.html',
+        'app/templates/kubernetes/operations/secrets/_delete_target_workspace.html',
+        'app/templates/kubernetes/operations/secrets/_reveal_target_workspace.html',
+    ):
+        source = read(relative)
+        require(
+            'info_tip.render' not in source and 'components/info_tip.html' not in source,
+            f'{relative} must not scatter routine Info Tips across individual controls.',
             errors,
         )
     joined_guidance = '\n'.join(operations_guidance_sources.values())
+    for retired_tip in (
+        'configmap-create-cluster-tip',
+        'configmap-create-namespace-tip',
+        'configmap-create-name-tip',
+        'configmap-target-cluster-tip',
+        'configmap-target-namespace-tip',
+        'configmap-target-object-tip',
+        'configmap-update-mode-tip',
+        'secret-create-cluster-tip',
+        'secret-create-namespace-tip',
+        'secret-create-name-tip',
+        'secret-create-mutability-tip',
+        'secret-replace-cluster-tip',
+        'secret-replace-target-namespace-tip',
+        'secret-replace-target-secret-tip',
+        'secret-delete-cluster-tip',
+        'secret-delete-target-namespace-tip',
+        'secret-delete-target-secret-tip',
+        'secret-reveal-cluster-tip',
+        'secret-reveal-target-namespace-tip',
+        'secret-reveal-target-secret-tip',
+        'secret-replace-basic-username-tip',
+    ):
+        require(
+            retired_tip not in joined_guidance,
+            f'Operations field-level Info Tip must remain retired: {retired_tip}',
+            errors,
+        )
     for retired_helper in (
         'form_field.help("Registered cluster for the target namespace.")',
         'form_field.help("Loaded from the selected Kubernetes API.")',
@@ -457,7 +517,7 @@ def main() -> int:
 
     print(
         'KAORI Kubernetes Operations final-lock passed: AuthZ-first cluster prerequisites, '
-        'task-appropriate ConfigMap/Secret mutation workspaces, shared Info Tip field guidance, reviewed Integration registration geometry, '
+        'task-appropriate ConfigMap/Secret mutation workspaces, consolidated section-level Info Tip guidance, reviewed Integration registration geometry, '
         'layered release evidence, and canonical shared workflow ownership are aligned.'
     )
     return 0
