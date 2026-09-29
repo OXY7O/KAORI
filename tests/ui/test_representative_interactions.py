@@ -334,6 +334,10 @@ def test_sidebar_v21_two_level_navigation_and_page_workspace_across_canonical_vi
         expect(page.locator('[data-kaori-domain-workspace-nav]')).to_have_count(0)
         inventory_views = page.locator('[data-kaori-capability-navigation="kubernetes_inventory"]')
         expect(inventory_views).to_be_visible()
+        expect(
+            inventory_views.locator('[data-kaori-tab-variant="integrated-workspace-server"]')
+        ).to_be_visible()
+        expect(inventory_views.locator('[data-kaori-tab-variant="content-tabs"]')).to_have_count(0)
         for label in (
             'Overview',
             'Topology',
@@ -417,6 +421,9 @@ def test_sidebar_v21_two_level_navigation_and_page_workspace_across_canonical_vi
         expect(page.locator('[data-kaori-domain-workspace-nav]')).to_have_count(0)
         object_views = page.locator('[data-kaori-capability-navigation="object_storage_inventory"]')
         expect(object_views).to_be_visible()
+        expect(
+            object_views.locator('[data-kaori-tab-variant="integrated-workspace-server"]')
+        ).to_be_visible()
         for label in ('Overview', 'Systems', 'Buckets & Containers'):
             expect(object_views.get_by_role('link', name=label, exact=True)).to_be_visible()
 

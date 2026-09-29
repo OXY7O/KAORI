@@ -103,9 +103,10 @@ def test_app_shell_does_not_render_second_horizontal_capability_row() -> None:
     assert 'build_workspace_navigation' not in presentation
     assert "'workspace_navigation':" not in presentation
 
-    assert '{% import "components/content_tabs.html" as content_tabs %}' in layout
+    assert '{% import "components/workspace_tabs.html" as workspace_tabs %}' in layout
     assert 'data-kaori-capability-navigation="{{ capability_navigation.key }}"' in layout
-    assert 'content_tabs.render_links(' in layout
+    assert 'workspace_tabs.render_navigation(' in layout
+    assert "prefix='detail-' ~ capability_navigation.key" in layout
 
 
 def test_level_three_detail_navigation_replaces_sidebar_level_three() -> None:
@@ -131,7 +132,7 @@ def test_level_three_detail_navigation_replaces_sidebar_level_three() -> None:
     assert "'Resource Profiles'," in model
     assert "'Buckets & Containers'," in model
     assert "'Capacity & Usage'," in model
-    assert "data_namespace='capability'" in layout
+    assert "workspace_tabs.render_navigation(" in layout
 
 
 def test_navigation_context_is_preserved_without_becoming_navigation_identity() -> None:
@@ -180,3 +181,15 @@ def test_breadcrumb_hierarchy_matches_workspace_capability_detail_scope() -> Non
     assert "BreadcrumbItem('Operations')" in breadcrumb
     assert "BreadcrumbItem('Analytics', 'chart-no-axes-combined')" in breadcrumb
     assert "BreadcrumbItem('Dashboards', 'layout-dashboard')" not in breadcrumb
+
+
+def test_level_three_integrated_workspace_tabs_do_not_float() -> None:
+    layout = _read('app/templates/layouts/app.html')
+    workspace_tabs = _read('app/templates/components/workspace_tabs.html')
+    content_tabs = _read('app/templates/components/content_tabs.html')
+
+    assert 'workspace_tabs.render_navigation(' in layout
+    assert 'content_tabs.render_links(' not in layout
+    assert 'data-kaori-tab-variant="integrated-workspace-server"' in workspace_tabs
+    assert 'overflow-x-auto border-b border-outline-subtle' in workspace_tabs
+    assert 'rounded-xl border border-outline-default bg-surface-card' in content_tabs

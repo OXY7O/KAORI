@@ -13,7 +13,7 @@ The numeric name is convenient during UI reviews. The semantic key is the stable
 
 Tab Style 1 provides integrated navigation between peer sections inside one operational workspace. The tabs attach visually to the content area and do not render as a separate card or floating block.
 
-Use this style when each tab represents a peer view of the same resource scope, operational context, or workspace.
+Use this style when each tab represents a peer view of the same resource scope, operational context, or workspace. This includes server-rendered **level-3 route peers inside one sidebar capability** such as Kubernetes Inventory `Overview · Topology · Nodes · ...`.
 
 ## Required behavior
 
@@ -42,6 +42,25 @@ Use this style when each tab represents a peer view of the same resource scope, 
 ```
 
 The owning page supplies `activeTab`, `setTab()`, and `moveTab()` state and renders panels with matching IDs.
+
+## Server-owned route mode
+
+`render_navigation()` is the canonical mode for server-rendered peer routes.
+
+Use it when:
+
+- sidebar level 1/2 already establishes workspace and capability identity;
+- each level-3 item is a real route;
+- the route row should feel attached to the workspace rather than floating above it;
+- active state is server-owned with `aria-current="page"`.
+
+Tuple shape:
+
+```text
+(key, label, icon, badge, href)
+```
+
+This is the canonical KAORI treatment for route-level level-3 navigation under Sidebar v2.1.
 
 ## Visual contract
 

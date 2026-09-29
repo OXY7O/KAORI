@@ -7,7 +7,7 @@
         <link rel="icon"
               type="image/svg+xml"
               href="{{ url_for('static', filename='favicon.svg') }}" />
-        {% import "components/content_tabs.html" as content_tabs %}
+        {% import "components/workspace_tabs.html" as workspace_tabs %}
         <title>
             {% block title %}
                 KAORI
@@ -44,15 +44,13 @@
                     <div class="p-5 lg:p-6 2xl:p-7">
                         {% include "components/states/_flash_messages.html" %}
                         {% if capability_navigation %}
-                            <div class="mb-5"
+                            <div class="mb-4 min-w-0"
                                  data-kaori-capability-navigation="{{ capability_navigation.key }}">
-                                {{ content_tabs.render_links(
-                                    'capability-' ~ capability_navigation.key,
+                                {{ workspace_tabs.render_navigation(
                                     capability_navigation.tabs,
                                     capability_navigation.active_key,
-                                    capability_navigation.label ~ ' views',
-                                    data_namespace='capability',
-                                    nowrap=true
+                                    prefix='detail-' ~ capability_navigation.key,
+                                    aria_label=capability_navigation.label ~ ' views'
                                 ) }}
                             </div>
                         {% endif %}

@@ -39,14 +39,14 @@ There is **no global Domain Workspace horizontal strip** between breadcrumb and 
 
 ## Shared Component Ownership
 
-Route-level detailed peer views normally use:
+Route-level detailed peer views that define the current capability workspace use:
 
-- `components/content_tabs.html` — four-plus closely related detailed routes;
+- `components/workspace_tabs.html` server-owned Integrated Workspace Tabs — canonical flat level-3 route navigation;
+- `components/content_tabs.html` — subordinate content switching **inside one route/page**, such as Analytics Overview evidence sections;
 - `components/segmented_tabs.html` — two/three local presentation modes;
-- `components/workspace_tabs.html` — integrated sections that genuinely define one page workspace, such as the Kubernetes Operations Dashboard internal sections;
 - `components/framed_workspace_tabs.html` — only where an explicit framed parent workspace is semantically required.
 
-Sidebar capability navigation does not use these components.
+Sidebar capability navigation does not use these components. Level-3 route navigation must attach visually to the page surface: no outer rounded card, no floating pill container, and no duplicated workspace header.
 
 No new tab family is authorized.
 
@@ -148,7 +148,7 @@ Each scope conveys different information and should not duplicate a peer row.
 
 ## Responsive Contract
 
-Local Content Tabs own their existing horizontal-overflow behavior.
+Integrated Workspace Tabs own route-level horizontal-overflow behavior. Content Tabs retain their separate contract for intra-page content switching.
 
 Requirements:
 
@@ -163,7 +163,7 @@ Requirements:
 Validate:
 
 - no global Domain Workspace strip;
-- correct active level-3 detail on representative Kubernetes/Object Storage pages;
+- correct flat Integrated Workspace level-3 detail on representative Kubernetes/Object Storage pages;
 - Analytics Overview duplicate-tab suppression;
 - bounded context preservation;
 - all canonical viewports;

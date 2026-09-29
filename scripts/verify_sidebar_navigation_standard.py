@@ -138,10 +138,10 @@ def verify() -> None:
     _require(
         layout,
         (
-            '{% import "components/content_tabs.html" as content_tabs %}',
+            '{% import "components/workspace_tabs.html" as workspace_tabs %}',
             'data-kaori-capability-navigation="{{ capability_navigation.key }}"',
-            'content_tabs.render_links(',
-            "data_namespace='capability'",
+            'workspace_tabs.render_navigation(',
+            "prefix='detail-' ~ capability_navigation.key",
         ),
         'page level-3 navigation',
     )
@@ -184,7 +184,7 @@ def verify() -> None:
             '# KAORI Page Workspace Navigation Standard v1.1',
             'Page level 3 — Detailed View / Resource View',
             'There is **no global Domain Workspace horizontal strip**',
-            'components/content_tabs.html',
+            'components/workspace_tabs.html',
             'Analytics Overview already owns summary/evidence Content Tabs',
         ),
         'page workspace documentation',

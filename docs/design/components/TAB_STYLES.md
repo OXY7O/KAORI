@@ -21,7 +21,8 @@ The page-level selection authority is `../patterns/PAGE_ARCHETYPE_AND_NAVIGATION
 | Question | Select |
 |---|---|
 | Are there two or three mutually exclusive local views inside one component, visualization, drawer, or inspector? | **Tab Style 3 — Compact Segmented Tabs** |
-| Are there several closely related content views subordinate to an already-established workspace? | **Tab Style 4 — Content Tabs** |
+| Are there peer server-rendered routes that define the current capability workspace? | **Tab Style 1 — Integrated Workspace Tabs** |
+| Are there several closely related content states/sections inside one established route/page? | **Tab Style 4 — Content Tabs** |
 | Are these peer operational domains inside an explicit framed parent workspace? | **Tab Style 2 — Framed Workspace Tabs** |
 | Are these peer sections that define one workspace and attach through a simple divider? | **Tab Style 1 — Integrated Workspace Tabs** |
 | Does none of the above apply? | **No tabs**; prefer sections, routes, cards, or a detail surface |
@@ -41,9 +42,9 @@ Selection is semantic, not aesthetic. A fifth style is not created to change col
 | State | Stored in the URL and preserved through HTMX scope changes |
 | Layout | Horizontal tabs with narrow-screen overflow |
 
-Use Tab Style 1 for operational dashboards and other peer workspace domains where the tab bar is part of the workspace hierarchy.
+Use Tab Style 1 for operational dashboards and other peer workspace domains where the tab bar is part of the workspace hierarchy. Under Sidebar v2.1, route-level level-3 peers inside one capability also use this style so navigation stays flat and attached rather than floating.
 
-For server-rendered peer workspaces that need URL persistence, use the canonical URL-backed workspace contract. Do not duplicate tab styling or introduce a second page-local state owner.
+For server-rendered peer workspaces that need URL persistence, use `render_navigation()` as the canonical URL-backed workspace contract. Do not duplicate tab styling or introduce a second page-local state owner.
 
 ## Tab Style 2 — Framed Workspace Tabs
 
@@ -87,7 +88,7 @@ Compact toolbar tabsets stay content-width by default. Bounded inspectors may us
 | State | Consumer-owned buttons or server/URL-owned links; one owner per tabset |
 | Layout | Wrap by default; approved one-row overflow mode for dense compact navigation |
 
-Use Tab Style 4 for compact intra-workspace content navigation. The component owns visual active/inactive class tokens. Client-owned tabsets use `render_buttons()` with their controller; URL/server-owned section navigation uses `render_links()`; security-sensitive controlled views that require instant switching plus a real navigation fallback use `render_controlled_links()`. Internal dataset, snapshot, DOM-target, or loader identifiers must never be passed through as visible badges. Dense navigation may use the documented no-wrap mode only with concise user-facing labels. The detailed contract lives in `CONTENT_TABS.md`.
+Use Tab Style 4 for compact intra-route/intra-page content navigation. It is not the route-level level-3 navigator under Sidebar v2.1. The component owns visual active/inactive class tokens. Client-owned tabsets use `render_buttons()` with their controller; URL/server-owned section navigation uses `render_links()`; security-sensitive controlled views that require instant switching plus a real navigation fallback use `render_controlled_links()`. Internal dataset, snapshot, DOM-target, or loader identifiers must never be passed through as visible badges. Dense navigation may use the documented no-wrap mode only with concise user-facing labels. The detailed contract lives in `CONTENT_TABS.md`.
 
 ## Future Styles
 

@@ -675,6 +675,7 @@ def build_capability_navigation(
                 view.key,
                 view.label,
                 view.icon,
+                None,
                 url_for(
                     view.endpoint,
                     **_preserved_context(query_args, _CAPABILITY_CONTEXT_KEYS.get(capability_key, ())),
