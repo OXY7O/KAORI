@@ -27,7 +27,7 @@ _ARBITRARY_TEXT = re.compile(r'\btext-\[[^\]]+\]')
 _ARBITRARY_TRACKING = re.compile(r'\btracking-\[[^\]]+\]')
 _FONT_EXTRABOLD = re.compile(r'\bfont-extrabold\b')
 _ARBITRARY_RADIUS = re.compile(r'\b(?:rounded-3xl|rounded-\[[^\]]+\])')
-_RAW_HEX = re.compile(r'(?<![\w-])#[0-9a-fA-F]{3,8}\b')
+_RAW_HEX = re.compile(r'(?<![\\w-])#[0-9a-fA-F]{3,8}(?![0-9a-zA-Z_-])')
 _RAW_PALETTE = re.compile(
     r'\b(?:bg|text|border|ring|shadow|fill|stroke)-'
     r'(?:red|green|blue|amber|yellow|gray|slate|zinc|neutral|stone|indigo|'
