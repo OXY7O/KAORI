@@ -131,6 +131,23 @@ OPERATIONAL_DASHBOARD_DESCRIPTION_PATTERN = re.compile(
     r"\s*'(?P<description>[^']*)'",
     flags=re.DOTALL,
 )
+STATIC_INTRO_IDENTITY_PATTERN = re.compile(
+    r"{%\s*call\s+page_hero\.intro\(\s*[^,]+,\s*(?P<quote>['\"])"
+    r"(?P<eyebrow>.*?)(?P=quote)\s*,[^%]*%}(?P<body>.*?){%\s*endcall\s*%}",
+    flags=re.DOTALL,
+)
+STATIC_H1_IDENTITY_PATTERN = re.compile(
+    r"<h1\b[^>]*>(?P<title>[^<{]+)</h1>",
+    flags=re.IGNORECASE | re.DOTALL,
+)
+OPERATIONAL_DASHBOARD_IDENTITY_PATTERN = re.compile(
+    r"page_hero\.operational_dashboard\(\s*"
+    r"(?P<q1>['\"])(?P<eyebrow>.*?)(?P=q1)\s*,\s*"
+    r"(?P<q2>['\"])(?P<icon>.*?)(?P=q2)\s*,\s*"
+    r"(?P<q3>['\"])(?P<title>.*?)(?P=q3)",
+    flags=re.DOTALL,
+)
+IDENTITY_STOP_WORDS = frozenset({'a', 'an', 'and', 'for', 'in', 'of', 'on', 'or', 'the', 'to', 'with'})
 PROVIDER_HERO_CALL_PATTERN = re.compile(
     r'provider_(?P<kind>edit|registration)_hero\.render\(\s*'
     r'(?:[^,\n]+,\s*){4}'
@@ -302,6 +319,56 @@ def _profile_templates() -> list[Path]:
 def _normalize_description_text(value: str) -> str:
     text = re.sub(r'<[^>]+>', ' ', value)
     return html.unescape(' '.join(text.split()))
+
+
+def _identity_tokens(value: str) -> set[str]:
+    return {
+        token.lower()
+        for token in DESCRIPTION_WORD_PATTERN.findall(_normalize_description_text(value))
+        if len(token) > 2 and token.lower() not in IDENTITY_STOP_WORDS
+    }
+
+
+def _verify_non_redundant_hero_identity() -> int:
+    failures: list[str] = []
+    audited = 0
+
+    for path in sorted(TEMPLATES.rglob('*.html')):
+        if path == HERO:
+            continue
+        source = _read(path)
+        relative = str(path.relative_to(ROOT))
+
+        for match in STATIC_INTRO_IDENTITY_PATTERN.finditer(source):
+            title_match = STATIC_H1_IDENTITY_PATTERN.search(match.group('body'))
+            if not title_match:
+                continue
+            eyebrow = _normalize_description_text(match.group('eyebrow'))
+            title = _normalize_description_text(title_match.group('title'))
+            overlap = sorted(_identity_tokens(eyebrow) & _identity_tokens(title))
+            audited += 1
+            if overlap:
+                failures.append(
+                    f"{relative}: eyebrow={eyebrow!r} and title={title!r} repeat semantic token(s): "
+                    + ', '.join(overlap)
+                )
+
+        for match in OPERATIONAL_DASHBOARD_IDENTITY_PATTERN.finditer(source):
+            eyebrow = _normalize_description_text(match.group('eyebrow'))
+            title = _normalize_description_text(match.group('title'))
+            overlap = sorted(_identity_tokens(eyebrow) & _identity_tokens(title))
+            audited += 1
+            if overlap:
+                failures.append(
+                    f"{relative}: dashboard eyebrow={eyebrow!r} and title={title!r} repeat semantic token(s): "
+                    + ', '.join(overlap)
+                )
+
+    if failures:
+        raise AssertionError('Redundant Hero identity pairs:\n- ' + '\n- '.join(failures))
+    if not audited:
+        raise AssertionError('Hero identity audit discovered no deterministic eyebrow/title pairs')
+    return audited
 
 
 def _local_jinja_literal_values(source: str, variable: str) -> list[str]:
@@ -981,6 +1048,7 @@ def verify() -> None:
             f'Operational Dashboard profile must have exactly two consumers; found {len(profile_templates)}'
         )
 
+    identity_pairs = _verify_non_redundant_hero_identity()
     _verify_dashboard_profile()
     _verify_blocked_context_ownership()
     _verify_analytics_metadata_ownership()
@@ -1008,7 +1076,8 @@ def verify() -> None:
         'KAORI Hero component standard passed: '
         f'{len(primitive_shells)} compatibility shells, '
         f'{len(profile_templates)} profile consumers, '
-        f'{audited} audited descriptions; v1.9 non-redundant Hero identity, phone-native compact composition, and persistent metadata, '
+        f'{audited} audited descriptions, {identity_pairs} deterministic identity pairs; '
+        'v1.9 non-redundant Hero identity, phone-native compact composition, and persistent metadata, '
         '7-15 word density with a preferred 8-12 word range, maximum 68 characters, browser-proven non-phone single-line rendering, action-oriented copy, blocked/degraded state ownership, dynamic Jinja resolution, '
         'dark-mode ownership, and unmanaged-shell detection are synchronized.'
     )

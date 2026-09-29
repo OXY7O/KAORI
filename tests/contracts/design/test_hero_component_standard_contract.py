@@ -249,3 +249,50 @@ def test_kubernetes_blocker_families_are_locked_to_general_and_analytics() -> No
     assert 'components/states/_blocked_state.html' not in tenant
     assert '{% block page_capability_navigation %}' in analytics
     assert '{% if dependency_blocker %}' in analytics
+
+
+def test_active_hero_families_use_navigation_owned_non_redundant_identity() -> None:
+    expected = {
+        'app/templates/kubernetes/inventory/overview/partials/_hero.html': ('Kubernetes Inventory', 'Overview'),
+        'app/templates/kubernetes/inventory/nodes/partials/_hero.html': ('Kubernetes Inventory', 'Nodes'),
+        'app/templates/kubernetes/governance/overview/index.html': ('Kubernetes Governance', 'Overview'),
+        'app/templates/kubernetes/governance/tls_certificates/partials/_hero.html': (
+            'Kubernetes Governance',
+            'TLS Certificates',
+        ),
+        'app/templates/kubernetes/analytics/capacity/partials/_hero.html': ('Kubernetes Analytics', 'Capacity'),
+        'app/templates/storage/object_storage/inventory/overview/partials/_hero.html': (
+            'Object Storage Inventory',
+            'Overview',
+        ),
+        'app/templates/access/overview/index.html': ('Access', 'Overview'),
+        'app/templates/platform_operations/overview/index.html': ('Operations Center', 'Overview'),
+    }
+
+    for relative, (eyebrow, title) in expected.items():
+        source = (ROOT / relative).read_text(encoding='utf-8')
+        assert eyebrow in source, relative
+        assert f'>{title}</h1>' in source, relative
+
+
+def test_reports_and_integrations_hero_identity_follow_sidebar_vocabulary() -> None:
+    report_expectations = {
+        'overview/index.html': ('Reports', 'Overview'),
+        'generate/index.html': ('Reports', 'Generate'),
+        'generated/index.html': ('Reports', 'Generated'),
+        'report_templates/index.html': ('Reports', 'Templates'),
+        'storage/index.html': ('Reports', 'Storage'),
+        'schedules/index.html': ('Reports', 'Schedules'),
+    }
+    base = ROOT / 'app' / 'templates' / 'reports'
+    for relative, (eyebrow, title) in report_expectations.items():
+        source = (base / relative).read_text(encoding='utf-8')
+        assert f"'{eyebrow}'" in source, relative
+        assert f'>{title}</h1>' in source, relative
+
+    integration_overview = (ROOT / 'app/templates/integrations/overview.html').read_text(encoding='utf-8')
+    integration_domain = (ROOT / 'app/templates/integrations/domain.html').read_text(encoding='utf-8')
+    assert '{% set badge = "Integrations" %}' in integration_overview
+    assert '{% set title = "Overview" %}' in integration_overview
+    assert 'page_hero.intro(domain.icon, "Integrations", domain.icon)' in integration_domain
+    assert '>{{ domain.label }}</h1>' in integration_domain

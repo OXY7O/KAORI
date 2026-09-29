@@ -133,7 +133,7 @@ KUBERNETES TENANT → Kubernetes Tenant Overview
 
 Do not repeat domain/capability wording already carried by the eyebrow merely to make the title longer. When an eyebrow already establishes the domain, prefer a concise destination title such as `Overview`, `Capacity`, `Users`, or `Operations`. Titles remain stable across normal, blocked, degraded, and empty states. A title may be more descriptive than the sidebar label only when standalone page identity would otherwise be ambiguous.
 
-This is a semantic rule, not a typography preference. New or materially redesigned Heroes must satisfy it. Legacy surfaces that still duplicate eyebrow/title wording are tracked as UI-standard drift and must not be used as precedent.
+This is a semantic rule, not a typography preference. New or materially redesigned Heroes must satisfy it. Active authenticated surfaces are progressively migrated to the navigation-owned vocabulary and deterministic static eyebrow/H1 pairs are verifier-audited for repeated semantic tokens. Legacy surfaces that still duplicate eyebrow/title wording are tracked as UI-standard drift and must not be used as precedent.
 
 ## Operational Dashboard Hero Profile
 

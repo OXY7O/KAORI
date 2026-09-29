@@ -15,8 +15,8 @@
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('hard-drive', 'Report Storage', 'hard-drive') %}
-                        <h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1>
+                    {% call page_hero.intro('hard-drive', 'Reports', 'hard-drive') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Storage</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('database', payload.active_backend|upper ~ ' Backend') }}
