@@ -44,7 +44,13 @@ def test_tenant_routes_own_only_five_primary_destinations() -> None:
         assert template in routes
 
     get_routes = set(re.findall(r"@tenant_bp\.get\('([^']+)'\)", routes))
-    assert get_routes == {'/', '/tenants', '/resource-profiles', '/namespace-provisioning', '/operations'}
+    primary_routes = {'/', '/tenants', '/resource-profiles', '/namespace-provisioning', '/operations'}
+    assert primary_routes.issubset(get_routes)
+    assert '/overview/cluster-estate' in get_routes
+    assert '/tenants/registry' not in get_routes
+    assert '/tenants/membership-registry' not in get_routes
+    assert '/tenants/group-registry' not in get_routes
+    assert {'/management', '/inventory', '/analytics'}.isdisjoint(get_routes)
 
 
 def test_tenant_pages_reuse_kaori_shared_presentation_patterns() -> None:
@@ -96,7 +102,9 @@ def test_tenant_primary_navigation_preserves_provider_neutral_boundary() -> None
 
 def test_tenant_registry_pages_use_shared_default_five_pagination() -> None:
     service = (ROOT / 'app/kubernetes/tenant/service.py').read_text(encoding='utf-8')
-    footer = (ROOT / 'app/templates/kubernetes/tenant/partials/_pagination_footer.html').read_text(encoding='utf-8')
+    tenant_registry = (ROOT / 'app/templates/kubernetes/tenant/partials/_tenant_registry.html').read_text(
+        encoding='utf-8'
+    )
 
     assert '_ALLOWED_PAGE_SIZES = (5, 10, 25, 50)' in service
     for helper in (
@@ -106,18 +114,39 @@ def test_tenant_registry_pages_use_shared_default_five_pagination() -> None:
     ):
         assert f'def {helper}(' in service
 
-    assert 'components/pagination.html' in footer
-    assert 'pagination_ui.numeric_pages' in footer
-    assert 'pagination_ui.page_size_classes' in footer
+    assert 'tenant_pagination' in tenant_registry
+    assert 'components/table_registry.html' in tenant_registry
+    assert 'registry_ui.filter_form' in tenant_registry
+    assert 'registry_ui.footer' in tenant_registry
+    assert "'tenant.tenants'" in tenant_registry
 
-    for path, state in (
-        ('tenants.html', 'tenant_pagination'),
-        ('resource_profiles.html', 'profile_pagination'),
-        ('namespace_provisioning.html', 'namespace_pagination'),
-    ):
-        template = (ROOT / 'app/templates/kubernetes/tenant' / path).read_text(encoding='utf-8')
-        assert state in template
-        assert 'partials/_pagination_footer.html' in template
+    resource_profiles = (ROOT / 'app/templates/kubernetes/tenant/resource_profiles.html').read_text(encoding='utf-8')
+    resource_profile_registry = (
+        ROOT / 'app/templates/kubernetes/tenant/partials/_resource_profile_registry.html'
+    ).read_text(encoding='utf-8')
+    assert '_resource_profile_registry.html' in resource_profiles
+    assert 'components/content_tabs.html' in resource_profiles
+    assert 'content_tabs.render_links' in resource_profiles
+    assert 'profile_pagination' in resource_profile_registry
+    assert 'components/table_registry.html' in resource_profile_registry
+    assert 'registry_ui.filter_form' in resource_profile_registry
+    assert 'registry_ui.footer' in resource_profile_registry
+    assert 'partials/_pagination_footer.html' not in resource_profile_registry
+
+    namespace_page = (ROOT / 'app/templates/kubernetes/tenant/namespace_provisioning.html').read_text(encoding='utf-8')
+    namespace_registry = (ROOT / 'app/templates/kubernetes/tenant/partials/_namespace_registry.html').read_text(
+        encoding='utf-8'
+    )
+    assert '_namespace_registry.html' in namespace_page
+    assert 'namespace_pagination' in namespace_registry
+    assert 'components/table_registry.html' in namespace_registry
+    assert 'registry_ui.filter_form' in namespace_registry
+    assert 'registry_ui.footer' in namespace_registry
+    assert 'namespace_search' in namespace_registry
+    assert 'namespace_tenant_id' in namespace_registry
+    assert 'namespace_environment' in namespace_registry
+    assert 'namespace_status' in namespace_registry
+    assert '_pagination_footer.html' not in namespace_page
 
 
 def test_namespace_allocation_selector_is_not_limited_by_visible_page() -> None:

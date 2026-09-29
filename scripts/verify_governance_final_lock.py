@@ -144,6 +144,7 @@ def main() -> int:
         errors,
     )
     page_content = read('app/templates/kubernetes/governance/tls_certificates/partials/_page_content.html')
+    workspace = read('app/templates/kubernetes/governance/tls_certificates/partials/_page_workspace.html')
     require(
         page_content.find('{% if cluster_onboarding.is_blocked %}')
         < page_content.find('{% elif not payload.schema_readiness.ready %}')
@@ -178,8 +179,11 @@ def main() -> int:
         errors,
     )
     require(
-        'Certificate Validity & Operations' in summary and 'partials/_sync_panel.html' in summary,
-        'TLS posture and inventory operations must remain consolidated in one Governance workspace section.',
+        'Certificate Validity' in summary
+        and 'Certificate Validity & Operations' not in summary
+        and 'partials/_sync_panel.html' not in summary
+        and workspace.find('partials/_sync_panel.html') < workspace.find("'Certificate Posture'"),
+        'TLS posture and inventory operations must retain the canonical Governance workspace hierarchy.',
         errors,
     )
     require(

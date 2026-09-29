@@ -27,7 +27,7 @@ _ARBITRARY_TEXT = re.compile(r'\btext-\[[^\]]+\]')
 _ARBITRARY_TRACKING = re.compile(r'\btracking-\[[^\]]+\]')
 _FONT_EXTRABOLD = re.compile(r'\bfont-extrabold\b')
 _ARBITRARY_RADIUS = re.compile(r'\b(?:rounded-3xl|rounded-\[[^\]]+\])')
-_RAW_HEX = re.compile(r'(?<![\w-])#[0-9a-fA-F]{3,8}\b')
+_RAW_HEX = re.compile(r'(?<![\\w-])#[0-9a-fA-F]{3,8}(?![0-9a-zA-Z_-])')
 _RAW_PALETTE = re.compile(
     r'\b(?:bg|text|border|ring|shadow|fill|stroke)-'
     r'(?:red|green|blue|amber|yellow|gray|slate|zinc|neutral|stone|indigo|'
@@ -51,6 +51,9 @@ _APPROVED_SEMANTIC_BORDER_COMPONENTS = {
     'app/templates/components/operational_callout.html',
     'app/templates/components/kubernetes_operation_ui.html',
     'app/templates/components/table_label.html',
+    'app/templates/components/destructive_confirmation_modal.html',
+    'app/templates/components/one_time_secret.html',
+    'app/templates/components/status_detail_dialog.html',
     'app/templates/integrations/components/_asset_owner_delete_modal.html',
     'app/templates/integrations/components/_observability_binding_modal.html',
     'app/templates/integrations/components/_workspace.html',
@@ -65,6 +68,8 @@ _APPROVED_STANDARD_SURFACE_COMPONENTS = {
     'app/templates/components/protected_value_panel.html',
     'app/templates/components/activity_status_card.html',
     'app/templates/components/kubernetes_operation_ui.html',
+    'app/templates/kubernetes/governance/tls_certificates/partials/_sync_panel.html',
+    'app/templates/kubernetes/tenant/partials/_sync_workspace.html',
 }
 
 _APPROVED_ARBITRARY_TEXT_COMPONENTS = {
@@ -72,6 +77,8 @@ _APPROVED_ARBITRARY_TEXT_COMPONENTS = {
     'app/templates/components/page_hero.html',
     'app/templates/components/table.html',
     'app/templates/components/table_label.html',
+    'app/templates/components/one_time_secret.html',
+    'app/templates/components/status_detail_dialog.html',
 }
 _APPROVED_FONT_EXTRABOLD_COMPONENTS = {
     'app/templates/components/navigation/sidebar.html',

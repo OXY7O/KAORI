@@ -37,7 +37,7 @@ def test_tls_workspace_and_progress_are_canonical() -> None:
 
     assert 'id="tls-certificates-page-workspace"' in workspace
     assert "partial_mode='page_workspace'" in workspace
-    assert '_sync_progress_toast.html' in workspace
+    assert '_sync_progress_toast.html' not in workspace
     assert 'components/operational_progress_toast.html' in progress
     assert not (ROOT / 'app/kubernetes/governance/tls_certificates/toast.py').exists()
     assert not (ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_inventory_scope.html').exists()

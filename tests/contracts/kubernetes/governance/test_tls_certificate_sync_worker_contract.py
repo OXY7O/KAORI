@@ -55,16 +55,29 @@ def test_tls_worker_progress_is_owned_by_inventory_operations_loading_bar() -> N
     assert 'hx-sync="this:replace"' in live_state
     assert 'load delay:2s' not in live_state
     assert 'toast_oob=true' not in sync_response
-    assert '_sync_progress_toast.html' in scope
+    assert '_sync_progress_toast.html' not in scope
     assert 'tls-sync-feedback' not in layout
     assert "url_for('governance.tls_certificates_active_sync')" not in layout
     governance_routes = (ROOT / 'app/kubernetes/governance/routes.py').read_text()
     assert 'tls_certificates_active_sync' not in governance_routes
     assert 'def tls_certificates_active_sync' not in routes
     assert "'tlsInventorySyncFinished': True" in routes
+    assert "'kaori:notifications-changed': True" in routes
     assert "response.headers['HX-Trigger-After-Swap']" in routes
     assert "response.headers['Cache-Control'] = 'no-store, max-age=0'" in routes
     assert 'feedback=feedback' in routes
+
+
+def test_tls_accepted_dispatch_stays_inline_and_refreshes_notification_deck_on_terminal_state() -> None:
+    routes = (ROOT / 'app/kubernetes/governance/tls_certificates/routes.py').read_text()
+    scope = (ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_page_workspace.html').read_text()
+
+    assert 'sync_progress=' not in routes
+    assert '_sync_progress_toast.html' not in scope
+    assert 'return _render_sync_response(filter_args=filter_args)' in routes
+    assert "if not sync['is_active']:" in routes
+    assert "'tlsInventorySyncFinished': True" in routes
+    assert "'kaori:notifications-changed': True" in routes
 
 
 def test_tls_filter_state_keeps_one_canonical_workspace_boundary() -> None:
@@ -131,12 +144,17 @@ def test_tls_page_exposes_automatic_freshness_with_scoped_worker_progress() -> N
         ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_sync_live_state.html'
     ).read_text()
 
-    assert 'Automatic Sync' in live_state
-    assert 'Last Successful' in live_state
-    assert 'Next Scheduled' in live_state
+    assert 'Automatic Sync' in sync_panel
+    assert 'Last Successful' in sync_panel
+    assert 'Next Scheduled' in sync_panel
+    assert 'Automatic Sync:' not in live_state
+    assert 'Last Successful:' not in live_state
+    assert 'Next Scheduled:' not in live_state
     assert 'payload.sync_state.is_active' in live_state
     assert "job_key='governance.tls_certificates.sync'" in sync_panel
     assert 'TLS Secret synchronization progress' in live_state
+    assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' in sync_panel
+    assert 'aria-labelledby="tls-inventory-operations-heading"' in sync_panel
     assert 'hx-indicator="#tls-sync-panel-poll-indicator"' in live_state
 
 

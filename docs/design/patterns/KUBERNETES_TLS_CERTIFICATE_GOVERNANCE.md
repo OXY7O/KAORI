@@ -9,8 +9,11 @@ TLS Certificate Governance is a read-oriented registry for certificate validity,
 ```text
 Compact Hero
 TLS Collection Snapshot
-Certificate Validity & Operations
-Compact Certificate Registry
+TLS Inventory Operations
+Certificate Posture — shared Section Intro
+└── Certificate Validity
+Certificate Inventory — shared Section Intro
+└── TLS Certificate Registry
 Detail Style 2 — Full Workspace Modal
 ```
 
@@ -77,6 +80,12 @@ Coverage is declaration evidence, not live endpoint reachability. Host values re
 
 Wildcard identities use single-label semantics. `*.example.com` covers `api.example.com`, but it does not cover `example.com` or `deep.api.example.com`. KAORI must not broaden wildcard coverage across multiple DNS labels.
 
+## Section hierarchy and cluster-source action
+
+TLS Governance reuses `components/section_intro.html` for the plain hierarchy above certificate posture and registry content. The component adds no card geometry or separate palette.
+
+Cluster-source navigation is labeled **Open Cluster Integrations** and routes to `integrations.kubernetes`, matching Kubernetes Inventory.
+
 ## Compact registry table
 
 ```text
@@ -112,9 +121,22 @@ The modal uses permission-aware rotation actions. Governance never owns the muta
 
 The modal header follows the shared Full Workspace Modal alignment contract: lifecycle/status labels sit below the descriptive line and align with the title/description text column, never with the outer-left icon edge.
 
-## Certificate Validity & Operations workspace
+## TLS Inventory Operations and certificate posture
 
-TLS inventory synchronization and certificate posture are one operational workspace. `TLS Inventory Operations` is an internal toolbar/state row inside the `Certificate Validity & Operations` section, followed by the six validity/coverage posture metrics. It must not render as a separate sibling card above the posture grid.
+TLS inventory synchronization is a standalone operational surface immediately after the TLS Collection Snapshot. Its placement and interaction follow the same background-inventory pattern used by Kubernetes Tenant:
+
+```text
+Collection Snapshot
+→ Inventory Operations
+→ Evidence Posture
+→ Registry
+```
+
+`TLS Inventory Operations` owns Sync TLS, Configure Sync, Bulk Rotation handoff, worker progress, automatic policy state, last successful collection, and next scheduled execution. It must not be nested inside certificate validity metrics.
+
+Certificate validity remains a separate evidence block under the shared `Certificate Posture` section intro. `Certificate Inventory` is the outer section context for `TLS Certificate Registry`; the outer and inner titles intentionally express different hierarchy levels.
+
+Accepted background sync dispatch remains inline and does not create a queued/completion toast or unread Notification Deck item. Terminal worker evidence persists the Notification Deck result and triggers navigation refresh without a full-page reload.
 
 ## Single TLS rotation workspace
 

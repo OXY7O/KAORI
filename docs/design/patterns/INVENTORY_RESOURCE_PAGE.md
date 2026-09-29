@@ -1,4 +1,4 @@
-# Inventory Resource Page Pattern v1.3
+# Inventory Resource Page Pattern v1.4
 
 **Status:** Locked reference pattern  
 **Scope:** Kubernetes Inventory Overview, Nodes, Namespaces, Configuration, Workloads, Pods, Services, Ingresses, Storage, and Topology
@@ -15,8 +15,10 @@ All generation-scoped reads use the **latest committed inventory generation**. `
 Canonical Hero
 Cluster onboarding blocker when setup is incomplete
 Snapshot Context Bar when inventory scope is available
-Resource Posture
-Filter + Shared Inventory Table
+Operational Posture — shared Section Intro
+└── Resource Posture
+Inventory Records — shared Section Intro
+└── Filter + Shared Inventory Table
 Pagination 5 / 10 / 25 / 50
 Detail Style 2 — Full Workspace Modal
 ```
@@ -28,6 +30,27 @@ Inventory Overview uses the same Full Workspace Modal and Unified Resource Sheet
 Inventory Overview and the eight resource pages use the shared KAORI Hero implementation. The right-side header accessory is the approved **Status Badge Box** when operational/readiness state is shown. Do not create page-local hero geometry, icon boxes, badges, metric cards, or status treatments.
 
 The Hero owns resource identity and high-level posture. Exact collection timestamp, generation coverage, and snapshot exceptions belong to the Snapshot Context Bar rather than duplicated Hero metadata.
+
+
+Cluster-source actions use the canonical label **Open Cluster Integrations** and route to `integrations.kubernetes`. Do not alternate between `Manage Clusters`, `Open Cluster List`, and provider-specific wording on Inventory surfaces.
+
+## Section hierarchy contract
+
+Major Inventory workspaces use `components/section_intro.html` immediately above the owning card/table/visualization. The intro provides operator context without becoming another card.
+
+Resource pages use:
+
+```text
+Operational Posture
+└── <resource-specific posture card>
+
+Inventory Records
+└── <resource> Inventory table
+```
+
+Inventory Overview uses `Inventory Assets` above the asset catalog and `Multi-Cluster Inventory` above the compact cluster table. Topology uses `Inventory Relationships` above the adaptive visualization workspace.
+
+The section title and child card title must not repeat the same phrase. Preserve the child's existing shared component ownership and HTMX target boundaries.
 
 ## Authorization and readiness request contract
 

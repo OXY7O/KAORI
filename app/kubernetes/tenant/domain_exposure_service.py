@@ -54,6 +54,8 @@ def create_domain_reservation_committed(
     environment = db.session.get(TenantEnvironment, environment_id)
     if environment is None:
         raise ValueError('Select a Tenant environment.')
+    if environment.tenant.lifecycle_status != 'ready':
+        raise ValueError('Tenant is not Ready; domain reservation creation is frozen during decommission.')
     normalized = normalize_domain_pattern(hostname_pattern, match_mode)
 
     candidate = TenantDomainReservation()
@@ -142,6 +144,8 @@ def create_exposure_policy_committed(
     namespace = db.session.get(TenantNamespace, namespace_id)
     if namespace is None:
         raise ValueError('Select a Tenant namespace.')
+    if namespace.environment.tenant.lifecycle_status != 'ready':
+        raise ValueError('Tenant is not Ready; exposure policy creation is frozen during decommission.')
     if TenantExposurePolicy.query.filter_by(tenant_namespace_id=namespace.id).first() is not None:
         raise ValueError('This Tenant namespace already has an exposure policy.')
 

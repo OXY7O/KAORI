@@ -41,9 +41,29 @@ def test_tenant_workspace_reads_committed_cross_child_state() -> None:
 def test_tenant_tenants_surface_exposes_governed_access_and_credential_lifecycle_without_secrets() -> None:
     routes = _read('app/kubernetes/tenant/routes.py')
     page = _read('app/templates/kubernetes/tenant/tenants.html')
-    access = _read('app/templates/kubernetes/tenant/partials/_members_access.html')
-    credential = _read('app/templates/kubernetes/tenant/partials/_credential_management.html')
-    template = page + access + credential
+    admin = _read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
+    memberships = _read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
+    grants = _read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    credential = _read('app/templates/kubernetes/tenant/partials/_tenant_credentials_workspace.html')
+    namespace_access = _read('app/templates/kubernetes/tenant/partials/_tenant_namespace_access_workspace.html')
+    membership_registry = _read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
+    group_registry = _read('app/templates/kubernetes/tenant/partials/_group_registry.html')
+    access_grant_registry = _read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+    credential_registry = _read('app/templates/kubernetes/tenant/partials/_credential_registry.html')
+    namespace_access_registry = _read('app/templates/kubernetes/tenant/partials/_namespace_access_registry.html')
+    template = (
+        page
+        + admin
+        + memberships
+        + grants
+        + credential
+        + namespace_access
+        + membership_registry
+        + group_registry
+        + access_grant_registry
+        + credential_registry
+        + namespace_access_registry
+    )
 
     for path in (
         '/credentials/human',
@@ -55,7 +75,8 @@ def test_tenant_tenants_surface_exposes_governed_access_and_credential_lifecycle
     ):
         assert f"@tenant_bp.post('{path}')" in routes
 
-    assert 'Members &amp; Access' in template
+    assert 'Memberships' in template
+    assert 'Access Grants' in template
     assert 'Issue Human Access' in template
     assert 'Issue CI/CD Deployer' in template
     assert 'Namespace Access' in template
@@ -70,13 +91,19 @@ def test_tenant_tenants_surface_exposes_governed_access_and_credential_lifecycle
 def test_tenant_operations_keeps_provider_policy_audit_and_reports_evidence_explicit() -> None:
     overview = _read('app/templates/kubernetes/tenant/overview.html')
     operations = _read('app/templates/kubernetes/tenant/operations.html')
+    provider = _read('app/templates/kubernetes/tenant/partials/_operations_provider_registry.html')
+    access = _read('app/templates/kubernetes/tenant/partials/_operations_access_reconciliation_registry.html')
+    evidence = _read('app/templates/kubernetes/tenant/partials/_operations_evidence_registry.html')
 
-    assert 'provider_state' in operations
-    assert 'reconciliation_authority' in operations
-    assert 'correlation_status' in operations
-    assert 'Managed Resources &amp; Policies' in operations
+    assert 'provider_state' in provider
+    assert 'reconciliation_authority' in provider
+    assert 'reconciliation_status' in access
+    assert 'correlation_status' in evidence
+    assert 'managed-resource' in evidence
+    assert 'domain-reservation' in evidence
+    assert 'exposure-policy' in evidence
     assert 'Tenant Governance' in overview
-    assert 'Open Reports' in overview
+    assert 'Governance &amp; Reports' in operations
     assert 'Reports' in operations
 
 

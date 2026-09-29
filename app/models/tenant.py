@@ -57,6 +57,8 @@ class TenantNamespaceProvisioningStatus(StrEnum):
     READY = 'ready'
     DRIFTED = 'drifted'
     FAILED = 'failed'
+    DEPROVISIONING = 'deprovisioning'
+    DEPROVISIONED = 'deprovisioned'
 
 
 class TenantMembershipPrincipalType(StrEnum):
@@ -139,6 +141,7 @@ class Tenant(db.Model):
     cluster_id: Mapped[str] = mapped_column(ForeignKey('clusters.id', ondelete='RESTRICT'), nullable=False)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     slug: Mapped[str] = mapped_column(String(120), nullable=False)
+    generation: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     lifecycle_status: Mapped[str] = mapped_column(
         String(30), nullable=False, default=TenantLifecycleStatus.PENDING.value
@@ -177,8 +180,9 @@ class Tenant(db.Model):
     )
 
     __table_args__ = (
-        UniqueConstraint('cluster_id', 'slug', name='uq_tenants_cluster_slug'),
+        UniqueConstraint('cluster_id', 'slug', 'generation', name='uq_tenants_cluster_slug_generation'),
         UniqueConstraint('correlation_id', name='uq_tenants_correlation_id'),
+        CheckConstraint('generation >= 1', name='ck_tenants_generation'),
         CheckConstraint("provider_key IN ('native_kubernetes', 'capsule')", name='ck_tenants_provider_key'),
         CheckConstraint(
             "provider_state IN ('native', 'capsule', 'capsule_degraded', 'native_recovery')",
@@ -345,6 +349,7 @@ class TenantNamespace(db.Model):
     allocation_limit_defaults_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     allocation_customized: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     namespace: Mapped[str] = mapped_column(String(253), nullable=False)
+    generation: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     ownership_status: Mapped[str] = mapped_column(
         String(30), nullable=False, default=TenantOwnershipStatus.MANAGED.value
     )
@@ -378,13 +383,19 @@ class TenantNamespace(db.Model):
     )
 
     __table_args__ = (
-        UniqueConstraint('cluster_id', 'namespace', name='uq_tenant_namespaces_cluster_namespace'),
+        UniqueConstraint(
+            'cluster_id',
+            'namespace',
+            'generation',
+            name='uq_tenant_namespaces_cluster_namespace_generation',
+        ),
         UniqueConstraint('correlation_id', name='uq_tenant_namespaces_correlation_id'),
+        CheckConstraint('generation >= 1', name='ck_tenant_namespaces_generation'),
         CheckConstraint(
             "ownership_status IN ('managed', 'discovered', 'adopted')", name='ck_tenant_namespaces_ownership_status'
         ),
         CheckConstraint(
-            "provisioning_status IN ('pending', 'ready', 'drifted', 'failed')",
+            "provisioning_status IN ('pending', 'ready', 'drifted', 'failed', 'deprovisioning', 'deprovisioned')",
             name='ck_tenant_namespaces_provisioning_status',
         ),
         Index('ix_tenant_namespaces_environment', 'tenant_environment_id', 'namespace'),

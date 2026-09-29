@@ -87,6 +87,8 @@ def create_deployer_credential_committed(
     tenant = db.session.get(Tenant, namespace.environment.tenant_id)
     if tenant is None:
         raise ValueError('Tenant namespace no longer has a Tenant.')
+    if tenant.lifecycle_status != 'ready':
+        raise ValueError('Tenant is not Ready; credential issuance is frozen during decommission.')
     application_name = normalize_deployer_application(request.application_name)
     environment = namespace.environment.environment
     purpose = normalize_credential_purpose(f'{request.purpose}-{application_name}-{environment}')
@@ -110,12 +112,14 @@ def create_deployer_credential_committed(
     profile = get_access_profile('deployer')
 
     membership = TenantMembership()
+    membership.tenant_id = tenant.id
     membership.tenant = tenant
     membership.principal_type = TenantMembershipPrincipalType.SERVICE_ACCOUNT.value
     membership.subject_name = service_account_name
     membership.status = TenantMembershipStatus.ACTIVE.value
 
     grant = TenantAccessGrant()
+    grant.tenant_id = tenant.id
     grant.tenant = tenant
     grant.membership = membership
     grant.namespace = namespace
@@ -127,6 +131,7 @@ def create_deployer_credential_committed(
 
     credential = TenantCredential()
     credential.public_id = public_id
+    credential.tenant_id = tenant.id
     credential.tenant = tenant
     credential.owner_user = owner
     credential.access_grant = grant

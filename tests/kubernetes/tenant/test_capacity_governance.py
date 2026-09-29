@@ -9,7 +9,11 @@ from app.kubernetes.tenant.capacity import (
     evaluate_allocation_preflight,
     quota_request_vector,
 )
-from app.kubernetes.tenant.capacity_governance import _capacity_vector, _unknown_evidence_decision
+from app.kubernetes.tenant.capacity_governance import (
+    _capacity_vector,
+    _committed_evidence_reason,
+    _unknown_evidence_decision,
+)
 
 
 def test_quota_request_vector_preserves_unbounded_dimensions() -> None:
@@ -17,6 +21,29 @@ def test_quota_request_vector_preserves_unbounded_dimensions() -> None:
 
     assert vector.cpu == Decimal('1.500')
     assert vector.memory_bytes is None
+
+
+def test_incomplete_active_commitment_remains_unknown_instead_of_zero() -> None:
+    reason = _committed_evidence_reason(CapacityVector(cpu=None, memory_bytes=Decimal('1024')))
+
+    assert reason is not None
+    assert 'unbounded or missing' in reason
+    assert 'cannot be proven' in reason
+
+
+def test_bounded_active_commitment_has_no_unknown_reason() -> None:
+    assert _committed_evidence_reason(CapacityVector(cpu=Decimal('2'), memory_bytes=Decimal('4096'))) is None
+
+
+def test_incomplete_commitment_reason_names_blocking_namespaces() -> None:
+    reason = _committed_evidence_reason(
+        CapacityVector(cpu=None, memory_bytes=None),
+        ['legacy-a', 'adopted-b'],
+    )
+
+    assert reason is not None
+    assert 'legacy-a, adopted-b' in reason
+    assert 'Apply a bounded Resource Profile allocation before positive changes.' in reason
 
 
 def test_budget_subtracts_reserve_headroom_and_unmanaged_commitments() -> None:

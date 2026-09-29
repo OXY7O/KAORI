@@ -98,6 +98,8 @@ def create_advanced_intent_committed(
     tenant = db.session.get(Tenant, tenant_id)
     if tenant is None:
         raise ValueError('Selected Tenant no longer exists.')
+    if tenant.lifecycle_status != 'ready':
+        raise ValueError('Tenant is not Ready; advanced capability creation is frozen during decommission.')
     if tenant.provider_key != 'capsule' or tenant.provider_state != 'capsule':
         raise ValueError('Advanced Capsule capability requires healthy Capsule provider authority.')
 
@@ -168,6 +170,8 @@ def reconcile_advanced_intent_committed(
     intent = db.session.get(TenantAdvancedCapabilityIntent, intent_id)
     if intent is None:
         raise ValueError('Selected advanced Capsule intent no longer exists.')
+    if intent.tenant.lifecycle_status != 'ready':
+        raise ValueError('Tenant is not Ready; advanced capability reconciliation is frozen during decommission.')
     if desired_spec is not None:
         intent.desired_spec_json = deepcopy(desired_spec)
         intent.generation += 1

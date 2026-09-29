@@ -83,6 +83,9 @@
 {% macro action_classes(destructive=false) -%}
     inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 {{ 'border-status-critical/30 bg-surface-card text-status-critical-text hover:bg-status-critical-soft focus-visible:ring-status-critical/30' if destructive else 'border-outline-default bg-surface-card text-content-secondary hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:ring-outline-focus' }}
 {%- endmacro %}
+{% macro action_grid_classes(columns=2) -%}
+    ml-auto grid w-fit {{ 'grid-cols-1' if columns == 1 else 'grid-cols-2' }} gap-1.5
+{%- endmacro %}
 {% macro search_field(name, value, placeholder, id=None) -%}
     <div class="relative">
         <i data-lucide="search"

@@ -102,7 +102,18 @@ def test_deployer_credential_is_namespace_and_application_bound() -> None:
         validate_credential_contract(credential)
 
 
-def test_deployer_material_is_short_lived() -> None:
+def test_deployer_material_respects_environment_policy() -> None:
     credential = _deployer_credential()
-    ttl = token_ttl_seconds(credential, requested_seconds=7200)
-    assert 300 <= ttl <= 3600
+    ttl = token_ttl_seconds(
+        credential,
+        requested_seconds=8 * 60 * 60,
+        environment='development',
+    )
+    assert ttl == 8 * 60 * 60
+
+    with pytest.raises(ValueError, match='Production credential material is limited to 1 hour'):
+        token_ttl_seconds(
+            credential,
+            requested_seconds=8 * 60 * 60,
+            environment='production',
+        )

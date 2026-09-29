@@ -52,11 +52,11 @@ TLS has two distinct execution models.
 
 TLS Inventory synchronization is a background `JobExecution`:
 
-1. The accepted dispatch is shown through the canonical progress toast and job link.
-2. No duplicate queued Notification Deck item is created.
+1. The accepted dispatch updates the inline TLS Inventory Operations worker state through HTMX; no success toast or Notification Deck item is created at click time.
+2. The inline worker state polls the canonical JobExecution until terminal completion.
 3. Secret collection and Ingress mapping evidence are evaluated independently per cluster.
 4. Terminal Activity Audit and Notification Deck evidence are persisted before the JobExecution is marked terminal.
-5. The progress toast transitions to the terminal state without racing ahead of persistent evidence.
+5. The terminal polling response emits `tlsInventorySyncFinished` and `kaori:notifications-changed`, so the TLS workspace and notification badge refresh without a full-page reload.
 
 Terminal results:
 
@@ -95,7 +95,7 @@ Additional corrections:
 - duplicate Ingress consumers and duplicate host declarations are deduplicated;
 - inventory collection parses only `tls.crt` and never reads or persists `tls.key`;
 - `db.session.get()` replaces legacy model-query lookup paths within the audited TLS scope;
-- active and terminal TLS workspaces use canonical `_page_workspace.html` and progress-toast components;
+- active and terminal TLS workspaces use canonical `_page_workspace.html` plus inline worker progress; accepted sync dispatch no longer creates a progress toast;
 - legacy TLS toast and inventory-scope wrappers are removed.
 
 ## Migration and RBAC

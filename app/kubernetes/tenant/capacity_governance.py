@@ -27,6 +27,7 @@ from app.models.tenant import (
     TenantCapacityPolicy,
     TenantEnvironment,
     TenantNamespace,
+    TenantNamespaceProvisioningStatus,
     TenantResourceProfile,
 )
 
@@ -104,7 +105,7 @@ def upsert_capacity_policy_committed(source: Mapping[str, Any]) -> TenantCapacit
 def build_capacity_governance_summary(cluster_id: str) -> dict[str, Any]:
     policy = TenantCapacityPolicy.query.filter_by(cluster_id=cluster_id).first()
     snapshot_result = _read_capacity_snapshot(cluster_id)
-    committed, committed_count = _committed_tenant_allocation(cluster_id)
+    committed, committed_count, unbounded_namespaces = _committed_tenant_allocation(cluster_id)
 
     if policy is None:
         return {
@@ -146,11 +147,12 @@ def build_capacity_governance_summary(cluster_id: str) -> dict[str, Any]:
         }
 
     budget = _budget(policy, capacity)
-    state = classify_capacity_state(budget=budget.available, committed=committed)
+    commitment_reason = _committed_evidence_reason(committed, unbounded_namespaces)
+    state = 'Unknown' if commitment_reason else classify_capacity_state(budget=budget.available, committed=committed)
     return {
         'cluster_id': cluster_id,
         'state': state,
-        'reason': _state_reason(state),
+        'reason': commitment_reason or _state_reason(state),
         'policy': _policy_json(policy),
         'snapshot_state': snapshot_result.state,
         'data_cutoff': _snapshot_cutoff(snapshot_result),
@@ -212,7 +214,7 @@ def _enforce_allocation_preflight(
     operation: str,
 ) -> TenantCapacityDecision:
     cluster_id = tenant_environment.tenant.cluster_id
-    committed, committed_count = _committed_tenant_allocation(cluster_id)
+    committed, committed_count, unbounded_namespaces = _committed_tenant_allocation(cluster_id)
     policy = TenantCapacityPolicy.query.filter_by(cluster_id=cluster_id).first()
     snapshot_result = _read_capacity_snapshot(cluster_id)
     capacity, capacity_reason = _capacity_vector(snapshot_result)
@@ -239,10 +241,8 @@ def _enforce_allocation_preflight(
         budget = _budget(policy, capacity)
         if committed.cpu is None or committed.memory_bytes is None:
             pure = _unknown_evidence_decision(
-                reason=(
-                    'Committed Tenant allocation contains an unbounded CPU or memory request dimension; '
-                    'positive allocation cannot be proven safe.'
-                ),
+                reason=_committed_evidence_reason(committed, unbounded_namespaces)
+                or 'Committed Tenant allocation is incomplete; positive allocation cannot be proven safe.',
                 committed=committed,
                 current=current,
                 proposed=proposed,
@@ -380,19 +380,49 @@ def _capacity_vector(result: SnapshotResult) -> tuple[CapacityVector | None, str
     return CapacityVector(cpu=cpu_value, memory_bytes=memory_value), ''
 
 
-def _committed_tenant_allocation(cluster_id: str) -> tuple[CapacityVector, int]:
-    rows = TenantNamespace.query.filter_by(cluster_id=cluster_id).all()
+def _committed_tenant_allocation(cluster_id: str) -> tuple[CapacityVector, int, list[str]]:
+    rows = (
+        TenantNamespace.query.filter(
+            TenantNamespace.cluster_id == cluster_id,
+            TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+        )
+        .order_by(TenantNamespace.namespace.asc())
+        .all()
+    )
     cpu_total: Decimal | None = _ZERO
     memory_total: Decimal | None = _ZERO
+    unbounded_namespaces: list[str] = []
 
     for row in rows:
         vector = quota_request_vector(row.allocation_quota_json or {})
+        if vector.cpu is None or vector.memory_bytes is None:
+            unbounded_namespaces.append(row.namespace)
         if cpu_total is not None:
             cpu_total = cpu_total + vector.cpu if vector.cpu is not None else None
         if memory_total is not None:
             memory_total = memory_total + vector.memory_bytes if vector.memory_bytes is not None else None
 
-    return CapacityVector(cpu=cpu_total, memory_bytes=memory_total), len(rows)
+    return CapacityVector(cpu=cpu_total, memory_bytes=memory_total), len(rows), unbounded_namespaces
+
+
+def _committed_evidence_reason(
+    committed: CapacityVector,
+    unbounded_namespaces: list[str] | None = None,
+) -> str | None:
+    if committed.cpu is None or committed.memory_bytes is None:
+        names = list(unbounded_namespaces or [])
+        if names:
+            visible = ', '.join(names[:3])
+            suffix = f' +{len(names) - 3} more' if len(names) > 3 else ''
+            return (
+                'Unbounded or missing CPU/memory request commitment on active Namespace(s): '
+                f'{visible}{suffix}. Apply a bounded Resource Profile allocation before positive changes.'
+            )
+        return (
+            'At least one active Tenant namespace has an unbounded or missing CPU/memory request commitment; '
+            'Committed and Headroom cannot be proven until the allocation contract is bounded.'
+        )
+    return None
 
 
 def _budget(policy: TenantCapacityPolicy, capacity: CapacityVector) -> TenantAllocationBudget:

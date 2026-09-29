@@ -98,7 +98,6 @@ def _render_sync_response(
     *,
     filter_args: dict[str, Any],
     feedback: dict[str, object] | None = None,
-    sync_progress: dict[str, object] | None = None,
     status_code: int = 202,
 ):
     payload = get_tls_certificate_page(filter_args)
@@ -115,7 +114,6 @@ def _render_sync_response(
             'kubernetes/governance/tls_certificates/partials/_page_workspace.html',
             payload=payload,
             sync_feedback=rendered_feedback,
-            sync_progress=sync_progress,
         ),
         status_code,
     )
@@ -212,6 +210,13 @@ def tls_certificates_sync_status(public_id: str):
             )
         response.headers['Cache-Control'] = 'no-store, max-age=0'
         response.headers['Pragma'] = 'no-cache'
+        if not sync['is_active']:
+            response.headers['HX-Trigger-After-Swap'] = json.dumps(
+                {
+                    'tlsInventorySyncFinished': True,
+                    'kaori:notifications-changed': True,
+                }
+            )
         return response
 
     response = make_response(
@@ -387,7 +392,6 @@ def tls_certificates_sync():
             return _render_sync_response(filter_args=filter_args, feedback=feedback, status_code=409)
         return redirect(url_for('governance.tls_certificates', **filter_args))
 
-    sync_progress = present_tls_sync_job(outcome.job, user_id=int(current_user.id))
     _record_dispatch_audit(
         action_status='queued' if outcome.created else 'already_active',
         summary=(
@@ -400,10 +404,7 @@ def tls_certificates_sync():
         metadata={'created': outcome.created, 'trigger_type': 'manual'},
     )
     if is_htmx:
-        return _render_sync_response(
-            filter_args=filter_args,
-            sync_progress=sync_progress,
-        )
+        return _render_sync_response(filter_args=filter_args)
     queue_transient_feedback(
         status='success' if outcome.created else 'info',
         title='TLS Secret Sync Queued' if outcome.created else 'TLS Secret Sync Already Active',

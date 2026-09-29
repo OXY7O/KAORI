@@ -99,9 +99,9 @@ def test_inventory_freshness_uses_committed_cluster_inventory_snapshots() -> Non
     assert 'get_inventory_freshness_context(cluster_id=cluster_id)' in routes
 
 
-def test_network_and_storage_inventory_offer_open_cluster_list() -> None:
+def test_network_and_storage_inventory_offer_open_cluster_integrations() -> None:
     for page in ('services', 'ingresses', 'storage'):
         source = read(INVENTORY_TEMPLATES / page / 'partials' / '_table_card.html')
         assert "url_for('integrations.kubernetes')" in source
-        assert 'Open Cluster List' in source
+        assert 'Open Cluster Integrations' in source
         assert source.count('<header') == source.count('</header>')

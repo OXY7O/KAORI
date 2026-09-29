@@ -1,0 +1,24 @@
+{% import "components/snapshot_context_bar.html" as snapshot_context %}
+<div id="tenant-live-connection-snapshot"
+     {% if tenant_live_connection_oob|default(false) %}hx-swap-oob="true"{% endif %}>
+    {{ snapshot_context.render(source_label=tenant_live_connection.source_label,
+        status=tenant_live_connection.status,
+        tone=tenant_live_connection.tone,
+        description=tenant_live_connection.description,
+        latest_collected=tenant_live_connection.checked_at_label,
+        scope_label=tenant_live_connection.scope_label,
+        coverage_label=tenant_live_connection.coverage_label,
+        exceptions_label=tenant_live_connection.exception_label,
+        icon='plug-zap',
+        title='Tenant Collection Snapshot',
+        latest_supporting='Checked on page load or operation',
+        scope_supporting='Kubernetes connections',
+        coverage_supporting=tenant_live_connection.coverage_supporting,
+        exceptions_supporting='No worker sync',
+        coverage_tone=tenant_live_connection.coverage_tone,
+        exceptions_tone=tenant_live_connection.exceptions_tone,
+        latest_label='Live Check',
+        scope_metric_label='Live Scope',
+        coverage_metric_label='API Reachability',
+        exceptions_metric_label='Connection Exceptions') }}
+</div>

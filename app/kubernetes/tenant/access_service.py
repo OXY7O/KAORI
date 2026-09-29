@@ -38,6 +38,10 @@ class TenantAccessStateConflictError(RuntimeError):
     """Committed Tenant access state changed while a mutation was applying."""
 
 
+class TenantGroupReconciliationError(RuntimeError):
+    """Tenant Group desired identity was committed but dependent RBAC reconciliation needs attention."""
+
+
 def normalize_group_slug(value: str) -> str:
     slug = _GROUP_SLUG_RE.sub('-', value.strip().lower().replace('_', '-').replace(' ', '-'))
     slug = re.sub(r'-+', '-', slug).strip('-')
@@ -46,7 +50,13 @@ def normalize_group_slug(value: str) -> str:
     return slug
 
 
+def _require_ready_tenant(tenant: Tenant) -> None:
+    if tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
+        raise ValueError('Tenant is not Ready; new access mutations are frozen during decommission.')
+
+
 def create_tenant_group(*, tenant: Tenant, name: str, subject_name: str | None = None) -> TenantGroup:
+    _require_ready_tenant(tenant)
     display_name = name.strip()
     if not display_name or len(display_name) > 120:
         raise ValueError('Tenant Group name is required and must be at most 120 characters.')
@@ -68,10 +78,16 @@ def create_tenant_group(*, tenant: Tenant, name: str, subject_name: str | None =
 
 
 def add_user_membership(*, tenant: Tenant, user: User, subject_name: str | None = None) -> TenantMembership:
+    _require_ready_tenant(tenant)
     if not user.is_active:
         raise ValueError('Only an active KAORI user can become a Tenant member.')
-    if TenantMembership.query.filter_by(tenant_id=tenant.id, user_id=user.id).first() is not None:
-        raise ValueError('This user is already a member of the selected Tenant.')
+    existing = TenantMembership.query.filter_by(tenant_id=tenant.id, user_id=user.id).first()
+    if existing is not None:
+        if existing.status == TenantMembershipStatus.REVOKED.value:
+            raise ValueError(
+                'This user already has a revoked Tenant membership. Reactivate it from the Membership Registry.'
+            )
+        raise ValueError('This user is already an active member of the selected Tenant.')
 
     membership = TenantMembership()
     membership.tenant = tenant
@@ -85,12 +101,18 @@ def add_user_membership(*, tenant: Tenant, user: User, subject_name: str | None 
 
 
 def add_group_membership(*, tenant: Tenant, group: TenantGroup) -> TenantMembership:
+    _require_ready_tenant(tenant)
     if group.tenant_id != tenant.id:
         raise ValueError('Tenant Group membership cannot cross Tenant boundaries.')
     if not group.enabled:
         raise ValueError('Only an enabled Tenant Group can become a Tenant member.')
-    if TenantMembership.query.filter_by(tenant_id=tenant.id, group_id=group.id).first() is not None:
-        raise ValueError('This group is already a member of the selected Tenant.')
+    existing = TenantMembership.query.filter_by(tenant_id=tenant.id, group_id=group.id).first()
+    if existing is not None:
+        if existing.status == TenantMembershipStatus.REVOKED.value:
+            raise ValueError(
+                'This Tenant Group already has a revoked membership. Reactivate it from the Membership Registry.'
+            )
+        raise ValueError('This Tenant Group is already an active member of the selected Tenant.')
 
     membership = TenantMembership()
     membership.tenant = tenant
@@ -172,6 +194,7 @@ def create_access_grant_committed(
     membership = db.session.get(TenantMembership, membership_id)
     if membership is None or membership.status != TenantMembershipStatus.ACTIVE.value:
         raise ValueError('Select an active Tenant membership.')
+    _require_ready_tenant(membership.tenant)
     profile = get_access_profile(access_profile)
     environment, namespace = _grant_scope(
         membership=membership,
@@ -274,6 +297,186 @@ def create_tenant_group_committed(*, tenant: Tenant, name: str, subject_name: st
         raise
 
 
+def _record_group_event(
+    *,
+    actor: User | None,
+    group: TenantGroup,
+    action: str,
+    summary: str,
+    outcome: str,
+    previous_name: str | None = None,
+    previous_subject_name: str | None = None,
+) -> None:
+    event = AuditEvent()
+    event.actor_user_id = actor.id if actor is not None else None
+    event.target_type = 'tenant_group'
+    event.target_id = group.public_id
+    event.action = action
+    event.summary = summary
+    event.metadata_json = {
+        'tenant_id': group.tenant_id,
+        'group_name': group.name,
+        'group_slug': group.slug,
+        'subject_name': group.subject_name,
+        'enabled': group.enabled,
+        'previous_name': previous_name,
+        'previous_subject_name': previous_subject_name,
+        'outcome': outcome,
+        'correlation_id': group.correlation_id,
+    }
+    db.session.add(event)
+
+
+def update_tenant_group_committed(
+    *,
+    group_id: int,
+    name: str,
+    subject_name: str,
+    actor: User | None = None,
+) -> TenantGroup:
+    group = db.session.get(TenantGroup, group_id)
+    if group is None:
+        raise ValueError('Selected Tenant Group no longer exists.')
+    _require_ready_tenant(group.tenant)
+
+    display_name = name.strip()
+    subject = subject_name.strip()
+    if not display_name or len(display_name) > 120:
+        raise ValueError('Tenant Group name is required and must be at most 120 characters.')
+    if not subject or len(subject) > 253:
+        raise ValueError('Kubernetes Group Subject is required and must be at most 253 characters.')
+
+    duplicate_subject = TenantGroup.query.filter(
+        TenantGroup.tenant_id == group.tenant_id,
+        TenantGroup.id != group.id,
+        TenantGroup.subject_name == subject,
+    ).first()
+    if duplicate_subject is not None:
+        raise ValueError('Another Tenant Group already uses this Kubernetes Group Subject in the selected Tenant.')
+
+    previous_name = group.name
+    previous_subject = group.subject_name
+    subject_changed = subject != previous_subject
+
+    group.name = display_name
+    group.subject_name = subject
+    if subject_changed:
+        for membership in group.memberships:
+            membership.subject_name = subject
+
+    _record_group_event(
+        actor=actor,
+        group=group,
+        action='tenant_group.updated',
+        summary=(
+            'Tenant Group display metadata and Kubernetes Group Subject were updated.'
+            if subject_changed
+            else 'Tenant Group display name was updated.'
+        ),
+        outcome='success',
+        previous_name=previous_name,
+        previous_subject_name=previous_subject,
+    )
+    try:
+        db.session.commit()
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise TenantAccessStateConflictError(
+            'Committed Tenant Group identity changed while this request was being applied. Refresh and retry.'
+        ) from exc
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+
+    if not subject_changed:
+        return group
+
+    reconciliation_errors: list[str] = []
+    active_grants = [
+        grant
+        for membership in group.memberships
+        if membership.status == TenantMembershipStatus.ACTIVE.value
+        for grant in membership.access_grants
+        if grant.status == TenantAccessGrantStatus.ACTIVE.value
+    ]
+    for grant in sorted(active_grants, key=lambda item: item.id or 0):
+        try:
+            reconcile_access_grant_committed(grant_id=int(grant.id), actor=actor)
+        except (ApiException, ValueError, SQLAlchemyError) as exc:
+            db.session.rollback()
+            reconciliation_errors.append(str(exc))
+
+    if reconciliation_errors:
+        raise TenantGroupReconciliationError(
+            'Tenant Group subject was updated, but one or more active Access Grants require Reconcile.'
+        )
+    return group
+
+
+def retire_tenant_group_committed(*, group_id: int, actor: User | None = None) -> TenantGroup:
+    group = db.session.get(TenantGroup, group_id)
+    if group is None:
+        raise ValueError('Selected Tenant Group no longer exists.')
+    if not group.enabled:
+        return group
+    _require_ready_tenant(group.tenant)
+
+    active_memberships = [
+        membership for membership in group.memberships if membership.status == TenantMembershipStatus.ACTIVE.value
+    ]
+    if active_memberships:
+        raise ValueError('Revoke the active Tenant Group membership before retiring this group.')
+
+    unresolved_grants = [
+        grant
+        for membership in group.memberships
+        for grant in membership.access_grants
+        if grant.status != TenantAccessGrantStatus.REVOKED.value
+        or grant.reconciliation_status != TenantAccessReconciliationStatus.REVOKED.value
+    ]
+    if unresolved_grants:
+        raise ValueError('Resolve provider cleanup for previous Access Grants before retiring this Tenant Group.')
+
+    group.enabled = False
+    _record_group_event(
+        actor=actor,
+        group=group,
+        action='tenant_group.retired',
+        summary='Tenant Group was retired while its historical membership and grant evidence were retained.',
+        outcome='success',
+    )
+    try:
+        db.session.commit()
+        return group
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+
+
+def reactivate_tenant_group_committed(*, group_id: int, actor: User | None = None) -> TenantGroup:
+    group = db.session.get(TenantGroup, group_id)
+    if group is None:
+        raise ValueError('Selected Tenant Group no longer exists.')
+    if group.enabled:
+        return group
+    _require_ready_tenant(group.tenant)
+
+    group.enabled = True
+    _record_group_event(
+        actor=actor,
+        group=group,
+        action='tenant_group.reactivated',
+        summary='Tenant Group was reactivated for future Tenant Membership use.',
+        outcome='success',
+    )
+    try:
+        db.session.commit()
+        return group
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+
+
 def add_user_membership_committed(
     *,
     tenant: Tenant,
@@ -328,6 +531,37 @@ def create_tenant_group_by_id_committed(
     if tenant is None:
         raise ValueError('Select a Tenant.')
     return create_tenant_group_committed(tenant=tenant, name=name, subject_name=subject_name)
+
+
+def update_tenant_group_by_id_committed(
+    *,
+    group_id: int,
+    name: str,
+    subject_name: str,
+    actor_user_id: int | None = None,
+) -> TenantGroup:
+    return update_tenant_group_committed(
+        group_id=group_id,
+        name=name,
+        subject_name=subject_name,
+        actor=_actor_by_id(actor_user_id),
+    )
+
+
+def retire_tenant_group_by_id_committed(
+    *,
+    group_id: int,
+    actor_user_id: int | None = None,
+) -> TenantGroup:
+    return retire_tenant_group_committed(group_id=group_id, actor=_actor_by_id(actor_user_id))
+
+
+def reactivate_tenant_group_by_id_committed(
+    *,
+    group_id: int,
+    actor_user_id: int | None = None,
+) -> TenantGroup:
+    return reactivate_tenant_group_committed(group_id=group_id, actor=_actor_by_id(actor_user_id))
 
 
 def add_user_membership_by_id_committed(
@@ -400,6 +634,14 @@ def revoke_membership_by_id_committed(
     actor_user_id: int | None = None,
 ) -> TenantMembership:
     return revoke_membership_committed(membership_id=membership_id, actor=_actor_by_id(actor_user_id))
+
+
+def reactivate_membership_by_id_committed(
+    *,
+    membership_id: int,
+    actor_user_id: int | None = None,
+) -> TenantMembership:
+    return reactivate_membership_committed(membership_id=membership_id, actor=_actor_by_id(actor_user_id))
 
 
 def _record_membership_event(
@@ -475,6 +717,121 @@ def revoke_membership_committed(*, membership_id: int, actor: User | None = None
     return membership
 
 
+def reactivate_membership_committed(*, membership_id: int, actor: User | None = None) -> TenantMembership:
+    membership = db.session.get(TenantMembership, membership_id)
+    if membership is None:
+        raise ValueError('Selected Tenant membership no longer exists.')
+    if membership.status == TenantMembershipStatus.ACTIVE.value:
+        return membership
+
+    _require_ready_tenant(membership.tenant)
+    if membership.principal_type == TenantMembershipPrincipalType.USER.value:
+        if membership.user is None or not membership.user.is_active:
+            raise ValueError('The linked KAORI user is not active; reactivate the user before Tenant membership.')
+    elif membership.principal_type == TenantMembershipPrincipalType.GROUP.value:
+        if membership.group is None or not membership.group.enabled:
+            raise ValueError('The linked Tenant Group is disabled; enable the group before membership reactivation.')
+    else:
+        raise ValueError('Membership reactivation currently supports User and Tenant Group principals only.')
+
+    unresolved_grants = [
+        grant
+        for grant in membership.access_grants
+        if grant.status != TenantAccessGrantStatus.REVOKED.value
+        or grant.reconciliation_status != TenantAccessReconciliationStatus.REVOKED.value
+    ]
+    if unresolved_grants:
+        raise ValueError('Resolve provider cleanup for all previous Access Grants before reactivating this membership.')
+
+    membership.status = TenantMembershipStatus.ACTIVE.value
+    _record_membership_event(
+        actor=actor,
+        membership=membership,
+        action='tenant_membership.reactivated',
+        summary='Tenant membership was reactivated; previous Access Grants remain revoked.',
+        outcome='success',
+    )
+    try:
+        db.session.commit()
+        return membership
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise TenantAccessStateConflictError(
+            'Committed Tenant membership state changed during reactivation. Refresh and retry.'
+        ) from exc
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+
+
+def reconcile_access_grants_for_namespace_committed(
+    *,
+    namespace: TenantNamespace,
+    actor: User | None = None,
+) -> dict[str, int]:
+    """Expand active Environment/Tenant grants after explicit namespace provisioning.
+
+    This is an operation follow-up, not an inventory/sync mutation path. Namespace
+    scope remains explicit and is never inferred automatically.
+    """
+
+    tenant = namespace.environment.tenant
+    if tenant.provider_key != 'native_kubernetes' or tenant.reconciliation_authority != 'native_kubernetes':
+        return {'matched': 0, 'reconciled': 0, 'failed': 0}
+
+    grants = (
+        TenantAccessGrant.query.filter(
+            TenantAccessGrant.tenant_id == tenant.id,
+            TenantAccessGrant.status == TenantAccessGrantStatus.ACTIVE.value,
+            (
+                (TenantAccessGrant.scope_type == TenantAccessScope.TENANT.value)
+                | (
+                    (TenantAccessGrant.scope_type == TenantAccessScope.ENVIRONMENT.value)
+                    & (TenantAccessGrant.tenant_environment_id == namespace.tenant_environment_id)
+                )
+            ),
+        )
+        .order_by(TenantAccessGrant.id.asc())
+        .all()
+    )
+
+    reconciled = 0
+    failed = 0
+    for grant in grants:
+        try:
+            reconcile_native_access_grant(grant)
+            _record_grant_event(
+                actor=actor,
+                grant=grant,
+                action='tenant_access_grant.namespace_scope_expanded',
+                summary=(
+                    f'Tenant Access Grant reconciled after namespace {namespace.namespace} entered its committed scope.'
+                ),
+                outcome='success',
+            )
+            db.session.commit()
+            reconciled += 1
+        except (ApiException, ValueError):
+            if grant.id is not None:
+                _record_grant_event(
+                    actor=actor,
+                    grant=grant,
+                    action='tenant_access_grant.namespace_scope_expand_failed',
+                    summary=(
+                        f'Namespace {namespace.namespace} entered the committed scope, '
+                        'but Access Grant reconciliation requires operator attention.'
+                    ),
+                    outcome='failed',
+                )
+                db.session.commit()
+            failed += 1
+        except SQLAlchemyError:
+            db.session.rollback()
+            failed += 1
+
+    return {'matched': len(grants), 'reconciled': reconciled, 'failed': failed}
+
+
 def inspect_access_grant_committed(*, grant_id: int, actor: User | None = None) -> TenantAccessGrant:
     grant = db.session.get(TenantAccessGrant, grant_id)
     if grant is None:
@@ -499,6 +856,7 @@ def reconcile_access_grant_committed(*, grant_id: int, actor: User | None = None
     grant = db.session.get(TenantAccessGrant, grant_id)
     if grant is None:
         raise ValueError('Selected Tenant Access Grant no longer exists.')
+    _require_ready_tenant(grant.tenant)
     try:
         reconcile_native_access_grant(grant)
         _record_grant_event(
@@ -525,7 +883,7 @@ def reconcile_access_grant_committed(*, grant_id: int, actor: User | None = None
 
 def get_tenant_access_context() -> dict[str, object]:
     tenant_options = (
-        Tenant.query.filter(Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value)
+        Tenant.query.filter(Tenant.lifecycle_status == TenantLifecycleStatus.READY.value)
         .order_by(Tenant.name.asc())
         .all()
     )
@@ -534,28 +892,45 @@ def get_tenant_access_context() -> dict[str, object]:
         .order_by(User.username.asc())
         .all()
     )
-    group_options = TenantGroup.query.filter_by(enabled=True).order_by(TenantGroup.name.asc()).all()
+    group_options = (
+        TenantGroup.query.join(Tenant, Tenant.id == TenantGroup.tenant_id)
+        .filter(
+            TenantGroup.enabled.is_(True),
+            Tenant.lifecycle_status == TenantLifecycleStatus.READY.value,
+        )
+        .order_by(TenantGroup.name.asc())
+        .all()
+    )
     membership_options = (
-        TenantMembership.query.filter_by(status=TenantMembershipStatus.ACTIVE.value)
+        TenantMembership.query.join(Tenant, Tenant.id == TenantMembership.tenant_id)
+        .filter(
+            TenantMembership.status == TenantMembershipStatus.ACTIVE.value,
+            Tenant.lifecycle_status == TenantLifecycleStatus.READY.value,
+        )
         .order_by(TenantMembership.created_at.desc())
         .all()
     )
     environment_options = (
         TenantEnvironment.query.join(Tenant, Tenant.id == TenantEnvironment.tenant_id)
-        .filter(Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value)
+        .filter(Tenant.lifecycle_status == TenantLifecycleStatus.READY.value)
         .order_by(Tenant.name.asc(), TenantEnvironment.environment.asc())
         .all()
     )
     namespace_options = (
         TenantNamespace.query.join(TenantEnvironment, TenantEnvironment.id == TenantNamespace.tenant_environment_id)
         .join(Tenant, Tenant.id == TenantEnvironment.tenant_id)
-        .filter(Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value)
+        .filter(
+            Tenant.lifecycle_status == TenantLifecycleStatus.READY.value,
+            TenantNamespace.provisioning_status == 'ready',
+        )
         .order_by(Tenant.name.asc(), TenantNamespace.namespace.asc())
         .all()
     )
+    profile_order = ('viewer', 'operator', 'tenant_admin', 'deployer')
     profiles = [
         ACCESS_PROFILE_CATALOG[(key, LATEST_ACCESS_PROFILE_VERSION[key])]
-        for key in sorted(LATEST_ACCESS_PROFILE_VERSION)
+        for key in profile_order
+        if key in LATEST_ACCESS_PROFILE_VERSION
     ]
     return {
         'access_tenant_options': tenant_options,

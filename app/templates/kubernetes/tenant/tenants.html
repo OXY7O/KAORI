@@ -1,41 +1,42 @@
 {% extends "kubernetes/tenant/base.html" %}
-{% import "components/table_label.html" as table_label %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/resource_posture_grid.html" as resource_posture_grid %}
+{% import "components/section_intro.html" as section_intro %}
 {% block tenant_content %}
     {% set can_manage = current_user.has_permission('tenant.manage') %}
-    <section class="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]"
-             aria-label="Tenant ownership">
-        {% include "kubernetes/tenant/partials/_tenant_form.html" %}
-        <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
-            <header class="border-b border-outline-subtle px-5 py-4">
-                <h2 class="text-base font-semibold text-content-primary">Tenants</h2>
-                <p class="mt-1 text-sm text-content-secondary">Review committed ownership, provider authority, and lifecycle state.</p>
-            </header>
-            <div class="divide-y divide-outline-subtle">
-                {% for tenant in tenants %}
-                    <article class="px-5 py-4">
-                        <div class="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                                <p class="font-semibold text-content-primary">{{ tenant.name }}</p>
-                                <p class="mt-1 text-xs text-content-muted">{{ tenant.slug }} · {{ tenant.provider_key|replace('_', ' ') |title }}</p>
-                            </div>
-                            <div class="flex flex-wrap gap-2">
-                                {{ table_label.status_label(tenant.lifecycle_status|title, 'normal' if tenant.lifecycle_status == 'ready' else 'warning') }}
-                                {{ table_label.status_label(tenant.provider_state|replace('_', ' ') |title, 'info') }}
-                            </div>
-                        </div>
-                        <p class="mt-2 text-xs text-content-muted">Reconciliation authority: {{ tenant.reconciliation_authority|replace('_', ' ') |title }}</p>
-                    </article>
-                {% else %}
-                    <p class="px-5 py-8 text-sm text-content-muted">No Tenant records yet.</p>
-                {% endfor %}
-            </div>
-            {% set pagination_state = tenant_pagination %}
-            {% set pagination_resource = "tenants" %}
-            {% set pagination_endpoint = "tenant.tenants" %}
-            {% set pagination_id = "tenant-registry" %}
-            {% include "kubernetes/tenant/partials/_pagination_footer.html" %}
-        </div>
+    {% set tenant_summary_metrics = [
+            ('building-2', 'Tenants', tenant_summary_tenant_count, tenant_summary_environment_count ~ ' committed environments', 'info'),
+            ('boxes', 'Namespaces', tenant_summary_namespace_count, 'Governed namespace allocations', 'info'),
+            ('users-round', 'Memberships', tenant_summary_membership_count, 'Active user, group, and machine principals', 'normal'),
+            ('shield-check', 'Access Grants', tenant_summary_access_grant_count, 'Active versioned RBAC grants', 'normal'),
+            ('key-round', 'Credentials', tenant_summary_credential_count, 'Current governed credential records', 'info')
+        ] %}
+    <section class="space-y-4" aria-labelledby="tenant-summary-heading">
+        {{ section_intro.render('Multi-Cluster Posture',
+                'Review committed Tenant ownership, namespace, identity, access, and credential posture across the Kubernetes estate.',
+                'tenant-summary-heading') }}
+        {% call operational_section_card.render(
+            'Tenant Estate',
+            'Committed Tenant scope across the current Kubernetes estate. Open the workspace below for registry and lifecycle administration.',
+            'layout-dashboard',
+            body_classes='p-0',
+            aria_label='Tenant governance summary'
+            ) %}
+            {{ resource_posture_grid.render(tenant_summary_metrics, columns=5) }}
+        {% endcall %}
     </section>
-    {% include "kubernetes/tenant/partials/_members_access.html" %}
-    {% include "kubernetes/tenant/partials/_credential_management.html" %}
+    <section class="space-y-4" aria-labelledby="tenant-workspace-heading">
+        {{ section_intro.render('Governed Administration',
+                'Use one focused workflow at a time while retaining the same committed Tenant context.',
+                'tenant-workspace-heading') }}
+        {% include "kubernetes/tenant/partials/_tenant_admin_workspace.html" %}
+    </section>
 {% endblock tenant_content %}
+{% block tenant_scripts %}
+    <script src="{{ url_for('static', filename='js/destructive_confirmation_modal.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/tenant_adoption_modal.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/tenant_access_grant_form.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/tenant_group_modal.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/tenant_setup_provider.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/tenant_credential_material.js') }}"></script>
+{% endblock tenant_scripts %}

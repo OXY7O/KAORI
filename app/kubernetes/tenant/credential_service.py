@@ -202,6 +202,8 @@ def create_human_credential_committed(
     owner = db.session.get(User, owner_user_id)
     if grant is None:
         raise ValueError('Select an active Tenant Access Grant.')
+    if grant.tenant.lifecycle_status != 'ready':
+        raise ValueError('Tenant is not Ready; credential issuance is frozen during decommission.')
     if owner is None or not owner.is_active:
         raise ValueError('Select an active credential owner.')
     if grant.reconciliation_status != TenantAccessReconciliationStatus.READY.value:
@@ -237,6 +239,7 @@ def create_human_credential_committed(
     credential = TenantCredential()
     credential.public_id = public_id
     credential.tenant_id = grant.tenant_id
+    credential.tenant = grant.tenant
     credential.owner_user = owner
     credential.access_grant = grant
     credential.credential_type = TenantCredentialType.HUMAN_SERVICE_ACCOUNT.value
@@ -296,6 +299,8 @@ def create_admin_credential_committed(
     namespace = db.session.get(TenantNamespace, anchor_namespace_id)
     if tenant is None:
         raise ValueError('Select a Tenant.')
+    if tenant.lifecycle_status != 'ready':
+        raise ValueError('Tenant is not Ready; credential issuance is frozen during decommission.')
     if owner is None or not owner.is_active or not owner.is_admin_level:
         raise ValueError('Administrative kubeconfig ownership requires an active KAORI administrator.')
     if namespace is None:
@@ -416,6 +421,8 @@ def renew_credential_committed(
     credential = db.session.get(TenantCredential, credential_id)
     if credential is None:
         raise ValueError('Selected Tenant credential no longer exists.')
+    if credential.tenant.lifecycle_status != 'ready':
+        raise ValueError('Tenant is not Ready; credential renewal is frozen during decommission.')
     if credential.status == TenantCredentialStatus.REVOKED.value:
         raise ValueError('Revoked Tenant credentials cannot be renewed.')
 
@@ -493,6 +500,8 @@ def resume_credential_committed(*, credential_id: int, actor: User | None = None
     credential = db.session.get(TenantCredential, credential_id)
     if credential is None:
         raise ValueError('Selected Tenant credential no longer exists.')
+    if credential.tenant.lifecycle_status != 'ready':
+        raise ValueError('Tenant is not Ready; credential resume is frozen during decommission.')
     if credential.status != TenantCredentialStatus.SUSPENDED.value:
         raise ValueError('Only a suspended Tenant credential can be resumed.')
 
@@ -616,7 +625,11 @@ def _request_short_lived_token(
     validate_credential_contract(credential)
     reconcile_native_credential(credential)
 
-    ttl = token_ttl_seconds(credential, requested_seconds=requested_seconds)
+    ttl = token_ttl_seconds(
+        credential,
+        requested_seconds=requested_seconds,
+        environment=namespace.environment.environment,
+    )
     cluster = db.session.get(Cluster, credential.tenant.cluster_id)
     if cluster is None:
         raise ValueError('Tenant cluster no longer exists.')
@@ -671,7 +684,12 @@ def issue_jumpserver_token_committed(
         action='tenant_credential.jumpserver_material_issued',
         summary='Short-lived Tenant credential material was issued for JumpServer delivery.',
         outcome='success',
-        extra={'namespace': namespace.namespace, 'expires_at': expires_at.isoformat()},
+        extra={
+            'namespace': namespace.namespace,
+            'environment': namespace.environment.environment,
+            'requested_seconds': requested_seconds,
+            'expires_at': expires_at.isoformat(),
+        },
     )
     db.session.commit()
     return GeneratedTokenMaterial(
@@ -786,7 +804,12 @@ def generate_kubeconfig_committed(
         action=action,
         summary=summary,
         outcome='success',
-        extra={'namespace': namespace.namespace, 'expires_at': expires_at.isoformat()},
+        extra={
+            'namespace': namespace.namespace,
+            'environment': namespace.environment.environment,
+            'requested_seconds': requested_seconds,
+            'expires_at': expires_at.isoformat(),
+        },
     )
     db.session.commit()
     return GeneratedKubeconfigMaterial(
@@ -796,3 +819,45 @@ def generate_kubeconfig_committed(
         access_package=package,
         kubeconfig=rendered,
     )
+
+
+def generate_credential_material_committed(
+    *,
+    credential_id: int,
+    namespace_id: int,
+    requested_seconds: int = DEFAULT_TOKEN_TTL_SECONDS,
+    actor: User | None = None,
+) -> GeneratedTokenMaterial | GeneratedKubeconfigMaterial:
+    """Mint one non-persisted delivery artifact from committed credential authority.
+
+    Human credentials receive a short-lived ServiceAccount token for manual
+    JumpServer delivery. Deployer/admin credentials receive a short-lived
+    kubeconfig embedding a TokenRequest token. Secret material is returned only
+    to the caller and is never persisted by KAORI.
+    """
+
+    credential = db.session.get(TenantCredential, credential_id)
+    if credential is None:
+        raise ValueError('Selected Tenant credential no longer exists.')
+
+    credential_type = TenantCredentialType(credential.credential_type)
+    if credential_type is TenantCredentialType.HUMAN_SERVICE_ACCOUNT:
+        return issue_jumpserver_token_committed(
+            credential_id=credential.id,
+            namespace_id=namespace_id,
+            requested_seconds=requested_seconds,
+            actor=actor,
+        )
+
+    if credential_type in {
+        TenantCredentialType.DEPLOYER_SERVICE_ACCOUNT,
+        TenantCredentialType.ADMIN_KUBECONFIG,
+    }:
+        return generate_kubeconfig_committed(
+            credential_id=credential.id,
+            namespace_id=namespace_id,
+            requested_seconds=requested_seconds,
+            actor=actor,
+        )
+
+    raise ValueError('This Tenant credential type has no approved material-delivery path.')

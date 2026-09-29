@@ -1,0 +1,62 @@
+{% import "components/content_tabs.html" as content_tabs %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% set tenant_admin_tabs = [
+    ('registry', 'Tenant Registry', 'table-2', url_for('tenant.tenants', section='registry')),
+    ('discovery', 'Discovery', 'radar', url_for('tenant.tenants', section='discovery')),
+    ('tenant-setup', 'Tenant Setup', 'building-2', url_for('tenant.tenants', section='tenant-setup')),
+    ('memberships', 'Memberships', 'users-round', url_for('tenant.tenants', section='memberships')),
+    ('access-grants', 'Access Grants', 'shield-check', url_for('tenant.tenants', section='access-grants')),
+    ('credentials', 'Credentials', 'key-round', url_for('tenant.tenants', section='credentials')),
+    ('namespace-access', 'Namespace Access', 'route', url_for('tenant.tenants', section='namespace-access'))
+] %}
+<section id="tenant-admin-workspace"
+         class="{{ operational_section_card.shell_classes() }}"
+         aria-labelledby="tenant-admin-workspace-title">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="panels-top-left" class="h-5 w-5"></i>
+            </span>
+            <div class="min-w-0">
+                <h2 id="tenant-admin-workspace-title"
+                    class="text-base font-semibold text-content-primary">Tenant Workspace</h2>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">
+                    Review committed Tenant state first, then open the specific governance workflow you need.
+                </p>
+            </div>
+        </div>
+        {{ loading_bar.render('tenant-admin-loading', label='Loading Tenant Workspace') }}
+    </header>
+    {{ content_tabs.render_links('tenant-admin',
+        tenant_admin_tabs,
+        active_tenant_section,
+        'Tenant Workspace',
+        embedded=true,
+        data_namespace='tenant-admin',
+        hx_target='#tenant-admin-workspace',
+        hx_select='#tenant-admin-workspace',
+        hx_swap='outerHTML show:none focus-scroll:false',
+        hx_push_url='true',
+        hx_indicator='#tenant-admin-loading',
+        nowrap=true,
+        hx_sync='this:replace') }}
+    <div class="space-y-5 p-4 sm:p-5">
+        {% if active_tenant_section == 'registry' %}
+            {% include "kubernetes/tenant/partials/_tenant_registry.html" %}
+        {% elif active_tenant_section == 'discovery' %}
+            {% include "kubernetes/tenant/partials/_tenant_discovery.html" %}
+        {% elif active_tenant_section == 'memberships' %}
+            {% include "kubernetes/tenant/partials/_tenant_memberships_workspace.html" %}
+        {% elif active_tenant_section == 'access-grants' %}
+            {% include "kubernetes/tenant/partials/_tenant_access_grants_workspace.html" %}
+        {% elif active_tenant_section == 'credentials' %}
+            {% include "kubernetes/tenant/partials/_tenant_credentials_workspace.html" %}
+        {% elif active_tenant_section == 'namespace-access' %}
+            {% include "kubernetes/tenant/partials/_tenant_namespace_access_workspace.html" %}
+        {% else %}
+            {% include "kubernetes/tenant/partials/_tenant_setup_workspace.html" %}
+        {% endif %}
+    </div>
+</section>

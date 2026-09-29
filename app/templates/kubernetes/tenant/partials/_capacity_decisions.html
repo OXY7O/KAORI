@@ -1,20 +1,56 @@
-<section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+<section class="{{ table_ui.block_classes() }}"
          aria-label="Tenant capacity decisions">
     <header class="border-b border-outline-subtle px-5 py-4">
-        <h2 class="text-base font-semibold text-content-primary">Capacity Decisions</h2>
-        <p class="mt-1 text-xs text-content-muted">Latest 5 committed allocation preflight decisions.</p>
-    </header>
-    <div class="divide-y divide-outline-subtle">
-        {% for decision in capacity_decisions %}
-            <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-                <div>
-                    <p class="font-semibold text-content-primary">{{ decision.namespace }}</p>
-                    <p class="mt-1 text-xs text-content-muted">{{ decision.operation|replace('_', ' ') |title }} · {{ decision.capacity_state }}</p>
-                </div>
-                {{ table_label.status_label(decision.decision|title, 'normal' if decision.decision == 'allow' else 'critical') }}
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                <i data-lucide="shield-check" class="h-5 w-5"></i>
+            </span>
+            <div>
+                <h2 class="{{ table_ui.block_title_classes() }}">Capacity Decisions</h2>
+                <p class="{{ table_ui.block_description_classes() }}">Recent committed allocation-admission evidence. Allow or Block reflects the decision made before Namespace allocation mutation.</p>
             </div>
-        {% else %}
-            <p class="px-5 py-6 text-sm text-content-muted">No capacity preflight decision has been committed yet.</p>
-        {% endfor %}
+        </div>
+    </header>
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[760px]') }}">
+            <caption class="sr-only">Recent Tenant capacity decisions.</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Namespace</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Operation</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Capacity State</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Decision</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for decision in capacity_decisions %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_ui.title_cell(decision.namespace, 'Committed admission evidence', 'folder-tree') }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-sm font-semibold text-content-primary">{{ decision.operation|replace('_', ' ') |title }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_label.status_label(decision.capacity_state, 'normal' if decision.capacity_state == 'Healthy' else ('critical' if decision.capacity_state in ['Critical', 'Exhausted', 'Overcommitted'] else 'warning') ) }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_label.status_label(decision.decision|title, 'normal' if decision.decision == 'allow' else 'critical') }}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="p-0">
+                            {% set empty_state_icon = "shield-check" %}
+                            {% set empty_state_title = "No Capacity Decisions Yet" %}
+                            {% set empty_state_description = "A decision appears after Namespace provisioning or allocation-change preflight runs." %}
+                            {% include 'components/states/_empty_state.html' %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </section>

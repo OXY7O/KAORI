@@ -69,6 +69,8 @@ def create_managed_resource_intent_committed(
     namespace = db.session.get(TenantNamespace, namespace_id)
     if namespace is None:
         raise ValueError('Select a managed Tenant namespace.')
+    if namespace.environment.tenant.lifecycle_status != 'ready':
+        raise ValueError('Tenant is not Ready; managed-resource creation is frozen during decommission.')
     if namespace.provisioning_status != TenantNamespaceProvisioningStatus.READY.value:
         raise ValueError('Managed resources require a Ready Tenant namespace.')
 
@@ -137,6 +139,8 @@ def rotate_managed_resource_committed(
     intent = db.session.get(TenantManagedResourceIntent, intent_id)
     if intent is None:
         raise ValueError('Selected Tenant managed resource no longer exists.')
+    if intent.tenant.lifecycle_status != 'ready':
+        raise ValueError('Tenant is not Ready; managed-resource rotation is frozen during decommission.')
     if intent.mode not in {
         TenantManagedResourceMode.NAMESPACE_TLS_COMPAT.value,
         TenantManagedResourceMode.IMAGE_PULL_SECRET.value,

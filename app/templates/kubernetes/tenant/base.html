@@ -45,6 +45,9 @@
                 ) }}
             </div>
         </section>
+        {% if tenant_page != 'overview' and tenant_live_connection is defined %}
+            {% include "kubernetes/tenant/partials/_live_connection_snapshot.html" %}
+        {% endif %}
         {% if not native_available %}
             {% set blocked_state_title = "Tenant capability is blocked" %}
             {% set blocked_state_description = "Register and validate a Kubernetes cluster before running Native Tenant workflows." %}

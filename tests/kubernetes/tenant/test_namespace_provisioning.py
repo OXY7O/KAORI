@@ -132,3 +132,32 @@ def test_desired_contract_can_use_frozen_allocation_snapshot() -> None:
 
     assert desired['quota'] == {'requests.cpu': '3'}
     assert desired['limits'] == {}
+
+
+def test_namespace_delete_observation_surfaces_terminating_finalizers() -> None:
+    api = FakeCoreApi()
+    api.namespaces['payments-dev'] = SimpleNamespace(
+        metadata=SimpleNamespace(
+            deletion_timestamp='2026-09-28T02:00:00Z',
+            finalizers=[],
+        ),
+        spec=SimpleNamespace(finalizers=['kubernetes']),
+        status=SimpleNamespace(phase='Terminating'),
+    )
+
+    absent, evidence = provisioning._namespace_delete_observation(api, 'payments-dev')
+
+    assert absent is False
+    assert evidence['observed_absent'] is False
+    assert evidence['phase'] == 'Terminating'
+    assert evidence['finalizers'] == ['kubernetes']
+
+
+def test_namespace_delete_observation_requires_provider_absence() -> None:
+    api = FakeCoreApi()
+    absent, evidence = provisioning._namespace_delete_observation(api, 'payments-dev')
+
+    assert absent is True
+    assert evidence['observed_absent'] is True
+    assert evidence['phase'] == 'Absent'
+    assert evidence['finalizers'] == []

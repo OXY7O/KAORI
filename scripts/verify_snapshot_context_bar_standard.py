@@ -36,8 +36,10 @@ def main() -> int:
         'xl:divide-outline-subtle',
         "coverage_tone='normal'",
         "exceptions_tone='normal'",
-        "metric('database-backup', 'Committed Coverage'",
-        "metric('scan-search', 'Snapshot Exceptions'",
+        "coverage_metric_label='Committed Coverage'",
+        "exceptions_metric_label='Snapshot Exceptions'",
+        "metric('database-backup', coverage_metric_label",
+        "metric('scan-search', exceptions_metric_label",
         'supporting',
     ):
         require(component, token, 'snapshot component', errors)

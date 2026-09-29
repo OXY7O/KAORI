@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from datetime import UTC, datetime
 from typing import Any
 
@@ -22,8 +23,10 @@ from app.kubernetes.tenant.validation import validate_namespace_name, validate_p
 from app.models import Cluster
 from app.models.tenant import (
     TenantEnvironment,
+    TenantLifecycleStatus,
     TenantNamespace,
     TenantNamespaceProvisioningStatus,
+    TenantOwnershipStatus,
     TenantResourceProfile,
 )
 
@@ -78,8 +81,8 @@ def create_namespace_intent(
     allocation_customized: bool = False,
 ) -> TenantNamespace:
     tenant = tenant_environment.tenant
-    if tenant.lifecycle_status == 'decommissioned':
-        raise ValueError('cannot provision a namespace for a decommissioned tenant')
+    if tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
+        raise ValueError('Tenant must be Ready before provisioning a namespace.')
     if tenant.cluster_id is None:
         raise ValueError('tenant must have an assigned Kubernetes cluster')
     if not profile.enabled:
@@ -214,6 +217,154 @@ def _effective_contract(api, desired: dict[str, Any]) -> dict[str, Any]:
         else {},
         'provider_key': desired['provider_key'],
     }
+
+
+def _namespace_delete_observation(api, name: str) -> tuple[bool, dict[str, Any]]:
+    current = _read_or_none(api.read_namespace, name)
+    if current is None:
+        return True, {
+            'namespace': name,
+            'observed_absent': True,
+            'phase': 'Absent',
+            'deletion_timestamp': None,
+            'finalizers': [],
+        }
+
+    metadata = getattr(current, 'metadata', None)
+    spec = getattr(current, 'spec', None)
+    status = getattr(current, 'status', None)
+    finalizers = list(getattr(spec, 'finalizers', None) or getattr(metadata, 'finalizers', None) or [])
+    deletion_timestamp = getattr(metadata, 'deletion_timestamp', None)
+    phase = str(getattr(status, 'phase', None) or ('Terminating' if deletion_timestamp else 'Present'))
+    return False, {
+        'namespace': name,
+        'observed_absent': False,
+        'phase': phase,
+        'deletion_timestamp': (
+            deletion_timestamp.isoformat()
+            if isinstance(deletion_timestamp, datetime)
+            else str(deletion_timestamp or '')
+        ),
+        'finalizers': [str(item) for item in finalizers],
+    }
+
+
+def deprovision_native_namespace(
+    record: TenantNamespace,
+    *,
+    timeout_seconds: float = 120.0,
+    poll_interval_seconds: float = 2.0,
+) -> TenantNamespace:
+    """Delete one KAORI-managed namespace and prove provider absence.
+
+    Namespace deletion is intentionally observation-driven: a successful DELETE
+    request is not treated as teardown completion. KAORI waits until Kubernetes
+    returns 404 and surfaces Terminating/finalizer evidence when the timeout is
+    reached. Finalizers are never force-removed by this managed path.
+    """
+
+    tenant = record.environment.tenant
+    if tenant.provider_key != 'native_kubernetes' or tenant.provider_state != 'native':
+        raise ValueError('Native namespace deprovisioning requires Native Kubernetes provider authority.')
+    if tenant.reconciliation_authority != 'native_kubernetes':
+        raise ValueError('Native namespace deprovisioning requires Native Kubernetes reconciliation authority.')
+    if record.ownership_status != TenantOwnershipStatus.MANAGED.value:
+        raise ValueError('Automatic namespace deprovisioning is limited to KAORI-managed namespaces.')
+
+    cluster = db.session.get(Cluster, record.cluster_id)
+    if cluster is None:
+        raise ValueError('Tenant namespace cluster no longer exists.')
+
+    api = runtime_adapter.build_client(cluster).core_api()
+    current = _read_or_none(api.read_namespace, record.namespace)
+    if current is not None:
+        _managed_or_absent(getattr(current, 'metadata', None), kind='Namespace')
+
+    record.provisioning_status = TenantNamespaceProvisioningStatus.DEPROVISIONING.value
+    record.provisioning_message = 'Namespace deletion requested; waiting for Kubernetes to confirm absence.'
+    record.last_reconciled_at = datetime.now(UTC)
+
+    try:
+        if current is not None:
+            try:
+                api.delete_namespace(name=record.namespace)
+            except ApiException as exc:
+                if exc.status != 404:
+                    raise
+
+        deadline = time.monotonic() + max(float(timeout_seconds), 0.0)
+        observed_absent, observation = _namespace_delete_observation(api, record.namespace)
+        while not observed_absent and time.monotonic() < deadline:
+            time.sleep(max(float(poll_interval_seconds), 0.0))
+            observed_absent, observation = _namespace_delete_observation(api, record.namespace)
+
+        record.last_reconciled_at = datetime.now(UTC)
+        evidence = dict(record.provisioning_evidence_json or {})
+        evidence['deprovision'] = {
+            **observation,
+            'provider': 'native_kubernetes',
+            'observed_at': record.last_reconciled_at.isoformat(),
+            'secret_material_persisted': False,
+        }
+        record.provisioning_evidence_json = evidence
+
+        if not observed_absent:
+            finalizers = ', '.join(observation.get('finalizers') or []) or 'none reported'
+            phase = str(observation.get('phase') or 'Terminating')
+            record.provisioning_status = TenantNamespaceProvisioningStatus.FAILED.value
+            record.provisioning_message = (
+                f'Namespace deletion is still {phase}; provider absence was not observed before timeout. '
+                f'Finalizers: {finalizers}. Resolve the blocker and retry.'
+            )
+            raise ValueError(record.provisioning_message)
+
+        record.provisioning_status = TenantNamespaceProvisioningStatus.DEPROVISIONED.value
+        record.provisioning_message = 'Kubernetes confirmed the namespace is absent.'
+        record.effective_hash = None
+        return record
+    except ApiException as exc:
+        record.provisioning_status = TenantNamespaceProvisioningStatus.FAILED.value
+        record.provisioning_message = str(exc)[:1000]
+        record.last_reconciled_at = datetime.now(UTC)
+        evidence = dict(record.provisioning_evidence_json or {})
+        evidence['deprovision'] = {
+            'namespace': record.namespace,
+            'provider': 'native_kubernetes',
+            'observed_absent': False,
+            'error': record.provisioning_message,
+            'observed_at': record.last_reconciled_at.isoformat(),
+            'secret_material_persisted': False,
+        }
+        record.provisioning_evidence_json = evidence
+        raise
+
+
+def deprovision_native_namespace_committed(
+    *,
+    namespace_id: int,
+    timeout_seconds: float = 120.0,
+    poll_interval_seconds: float = 2.0,
+) -> TenantNamespace:
+    record = db.session.get(TenantNamespace, namespace_id)
+    if record is None:
+        raise ValueError('Selected Tenant namespace no longer exists.')
+    if record.provisioning_status == TenantNamespaceProvisioningStatus.DEPROVISIONED.value:
+        return record
+
+    try:
+        deprovision_native_namespace(
+            record,
+            timeout_seconds=timeout_seconds,
+            poll_interval_seconds=poll_interval_seconds,
+        )
+        db.session.commit()
+        return record
+    except (ApiException, ValueError):
+        # Preserve fail-closed teardown evidence so retry/UAT can see the exact
+        # Terminating/finalizer or provider error instead of rolling it away.
+        if record.id is not None:
+            db.session.commit()
+        raise
 
 
 def reconcile_native_namespace(record: TenantNamespace) -> TenantNamespace:
