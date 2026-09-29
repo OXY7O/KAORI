@@ -40,13 +40,18 @@ def test_governance_overview_is_domain_first_and_child_capability_evidence_stays
 
     for token in (
         'Kubernetes Governance',
-        'Review Kubernetes governance capabilities, control posture, evidence, and ownership across the platform.',
+        'Review Kubernetes governance controls, evidence, and ownership.',
         'Governance Capabilities',
+        'Implemented governance controls are added as independent capability cards without changing the Overview structure.',
+        '[grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr))]',
+        "'title': 'TLS Certificates'",
+        "'action': 'Open TLS Certificates' if can_view_tls else 'View Permission Required'",
         'Governance Operating Model',
         'Provider Authority',
         'Policy & Guardrails',
         'Committed Evidence',
         'Controlled Handoffs',
+        'KAORI applies governance policy and authorization guardrails without cloning the provider control plane.',
         'Open Cluster Integrations',
         'View Permission Required',
         'New governance capabilities join this catalog only after implementation and authorization',
@@ -67,6 +72,9 @@ def test_governance_overview_is_domain_first_and_child_capability_evidence_stays
     assert 'domain-first' in standard
     assert 'does **not** load TLS certificate inventory' in standard
     assert '**Open Cluster Integrations**' in standard
+    assert 'scalable equal-height catalog' in standard
+    assert 'parent section owns no TLS-specific action' in standard
+    assert 'auto-fitting minimum-width grid' in standard
 
 
 def test_governance_dead_job_presentation_helper_is_retired() -> None:

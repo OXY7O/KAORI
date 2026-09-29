@@ -11,7 +11,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('layout-dashboard', 'Kubernetes Governance', 'shield-check') %}
                         <h1 class="{{ page_hero.title_classes() }}">Overview</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Review Kubernetes governance capabilities, control posture, evidence, and ownership across the platform.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review Kubernetes governance controls, evidence, and ownership.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('shield-check', 'Governance Controls') }}
                             {{ page_hero.meta_label('database-zap', 'Committed Evidence') }}
@@ -56,37 +56,58 @@
                     'Open implemented Kubernetes governance capabilities from one domain-level control catalog.',
                     'governance-capabilities-heading'
                 ) }}
+                {% set governance_capabilities = [
+                    {
+                        'icon': 'badge-check',
+                        'title': 'TLS Certificates',
+                        'status': 'Implemented',
+                        'tone': 'normal',
+                        'description': 'Govern certificate lifecycle, declared-host coverage, Ingress relationships, collection evidence, and controlled rotation handoff.',
+                        'boundary': 'TLS-specific posture and evidence stay inside the TLS Certificates capability.',
+                        'href': url_for('governance.tls_certificates') if can_view_tls else none,
+                        'action': 'Open TLS Certificates' if can_view_tls else 'View Permission Required',
+                        'action_icon': 'arrow-right' if can_view_tls else 'lock',
+                        'available': can_view_tls
+                    }
+                ] %}
                 {% call operational_section_card.render(
                     'Governance Capabilities',
-                    'Each capability owns its detailed posture, evidence, and governed workflow without redefining the Governance Overview.',
+                    'Implemented governance controls are added as independent capability cards without changing the Overview structure.',
                     'layout-dashboard',
-                    action_href=url_for('governance.tls_certificates') if can_view_tls else none,
-                    action_label='Open TLS Certificates' if can_view_tls else none,
-                    action_icon='arrow-right',
                     body_classes='p-0',
                     aria_label='Kubernetes governance capabilities'
                 ) %}
-                    <article class="grid gap-4 p-5 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                              aria-hidden="true">
-                            <i data-lucide="badge-check" class="h-5 w-5"></i>
-                        </span>
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <h3 class="text-sm font-semibold text-content-primary">TLS Certificates</h3>
-                                {{ table_label.status_label('Implemented', 'normal') }}
-                            </div>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">
-                                Govern certificate lifecycle, declared-host coverage, Ingress relationships, collection evidence, and controlled rotation handoff.
-                            </p>
-                            <p class="mt-1.5 text-xs leading-5 text-content-muted">
-                                Detailed certificate posture belongs to the TLS Certificates capability page; Governance Overview stays domain-level and read-oriented.
-                            </p>
-                        </div>
-                        {% if not can_view_tls %}
-                            <div class="shrink-0">{{ table_label.metadata_label('View Permission Required', icon='lock') }}</div>
-                        {% endif %}
-                    </article>
+                    <div class="grid gap-4 p-5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr))]">
+                        {% for capability in governance_capabilities %}
+                            <article class="flex h-full min-w-0 flex-col rounded-xl border border-outline-subtle bg-surface-elevated p-5">
+                                <div class="flex items-start gap-3">
+                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="{{ capability.icon }}" class="h-5 w-5"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <h3 class="text-sm font-semibold text-content-primary">{{ capability.title }}</h3>
+                                            {{ table_label.status_label(capability.status, capability.tone) }}
+                                        </div>
+                                        <p class="mt-2 text-xs leading-5 text-content-secondary">{{ capability.description }}</p>
+                                    </div>
+                                </div>
+                                <p class="mt-4 text-xs leading-5 text-content-muted">{{ capability.boundary }}</p>
+                                <div class="mt-auto pt-5">
+                                    {% if capability.available %}
+                                        <a href="{{ capability.href }}"
+                                           class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                            {{ capability.action }}
+                                            <i data-lucide="{{ capability.action_icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                        </a>
+                                    {% else %}
+                                        {{ table_label.metadata_label(capability.action, icon=capability.action_icon) }}
+                                    {% endif %}
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
                     <footer class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs leading-5 text-content-muted">
                         New governance capabilities join this catalog only after implementation and authorization. Overview does not advertise placeholder workflows.
                     </footer>
@@ -109,7 +130,7 @@
                     <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
                         {% for icon, title, description in [
                             ('radio-tower', 'Provider Authority', 'Kubernetes remains authoritative for live resources, admission, and enforcement state.'),
-                            ('shield-check', 'Policy & Guardrails', 'KAORI applies governance policy, authorization boundaries, and control semantics without cloning the provider control plane.'),
+                            ('shield-check', 'Policy & Guardrails', 'KAORI applies governance policy and authorization guardrails without cloning the provider control plane.'),
                             ('database-zap', 'Committed Evidence', 'Collectors normalize durable evidence for posture, history, cross-domain correlation, reporting, and audit.'),
                             ('square-terminal', 'Controlled Handoffs', 'Mutations stay in the owning governed operation workflow; Governance Overview itself remains read-only.')
                         ] %}

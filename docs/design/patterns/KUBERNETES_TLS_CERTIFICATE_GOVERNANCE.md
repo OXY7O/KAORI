@@ -29,6 +29,10 @@ Governance Model
 
 Detailed TLS posture, validity, coverage, collection evidence, and rotation context remain owned by the TLS Certificates capability page.
 
+The Overview Hero uses the compact KAORI description **Review Kubernetes governance controls, evidence, and ownership.** The Governance Operating Model keeps policy copy compact: **KAORI applies governance policy and authorization guardrails without cloning the provider control plane.**
+
+Governance Capabilities is a scalable equal-height catalog. The parent section owns no TLS-specific action. Each implemented capability contributes one self-contained card with identity, status, purpose, boundary, permission state, and its own action. The catalog uses an auto-fitting minimum-width grid so one capability fills the available row, multiple capabilities distribute evenly, and adding another implemented governance capability does not require changing the surrounding Overview composition. Unimplemented capabilities are never rendered as placeholders.
+
 ## Canonical structure
 
 ```text

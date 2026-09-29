@@ -156,17 +156,29 @@ def main() -> int:
     )
 
     for token in (
-        'Review Kubernetes governance capabilities, control posture, evidence, and ownership across the platform.',
+        'Review Kubernetes governance controls, evidence, and ownership.',
         'Governance Capabilities',
+        'Implemented governance controls are added as independent capability cards without changing the Overview structure.',
+        '[grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr))]',
+        "'title': 'TLS Certificates'",
+        "'action': 'Open TLS Certificates' if can_view_tls else 'View Permission Required'",
         'Governance Operating Model',
         'Provider Authority',
         'Policy & Guardrails',
         'Committed Evidence',
         'Controlled Handoffs',
+        'KAORI applies governance policy and authorization guardrails without cloning the provider control plane.',
         'View Permission Required',
         'New governance capabilities join this catalog only after implementation and authorization',
     ):
         require(token in overview, f'Governance Overview domain-first composition is missing: {token}', errors)
+    require(
+        "action_href=url_for('governance.tls_certificates')" not in overview
+        and "action_label='Open TLS Certificates'" not in overview,
+        'Governance Capabilities parent card must not own a TLS-specific action.',
+        errors,
+    )
+
     for retired_tls_overview in (
         'Committed Governance Posture',
         'TLS Governance Snapshot',
@@ -295,7 +307,7 @@ def main() -> int:
     print(
         'KAORI Kubernetes Governance Final Lock v1 passed: AuthZ-first readiness, TLS evidence minimization, '
         'domain-first Governance Overview, canonical Hero/table/modal/pagination ownership, user-scoped sync status, '
-        'dead-surface cleanup, and L0–L7 release evidence are aligned.'
+        'scalable capability catalog, dead-surface cleanup, and L0–L7 release evidence are aligned.'
     )
     return 0
 
