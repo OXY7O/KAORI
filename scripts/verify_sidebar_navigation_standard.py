@@ -47,6 +47,12 @@ def verify() -> None:
             'text-xs font-medium',
             'data-kaori-sidebar-section',
             'data-kaori-sidebar-workspace',
+            "{% for item in section['items'] %}",
+            "item['href']",
+            "item['label']",
+            "item['key']",
+            "item['active']",
+            "item['icon']",
             'aria-current="page"',
             'sidebar-parent-link',
             'min-h-11',
@@ -57,6 +63,12 @@ def verify() -> None:
 
     if '<details class="sidebar-menu' in sidebar:
         raise AssertionError('sidebar.html: v2 global navigation must not render expandable nested menus')
+
+    if 'section.items' in sidebar:
+        raise AssertionError(
+            "sidebar.html: Jinja mapping key 'items' must use explicit bracket access; "
+            "attribute lookup resolves dict.items() instead of the navigation collection"
+        )
 
     legacy_includes = (
         'dashboards_menu.html',

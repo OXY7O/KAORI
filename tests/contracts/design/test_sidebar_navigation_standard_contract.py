@@ -72,6 +72,17 @@ def test_global_sidebar_is_workspace_only_and_future_domains_are_not_placeholder
         assert future not in model
 
 
+def test_sidebar_mapping_access_avoids_jinja_dict_method_collisions() -> None:
+    sidebar = (ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'sidebar.html').read_text(
+        encoding='utf-8'
+    )
+
+    assert "{% for item in section['items'] %}" in sidebar
+    assert 'section.items' not in sidebar
+    for key in ('href', 'label', 'key', 'active', 'icon'):
+        assert f"item['{key}']" in sidebar
+
+
 def test_domain_workspace_navigation_reuses_integrated_workspace_tabs() -> None:
     layout = (ROOT / 'app' / 'templates' / 'layouts' / 'app.html').read_text(encoding='utf-8')
     model = (ROOT / 'app' / 'common' / 'workspace_navigation.py').read_text(encoding='utf-8')

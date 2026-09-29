@@ -219,6 +219,8 @@ Renderer: `app/templates/components/navigation/sidebar.html`
 Workspace navigation renderer: `app/templates/components/workspace_tabs.html`  
 Breadcrumb authority: `app/common/navigation.py`
 
+The runtime navigation model is passed to Jinja as mappings. Renderer access must use explicit mapping syntax (for example `section['items']` and `item['label']`) rather than attribute syntax for mapping keys. This avoids collisions with Python mapping methods such as `dict.items()`, `dict.keys()`, and `dict.values()`.
+
 Legacy submenu templates may remain temporarily during migration but must not be included by the global sidebar after v2 adoption.
 
 ## Playwright / Visual QA

@@ -44,20 +44,20 @@
              @click="if ($event.target.closest('a[href]')) closeMobileNavigation()">
             {% for section in sidebar_navigation %}
                 <div class="sidebar-nav-section"
-                     data-kaori-sidebar-section="{{ section.label|lower|replace(' ', '-') }}">
-                    <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">{{ section.label }}</div>
+                     data-kaori-sidebar-section="{{ section['label']|lower|replace(' ', '-') }}">
+                    <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">{{ section['label'] }}</div>
                     <div class="space-y-1">
-                        {% for item in section.items %}
-                            <a href="{{ item.href }}"
-                               title="{{ item.label }}"
-                               aria-label="{{ item.label }}"
-                               data-kaori-sidebar-workspace="{{ item.key }}"
-                               {% if item.active %}aria-current="page"{% endif %}
-                               class="{{ 'sidebar-parent-active' if item.active else 'sidebar-item-idle' }} sidebar-parent-link group flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition lg:[.sidebar-collapsed_&]:justify-center lg:[.sidebar-collapsed_&]:px-2">
-                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if item.active else 'sidebar-item-idle-icon' }} transition">
-                                    <i data-lucide="{{ item.icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                        {% for item in section['items'] %}
+                            <a href="{{ item['href'] }}"
+                               title="{{ item['label'] }}"
+                               aria-label="{{ item['label'] }}"
+                               data-kaori-sidebar-workspace="{{ item['key'] }}"
+                               {% if item['active'] %}aria-current="page"{% endif %}
+                               class="{{ 'sidebar-parent-active' if item['active'] else 'sidebar-item-idle' }} sidebar-parent-link group flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition lg:[.sidebar-collapsed_&]:justify-center lg:[.sidebar-collapsed_&]:px-2">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if item['active'] else 'sidebar-item-idle-icon' }} transition">
+                                    <i data-lucide="{{ item['icon'] }}" class="h-4 w-4" aria-hidden="true"></i>
                                 </span>
-                                <span class="sidebar-expanded-only truncate whitespace-nowrap">{{ item.label }}</span>
+                                <span class="sidebar-expanded-only truncate whitespace-nowrap">{{ item['label'] }}</span>
                             </a>
                         {% endfor %}
                     </div>
