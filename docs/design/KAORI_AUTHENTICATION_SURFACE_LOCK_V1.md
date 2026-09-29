@@ -26,6 +26,31 @@ It does not redesign identity-provider administration, User Management, Roles & 
 8. Auth templates use canonical typography tokens: no arbitrary text sizes/tracking, no `font-extrabold`, no presentation-only uppercase utilities, and no inline DOM event handlers.
 9. Password/theme interaction runtime is owned by `app/static/js/auth_login.js`; only the pre-paint theme bootstrap remains inline to prevent theme flash.
 
+### Canonical Database Setup Workspace Composition
+
+The approved Database Setup Required surface is a non-Hero operational readiness workspace. It uses the global **Major Page Title outside Hero** typography authority: 24 px (`text-2xl`), semibold, compact line height, with no Hero minimum-height or promotional title treatment.
+
+The composition is:
+
+```text
+Compact Page Identity + Shared Readiness Labels
+→ Development Bootstrap
+→ Shared Initialization Info Flow
+→ Security / Readiness Supporting Evidence
+→ Progressive Setup Details
+→ Retry Setup Check
+```
+
+Shared ownership is mandatory:
+
+- `components/table_label.html` owns PostgreSQL/schema semantic labels;
+- `components/operational_section_card.html` owns primary operational surfaces;
+- `components/info_flow.html` owns the initialization sequence;
+- `components/terminal_command.html` owns copyable bootstrap/check commands;
+- `components/operational_callout.html` owns semantic security/recovery callouts.
+
+The setup page must not introduce authenticated Hero geometry, page-local semantic badge styling, a copied timeline implementation, arbitrary typography, or database mutation from presentation code.
+
 ## Locked Security Contract
 
 - Login is rate-limited and Flask-WTF owns CSRF validation.

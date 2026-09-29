@@ -9,7 +9,7 @@ SETUP_TEMPLATE = ROOT / 'app' / 'templates' / 'access' / 'authentication' / 'set
 def test_canonical_auth_setup_heading_is_not_counted_as_custom_hero_title() -> None:
     source = (
         '<h1 data-kaori-auth-setup-heading-authority="readiness-workspace" '
-        'class="mt-1 text-xl font-semibold leading-7 tracking-tight text-content-primary sm:text-2xl sm:leading-8">'
+        'class="mt-0.5 text-2xl font-semibold leading-8 text-content-primary">'
         'Database Setup Required</h1>'
     )
 
@@ -34,19 +34,25 @@ def test_unmarked_setup_heading_remains_custom_hero_title_debt() -> None:
     )
 
 
-def test_auth_setup_header_uses_compact_readiness_workspace_hierarchy() -> None:
+def test_auth_setup_workspace_uses_canonical_operational_hierarchy() -> None:
     source = SETUP_TEMPLATE.read_text(encoding='utf-8')
 
-    assert 'px-5 py-4 sm:px-7 sm:py-5 lg:px-8' in source
-    assert 'flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between' in source
-    assert 'flex min-w-0 items-start gap-3' in source
-    assert 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl' in source
-    assert (
-        'class="mt-1 text-xl font-semibold leading-7 tracking-tight '
-        'text-content-primary sm:text-2xl sm:leading-8"'
-    ) in source
-    assert 'mt-1.5 max-w-2xl text-sm leading-6 text-content-secondary' in source
+    assert 'data-kaori-setup-workspace="release-v2"' in source
+    assert 'data-kaori-auth-setup-heading-authority="readiness-workspace"' in source
+    assert 'class="mt-0.5 text-2xl font-semibold leading-8 text-content-primary"' in source
+    assert 'tracking-tight' not in source
     assert 'sm:text-3xl' not in source
-    assert 'text-2xl font-bold tracking-tight text-content-primary sm:text-3xl' not in source
+    assert 'max-w-4xl overflow-hidden rounded-2xl' not in source
+
+    assert '{% import "components/table_label.html" as table_label %}' in source
+    assert '{% import "components/info_flow.html" as info_flow %}' in source
+    assert '{% import "components/operational_section_card.html" as operational_section_card %}' in source
+    assert 'table_label.status_indicator_label("PostgreSQL Reachable", "normal")' in source
+    assert 'table_label.status_indicator_label("Schema Missing", "warning")' in source
+    assert 'operational_section_card.render(' in source
+    assert 'info_flow.render(' in source
+    assert '<ol ' not in source
+
+    assert source.index('Development Bootstrap') < source.index('Initialization Path')
     assert 'PostgreSQL Reachable' in source
     assert 'Schema Missing' in source

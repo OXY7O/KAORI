@@ -129,6 +129,12 @@ def main() -> int:
         'PostgreSQL Reachable',
         'Schema Missing',
         'components/terminal_command.html',
+        'components/info_flow.html',
+        'components/operational_section_card.html',
+        'components/table_label.html',
+        'table_label.status_indicator_label',
+        'info_flow.render',
+        'operational_section_card.render',
         'Copy Command',
         'This readiness check is read-only.',
     ):
