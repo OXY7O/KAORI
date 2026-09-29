@@ -28,7 +28,6 @@ _ARBITRARY_TRACKING = re.compile(r'\btracking-\[[^\]]+\]')
 _FONT_EXTRABOLD = re.compile(r'\bfont-extrabold\b')
 _ARBITRARY_RADIUS = re.compile(r'\b(?:rounded-3xl|rounded-\[[^\]]+\])')
 _RAW_HEX = re.compile(r'(?<![\w-])#[0-9a-fA-F]{3,8}\b')
-_JINJA_STRING = re.compile(r"""(['"])(?:\\.|(?!\\1).)*\\1""")
 _RAW_PALETTE = re.compile(
     r'\b(?:bg|text|border|ring|shadow|fill|stroke)-'
     r'(?:red|green|blue|amber|yellow|gray|slate|zinc|neutral|stone|indigo|'
@@ -175,7 +174,7 @@ def _metrics(relative: str, source: str) -> dict[str, int]:
             0 if relative in _APPROVED_FONT_EXTRABOLD_COMPONENTS else len(_FONT_EXTRABOLD.findall(source))
         ),
         'arbitrary_radii': len(_ARBITRARY_RADIUS.findall(source)),
-        'raw_hex_colors': len(_RAW_HEX.findall(_JINJA_STRING.sub('', source))),
+        'raw_hex_colors': len(_RAW_HEX.findall(source)),
         'raw_palette_utilities': len(_RAW_PALETTE.findall(source)),
         'semantic_border_utilities': (
             0 if relative in _APPROVED_SEMANTIC_BORDER_COMPONENTS else len(_SEMANTIC_BORDER.findall(source))
