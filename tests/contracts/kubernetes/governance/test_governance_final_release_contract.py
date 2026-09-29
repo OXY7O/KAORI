@@ -25,6 +25,38 @@ def test_tls_routes_own_authorized_clusterless_handling() -> None:
     )
 
 
+
+
+def test_governance_overview_is_capability_first_and_permission_gates_tls_evidence() -> None:
+    routes = read('app/kubernetes/governance/routes.py')
+    overview = read('app/templates/kubernetes/governance/overview/index.html')
+    standard = read('docs/design/patterns/KUBERNETES_TLS_CERTIFICATE_GOVERNANCE.md')
+
+    assert "@permission_required('governance.view')\ndef overview" in routes
+    assert "can_view_tls = current_user.has_permission('tls_certificates.view')" in routes
+    assert 'get_tls_certificate_page({})' in routes
+    assert 'if can_view_tls and has_registered_clusters() is not False' in routes
+    assert 'can_view_tls=can_view_tls' in routes
+    assert 'tls_payload=tls_payload' in routes
+
+    for token in (
+        'Governance Capabilities',
+        'Committed Governance Posture',
+        'TLS Governance Snapshot',
+        'TLS Governance Posture',
+        'Governance Model',
+        'components/snapshot_context_bar.html',
+        'Additional governance capabilities appear here only after they are implemented and authorized',
+    ):
+        assert token in overview
+
+    assert '{% if can_view_tls and tls_payload %}' in overview
+    assert 'View Permission Required' in overview
+    assert 'TLS View Restricted' in overview
+    assert 'Governance Overview landing contract' in standard
+    assert 'never queries Kubernetes at request time' in standard
+
+
 def test_governance_dead_job_presentation_helper_is_retired() -> None:
     source = read('app/kubernetes/governance/tls_certificates/job_presentation.py')
     assert 'def get_active_tls_sync_job(' not in source

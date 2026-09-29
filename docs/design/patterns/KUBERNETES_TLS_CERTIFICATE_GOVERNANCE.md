@@ -4,6 +4,27 @@
 
 TLS Certificate Governance is a read-oriented registry for certificate validity, declared-host coverage, Ingress relationships, collection evidence, and controlled rotation handoff.
 
+## Governance Overview landing contract
+
+Kubernetes Governance Overview is the capability-first landing page for implemented Kubernetes governance controls. TLS Certificates is the first implemented capability; future capabilities join the same Overview grammar only after implementation and authorization. The Overview must not advertise placeholder workflows.
+
+`governance.view` authorizes the landing page. Detailed TLS counts, snapshot evidence, and TLS drill-down are resolved only when the current user also has `tls_certificates.view`. A user without that permission sees the implemented TLS capability in a restricted state but receives no certificate counts or collection evidence.
+
+Normal Governance Overview reads committed KAORI database/worker evidence only. It never queries Kubernetes at request time and never owns mutation. Kubernetes remains authoritative for live resource state; controlled TLS mutation remains owned by Kubernetes Secret Operations.
+
+Canonical Overview hierarchy:
+
+```text
+Hero
+Governance Scope
+└── Governance Capabilities
+Committed Governance Posture        # only when TLS evidence is authorized
+├── TLS Governance Snapshot
+└── TLS Governance Posture
+Governance Model
+└── Provider Authority / Committed Evidence / Controlled Mutation
+```
+
 ## Canonical structure
 
 ```text

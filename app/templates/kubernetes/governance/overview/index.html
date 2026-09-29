@@ -1,5 +1,10 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/section_intro.html" as section_intro %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/resource_posture_grid.html" as posture_grid %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/snapshot_context_bar.html" as snapshot_context %}
 {% block title %}Governance{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6">
@@ -8,8 +13,11 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('layout-dashboard', 'Kubernetes Governance', 'shield-check') %}
                         <h1 class="{{ page_hero.title_classes() }}">Overview</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Govern certificate lifecycle, usage, policy evidence, and workflows.</p>
-                        <div class="{{ page_hero.metadata_row_classes() }}">{{ page_hero.meta_label('shield-check', 'Governance Controls') }}{{ page_hero.meta_label('badge-check', 'TLS Lifecycle') }}</div>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review implemented Kubernetes governance capabilities, committed evidence, and controlled operational handoffs.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('shield-check', 'Governance Controls') }}
+                            {{ page_hero.meta_label('database-zap', 'Committed Evidence') }}
+                        </div>
                     {% endcall %}
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}"
@@ -21,23 +29,154 @@
                         {% include 'components/cluster/_hero_blocked_context.html' %}
                     {% else %}
                         <div class="{{ page_hero.context_panel_classes() }}">
-                            {{ page_hero.context_header('Active Capability', 'TLS Certificate Governance', 'shield-check') }}
+                            {{ page_hero.context_header('Governance Portfolio', 'Kubernetes Controls', 'shield-check') }}
                             <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                                {{ page_hero.context_metric('badge-check', 'Lifecycle Scope', 'TLS', 'Certificate validity and expiry') }}
-                                {{ page_hero.context_metric('route', 'Usage Mapping', 'Ingress', 'Referenced certificate consumers') }}
+                                {{ page_hero.context_metric('badge-check', 'Implemented Capability', 'TLS Certificates', 'Validity, coverage, and lifecycle evidence') }}
+                                {{ page_hero.context_metric('database-zap', 'Data Authority', 'Committed Evidence', 'Worker-collected governance state') }}
                             </div>
-                            <a href="{{ url_for('governance.tls_certificates') }}"
-                               class="{{ page_hero.context_single_action_classes() }}">
-                                <i data-lucide="arrow-right" class="h-4 w-4"></i>
-                                Open TLS Certificates
-                            </a>
+                            {% if can_view_tls %}
+                                <a href="{{ url_for('governance.tls_certificates') }}"
+                                   class="{{ page_hero.context_single_action_classes() }}">
+                                    <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                                    Open TLS Certificates
+                                </a>
+                            {% else %}
+                                {{ page_hero.context_info('lock', 'TLS View Restricted · detailed certificate evidence requires additional permission.') }}
+                            {% endif %}
                         </div>
                     {% endif %}
                 </aside>
             </div>
         </section>
+
         {% if cluster_onboarding.is_blocked %}
             {% include "components/cluster/_onboarding_banner.html" %}
+        {% else %}
+            {% set tls_ready = can_view_tls and tls_payload and tls_payload.schema_readiness.ready %}
+            {% set capability_status = 'Available' if tls_ready else ('Upgrade Required' if can_view_tls and tls_payload else 'Restricted') %}
+            {% set capability_tone = 'normal' if tls_ready else ('warning' if can_view_tls and tls_payload else 'disabled') %}
+            <section class="space-y-4" aria-labelledby="governance-capabilities-heading">
+                {{ section_intro.render(
+                    'Governance Scope',
+                    'Implemented Kubernetes governance capabilities and the evidence boundary each capability owns.',
+                    'governance-capabilities-heading'
+                ) }}
+                {% call operational_section_card.render(
+                    'Governance Capabilities',
+                    'Capability-first governance surfaces backed by explicit provider and committed-evidence boundaries.',
+                    'layout-dashboard',
+                    action_href=url_for('governance.tls_certificates') if can_view_tls else none,
+                    action_label='Open TLS Certificates' if can_view_tls else none,
+                    action_icon='arrow-right',
+                    body_classes='p-0',
+                    aria_label='Kubernetes governance capabilities'
+                ) %}
+                    <article class="grid gap-4 p-5 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="badge-check" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h3 class="text-sm font-semibold text-content-primary">TLS Certificates</h3>
+                                {{ table_label.status_label(capability_status, capability_tone) }}
+                            </div>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                Certificate validity, declared-host coverage, Ingress relationships, collection evidence, and controlled rotation handoff.
+                            </p>
+                            <p class="mt-1.5 text-xs leading-5 text-content-muted">
+                                Kubernetes remains authoritative for live TLS Secret and Ingress state; KAORI presents committed governance evidence and workflow context.
+                            </p>
+                        </div>
+                        {% if not can_view_tls %}
+                            <div class="shrink-0">{{ table_label.metadata_label('View Permission Required', icon='lock') }}</div>
+                        {% endif %}
+                    </article>
+                    <footer class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs leading-5 text-content-muted">
+                        Additional governance capabilities appear here only after they are implemented and authorized; Overview does not advertise placeholder workflows.
+                    </footer>
+                {% endcall %}
+            </section>
+
+            {% if can_view_tls and tls_payload %}
+                {% set tls_exceptions = (tls_payload.summary.critical or 0) + (tls_payload.summary.expired or 0) + (tls_payload.summary.invalid or 0) %}
+                {% set coverage_exceptions = (tls_payload.summary.coverage_partial or 0) + (tls_payload.summary.coverage_uncovered or 0) + (tls_payload.summary.coverage_not_reported or 0) %}
+                {% set tls_metrics = [
+                    ('badge-check', 'TLS Certificates', tls_payload.summary.total, 'Committed certificate inventory records.', 'info'),
+                    ('calendar-clock', 'Renewal Window', tls_payload.summary.warning, 'Certificates approaching the configured renewal window.', 'warning' if tls_payload.summary.warning else 'normal'),
+                    ('triangle-alert', 'Critical Exceptions', tls_exceptions, 'Critical-window, expired, or invalid certificates.', 'critical' if tls_exceptions else 'normal'),
+                    ('shield-alert', 'Host Coverage Exceptions', coverage_exceptions, 'Partial, uncovered, or unavailable declared-host mapping.', 'warning' if coverage_exceptions else 'normal')
+                ] %}
+                <section class="space-y-4" aria-labelledby="governance-posture-heading">
+                    {{ section_intro.render(
+                        'Committed Governance Posture',
+                        'Current TLS governance posture from worker-collected KAORI evidence; no live provider query is issued by this Overview.',
+                        'governance-posture-heading'
+                    ) }}
+                    {{ snapshot_context.render(
+                        source_label=tls_payload.snapshot.source_label,
+                        status=tls_payload.snapshot.status,
+                        tone=tls_payload.snapshot.tone,
+                        description=tls_payload.snapshot.description,
+                        latest_collected=tls_payload.snapshot.latest_collected,
+                        scope_label=tls_payload.snapshot.scope_label,
+                        coverage_label=tls_payload.snapshot.coverage_label,
+                        exceptions_label=tls_payload.snapshot.exceptions_label,
+                        icon='database-backup',
+                        title='TLS Governance Snapshot',
+                        latest_supporting=tls_payload.snapshot.latest_supporting|default('Worker-generated snapshot'),
+                        scope_supporting=tls_payload.snapshot.scope_supporting|default('Fleet scope'),
+                        coverage_supporting=tls_payload.snapshot.coverage_supporting|default('Collected TLS inventory'),
+                        exceptions_supporting=tls_payload.snapshot.exceptions_supporting|default('Review collection evidence'),
+                        coverage_tone=tls_payload.snapshot.coverage_tone|default(tls_payload.snapshot.tone),
+                        exceptions_tone=tls_payload.snapshot.exceptions_tone|default(tls_payload.snapshot.tone)
+                    ) }}
+                    {% call operational_section_card.render(
+                        'TLS Governance Posture',
+                        'Lifecycle and declared-host exceptions requiring governance review.',
+                        'shield-check',
+                        action_href=url_for('governance.tls_certificates'),
+                        action_label='Review Certificates',
+                        action_icon='arrow-right',
+                        body_classes='p-0',
+                        aria_label='TLS governance posture'
+                    ) %}
+                        {{ posture_grid.render(tls_metrics, columns=4) }}
+                    {% endcall %}
+                </section>
+            {% endif %}
+
+            <section class="space-y-4" aria-labelledby="governance-model-heading">
+                {{ section_intro.render(
+                    'Governance Model',
+                    'Keep provider authority, committed evidence, and controlled mutation ownership distinct as the domain expands.',
+                    'governance-model-heading'
+                ) }}
+                {% call operational_section_card.render(
+                    'Governance Boundaries',
+                    'The same ownership model applies to TLS today and future implemented Kubernetes governance capabilities.',
+                    'scale',
+                    body_classes='p-0',
+                    aria_label='Kubernetes governance boundaries'
+                ) %}
+                    <div class="grid gap-px bg-outline-subtle md:grid-cols-3">
+                        {% for icon, title, description in [
+                            ('radio-tower', 'Provider Authority', 'Kubernetes remains authoritative for live resource state and enforcement.'),
+                            ('database-zap', 'Committed Evidence', 'KAORI workers normalize governed evidence for read-oriented posture, history, correlation, and audit.'),
+                            ('square-terminal', 'Controlled Mutation', 'Changes stay in the owning governed operation workflow; Overview never mutates provider state.')
+                        ] %}
+                            <article class="bg-surface-card p-5">
+                                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                                </span>
+                                <h3 class="mt-3 text-sm font-semibold text-content-primary">{{ title }}</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% endcall %}
+            </section>
         {% endif %}
     </div>
 {% endblock dashboard_content %}

@@ -56,6 +56,20 @@ def main() -> int:
         errors,
     )
 
+    for token in (
+        "@permission_required('governance.view')",
+        "can_view_tls = current_user.has_permission('tls_certificates.view')",
+        'get_tls_certificate_page({})',
+        'if can_view_tls and has_registered_clusters() is not False',
+        'can_view_tls=can_view_tls',
+        'tls_payload=tls_payload',
+    ):
+        require(
+            token in governance_source,
+            f'Governance Overview route must preserve permission-gated committed TLS evidence: {token}',
+            errors,
+        )
+
     for name, expected_permission in (
         ('tls_certificates_index', 'tls_certificates.view'),
         ('tls_certificates_detail', 'tls_certificates.view'),
@@ -133,6 +147,20 @@ def main() -> int:
         'Governance Overview Hero metadata must remain governance-specific.',
         errors,
     )
+
+    for token in (
+        'Governance Capabilities',
+        'Committed Governance Posture',
+        'TLS Governance Snapshot',
+        'TLS Governance Posture',
+        'Governance Model',
+        'components/snapshot_context_bar.html',
+        '{% if can_view_tls and tls_payload %}',
+        'View Permission Required',
+        'TLS View Restricted',
+        'Additional governance capabilities appear here only after they are implemented and authorized',
+    ):
+        require(token in overview, f'Governance Overview landing composition is missing: {token}', errors)
     require(
         'page_hero.context_card(' in hero,
         'TLS Governance Hero must use the canonical status-oriented context card.',
@@ -207,7 +235,13 @@ def main() -> int:
 
     standard = read('docs/design/patterns/KUBERNETES_TLS_CERTIFICATE_GOVERNANCE.md')
     audit = read('docs/design/audits/KUBERNETES_GOVERNANCE_FINAL_RECHECK_2026_08.md')
-    for phrase in ('Authorization before readiness', 'Context Icon Box', 'Status Badge Box', 'L0–L7'):
+    for phrase in (
+        'Authorization before readiness',
+        'Context Icon Box',
+        'Status Badge Box',
+        'Governance Overview landing contract',
+        'L0–L7',
+    ):
         require(phrase in standard or phrase in audit, f'Governance documentation must record {phrase}.', errors)
 
     quality_gate = read('scripts/quality_gate.sh')
@@ -241,8 +275,8 @@ def main() -> int:
 
     print(
         'KAORI Kubernetes Governance Final Lock v1 passed: AuthZ-first readiness, TLS evidence minimization, '
-        'canonical Hero/table/modal/pagination ownership, user-scoped sync status, dead-surface cleanup, and L0–L7 '
-        'release evidence are aligned.'
+        'capability-first permission-gated Overview, canonical Hero/table/modal/pagination ownership, user-scoped sync status, '
+        'dead-surface cleanup, and L0–L7 release evidence are aligned.'
     )
     return 0
 
