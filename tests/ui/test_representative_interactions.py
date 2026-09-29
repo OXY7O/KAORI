@@ -409,7 +409,7 @@ def test_sidebar_v21_two_level_navigation_and_page_workspace_across_canonical_vi
             page.locator('[data-mobile-navigation-close]').click()
 
         response = page.goto(
-            f'{kaori_authenticated_base_url}/storage/object-storage/inventory/',
+            f'{kaori_authenticated_base_url}/storage/object-storage/',
             wait_until='networkidle',
         )
         assert response is not None

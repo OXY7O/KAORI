@@ -97,7 +97,13 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
             WorkspaceCapabilityDefinition(
                 'tenant', 'Tenant', 'building-2', 'tenant.index', ('tenant.view', 'tenant.manage')
             ),
-            WorkspaceCapabilityDefinition('analytics', 'Analytics', 'chart-column', 'analytics.overview', ('analytics.view',)),
+            WorkspaceCapabilityDefinition(
+                'analytics',
+                'Analytics',
+                'chart-column',
+                'analytics.overview',
+                ('analytics.view',),
+            ),
         ),
     ),
     WorkspaceDefinition(
@@ -170,7 +176,13 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         icon='file-text',
         section='Insights',
         capabilities=(
-            WorkspaceCapabilityDefinition('overview', 'Overview', 'layout-dashboard', 'reports.overview', ('reports.view',)),
+            WorkspaceCapabilityDefinition(
+                'overview',
+                'Overview',
+                'layout-dashboard',
+                'reports.overview',
+                ('reports.view',),
+            ),
             WorkspaceCapabilityDefinition(
                 'generate',
                 'Generate',
@@ -178,11 +190,23 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 'reports.generate_report',
                 ('reports.generate',),
             ),
-            WorkspaceCapabilityDefinition('generated', 'Generated', 'files', 'reports.generated_reports', ('reports.view',)),
+            WorkspaceCapabilityDefinition(
+                'generated',
+                'Generated',
+                'files',
+                'reports.generated_reports',
+                ('reports.view',),
+            ),
             WorkspaceCapabilityDefinition(
                 'templates', 'Templates', 'layout-template', 'reports.report_templates', ('reports.manage_templates',)
             ),
-            WorkspaceCapabilityDefinition('storage', 'Storage', 'hard-drive', 'reports.storage', ('reports.manage_storage',)),
+            WorkspaceCapabilityDefinition(
+                'storage',
+                'Storage',
+                'hard-drive',
+                'reports.storage',
+                ('reports.manage_storage',),
+            ),
             WorkspaceCapabilityDefinition(
                 'schedules', 'Schedules', 'calendar-clock', 'reports.schedules', ('reports.manage_schedules',)
             ),
@@ -237,7 +261,13 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
             WorkspaceCapabilityDefinition(
                 'observability', 'Observability', 'activity', 'integrations.observability', ('integrations.manage',)
             ),
-            WorkspaceCapabilityDefinition('storage', 'Storage', 'database', 'integrations.storage', ('integrations.manage',)),
+            WorkspaceCapabilityDefinition(
+                'storage',
+                'Storage',
+                'database',
+                'integrations.storage',
+                ('integrations.manage',),
+            ),
             WorkspaceCapabilityDefinition(
                 'notifications',
                 'Notification Channels',
