@@ -214,4 +214,4 @@ def test_operational_dashboard_standard_is_family_owned() -> None:
     assert 'Registry/Harbor and Source Control/GitHub' in audit
     assert 'Tenant Governance Flow' in audit
     assert 'Issue #758' in audit
-    assert 'four-record preview' in audit
+    assert 'five-record preview' in audit

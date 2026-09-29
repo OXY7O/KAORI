@@ -256,7 +256,7 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
         assert token in signals
     assert 'Alerts Summary' in alerts
     assert 'def _alerts(selected: ObjectStorageSystem | None)' in service
-    assert "for case in posture['cases'][:4]" in service
+    assert "for case in posture['cases'][:5]" in service
     assert 'Alert Interpretation & Response' in response
     assert 'Controlled Response Flow' in response
     assert 'components/numbered_governance_steps.html' in response

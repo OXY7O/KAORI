@@ -404,7 +404,7 @@ def _alerts(selected: ObjectStorageSystem | None) -> dict[str, Any]:
             ),
             'case_id': case.public_id,
         }
-        for case in posture['cases'][:4]
+        for case in posture['cases'][:5]
     ]
     return {
         'available': True,

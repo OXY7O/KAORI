@@ -105,7 +105,7 @@ Both flows keep domain-specific descriptions detailed enough to state the eviden
 
 ### Alerts Summary preview contract
 
-`Alerts Summary` is a bounded dashboard preview, not an alert registry. Kubernetes and Object Storage expose and render at most **four** recent active AlertCase records while severity totals continue to represent the complete selected scope. The full case set remains available through **Open Alert Intelligence**.
+`Alerts Summary` is a bounded dashboard preview, not an alert registry. Kubernetes and Object Storage expose and render at most **five** recent active AlertCase records while severity totals continue to represent the complete selected scope. The full case set remains available through **Open Alert Intelligence**.
 
 ## Data-boundary contract
 

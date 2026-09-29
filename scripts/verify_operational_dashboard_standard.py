@@ -429,22 +429,22 @@ def verify() -> None:
 
     _require(
         alert_summary,
-        ('up to four recent cases', 'dashboard.alerts_snapshot.items[:4]'),
+        ('up to five recent cases', 'dashboard.alerts_snapshot.items[:5]'),
         'Kubernetes Alerts Summary preview',
     )
     _require(
         alerts_builder,
-        ('for item in raw_items[:4]',),
+        ('for item in raw_items[:5]',),
         'Kubernetes Alerts Summary snapshot builder',
     )
     _require(
         object_alert_summary,
-        ('up to four recent cases', 'dashboard.alerts.rows[:4]'),
+        ('up to five recent cases', 'dashboard.alerts.rows[:5]'),
         'Object Storage Alerts Summary preview',
     )
     _require(
         object_dashboard_service,
-        ("for case in posture['cases'][:4]",),
+        ("for case in posture['cases'][:5]",),
         'Object Storage Alerts Summary snapshot builder',
     )
     for owner, source in (
@@ -662,7 +662,7 @@ def verify() -> None:
     print(
         'KAORI operational dashboard standard passed: shared Hero profile parity, canonical composition, '
         'snapshot-only web boundary, authorization-first lazy sections, URL-backed keyboard-accessible tabs, '
-        'shared style ownership, numbered response/reporting guidance, four-record alert previews, '
+        'shared style ownership, numbered response/reporting guidance, five-record alert previews, '
         'behavioral release evidence, documentation, and quality-gate enforcement match v1.6.'
     )
 
