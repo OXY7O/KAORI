@@ -6,24 +6,28 @@ TLS Certificate Governance is a read-oriented registry for certificate validity,
 
 ## Governance Overview landing contract
 
-Kubernetes Governance Overview is the capability-first landing page for implemented Kubernetes governance controls. TLS Certificates is the first implemented capability; future capabilities join the same Overview grammar only after implementation and authorization. The Overview must not advertise placeholder workflows.
+Kubernetes Governance Overview is the **domain-first** landing page for Kubernetes governance as a whole. TLS Certificates is the first implemented child capability; it does not define the Hero, Hero context, primary posture, or information architecture of the Governance domain. Future implemented governance capabilities join the same catalog without redesigning Overview. Placeholder capability links are prohibited.
 
-`governance.view` authorizes the landing page. Detailed TLS counts, snapshot evidence, and TLS drill-down are resolved only when the current user also has `tls_certificates.view`. A user without that permission sees the implemented TLS capability in a restricted state but receives no certificate counts or collection evidence.
+`governance.view` authorizes the landing page. `tls_certificates.view` controls only whether the TLS Certificates child capability can be opened. Governance Overview does **not** load TLS certificate inventory, certificate counts, TLS snapshot posture, or other child-capability detail evidence solely to render the domain landing page.
 
-Normal Governance Overview reads committed KAORI database/worker evidence only. It never queries Kubernetes at request time and never owns mutation. Kubernetes remains authoritative for live resource state; controlled TLS mutation remains owned by Kubernetes Secret Operations.
+The ready-state Hero represents the generic Kubernetes governance boundary: Kubernetes is authoritative for live resource/enforcement state, KAORI owns normalized governance evidence and orchestration, and the canonical Hero action is **Open Cluster Integrations**. Overview itself remains read-only and issues no live Kubernetes request.
 
 Canonical Overview hierarchy:
 
 ```text
-Hero
+Hero — Kubernetes Governance / Overview
 Governance Scope
 └── Governance Capabilities
-Committed Governance Posture        # only when TLS evidence is authorized
-├── TLS Governance Snapshot
-└── TLS Governance Posture
+    └── TLS Certificates                  # current implemented child capability
 Governance Model
-└── Provider Authority / Committed Evidence / Controlled Mutation
+└── Governance Operating Model
+    ├── Provider Authority
+    ├── Policy & Guardrails
+    ├── Committed Evidence
+    └── Controlled Handoffs
 ```
+
+Detailed TLS posture, validity, coverage, collection evidence, and rotation context remain owned by the TLS Certificates capability page.
 
 ## Canonical structure
 

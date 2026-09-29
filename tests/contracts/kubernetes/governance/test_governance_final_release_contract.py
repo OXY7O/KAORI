@@ -27,34 +27,46 @@ def test_tls_routes_own_authorized_clusterless_handling() -> None:
 
 
 
-def test_governance_overview_is_capability_first_and_permission_gates_tls_evidence() -> None:
+def test_governance_overview_is_domain_first_and_child_capability_evidence_stays_out() -> None:
     routes = read('app/kubernetes/governance/routes.py')
     overview = read('app/templates/kubernetes/governance/overview/index.html')
     standard = read('docs/design/patterns/KUBERNETES_TLS_CERTIFICATE_GOVERNANCE.md')
 
     assert "@permission_required('governance.view')\ndef overview" in routes
-    assert "can_view_tls = current_user.has_permission('tls_certificates.view')" in routes
-    assert 'get_tls_certificate_page({})' in routes
-    assert 'if can_view_tls and has_registered_clusters() is not False' in routes
-    assert 'can_view_tls=can_view_tls' in routes
-    assert 'tls_payload=tls_payload' in routes
+    assert "can_view_tls=current_user.has_permission('tls_certificates.view')" in routes
+    assert 'get_tls_certificate_page' not in routes
+    assert 'has_registered_clusters' not in routes
+    assert 'tls_payload' not in routes
 
     for token in (
+        'Kubernetes Governance',
+        'Review Kubernetes governance capabilities, control posture, evidence, and ownership across the platform.',
         'Governance Capabilities',
-        'Committed Governance Posture',
-        'TLS Governance Snapshot',
-        'TLS Governance Posture',
-        'Governance Model',
-        'components/snapshot_context_bar.html',
-        'Additional governance capabilities appear here only after they are implemented and authorized',
+        'Governance Operating Model',
+        'Provider Authority',
+        'Policy & Guardrails',
+        'Committed Evidence',
+        'Controlled Handoffs',
+        'Open Cluster Integrations',
+        'View Permission Required',
+        'New governance capabilities join this catalog only after implementation and authorization',
     ):
         assert token in overview
 
-    assert '{% if can_view_tls and tls_payload %}' in overview
-    assert 'View Permission Required' in overview
-    assert 'TLS View Restricted' in overview
+    for retired_tls_overview in (
+        'Committed Governance Posture',
+        'TLS Governance Snapshot',
+        'TLS Governance Posture',
+        'components/snapshot_context_bar.html',
+        '{% if can_view_tls and tls_payload %}',
+        'TLS View Restricted',
+    ):
+        assert retired_tls_overview not in overview
+
     assert 'Governance Overview landing contract' in standard
-    assert 'never queries Kubernetes at request time' in standard
+    assert 'domain-first' in standard
+    assert 'does **not** load TLS certificate inventory' in standard
+    assert '**Open Cluster Integrations**' in standard
 
 
 def test_governance_dead_job_presentation_helper_is_retired() -> None:

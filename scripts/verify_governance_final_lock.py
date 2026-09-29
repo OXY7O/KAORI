@@ -58,15 +58,17 @@ def main() -> int:
 
     for token in (
         "@permission_required('governance.view')",
-        "can_view_tls = current_user.has_permission('tls_certificates.view')",
-        'get_tls_certificate_page({})',
-        'if can_view_tls and has_registered_clusters() is not False',
-        'can_view_tls=can_view_tls',
-        'tls_payload=tls_payload',
+        "can_view_tls=current_user.has_permission('tls_certificates.view')",
     ):
         require(
             token in governance_source,
-            f'Governance Overview route must preserve permission-gated committed TLS evidence: {token}',
+            f'Governance Overview route must preserve domain authorization and child-capability visibility: {token}',
+            errors,
+        )
+    for retired_dependency in ('get_tls_certificate_page', 'has_registered_clusters', 'tls_payload'):
+        require(
+            retired_dependency not in governance_source,
+            f'Governance Overview route must not load child-capability evidence: {retired_dependency}',
             errors,
         )
 
@@ -133,8 +135,10 @@ def main() -> int:
     table = read('app/templates/kubernetes/governance/tls_certificates/partials/_table.html')
     page = read('app/templates/kubernetes/governance/tls_certificates/index.html')
     require(
-        'page_hero.context_header(' in overview,
-        'Governance Overview Hero must use the Context Icon Box.',
+        'page_hero.context_card(' in overview
+        and "'Open Cluster Integrations'" in overview
+        and "url_for('integrations.kubernetes')" in overview,
+        'Governance Overview ready Hero must use the canonical generic context card and Open Cluster Integrations action.',
         errors,
     )
     require(
@@ -143,24 +147,39 @@ def main() -> int:
         errors,
     )
     require(
-        'Governance Controls' in overview and "meta_label('server-cog', 'Kubernetes Operations')" not in overview,
-        'Governance Overview Hero metadata must remain governance-specific.',
+        'Governance Controls' in overview
+        and 'Committed Evidence' in overview
+        and 'Governed Handoffs' in overview
+        and "meta_label('server-cog', 'Kubernetes Operations')" not in overview,
+        'Governance Overview Hero metadata must remain domain-governance specific.',
         errors,
     )
 
     for token in (
+        'Review Kubernetes governance capabilities, control posture, evidence, and ownership across the platform.',
         'Governance Capabilities',
+        'Governance Operating Model',
+        'Provider Authority',
+        'Policy & Guardrails',
+        'Committed Evidence',
+        'Controlled Handoffs',
+        'View Permission Required',
+        'New governance capabilities join this catalog only after implementation and authorization',
+    ):
+        require(token in overview, f'Governance Overview domain-first composition is missing: {token}', errors)
+    for retired_tls_overview in (
         'Committed Governance Posture',
         'TLS Governance Snapshot',
         'TLS Governance Posture',
-        'Governance Model',
         'components/snapshot_context_bar.html',
         '{% if can_view_tls and tls_payload %}',
-        'View Permission Required',
         'TLS View Restricted',
-        'Additional governance capabilities appear here only after they are implemented and authorized',
     ):
-        require(token in overview, f'Governance Overview landing composition is missing: {token}', errors)
+        require(
+            retired_tls_overview not in overview,
+            f'Governance Overview must not be TLS-posture centric: {retired_tls_overview}',
+            errors,
+        )
     require(
         'page_hero.context_card(' in hero,
         'TLS Governance Hero must use the canonical status-oriented context card.',
@@ -275,7 +294,7 @@ def main() -> int:
 
     print(
         'KAORI Kubernetes Governance Final Lock v1 passed: AuthZ-first readiness, TLS evidence minimization, '
-        'capability-first permission-gated Overview, canonical Hero/table/modal/pagination ownership, user-scoped sync status, '
+        'domain-first Governance Overview, canonical Hero/table/modal/pagination ownership, user-scoped sync status, '
         'dead-surface cleanup, and L0–L7 release evidence are aligned.'
     )
     return 0
