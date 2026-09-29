@@ -1,4 +1,4 @@
-# KAORI Operational Dashboard Pattern v1.5
+# KAORI Operational Dashboard Pattern v1.6
 
 **Status:** Locked reference pattern  
 **Reference implementations:** Kubernetes Operations Dashboard and Object Storage Operations Dashboard  
@@ -79,8 +79,8 @@ Kubernetes maps the health table to clusters and Object Storage maps it to regis
 - Use `components/workspace_tabs.html` with semantic key `integrated-workspace`.
 - Use `components/operational_section_card.html` for repeated section shells.
 - Use `components/peer_content_grid.html` for equal-height peer content.
-- Use `components/operational_flow_steps.html` for capacity, reporting, and other arrow-connected action flows.
-- Use `components/numbered_governance_steps.html` for **Alert Interpretation & Response**, reusing the same numbered, non-arrow sequence as Tenant Governance Flow.
+- Use `components/operational_flow_steps.html` for capacity and other directional action flows where arrow-connected progression remains meaningful.
+- Use `components/numbered_governance_steps.html` for **Alert Interpretation & Response** and **Controlled Reporting Flow**, reusing the same numbered, non-arrow governance sequence as Tenant Governance Flow.
 - Use `components/operational_callout.html` for interpretation/supporting guidance.
 - Use `components/forecast_projection_chart.html` for historical/projected utilization.
 - Use canonical table, label, empty-state, loading, and pagination components.
@@ -95,9 +95,17 @@ Identity → Scope → Indicators → Peer analysis → Interpretation → Actio
 
 The Hero establishes identity, evidence boundary, and readiness. Operational Signal Overview owns scope and high-level indicators. Tabs are peer perspectives of the same dashboard scope. Evidence precedes interpretation and action.
 
-### Alert response flow contract
+### Controlled dashboard flow contract
 
-`Alert Interpretation & Response` keeps the shared six-step sequence `Validate → Triage → Investigate → Respond → Verify → Record`, rendered through `components/numbered_governance_steps.html`. This is the same visual grammar used by Tenant Governance Flow. Capacity and Reporting keep `components/operational_flow_steps.html` because those remain arrow-connected action flows.
+`Alert Interpretation & Response` keeps the shared six-step sequence `Validate → Triage → Investigate → Respond → Verify → Record`, rendered through `components/numbered_governance_steps.html`.
+
+`Controlled Reporting Flow` uses the same numbered governance grammar for `Validate → Select → Create → Generate → Schedule → Retain`. Reporting is a governed decision sequence rather than a directional data pipeline, so it must not use the arrow-connected operational-flow component.
+
+Both flows keep domain-specific descriptions detailed enough to state the evidence checked, the decision or action performed, and the expected boundary or outcome. Capacity remains on `components/operational_flow_steps.html` where directional action progression is still the intended semantic.
+
+### Alerts Summary preview contract
+
+`Alerts Summary` is a bounded dashboard preview, not an alert registry. Kubernetes and Object Storage expose and render at most **four** recent active AlertCase records while severity totals continue to represent the complete selected scope. The full case set remains available through **Open Alert Intelligence**.
 
 ## Data-boundary contract
 

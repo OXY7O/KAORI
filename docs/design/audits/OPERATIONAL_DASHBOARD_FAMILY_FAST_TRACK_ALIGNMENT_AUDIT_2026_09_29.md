@@ -3,6 +3,7 @@
 ## Authority
 
 - Issue #753 — Lock dashboard family standard and align alert response governance flow.
+- Issue #758 — Refine Operational Dashboard alert density and reporting governance flow.
 - `docs/design/patterns/OPERATIONAL_DASHBOARD.md` v1.5.
 - Kubernetes Operations Dashboard and Object Storage Operations Dashboard as the paired reference implementation.
 - Tenant Governance Flow as the existing numbered, non-arrow governance-sequence reference.
@@ -34,9 +35,13 @@ The retained semantic order is:
 
 This matches the visual grammar of **Tenant Governance Flow** and removes the older arrow-connected boxes from alert-response guidance without creating a new component.
 
-Capacity and Reporting remain on `components/operational_flow_steps.html`; their arrow-connected action-flow semantics are intentionally unchanged.
+Controlled Reporting Flow now follows the same `components/numbered_governance_steps.html` grammar as Controlled Response Flow. Its retained semantic order is `Validate → Select → Create → Generate → Schedule → Retain`. Capacity remains on `components/operational_flow_steps.html` because its directional action-flow semantics remain intentional.
 
-## Copy-density alignment
+## Alert preview and copy-density alignment
+
+Alerts Summary is now a bounded four-record preview in both reference dashboards. The server-side snapshot builders and template loops cap recent AlertCase content at four while severity totals remain full-scope; operators continue to use Alert Intelligence for the complete case set.
+
+Controlled Response and Controlled Reporting step descriptions are expanded so each stage states the evidence being checked, the decision/action expected, and the required outcome boundary without turning the dashboard into procedural documentation.
 
 The Fast Track pass also adjusts three reviewed strings without changing operational meaning:
 
@@ -58,7 +63,8 @@ The existing Operational Dashboard verifier and focused dashboard contract tests
 
 - shared dashboard family authority;
 - Registry/Harbor and Source Control/GitHub reuse direction;
-- the shared numbered alert-response sequence in both reference dashboards;
-- continued use of arrow-connected operational flows for capacity/reporting where already established.
+- the shared numbered Controlled Response and Controlled Reporting sequences in both reference dashboards;
+- the four-record Alerts Summary preview boundary in both dashboard families;
+- continued use of arrow-connected operational flow only where the locked pattern still requires it, including capacity.
 
 Developer Check, Full Admission, staging PR, UAT, and promotion remain outside this Fast Track step until explicit human acceptance.

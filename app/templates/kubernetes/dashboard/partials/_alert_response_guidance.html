@@ -1,7 +1,14 @@
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/numbered_governance_steps.html" as numbered_steps %}
 {% import "components/operational_section_card.html" as operational_section_card %}
-{% set alert_response_steps = [('scan-search', 'Validate', 'Freshness, cluster, and source'), ('list-filter', 'Triage', 'Severity, scope, and owner'), ('chart-no-axes-combined', 'Investigate', 'Metrics, labels, and changes'), ('shield-check', 'Respond', 'Approved runbook and guardrails'), ('circle-check-big', 'Verify', 'Recovery and workload stability'), ('clipboard-check', 'Record', 'Outcome and activity evidence')] %}
+{% set alert_response_steps = [
+    ('scan-search', 'Validate', 'Confirm the selected cluster, committed snapshot freshness, and alert-source evidence before acting on the signal.'),
+    ('list-filter', 'Triage', 'Rank severity and blast radius, identify the affected namespace or workload, and establish an accountable owner.'),
+    ('chart-no-axes-combined', 'Investigate', 'Correlate labels with committed metrics, recent changes, dependencies, and related signals to test the suspected cause.'),
+    ('shield-check', 'Respond', 'Execute only the approved runbook or governed change for the confirmed scope while preserving permission and safety guardrails.'),
+    ('circle-check-big', 'Verify', 'Confirm alert recovery, workload health, and relevant SLI or capacity signals remain stable after the response.'),
+    ('clipboard-check', 'Record', 'Capture the decision, action, verification result, and follow-up evidence so the operational outcome remains auditable.')
+] %}
 {% call operational_section_card.render(
     'Alert Interpretation & Response',
     'Meaning, triage order, and controlled response flow for active Kubernetes alerts.',

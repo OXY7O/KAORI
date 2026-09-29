@@ -9,14 +9,18 @@ CONTENT = DASHBOARD_DIR / 'partials' / '_content.html'
 HERO = DASHBOARD_DIR / 'partials' / '_hero.html'
 ONBOARDING_BANNER = ROOT / 'app' / 'templates' / 'components' / 'cluster' / '_onboarding_banner.html'
 SIGNAL_OVERVIEW = DASHBOARD_DIR / 'partials' / '_signal_overview.html'
+ALERT_SUMMARY = DASHBOARD_DIR / 'partials' / '_alerts_summary.html'
 ALERT_GUIDANCE = DASHBOARD_DIR / 'partials' / '_alert_response_guidance.html'
 REPORTING_GUIDANCE = DASHBOARD_DIR / 'partials' / '_reporting_guidance.html'
+ALERTS_BUILDER = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'sections' / 'alerts.py'
 OBJECT_DASHBOARD_DIR = ROOT / 'app' / 'templates' / 'storage' / 'object_storage' / 'dashboard'
 OBJECT_CONTENT = OBJECT_DASHBOARD_DIR / 'partials' / '_content.html'
 OBJECT_HERO = OBJECT_DASHBOARD_DIR / 'partials' / '_hero.html'
 OBJECT_SIGNAL_OVERVIEW = OBJECT_DASHBOARD_DIR / 'partials' / '_signal_overview.html'
+OBJECT_ALERT_SUMMARY = OBJECT_DASHBOARD_DIR / 'partials' / '_alerts_summary.html'
 OBJECT_ALERT_GUIDANCE = OBJECT_DASHBOARD_DIR / 'partials' / '_alert_response_guidance.html'
 OBJECT_REPORTING_GUIDANCE = OBJECT_DASHBOARD_DIR / 'partials' / '_reporting_guidance.html'
+OBJECT_DASHBOARD_SERVICE = ROOT / 'app' / 'storage' / 'object_storage' / 'dashboard' / 'service.py'
 PAGE_HERO = ROOT / 'app' / 'templates' / 'components' / 'page_hero.html'
 WORKSPACE_TABS = ROOT / 'app' / 'templates' / 'components' / 'workspace_tabs.html'
 METRIC_CARD = ROOT / 'app' / 'templates' / 'components' / 'operational_metric_card.html'
@@ -190,13 +194,17 @@ def verify() -> None:
     hero = _read(HERO)
     onboarding_banner = _read(ONBOARDING_BANNER)
     signal_overview = _read(SIGNAL_OVERVIEW)
+    alert_summary = _read(ALERT_SUMMARY)
     alert_guidance = _read(ALERT_GUIDANCE)
     reporting_guidance = _read(REPORTING_GUIDANCE)
+    alerts_builder = _read(ALERTS_BUILDER)
     object_content = _read(OBJECT_CONTENT)
     object_hero = _read(OBJECT_HERO)
     object_signal_overview = _read(OBJECT_SIGNAL_OVERVIEW)
+    object_alert_summary = _read(OBJECT_ALERT_SUMMARY)
     object_alert_guidance = _read(OBJECT_ALERT_GUIDANCE)
     object_reporting_guidance = _read(OBJECT_REPORTING_GUIDANCE)
+    object_dashboard_service = _read(OBJECT_DASHBOARD_SERVICE)
     page_hero = _read(PAGE_HERO)
     workspace_tabs = _read(WORKSPACE_TABS)
     metric_card = _read(METRIC_CARD)
@@ -360,22 +368,93 @@ def verify() -> None:
         if 'components/operational_flow_steps.html' in source:
             raise AssertionError(f'{owner}: alert response must use the shared numbered governance sequence')
 
+    for owner, source in (
+        ('Kubernetes reporting guidance', reporting_guidance),
+        ('Object Storage reporting guidance', object_reporting_guidance),
+    ):
+        _require(
+            source,
+            (
+                'components/numbered_governance_steps.html',
+                'reporting_steps',
+                'Controlled Reporting Flow',
+                "'Validate'",
+                "'Select'",
+                "'Create'",
+                "'Generate'",
+                "'Schedule'",
+                "'Retain'",
+                'approved output',
+            ),
+            owner,
+        )
+        if 'components/operational_flow_steps.html' in source:
+            raise AssertionError(f'{owner}: Controlled Reporting Flow must use the shared numbered governance sequence')
     _require(
         reporting_guidance,
-        (
-            'approved output',
-            'stored artifact',
-            'Reporting Control',
-            'Controlled Reporting Flow',
-            'Reporting Tip',
-        ),
+        ('stored artifact', 'Reporting Control', 'Reporting Tip'),
         'Kubernetes format-neutral reporting guidance',
     )
     _require(
         object_reporting_guidance,
-        ('Reporting Control', 'Controlled Reporting Flow', 'Reporting Tip'),
+        ('Reporting Control', 'Reporting Tip'),
         'Object Storage reporting control',
     )
+    for owner, source in (
+        ('Kubernetes alert response guidance', alert_guidance),
+        ('Object Storage alert response guidance', object_alert_guidance),
+    ):
+        _require(
+            source,
+            (
+                'before acting on the signal',
+                'establish an accountable owner',
+                'remains auditable',
+            ),
+            f'{owner} detailed step copy',
+        )
+    for owner, source in (
+        ('Kubernetes reporting guidance', reporting_guidance),
+        ('Object Storage reporting guidance', object_reporting_guidance),
+    ):
+        _require(
+            source,
+            (
+                'committed evidence freshness',
+                'generation intent',
+                'retention or audit evidence',
+            ),
+            f'{owner} detailed step copy',
+        )
+
+    _require(
+        alert_summary,
+        ('up to four recent cases', 'dashboard.alerts_snapshot.items[:4]'),
+        'Kubernetes Alerts Summary preview',
+    )
+    _require(
+        alerts_builder,
+        ('for item in raw_items[:4]',),
+        'Kubernetes Alerts Summary snapshot builder',
+    )
+    _require(
+        object_alert_summary,
+        ('up to four recent cases', 'dashboard.alerts.rows[:4]'),
+        'Object Storage Alerts Summary preview',
+    )
+    _require(
+        object_dashboard_service,
+        ("for case in posture['cases'][:4]",),
+        'Object Storage Alerts Summary snapshot builder',
+    )
+    for owner, source in (
+        ('Kubernetes Alerts Summary template', alert_summary),
+        ('Kubernetes Alerts Summary builder', alerts_builder),
+        ('Object Storage Alerts Summary template', object_alert_summary),
+        ('Object Storage Alerts Summary builder', object_dashboard_service),
+    ):
+        if '[:3]' in source and 'alert' in owner.lower():
+            raise AssertionError(f'{owner}: stale three-record alert preview cap remains')
     _require(
         object_alert_guidance,
         (
@@ -499,7 +578,7 @@ def verify() -> None:
     _require(
         standard,
         (
-            '# KAORI Operational Dashboard Pattern v1.5',
+            '# KAORI Operational Dashboard Pattern v1.6',
             'Operational Dashboard Hero Profile',
             'page_hero.operational_dashboard(...)',
             'Active Scope',
@@ -583,8 +662,8 @@ def verify() -> None:
     print(
         'KAORI operational dashboard standard passed: shared Hero profile parity, canonical composition, '
         'snapshot-only web boundary, authorization-first lazy sections, URL-backed keyboard-accessible tabs, '
-        'shared style ownership, numbered alert response guidance, format-neutral reporting guidance, '
-        'behavioral release evidence, documentation, and quality-gate enforcement match v1.5.'
+        'shared style ownership, numbered response/reporting guidance, four-record alert previews, '
+        'behavioral release evidence, documentation, and quality-gate enforcement match v1.6.'
     )
 
 

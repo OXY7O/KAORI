@@ -168,20 +168,34 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
         assert token not in all_source
 
 
-def test_alert_response_flow_reuses_tenant_governance_sequence() -> None:
-    kubernetes = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
-    object_storage = read('app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html')
-    tenant = read(
-        'app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html'
-    )
+def test_response_and_reporting_flows_reuse_numbered_governance_sequence() -> None:
+    kubernetes_response = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
+    object_response = read('app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html')
+    kubernetes_reporting = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
+    object_reporting = read('app/templates/storage/object_storage/dashboard/partials/_reporting_guidance.html')
+    tenant = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
 
     assert 'Tenant Governance Flow' in tenant
     assert 'components/numbered_governance_steps.html' in tenant
-    for source in (kubernetes, object_storage):
+
+    for source in (kubernetes_response, object_response):
         assert 'components/numbered_governance_steps.html' in source
         assert 'components/operational_flow_steps.html' not in source
         assert 'alert_response_steps' in source
+        assert 'before acting on the signal' in source
+        assert 'establish an accountable owner' in source
+        assert 'remains auditable' in source
         for step in ('Validate', 'Triage', 'Investigate', 'Respond', 'Verify', 'Record'):
+            assert f"'{step}'" in source
+
+    for source in (kubernetes_reporting, object_reporting):
+        assert 'components/numbered_governance_steps.html' in source
+        assert 'components/operational_flow_steps.html' not in source
+        assert 'reporting_steps' in source
+        assert 'committed evidence freshness' in source
+        assert 'generation intent' in source
+        assert 'retention or audit evidence' in source
+        for step in ('Validate', 'Select', 'Create', 'Generate', 'Schedule', 'Retain'):
             assert f"'{step}'" in source
 
 
@@ -191,7 +205,7 @@ def test_operational_dashboard_standard_is_family_owned() -> None:
         'docs/design/audits/OPERATIONAL_DASHBOARD_FAMILY_FAST_TRACK_ALIGNMENT_AUDIT_2026_09_29.md'
     )
 
-    assert '# KAORI Operational Dashboard Pattern v1.5' in standard
+    assert '# KAORI Operational Dashboard Pattern v1.6' in standard
     assert 'Kubernetes Operations Dashboard and Object Storage Operations Dashboard' in standard
     assert 'Dashboard family consistency' in standard
     assert 'Registry/Harbor and Source Control/GitHub' in standard
@@ -199,3 +213,5 @@ def test_operational_dashboard_standard_is_family_owned() -> None:
     assert 'same four workspace tabs' in audit
     assert 'Registry/Harbor and Source Control/GitHub' in audit
     assert 'Tenant Governance Flow' in audit
+    assert 'Issue #758' in audit
+    assert 'four-record preview' in audit
