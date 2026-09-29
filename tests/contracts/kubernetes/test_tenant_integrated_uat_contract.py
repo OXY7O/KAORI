@@ -103,7 +103,7 @@ def test_tenant_operations_keeps_provider_policy_audit_and_reports_evidence_expl
     assert 'domain-reservation' in evidence
     assert 'exposure-policy' in evidence
     assert 'Tenant Governance' in overview
-    assert 'Open Reports' in overview
+    assert 'Governance &amp; Reports' in operations
     assert 'Reports' in operations
 
 
