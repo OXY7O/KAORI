@@ -10,7 +10,7 @@
     ('shield-alert', 'Host Coverage Exceptions', coverage_exceptions, 'Partial, uncovered, or unavailable host mapping evidence.', 'warning' if coverage_exceptions else 'normal')
 ] %}
 {% call operational_section_card.render(
-    'Certificate Validity & Operations',
+    'Certificate Validity',
     'Lifecycle and declared-host coverage for the active governance filters.',
     'gauge',
     body_classes='p-0'
