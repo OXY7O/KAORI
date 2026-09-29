@@ -68,6 +68,8 @@ _APPROVED_STANDARD_SURFACE_COMPONENTS = {
     'app/templates/components/protected_value_panel.html',
     'app/templates/components/activity_status_card.html',
     'app/templates/components/kubernetes_operation_ui.html',
+    'app/templates/kubernetes/governance/tls_certificates/partials/_sync_panel.html',
+    'app/templates/kubernetes/tenant/partials/_sync_workspace.html',
 }
 
 _APPROVED_ARBITRARY_TEXT_COMPONENTS = {
