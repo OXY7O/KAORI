@@ -174,7 +174,7 @@ def _metrics(relative: str, source: str) -> dict[str, int]:
             0 if relative in _APPROVED_FONT_EXTRABOLD_COMPONENTS else len(_FONT_EXTRABOLD.findall(source))
         ),
         'arbitrary_radii': len(_ARBITRARY_RADIUS.findall(source)),
-        'raw_hex_colors': len(_RAW_HEX.findall(source)),
+        'raw_hex_colors': len(_RAW_HEX.findall(_JINJA_STRING.sub('', source))),
         'raw_palette_utilities': len(_RAW_PALETTE.findall(source)),
         'semantic_border_utilities': (
             0 if relative in _APPROVED_SEMANTIC_BORDER_COMPONENTS else len(_SEMANTIC_BORDER.findall(source))
