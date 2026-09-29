@@ -50,7 +50,6 @@ from app.kubernetes.tenant.credential_service import (
     TenantCredentialStateConflictError,
     create_human_credential_from_grant_committed,
     generate_credential_material_committed,
-    get_credential,
     renew_credential_committed,
     resume_credential_committed,
     revoke_credential_committed,
@@ -1543,6 +1542,7 @@ def _credential_feedback(
             },
         )
 
+
 @tenant_bp.post('/credentials/<int:credential_id>/material')
 @permission_required('tenant.manage')
 def generate_credential_material_route(credential_id: int):
@@ -1603,7 +1603,7 @@ def generate_credential_material_route(credential_id: int):
             material_expires_at=material.expires_at,
             material_requested_seconds=requested_seconds,
             material_access_package=material.access_package,
-            material_credential_valid_until=credential_record.valid_until,
+            material_credential_valid_until=material.expires_at,
             delivery_label=delivery_label,
             **context,
         )
