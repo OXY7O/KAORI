@@ -43,6 +43,31 @@ def test_shared_operation_component_keeps_special_workflow_and_embedded_action_p
     assert 'embedded=true' in component
 
 
+def test_operations_header_info_tips_are_not_clipped_by_surface_shells() -> None:
+    component = read('app/templates/components/kubernetes_operation_ui.html')
+    replace_content = read('app/templates/kubernetes/operations/secrets/_replace_content_form.html')
+
+    assert "macro surface_shell_classes(extra_classes='', allow_overflow=false)" in component
+    assert "'overflow-visible' if allow_overflow else 'overflow-hidden'" in component
+    assert 'surface_shell_classes(allow_overflow=info_id and info_title)' in component
+
+    for relative in (
+        'app/templates/kubernetes/operations/configmaps/create.html',
+        'app/templates/kubernetes/operations/configmaps/update.html',
+        'app/templates/kubernetes/operations/configmaps/delete.html',
+    ):
+        assert 'surface_shell_classes(configmap_main_classes, true)' in read(relative)
+
+    assert 'surface_shell_classes(form_context.main_classes(), true)' in read(
+        'app/templates/kubernetes/operations/secrets/create.html'
+    )
+    assert 'surface_shell_classes(allow_overflow=true)' in read(
+        'app/templates/kubernetes/operations/secrets/reveal.html'
+    )
+    assert '<section class="overflow-visible rounded-xl border bg-surface-card shadow-sm' in replace_content
+    assert 'rounded-t-xl border-b' in replace_content
+
+
 def test_operations_landing_hero_and_deletion_reference_defaults_are_aligned() -> None:
     configmaps = read('app/templates/kubernetes/operations/configmaps/index.html')
     secrets = read('app/templates/kubernetes/operations/secrets/index.html')

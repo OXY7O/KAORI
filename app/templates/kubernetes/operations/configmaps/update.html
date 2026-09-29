@@ -40,7 +40,7 @@
               class="{{ form_context.layout_classes() }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             {% set configmap_main_classes = form_context.main_classes() %}
-            <section class="{{ configmap_ui.surface_shell_classes(configmap_main_classes) }}"
+            <section class="{{ configmap_ui.surface_shell_classes(configmap_main_classes, true) }}"
                      data-kubernetes-operation-form="configmap-update">
                 {% set configmap_update_info = [
                     'Cluster, Namespace, ConfigMap identity, immutable state, and resourceVersion are loaded from the selected live Kubernetes target.',

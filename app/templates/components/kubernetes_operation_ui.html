@@ -4,8 +4,8 @@
 {% import "components/operational_point_flow.html" as point_flow %}
 {% import "components/info_tip.html" as info_tip %}
 {# Canonical KAORI primitives for guarded Kubernetes mutation workflows. #}
-{% macro surface_shell_classes(extra_classes='') -%}
-    overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ extra_classes }}
+{% macro surface_shell_classes(extra_classes='', allow_overflow=false) -%}
+    {{ 'overflow-visible' if allow_overflow else 'overflow-hidden' }} rounded-xl border border-outline-default bg-surface-card shadow-sm {{ extra_classes }}
 {%- endmacro %}
 {% macro section_header(icon, title, description, tone='brand', info_id=None, info_title=None, info_text='', info_items=None, info_placement='right') -%}
     <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6">
@@ -97,7 +97,7 @@
     </div>
 {%- endmacro %}
 {% macro workspace_section(icon, title, description, tone='brand', body_classes='p-5 sm:p-6', marker=None, info_id=None, info_title=None, info_text='', info_items=None, info_placement='right') -%}
-    <section class="{{ surface_shell_classes() }}"
+    <section class="{{ surface_shell_classes(allow_overflow=info_id and info_title) }}"
              {% if marker %}data-kubernetes-operation-section="{{ marker }}"{% endif %}>
         {{ section_header(icon, title, description, tone, info_id, info_title, info_text, info_items, info_placement) }}
         <div class="{{ body_classes }}">{{ caller() }}</div>

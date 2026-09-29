@@ -439,6 +439,43 @@ def main() -> int:
         'Kubernetes Operation UI must own section-level Info Tip composition.',
         errors,
     )
+    require(
+        "macro surface_shell_classes(extra_classes='', allow_overflow=false)" in shared_ui
+        and "'overflow-visible' if allow_overflow else 'overflow-hidden'" in shared_ui
+        and 'surface_shell_classes(allow_overflow=info_id and info_title)' in shared_ui,
+        'Kubernetes Operation surfaces with header Info Tips must permit visible overflow.',
+        errors,
+    )
+    for relative in (
+        'app/templates/kubernetes/operations/configmaps/create.html',
+        'app/templates/kubernetes/operations/configmaps/update.html',
+        'app/templates/kubernetes/operations/configmaps/delete.html',
+    ):
+        require(
+            'surface_shell_classes(configmap_main_classes, true)' in read(relative),
+            f'{relative} must allow its header Info Tip to escape the card boundary.',
+            errors,
+        )
+    require(
+        'surface_shell_classes(form_context.main_classes(), true)'
+        in read('app/templates/kubernetes/operations/secrets/create.html'),
+        'Secret Create must allow its header Info Tip to escape the card boundary.',
+        errors,
+    )
+    require(
+        'surface_shell_classes(allow_overflow=true)'
+        in read('app/templates/kubernetes/operations/secrets/reveal.html'),
+        'Protected Reveal must allow its header Info Tip to escape the card boundary.',
+        errors,
+    )
+    require(
+        '<section class="overflow-visible rounded-xl border bg-surface-card shadow-sm'
+        in replace_content
+        and 'rounded-t-xl border-b' in replace_content,
+        'Secret Replace content guidance must remain visible outside its card while preserving rounded header geometry.',
+        errors,
+    )
+
     header_guidance = {
         'app/templates/kubernetes/operations/configmaps/create.html': 'configmap-create-guidance-tip',
         'app/templates/kubernetes/operations/configmaps/update.html': 'configmap-update-guidance-tip',
