@@ -172,6 +172,42 @@ The following family-level map keeps current production surfaces deterministic w
 
 Where a family contains materially different route intents, classify the route rather than assigning one archetype to the entire module.
 
+## Application Navigation Layering
+
+Global and local navigation are separate semantic layers:
+
+```text
+Global Sidebar
+Section -> Workspace
+
+Domain Workspace Navigation
+Workspace -> Capability
+
+Capability Content Navigation
+Capability -> Detailed peer view
+```
+
+The global sidebar never uses a third nested level. Provider/vendor identity and runtime instances remain inside their owning workspace rather than becoming global navigation.
+
+The second layer uses `components/workspace_tabs.html` server-owned Integrated Workspace Tabs. Detailed content continues to select from the existing registered tab families below.
+
+Examples:
+
+```text
+Kubernetes
+  -> Analytics
+      -> Capacity
+
+Object Storage
+  -> Inventory
+      -> Buckets
+
+Access
+  -> Identity Providers
+```
+
+See `components/SIDEBAR_NAVIGATION.md` and `components/DOMAIN_WORKSPACE_NAVIGATION.md`.
+
 ## Navigation and Tab Decision Matrix
 
 Tabs are optional. A page should use no tabs when sections, routes, cards, or a detail surface express the information architecture more clearly.

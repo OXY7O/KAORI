@@ -7,6 +7,7 @@
         <link rel="icon"
               type="image/svg+xml"
               href="{{ url_for('static', filename='favicon.svg') }}" />
+        {% import "components/workspace_tabs.html" as workspace_tabs %}
         <title>
             {% block title %}
                 KAORI
@@ -42,6 +43,27 @@
                       class="min-h-0 flex-1 overflow-y-auto scroll-pt-5 bg-surface-page transition-colors duration-300 [scrollbar-gutter:stable] lg:scroll-pt-6 2xl:scroll-pt-7">
                     <div class="p-5 lg:p-6 2xl:p-7">
                         {% include "components/states/_flash_messages.html" %}
+                        {% if workspace_navigation %}
+                            <section class="mb-5 overflow-hidden rounded-xl border border-outline-default bg-surface-card px-4 pt-3 shadow-sm sm:px-5"
+                                     data-kaori-domain-workspace-nav="{{ workspace_navigation.key }}"
+                                     aria-label="{{ workspace_navigation.label }} workspace navigation">
+                                <div class="flex items-center gap-2 pb-2">
+                                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                        <i data-lucide="{{ workspace_navigation.icon }}"
+                                           class="h-3.5 w-3.5"
+                                           aria-hidden="true"></i>
+                                    </span>
+                                    <span class="text-xs font-semibold uppercase tracking-wider text-content-muted">Workspace</span>
+                                    <span class="text-sm font-semibold text-content-primary">{{ workspace_navigation.label }}</span>
+                                </div>
+                                {{ workspace_tabs.render_navigation(
+                                    workspace_navigation.tabs,
+                                    workspace_navigation.active_key,
+                                    prefix='domain-' ~ workspace_navigation.key,
+                                    aria_label=workspace_navigation.label ~ ' capabilities'
+                                ) }}
+                            </section>
+                        {% endif %}
                         {% block dashboard_content %}
                         {% endblock dashboard_content %}
                     </div>

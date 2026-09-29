@@ -20,71 +20,85 @@ def test_sidebar_navigation_standard_is_enforced() -> None:
     assert 'KAORI sidebar navigation standard passed' in result.stdout
 
 
-def test_sidebar_standard_is_registered_as_authoritative_design_document() -> None:
+def test_sidebar_v2_and_domain_workspace_authorities_are_registered() -> None:
     readme = (ROOT / 'docs' / 'design' / 'README.md').read_text(encoding='utf-8')
     design_system = (ROOT / 'docs' / 'design' / 'DESIGN_SYSTEM.md').read_text(encoding='utf-8')
-    standard = (ROOT / 'docs' / 'design' / 'components' / 'SIDEBAR_NAVIGATION.md').read_text(encoding='utf-8')
+    sidebar_standard = (ROOT / 'docs' / 'design' / 'components' / 'SIDEBAR_NAVIGATION.md').read_text(
+        encoding='utf-8'
+    )
+    workspace_standard = (
+        ROOT / 'docs' / 'design' / 'components' / 'DOMAIN_WORKSPACE_NAVIGATION.md'
+    ).read_text(encoding='utf-8')
 
     assert 'locked application-shell navigation contract' in readme
-    assert 'locked v1.7 sidebar hierarchy' in design_system
-    assert 'The earlier 12/11 px markdown baseline' in standard
-    assert 'KAORI Sidebar Navigation Standard v1.7' in standard
-    assert 'dark mode keeps the active Violet surface without a separate left-edge accent' in standard
-    assert '## Navigation Naming Contract' in standard
-    assert 'Section provides domain context' in standard
-    assert '15/13 px visual-guide draft' in standard
+    assert 'DOMAIN_WORKSPACE_NAVIGATION.md' in readme
+    assert 'locked v2 global Section → Workspace' in design_system
+    assert 'KAORI Sidebar Navigation Standard v2.0' in sidebar_standard
+    assert 'A third level in the global sidebar is prohibited.' in sidebar_standard
+    assert 'KAORI Domain Workspace Navigation Standard v1.0' in workspace_standard
+    assert 'workspace_tabs.render_navigation()' in workspace_standard
 
 
-def test_navigation_content_hierarchy_matches_design_system_v2_contract() -> None:
-    sidebar = (ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'sidebar.html').read_text(encoding='utf-8')
-    analytics_menu = (ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'analytics_menu.html').read_text(
+def test_global_sidebar_is_workspace_only_and_future_domains_are_not_placeholders() -> None:
+    sidebar = (ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'sidebar.html').read_text(
         encoding='utf-8'
     )
-    tenant_menu = (ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'tenant_menu.html').read_text(
-        encoding='utf-8'
-    )
+    model = (ROOT / 'app' / 'common' / 'workspace_navigation.py').read_text(encoding='utf-8')
+
+    assert 'data-kaori-sidebar-section' in sidebar
+    assert 'data-kaori-sidebar-workspace' in sidebar
+    assert '<details class="sidebar-menu' not in sidebar
+    assert 'analytics_menu.html' not in sidebar
+    assert 'inventory_menu.html' not in sidebar
+    assert 'tenant_menu.html' not in sidebar
+
+    for current in (
+        "key='kubernetes'",
+        "key='object_storage'",
+        "key='intelligence'",
+        "key='reports'",
+        "key='operations_center'",
+        "key='integrations'",
+        "key='access'",
+        "key='settings'",
+    ):
+        assert current in model
+
+    for future in ("key='compute'", "key='network'", "key='reliability'", "key='finops'", "key='automation'"):
+        assert future not in model
+
+
+def test_domain_workspace_navigation_reuses_integrated_workspace_tabs() -> None:
+    layout = (ROOT / 'app' / 'templates' / 'layouts' / 'app.html').read_text(encoding='utf-8')
+    model = (ROOT / 'app' / 'common' / 'workspace_navigation.py').read_text(encoding='utf-8')
+
+    assert '{% import "components/workspace_tabs.html" as workspace_tabs %}' in layout
+    assert 'workspace_tabs.render_navigation(' in layout
+    assert 'data-kaori-domain-workspace-nav="{{ workspace_navigation.key }}"' in layout
+
+    for kubernetes_tab in (
+        "'overview', 'Overview'",
+        "'inventory', 'Inventory'",
+        "'operations',",
+        "'governance', 'Governance'",
+        "'tenant', 'Tenant'",
+        "'analytics', 'Analytics'",
+    ):
+        assert kubernetes_tab in model
+
+    assert "'object_storage'" in model
+    assert "'object_storage_inventory.overview'" in model
+    assert "'analytics.object_storage_overview'" in model
+
+
+def test_breadcrumb_hierarchy_matches_workspace_ownership() -> None:
     breadcrumb = (ROOT / 'app' / 'common' / 'navigation.py').read_text(encoding='utf-8')
-    kubernetes_overview = (
-        ROOT / 'app' / 'templates' / 'kubernetes' / 'analytics' / 'overview' / 'partials' / '_hero.html'
-    ).read_text(encoding='utf-8')
-    object_storage_pages = (ROOT / 'app' / 'storage' / 'object_storage' / 'analytics' / 'pages.py').read_text(
-        encoding='utf-8'
-    )
 
-    assert '>Analytics</div>' in sidebar
-    assert sidebar.index('>Storage</div>') < sidebar.index('>Analytics</div>') < sidebar.index('>Insights</div>')
-    assert '>Tenant</span>' in tenant_menu
-    assert "url_for('tenant.index')" in tenant_menu
-    assert "url_for('tenant.tenants')" in tenant_menu
-    assert "url_for('tenant.resource_profiles')" in tenant_menu
-    assert "url_for('tenant.namespace_provisioning')" in tenant_menu
-    assert "url_for('tenant.operations')" in tenant_menu
-    assert '>Kubernetes</span>' in analytics_menu
-    assert '>Object Storage</span>' in analytics_menu
-    assert '>Kubernetes Analytics</span>' not in analytics_menu
-    assert '>Object Storage Analytics</span>' not in analytics_menu
-
+    assert "BreadcrumbItem('Kubernetes', 'boxes')" in breadcrumb
+    assert "BreadcrumbItem('Object Storage', 'database')" in breadcrumb
+    assert "BreadcrumbItem('Inventory')" in breadcrumb
+    assert "BreadcrumbItem('Operations')" in breadcrumb
     assert "BreadcrumbItem('Analytics', 'chart-no-axes-combined')" in breadcrumb
-    assert "BreadcrumbItem('Kubernetes', 'bar-chart-3')" in breadcrumb
-    assert "BreadcrumbItem('Object Storage', 'database-zap')" in breadcrumb
-    assert "BreadcrumbItem('Object Storage Inventory', 'database')" not in breadcrumb
 
-    assert '>Overview</h1>' in kubernetes_overview
-    assert "'Overview'," in object_storage_pages
-    assert "'Capacity & Usage'," in object_storage_pages
-    assert "'Performance'," in object_storage_pages
-    assert "'Object Storage Capacity & Usage'," not in object_storage_pages
-    assert "'Object Storage Performance'," not in object_storage_pages
-
-    kubernetes_titles = {
-        'utilization/routes.py': ("'title': 'Utilization'", "'title': 'Resource Utilization'"),
-        'capacity/routes.py': ("'title': 'Capacity'", "'title': 'Capacity Analysis'"),
-        'storage/routes.py': ("'title': 'Storage'", "'title': 'Storage Analysis'"),
-        'workload/routes.py': ("'title': 'Workloads'", "'title': 'Workload Analysis'"),
-        'forecast/routes.py': ("'title': 'Forecast'", "'title': 'Resource Forecast'"),
-    }
-    analytics_root = ROOT / 'app' / 'kubernetes' / 'analytics'
-    for relative, (expected, obsolete) in kubernetes_titles.items():
-        source = (analytics_root / relative).read_text(encoding='utf-8')
-        assert expected in source
-        assert obsolete not in source
+    assert "BreadcrumbItem('Dashboards', 'layout-dashboard')" not in breadcrumb
+    assert "BreadcrumbItem('Inventory', 'boxes')" not in breadcrumb

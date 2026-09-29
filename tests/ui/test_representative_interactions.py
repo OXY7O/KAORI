@@ -265,6 +265,60 @@ def test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewp
         assert_document_fits_viewport(page)
 
 
+def test_sidebar_v2_and_domain_workspace_navigation_across_canonical_viewports(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """Validate v2 global workspace navigation and Kubernetes workspace tabs across the canonical matrix."""
+    page = configured_page
+    viewport_name, (width, _) = kaori_viewport
+
+    with _browser_evidence(page, 'sidebar-v2-domain-workspace', viewport_name):
+        _login(page, kaori_authenticated_base_url)
+        response = page.goto(f'{kaori_authenticated_base_url}/welcome', wait_until='networkidle')
+        assert response is not None
+        assert response.ok
+
+        if width < 1024:
+            page.locator('[data-mobile-menu-trigger]').click()
+
+        sidebar = page.locator('#app-sidebar')
+        expect(sidebar).to_be_visible()
+
+        section_labels = sidebar.locator('[data-kaori-sidebar-section] .sidebar-section-label').all_inner_texts()
+        assert section_labels == ['Main', 'Infrastructure', 'Insights', 'Platform', 'Administration']
+
+        for key in (
+            'welcome',
+            'kubernetes',
+            'object_storage',
+            'intelligence',
+            'reports',
+            'operations_center',
+            'integrations',
+            'access',
+            'settings',
+        ):
+            expect(sidebar.locator(f'[data-kaori-sidebar-workspace="{key}"]')).to_be_visible()
+
+        sidebar_text = sidebar.inner_text()
+        assert '\nSTORAGE\n' not in f'\n{sidebar_text}\n'
+        assert '\nANALYTICS\n' not in f'\n{sidebar_text}\n'
+
+        kubernetes = sidebar.locator('[data-kaori-sidebar-workspace="kubernetes"]')
+        kubernetes.click()
+        page.wait_for_load_state('networkidle')
+
+        workspace = page.locator('[data-kaori-domain-workspace-nav="kubernetes"]')
+        expect(workspace).to_be_visible()
+        for label in ('Overview', 'Inventory', 'Operations', 'Governance', 'Tenant', 'Analytics'):
+            expect(workspace.get_by_role('link', name=label, exact=True)).to_be_visible()
+
+        assert_document_fits_viewport(page)
+        assert_locator_within_document_width(page, workspace, label='Kubernetes domain workspace navigation')
+
+
 def test_deterministic_visual_surface_catalog_light_and_dark(
     configured_page: Page,
     kaori_viewport: tuple[str, tuple[int, int]],
