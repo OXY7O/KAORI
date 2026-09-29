@@ -525,6 +525,12 @@ def build_capability_navigation(endpoint: str | None, user: Any) -> dict[str, An
     if capability_key is None:
         return None
 
+    # Analytics Overview already owns canonical summary Content Tabs whose panels
+    # drill into the deep-analysis routes. Do not duplicate those labels in a
+    # second route-level tabset on the Overview itself.
+    if capability_key == 'kubernetes_analytics' and resolved_endpoint == 'analytics.overview':
+        return None
+
     visible_views = tuple(
         view for view in _CAPABILITY_VIEWS[capability_key] if _has_any_permission(user, view.permissions)
     )

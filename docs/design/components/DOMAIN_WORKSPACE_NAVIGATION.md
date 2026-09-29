@@ -79,7 +79,7 @@ Detailed views remain local and are rendered through shared server-owned Content
 - Operations -> ConfigMaps / Secrets;
 - Governance -> Overview / TLS Certificates;
 - Tenant -> Overview / Tenants / Resource Profiles / Namespace Provisioning / Operations;
-- Analytics -> Overview / Usage / Capacity / Workloads / Storage / Consumers / Forecast / Alerts & Anomalies. Deeper Actions/Guidance remain owned inside Analytics content where applicable.
+- Analytics Overview keeps its existing summary Content Tabs (Usage / Capacity / Workload / Storage / Consumers / Forecast / Alerts / Actions / Guidance) and their explicit drill-down CTAs. Deep-analysis routes use the route-level peer navigation Overview / Usage / Capacity / Workloads / Storage / Consumers / Forecast / Alerts & Anomalies. The Overview must not render both tabsets at once.
 
 ### Object Storage
 

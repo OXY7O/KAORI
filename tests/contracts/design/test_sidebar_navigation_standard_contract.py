@@ -134,3 +134,19 @@ def test_capability_detail_navigation_replaces_retired_sidebar_submenus() -> Non
     assert "'Resource Profiles'," in model
     assert "'Buckets & Containers'," in model
     assert "'Capacity & Usage'," in model
+
+
+def test_analytics_overview_does_not_duplicate_route_and_summary_tabsets() -> None:
+    model = (ROOT / 'app' / 'common' / 'workspace_navigation.py').read_text(encoding='utf-8')
+    overview = (
+        ROOT / 'app' / 'templates' / 'kubernetes' / 'analytics' / 'overview' / 'index.html'
+    ).read_text(encoding='utf-8')
+
+    assert "capability_key == 'kubernetes_analytics' and resolved_endpoint == 'analytics.overview'" in model
+    assert "return None" in model.split(
+        "capability_key == 'kubernetes_analytics' and resolved_endpoint == 'analytics.overview'", 1
+    )[1].split('visible_views', 1)[0]
+
+    assert "content_tabs.render_buttons('overview-content'" in overview
+    assert 'View Resource Utilization' not in overview
+    assert 'data-kaori-capability-navigation' not in overview
