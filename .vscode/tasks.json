@@ -58,9 +58,6 @@
       },
       "isBackground": true,
       "problemMatcher": [],
-      "runOptions": {
-        "runOn": "folderOpen"
-      },
       "presentation": {
         "reveal": "silent",
         "panel": "dedicated",

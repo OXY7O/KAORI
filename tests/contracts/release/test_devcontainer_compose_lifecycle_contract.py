@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[3]
 DEV_COMPOSE = ROOT / '.devcontainer' / 'compose.devcontainer.yml'
 DEVCONTAINER = ROOT / '.devcontainer' / 'devcontainer.json'
 ENSURE_FRONTEND = ROOT / '.devcontainer' / 'ensure-frontend.sh'
+VSCODE_TASKS = ROOT / '.vscode' / 'tasks.json'
 DOCKERFILE = ROOT / 'Dockerfile'
 DEV_REQUIREMENTS = ROOT / 'requirements' / 'dev.txt'
 
@@ -80,6 +81,15 @@ def test_devcontainer_workers_have_graceful_shutdown_windows() -> None:
         section = service_section(compose, service)
         assert 'restart: unless-stopped' in section
         assert f'stop_grace_period: {period}' in section
+
+
+def test_tailwind_watcher_does_not_race_devcontainer_frontend_bootstrap() -> None:
+    tasks = json.loads(read(VSCODE_TASKS))
+    watcher = next(task for task in tasks['tasks'] if task.get('label') == 'KAORI: Watch Tailwind CSS')
+
+    assert watcher['command'] == 'npm run watch-css'
+    assert watcher['isBackground'] is True
+    assert watcher.get('runOptions', {}).get('runOn') != 'folderOpen'
 
 
 def test_devcontainer_frontend_bootstrap_repairs_generated_output_permissions() -> None:
