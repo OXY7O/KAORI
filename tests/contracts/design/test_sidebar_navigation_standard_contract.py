@@ -153,7 +153,10 @@ def test_analytics_overview_does_not_duplicate_route_and_summary_tabsets() -> No
     model = _read('app/common/workspace_navigation.py')
     overview = _read('app/templates/kubernetes/analytics/overview/index.html')
 
-    assert "capability_key == 'kubernetes_analytics' and resolved_endpoint == 'analytics.overview'" in model
+    assert "capability_key == 'kubernetes_analytics' and resolved_endpoint == 'analytics.overview'" not in model
+    assert '{% block page_capability_navigation %}' in overview
+    assert '{% if dependency_blocker %}' in overview
+    assert '{{ super() }}' in overview
     assert "content_tabs.render_buttons('overview-content'" in overview
 
 
