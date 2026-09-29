@@ -50,6 +50,7 @@ from app.kubernetes.tenant.credential_service import (
     TenantCredentialStateConflictError,
     create_human_credential_from_grant_committed,
     generate_credential_material_committed,
+    get_credential,
     renew_credential_committed,
     resume_credential_committed,
     revoke_credential_committed,
@@ -1567,7 +1568,7 @@ def generate_credential_material_route(credential_id: int):
 
     context = _tenant_workspace_context()
     context.update(get_live_tenant_connection_context())
-    credential_record = TenantCredential.query.filter_by(id=credential_id).first()
+    credential_record = get_credential(credential_id)
     if credential_record is None:
         abort(404)
 
