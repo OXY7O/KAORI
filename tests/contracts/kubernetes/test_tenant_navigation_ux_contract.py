@@ -156,3 +156,16 @@ def test_namespace_allocation_selector_is_not_limited_by_visible_page() -> None:
     assert "'namespace_options': namespace_options" in service
     assert '{% for item in namespace_options %}' in allocation
     assert '{% for item in namespaces %}' not in allocation
+
+def test_tenant_blocked_state_is_terminal_until_native_kubernetes_is_ready() -> None:
+    base = (ROOT / 'app/templates/kubernetes/tenant/base.html').read_text(encoding='utf-8')
+
+    blocked_index = base.index('{% if not native_available %}')
+    else_index = base.index('{% else %}', blocked_index)
+    content_index = base.index('{% block tenant_content %}', blocked_index)
+    endif_index = base.index('{% endif %}', content_index)
+
+    assert blocked_index >= 0
+    assert 'components/states/_blocked_state.html' in base[blocked_index:else_index]
+    assert 'Open Cluster Integrations' in base[blocked_index:else_index]
+    assert blocked_index < else_index < content_index < endif_index

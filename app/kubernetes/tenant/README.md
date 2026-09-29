@@ -33,6 +33,12 @@ Operations task views stay inside the page so the sidebar remains exactly two in
 
 Normal Tenant workspace reads are composed from committed KAORI state. Live provider calls remain inside the owning mutation/reconciliation adapters, plus the explicitly live Tenant connection/discovery surfaces described below.
 
+### Native Kubernetes prerequisite rendering
+
+Native Kubernetes remains the mandatory baseline for Tenant workflows. When no Ready Native Kubernetes cluster is available, the shared Tenant page composition is terminal after orientation: KAORI renders the normal Tenant Hero followed by the canonical blocked-state surface and Cluster Integrations action, but does not render page-specific Tenant operational content beneath the blocker. Once a Ready Native Kubernetes cluster exists, the normal Overview, Tenants, Resource Profiles, Namespace Provisioning, or Operations content is rendered unchanged.
+
+This is a presentation boundary only. It does not add a live provider read, mutate Kubernetes state, or replace the existing committed-state authority.
+
 Tenant Overview owns a registered **Tenant inventory correlation** job while Kubernetes remains authoritative for observed cluster resources:
 
 ```text

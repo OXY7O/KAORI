@@ -58,9 +58,10 @@
             {% set blocked_state_show_admin_required = true %}
             {% set blocked_state_steps = ["Register Cluster", "Run Sync", "Return to Tenant"] %}
             {% include "components/states/_blocked_state.html" %}
+        {% else %}
+            {% block tenant_content %}
+            {% endblock tenant_content %}
         {% endif %}
-        {% block tenant_content %}
-        {% endblock tenant_content %}
     </div>
 {% endblock dashboard_content %}
 {% block scripts %}
