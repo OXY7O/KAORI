@@ -73,8 +73,10 @@ def test_tls_summary_renders_with_canonical_inventory_component() -> None:
         payload=_payload(), current_user=current_user
     )
 
-    assert 'Certificate Validity &amp; Operations' in rendered or 'Certificate Validity & Operations' in rendered
-    assert 'TLS Inventory Operations' in rendered
+    assert 'Certificate Validity' in rendered
+    assert 'Certificate Validity &amp; Operations' not in rendered
+    assert 'Certificate Validity & Operations' not in rendered
+    assert 'TLS Inventory Operations' not in rendered
     assert 'Renewal Window' in rendered
     assert 'Host Coverage Exceptions' in rendered
 
