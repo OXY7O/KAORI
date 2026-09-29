@@ -49,7 +49,8 @@ from app.kubernetes.tenant.credential_service import (
     HumanCredentialIssueRequest,
     TenantCredentialStateConflictError,
     create_human_credential_from_grant_committed,
-    generate_credential_material_committed, get_credential,
+    generate_credential_material_committed,
+    get_credential,
     renew_credential_committed,
     resume_credential_committed,
     revoke_credential_committed,
@@ -1541,7 +1542,6 @@ def _credential_feedback(
                 'operation': f'credential_{action}',
             },
         )
-
 
 @tenant_bp.post('/credentials/<int:credential_id>/material')
 @permission_required('tenant.manage')
