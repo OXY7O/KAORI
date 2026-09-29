@@ -225,3 +225,12 @@ def test_hero_context_panel_footer_variants_share_one_precise_row_rhythm() -> No
     assert "mt-auto grid min-h-10 gap-2 {{ 'grid-cols-2' if columns == 2 else 'grid-cols-1' }}" in source
     assert 'mt-3 grid grid-cols-2 gap-2' not in source
     assert 'mt-auto grid gap-2 pt-3' not in source
+
+
+def test_intelligence_overview_uses_non_redundant_hero_identity() -> None:
+    source = (ROOT / 'app' / 'templates' / 'intelligence' / 'overview.html').read_text(encoding='utf-8')
+
+    assert "page_hero.intro('brain-circuit', 'Intelligence', 'scan-search')" in source
+    assert '<h1 class="{{ page_hero.title_classes() }}">Overview</h1>' in source
+    assert 'Infrastructure Intelligence' not in source
+    assert '>Intelligence Overview</h1>' not in source

@@ -52,7 +52,7 @@ Canonical application composition:
 ```text
 Navbar / Breadcrumb
 ↓
-Domain Workspace Navigation
+Flat Domain Workspace Navigation
 ↓
 Capability Content Navigation when the capability owns multiple routes
 ↓
@@ -61,7 +61,11 @@ Owning Page Hero / Page Identity
 Operational content
 ```
 
-The navigation header is intentionally compact and reusable across existing page archetypes. Domain Workspace Navigation uses Integrated Workspace Tabs; multi-route capability detail uses server-owned Content Tabs. A page must not copy the retired global-sidebar submenu markup into local templates.
+Domain Workspace Navigation is a **secondary navigation strip**, not a second page header. It uses the existing Integrated Workspace Tabs directly and therefore must not add an outer card, rounded shell, background, shadow, duplicated `WORKSPACE` label, or repeated workspace title around the tab component.
+
+The Hero remains the page's visual identity anchor. Its eyebrow/title pair follows Hero v1.9 semantics: the eyebrow communicates workspace/domain context and the H1 communicates the current destination, for example `INTELLIGENCE → Overview`, not `INFRASTRUCTURE INTELLIGENCE → Intelligence Overview`.
+
+Multi-route capability detail uses server-owned Content Tabs. A page must not copy the retired global-sidebar submenu markup into local templates.
 
 ## Current Implemented Workspaces
 

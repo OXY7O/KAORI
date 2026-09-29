@@ -83,6 +83,23 @@ def test_sidebar_mapping_access_avoids_jinja_dict_method_collisions() -> None:
         assert f"item['{key}']" in sidebar
 
 
+def test_domain_workspace_navigation_is_flat_not_a_second_header_card() -> None:
+    layout = (ROOT / 'app' / 'templates' / 'layouts' / 'app.html').read_text(encoding='utf-8')
+    standard = (
+        ROOT / 'docs' / 'design' / 'components' / 'DOMAIN_WORKSPACE_NAVIGATION.md'
+    ).read_text(encoding='utf-8')
+
+    workspace_region = layout.split('{% if workspace_navigation %}', 1)[1].split('{% endif %}', 1)[0]
+
+    assert 'workspace_tabs.render_navigation(' in workspace_region
+    assert 'rounded-xl' not in workspace_region
+    assert 'bg-surface-card' not in workspace_region
+    assert 'shadow-sm' not in workspace_region
+    assert '>Workspace<' not in workspace_region
+    assert 'secondary navigation strip' in standard
+    assert 'must not add an outer card' in standard
+
+
 def test_domain_workspace_navigation_reuses_integrated_workspace_tabs() -> None:
     layout = (ROOT / 'app' / 'templates' / 'layouts' / 'app.html').read_text(encoding='utf-8')
     model = (ROOT / 'app' / 'common' / 'workspace_navigation.py').read_text(encoding='utf-8')
