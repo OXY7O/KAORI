@@ -186,7 +186,7 @@
                                                 data-destructive-submit-button-id="tenant-decommission-submit-{{ tenant.id }}"
                                                 data-destructive-target="{{ tenant.name }}"
                                                 data-destructive-scope="{{ row.cluster.name if row.cluster else tenant.cluster_id }} · {{ decommission.credential_count }} credential{{ '' if decommission.credential_count == 1 else 's' }} · {{ decommission.access_grant_count }} grant{{ '' if decommission.access_grant_count == 1 else 's' }} · {{ decommission.namespace_count }} namespace{{ '' if decommission.namespace_count == 1 else 's' }} · Gen {{ tenant.generation }}"
-                                                class="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-status-critical-border bg-surface-card px-3 text-xs font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                class="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-card px-3 text-xs font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                             <i data-lucide="{{ 'rotate-ccw' if tenant.lifecycle_status == 'decommissioning' else 'archive-x' }}"
                                                class="h-3.5 w-3.5"
                                                aria-hidden="true"></i>
