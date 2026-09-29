@@ -91,6 +91,8 @@ This prevents a local username collision from silently authenticating against LD
 
 The login surface exposes a conditional Browser SSO action region below the primary Local Database sign-in action. No runtime-ready SSO provider means no divider or reserved blank space. One provider uses a full-width action; Google + GitHub use a balanced two-column row from `sm` while remaining stacked on narrower viewports. Provider display names/icons remain definition/record-driven and every action carries only the sanitized internal `next` target.
 
+Authentication responsiveness follows the canonical KAORI viewport matrix (1440×900, 1280×800, 1024×768, 768×1024, 390×844, and 360×800). Laptop and compact-laptop retain the split brand/form composition; tablet and phone recompose to a form-first surface with the brand panel removed from layout. No page-level horizontal overflow is permitted, and phone layouts may extend vertically rather than clipping sign-in or SSO actions.
+
 1. `/auth/sso/<provider>/start` resolves an enabled provider from the identity-provider registry.
 2. The browser strategy is selected by provider identity and adapter key.
 3. KAORI stores only the state fingerprint, provider ID, nonce when required, and start timestamp in the session.

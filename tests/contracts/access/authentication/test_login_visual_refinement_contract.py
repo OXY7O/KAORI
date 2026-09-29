@@ -5,6 +5,8 @@ TEMPLATES = ROOT / 'app' / 'templates' / 'access' / 'authentication' / 'partials
 CSS = ROOT / 'app' / 'static' / 'css' / 'auth-login.css'
 FABRIC = ROOT / 'app' / 'static' / 'images' / 'kaori-login-operations-fabric.svg'
 LOGIN_FORM = TEMPLATES / '_login_form.html'
+INDEX = ROOT / 'app' / 'templates' / 'access' / 'authentication' / 'index.html'
+BRAND_PANEL = TEMPLATES / '_brand_panel.html'
 
 
 def _read(path: Path) -> str:
@@ -94,3 +96,28 @@ def test_login_sso_region_has_explicit_zero_one_two_provider_geometry() -> None:
     assert 'class="inline-flex h-11 min-w-0 items-center justify-center' in form
     assert '<span class="min-w-0 truncate">{{ provider.display_name }}</span>' in form
     assert 'aria-label="Continue with {{ provider.display_name }}"' in form
+
+
+def test_login_recomposes_across_canonical_device_classes() -> None:
+    index = _read(INDEX)
+    brand = _read(BRAND_PANEL)
+    form = _read(LOGIN_FORM)
+    css = _read(CSS)
+
+    assert 'px-3 py-3 sm:px-5 sm:py-4 lg:px-6 lg:py-5' in index
+    assert 'lg:grid-cols-12' in index
+
+    assert 'relative hidden min-h-full' in brand
+    assert 'lg:col-span-5' in brand
+    assert 'lg:flex' in brand
+
+    assert 'px-6 py-6 sm:px-8 lg:col-span-7 lg:px-10 xl:px-12' in form
+    assert 'relative z-10 mx-auto w-full max-w-md' in form
+    assert 'mb-6 flex items-center gap-3 lg:hidden' in form
+
+    assert '{% if sso_provider_rows|length > 1 %}sm:grid-cols-2{% endif %}' in form
+    assert 'h-11' in form
+    assert 'w-full' in form
+
+    assert '@media (min-width: 1024px)' in css
+    assert '@media (max-height: 760px) and (min-width: 1024px)' in css

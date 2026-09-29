@@ -103,7 +103,7 @@
                         {% set provider_login_url = url_for('auth.sso_start', provider_key=provider.key, next=form.next.data) if form.next.data else url_for('auth.sso_start', provider_key=provider.key) %}
                         <a href="{{ provider_login_url }}"
                            data-kaori-sso-provider="{{ provider.provider_key }}"
-                           class="inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-xl border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary shadow-sm transition hover:border-kaori-accent hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-outline-focus"
+                           class="inline-flex h-11 w-full min-w-0 items-center justify-center gap-2 rounded-xl border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary shadow-sm transition hover:border-kaori-accent hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-outline-focus"
                            aria-label="Continue with {{ provider.display_name }}"
                            title="Continue with {{ provider.display_name }}">
                             <i data-lucide="{{ row.definition.icon }}"

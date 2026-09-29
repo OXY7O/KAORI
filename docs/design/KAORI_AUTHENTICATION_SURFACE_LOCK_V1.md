@@ -43,6 +43,32 @@ Canonical geometry:
 
 The Local Database form remains the primary credential/recovery path and provider actions remain visually secondary to **Sign In**.
 
+### Login Responsive Composition
+
+Laptop browser usage is the primary product target, but Authentication follows the global canonical viewport authority from `tests/ui/conftest.py::CANONICAL_VIEWPORTS`:
+
+| Viewport | Size | Authentication composition |
+| --- | ---: | --- |
+| large-desktop | 1440×900 | split brand/form |
+| laptop | 1280×800 | primary compact split target |
+| compact-laptop | 1024×768 | lower-bound split target |
+| tablet | 768×1024 | form-first; brand panel removed from layout |
+| mobile | 390×844 | single-column form; SSO actions stacked |
+| small-mobile | 360×800 | smallest canonical form-first target |
+
+Responsive ownership rules:
+
+- smaller viewports recompose rather than shrink the split desktop surface;
+- the brand panel is present only at `lg+`; below `lg`, the form panel owns the visible KAORI identity;
+- form content stays bounded by the existing `max-w-md` reading width while the outer panel remains viewport-safe;
+- primary credential controls and browser SSO actions retain the 44 px interaction-height contract;
+- one SSO provider is full width; multiple providers stack below `sm` and use a two-column grid from `sm+`;
+- page-level horizontal scrolling is prohibited;
+- phone layouts may grow vertically and use normal document scrolling rather than clipping authentication actions to preserve desktop card height;
+- light/dark mode, focus visibility, accessible names, and authentication semantics remain equivalent at every canonical viewport.
+
+Real-device UAT may add evidence, but physical device names do not become CSS contracts.
+
 ### Canonical Database Setup Workspace Composition
 
 The approved Database Setup Required surface is a non-Hero operational readiness workspace. It uses the global **Major Page Title outside Hero** typography authority: 24 px (`text-2xl`), semibold, compact line height, with no Hero minimum-height or promotional title treatment.
