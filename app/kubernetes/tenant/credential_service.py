@@ -143,17 +143,14 @@ def _record_generation(credential: TenantCredential, *, issued_at: datetime) -> 
     generation.generation = credential.rotation_generation
     generation.issued_at = issued_at
     generation.provider_evidence_json = {
-        'reconciliation_status': credential.reconciliation_status, 'desired_hash': credential.desired_hash,
+        'reconciliation_status': credential.reconciliation_status,
+        'desired_hash': credential.desired_hash,
         'effective_hash': credential.effective_hash,
         'targets': list((credential.reconciliation_evidence_json or {}).get('effective_targets') or []),
         'secret_material_persisted': False,
     }
     db.session.add(generation)
     return generation
-
-
-def get_credential(credential_id: int) -> TenantCredential | None:
-    return TenantCredential.query.filter_by(id=credential_id).first()
 
 
 def _existing_owner_purpose(
