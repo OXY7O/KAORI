@@ -156,6 +156,7 @@ def _record_generation(credential: TenantCredential, *, issued_at: datetime) -> 
 def get_credential(credential_id: int) -> TenantCredential | None:
     return TenantCredential.query.filter_by(id=credential_id).first()
 
+
 def _existing_owner_purpose(
     *,
     tenant_id: str,
