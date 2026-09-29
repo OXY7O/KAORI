@@ -81,6 +81,8 @@ Rules:
 - the primary form should be one canonical form card with internal sections rather than a stack of independent mutation cards; validation and the canonical action bar remain inside that primary card;
 - do not introduce a new page-local geometry when the shared Form + Right Context or another reviewed KAORI pattern already fits;
 - controls use 40 px geometry and 12 px labels;
+- routine field guidance that explains source, naming, mutability, selection, or non-critical lifecycle semantics uses the shared `components/info_tip.html` trigger inline with the field label instead of a permanent helper paragraph;
+- unavailable/empty live-target state, validation failure, destructive confirmation, security boundary, authentication/step-up requirement, and stale/missing evidence remain persistently visible and must never be hidden in an Info Tip;
 - mutation remains validation-gated, but the server always performs a fresh provider validation immediately before mutation;
 - target identity, payload/current state, validation evidence, and destructive impact remain visually distinct rather than becoming one stretched card;
 - the canonical Hero may still own a right-side Context/Status/Action accessory; that Hero accessory is not a content right rail;

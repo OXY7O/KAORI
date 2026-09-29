@@ -372,8 +372,27 @@ def main() -> int:
     )
 
     form_field = read('app/templates/components/form_field.html')
+    info_tip = read('app/templates/components/info_tip.html')
     replace_page = read('app/templates/kubernetes/operations/secrets/replace.html')
     replace_content = read('app/templates/kubernetes/operations/secrets/_replace_content_form.html')
+    operations_guidance_sources = {
+        relative: read(relative)
+        for relative in (
+            'app/templates/kubernetes/operations/configmaps/create.html',
+            'app/templates/kubernetes/operations/configmaps/_namespace_options.html',
+            'app/templates/kubernetes/operations/configmaps/_workspace.html',
+            'app/templates/kubernetes/operations/configmaps/_editor.html',
+            'app/templates/kubernetes/operations/secrets/create.html',
+            'app/templates/kubernetes/operations/secrets/_namespace_field.html',
+            'app/templates/kubernetes/operations/secrets/replace.html',
+            'app/templates/kubernetes/operations/secrets/delete.html',
+            'app/templates/kubernetes/operations/secrets/reveal.html',
+            'app/templates/kubernetes/operations/secrets/_replace_target_workspace.html',
+            'app/templates/kubernetes/operations/secrets/_delete_target_workspace.html',
+            'app/templates/kubernetes/operations/secrets/_reveal_target_workspace.html',
+            'app/templates/kubernetes/operations/secrets/_replace_content_form.html',
+        )
+    }
     require(
         'min-h-6' in form_field
         and 'mt-2 box-border h-10 min-h-10 w-full' in form_field
@@ -381,6 +400,45 @@ def main() -> int:
         'Form Field Alignment contract drifted.',
         errors,
     )
+    require(
+        'components/info_tip.html' in info_tip
+        or 'aria-haspopup="dialog"' in info_tip,
+        'Shared Info Tip component is unavailable.',
+        errors,
+    )
+    for relative, source in operations_guidance_sources.items():
+        require(
+            'components/info_tip.html' in source,
+            f'{relative} must reuse the shared Info Tip for routine field guidance.',
+            errors,
+        )
+    joined_guidance = '\n'.join(operations_guidance_sources.values())
+    for retired_helper in (
+        'form_field.help("Registered cluster for the target namespace.")',
+        'form_field.help("Loaded from the selected Kubernetes API.")',
+        'form_field.help("DNS-compatible resource name")',
+        'form_field.help("Control future updates")',
+        'Target identity and type come from live Kubernetes.</span>',
+        'Merge preserves unsubmitted keys. Replace removes keys omitted from this form.</p>',
+        'Leave blank to keep the current username.</span>',
+    ):
+        require(
+            retired_helper not in joined_guidance,
+            f'Operations routine field helper must move to Info Tip: {retired_helper}',
+            errors,
+        )
+    for persistent_state in (
+        'No live namespace is available for the selected cluster.',
+        'No ConfigMap currently exists in this live namespace.',
+        'No supported live Secret was found in this namespace.',
+        'No revealable live Opaque, Basic Auth, or Registry Secret was found.',
+    ):
+        require(
+            persistent_state in joined_guidance,
+            f'Operations required state must remain persistently visible: {persistent_state}',
+            errors,
+        )
+
     require(
         'replace-secret-apply-button' in replace_content and 'Replace Selected Data' in replace_content,
         'Secret Replace must render its apply action inside the HTMX-swapped content.',
@@ -399,8 +457,8 @@ def main() -> int:
 
     print(
         'KAORI Kubernetes Operations final-lock passed: AuthZ-first cluster prerequisites, '
-        'task-appropriate ConfigMap/Secret mutation workspaces, reviewed Integration registration geometry, layered release evidence, '
-        'and canonical shared workflow ownership are aligned.'
+        'task-appropriate ConfigMap/Secret mutation workspaces, shared Info Tip field guidance, reviewed Integration registration geometry, '
+        'layered release evidence, and canonical shared workflow ownership are aligned.'
     )
     return 0
 

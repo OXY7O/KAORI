@@ -1,6 +1,7 @@
 {% import "components/live_lookup_notice.html" as live_lookup %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/kubernetes_operation_ui.html" as configmap_ui %}
+{% import "components/info_tip.html" as info_tip %}
 {% if target %}
     <div class="space-y-5">
         <div class="grid gap-3 lg:grid-cols-3">
@@ -24,9 +25,12 @@
         {% else %}
             <div class="rounded-lg border border-outline-default bg-surface-hover p-4">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
+                    <div class="inline-flex min-h-6 items-center gap-1.5">
                         <h3 class="text-sm font-semibold text-content-primary">Update Mode</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Merge preserves unsubmitted keys. Replace removes keys omitted from this form.</p>
+                        {{ info_tip.render('configmap-update-mode-tip',
+                                            'Update mode',
+                                            'Merge preserves unsubmitted keys. Replace removes keys omitted from this form.',
+                                            placement='right') }}
                     </div>
                     <select name="update_mode"
                             data-configmap-update-mode
