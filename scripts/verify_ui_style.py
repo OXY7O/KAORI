@@ -51,6 +51,9 @@ _APPROVED_SEMANTIC_BORDER_COMPONENTS = {
     'app/templates/components/operational_callout.html',
     'app/templates/components/kubernetes_operation_ui.html',
     'app/templates/components/table_label.html',
+    'app/templates/components/destructive_confirmation_modal.html',
+    'app/templates/components/one_time_secret.html',
+    'app/templates/components/status_detail_dialog.html',
     'app/templates/integrations/components/_asset_owner_delete_modal.html',
     'app/templates/integrations/components/_observability_binding_modal.html',
     'app/templates/integrations/components/_workspace.html',
@@ -72,6 +75,8 @@ _APPROVED_ARBITRARY_TEXT_COMPONENTS = {
     'app/templates/components/page_hero.html',
     'app/templates/components/table.html',
     'app/templates/components/table_label.html',
+    'app/templates/components/one_time_secret.html',
+    'app/templates/components/status_detail_dialog.html',
 }
 _APPROVED_FONT_EXTRABOLD_COMPONENTS = {
     'app/templates/components/navigation/sidebar.html',
