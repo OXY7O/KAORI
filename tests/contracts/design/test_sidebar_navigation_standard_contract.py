@@ -93,13 +93,13 @@ def test_current_workspace_capabilities_are_sidebar_children() -> None:
         assert future not in model
 
 
-def test_app_shell_does_not_render_second_horizontal_capability_row() -> None:
+def test_app_shell_renders_only_page_level_integrated_route_navigation() -> None:
     layout = _read('app/templates/layouts/app.html')
     presentation = _read('app/bootstrap/presentation.py')
 
     assert 'data-kaori-domain-workspace-nav' not in layout
-    assert 'workspace_tabs.render_navigation(' not in layout
     assert 'workspace_navigation' not in layout
+    assert 'workspace_tabs.render_navigation(' in layout
     assert 'build_workspace_navigation' not in presentation
     assert "'workspace_navigation':" not in presentation
 

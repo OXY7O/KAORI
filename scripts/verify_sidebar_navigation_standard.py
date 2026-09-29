@@ -147,7 +147,6 @@ def verify() -> None:
     )
     for retired in (
         'data-kaori-domain-workspace-nav',
-        'workspace_tabs.render_navigation(',
         'workspace_navigation',
     ):
         if retired in layout:
