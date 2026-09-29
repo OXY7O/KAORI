@@ -48,7 +48,7 @@
             <div class="min-h-0 flex-1 space-y-5 overflow-y-auto bg-surface-page p-5 sm:p-6">
                 <dl class="grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
                     <div class="bg-surface-card p-3.5">
-                        <dt class="text-[11px] uppercase tracking-wide text-content-muted">Contract</dt>
+                        <dt class="text-xs uppercase tracking-wide text-content-muted">Contract</dt>
                         <dd class="mt-1 text-sm font-semibold text-content-primary">
                             {{ profile.profile_class|title }} · v{{ profile.version }}
                         </dd>
@@ -57,7 +57,7 @@
                         </dd>
                     </div>
                     <div class="bg-surface-card p-3.5">
-                        <dt class="text-[11px] uppercase tracking-wide text-content-muted">Lineage</dt>
+                        <dt class="text-xs uppercase tracking-wide text-content-muted">Lineage</dt>
                         <dd class="mt-1 text-sm font-semibold text-content-primary">
                             {% if editable and profile.base_preset_class %}
                                 Based on {{ profile.base_preset_class|title }}
@@ -76,7 +76,7 @@
                         </dd>
                     </div>
                     <div class="bg-surface-card p-3.5">
-                        <dt class="text-[11px] uppercase tracking-wide text-content-muted">Namespace References</dt>
+                        <dt class="text-xs uppercase tracking-wide text-content-muted">Namespace References</dt>
                         <dd class="mt-1 text-sm font-semibold text-content-primary">
                             {{ usage.namespaces }}
                         </dd>
@@ -85,7 +85,7 @@
                         </dd>
                     </div>
                     <div class="bg-surface-card p-3.5">
-                        <dt class="text-[11px] uppercase tracking-wide text-content-muted">Capacity Decisions</dt>
+                        <dt class="text-xs uppercase tracking-wide text-content-muted">Capacity Decisions</dt>
                         <dd class="mt-1 text-sm font-semibold text-content-primary">
                             {{ usage.capacity_decisions }}
                         </dd>
@@ -210,7 +210,7 @@
                                 ('Secrets', profile.quota_hard_json.get('secrets'))
                                 ] %}
                                 <div class="bg-surface-card p-3">
-                                    <dt class="text-[11px] font-medium text-content-muted">{{ label }}</dt>
+                                    <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
                                     <dd class="mt-1 text-sm font-semibold text-content-primary">
                                         {{ value or 'Unbounded' }}
                                     </dd>
@@ -228,7 +228,7 @@
                                 ('Memory Limit', defaults.get('memory'))
                                 ] %}
                                 <div class="bg-surface-card p-3">
-                                    <dt class="text-[11px] font-medium text-content-muted">{{ label }}</dt>
+                                    <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
                                     <dd class="mt-1 text-sm font-semibold text-content-primary">
                                         {{ value or '—' }}
                                     </dd>
