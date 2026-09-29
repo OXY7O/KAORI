@@ -1567,9 +1567,6 @@ def generate_credential_material_route(credential_id: int):
 
     context = _tenant_workspace_context()
     context.update(get_live_tenant_connection_context())
-    credential_record = get_credential(credential_id)
-    if credential_record is None:
-        abort(404)
     if isinstance(material, GeneratedTokenMaterial):
         material_kind = 'token'
         material_title = 'JumpServer ServiceAccount Token'
