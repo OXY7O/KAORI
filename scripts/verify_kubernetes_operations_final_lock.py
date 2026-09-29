@@ -129,14 +129,14 @@ def main() -> int:
     primary_identity_tokens = {
         'app/kubernetes/operations/configmaps/routes.py': (
             "page_title='ConfigMap Management'",
-            "page_title='Create Kubernetes ConfigMap'",
+            "page_title='Create ConfigMap'",
             "page_title='Update ConfigMap'",
             "page_title='Delete ConfigMap'",
         ),
         'app/kubernetes/operations/secrets/crud_routes.py': (
             "page_title='Secret Management'",
-            "page_title='Create Kubernetes Secret'",
-            "page_title='Replace Kubernetes Secret Data'",
+            "page_title='Create Secret'",
+            "page_title='Replace Secret'",
             "page_title='Delete Kubernetes Secret'",
         ),
         'app/kubernetes/operations/secrets/reveal_routes.py': ("page_title='Protected Kubernetes Secret Reveal'",),

@@ -103,7 +103,7 @@ Authentication
 
 The canonical boundary is **AuthZ → cluster prerequisite → request validation → live provider**. The cluster prerequisite is implemented with `cluster_required()` inside the route permission boundary. A Blueprint `before_request` must not return cluster onboarding/readiness responses before authorization.
 
-For full-page GET requests that fail the cluster prerequisite, Kubernetes Operations renders the shared setup-blocked Hero context with `Operations Readiness`, followed by the canonical onboarding banner. The blocked Hero must use `components/cluster/_hero_blocked_context.html`; operation-specific forms and mutation controls are not rendered. The requested operation keeps its normal page identity and concise purpose copy (`ConfigMap Management`, `Create Kubernetes Secret`, `Protected Kubernetes Secret Reveal`, and so on); `Cluster Setup Required` is readiness state, not the page title.
+For full-page GET requests that fail the cluster prerequisite, Kubernetes Operations renders the shared setup-blocked Hero context with `Operations Readiness`, followed by the canonical onboarding banner. The blocked Hero must use `components/cluster/_hero_blocked_context.html`; operation-specific forms and mutation controls are not rendered. The requested operation keeps its normal page identity and concise purpose copy (`ConfigMap Management`, `Create ConfigMap`, `Create Secret`, `Replace Secret`, `Protected Kubernetes Secret Reveal`, and so on); `Cluster Setup Required` is readiness state, not the page title.
 
 
 ## ConfigMap entry editing
@@ -111,6 +111,11 @@ For full-page GET requests that fail the cluster prerequisite, Kubernetes Operat
 ConfigMap text and binary entries use Structured Entry Editor. Update keeps Merge and Replace explicit. Immutable ConfigMaps remain protected from update.
 
 ## Secret creation and replacement
+
+Workflow naming is intentionally task-specific:
+
+- **Update ConfigMap** owns editable current-state mutation with explicit Merge / Replace modes and effective diff preview.
+- **Replace Secret** owns submitted-key value replacement without reading or rendering current Secret values. Blank fields preserve existing values and key deletion is outside this workflow.
 
 Secret Type uses Operational Choice Card Group with the canonical responsive 1/2/3-column reflow. The selected option uses a strong Violet boundary, selected surface, check icon, and explicit `Selected` marker; changing only the rail summary is insufficient. Existing values are never rendered in Replace. Blank replacement inputs mean unchanged; submitted values mean replace.
 

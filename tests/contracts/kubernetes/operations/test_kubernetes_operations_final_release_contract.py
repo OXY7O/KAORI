@@ -60,6 +60,28 @@ def test_operations_landing_hero_and_deletion_reference_defaults_are_aligned() -
     assert "secret_delete_guardrails, icon='shield-alert', open_by_default=false" in secret_delete
 
 
+def test_operations_workflow_hero_names_are_compact_and_semantically_distinct() -> None:
+    configmap_create = read('app/templates/kubernetes/operations/configmaps/create.html')
+    secret_create = read('app/templates/kubernetes/operations/secrets/create.html')
+    secret_replace = read('app/templates/kubernetes/operations/secrets/replace.html')
+    configmap_routes = read('app/kubernetes/operations/configmaps/routes.py')
+    secret_routes = read('app/kubernetes/operations/secrets/crud_routes.py')
+    pattern = read('docs/design/patterns/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS.md')
+
+    assert '>Create ConfigMap</h1>' in configmap_create
+    assert '>Create Kubernetes ConfigMap</h1>' not in configmap_create
+    assert '>Create Secret</h1>' in secret_create
+    assert 'Create Kubernetes Secret' not in secret_create
+    assert '>Replace Secret</h1>' in secret_replace
+    assert 'Replace Kubernetes Secret Data' not in secret_replace
+
+    assert "page_title='Create ConfigMap'" in configmap_routes
+    assert "page_title='Create Secret'" in secret_routes
+    assert "page_title='Replace Secret'" in secret_routes
+    assert '**Update ConfigMap**' in pattern and '**Replace Secret**' in pattern
+    assert 'without reading or rendering current Secret values' in pattern
+
+
 def test_operations_authorization_and_cluster_prerequisite_are_owned_inside_route_permissions() -> None:
     root_routes = read('app/kubernetes/operations/routes.py')
     operation_flow = read('app/kubernetes/operations/operation_flow.py')
