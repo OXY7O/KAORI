@@ -13,9 +13,6 @@
               hx-indicator="this"></span>
         {% include "kubernetes/governance/tls_certificates/partials/_snapshot_context.html" %}
         {% include "kubernetes/governance/tls_certificates/partials/_sync_panel.html" %}
-        {% if sync %}
-            {% include "kubernetes/governance/tls_certificates/partials/_sync_progress_toast.html" %}
-        {% endif %}
         <section class="space-y-4" aria-labelledby="tls-certificate-posture-heading">
             {{ section_intro.render('Certificate Posture',
                         'Review lifecycle and host-coverage conditions from committed TLS evidence.',
