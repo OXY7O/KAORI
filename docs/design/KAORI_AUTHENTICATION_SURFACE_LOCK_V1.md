@@ -26,6 +26,23 @@ It does not redesign identity-provider administration, User Management, Roles & 
 8. Auth templates use canonical typography tokens: no arbitrary text sizes/tracking, no `font-extrabold`, no presentation-only uppercase utilities, and no inline DOM event handlers.
 9. Password/theme interaction runtime is owned by `app/static/js/auth_login.js`; only the pre-paint theme bootstrap remains inline to prevent theme flash.
 
+### Browser SSO Action Region
+
+The accepted split-screen login remains unchanged when browser SSO is disabled. The SSO action region is conditional and consumes no blank placeholder space when no runtime-ready browser provider exists.
+
+Current supported browser providers are Google OIDC and GitHub OAuth. Their login actions are rendered from the provider registry rather than hard-coded provider branches.
+
+Canonical geometry:
+
+- zero providers: no divider and no SSO action region;
+- one provider: one full-width 44 px action;
+- two providers: two peer 44 px actions in a two-column row from `sm`, stacked below `sm`;
+- additional future browser providers wrap through the same two-column grid;
+- provider display names may vary, so button text uses a bounded flexible/truncating span while the full name remains available through accessible label/title text;
+- every provider link preserves only the server-sanitized internal `next` target.
+
+The Local Database form remains the primary credential/recovery path and provider actions remain visually secondary to **Sign In**.
+
 ### Canonical Database Setup Workspace Composition
 
 The approved Database Setup Required surface is a non-Hero operational readiness workspace. It uses the global **Major Page Title outside Hero** typography authority: 24 px (`text-2xl`), semibold, compact line height, with no Hero minimum-height or promotional title treatment.

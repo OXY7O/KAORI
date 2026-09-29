@@ -86,22 +86,34 @@
             {{ form.submit(class="kaori-login-submit inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-kaori-primary px-5 text-sm font-semibold text-white shadow-md shadow-kaori-primary/20 transition hover:bg-kaori-primary-hover focus:outline-none focus:ring-2 focus:ring-outline-focus focus:ring-offset-2 focus:ring-offset-surface-card disabled:cursor-not-allowed disabled:opacity-60") }}
         </form>
         {% if sso_provider_rows %}
-            <div class="my-5 flex items-center gap-3" aria-hidden="true">
-                <span class="h-px flex-1 bg-outline-subtle"></span>
-                <span class="text-xs font-semibold tracking-wide text-content-disabled">Or Continue With</span>
-                <span class="h-px flex-1 bg-outline-subtle"></span>
-            </div>
-            <div class="grid gap-2 sm:grid-cols-2">
-                {% for row in sso_provider_rows %}
-                    {% set provider = row.record %}
-                    {% set provider_login_url = url_for('auth.sso_start', provider_key=provider.key, next=form.next.data) if form.next.data else url_for('auth.sso_start', provider_key=provider.key) %}
-                    <a href="{{ provider_login_url }}"
-                       class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary shadow-sm transition hover:border-kaori-accent hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-outline-focus">
-                        <i data-lucide="{{ row.definition.icon }}" class="h-4 w-4"></i>
-                        {{ provider.display_name }}
-                    </a>
-                {% endfor %}
-            </div>
+            <section class="mt-5"
+                     data-kaori-sso-actions
+                     data-kaori-sso-provider-count="{{ sso_provider_rows|length }}"
+                     aria-labelledby="sso-actions-title">
+                <div class="flex items-center gap-3">
+                    <span class="h-px flex-1 bg-outline-subtle" aria-hidden="true"></span>
+                    <h3 id="sso-actions-title"
+                        class="shrink-0 text-xs font-semibold tracking-wide text-content-disabled">Or Continue With</h3>
+                    <span class="h-px flex-1 bg-outline-subtle" aria-hidden="true"></span>
+                </div>
+                <div class="mt-3 grid gap-2 {% if sso_provider_rows|length > 1 %}sm:grid-cols-2{% endif %}"
+                     data-kaori-sso-provider-grid>
+                    {% for row in sso_provider_rows %}
+                        {% set provider = row.record %}
+                        {% set provider_login_url = url_for('auth.sso_start', provider_key=provider.key, next=form.next.data) if form.next.data else url_for('auth.sso_start', provider_key=provider.key) %}
+                        <a href="{{ provider_login_url }}"
+                           data-kaori-sso-provider="{{ provider.provider_key }}"
+                           class="inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-xl border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary shadow-sm transition hover:border-kaori-accent hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-outline-focus"
+                           aria-label="Continue with {{ provider.display_name }}"
+                           title="Continue with {{ provider.display_name }}">
+                            <i data-lucide="{{ row.definition.icon }}"
+                               class="h-4 w-4 shrink-0"
+                               aria-hidden="true"></i>
+                            <span class="min-w-0 truncate">{{ provider.display_name }}</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            </section>
         {% endif %}
         <div class="mt-4 flex items-center justify-center gap-2 text-xs text-content-muted">
             <i data-lucide="lock-keyhole"

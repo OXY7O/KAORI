@@ -89,6 +89,8 @@ This prevents a local username collision from silently authenticating against LD
 
 ## Browser SSO Flow
 
+The login surface exposes a conditional Browser SSO action region below the primary Local Database sign-in action. No runtime-ready SSO provider means no divider or reserved blank space. One provider uses a full-width action; Google + GitHub use a balanced two-column row from `sm` while remaining stacked on narrower viewports. Provider display names/icons remain definition/record-driven and every action carries only the sanitized internal `next` target.
+
 1. `/auth/sso/<provider>/start` resolves an enabled provider from the identity-provider registry.
 2. The browser strategy is selected by provider identity and adapter key.
 3. KAORI stores only the state fingerprint, provider ID, nonce when required, and start timestamp in the session.
