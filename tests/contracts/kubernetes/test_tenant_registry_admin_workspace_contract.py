@@ -355,10 +355,11 @@ def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None
     assert 'database-only lifecycle flag' in readme
 
 
-def test_cluster_estate_uses_compact_fixed_row_geometry() -> None:
+def test_cluster_estate_uses_compact_shared_table_geometry() -> None:
     estate = read('app/templates/kubernetes/tenant/partials/_cluster_estate.html')
 
-    assert "table_ui.table_classes('min-w-[940px] table-fixed')" in estate
+    assert "table_ui.table_classes('min-w-[900px]')" in estate
+    assert 'table_ui.cluster_identity(row.name, row.environment)' in estate
     for width in ('w-[29%]', 'w-[11%]', 'w-[13%]', 'w-[16%]', 'w-[17%]', 'w-[14%]'):
         assert width in estate
     assert estate.count('align-middle') >= 6
@@ -391,10 +392,10 @@ def test_namespace_access_security_boundary_matches_peer_surface() -> None:
     assert 'bg-status-info-soft' not in workspace
 
 
-def test_operational_attention_peer_cards_are_geometry_symmetric() -> None:
+def test_operational_attention_peer_cards_preserve_bounded_alignment() -> None:
     overview = read('app/templates/kubernetes/tenant/overview.html')
 
-    assert 'xl:items-stretch' in overview
+    assert 'xl:items-start' in overview
     assert overview.count("extra_classes='flex h-full flex-col'") >= 2
     assert overview.count("body_classes='flex flex-1 flex-col p-0'") >= 2
     assert 'Showing {{ tenant_attention_rows|length }} prioritized condition' in overview
