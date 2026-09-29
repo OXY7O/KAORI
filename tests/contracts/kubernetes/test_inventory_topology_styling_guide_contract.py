@@ -53,6 +53,8 @@ def test_topology_side_panes_are_always_on_demand_drawers() -> None:
 
     assert 'fixed inset-y-0' in component
     assert 'z-50 hidden w-full' in component
+    assert "'left-0 border-r max-w-sm' if side == 'left'" in component
+    assert "'right-0 border-l max-w-2xl'" in component
     assert '2xl:static' not in component
     assert 'isPersistentExplorer' not in script
     assert 'if (!panel) return' in script
@@ -252,7 +254,8 @@ def test_topology_cluster_icon_and_api_server_layout_are_readable() -> None:
     assert "normalizedLabel === 'api server'" in script
     assert "valueElement.classList.add('min-w-0', 'flex-1', 'truncate', 'whitespace-nowrap')" in script
     assert "valueElement.title = String(displayValue || 'Not Reported')" in script
-    assert 'max-w-[15rem]' in inspector
+    assert 'max-w-[28rem]' in inspector
+    assert 'max-w-2xl' in _read('app/templates/components/visualization_workspace.html')
 
 
 def test_topology_runtime_status_strips_use_shared_semantic_border_authority() -> None:
