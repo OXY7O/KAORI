@@ -199,6 +199,25 @@ def test_response_and_reporting_flows_reuse_numbered_governance_sequence() -> No
             assert f"'{step}'" in source
 
 
+def test_recent_report_activity_is_bounded_to_five_in_both_reference_dashboards() -> None:
+    kubernetes_summary = read('app/templates/kubernetes/dashboard/partials/_reporting_summary.html')
+    kubernetes_builder = read('app/kubernetes/dashboard/sections/reporting.py')
+    object_summary = read('app/templates/storage/object_storage/dashboard/partials/_reporting_summary.html')
+    object_service = read('app/storage/object_storage/dashboard/service.py')
+
+    assert 'Up to five latest generated report records.' in kubernetes_summary
+    assert 'reporting.latest_reports[:5]' in kubernetes_summary
+    assert 'query_all(Report, selected_cluster_id, limit=5)' in kubernetes_builder
+
+    assert 'Up to five latest generated Object Storage report records.' in object_summary
+    assert 'reporting.latest_reports[:5]' in object_summary
+    assert 'recent = reports_query.order_by(Report.created_at.desc()).limit(5).all()' in object_service
+
+    for source in (kubernetes_summary, kubernetes_builder, object_summary):
+        assert 'three latest generated' not in source
+        assert 'limit=3' not in source
+
+
 def test_operational_dashboard_standard_is_family_owned() -> None:
     standard = read('docs/design/patterns/OPERATIONAL_DASHBOARD.md')
     audit = read(
@@ -215,3 +234,4 @@ def test_operational_dashboard_standard_is_family_owned() -> None:
     assert 'Tenant Governance Flow' in audit
     assert 'Issue #758' in audit
     assert 'five-record preview' in audit
+    assert 'five-record Recent Report Activity preview boundary' in audit

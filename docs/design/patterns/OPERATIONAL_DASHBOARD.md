@@ -107,6 +107,10 @@ Both flows keep domain-specific descriptions detailed enough to state the eviden
 
 `Alerts Summary` is a bounded dashboard preview, not an alert registry. Kubernetes and Object Storage expose and render at most **five** recent active AlertCase records while severity totals continue to represent the complete selected scope. The full case set remains available through **Open Alert Intelligence**.
 
+### Recent Report Activity preview contract
+
+`Recent Report Activity` is a bounded dashboard preview of generated report artifacts. Kubernetes and Object Storage query and render at most **five** latest generated report records. The Reports workspace remains authoritative for full report history, filtering, scheduling, and retained-artifact review; dashboard summaries must not add local pagination.
+
 ## Data-boundary contract
 
 - Web requests read committed database rows and worker snapshots only.

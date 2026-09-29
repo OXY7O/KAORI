@@ -41,6 +41,8 @@ Controlled Reporting Flow now follows the same `components/numbered_governance_s
 
 Alerts Summary is now a bounded five-record preview in both reference dashboards. The server-side snapshot builders and template loops cap recent AlertCase content at five while severity totals remain full-scope; operators continue to use Alert Intelligence for the complete case set.
 
+Recent Report Activity is also bounded to five latest generated report records in both reference dashboards. Server-side report queries and template loops share the same limit while the Reports workspace remains the full-history owner.
+
 Controlled Response and Controlled Reporting step descriptions are expanded so each stage states the evidence being checked, the decision/action expected, and the required outcome boundary without turning the dashboard into procedural documentation.
 
 The Fast Track pass also adjusts three reviewed strings without changing operational meaning:
@@ -65,6 +67,7 @@ The existing Operational Dashboard verifier and focused dashboard contract tests
 - Registry/Harbor and Source Control/GitHub reuse direction;
 - the shared numbered Controlled Response and Controlled Reporting sequences in both reference dashboards;
 - the five-record Alerts Summary preview boundary in both dashboard families;
+- the five-record Recent Report Activity preview boundary in both dashboard families;
 - continued use of arrow-connected operational flow only where the locked pattern still requires it, including capacity.
 
 Developer Check, Full Admission, staging PR, UAT, and promotion remain outside this Fast Track step until explicit human acceptance.

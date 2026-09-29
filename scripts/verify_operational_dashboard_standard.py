@@ -12,7 +12,9 @@ SIGNAL_OVERVIEW = DASHBOARD_DIR / 'partials' / '_signal_overview.html'
 ALERT_SUMMARY = DASHBOARD_DIR / 'partials' / '_alerts_summary.html'
 ALERT_GUIDANCE = DASHBOARD_DIR / 'partials' / '_alert_response_guidance.html'
 REPORTING_GUIDANCE = DASHBOARD_DIR / 'partials' / '_reporting_guidance.html'
+REPORTING_SUMMARY = DASHBOARD_DIR / 'partials' / '_reporting_summary.html'
 ALERTS_BUILDER = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'sections' / 'alerts.py'
+REPORTING_BUILDER = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'sections' / 'reporting.py'
 OBJECT_DASHBOARD_DIR = ROOT / 'app' / 'templates' / 'storage' / 'object_storage' / 'dashboard'
 OBJECT_CONTENT = OBJECT_DASHBOARD_DIR / 'partials' / '_content.html'
 OBJECT_HERO = OBJECT_DASHBOARD_DIR / 'partials' / '_hero.html'
@@ -20,6 +22,7 @@ OBJECT_SIGNAL_OVERVIEW = OBJECT_DASHBOARD_DIR / 'partials' / '_signal_overview.h
 OBJECT_ALERT_SUMMARY = OBJECT_DASHBOARD_DIR / 'partials' / '_alerts_summary.html'
 OBJECT_ALERT_GUIDANCE = OBJECT_DASHBOARD_DIR / 'partials' / '_alert_response_guidance.html'
 OBJECT_REPORTING_GUIDANCE = OBJECT_DASHBOARD_DIR / 'partials' / '_reporting_guidance.html'
+OBJECT_REPORTING_SUMMARY = OBJECT_DASHBOARD_DIR / 'partials' / '_reporting_summary.html'
 OBJECT_DASHBOARD_SERVICE = ROOT / 'app' / 'storage' / 'object_storage' / 'dashboard' / 'service.py'
 PAGE_HERO = ROOT / 'app' / 'templates' / 'components' / 'page_hero.html'
 WORKSPACE_TABS = ROOT / 'app' / 'templates' / 'components' / 'workspace_tabs.html'
@@ -197,13 +200,16 @@ def verify() -> None:
     alert_summary = _read(ALERT_SUMMARY)
     alert_guidance = _read(ALERT_GUIDANCE)
     reporting_guidance = _read(REPORTING_GUIDANCE)
+    reporting_summary = _read(REPORTING_SUMMARY)
     alerts_builder = _read(ALERTS_BUILDER)
+    reporting_builder = _read(REPORTING_BUILDER)
     object_content = _read(OBJECT_CONTENT)
     object_hero = _read(OBJECT_HERO)
     object_signal_overview = _read(OBJECT_SIGNAL_OVERVIEW)
     object_alert_summary = _read(OBJECT_ALERT_SUMMARY)
     object_alert_guidance = _read(OBJECT_ALERT_GUIDANCE)
     object_reporting_guidance = _read(OBJECT_REPORTING_GUIDANCE)
+    object_reporting_summary = _read(OBJECT_REPORTING_SUMMARY)
     object_dashboard_service = _read(OBJECT_DASHBOARD_SERVICE)
     page_hero = _read(PAGE_HERO)
     workspace_tabs = _read(WORKSPACE_TABS)
@@ -455,6 +461,37 @@ def verify() -> None:
     ):
         if '[:3]' in source and 'alert' in owner.lower():
             raise AssertionError(f'{owner}: stale three-record alert preview cap remains')
+
+    _require(
+        reporting_summary,
+        ('Up to five latest generated report records.', 'reporting.latest_reports[:5]'),
+        'Kubernetes Recent Report Activity preview',
+    )
+    _require(
+        reporting_builder,
+        ('query_all(Report, selected_cluster_id, limit=5)',),
+        'Kubernetes Recent Report Activity builder',
+    )
+    _require(
+        object_reporting_summary,
+        (
+            'Up to five latest generated Object Storage report records.',
+            'reporting.latest_reports[:5]',
+        ),
+        'Object Storage Recent Report Activity preview',
+    )
+    _require(
+        object_dashboard_service,
+        ('recent = reports_query.order_by(Report.created_at.desc()).limit(5).all()',),
+        'Object Storage Recent Report Activity builder',
+    )
+    for owner, source in (
+        ('Kubernetes Reporting Summary', reporting_summary),
+        ('Kubernetes Reporting builder', reporting_builder),
+        ('Object Storage Reporting Summary', object_reporting_summary),
+    ):
+        if 'three latest generated' in source or 'limit=3' in source or '[:3]' in source:
+            raise AssertionError(f'{owner}: stale three-record report preview cap remains')
     _require(
         object_alert_guidance,
         (
@@ -662,7 +699,7 @@ def verify() -> None:
     print(
         'KAORI operational dashboard standard passed: shared Hero profile parity, canonical composition, '
         'snapshot-only web boundary, authorization-first lazy sections, URL-backed keyboard-accessible tabs, '
-        'shared style ownership, numbered response/reporting guidance, five-record alert previews, '
+        'shared style ownership, numbered response/reporting guidance, five-record alert/report previews, '
         'behavioral release evidence, documentation, and quality-gate enforcement match v1.6.'
     )
 

@@ -7,7 +7,7 @@ from app.models import Report, ReportSchedule, ReportTemplate
 
 
 def build_reporting_snapshot(selected_cluster_id: str | None) -> ReportingSnapshot:
-    reports = query_all(Report, selected_cluster_id, limit=3)
+    reports = query_all(Report, selected_cluster_id, limit=5)
     latest: list[ReportItem] = []
     for report in reports:
         title = str(get_attr(report, 'title', 'name', 'report_name', default='Generated Report'))

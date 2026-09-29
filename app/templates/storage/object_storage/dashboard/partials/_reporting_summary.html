@@ -38,7 +38,7 @@
             <div class="min-w-0">
                 <h3 id="object-storage-recent-report-activity-title"
                     class="text-sm font-semibold text-content-primary">Recent Report Activity</h3>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Up to three latest generated Object Storage report records.</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Up to five latest generated Object Storage report records.</p>
             </div>
             {% if reporting.latest_reports %}
                 {{ table_label.metadata_label(table_label.count_text(reporting.latest_reports|length, 'Record') ,
@@ -48,7 +48,7 @@
         </div>
         {% if reporting.latest_reports %}
             <div class="divide-y divide-outline-subtle border-y border-outline-subtle">
-                {% for report in reporting.latest_reports %}
+                {% for report in reporting.latest_reports[:5] %}
                     {% set normalized_status = report.status|default('Unknown', true)|lower %}
                     {% set status_tone = 'normal' if normalized_status in ['completed', 'ready', 'succeeded'] else ('critical' if normalized_status in ['failed', 'error'] else ('info' if normalized_status in ['queued', 'running', 'pending', 'in progress'] else 'unknown')) %}
                     <article class="flex min-w-0 flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">

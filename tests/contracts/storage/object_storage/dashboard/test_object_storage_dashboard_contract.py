@@ -270,6 +270,9 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     assert "peer_content_grid.column_classes('secondary', 'seven-five')" in reporting
     assert 'Reporting Summary' in reporting_summary
     assert 'Recent Report Activity' in reporting_summary
+    assert 'Up to five latest generated Object Storage report records.' in reporting_summary
+    assert 'reporting.latest_reports[:5]' in reporting_summary
+    assert 'recent = reports_query.order_by(Report.created_at.desc()).limit(5).all()' in service
     assert 'Reporting Interpretation & Next Steps' in reporting_guidance
     assert 'Reporting Control' in reporting_guidance
     assert 'Controlled Reporting Flow' in reporting_guidance
