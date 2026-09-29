@@ -73,6 +73,8 @@ def test_operations_workflow_hero_names_are_compact_and_semantically_distinct() 
     assert '>Create Secret</h1>' in secret_create
     assert 'Create Kubernetes Secret' not in secret_create
     assert '>Replace Secret</h1>' in secret_replace
+    assert "'Replace Workflow'" in secret_replace
+    assert "'Update Workflow'" not in secret_replace
     assert 'Replace Kubernetes Secret Data' not in secret_replace
 
     assert "page_title='Create ConfigMap'" in configmap_routes
