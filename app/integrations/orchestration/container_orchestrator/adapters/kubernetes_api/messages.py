@@ -10,6 +10,14 @@ def compact_readiness_reason(value: object) -> str:
         return ''
 
     lowered = text.lower()
+    if 'kaori extended lifecycle support' in lowered and lowered.startswith('kubernetes '):
+        subject = text.split(' is ', 1)[0].strip()
+        if subject:
+            return f'{subject} uses KAORI Extended support. Upgrade recommended.'
+
+    if 'optional capability access is unavailable for:' in lowered:
+        return 'Optional capability access is limited; core Kubernetes readiness is unaffected.'
+
     if 'legacy lifecycle band' in lowered and lowered.startswith('kubernetes '):
         subject = text.split(' is ', 1)[0].strip()
         if subject:

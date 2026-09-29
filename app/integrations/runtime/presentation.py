@@ -243,6 +243,11 @@ def runtime_history_view(
                     if row.message and not _message_repeats_diagnostic(row.message or '', diagnostics)
                     else None
                 ),
+                'summary': _runtime_primary_summary(
+                    integration_type=row.integration_type,
+                    message=row.message or '',
+                    diagnostics=diagnostics,
+                ),
                 'diagnostics': diagnostics,
                 'diagnostic_count': len(diagnostics),
                 'lifecycle_context': lifecycle_context,

@@ -349,7 +349,7 @@
                     {% set validation_steps = [
                                             ('01', 'API Serving', row.api_version, 'Selected API is served by the registered Kubernetes API.'),
                                             ('02', 'Resource Discovery', api_resource, 'Expected resource is discoverable through the selected API contract.'),
-                                            ('03', 'Effective Authorization', row.required_verbs_display, 'Required verbs are evaluated for ' ~ authorization_scope|lower ~ '.')
+                                            ('03', 'Effective Authorization', row.required_verbs_display, 'Required verbs are evaluated across all namespaces for this cluster-wide contract.' if row.required else 'Required verbs are evaluated only in the approved namespace for this optional contract.')
                                         ] %}
                     {% for number, title, evidence, description in validation_steps %}
                         <li class="min-w-0 bg-surface-card p-4 sm:p-5">
