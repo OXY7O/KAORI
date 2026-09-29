@@ -174,37 +174,37 @@ Where a family contains materially different route intents, classify the route r
 
 ## Application Navigation Layering
 
-Global and local navigation are separate semantic layers:
+Global and local navigation are separate semantic layers. Sidebar section labels are grouping metadata, not a navigation level.
 
 ```text
 Global Sidebar
-Section -> Workspace
+Level 1: Workspace / Domain
+Level 2: Capability
 
-Domain Workspace Navigation
-Workspace -> Capability
-
-Capability Content Navigation
-Capability -> Detailed peer view
+Page Workspace
+Level 3: Detailed peer view
 ```
 
-The global sidebar never uses a third nested level. Provider/vendor identity and runtime instances remain inside their owning workspace rather than becoming global navigation.
-
-The second layer uses `components/workspace_tabs.html` server-owned Integrated Workspace Tabs. Detailed content continues to select from the existing registered tab families below.
+The sidebar never renders level 3. The page does not repeat level-2 capability peers as another global horizontal strip.
 
 Examples:
 
 ```text
-Kubernetes
-  -> Analytics
-      -> Capacity
+Kubernetes               ← sidebar level 1
+  Inventory               ← sidebar level 2
+    Nodes                  ← page level 3
 
 Object Storage
-  -> Inventory
-      -> Buckets
+  Analytics
+    Forecast
 
 Access
-  -> Identity Providers
+  Identity Providers      ← level 2; no level-3 row required
 ```
+
+Provider/vendor identities and runtime instances remain inside their owning capability/workspace rather than becoming sidebar roots.
+
+Level-3 route peers select from the existing registered tab families below, normally Content Tabs. Integrated Workspace Tabs remain valid only for page-local workspaces that genuinely define peer sections of one page; they are not the global Workspace → Capability navigator.
 
 See `components/SIDEBAR_NAVIGATION.md` and `components/DOMAIN_WORKSPACE_NAVIGATION.md`.
 

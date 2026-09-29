@@ -21,7 +21,6 @@ from app.common.timezone import (
 from app.common.workspace_navigation import (
     build_capability_navigation,
     build_sidebar_navigation,
-    build_workspace_navigation,
 )
 from app.integrations.navigation import build_integration_navigation_context, integration_endpoint_owner
 from app.kubernetes.cluster.constants import get_environment_label
@@ -104,8 +103,7 @@ def register_presentation(app: Flask) -> None:
                 request.path,
                 integration_owner=integration_owner,
             ),
-            'sidebar_navigation': build_sidebar_navigation(request.endpoint, current_user),
-            'workspace_navigation': build_workspace_navigation(request.endpoint, current_user, request.args),
+            'sidebar_navigation': build_sidebar_navigation(request.endpoint, current_user, request.args),
             'capability_navigation': build_capability_navigation(request.endpoint, current_user, request.args),
             'integration_navigation': integration_navigation,
         }

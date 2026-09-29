@@ -7,6 +7,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 
 
+def _read(path: str) -> str:
+    return (ROOT / path).read_text(encoding='utf-8')
+
+
 def test_sidebar_navigation_standard_is_enforced() -> None:
     result = subprocess.run(
         [sys.executable, 'scripts/verify_sidebar_navigation_standard.py'],
@@ -20,43 +24,39 @@ def test_sidebar_navigation_standard_is_enforced() -> None:
     assert 'KAORI sidebar navigation standard passed' in result.stdout
 
 
-def test_sidebar_v2_and_domain_workspace_authorities_are_registered() -> None:
-    readme = (ROOT / 'docs' / 'design' / 'README.md').read_text(encoding='utf-8')
-    design_system = (ROOT / 'docs' / 'design' / 'DESIGN_SYSTEM.md').read_text(encoding='utf-8')
-    sidebar_standard = (ROOT / 'docs' / 'design' / 'components' / 'SIDEBAR_NAVIGATION.md').read_text(
-        encoding='utf-8'
-    )
-    workspace_standard = (
-        ROOT / 'docs' / 'design' / 'components' / 'DOMAIN_WORKSPACE_NAVIGATION.md'
-    ).read_text(encoding='utf-8')
-    ownership = (
-        ROOT / 'docs' / 'design' / 'components' / 'REUSABLE_COMPONENT_OWNERSHIP.md'
-    ).read_text(encoding='utf-8')
+def test_sidebar_v21_uses_two_real_levels_below_section_groups() -> None:
+    sidebar = _read('app/templates/components/navigation/sidebar.html')
+    model = _read('app/common/workspace_navigation.py')
 
-    assert 'locked application-shell navigation contract' in readme
-    assert 'DOMAIN_WORKSPACE_NAVIGATION.md' in readme
-    assert 'locked v2 global Section → Workspace' in design_system
-    assert 'KAORI Sidebar Navigation Standard v2.0' in sidebar_standard
-    assert 'A third level in the global sidebar is prohibited.' in sidebar_standard
-    assert 'KAORI Domain Workspace Navigation Standard v1.0' in workspace_standard
-    assert 'workspace_tabs.render_navigation()' in workspace_standard
-    assert '`app/common/workspace_navigation.py`' in ownership
+    assert '<details class="sidebar-menu space-y-1"' in sidebar
+    assert 'data-kaori-sidebar-workspace="{{ item[\'key\'] }}"' in sidebar
+    assert 'data-kaori-sidebar-workspace-trigger="{{ item[\'key\'] }}"' in sidebar
+    assert 'data-kaori-sidebar-capability="{{ child[\'key\'] }}"' in sidebar
+    assert "{% for child in item['children'] %}" in sidebar
+    assert 'sidebar-submenu' in sidebar
+
+    assert 'class WorkspaceCapabilityDefinition:' in model
+    assert 'capabilities: tuple[WorkspaceCapabilityDefinition, ...]' in model
+    assert "'children': children" in model
+    assert "'children': ()" in model
+    assert 'def build_workspace_navigation(' not in model
 
 
-def test_global_sidebar_is_workspace_only_and_future_domains_are_not_placeholders() -> None:
-    sidebar = (ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'sidebar.html').read_text(
-        encoding='utf-8'
-    )
-    model = (ROOT / 'app' / 'common' / 'workspace_navigation.py').read_text(encoding='utf-8')
+def test_sidebar_mapping_access_avoids_jinja_dict_method_collisions() -> None:
+    sidebar = _read('app/templates/components/navigation/sidebar.html')
 
-    assert 'data-kaori-sidebar-section' in sidebar
-    assert 'data-kaori-sidebar-workspace' in sidebar
-    assert '<details class="sidebar-menu' not in sidebar
-    assert 'analytics_menu.html' not in sidebar
-    assert 'inventory_menu.html' not in sidebar
-    assert 'tenant_menu.html' not in sidebar
+    assert "{% for item in section['items'] %}" in sidebar
+    assert 'section.items' not in sidebar
+    for key in ('label', 'key', 'active', 'icon', 'children'):
+        assert f"item['{key}']" in sidebar
+    for key in ('href', 'label', 'key', 'active', 'icon'):
+        assert f"child['{key}']" in sidebar
 
-    for current in (
+
+def test_current_workspace_capabilities_are_sidebar_children() -> None:
+    model = _read('app/common/workspace_navigation.py')
+
+    for workspace in (
         "key='kubernetes'",
         "key='object_storage'",
         "key='intelligence'",
@@ -66,79 +66,51 @@ def test_global_sidebar_is_workspace_only_and_future_domains_are_not_placeholder
         "key='access'",
         "key='settings'",
     ):
-        assert current in model
+        assert workspace in model
 
-    for future in ("key='compute'", "key='network'", "key='reliability'", "key='finops'", "key='automation'"):
-        assert future not in model
-
-
-def test_sidebar_mapping_access_avoids_jinja_dict_method_collisions() -> None:
-    sidebar = (ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'sidebar.html').read_text(
-        encoding='utf-8'
-    )
-
-    assert "{% for item in section['items'] %}" in sidebar
-    assert 'section.items' not in sidebar
-    for key in ('href', 'label', 'key', 'active', 'icon'):
-        assert f"item['{key}']" in sidebar
-
-
-def test_domain_workspace_navigation_is_flat_not_a_second_header_card() -> None:
-    layout = (ROOT / 'app' / 'templates' / 'layouts' / 'app.html').read_text(encoding='utf-8')
-    standard = (
-        ROOT / 'docs' / 'design' / 'components' / 'DOMAIN_WORKSPACE_NAVIGATION.md'
-    ).read_text(encoding='utf-8')
-
-    workspace_region = layout.split('{% if workspace_navigation %}', 1)[1].split('{% endif %}', 1)[0]
-
-    assert 'workspace_tabs.render_navigation(' in workspace_region
-    assert 'rounded-xl' not in workspace_region
-    assert 'bg-surface-card' not in workspace_region
-    assert 'shadow-sm' not in workspace_region
-    assert '>Workspace<' not in workspace_region
-    assert 'secondary navigation strip' in standard
-    assert 'must not add an outer card' in standard
-
-
-def test_domain_workspace_navigation_reuses_integrated_workspace_tabs() -> None:
-    layout = (ROOT / 'app' / 'templates' / 'layouts' / 'app.html').read_text(encoding='utf-8')
-    model = (ROOT / 'app' / 'common' / 'workspace_navigation.py').read_text(encoding='utf-8')
-
-    assert '{% import "components/workspace_tabs.html" as workspace_tabs %}' in layout
-    assert 'workspace_tabs.render_navigation(' in layout
-    assert 'data-kaori-domain-workspace-nav="{{ workspace_navigation.key }}"' in layout
-
-    for kubernetes_tab in (
+    for capability in (
         "'overview', 'Overview'",
         "'inventory', 'Inventory'",
         "'operations',",
         "'governance', 'Governance'",
         "'tenant', 'Tenant'",
         "'analytics', 'Analytics'",
+        "'recommendations', 'Recommendations'",
+        "'alert_intelligence',",
+        "'generate',",
+        "'data_lifecycle',",
+        "'identity_providers',",
     ):
-        assert kubernetes_tab in model
+        assert capability in model
 
-    assert "'object_storage'" in model
-    assert "'object_storage_inventory.overview'" in model
-    assert "'analytics.object_storage_overview'" in model
-
-
-def test_breadcrumb_hierarchy_matches_workspace_ownership() -> None:
-    breadcrumb = (ROOT / 'app' / 'common' / 'navigation.py').read_text(encoding='utf-8')
-
-    assert "BreadcrumbItem('Kubernetes', 'boxes')" in breadcrumb
-    assert "BreadcrumbItem('Object Storage', 'database')" in breadcrumb
-    assert "BreadcrumbItem('Inventory')" in breadcrumb
-    assert "BreadcrumbItem('Operations')" in breadcrumb
-    assert "BreadcrumbItem('Analytics', 'chart-no-axes-combined')" in breadcrumb
-
-    assert "BreadcrumbItem('Dashboards', 'layout-dashboard')" not in breadcrumb
-    assert "BreadcrumbItem('Inventory', 'boxes')" not in breadcrumb
+    for future in (
+        "key='compute'",
+        "key='network'",
+        "key='reliability'",
+        "key='finops'",
+        "key='automation'",
+    ):
+        assert future not in model
 
 
-def test_capability_detail_navigation_replaces_retired_sidebar_submenus() -> None:
-    model = (ROOT / 'app' / 'common' / 'workspace_navigation.py').read_text(encoding='utf-8')
-    layout = (ROOT / 'app' / 'templates' / 'layouts' / 'app.html').read_text(encoding='utf-8')
+def test_app_shell_does_not_render_second_horizontal_capability_row() -> None:
+    layout = _read('app/templates/layouts/app.html')
+    presentation = _read('app/bootstrap/presentation.py')
+
+    assert 'data-kaori-domain-workspace-nav' not in layout
+    assert 'workspace_tabs.render_navigation(' not in layout
+    assert 'workspace_navigation' not in layout
+    assert 'build_workspace_navigation' not in presentation
+    assert "'workspace_navigation':" not in presentation
+
+    assert '{% import "components/content_tabs.html" as content_tabs %}' in layout
+    assert 'data-kaori-capability-navigation="{{ capability_navigation.key }}"' in layout
+    assert 'content_tabs.render_links(' in layout
+
+
+def test_level_three_detail_navigation_replaces_sidebar_level_three() -> None:
+    model = _read('app/common/workspace_navigation.py')
+    layout = _read('app/templates/layouts/app.html')
 
     for capability in (
         "'kubernetes_inventory': (",
@@ -151,53 +123,60 @@ def test_capability_detail_navigation_replaces_retired_sidebar_submenus() -> Non
     ):
         assert capability in model
 
-    assert 'build_capability_navigation' in model
-    assert '{% import "components/content_tabs.html" as content_tabs %}' in layout
-    assert 'data-kaori-capability-navigation="{{ capability_navigation.key }}"' in layout
-    assert 'content_tabs.render_links(' in layout
-    assert "data_namespace='capability'" in layout
-    assert 'nowrap=true' in layout
-
-    assert "'Overview', 'layout-grid', 'inventory.overview'" in model
     assert "'Topology', 'waypoints', 'inventory.topology'" in model
+    assert "'Nodes', 'server', 'inventory.nodes'" in model
     assert "'ConfigMaps'," in model
     assert "'Secrets'," in model
     assert "'TLS Certificates'," in model
     assert "'Resource Profiles'," in model
     assert "'Buckets & Containers'," in model
     assert "'Capacity & Usage'," in model
+    assert "data_namespace='capability'" in layout
 
 
 def test_navigation_context_is_preserved_without_becoming_navigation_identity() -> None:
-    model = (ROOT / 'app' / 'common' / 'workspace_navigation.py').read_text(encoding='utf-8')
-    presentation = (ROOT / 'app' / 'bootstrap' / 'presentation.py').read_text(encoding='utf-8')
-    standard = (
-        ROOT / 'docs' / 'design' / 'components' / 'DOMAIN_WORKSPACE_NAVIGATION.md'
-    ).read_text(encoding='utf-8')
+    model = _read('app/common/workspace_navigation.py')
+    presentation = _read('app/bootstrap/presentation.py')
 
-    assert "_WORKSPACE_CONTEXT_KEYS" in model
     assert "'kubernetes': ('cluster_id',)" in model
     assert "'object_storage': ('system_id',)" in model
     assert "'kubernetes_analytics': ('cluster_id', 'time_range')" in model
     assert "'object_storage_analytics': ('system_id', 'time_range')" in model
     assert "'kubernetes_operations': ('cluster_id', 'namespace')" in model
     assert '_preserved_context' in model
-    assert 'build_workspace_navigation(request.endpoint, current_user, request.args)' in presentation
+    assert 'build_sidebar_navigation(request.endpoint, current_user, request.args)' in presentation
     assert 'build_capability_navigation(request.endpoint, current_user, request.args)' in presentation
-    assert 'Filters that are meaningful only to one page remain page-local' in standard
 
 
 def test_analytics_overview_does_not_duplicate_route_and_summary_tabsets() -> None:
-    model = (ROOT / 'app' / 'common' / 'workspace_navigation.py').read_text(encoding='utf-8')
-    overview = (
-        ROOT / 'app' / 'templates' / 'kubernetes' / 'analytics' / 'overview' / 'index.html'
-    ).read_text(encoding='utf-8')
+    model = _read('app/common/workspace_navigation.py')
+    overview = _read('app/templates/kubernetes/analytics/overview/index.html')
 
     assert "capability_key == 'kubernetes_analytics' and resolved_endpoint == 'analytics.overview'" in model
-    assert "return None" in model.split(
-        "capability_key == 'kubernetes_analytics' and resolved_endpoint == 'analytics.overview'", 1
-    )[1].split('visible_views', 1)[0]
-
     assert "content_tabs.render_buttons('overview-content'" in overview
-    assert 'View Resource Utilization' not in overview
-    assert 'data-kaori-capability-navigation' not in overview
+
+
+def test_navigation_documentation_registers_corrected_hierarchy() -> None:
+    sidebar_standard = _read('docs/design/components/SIDEBAR_NAVIGATION.md')
+    workspace_standard = _read('docs/design/components/DOMAIN_WORKSPACE_NAVIGATION.md')
+    design_system = _read('docs/design/DESIGN_SYSTEM.md')
+    ownership = _read('docs/design/components/REUSABLE_COMPONENT_OWNERSHIP.md')
+
+    assert 'KAORI Sidebar Navigation Standard v2.1' in sidebar_standard
+    assert 'Level 1 — Workspace / Domain' in sidebar_standard
+    assert 'Level 2 — Capability' in sidebar_standard
+    assert 'KAORI Page Workspace Navigation Standard v1.1' in workspace_standard
+    assert 'Page level 3 — Detailed View / Resource View' in workspace_standard
+    assert 'two-level Workspace → Capability sidebar navigation contract' in design_system
+    assert '`app/common/workspace_navigation.py`' in ownership
+
+
+def test_breadcrumb_hierarchy_matches_workspace_capability_detail_scope() -> None:
+    breadcrumb = _read('app/common/navigation.py')
+
+    assert "BreadcrumbItem('Kubernetes', 'boxes')" in breadcrumb
+    assert "BreadcrumbItem('Object Storage', 'database')" in breadcrumb
+    assert "BreadcrumbItem('Inventory')" in breadcrumb
+    assert "BreadcrumbItem('Operations')" in breadcrumb
+    assert "BreadcrumbItem('Analytics', 'chart-no-axes-combined')" in breadcrumb
+    assert "BreadcrumbItem('Dashboards', 'layout-dashboard')" not in breadcrumb

@@ -4,10 +4,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SIDEBAR = ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'sidebar.html'
-WORKSPACE_MODEL = ROOT / 'app' / 'common' / 'workspace_navigation.py'
-BREADCRUMB = ROOT / 'app' / 'common' / 'navigation.py'
+MODEL = ROOT / 'app' / 'common' / 'workspace_navigation.py'
 LAYOUT = ROOT / 'app' / 'templates' / 'layouts' / 'app.html'
 PRESENTATION = ROOT / 'app' / 'bootstrap' / 'presentation.py'
+BREADCRUMB = ROOT / 'app' / 'common' / 'navigation.py'
 SIDEBAR_STANDARD = ROOT / 'docs' / 'design' / 'components' / 'SIDEBAR_NAVIGATION.md'
 WORKSPACE_STANDARD = ROOT / 'docs' / 'design' / 'components' / 'DOMAIN_WORKSPACE_NAVIGATION.md'
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
@@ -15,62 +15,56 @@ QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 
 def _read(path: Path) -> str:
     if not path.exists():
-        raise AssertionError(f'Missing required navigation contract file: {path.relative_to(ROOT)}')
+        raise AssertionError(f'Missing navigation contract file: {path.relative_to(ROOT)}')
     return path.read_text(encoding='utf-8')
 
 
-def _require_tokens(source: str, tokens: tuple[str, ...], owner: str) -> None:
+def _require(source: str, tokens: tuple[str, ...], owner: str) -> None:
     missing = [token for token in tokens if token not in source]
     if missing:
-        raise AssertionError(f'{owner}: missing canonical tokens: {", ".join(missing)}')
+        raise AssertionError(f'{owner}: missing tokens: {", ".join(missing)}')
 
 
 def verify() -> None:
     sidebar = _read(SIDEBAR)
-    workspace_model = _read(WORKSPACE_MODEL)
-    breadcrumb = _read(BREADCRUMB)
+    model = _read(MODEL)
     layout = _read(LAYOUT)
     presentation = _read(PRESENTATION)
+    breadcrumb = _read(BREADCRUMB)
     sidebar_standard = _read(SIDEBAR_STANDARD)
     workspace_standard = _read(WORKSPACE_STANDARD)
 
-    _require_tokens(
+    _require(
         sidebar,
         (
             'w-[250px]',
             'lg:[.sidebar-collapsed_&]:w-[78px]',
-            'rounded-2xl',
-            'bg-surface-sidebar',
-            'overflow-y-auto',
-            'sidebar-expanded-only',
-            'text-sm font-extrabold leading-5',
-            'text-xs font-medium',
             'data-kaori-sidebar-section',
             'data-kaori-sidebar-workspace',
-            "{% for item in section['items'] %}",
-            "item['href']",
-            "item['label']",
-            "item['key']",
-            "item['active']",
-            "item['icon']",
-            'aria-current="page"',
-            'sidebar-parent-link',
+            'data-kaori-sidebar-workspace-trigger',
+            'data-kaori-sidebar-capabilities',
+            'data-kaori-sidebar-capability',
+            "{% if item['children'] %}",
+            "{% for child in item['children'] %}",
+            "child['href']",
+            "child['label']",
+            "child['active']",
+            '<details class="sidebar-menu space-y-1"',
+            'sidebar-parent-active',
+            'sidebar-submenu',
             'min-h-11',
             'text-base font-semibold leading-6',
+            'text-sm leading-5',
         ),
-        'sidebar v2 shell',
+        'two-level sidebar renderer',
     )
 
-    if '<details class="sidebar-menu' in sidebar:
-        raise AssertionError('sidebar.html: v2 global navigation must not render expandable nested menus')
-
     if 'section.items' in sidebar:
-        raise AssertionError(
-            "sidebar.html: Jinja mapping key 'items' must use explicit bracket access; "
-            "attribute lookup resolves dict.items() instead of the navigation collection"
-        )
+        raise AssertionError("sidebar renderer must use section['items'], not dict.items attribute lookup")
+    if 'workspace_tabs.render_navigation' in sidebar:
+        raise AssertionError('sidebar capabilities must not be rendered as horizontal workspace tabs')
 
-    legacy_includes = (
+    for legacy in (
         'dashboards_menu.html',
         'inventory_menu.html',
         'kubernetes_operations_menu.html',
@@ -84,15 +78,26 @@ def verify() -> None:
         'integrations_menu.html',
         'access_management_menu.html',
         'settings_menu.html',
-    )
-    for filename in legacy_includes:
-        if filename in sidebar:
-            raise AssertionError(f'sidebar.html: legacy nested menu include remains active: {filename}')
+    ):
+        if legacy in sidebar:
+            raise AssertionError(f'legacy sidebar include remains active: {legacy}')
 
-    _require_tokens(
-        workspace_model,
+    _require(
+        model,
         (
-            "_SECTION_ORDER = ('Main', 'Infrastructure', 'Operations', 'Assurance', 'Insights', 'Platform', 'Administration')",
+            'class WorkspaceCapabilityDefinition:',
+            'capabilities: tuple[WorkspaceCapabilityDefinition, ...]',
+            'def build_sidebar_navigation(',
+            'def build_capability_navigation(',
+            "'children': children",
+            "'children': ()",
+            "'active': (",
+            '_visible_capabilities',
+            '_resolved_capability_endpoint',
+            '_active_capability_key',
+            '_WORKSPACE_CONTEXT_KEYS',
+            '_CAPABILITY_CONTEXT_KEYS',
+            '_preserved_context',
             "key='kubernetes'",
             "key='object_storage'",
             "key='intelligence'",
@@ -101,30 +106,12 @@ def verify() -> None:
             "key='integrations'",
             "key='access'",
             "key='settings'",
-            "'Overview', 'layout-dashboard', 'kubernetes_dashboard.index'",
-            "'Inventory', 'boxes', 'inventory.overview'",
-            "'Tenant', 'building-2', 'tenant.index'",
-            "'Analytics', 'chart-column', 'analytics.overview'",
-            "'Inventory', 'database', 'object_storage_inventory.overview'",
-            "'Analytics', 'chart-column', 'analytics.object_storage_overview'",
-            '_resolved_tab_endpoint',
-            'build_sidebar_navigation',
-            'build_workspace_navigation',
-            'build_capability_navigation',
-            '_preserved_context',
-            "_WORKSPACE_CONTEXT_KEYS",
-            "_CAPABILITY_CONTEXT_KEYS",
-            "capability_key == 'kubernetes_analytics' and resolved_endpoint == 'analytics.overview'",
-            "'kubernetes_inventory': (",
-            "'kubernetes_operations': (",
-            "'kubernetes_governance': (",
-            "'kubernetes_tenant': (",
-            "'kubernetes_analytics': (",
-            "'object_storage_inventory': (",
-            "'object_storage_analytics': (",
         ),
-        'workspace navigation model',
+        'navigation semantic model',
     )
+
+    if 'def build_workspace_navigation(' in model:
+        raise AssertionError('horizontal Domain Workspace navigation model must not remain active')
 
     for future_placeholder in (
         "key='compute'",
@@ -134,36 +121,39 @@ def verify() -> None:
         "key='automation'",
         "key='backup_recovery'",
     ):
-        if future_placeholder in workspace_model:
-            raise AssertionError(f'workspace navigation model renders reserved future placeholder: {future_placeholder}')
+        if future_placeholder in model:
+            raise AssertionError(f'reserved future workspace rendered as placeholder: {future_placeholder}')
 
-    _require_tokens(
+    _require(
         presentation,
         (
-            'build_sidebar_navigation',
-            'build_workspace_navigation',
-            "'sidebar_navigation': build_sidebar_navigation(request.endpoint, current_user)",
-            "'workspace_navigation': build_workspace_navigation(request.endpoint, current_user, request.args)",
+            "'sidebar_navigation': build_sidebar_navigation(request.endpoint, current_user, request.args)",
             "'capability_navigation': build_capability_navigation(request.endpoint, current_user, request.args)",
         ),
         'presentation context',
     )
+    if "'workspace_navigation':" in presentation or 'build_workspace_navigation' in presentation:
+        raise AssertionError('presentation still publishes retired horizontal workspace navigation')
 
-    _require_tokens(
+    _require(
         layout,
         (
-            '{% import "components/workspace_tabs.html" as workspace_tabs %}',
-            'data-kaori-domain-workspace-nav="{{ workspace_navigation.key }}"',
-            'workspace_tabs.render_navigation(',
-            "prefix='domain-' ~ workspace_navigation.key",
             '{% import "components/content_tabs.html" as content_tabs %}',
             'data-kaori-capability-navigation="{{ capability_navigation.key }}"',
             'content_tabs.render_links(',
+            "data_namespace='capability'",
         ),
-        'domain workspace renderer',
+        'page level-3 navigation',
     )
+    for retired in (
+        'data-kaori-domain-workspace-nav',
+        'workspace_tabs.render_navigation(',
+        'workspace_navigation',
+    ):
+        if retired in layout:
+            raise AssertionError(f'app shell retains retired horizontal workspace navigation: {retired}')
 
-    _require_tokens(
+    _require(
         breadcrumb,
         (
             "BreadcrumbItem('Kubernetes', 'boxes')",
@@ -172,49 +162,41 @@ def verify() -> None:
             "BreadcrumbItem('Operations')",
             "BreadcrumbItem('Analytics', 'chart-no-axes-combined')",
         ),
-        'breadcrumb v2 ownership',
+        'breadcrumb hierarchy',
     )
-    for obsolete in (
-        "BreadcrumbItem('Dashboards', 'layout-dashboard')",
-        "BreadcrumbItem('Inventory', 'boxes')",
-        "BreadcrumbItem('Analytics', 'chart-no-axes-combined'),\n            BreadcrumbItem('Kubernetes'",
-    ):
-        if obsolete in breadcrumb:
-            raise AssertionError(f'navigation breadcrumb retains obsolete mixed-root ownership: {obsolete}')
 
-    _require_tokens(
+    _require(
         sidebar_standard,
         (
-            '# KAORI Sidebar Navigation Standard v2.0',
-            'Section -> Workspace',
-            'A third level in the global sidebar is prohibited.',
-            'Reserved future ownership',
-            'Empty future sections are not rendered.',
-            'scripts/verify_sidebar_navigation_standard.py',
+            '# KAORI Sidebar Navigation Standard v2.1',
+            'Level 1 — Workspace / Domain',
+            'Level 2 — Capability',
+            'a third nested sidebar level is prohibited',
+            'Reserved Future Ownership',
+            'no horizontal Domain Workspace strip',
         ),
-        'sidebar v2 documentation',
+        'sidebar v2.1 documentation',
     )
 
-    _require_tokens(
+    _require(
         workspace_standard,
         (
-            '# KAORI Domain Workspace Navigation Standard v1.0',
-            'Workspace -> Capability',
-            'workspace_tabs.render_navigation()',
-            'Context Is Not Navigation',
-            'Reserved Future Workspace Contracts',
-            'Playwright Evidence',
+            '# KAORI Page Workspace Navigation Standard v1.1',
+            'Page level 3 — Detailed View / Resource View',
+            'There is **no global Domain Workspace horizontal strip**',
+            'components/content_tabs.html',
+            'Analytics Overview already owns summary/evidence Content Tabs',
         ),
-        'domain workspace documentation',
+        'page workspace documentation',
     )
 
     quality_gate = _read(QUALITY_GATE)
     if 'python scripts/verify_sidebar_navigation_standard.py' not in quality_gate:
-        raise AssertionError('scripts/quality_gate.sh does not execute the sidebar standard verifier')
+        raise AssertionError('quality gate does not execute the sidebar standard verifier')
 
     print(
-        'KAORI sidebar navigation standard passed: v2 Section -> Workspace global navigation, '
-        'shared Domain Workspace navigation, breadcrumb ownership, permission-aware roots, and future-placeholder guardrails are locked.'
+        'KAORI sidebar navigation standard passed: two-level Workspace -> Capability sidebar, '
+        'page-owned level-3 detail navigation, permission-aware disclosure, and future-domain guardrails are locked.'
     )
 
 

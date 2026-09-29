@@ -53,8 +53,8 @@ Use the documented shared owner before introducing local markup or utility bundl
 - `components/RIGHT_CONTEXT_RAIL.md`
 - `components/FORM_WITH_CONTEXT_RAIL.md`
 - `components/REUSABLE_COMPONENT_OWNERSHIP.md`
-- `components/SIDEBAR_NAVIGATION.md` — locked v2 global Section → Workspace application navigation contract.
-- `components/DOMAIN_WORKSPACE_NAVIGATION.md` — locked second-layer Workspace → Capability navigation contract.
+- `components/SIDEBAR_NAVIGATION.md` — locked v2.1 two-level Workspace → Capability sidebar navigation contract.
+- `components/DOMAIN_WORKSPACE_NAVIGATION.md` — locked page-level detailed-view navigation contract below sidebar capabilities.
 - `components/NAVBAR.md`
 - `components/OPERATIONAL_ACTION_FEEDBACK.md`
 - `components/WORKSPACE_SUMMARY_CARD.md`

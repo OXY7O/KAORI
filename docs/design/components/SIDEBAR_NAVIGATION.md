@@ -1,4 +1,4 @@
-# KAORI Sidebar Navigation Standard v2.0
+# KAORI Sidebar Navigation Standard v2.1
 
 **Status:** Locked application-shell navigation contract  
 **Foundation authority:** #747  
@@ -6,85 +6,89 @@
 
 ## Purpose
 
-The global sidebar is KAORI's workspace selector. It answers one question:
+The authenticated sidebar is KAORI's persistent two-level workspace navigator.
 
-> **Which major KAORI workspace/domain am I entering?**
-
-It does not expose every capability, page, provider, or resource.
-
-The canonical navigation hierarchy is:
+Section labels are non-interactive grouping metadata and are **not** counted as navigation levels.
 
 ```text
-Global Sidebar
-  Section -> Workspace
-
-Domain Workspace Navigation
-  Workspace -> Capability
-
-Capability / Content Navigation
-  Capability -> Detailed view
+Section label
+└── Level 1 — Workspace / Domain
+    └── Level 2 — Capability
 ```
 
-A third level in the global sidebar is prohibited.
+Detailed views below a capability belong to the page workspace, not the sidebar.
 
 ## Architecture Rule
 
-Sidebar ownership follows the KAORI architecture principle:
+Navigation follows the KAORI architecture principle:
 
 > **capability/domain first, provider second, instance third**
 
 Therefore:
 
-- providers/vendors do not become global sidebar roots;
-- provider domains and providers belong inside **Integrations**;
-- provider instances/resources belong in context selectors, registries, tables, drawers, and detail pages;
-- a new provider must not require global-sidebar restructuring;
-- a new detailed view extends its owning workspace rather than adding another sidebar nesting level.
+- providers/vendors do not become global roots merely because they are integrated;
+- provider domains/providers remain inside Integrations;
+- provider instances/resources remain context selectors, registries, tables, drawers, or detail surfaces;
+- sidebar level 1 identifies the workspace/domain;
+- sidebar level 2 identifies the capability;
+- detailed resource/view navigation is local page/workspace navigation;
+- a third nested sidebar level is prohibited.
 
 ## Visual Geometry
 
-The accepted Violet application-shell geometry remains unchanged from v1.7:
+The approved Violet sidebar geometry remains stable:
 
-| Element | Contract |
+| Role | Contract |
 | --- | --- |
-| Expanded desktop width | 250 px |
-| Collapsed desktop width | 78 px |
-| Mobile drawer | off-canvas, nearly full-width on compact phones |
-| Root workspace target | minimum 44 px |
-| Root label | 16 px / semibold |
-| Section label | 12 px / extra-bold uppercase |
-| Root icon container | 32 px |
-| Active state | canonical Violet surface + active icon treatment |
-| Dark mode | neutral-first sidebar surface with restrained Violet emphasis |
+| Expanded width | 250 px |
+| Collapsed width | 78 px |
+| Section label | 12 px extra-bold uppercase |
+| Level-1 workspace | minimum 44 px, 16 px semibold |
+| Level-1 icon surface | 32 px |
+| Level-1 icon | 16 px |
+| Level-2 capability | 14 px / 20 px line-height |
+| Level-2 icon | 14 px |
+| Level-2 indicator dot | 6 px |
+| Parent radius | 8 px |
+| Child radius | 8 px |
 
-Canonical root-link utility ownership remains:
+The level-1 parent remains visually stronger than its active level-2 child.
 
-```text
-sidebar-parent-link
-min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6
-sidebar-parent-active / sidebar-item-idle
-sidebar-parent-active-icon / sidebar-item-idle-icon
-```
+## Level-1 Workspace
 
-The v2 change is **information architecture**, not a visual rebrand.
+Level-1 workspaces use native `details/summary` when they own multiple capabilities.
 
-## Runtime Section Order
+Contract:
 
-Runtime sections render only when they contain at least one authorized implemented workspace.
+- minimum 44 px root target;
+- stable icon and Title Case label;
+- active workspace uses canonical `sidebar-parent-active`;
+- active parent remains open after navigation;
+- chevron indicates disclosure;
+- when desktop sidebar is collapsed, activating an expandable workspace first expands the sidebar and reveals level 2 rather than navigating to an arbitrary capability;
+- `title` and `aria-label` remain available in collapsed mode.
 
-Canonical reserved order:
+A true single-destination workspace may use a direct root link with identical root geometry.
 
-1. Main
-2. Infrastructure
-3. Operations
-4. Assurance
-5. Insights
-6. Platform
-7. Administration
+## Level-2 Capability
 
-Empty future sections are not rendered.
+Capabilities are subordinate links inside the active/open workspace.
 
-### Current implemented runtime
+Contract:
+
+- 14 px label;
+- subtle guide line;
+- 14 px stable Lucide icon;
+- 6 px indicator dot;
+- restrained translucent active state;
+- never use the same solid Violet fill as the level-1 parent;
+- one active capability may own `aria-current="page"`;
+- permission filtering occurs before rendering;
+- a capability link may preserve only approved stable context.
+
+## Runtime IA
+
+Current implemented runtime:
 
 ```text
 MAIN
@@ -92,22 +96,61 @@ MAIN
 
 INFRASTRUCTURE
 ├── Kubernetes
+│   ├── Overview
+│   ├── Inventory
+│   ├── Operations
+│   ├── Governance
+│   ├── Tenant
+│   └── Analytics
 └── Object Storage
+    ├── Overview
+    ├── Inventory
+    └── Analytics
 
 INSIGHTS
 ├── Intelligence
+│   ├── Overview
+│   ├── Recommendations
+│   ├── Alert Intelligence
+│   ├── Rule Catalog
+│   └── Automation Control
 └── Reports
+    ├── Overview
+    ├── Generate
+    ├── Generated
+    ├── Templates
+    ├── Storage
+    └── Schedules
 
 PLATFORM
 ├── Operations Center
+│   ├── Overview
+│   ├── Jobs
+│   ├── Data Lifecycle
+│   └── Kubernetes Admin
 └── Integrations
+    ├── Overview
+    ├── Orchestration
+    ├── Observability
+    ├── Storage
+    └── Notification Channels
 
 ADMINISTRATION
 ├── Access
+│   ├── Overview
+│   ├── Users
+│   ├── Identity Providers
+│   ├── Roles
+│   ├── Permissions
+│   └── Activity Audit
 └── Settings
+    ├── General
+    └── Account
 ```
 
-### Reserved future ownership
+## Reserved Future Ownership
+
+Reserved workspaces do not render until implementation and authorization exist:
 
 ```text
 MAIN
@@ -134,121 +177,152 @@ PLATFORM
 └── Automation
 ```
 
-Reserved ownership does not authorize placeholder navigation. A workspace appears only after a real route, authorization contract, and bounded implementation exist.
+Future workspace capabilities are defined by #747 and may extend their parent without changing the global section architecture.
 
 ## Permission Contract
 
-A root workspace is visible only when at least one child capability is authorized.
+A workspace is rendered only when at least one capability is authorized.
 
-The root link resolves to the **first authorized capability**, not blindly to an overview the user cannot access.
+A workspace does not navigate to an arbitrary child when the user activates its parent disclosure. Child links own navigation.
 
 Examples:
 
-- Kubernetes Governance-only user -> Governance target;
-- Kubernetes ConfigMap-only user -> Operations -> ConfigMaps target;
-- Reports generate-only user -> Generate target;
-- identity-provider-only administrator -> Access overview through the existing Access authorization contract.
+- Governance-only Kubernetes user sees Kubernetes → Governance;
+- ConfigMap-only user sees Kubernetes → Operations and the capability resolves to ConfigMaps;
+- identity-provider-only administrator sees Access → Identity Providers plus any authorized overview contract;
+- unauthorized siblings are omitted.
 
-Global navigation must never expose a destination that immediately fails authorization solely because a different child permission was selected as the root target.
+Server-side route decorators remain authoritative; sidebar filtering is discoverability, not authorization.
+
+## Context Contract
+
+Stable scope may survive sibling capability navigation without becoming navigation identity:
+
+- Kubernetes capabilities may preserve `cluster_id`;
+- Object Storage capabilities may preserve `system_id`.
+
+Detailed page navigation may preserve additional bounded context such as `time_range` or Operations `namespace` where explicitly registered.
+
+Do not propagate arbitrary page filters.
 
 ## Active-State Contract
 
-Exactly one root workspace may own `aria-current="page"`.
+Exactly one level-1 workspace may be active.
 
-Active ownership follows route/domain semantics:
+Within that workspace, exactly one authorized level-2 capability may own the active child state.
 
-- Kubernetes owns Dashboard/Inventory/Operations/Governance/Tenant/Kubernetes Analytics;
-- Object Storage owns Object Storage Dashboard/Inventory/Object Storage Analytics;
-- Intelligence owns Intelligence, Alert Intelligence, and Automation Control;
-- Operations Center owns Jobs and Platform Operations;
-- Integrations owns integration-domain/provider/connection routes;
-- Access owns user/identity-provider/role/permission/audit administration;
-- Settings owns general/account settings.
+Example:
 
-## Mobile / Responsive
+```text
+Kubernetes              ← active level 1
+  Inventory             ← active level 2
+```
 
-The mobile drawer uses the **same Section -> Workspace taxonomy** as desktop.
+The page then owns its detailed active view, such as `Overview` or `Nodes`.
 
-Requirements:
+## Responsive / Collapse Contract
 
+Desktop:
+
+- expanded width 250 px;
+- collapsed width 78 px;
+- collapsed mode hides text/submenus;
+- selecting an expandable workspace while collapsed expands the sidebar and reveals its capabilities.
+
+Mobile:
+
+- full readable off-canvas drawer;
+- same level-1/level-2 taxonomy;
 - no mobile-only information architecture;
-- no nested global submenus;
-- selecting a workspace closes the drawer;
-- drawer state must not mutate persisted desktop collapse state;
-- workspace labels are always visible in the mobile drawer;
-- page-level horizontal scroll is prohibited.
+- destination navigation closes the drawer;
+- disclosure does not overwrite desktop collapse preference.
 
 ## Breadcrumb Contract
 
-Breadcrumb root vocabulary matches the visible global workspace:
+Breadcrumb hierarchy may expose the page-detail level even though that detail is not in the sidebar:
 
 ```text
 KAORI / Kubernetes / Inventory / Nodes
 KAORI / Kubernetes / Analytics / Capacity
 KAORI / Object Storage / Inventory / Buckets
-KAORI / Object Storage / Analytics / Forecast
 KAORI / Intelligence / Recommendations
-KAORI / Operations Center / Jobs
-KAORI / Access / Identity Providers
+KAORI / Integrations / Observability
 ```
-
-Legacy mixed roots such as `Analytics / Kubernetes` or `Inventory / Nodes` are not canonical.
 
 ## Provider Boundary
 
-Never add these as global root workspaces merely because a provider is integrated:
+Do not add provider/vendor roots such as Harbor, GitHub, Ansible, Prometheus, Alertmanager, MinIO, Vault/OpenBao, VMware, Proxmox, Cilium, or NetBox simply because they are connected.
 
-- Harbor
-- GitHub
-- Ansible
-- Prometheus
-- Alertmanager
-- MinIO
-- Vault / OpenBao
-- VMware
-- Proxmox
-- Cilium
-- NetBox
+Provider navigation belongs inside the owning capability/workspace.
 
-They remain provider identities inside the owning capability/domain.
+## Jinja Mapping Contract
+
+Runtime navigation is supplied as Python mappings.
+
+Renderer access must use explicit mapping syntax:
+
+```jinja2
+section['items']
+item['children']
+child['label']
+```
+
+Do not use mapping attribute syntax such as `section.items`; Jinja may resolve Python methods such as `dict.items()`.
 
 ## Implementation Ownership
 
-Runtime sidebar model: `app/common/workspace_navigation.py`  
-Renderer: `app/templates/components/navigation/sidebar.html`  
-Workspace navigation renderer: `app/templates/components/workspace_tabs.html`  
-Breadcrumb authority: `app/common/navigation.py`
+Runtime semantic model:
+`app/common/workspace_navigation.py`
 
-The runtime navigation model is passed to Jinja as mappings. Renderer access must use explicit mapping syntax (for example `section['items']` and `item['label']`) rather than attribute syntax for mapping keys. This avoids collisions with Python mapping methods such as `dict.items()`, `dict.keys()`, and `dict.values()`.
+Global renderer:
+`app/templates/components/navigation/sidebar.html`
 
-Legacy submenu templates may remain temporarily during migration but must not be included by the global sidebar after v2 adoption.
+Detailed page navigation:
+`app/templates/components/content_tabs.html` and other registered local tab components
+
+Breadcrumb authority:
+`app/common/navigation.py`
+
+Legacy `*_menu.html` templates may remain temporarily as historical/migration files but must not be included by the v2.1 sidebar.
 
 ## Playwright / Visual QA
 
-Reuse the existing #543 / #224 authority.
+Reuse #543 / #224.
 
-At minimum validate:
+Required evidence:
 
-- expanded desktop sidebar;
-- collapsed desktop sidebar;
-- mobile drawer;
-- current root-section order;
-- absence of legacy global Storage/Analytics/Kubernetes-capability sections;
-- active root workspace;
+- expanded desktop two-level hierarchy;
+- collapsed desktop expansion behavior;
+- mobile disclosure/destination behavior;
+- active parent + subordinate active capability;
 - permission filtering;
-- Kubernetes/Object Storage workspace navigation;
+- Kubernetes/Object Storage detail Content Tabs;
 - light/dark;
 - all canonical viewports;
-- no document overflow.
+- no page-level horizontal overflow;
+- no horizontal Domain Workspace strip in the app shell.
 
-Baseline changes remain review-controlled and are not accepted merely because the DOM contract changed.
+Reviewed baseline changes require human acceptance.
 
-## Enforcement and Change Control
+## Prohibited Patterns
+
+Do not:
+
+- render a third nested sidebar level;
+- render capability peers as a second global horizontal tab row;
+- give active children the same solid Violet treatment as parents;
+- expose provider instances as sidebar items;
+- render future placeholder workspaces;
+- create a new tab family for ordinary detail navigation;
+- use page filters as navigation identity;
+- use Jinja mapping attribute syntax for runtime navigation mappings.
+
+## Enforcement
 
 Executable authority:
 
-- `scripts/verify_sidebar_navigation_standard.py`
-- `tests/contracts/design/test_sidebar_navigation_standard_contract.py`
-- Playwright UI coverage in `tests/ui/test_representative_interactions.py`
+- `scripts/verify_sidebar_navigation_standard.py`;
+- `tests/contracts/design/test_sidebar_navigation_standard_contract.py`;
+- Playwright coverage in `tests/ui/test_representative_interactions.py`.
 
-Any change to section ownership, workspace identity, visual geometry, responsive behavior, or the Section -> Workspace rule requires an explicit issue and design review.
+Any change to hierarchy, section ownership, geometry, responsive behavior, or provider boundary requires an explicit authority update.

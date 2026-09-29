@@ -1,239 +1,172 @@
-# KAORI Domain Workspace Navigation Standard v1.0
+# KAORI Page Workspace Navigation Standard v1.1
 
-**Status:** Locked workspace-navigation contract  
+**Status:** Locked detailed-view navigation contract  
 **Foundation authority:** #747  
 **Implementation authority:** #748
 
 ## Purpose
 
-Domain Workspace Navigation is the second navigation layer after the global sidebar.
-
-It answers:
-
-> **Which major capability inside the selected workspace do I want?**
-
-It replaces the old pattern of expressing capabilities as nested global-sidebar menus.
-
-## Navigation Layers
+The global sidebar already owns workspace and capability navigation:
 
 ```text
-Level 1 — Global Sidebar
-Section -> Workspace
-
-Level 2 — Domain Workspace Navigation
-Workspace -> Capability
-
-Level 3 — Capability Content Navigation
-Capability -> Detailed peer view
+Sidebar level 1 — Workspace / Domain
+Sidebar level 2 — Capability
 ```
 
-"Level 3" here is page/content navigation, not global-sidebar nesting.
+The page workspace owns only the next semantic layer:
 
-## Shared Component Ownership
+```text
+Page level 3 — Detailed View / Resource View
+```
 
-Domain Workspace Navigation uses the existing **Tab Style 1 — Integrated Workspace Tabs**:
-
-- component: `app/templates/components/workspace_tabs.html`;
-- server-owned mode: `workspace_tabs.render_navigation()`;
-- semantic key: `integrated-workspace-server`.
-
-No new tab family is introduced.
-
-Detailed capability views continue to use:
-
-- Content Tabs for four-plus subordinate peer content views;
-- Compact Segmented Tabs for two/three local modes;
-- Framed Workspace Tabs only when a framed parent surface is semantically required.
+This prevents stacked global tab rows and keeps the Hero/content area focused on the current capability.
 
 ## Default Composition
-
-Canonical application composition:
 
 ```text
 Navbar / Breadcrumb
 ↓
-Flat Domain Workspace Navigation
+Level-3 Content Navigation when required
 ↓
-Capability Content Navigation when the capability owns multiple routes
+Hero / Page Identity
 ↓
-Owning Page Hero / Page Identity
-↓
-Operational content
+Operational Content
 ```
 
-Domain Workspace Navigation is a **secondary navigation strip**, not a second page header. It uses the existing Integrated Workspace Tabs directly and therefore must not add an outer card, rounded shell, background, shadow, duplicated `WORKSPACE` label, or repeated workspace title around the tab component.
+A page with no peer detailed views renders no level-3 navigation.
 
-The Hero remains the page's visual identity anchor. Its eyebrow/title pair follows Hero v1.9 semantics: the eyebrow communicates workspace/domain context and the H1 communicates the current destination, for example `INTELLIGENCE → Overview`, not `INFRASTRUCTURE INTELLIGENCE → Intelligence Overview`.
+There is **no global Domain Workspace horizontal strip** between breadcrumb and page content.
 
-Multi-route capability detail uses server-owned Content Tabs. A page must not copy the retired global-sidebar submenu markup into local templates.
+## Shared Component Ownership
 
-## Current Implemented Workspaces
+Route-level detailed peer views normally use:
 
-### Kubernetes
+- `components/content_tabs.html` — four-plus closely related detailed routes;
+- `components/segmented_tabs.html` — two/three local presentation modes;
+- `components/workspace_tabs.html` — integrated sections that genuinely define one page workspace, such as the Kubernetes Operations Dashboard internal sections;
+- `components/framed_workspace_tabs.html` — only where an explicit framed parent workspace is semantically required.
+
+Sidebar capability navigation does not use these components.
+
+No new tab family is authorized.
+
+## Current Level-3 Contracts
+
+### Kubernetes / Inventory
 
 ```text
-Overview · Inventory · Operations · Governance · Tenant · Analytics
+Overview · Topology · Nodes · Namespaces · Workloads · Pods · Services · Ingresses · Storage · Configuration
 ```
 
-Permission-filtered using existing domain authorities.
-
-Detailed views remain local and are rendered through shared server-owned Content Tabs where they are route-level peers:
-
-- Inventory -> Overview / Topology / Nodes / Namespaces / Workloads / Pods / Services / Ingresses / Storage / Configuration;
-- Operations -> ConfigMaps / Secrets;
-- Governance -> Overview / TLS Certificates;
-- Tenant -> Overview / Tenants / Resource Profiles / Namespace Provisioning / Operations;
-- Analytics Overview keeps its existing summary Content Tabs (Usage / Capacity / Workload / Storage / Consumers / Forecast / Alerts / Actions / Guidance) and their explicit drill-down CTAs. Deep-analysis routes use the route-level peer navigation Overview / Usage / Capacity / Workloads / Storage / Consumers / Forecast / Alerts & Anomalies. The Overview must not render both tabsets at once.
-
-### Object Storage
+### Kubernetes / Operations
 
 ```text
-Overview · Inventory · Analytics
+ConfigMaps · Secrets
 ```
 
-Detailed route-level navigation is local:
-
-- Inventory -> Overview / Systems / Buckets & Containers;
-- Analytics -> Overview / Capacity & Usage / Performance / Forecast / Top Consumers / Alerts & Anomalies.
-
-Future Operations/Governance may extend this workspace without changing global navigation.
-
-### Intelligence
+### Kubernetes / Governance
 
 ```text
-Overview · Recommendations · Alert Intelligence · Rule Catalog · Automation Control
+Overview · TLS Certificates
 ```
 
-### Reports
+### Kubernetes / Tenant
 
 ```text
-Overview · Generate · Generated · Templates · Storage · Schedules
+Overview · Tenants · Resource Profiles · Namespace Provisioning · Operations
 ```
 
-### Operations Center
+### Kubernetes / Analytics
+
+Deep-analysis routes:
 
 ```text
-Overview · Jobs · Data Lifecycle · Kubernetes Admin
+Overview · Usage · Capacity · Workloads · Storage · Consumers · Forecast · Alerts & Anomalies
 ```
 
-### Integrations
+Kubernetes Analytics Overview already owns summary/evidence Content Tabs and therefore suppresses the separate deep-analysis route row on Overview itself. Its cards provide drill-down CTAs into the deep-analysis pages.
+
+### Object Storage / Inventory
 
 ```text
-Overview · Orchestration · Observability · Storage · Notification Channels
+Overview · Systems · Buckets & Containers
 ```
 
-Provider/domain-specific Framed Workspace navigation remains valid below this layer.
-
-### Access
+### Object Storage / Analytics
 
 ```text
-Overview · Users · Identity Providers · Roles · Permissions · Activity Audit
+Overview · Capacity & Usage · Performance · Forecast · Top Consumers · Alerts & Anomalies
 ```
-
-### Settings
-
-```text
-General · Account
-```
-
-## Reserved Future Workspace Contracts
-
-These names reserve IA ownership only. Do not render until implementation exists.
-
-- Compute: Overview · Assets · Virtualization · Capacity · Lifecycle · Analytics
-- Network: Overview · Connectivity · Flows · Dependencies · Policies · DNS · IPAM · Assets · Anomalies
-- Services: Overview · Catalog · Ownership · Dependencies · Runtime · Health
-- Reliability: Overview · Services & SLOs · Error Budgets · Incidents · Escalations · Postmortems · Analytics
-- Backup & Recovery: Overview · Protected Assets · Protection Policies · Restore Points · Restore Tests · RPO/RTO · Recovery Readiness
-- Security Posture: Overview · Findings · Supply Chain · Runtime · Secrets & PKI · Network · Exceptions
-- Policy & Compliance: Overview · Policies · Violations · Exceptions · Evidence · History
-- Secrets & PKI: Overview · Secrets · Certificates · PKI · Leases · Expiration · Consumers · Governance · Audit
-- FinOps: Overview · Allocation · Kubernetes · Infrastructure · Storage · Efficiency · Budgets · Forecast · Recommendations · Cost Model
-- Automation: Overview · Hosts · Inventories · Profiles · Patching · Plans · Runs · Schedules · Compliance
 
 ## Context Is Not Navigation
 
-Cluster, tenant, environment, provider, instance, namespace, time range, and resource identity remain context controls.
+Cluster, namespace, tenant, environment, provider, instance, system, time range, and resource identity are context.
+
+Stable identifiers may be preserved across sibling links where explicitly registered:
+
+- Kubernetes detailed views preserve `cluster_id`;
+- Kubernetes Analytics may preserve `time_range`;
+- Kubernetes Operations may preserve `namespace`;
+- Object Storage detailed views preserve `system_id`;
+- Object Storage Analytics may preserve `time_range`.
+
+Page-only filters remain local.
+
+## Hero Relationship
+
+The Hero remains the primary content identity anchor.
+
+Use Hero v1.9 semantics:
+
+```text
+Eyebrow = workspace/capability context
+H1      = current destination
+```
 
 Examples:
 
 ```text
-Kubernetes / Analytics
-[Cluster: prod-k8s-01] [Period: 24h]
-
-Object Storage / Inventory
-[System: minio-prod] [Environment: Production]
+KUBERNETES INVENTORY → Overview
+INTELLIGENCE          → Overview
+OBJECT STORAGE        → Inventory Overview
 ```
 
-Do not create sidebar/workspace tabs for individual clusters, providers, or instances.
-
-Stable scope identifiers may be carried across sibling navigation as URL context without becoming navigation identity. Current preserved context is intentionally bounded:
-
-- Kubernetes workspace/capability siblings preserve `cluster_id`;
-- Kubernetes deep Analytics siblings additionally preserve `time_range`;
-- Kubernetes Operations siblings may preserve `namespace`;
-- Object Storage workspace/capability siblings preserve `system_id`;
-- Object Storage Analytics siblings additionally preserve `time_range`.
-
-Filters that are meaningful only to one page remain page-local and are not propagated blindly.
-
-## Permission Contract
-
-Only authorized capabilities render.
-
-If the current route belongs to a capability no longer visible to the current user, the navigation resolves active state to the first visible authorized capability without manufacturing access.
-
-A workspace root must resolve to an authorized child capability.
-
-## Responsive Contract
-
-Integrated Workspace Tabs already own:
-
-- minimum 44 px target height;
-- horizontal overflow on narrow screens;
-- stable active Violet underline/text;
-- keyboard-visible focus;
-- real links and server navigation;
-- no page-level horizontal overflow.
-
-Do not create a mobile-only accordion or nested drawer for capability navigation.
+Do not add another `WORKSPACE <name>` header around local navigation.
 
 ## Active-State Contract
 
-Global sidebar and Domain Workspace Navigation must agree:
+The three semantic scopes agree:
 
 ```text
-Sidebar active: Kubernetes
-Workspace active: Analytics
-Breadcrumb: Kubernetes / Analytics / Capacity
-Content active: Capacity
+Sidebar level 1: Kubernetes
+Sidebar level 2: Inventory
+Page level 3:     Nodes
+Breadcrumb:       Kubernetes / Inventory / Nodes
 ```
 
-Each layer communicates a different scope and must not duplicate the same labels unnecessarily.
+Each scope conveys different information and should not duplicate a peer row.
 
-## Provider / Instance Boundary
+## Responsive Contract
 
-Integrations follows:
+Local Content Tabs own their existing horizontal-overflow behavior.
 
-```text
-Integrations workspace
-→ capability domain
-→ provider
-→ instance
-```
+Requirements:
 
-Provider and instance navigation remains inside Integrations-owned workspaces, registries, or detail surfaces.
+- no page-level horizontal overflow;
+- keyboard-visible focus;
+- active detail remains identifiable;
+- mobile does not introduce another drawer/accordion taxonomy for level 3;
+- long detail sets may horizontally scroll inside their own component.
 
 ## Playwright Evidence
 
-Canonical UI evidence must validate:
+Validate:
 
-- correct workspace strip for representative routes;
-- expected permission-filtered tabs;
-- active-state coherence;
-- horizontal safety at all canonical viewports;
-- mobile drawer + workspace strip coexistence;
-- no third global navigation level;
+- no global Domain Workspace strip;
+- correct active level-3 detail on representative Kubernetes/Object Storage pages;
+- Analytics Overview duplicate-tab suppression;
+- bounded context preservation;
+- all canonical viewports;
 - light/dark visual consistency.
 
-Reviewed visual baselines are updated only after human acceptance.
+Reviewed visual baselines update only after human acceptance.

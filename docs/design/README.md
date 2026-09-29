@@ -64,7 +64,7 @@ Authoritative shell standards include the locked application-shell navigation co
 - `components/RELATED_PAGE_CARD.md`
 - `components/VIEW_MORE_CONTENT.md`
 - `components/SIDEBAR_NAVIGATION.md`
-- `components/DOMAIN_WORKSPACE_NAVIGATION.md` — canonical second-layer domain capability navigation and future workspace ownership.
+- `components/DOMAIN_WORKSPACE_NAVIGATION.md` — canonical level-3 page workspace/detail navigation below the two-level sidebar.
 - `components/FORM_ACTION_BAR.md`
 - `components/CONNECTION_VALIDATION_HEADER.md`
 - `components/OPERATIONAL_TOGGLE.md`

@@ -265,16 +265,16 @@ def test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewp
         assert_document_fits_viewport(page)
 
 
-def test_sidebar_v2_and_domain_workspace_navigation_across_canonical_viewports(
+def test_sidebar_v21_two_level_navigation_and_page_workspace_across_canonical_viewports(
     configured_page: Page,
     kaori_viewport: tuple[str, tuple[int, int]],
     kaori_authenticated_base_url: str,
 ) -> None:
-    """Validate v2 global workspace navigation and Kubernetes workspace tabs across the canonical matrix."""
+    """Validate two-level sidebar disclosure and page-owned level-three navigation."""
     page = configured_page
     viewport_name, (width, _) = kaori_viewport
 
-    with _browser_evidence(page, 'sidebar-v2-domain-workspace', viewport_name):
+    with _browser_evidence(page, 'sidebar-v21-two-level-workspace', viewport_name):
         _login(page, kaori_authenticated_base_url)
         response = page.goto(f'{kaori_authenticated_base_url}/welcome', wait_until='networkidle')
         assert response is not None
@@ -289,8 +289,8 @@ def test_sidebar_v2_and_domain_workspace_navigation_across_canonical_viewports(
         section_labels = sidebar.locator('[data-kaori-sidebar-section] .sidebar-section-label').all_inner_texts()
         assert section_labels == ['Main', 'Infrastructure', 'Insights', 'Platform', 'Administration']
 
+        expect(sidebar.locator('[data-kaori-sidebar-workspace="welcome"]')).to_be_visible()
         for key in (
-            'welcome',
             'kubernetes',
             'object_storage',
             'intelligence',
@@ -302,9 +302,8 @@ def test_sidebar_v2_and_domain_workspace_navigation_across_canonical_viewports(
         ):
             expect(sidebar.locator(f'[data-kaori-sidebar-workspace="{key}"]')).to_be_visible()
 
-        sidebar_text = sidebar.inner_text()
-        assert '\nSTORAGE\n' not in f'\n{sidebar_text}\n'
-        assert '\nANALYTICS\n' not in f'\n{sidebar_text}\n'
+        kubernetes = sidebar.locator('[data-kaori-sidebar-workspace="kubernetes"]')
+        kubernetes_trigger = kubernetes.locator('[data-kaori-sidebar-workspace-trigger="kubernetes"]')
 
         if width >= 1024:
             collapse = page.get_by_role('button', name='Collapse navigation')
@@ -318,24 +317,23 @@ def test_sidebar_v2_and_domain_workspace_navigation_across_canonical_viewports(
             assert collapsed_box is not None
             assert collapsed_box['width'] < expanded_box['width']
 
-            page.get_by_role('button', name='Expand navigation').click()
+            kubernetes_trigger.click()
             expect(page.get_by_role('button', name='Collapse navigation')).to_be_visible()
 
-        kubernetes = sidebar.locator('[data-kaori-sidebar-workspace="kubernetes"]')
-        kubernetes.click()
-        page.wait_for_load_state('networkidle')
+        if not kubernetes.evaluate('element => element.open'):
+            kubernetes_trigger.click()
 
-        workspace = page.locator('[data-kaori-domain-workspace-nav="kubernetes"]')
-        expect(workspace).to_be_visible()
+        capability_region = kubernetes.locator('[data-kaori-sidebar-capabilities="kubernetes"]')
+        expect(capability_region).to_be_visible()
         for label in ('Overview', 'Inventory', 'Operations', 'Governance', 'Tenant', 'Analytics'):
-            expect(workspace.get_by_role('link', name=label, exact=True)).to_be_visible()
+            expect(capability_region.get_by_role('link', name=label, exact=True)).to_be_visible()
 
-        inventory_link = workspace.get_by_role('link', name='Inventory', exact=True)
-        inventory_link.click()
+        capability_region.get_by_role('link', name='Inventory', exact=True).click()
         page.wait_for_load_state('networkidle')
 
-        capability = page.locator('[data-kaori-capability-navigation="kubernetes_inventory"]')
-        expect(capability).to_be_visible()
+        expect(page.locator('[data-kaori-domain-workspace-nav]')).to_have_count(0)
+        inventory_views = page.locator('[data-kaori-capability-navigation="kubernetes_inventory"]')
+        expect(inventory_views).to_be_visible()
         for label in (
             'Overview',
             'Topology',
@@ -348,21 +346,28 @@ def test_sidebar_v2_and_domain_workspace_navigation_across_canonical_viewports(
             'Storage',
             'Configuration',
         ):
-            expect(capability.get_by_role('link', name=label, exact=True)).to_be_visible()
+            expect(inventory_views.get_by_role('link', name=label, exact=True)).to_be_visible()
 
-        expect(page.locator('[data-kaori-sidebar-workspace="kubernetes"]')).to_have_attribute('aria-current', 'page')
-        expect(workspace.get_by_role('link', name='Inventory', exact=True)).to_have_attribute('aria-current', 'page')
-        expect(capability.get_by_role('link', name='Overview', exact=True)).to_have_attribute('aria-current', 'page')
+        if width < 1024:
+            page.locator('[data-mobile-menu-trigger]').click()
+            sidebar = page.locator('#app-sidebar')
+            expect(sidebar).to_be_visible()
+
+        kubernetes = sidebar.locator('[data-kaori-sidebar-workspace="kubernetes"]')
+        expect(kubernetes).to_have_attribute('open', '')
+        expect(
+            kubernetes.locator('[data-kaori-sidebar-capability="inventory"]')
+        ).to_have_attribute('aria-current', 'page')
+
+        if width < 1024:
+            page.locator('[data-mobile-navigation-close]').click()
+
         assert_document_fits_viewport(page)
-        assert_locator_within_document_width(page, workspace, label='Kubernetes domain workspace navigation')
-        assert_locator_within_document_width(page, capability, label='Kubernetes Inventory capability navigation')
-
-        response = page.goto(f'{kaori_authenticated_base_url}/analytics/', wait_until='networkidle')
-        assert response is not None
-        assert response.ok
-        expect(page.locator('[data-kaori-domain-workspace-nav="kubernetes"]')).to_be_visible()
-        expect(page.locator('[data-kaori-capability-navigation="kubernetes_analytics"]')).to_have_count(0)
-        expect(page.locator('#analytics-overview-workspace [data-kaori-tab-variant="content-tabs"]')).to_be_visible()
+        assert_locator_within_document_width(
+            page,
+            inventory_views,
+            label='Kubernetes Inventory level-three navigation',
+        )
 
         response = page.goto(
             f'{kaori_authenticated_base_url}/analytics/capacity?time_range=7d',
@@ -370,48 +375,56 @@ def test_sidebar_v2_and_domain_workspace_navigation_across_canonical_viewports(
         )
         assert response is not None
         assert response.ok
-        analytics_capability = page.locator('[data-kaori-capability-navigation="kubernetes_analytics"]')
-        expect(analytics_capability).to_be_visible()
-        expect(analytics_capability.get_by_role('link', name='Capacity', exact=True)).to_have_attribute(
+        expect(page.locator('[data-kaori-domain-workspace-nav]')).to_have_count(0)
+
+        analytics_views = page.locator('[data-kaori-capability-navigation="kubernetes_analytics"]')
+        expect(analytics_views).to_be_visible()
+        expect(analytics_views.get_by_role('link', name='Capacity', exact=True)).to_have_attribute(
             'aria-current',
             'page',
         )
-        forecast_href = analytics_capability.get_by_role('link', name='Forecast', exact=True).get_attribute('href')
+        forecast_href = analytics_views.get_by_role('link', name='Forecast', exact=True).get_attribute('href')
         assert forecast_href is not None
         assert 'time_range=7d' in forecast_href
-        assert_document_fits_viewport(page)
 
-        response = page.goto(f'{kaori_authenticated_base_url}/dashboards/object-storage', wait_until='networkidle')
+        response = page.goto(f'{kaori_authenticated_base_url}/intelligence/', wait_until='networkidle')
         assert response is not None
         assert response.ok
+        expect(page.locator('[data-kaori-domain-workspace-nav]')).to_have_count(0)
+        expect(page.locator('[data-kaori-capability-navigation]')).to_have_count(0)
 
-        object_workspace = page.locator('[data-kaori-domain-workspace-nav="object_storage"]')
-        expect(object_workspace).to_be_visible()
-        for label in ('Overview', 'Inventory', 'Analytics'):
-            expect(object_workspace.get_by_role('link', name=label, exact=True)).to_be_visible()
-
-        object_workspace.get_by_role('link', name='Inventory', exact=True).click()
-        page.wait_for_load_state('networkidle')
-
-        object_capability = page.locator('[data-kaori-capability-navigation="object_storage_inventory"]')
-        expect(object_capability).to_be_visible()
-        for label in ('Overview', 'Systems', 'Buckets & Containers'):
-            expect(object_capability.get_by_role('link', name=label, exact=True)).to_be_visible()
-
-        expect(page.locator('[data-kaori-sidebar-workspace="object_storage"]')).to_have_attribute(
-            'aria-current',
-            'page',
-        )
+        if width < 1024:
+            page.locator('[data-mobile-menu-trigger]').click()
+        sidebar = page.locator('#app-sidebar')
+        intelligence = sidebar.locator('[data-kaori-sidebar-workspace="intelligence"]')
+        expect(intelligence).to_have_attribute('open', '')
+        intelligence_children = intelligence.locator('[data-kaori-sidebar-capabilities="intelligence"]')
+        for label in ('Overview', 'Recommendations', 'Alert Intelligence', 'Rule Catalog', 'Automation Control'):
+            expect(intelligence_children.get_by_role('link', name=label, exact=True)).to_be_visible()
         expect(
-            page.locator('[data-kaori-domain-workspace-nav="object_storage"]').get_by_role(
-                'link', name='Inventory', exact=True
-            )
+            intelligence.locator('[data-kaori-sidebar-capability="overview"]')
         ).to_have_attribute('aria-current', 'page')
+
+        if width < 1024:
+            page.locator('[data-mobile-navigation-close]').click()
+
+        response = page.goto(
+            f'{kaori_authenticated_base_url}/storage/object-storage/inventory/',
+            wait_until='networkidle',
+        )
+        assert response is not None
+        assert response.ok
+        expect(page.locator('[data-kaori-domain-workspace-nav]')).to_have_count(0)
+        object_views = page.locator('[data-kaori-capability-navigation="object_storage_inventory"]')
+        expect(object_views).to_be_visible()
+        for label in ('Overview', 'Systems', 'Buckets & Containers'):
+            expect(object_views.get_by_role('link', name=label, exact=True)).to_be_visible()
+
         assert_document_fits_viewport(page)
         assert_locator_within_document_width(
             page,
-            object_capability,
-            label='Object Storage Inventory capability navigation',
+            object_views,
+            label='Object Storage Inventory level-three navigation',
         )
 
 

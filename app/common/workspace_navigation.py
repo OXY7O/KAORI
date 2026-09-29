@@ -8,7 +8,7 @@ from flask import url_for
 
 
 @dataclass(frozen=True)
-class WorkspaceTabDefinition:
+class WorkspaceCapabilityDefinition:
     key: str
     label: str
     icon: str
@@ -22,7 +22,7 @@ class WorkspaceDefinition:
     label: str
     icon: str
     section: str
-    tabs: tuple[WorkspaceTabDefinition, ...]
+    capabilities: tuple[WorkspaceCapabilityDefinition, ...]
 
 
 @dataclass(frozen=True)
@@ -79,25 +79,25 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         label='Kubernetes',
         icon='boxes',
         section='Infrastructure',
-        tabs=(
-            WorkspaceTabDefinition(
+        capabilities=(
+            WorkspaceCapabilityDefinition(
                 'overview', 'Overview', 'layout-dashboard', 'kubernetes_dashboard.index', ('dashboard.view',)
             ),
-            WorkspaceTabDefinition('inventory', 'Inventory', 'boxes', 'inventory.overview', ('inventory.view',)),
-            WorkspaceTabDefinition(
+            WorkspaceCapabilityDefinition('inventory', 'Inventory', 'boxes', 'inventory.overview', ('inventory.view',)),
+            WorkspaceCapabilityDefinition(
                 'operations',
                 'Operations',
                 'wrench',
                 'kubernetes_operations.secret_management',
                 _KUBERNETES_OPERATION_PERMISSIONS,
             ),
-            WorkspaceTabDefinition(
+            WorkspaceCapabilityDefinition(
                 'governance', 'Governance', 'shield-check', 'governance.overview', _KUBERNETES_GOVERNANCE_PERMISSIONS
             ),
-            WorkspaceTabDefinition(
+            WorkspaceCapabilityDefinition(
                 'tenant', 'Tenant', 'building-2', 'tenant.index', ('tenant.view', 'tenant.manage')
             ),
-            WorkspaceTabDefinition('analytics', 'Analytics', 'chart-column', 'analytics.overview', ('analytics.view',)),
+            WorkspaceCapabilityDefinition('analytics', 'Analytics', 'chart-column', 'analytics.overview', ('analytics.view',)),
         ),
     ),
     WorkspaceDefinition(
@@ -105,18 +105,18 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         label='Object Storage',
         icon='database',
         section='Infrastructure',
-        tabs=(
-            WorkspaceTabDefinition(
+        capabilities=(
+            WorkspaceCapabilityDefinition(
                 'overview', 'Overview', 'layout-dashboard', 'object_storage_dashboard.index', ('dashboard.view',)
             ),
-            WorkspaceTabDefinition(
+            WorkspaceCapabilityDefinition(
                 'inventory',
                 'Inventory',
                 'database',
                 'object_storage_inventory.overview',
                 ('object_storage_inventory.view',),
             ),
-            WorkspaceTabDefinition(
+            WorkspaceCapabilityDefinition(
                 'analytics',
                 'Analytics',
                 'chart-column',
@@ -130,32 +130,32 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         label='Intelligence',
         icon='brain-circuit',
         section='Insights',
-        tabs=(
-            WorkspaceTabDefinition(
+        capabilities=(
+            WorkspaceCapabilityDefinition(
                 'overview',
                 'Overview',
                 'layout-dashboard',
                 'intelligence.index',
                 ('intelligence.view',),
             ),
-            WorkspaceTabDefinition(
+            WorkspaceCapabilityDefinition(
                 'recommendations', 'Recommendations', 'sparkles', 'intelligence.recommendations', ('intelligence.view',)
             ),
-            WorkspaceTabDefinition(
+            WorkspaceCapabilityDefinition(
                 'alert_intelligence',
                 'Alert Intelligence',
                 'triangle-alert',
                 'alert_intelligence.index',
                 ('intelligence.view',),
             ),
-            WorkspaceTabDefinition(
+            WorkspaceCapabilityDefinition(
                 'catalog',
                 'Rule Catalog',
                 'list-checks',
                 'intelligence.catalog',
                 ('intelligence.view',),
             ),
-            WorkspaceTabDefinition(
+            WorkspaceCapabilityDefinition(
                 'automation_control',
                 'Automation Control',
                 'workflow',
@@ -169,21 +169,21 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         label='Reports',
         icon='file-text',
         section='Insights',
-        tabs=(
-            WorkspaceTabDefinition('overview', 'Overview', 'layout-dashboard', 'reports.overview', ('reports.view',)),
-            WorkspaceTabDefinition(
+        capabilities=(
+            WorkspaceCapabilityDefinition('overview', 'Overview', 'layout-dashboard', 'reports.overview', ('reports.view',)),
+            WorkspaceCapabilityDefinition(
                 'generate',
                 'Generate',
                 'file-plus-2',
                 'reports.generate_report',
                 ('reports.generate',),
             ),
-            WorkspaceTabDefinition('generated', 'Generated', 'files', 'reports.generated_reports', ('reports.view',)),
-            WorkspaceTabDefinition(
+            WorkspaceCapabilityDefinition('generated', 'Generated', 'files', 'reports.generated_reports', ('reports.view',)),
+            WorkspaceCapabilityDefinition(
                 'templates', 'Templates', 'layout-template', 'reports.report_templates', ('reports.manage_templates',)
             ),
-            WorkspaceTabDefinition('storage', 'Storage', 'hard-drive', 'reports.storage', ('reports.manage_storage',)),
-            WorkspaceTabDefinition(
+            WorkspaceCapabilityDefinition('storage', 'Storage', 'hard-drive', 'reports.storage', ('reports.manage_storage',)),
+            WorkspaceCapabilityDefinition(
                 'schedules', 'Schedules', 'calendar-clock', 'reports.schedules', ('reports.manage_schedules',)
             ),
         ),
@@ -193,23 +193,23 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         label='Operations Center',
         icon='workflow',
         section='Platform',
-        tabs=(
-            WorkspaceTabDefinition(
+        capabilities=(
+            WorkspaceCapabilityDefinition(
                 'overview',
                 'Overview',
                 'layout-dashboard',
                 'platform_operations.overview.index',
                 _OPERATIONS_CENTER_PERMISSIONS,
             ),
-            WorkspaceTabDefinition('jobs', 'Jobs', 'list-checks', 'jobs.executions', ('jobs.view',)),
-            WorkspaceTabDefinition(
+            WorkspaceCapabilityDefinition('jobs', 'Jobs', 'list-checks', 'jobs.executions', ('jobs.view',)),
+            WorkspaceCapabilityDefinition(
                 'data_lifecycle',
                 'Data Lifecycle',
                 'archive-restore',
                 'platform_operations.data_lifecycle.index',
                 ('platform_operations.view_data_lifecycle',),
             ),
-            WorkspaceTabDefinition(
+            WorkspaceCapabilityDefinition(
                 'kubernetes_admin',
                 'Kubernetes Admin',
                 'server-cog',
@@ -223,22 +223,22 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         label='Integrations',
         icon='blocks',
         section='Platform',
-        tabs=(
-            WorkspaceTabDefinition(
+        capabilities=(
+            WorkspaceCapabilityDefinition(
                 'overview',
                 'Overview',
                 'layout-grid',
                 'integrations.overview',
                 ('integrations.manage',),
             ),
-            WorkspaceTabDefinition(
+            WorkspaceCapabilityDefinition(
                 'orchestration', 'Orchestration', 'workflow', 'integrations.orchestration', ('integrations.manage',)
             ),
-            WorkspaceTabDefinition(
+            WorkspaceCapabilityDefinition(
                 'observability', 'Observability', 'activity', 'integrations.observability', ('integrations.manage',)
             ),
-            WorkspaceTabDefinition('storage', 'Storage', 'database', 'integrations.storage', ('integrations.manage',)),
-            WorkspaceTabDefinition(
+            WorkspaceCapabilityDefinition('storage', 'Storage', 'database', 'integrations.storage', ('integrations.manage',)),
+            WorkspaceCapabilityDefinition(
                 'notifications',
                 'Notification Channels',
                 'send',
@@ -252,31 +252,31 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         label='Access',
         icon='shield-check',
         section='Administration',
-        tabs=(
-            WorkspaceTabDefinition(
+        capabilities=(
+            WorkspaceCapabilityDefinition(
                 'overview',
                 'Overview',
                 'layout-dashboard',
                 'access.overview.index',
                 _ACCESS_PERMISSIONS,
             ),
-            WorkspaceTabDefinition('users', 'Users', 'users-round', 'users.index', ('users.view',)),
-            WorkspaceTabDefinition(
+            WorkspaceCapabilityDefinition('users', 'Users', 'users-round', 'users.index', ('users.view',)),
+            WorkspaceCapabilityDefinition(
                 'identity_providers',
                 'Identity Providers',
                 'fingerprint',
                 'identity_providers.index',
                 ('identity_providers.view',),
             ),
-            WorkspaceTabDefinition('roles', 'Roles', 'badge-check', 'access.roles.index', ('roles.view',)),
-            WorkspaceTabDefinition(
+            WorkspaceCapabilityDefinition('roles', 'Roles', 'badge-check', 'access.roles.index', ('roles.view',)),
+            WorkspaceCapabilityDefinition(
                 'permissions',
                 'Permissions',
                 'key-round',
                 'access.permissions.index',
                 ('roles.view',),
             ),
-            WorkspaceTabDefinition(
+            WorkspaceCapabilityDefinition(
                 'activity_audit',
                 'Activity Audit',
                 'history',
@@ -290,9 +290,9 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         label='Settings',
         icon='settings',
         section='Administration',
-        tabs=(
-            WorkspaceTabDefinition('general', 'General', 'settings', 'settings.general'),
-            WorkspaceTabDefinition('account', 'Account', 'user', 'settings.account'),
+        capabilities=(
+            WorkspaceCapabilityDefinition('general', 'General', 'settings', 'settings.general'),
+            WorkspaceCapabilityDefinition('account', 'Account', 'user', 'settings.account'),
         ),
     ),
 )
@@ -661,11 +661,11 @@ def _has_any_permission(user: Any, permissions: tuple[str, ...]) -> bool:
     return any(user.has_permission(permission) for permission in permissions)
 
 
-def _visible_tabs(workspace: WorkspaceDefinition, user: Any) -> tuple[WorkspaceTabDefinition, ...]:
-    return tuple(tab for tab in workspace.tabs if _has_any_permission(user, tab.permissions))
+def _visible_capabilities(workspace: WorkspaceDefinition, user: Any) -> tuple[WorkspaceCapabilityDefinition, ...]:
+    return tuple(tab for tab in workspace.capabilities if _has_any_permission(user, tab.permissions))
 
 
-def _resolved_tab_endpoint(workspace_key: str, tab: WorkspaceTabDefinition, user: Any) -> str:
+def _resolved_capability_endpoint(workspace_key: str, tab: WorkspaceCapabilityDefinition, user: Any) -> str:
     if workspace_key == 'kubernetes' and tab.key == 'operations':
         if _has_any_permission(user, _KUBERNETES_CONFIGMAP_PERMISSIONS):
             return 'kubernetes_operations.configmap_management'
@@ -705,7 +705,7 @@ def _workspace_key(endpoint: str) -> str | None:
     return None
 
 
-def _active_tab_key(workspace_key: str, endpoint: str) -> str:
+def _active_capability_key(workspace_key: str, endpoint: str) -> str:
     if workspace_key == 'kubernetes':
         if endpoint.startswith('kubernetes_dashboard.'):
             return 'overview'
@@ -812,50 +812,11 @@ def _active_tab_key(workspace_key: str, endpoint: str) -> str:
     return 'overview'
 
 
-def build_workspace_navigation(
+def build_sidebar_navigation(
     endpoint: str | None,
     user: Any,
     query_args: Mapping[str, Any] | None = None,
-) -> dict[str, Any] | None:
-    if not getattr(user, 'is_authenticated', False):
-        return None
-
-    resolved_endpoint = endpoint or ''
-    workspace_key = _workspace_key(resolved_endpoint)
-    if workspace_key is None:
-        return None
-
-    workspace = next(item for item in WORKSPACES if item.key == workspace_key)
-    visible_tabs = _visible_tabs(workspace, user)
-    if not visible_tabs:
-        return None
-
-    active_key = _active_tab_key(workspace_key, resolved_endpoint)
-    if active_key not in {tab.key for tab in visible_tabs}:
-        active_key = visible_tabs[0].key
-
-    return {
-        'key': workspace.key,
-        'label': workspace.label,
-        'icon': workspace.icon,
-        'active_key': active_key,
-        'tabs': tuple(
-            (
-                tab.key,
-                tab.label,
-                tab.icon,
-                None,
-                url_for(
-                    _resolved_tab_endpoint(workspace.key, tab, user),
-                    **_preserved_context(query_args, _WORKSPACE_CONTEXT_KEYS.get(workspace.key, ())),
-                ),
-            )
-            for tab in visible_tabs
-        ),
-    }
-
-
-def build_sidebar_navigation(endpoint: str | None, user: Any) -> tuple[dict[str, Any], ...]:
+) -> tuple[dict[str, Any], ...]:
     if not getattr(user, 'is_authenticated', False):
         return ()
 
@@ -870,20 +831,48 @@ def build_sidebar_navigation(endpoint: str | None, user: Any) -> tuple[dict[str,
             'icon': 'sparkles',
             'href': url_for('welcome.index'),
             'active': resolved_endpoint == 'welcome.index',
+            'children': (),
         }
     )
 
     for workspace in WORKSPACES:
-        visible_tabs = _visible_tabs(workspace, user)
-        if not visible_tabs:
+        visible_capabilities = _visible_capabilities(workspace, user)
+        if not visible_capabilities:
             continue
+
+        active_capability = (
+            _active_capability_key(workspace.key, resolved_endpoint)
+            if active_workspace == workspace.key
+            else None
+        )
+        context = _preserved_context(
+            query_args,
+            _WORKSPACE_CONTEXT_KEYS.get(workspace.key, ()),
+        )
+        children = tuple(
+            {
+                'key': capability.key,
+                'label': capability.label,
+                'icon': capability.icon,
+                'href': url_for(
+                    _resolved_capability_endpoint(workspace.key, capability, user),
+                    **context,
+                ),
+                'active': (
+                    active_workspace == workspace.key
+                    and capability.key == active_capability
+                ),
+            }
+            for capability in visible_capabilities
+        )
+
         sections[workspace.section].append(
             {
                 'key': workspace.key,
                 'label': workspace.label,
                 'icon': workspace.icon,
-                'href': url_for(_resolved_tab_endpoint(workspace.key, visible_tabs[0], user)),
                 'active': active_workspace == workspace.key,
+                'children': children,
             }
         )
 
