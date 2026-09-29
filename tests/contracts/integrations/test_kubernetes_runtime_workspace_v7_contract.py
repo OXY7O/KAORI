@@ -3,7 +3,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATE = (
     ROOT
-    / 'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html'
+    / 'app/templates/integrations/orchestration/container_orchestrator/providers'
+    / 'kubernetes/partials/_runtime_workspace.html'
 )
 
 
@@ -51,6 +52,9 @@ def test_runtime_copy_and_extended_lifecycle_summary_are_compact() -> None:
     ).read_text(encoding='utf-8')
 
     assert 'Review persisted runtime health, diagnostics, lifecycle context, and validation boundaries.' in source
-    assert 'Runtime health gates current operation; Full Validation readiness remains independently evaluated.' in source
+    assert (
+        'Runtime health gates current operation; '
+        'Full Validation readiness remains independently evaluated.'
+    ) in source
     assert 'uses KAORI Extended support. Upgrade recommended.' in messages
     assert 'Optional capability access is limited; core Kubernetes readiness is unaffected.' in messages
