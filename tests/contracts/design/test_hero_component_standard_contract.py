@@ -234,3 +234,18 @@ def test_intelligence_overview_uses_non_redundant_hero_identity() -> None:
     assert '<h1 class="{{ page_hero.title_classes() }}">Overview</h1>' in source
     assert 'Infrastructure Intelligence' not in source
     assert '>Intelligence Overview</h1>' not in source
+
+
+def test_kubernetes_blocker_families_are_locked_to_general_and_analytics() -> None:
+    standard = (ROOT / 'docs' / 'design' / 'components' / 'HERO.md').read_text(encoding='utf-8')
+    tenant = (ROOT / 'app' / 'templates' / 'kubernetes' / 'tenant' / 'base.html').read_text(encoding='utf-8')
+    analytics = (
+        ROOT / 'app' / 'templates' / 'kubernetes' / 'analytics' / 'overview' / 'index.html'
+    ).read_text(encoding='utf-8')
+
+    assert 'Kubernetes has exactly two prerequisite blocker families' in standard
+    assert 'components/cluster/_hero_blocked_context.html' in tenant
+    assert 'components/cluster/_onboarding_banner.html' in tenant
+    assert 'components/states/_blocked_state.html' not in tenant
+    assert '{% block page_capability_navigation %}' in analytics
+    assert '{% if dependency_blocker %}' in analytics

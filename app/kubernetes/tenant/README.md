@@ -35,7 +35,7 @@ Normal Tenant workspace reads are composed from committed KAORI state. Live prov
 
 ### Native Kubernetes prerequisite rendering
 
-Native Kubernetes remains the mandatory baseline for Tenant workflows. When no Ready Native Kubernetes cluster is available, the shared Tenant page composition is terminal after orientation: KAORI renders the normal Tenant Hero followed by the canonical blocked-state surface and Cluster Integrations action, but does not render page-specific Tenant operational content beneath the blocker. Once a Ready Native Kubernetes cluster exists, the normal Overview, Tenants, Resource Profiles, Namespace Provisioning, or Operations content is rendered unchanged.
+Native Kubernetes remains the mandatory baseline for Tenant workflows. When no Ready Native Kubernetes cluster is available, Tenant uses the same **general Kubernetes prerequisite grammar** as Dashboard, Inventory, Operations, and Governance: the Hero keeps stable page identity and metadata, its right side renders `components/cluster/_hero_blocked_context.html` without a duplicate action, and the shared `components/cluster/_onboarding_banner.html` immediately below owns the canonical remediation sequence `Open Cluster Integrations → Register Cluster → Run Sync`. Page-specific Tenant operational content remains terminal/hidden beneath that blocker. Once a Ready Native Kubernetes cluster exists, the normal Overview, Tenants, Resource Profiles, Namespace Provisioning, or Operations content is rendered unchanged.
 
 This is a presentation boundary only. It does not add a live provider read, mutate Kubernetes state, or replace the existing committed-state authority.
 

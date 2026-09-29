@@ -193,3 +193,15 @@ def test_level_three_integrated_workspace_tabs_do_not_float() -> None:
     assert 'data-kaori-tab-variant="integrated-workspace-server"' in workspace_tabs
     assert 'overflow-x-auto border-b border-outline-subtle' in workspace_tabs
     assert 'rounded-xl border border-outline-default bg-surface-card' in content_tabs
+
+
+def test_kubernetes_analytics_overview_shows_route_navigation_only_when_blocked() -> None:
+    layout = _read('app/templates/layouts/app.html')
+    model = _read('app/common/workspace_navigation.py')
+    overview = _read('app/templates/kubernetes/analytics/overview/index.html')
+
+    assert '{% block page_capability_navigation %}' in layout
+    assert "capability_key == 'kubernetes_analytics' and resolved_endpoint == 'analytics.overview'" not in model
+    assert '{% block page_capability_navigation %}' in overview
+    assert '{% if dependency_blocker %}' in overview
+    assert '{{ super() }}' in overview

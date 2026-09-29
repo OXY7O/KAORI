@@ -43,17 +43,19 @@
                       class="min-h-0 flex-1 overflow-y-auto scroll-pt-5 bg-surface-page transition-colors duration-300 [scrollbar-gutter:stable] lg:scroll-pt-6 2xl:scroll-pt-7">
                     <div class="p-5 lg:p-6 2xl:p-7">
                         {% include "components/states/_flash_messages.html" %}
-                        {% if capability_navigation %}
-                            <div class="mb-4 min-w-0"
-                                 data-kaori-capability-navigation="{{ capability_navigation.key }}">
-                                {{ workspace_tabs.render_navigation(
-                                    capability_navigation.tabs,
-                                    capability_navigation.active_key,
-                                    prefix='detail-' ~ capability_navigation.key,
-                                    aria_label=capability_navigation.label ~ ' views'
-                                ) }}
-                            </div>
-                        {% endif %}
+                        {% block page_capability_navigation %}
+                            {% if capability_navigation %}
+                                <div class="mb-4 min-w-0"
+                                     data-kaori-capability-navigation="{{ capability_navigation.key }}">
+                                    {{ workspace_tabs.render_navigation(
+                                        capability_navigation.tabs,
+                                        capability_navigation.active_key,
+                                        prefix='detail-' ~ capability_navigation.key,
+                                        aria_label=capability_navigation.label ~ ' views'
+                                    ) }}
+                                </div>
+                            {% endif %}
+                        {% endblock page_capability_navigation %}
                         {% block dashboard_content %}
                         {% endblock dashboard_content %}
                     </div>

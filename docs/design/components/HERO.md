@@ -194,6 +194,15 @@ Blocked Analytics still renders the profile's three metadata labels through `pag
 
 The Hero does not prioritize generic `Current Step` / `Progress` values. Detailed dependency progress is owned by the shared `Analytics Setup Path` surface below the Hero, which shows Complete / Current Blocker / Pending states and the authoritative next action.
 
+## Kubernetes blocker-family lock
+
+Kubernetes has exactly two prerequisite blocker families:
+
+1. **General Kubernetes prerequisite** — Dashboard, Inventory, Operations, Governance, Tenant, and equivalent operational workspaces use the shared cluster blocked Hero context plus the shared cluster onboarding banner. The Hero explains readiness but does not duplicate the remediation CTA; the onboarding banner owns `Open Cluster Integrations → Register Cluster → Run Sync`.
+2. **Analytics dependency blocker** — Kubernetes/Object Storage Analytics use `Analytics Readiness` in the Hero plus the shared dependency/setup-path surface below it. Route-level Analytics navigation remains available while blocked so operators can understand the analytical workspace family; normal Kubernetes Analytics Overview may suppress that route row only because its internal summary Content Tabs already own the same peer vocabulary.
+
+A domain must not introduce a third blocked-state geometry or a page-local remediation sequence for equivalent semantics.
+
 ## Theme and surface contract
 
 The Hero surface is owned by `.kaori-hero-shell` and `--kaori-hero-background`. Templates must not use `bg-kaori-primary` for the outer Hero shell.

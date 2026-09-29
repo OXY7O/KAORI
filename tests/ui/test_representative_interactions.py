@@ -373,6 +373,20 @@ def test_sidebar_v21_two_level_navigation_and_page_workspace_across_canonical_vi
             label='Kubernetes Inventory level-three navigation',
         )
 
+        response = page.goto(f'{kaori_authenticated_base_url}/analytics/', wait_until='networkidle')
+        assert response is not None
+        assert response.ok
+        if page.locator('[data-kaori-blocked-state]').count() > 0:
+            analytics_blocked_views = page.locator(
+                '[data-kaori-capability-navigation="kubernetes_analytics"]'
+            )
+            expect(analytics_blocked_views).to_be_visible()
+            expect(
+                analytics_blocked_views.locator(
+                    '[data-kaori-tab-variant="integrated-workspace-server"]'
+                )
+            ).to_be_visible()
+
         response = page.goto(
             f'{kaori_authenticated_base_url}/analytics/capacity?time_range=7d',
             wait_until='networkidle',

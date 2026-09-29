@@ -4,22 +4,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 
 
-def test_tenant_uses_canonical_expandable_sidebar_parent() -> None:
-    menu = (ROOT / 'app/templates/components/navigation/tenant_menu.html').read_text(encoding='utf-8')
+def test_tenant_is_a_kubernetes_sidebar_capability_under_v21() -> None:
+    model = (ROOT / 'app/common/workspace_navigation.py').read_text(encoding='utf-8')
+    sidebar = (ROOT / 'app/templates/components/navigation/sidebar.html').read_text(encoding='utf-8')
 
-    assert '<details class="sidebar-menu space-y-1"' in menu
-    assert 'sidebar-menu-chevron' in menu
-    assert 'sidebar-submenu' in menu
-
-    for endpoint, label in (
-        ('tenant.index', 'Overview'),
-        ('tenant.tenants', 'Tenants'),
-        ('tenant.resource_profiles', 'Resource Profiles'),
-        ('tenant.namespace_provisioning', 'Namespace Provisioning'),
-        ('tenant.operations', 'Operations'),
-    ):
-        assert f"url_for('{endpoint}')" in menu
-        assert f'>{label}</span>' in menu
+    assert "key='kubernetes'" in model
+    assert "'tenant', 'Tenant', 'building-2', 'tenant.index'" in model
+    assert 'data-kaori-sidebar-capability="{{ child[\'key\'] }}"' in sidebar
 
 
 def test_tenant_routes_own_only_five_primary_destinations() -> None:
@@ -77,27 +68,27 @@ def test_tenant_pages_reuse_kaori_shared_presentation_patterns() -> None:
         assert 'workspace_tabs.html' not in template
 
 
-def test_sidebar_authority_documents_tenant_submenu_v17() -> None:
+def test_sidebar_authority_documents_tenant_capability_v21() -> None:
     standard = (ROOT / 'docs/design/components/SIDEBAR_NAVIGATION.md').read_text(encoding='utf-8')
     verifier = (ROOT / 'scripts/verify_sidebar_navigation_standard.py').read_text(encoding='utf-8')
 
-    assert 'KAORI Sidebar Navigation Standard v1.7' in standard
-    assert 'Tenant remains one Kubernetes capability parent' in standard
-    for label in ('Overview', 'Tenants', 'Resource Profiles', 'Namespace Provisioning', 'Operations'):
-        assert label in standard
-        assert label in verifier
+    assert 'KAORI Sidebar Navigation Standard v2.1' in standard
+    assert 'Level 1 — Workspace / Domain' in standard
+    assert 'Level 2 — Capability' in standard
+    assert 'Tenant' in standard
+    assert "key='tenant'" in (ROOT / 'app/common/workspace_navigation.py').read_text(encoding='utf-8')
+    assert 'two-level Workspace -> Capability sidebar' in verifier
 
 
 def test_tenant_primary_navigation_preserves_provider_neutral_boundary() -> None:
-    menu = (ROOT / 'app/templates/components/navigation/tenant_menu.html').read_text(encoding='utf-8')
+    model = (ROOT / 'app/common/workspace_navigation.py').read_text(encoding='utf-8')
     base = (ROOT / 'app/templates/kubernetes/tenant/base.html').read_text(encoding='utf-8')
     readme = (ROOT / 'app/kubernetes/tenant/README.md').read_text(encoding='utf-8')
 
     assert 'Native Kubernetes' in base
     assert 'Native Kubernetes' in readme
     assert 'Capsule' in readme
-    assert 'Native Kubernetes</span>' not in menu
-    assert 'Capsule</span>' not in menu
+    assert 'Capsule' not in model
 
 
 def test_tenant_registry_pages_use_shared_default_five_pagination() -> None:
@@ -157,15 +148,22 @@ def test_namespace_allocation_selector_is_not_limited_by_visible_page() -> None:
     assert '{% for item in namespace_options %}' in allocation
     assert '{% for item in namespaces %}' not in allocation
 
-def test_tenant_blocked_state_is_terminal_until_native_kubernetes_is_ready() -> None:
+def test_tenant_blocked_state_reuses_general_kubernetes_prerequisite_family() -> None:
     base = (ROOT / 'app/templates/kubernetes/tenant/base.html').read_text(encoding='utf-8')
 
     blocked_index = base.index('{% if not native_available %}')
-    else_index = base.index('{% else %}', blocked_index)
-    content_index = base.index('{% block tenant_content %}', blocked_index)
-    endif_index = base.index('{% endif %}', content_index)
+    terminal_index = base.rindex('{% if not native_available %}')
+    else_index = base.index('{% else %}', terminal_index)
+    content_index = base.index('{% block tenant_content %}', terminal_index)
 
-    assert blocked_index >= 0
-    assert 'components/states/_blocked_state.html' in base[blocked_index:else_index]
-    assert 'Open Cluster Integrations' in base[blocked_index:else_index]
-    assert blocked_index < else_index < content_index < endif_index
+    assert "components/cluster/_hero_blocked_context.html" in base
+    assert "components/cluster/_onboarding_banner.html" in base[terminal_index:else_index]
+    assert "components/states/_blocked_state.html" not in base
+    assert "Tenant capability is blocked" not in base
+    assert "Return to Tenant" not in base
+    assert "page_hero.context_card('Tenant context'" in base
+    assert blocked_index < terminal_index < else_index < content_index
+
+    blocked_hero = base[blocked_index:base.index('{% else %}', blocked_index)]
+    assert "page_hero.context_card('Tenant context'" not in blocked_hero
+    assert 'Open Cluster Integrations' not in blocked_hero
