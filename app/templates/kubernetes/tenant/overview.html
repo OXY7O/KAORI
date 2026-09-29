@@ -36,8 +36,8 @@
         {{ section_intro.render('Operational Attention',
                 'Prioritize actionable Tenant conditions, then review the latest committed Tenant activity.',
                 'tenant-attention-heading') }}
-        <div class="grid gap-5 xl:grid-cols-12 xl:items-start">
-            <div class="xl:col-span-7">
+        <div class="grid gap-5 xl:grid-cols-12 xl:items-stretch">
+            <div class="h-full xl:col-span-7">
                 {% call operational_section_card.render(
                     'Needs Attention',
                     'Prioritized governance, access, and credential conditions requiring operator review.',
@@ -91,7 +91,7 @@
                     </footer>
                 {% endcall %}
             </div>
-            <div class="xl:col-span-5">
+            <div class="h-full xl:col-span-5">
                 {% call operational_section_card.render(
                     'Recent Tenant Activity',
                     'Latest Tenant, access & credential changes.',
@@ -133,7 +133,7 @@
                             Showing {{ tenant_recent_activity_rows|length }} latest committed event{{ '' if tenant_recent_activity_rows|length == 1 else 's' }}.
                         </footer>
                     {% else %}
-                        <div class="flex items-start gap-3 px-5 py-6">
+                        <div class="flex min-h-[7.5rem] flex-1 items-start gap-3 px-5 py-6">
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-subtle text-content-muted"
                                   aria-hidden="true">
                                 <i data-lucide="history" class="h-4 w-4"></i>
@@ -145,6 +145,11 @@
                                 </p>
                             </div>
                         </div>
+                    {% endif %}
+                    {% if not tenant_recent_activity_rows %}
+                        <footer class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs text-content-muted">
+                            Showing 0 latest committed events.
+                        </footer>
                     {% endif %}
                 {% endcall %}
             </div>
