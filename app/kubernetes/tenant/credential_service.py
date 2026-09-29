@@ -153,6 +153,11 @@ def _record_generation(credential: TenantCredential, *, issued_at: datetime) -> 
     return generation
 
 
+def get_credential(credential_id: int) -> TenantCredential | None:
+    """Load a credential record outside the web/controller layer."""
+    return TenantCredential.query.filter_by(id=credential_id).first()
+
+
 def _existing_owner_purpose(
     *,
     tenant_id: str,
