@@ -729,6 +729,7 @@ def test_tenant_sync_marks_fresh_missing_namespaces_as_observational_drift() -> 
     service = read('app/kubernetes/tenant/service.py')
     routes = read('app/kubernetes/tenant/routes.py')
     operations = read('app/templates/kubernetes/tenant/operations.html')
+    drift_registry = read('app/templates/kubernetes/tenant/partials/_operations_drift_registry.html')
 
     assert 'def apply_missing_namespace_drift_from_inventory()' in sync
     assert 'TenantNamespaceProvisioningStatus.READY.value' in sync
@@ -753,11 +754,12 @@ def test_tenant_sync_marks_fresh_missing_namespaces_as_observational_drift() -> 
     assert 'reconcile_managed_native_namespace_committed(namespace_id=namespace_id)' in routes
     assert "operation': 'reconcile_namespace'" in routes
 
-    assert 'Namespace Provider Drift' in operations
-    assert "special_label('Drifted', 'warning', 'triangle-alert')" in operations
-    assert "url_for('tenant.reconcile_namespace_route', namespace_id=item.id)" in operations
-    assert 'Sync remains observation-only' in operations
-    assert 'Reconcile' in operations
+    assert '_operations_drift_registry.html' in operations
+    assert 'Namespace Provider Drift' in drift_registry
+    assert "special_label('Drifted', 'warning', 'triangle-alert')" in drift_registry
+    assert "url_for('tenant.reconcile_namespace_route', namespace_id=item.id)" in drift_registry
+    assert 'Sync observes drift only.' in drift_registry
+    assert 'Reconcile' in drift_registry
 
 
 def test_tenant_setup_enables_capability_gated_capsule_direct_create() -> None:
