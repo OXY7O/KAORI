@@ -163,6 +163,16 @@ Object Storage / Inventory
 
 Do not create sidebar/workspace tabs for individual clusters, providers, or instances.
 
+Stable scope identifiers may be carried across sibling navigation as URL context without becoming navigation identity. Current preserved context is intentionally bounded:
+
+- Kubernetes workspace/capability siblings preserve `cluster_id`;
+- Kubernetes deep Analytics siblings additionally preserve `time_range`;
+- Kubernetes Operations siblings may preserve `namespace`;
+- Object Storage workspace/capability siblings preserve `system_id`;
+- Object Storage Analytics siblings additionally preserve `time_range`.
+
+Filters that are meaningful only to one page remain page-local and are not propagated blindly.
+
 ## Permission Contract
 
 Only authorized capabilities render.

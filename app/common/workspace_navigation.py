@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
@@ -262,6 +263,21 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
 
 _SECTION_ORDER = ('Main', 'Infrastructure', 'Operations', 'Assurance', 'Insights', 'Platform', 'Administration')
 
+_WORKSPACE_CONTEXT_KEYS: dict[str, tuple[str, ...]] = {
+    'kubernetes': ('cluster_id',),
+    'object_storage': ('system_id',),
+}
+
+_CAPABILITY_CONTEXT_KEYS: dict[str, tuple[str, ...]] = {
+    'kubernetes_inventory': ('cluster_id',),
+    'kubernetes_operations': ('cluster_id', 'namespace'),
+    'kubernetes_governance': ('cluster_id',),
+    'kubernetes_tenant': ('cluster_id',),
+    'kubernetes_analytics': ('cluster_id', 'time_range'),
+    'object_storage_inventory': ('system_id',),
+    'object_storage_analytics': ('system_id', 'time_range'),
+}
+
 
 _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
     'kubernetes_inventory': (
@@ -516,7 +532,26 @@ def _capability_active_key(capability_key: str, endpoint: str) -> str:
     return 'overview'
 
 
-def build_capability_navigation(endpoint: str | None, user: Any) -> dict[str, Any] | None:
+def _preserved_context(
+    query_args: Mapping[str, Any] | None,
+    keys: tuple[str, ...],
+) -> dict[str, str]:
+    if query_args is None:
+        return {}
+
+    context: dict[str, str] = {}
+    for key in keys:
+        value = str(query_args.get(key) or '').strip()
+        if value:
+            context[key] = value
+    return context
+
+
+def build_capability_navigation(
+    endpoint: str | None,
+    user: Any,
+    query_args: Mapping[str, Any] | None = None,
+) -> dict[str, Any] | None:
     if not getattr(user, 'is_authenticated', False):
         return None
 
@@ -545,7 +580,18 @@ def build_capability_navigation(endpoint: str | None, user: Any) -> dict[str, An
         'key': capability_key,
         'label': _capability_label(capability_key),
         'active_key': active_key,
-        'tabs': tuple((view.key, view.label, view.icon, url_for(view.endpoint)) for view in visible_views),
+        'tabs': tuple(
+            (
+                view.key,
+                view.label,
+                view.icon,
+                url_for(
+                    view.endpoint,
+                    **_preserved_context(query_args, _CAPABILITY_CONTEXT_KEYS.get(capability_key, ())),
+                ),
+            )
+            for view in visible_views
+        ),
     }
 
 
@@ -702,7 +748,11 @@ def _active_tab_key(workspace_key: str, endpoint: str) -> str:
     return 'overview'
 
 
-def build_workspace_navigation(endpoint: str | None, user: Any) -> dict[str, Any] | None:
+def build_workspace_navigation(
+    endpoint: str | None,
+    user: Any,
+    query_args: Mapping[str, Any] | None = None,
+) -> dict[str, Any] | None:
     if not getattr(user, 'is_authenticated', False):
         return None
 
@@ -726,7 +776,16 @@ def build_workspace_navigation(endpoint: str | None, user: Any) -> dict[str, Any
         'icon': workspace.icon,
         'active_key': active_key,
         'tabs': tuple(
-            (tab.key, tab.label, tab.icon, None, url_for(_resolved_tab_endpoint(workspace.key, tab, user)))
+            (
+                tab.key,
+                tab.label,
+                tab.icon,
+                None,
+                url_for(
+                    _resolved_tab_endpoint(workspace.key, tab, user),
+                    **_preserved_context(query_args, _WORKSPACE_CONTEXT_KEYS.get(workspace.key, ())),
+                ),
+            )
             for tab in visible_tabs
         ),
     }

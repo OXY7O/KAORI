@@ -136,6 +136,25 @@ def test_capability_detail_navigation_replaces_retired_sidebar_submenus() -> Non
     assert "'Capacity & Usage'," in model
 
 
+def test_navigation_context_is_preserved_without_becoming_navigation_identity() -> None:
+    model = (ROOT / 'app' / 'common' / 'workspace_navigation.py').read_text(encoding='utf-8')
+    presentation = (ROOT / 'app' / 'bootstrap' / 'presentation.py').read_text(encoding='utf-8')
+    standard = (
+        ROOT / 'docs' / 'design' / 'components' / 'DOMAIN_WORKSPACE_NAVIGATION.md'
+    ).read_text(encoding='utf-8')
+
+    assert "_WORKSPACE_CONTEXT_KEYS" in model
+    assert "'kubernetes': ('cluster_id',)" in model
+    assert "'object_storage': ('system_id',)" in model
+    assert "'kubernetes_analytics': ('cluster_id', 'time_range')" in model
+    assert "'object_storage_analytics': ('system_id', 'time_range')" in model
+    assert "'kubernetes_operations': ('cluster_id', 'namespace')" in model
+    assert '_preserved_context' in model
+    assert 'build_workspace_navigation(request.endpoint, current_user, request.args)' in presentation
+    assert 'build_capability_navigation(request.endpoint, current_user, request.args)' in presentation
+    assert 'Filters that are meaningful only to one page remain page-local' in standard
+
+
 def test_analytics_overview_does_not_duplicate_route_and_summary_tabsets() -> None:
     model = (ROOT / 'app' / 'common' / 'workspace_navigation.py').read_text(encoding='utf-8')
     overview = (
