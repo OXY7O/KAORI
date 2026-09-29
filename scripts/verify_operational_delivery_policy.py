@@ -29,6 +29,7 @@ def main() -> int:
     tls_tasks = read('app/kubernetes/governance/tls_certificates/tasks.py')
     tls_presentation = read('app/kubernetes/governance/tls_certificates/job_presentation.py')
     tls_workspace = read('app/templates/kubernetes/governance/tls_certificates/partials/_page_workspace.html')
+    tls_progress = read('app/templates/kubernetes/governance/tls_certificates/partials/_sync_progress_toast.html')
     quality_gate = read('scripts/quality_gate.sh')
 
     for token in (
@@ -132,7 +133,10 @@ def main() -> int:
         errors,
     )
     require(
-        '_sync_progress_toast.html' in tls_workspace, 'TLS workspace must use the canonical progress toast.', errors
+        '_sync_progress_toast.html' not in tls_workspace
+        and 'components/operational_progress_toast.html' in tls_progress,
+        'TLS progress must retain canonical component ownership without duplicate workspace rendering.',
+        errors,
     )
     require(
         'notification_deck_user_ids' in tls_tasks and 'activity_audit_saved' in tls_tasks,
