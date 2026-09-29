@@ -100,6 +100,32 @@ def main() -> int:
     ):
         require(token in operation_flow, f'Operations cluster prerequisite is missing: {token}', errors)
 
+    configmap_landing = read('app/templates/kubernetes/operations/configmaps/index.html')
+    secret_landing = read('app/templates/kubernetes/operations/secrets/index.html')
+    configmap_delete_page = read('app/templates/kubernetes/operations/configmaps/delete.html')
+    secret_delete_page = read('app/templates/kubernetes/operations/secrets/delete.html')
+    for landing_name, landing_source in (
+        ('ConfigMap Management', configmap_landing),
+        ('Secret Management', secret_landing),
+    ):
+        require(
+            "'Open Cluster Integrations'," in landing_source
+            and "'Manage Clusters'," not in landing_source
+            and "url_for('integrations.kubernetes')" in landing_source,
+            f'{landing_name} Hero must use the canonical Open Cluster Integrations action.',
+            errors,
+        )
+    require(
+        "configmap_delete_guardrails, icon='shield-alert', open_by_default=false" in configmap_delete_page,
+        'ConfigMap Deletion Safety Contract must be collapsed by default.',
+        errors,
+    )
+    require(
+        "secret_delete_guardrails, icon='shield-alert', open_by_default=false" in secret_delete_page,
+        'Secret Deletion Safety Contract must be collapsed by default.',
+        errors,
+    )
+
     primary_identity_tokens = {
         'app/kubernetes/operations/configmaps/routes.py': (
             "page_title='ConfigMap Management'",

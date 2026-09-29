@@ -15,7 +15,7 @@ Live Mutation Evidence Boundary
 Operational Workflow Catalog
 ```
 
-The landing page is an operations catalog, not a marketing-card grid. Workflow cards use natural height and separate permission state from operation classification.
+The landing page is an operations catalog, not a marketing-card grid. Workflow cards use natural height and separate permission state from operation classification. The Hero context action uses the canonical **Open Cluster Integrations** label and links to the Kubernetes integration registry; the retired **Manage Clusters** wording must not return.
 
 ## Live Mutation Evidence Contract
 
@@ -131,6 +131,8 @@ Deletion
 ```
 
 The modal is the final human confirmation. It does not replace the signed receipt, RBAC preflight, or resourceVersion precondition. ConfigMap and signed Secret delete receipts are stateless, bound to the KAORI user and exact live target plus resourceVersion, and expire after ten minutes.
+
+The right-rail **Deletion Safety Contract** remains available as reference guidance but is collapsed by default. Persistent destructive warnings, exact-name confirmation, validation evidence, and final confirmation remain visible in the owning workflow and are never hidden by the collapsed reference state.
 
 ## Protected Secret Reveal
 

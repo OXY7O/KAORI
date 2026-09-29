@@ -43,6 +43,23 @@ def test_shared_operation_component_keeps_special_workflow_and_embedded_action_p
     assert 'embedded=true' in component
 
 
+def test_operations_landing_hero_and_deletion_reference_defaults_are_aligned() -> None:
+    configmaps = read('app/templates/kubernetes/operations/configmaps/index.html')
+    secrets = read('app/templates/kubernetes/operations/secrets/index.html')
+    configmap_delete = read('app/templates/kubernetes/operations/configmaps/delete.html')
+    secret_delete = read('app/templates/kubernetes/operations/secrets/delete.html')
+
+    for landing in (configmaps, secrets):
+        assert "'Open Cluster Integrations'," in landing
+        assert "'Manage Clusters'," not in landing
+        assert "url_for('integrations.kubernetes')" in landing
+
+    assert "information_guide_card.render('Deletion Safety Contract'" in configmap_delete
+    assert "configmap_delete_guardrails, icon='shield-alert', open_by_default=false" in configmap_delete
+    assert "information_guide_card.render('Deletion Safety Contract'" in secret_delete
+    assert "secret_delete_guardrails, icon='shield-alert', open_by_default=false" in secret_delete
+
+
 def test_operations_authorization_and_cluster_prerequisite_are_owned_inside_route_permissions() -> None:
     root_routes = read('app/kubernetes/operations/routes.py')
     operation_flow = read('app/kubernetes/operations/operation_flow.py')
