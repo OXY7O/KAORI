@@ -10,10 +10,13 @@
     ('shield-alert', 'Host Coverage Exceptions', coverage_exceptions, 'Partial, uncovered, or unavailable host mapping evidence.', 'warning' if coverage_exceptions else 'normal')
 ] %}
 {% call operational_section_card.render(
-    'Certificate Validity',
+    'Certificate Validity & Operations',
     'Lifecycle and declared-host coverage for the active governance filters.',
     'gauge',
     body_classes='p-0'
     ) %}
-    {{ posture_grid.render(metrics, columns=3) }}
+    <div class="space-y-4 p-5">
+        {{ posture_grid.render(metrics, columns=3) }}
+        {% include "kubernetes/governance/tls_certificates/partials/_sync_panel.html" %}
+    </div>
 {% endcall %}
