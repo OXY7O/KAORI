@@ -41,7 +41,7 @@
                             {% set cluster_blocked_cluster_value = registered_cluster_count %}
                             {% set cluster_blocked_cluster_supporting = "Registration exists; readiness requires review" %}
                             {% set cluster_blocked_state_value = "Validation Required" %}
-                            {% set cluster_blocked_state_supporting = "Tenant requires a connected Ready integration" %}
+                            {% set cluster_blocked_state_supporting = "Tenant requires a Ready integration" %}
                         {% else %}
                             {% set cluster_blocked_title = "Cluster Setup Required" %}
                             {% set cluster_blocked_info = "Add a Kubernetes cluster to activate Native Tenant workflows." %}

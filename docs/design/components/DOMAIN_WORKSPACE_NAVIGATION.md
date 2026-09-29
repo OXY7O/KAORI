@@ -86,7 +86,7 @@ Deep-analysis routes:
 Overview · Usage · Capacity · Workloads · Storage · Consumers · Forecast · Alerts & Anomalies
 ```
 
-Kubernetes Analytics Overview already owns summary/evidence Content Tabs and therefore suppresses the separate deep-analysis route row on Overview itself. Its cards provide drill-down CTAs into the deep-analysis pages.
+Kubernetes Analytics Overview always keeps the route-level Integrated Workspace Tabs visible. Its internal summary/evidence Content Tabs are subordinate switching inside the Overview route and do not replace level-3 navigation.
 
 ### Object Storage / Inventory
 
@@ -166,7 +166,7 @@ Validate:
 
 - no global Domain Workspace strip;
 - correct flat Integrated Workspace level-3 detail on representative Kubernetes/Object Storage pages;
-- Analytics Overview duplicate-tab suppression;
+- Analytics Overview route-level tabs plus subordinate summary/evidence Content Tabs;
 - bounded context preservation;
 - all canonical viewports;
 - light/dark visual consistency.

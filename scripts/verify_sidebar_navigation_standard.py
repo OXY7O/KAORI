@@ -203,7 +203,7 @@ def verify() -> None:
             'Page level 3 — Detailed View / Resource View',
             'There is **no global Domain Workspace horizontal strip**',
             'components/workspace_tabs.html',
-            'Analytics Overview already owns summary/evidence Content Tabs',
+            'Analytics Overview always keeps the route-level Integrated Workspace Tabs visible',
         ),
         'page workspace documentation',
     )

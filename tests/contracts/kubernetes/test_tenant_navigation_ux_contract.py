@@ -184,11 +184,12 @@ def test_tenant_readiness_matches_runtime_fallback_and_blocker_distinguishes_val
     assert 'registered_cluster_count = cluster_onboarding.cluster_count|default(0)' in base
     assert 'Cluster Validation Required' in base
     assert 'Registered Clusters' in base
-    assert 'Tenant requires a connected Ready integration' in base
+    assert 'Tenant requires a Ready integration' in base
 
     assert 'blocked_cluster_value' in hero_blocker
     assert 'blocked_cluster_supporting' in hero_blocker
     assert 'Validate Your Kubernetes Cluster' in onboarding
+    assert 'Cluster registered, but this workspace needs a Ready integration or pending legacy readiness persistence.' in onboarding
     assert 'Open Cluster Integrations' in onboarding
     assert 'Validate Cluster' in onboarding
     assert 'Confirm Ready' in onboarding

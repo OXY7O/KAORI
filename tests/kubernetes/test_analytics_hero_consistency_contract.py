@@ -32,6 +32,7 @@ def test_kubernetes_analytics_heroes_use_shared_three_slot_metadata_renderer() -
 def test_kubernetes_analytics_normal_heroes_use_cluster_integrations_action() -> None:
     base = ROOT / 'app' / 'templates' / 'kubernetes' / 'analytics'
     action_heroes = (
+        'overview/partials/_hero_posture.html',
         'utilization/partials/_hero.html',
         'capacity/partials/_hero.html',
         'storage/partials/_hero.html',

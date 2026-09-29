@@ -3,7 +3,7 @@
     {% set blocked_state_icon = "circle-check-big" %}
     {% set blocked_state_label = "Validation Required" %}
     {% set blocked_state_title = "Validate Your Kubernetes Cluster" %}
-    {% set blocked_state_description = "A Kubernetes cluster is registered, but this workspace requires a connected integration that is Ready or awaiting legacy readiness persistence." %}
+    {% set blocked_state_description = "Cluster registered, but this workspace needs a Ready integration or pending legacy readiness persistence." %}
     {% set blocked_state_steps = ["Open Cluster Integrations", "Validate Cluster", "Confirm Ready"] %}
 {% else %}
     {% set blocked_state_icon = "server-cog" %}
