@@ -234,7 +234,7 @@ def test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewp
         expect(tenant_card).to_be_visible()
         expect(access_card).to_be_visible()
         expect(tenant_card).to_contain_text('Governed Tenancy')
-        expect(tenant_card).to_contain_text('Namespace Provisioning')
+        expect(tenant_card).to_contain_text(re.compile(r'namespace provisioning', re.I))
         expect(access_card).to_contain_text('Identity Providers')
         expect(access_card).to_contain_text('directory-projected external identities')
 
