@@ -139,6 +139,21 @@ def verify() -> None:
     if "'workspace_navigation':" in presentation or 'build_workspace_navigation' in presentation:
         raise AssertionError('presentation still publishes retired horizontal workspace navigation')
 
+    navbar = _read(ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'navbar.html')
+    if "namespace(label='Welcome')" in navbar:
+        raise AssertionError(
+            'navbar mobile label must not call the Jinja namespace() builtin because route context may own a namespace variable'
+        )
+    _require(
+        navbar,
+        (
+            "mobile_page_candidates = breadcrumb_items | rejectattr('label', 'equalto', 'KAORI') | list",
+            "mobile_page_label = mobile_page_candidates[-1].label if mobile_page_candidates else 'Welcome'",
+            '{{ mobile_page_label }}',
+        ),
+        'navbar mobile breadcrumb label',
+    )
+
     _require(
         layout,
         (

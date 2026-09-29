@@ -2,12 +2,8 @@
 {% import "components/table_primitives.html" as surface_ui %}
 {% set breadcrumb_items = navigation_breadcrumb|default([], true) %}
 {% set current_user_role = current_user.role_name|default('Viewer', true)|replace('_', ' ')|title %}
-{% set mobile_page = namespace(label='Welcome') %}
-{% for item in breadcrumb_items %}
-    {% if item.label != 'KAORI' %}
-        {% set mobile_page.label = item.label %}
-    {% endif %}
-{% endfor %}
+{% set mobile_page_candidates = breadcrumb_items | rejectattr('label', 'equalto', 'KAORI') | list %}
+{% set mobile_page_label = mobile_page_candidates[-1].label if mobile_page_candidates else 'Welcome' %}
 <header class="sticky top-0 z-30 kaori-app-shell border-b border-outline-subtle bg-surface-shell backdrop-blur-xl transition-colors duration-300"
         x-data="kaoriNavbar"
         @kaori:notifications-changed.window="if ($event.detail?.tab && ['activity', 'inbox', 'notifications'].includes($event.detail?.tab)) { notificationDeckTab = $event.detail.tab } queueNotificationDeckRefresh()"
@@ -46,7 +42,7 @@
             </button>
             <div data-mobile-current-page class="min-w-0 lg:hidden">
                 <p class="truncate text-xs font-semibold uppercase tracking-wider text-content-muted">KAORI</p>
-                <p class="truncate text-sm font-semibold text-content-primary">{{ mobile_page.label }}</p>
+                <p class="truncate text-sm font-semibold text-content-primary">{{ mobile_page_label }}</p>
             </div>
             <div class="hidden min-w-0 lg:block">
                 <nav class="{{ surface_ui.block_classes() }} inline-flex h-10 min-w-0 max-w-[min(42rem,calc(100vw-8rem))] items-center gap-1.5 px-3 py-2 text-xs font-semibold transition"

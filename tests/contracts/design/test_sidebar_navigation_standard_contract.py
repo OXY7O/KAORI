@@ -184,6 +184,15 @@ def test_navigation_documentation_registers_corrected_hierarchy() -> None:
     assert '`app/common/workspace_navigation.py`' in ownership
 
 
+def test_navbar_mobile_label_does_not_use_jinja_namespace_builtin() -> None:
+    navbar = _read('app/templates/components/navigation/navbar.html')
+
+    assert "namespace(label='Welcome')" not in navbar
+    assert "mobile_page_candidates = breadcrumb_items | rejectattr('label', 'equalto', 'KAORI') | list" in navbar
+    assert "mobile_page_label = mobile_page_candidates[-1].label if mobile_page_candidates else 'Welcome'" in navbar
+    assert '{{ mobile_page_label }}' in navbar
+
+
 def test_breadcrumb_hierarchy_matches_workspace_capability_detail_scope() -> None:
     breadcrumb = _read('app/common/navigation.py')
 
