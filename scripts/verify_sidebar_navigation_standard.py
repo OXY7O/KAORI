@@ -98,6 +98,14 @@ def verify() -> None:
             '_resolved_tab_endpoint',
             'build_sidebar_navigation',
             'build_workspace_navigation',
+            'build_capability_navigation',
+            "'kubernetes_inventory': (",
+            "'kubernetes_operations': (",
+            "'kubernetes_governance': (",
+            "'kubernetes_tenant': (",
+            "'kubernetes_analytics': (",
+            "'object_storage_inventory': (",
+            "'object_storage_analytics': (",
         ),
         'workspace navigation model',
     )
@@ -120,6 +128,7 @@ def verify() -> None:
             'build_workspace_navigation',
             "'sidebar_navigation': build_sidebar_navigation(request.endpoint, current_user)",
             "'workspace_navigation': build_workspace_navigation(request.endpoint, current_user)",
+            "'capability_navigation': build_capability_navigation(request.endpoint, current_user)",
         ),
         'presentation context',
     )
@@ -131,6 +140,9 @@ def verify() -> None:
             'data-kaori-domain-workspace-nav="{{ workspace_navigation.key }}"',
             'workspace_tabs.render_navigation(',
             "prefix='domain-' ~ workspace_navigation.key",
+            '{% import "components/content_tabs.html" as content_tabs %}',
+            'data-kaori-capability-navigation="{{ capability_navigation.key }}"',
+            'content_tabs.render_links(',
         ),
         'domain workspace renderer',
     )

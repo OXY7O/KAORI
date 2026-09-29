@@ -315,8 +315,29 @@ def test_sidebar_v2_and_domain_workspace_navigation_across_canonical_viewports(
         for label in ('Overview', 'Inventory', 'Operations', 'Governance', 'Tenant', 'Analytics'):
             expect(workspace.get_by_role('link', name=label, exact=True)).to_be_visible()
 
+        inventory_link = workspace.get_by_role('link', name='Inventory', exact=True)
+        inventory_link.click()
+        page.wait_for_load_state('networkidle')
+
+        capability = page.locator('[data-kaori-capability-navigation="kubernetes_inventory"]')
+        expect(capability).to_be_visible()
+        for label in (
+            'Overview',
+            'Topology',
+            'Nodes',
+            'Namespaces',
+            'Workloads',
+            'Pods',
+            'Services',
+            'Ingresses',
+            'Storage',
+            'Configuration',
+        ):
+            expect(capability.get_by_role('link', name=label, exact=True)).to_be_visible()
+
         assert_document_fits_viewport(page)
         assert_locator_within_document_width(page, workspace, label='Kubernetes domain workspace navigation')
+        assert_locator_within_document_width(page, capability, label='Kubernetes Inventory capability navigation')
 
 
 def test_deterministic_visual_surface_catalog_light_and_dark(

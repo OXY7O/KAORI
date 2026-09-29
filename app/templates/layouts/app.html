@@ -8,6 +8,7 @@
               type="image/svg+xml"
               href="{{ url_for('static', filename='favicon.svg') }}" />
         {% import "components/workspace_tabs.html" as workspace_tabs %}
+        {% import "components/content_tabs.html" as content_tabs %}
         <title>
             {% block title %}
                 KAORI
@@ -44,7 +45,7 @@
                     <div class="p-5 lg:p-6 2xl:p-7">
                         {% include "components/states/_flash_messages.html" %}
                         {% if workspace_navigation %}
-                            <section class="mb-5 overflow-hidden rounded-xl border border-outline-default bg-surface-card px-4 pt-3 shadow-sm sm:px-5"
+                            <section class="{{ 'mb-3' if capability_navigation else 'mb-5' }} overflow-hidden rounded-xl border border-outline-default bg-surface-card px-4 pt-3 shadow-sm sm:px-5"
                                      data-kaori-domain-workspace-nav="{{ workspace_navigation.key }}"
                                      aria-label="{{ workspace_navigation.label }} workspace navigation">
                                 <div class="flex items-center gap-2 pb-2">
@@ -63,6 +64,19 @@
                                     aria_label=workspace_navigation.label ~ ' capabilities'
                                 ) }}
                             </section>
+                        {% endif %}
+                        {% if capability_navigation %}
+                            <div class="mb-5"
+                                 data-kaori-capability-navigation="{{ capability_navigation.key }}">
+                                {{ content_tabs.render_links(
+                                    'capability-' ~ capability_navigation.key,
+                                    capability_navigation.tabs,
+                                    capability_navigation.active_key,
+                                    capability_navigation.label ~ ' views',
+                                    data_namespace='capability',
+                                    nowrap=true
+                                ) }}
+                            </div>
                         {% endif %}
                         {% block dashboard_content %}
                         {% endblock dashboard_content %}

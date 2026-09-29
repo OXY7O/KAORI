@@ -54,14 +54,14 @@ Navbar / Breadcrumb
 ↓
 Domain Workspace Navigation
 ↓
-Owning Page Hero / Page Identity
+Capability Content Navigation when the capability owns multiple routes
 ↓
-Capability-local navigation when required
+Owning Page Hero / Page Identity
 ↓
 Operational content
 ```
 
-A domain page may visually integrate the workspace strip closer to its Hero during a later shared-shell refinement, but must continue to use the same shared navigation owner and semantics.
+The navigation header is intentionally compact and reusable across existing page archetypes. Domain Workspace Navigation uses Integrated Workspace Tabs; multi-route capability detail uses server-owned Content Tabs. A page must not copy the retired global-sidebar submenu markup into local templates.
 
 ## Current Implemented Workspaces
 
@@ -73,13 +73,13 @@ Overview · Inventory · Operations · Governance · Tenant · Analytics
 
 Permission-filtered using existing domain authorities.
 
-Detailed views remain local:
+Detailed views remain local and are rendered through shared server-owned Content Tabs where they are route-level peers:
 
 - Inventory -> Overview / Topology / Nodes / Namespaces / Workloads / Pods / Services / Ingresses / Storage / Configuration;
 - Operations -> ConfigMaps / Secrets;
 - Governance -> Overview / TLS Certificates;
 - Tenant -> Overview / Tenants / Resource Profiles / Namespace Provisioning / Operations;
-- Analytics -> Usage / Capacity / Workloads / Storage / Consumers / Forecast / Alerts & Anomalies / Actions / Guidance as owned by Analytics.
+- Analytics -> Overview / Usage / Capacity / Workloads / Storage / Consumers / Forecast / Alerts & Anomalies. Deeper Actions/Guidance remain owned inside Analytics content where applicable.
 
 ### Object Storage
 
@@ -87,7 +87,12 @@ Detailed views remain local:
 Overview · Inventory · Analytics
 ```
 
-Detailed Inventory and Analytics views stay inside those capabilities. Future Operations/Governance may extend this workspace without changing global navigation.
+Detailed route-level navigation is local:
+
+- Inventory -> Overview / Systems / Buckets & Containers;
+- Analytics -> Overview / Capacity & Usage / Performance / Forecast / Top Consumers / Alerts & Anomalies.
+
+Future Operations/Governance may extend this workspace without changing global navigation.
 
 ### Intelligence
 

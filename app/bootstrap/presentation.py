@@ -8,7 +8,7 @@ from flask_login import current_user
 from flask_wtf.csrf import generate_csrf
 
 from app.common.navigation import build_navigation_breadcrumb
-from app.common.workspace_navigation import build_sidebar_navigation, build_workspace_navigation
+from app.common.workspace_navigation import build_capability_navigation, build_sidebar_navigation, build_workspace_navigation
 from app.common.timezone import (
     format_user_date,
     format_user_datetime,
@@ -102,6 +102,7 @@ def register_presentation(app: Flask) -> None:
             ),
             'sidebar_navigation': build_sidebar_navigation(request.endpoint, current_user),
             'workspace_navigation': build_workspace_navigation(request.endpoint, current_user),
+            'capability_navigation': build_capability_navigation(request.endpoint, current_user),
             'integration_navigation': integration_navigation,
         }
 

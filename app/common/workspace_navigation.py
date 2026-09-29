@@ -24,6 +24,15 @@ class WorkspaceDefinition:
     tabs: tuple[WorkspaceTabDefinition, ...]
 
 
+@dataclass(frozen=True)
+class CapabilityViewDefinition:
+    key: str
+    label: str
+    icon: str
+    endpoint: str
+    permissions: tuple[str, ...] = ()
+
+
 _KUBERNETES_CONFIGMAP_PERMISSIONS = (
     'kubernetes_configmaps.view',
     'kubernetes_configmaps.create',
@@ -47,7 +56,6 @@ _KUBERNETES_OPERATION_PERMISSIONS = _KUBERNETES_CONFIGMAP_PERMISSIONS + _KUBERNE
 _KUBERNETES_GOVERNANCE_PERMISSIONS = (
     'governance.view',
     'tls_certificates.view',
-    'tls_certificates.sync',
 )
 
 _OPERATIONS_CENTER_PERMISSIONS = (
@@ -253,6 +261,288 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
 )
 
 _SECTION_ORDER = ('Main', 'Infrastructure', 'Operations', 'Assurance', 'Insights', 'Platform', 'Administration')
+
+
+_CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
+    'kubernetes_inventory': (
+        CapabilityViewDefinition('overview', 'Overview', 'layout-grid', 'inventory.overview', ('inventory.view',)),
+        CapabilityViewDefinition('topology', 'Topology', 'waypoints', 'inventory.topology', ('inventory.view',)),
+        CapabilityViewDefinition('nodes', 'Nodes', 'server', 'inventory.nodes', ('inventory.view',)),
+        CapabilityViewDefinition('namespaces', 'Namespaces', 'folders', 'inventory.namespaces', ('inventory.view',)),
+        CapabilityViewDefinition('workloads', 'Workloads', 'boxes', 'inventory.workloads', ('inventory.view',)),
+        CapabilityViewDefinition('pods', 'Pods', 'box', 'inventory.pods', ('inventory.view',)),
+        CapabilityViewDefinition('services', 'Services', 'network', 'inventory.services', ('inventory.view',)),
+        CapabilityViewDefinition('ingresses', 'Ingresses', 'route', 'inventory.ingresses', ('inventory.view',)),
+        CapabilityViewDefinition('storage', 'Storage', 'hard-drive', 'inventory.storage', ('inventory.view',)),
+        CapabilityViewDefinition(
+            'configuration', 'Configuration', 'file-key-2', 'inventory.configuration', ('inventory.view',)
+        ),
+    ),
+    'kubernetes_operations': (
+        CapabilityViewDefinition(
+            'configmaps',
+            'ConfigMaps',
+            'file-cog',
+            'kubernetes_operations.configmap_management',
+            _KUBERNETES_CONFIGMAP_PERMISSIONS,
+        ),
+        CapabilityViewDefinition(
+            'secrets',
+            'Secrets',
+            'key-round',
+            'kubernetes_operations.secret_management',
+            _KUBERNETES_SECRET_PERMISSIONS,
+        ),
+    ),
+    'kubernetes_governance': (
+        CapabilityViewDefinition('overview', 'Overview', 'layout-dashboard', 'governance.overview', ('governance.view',)),
+        CapabilityViewDefinition(
+            'tls_certificates',
+            'TLS Certificates',
+            'badge-check',
+            'governance.tls_certificates',
+            ('tls_certificates.view',),
+        ),
+    ),
+    'kubernetes_tenant': (
+        CapabilityViewDefinition('overview', 'Overview', 'layout-dashboard', 'tenant.index', ('tenant.view', 'tenant.manage')),
+        CapabilityViewDefinition('tenants', 'Tenants', 'building-2', 'tenant.tenants', ('tenant.view', 'tenant.manage')),
+        CapabilityViewDefinition(
+            'resource_profiles',
+            'Resource Profiles',
+            'layers-3',
+            'tenant.resource_profiles',
+            ('tenant.view', 'tenant.manage'),
+        ),
+        CapabilityViewDefinition(
+            'namespace_provisioning',
+            'Namespace Provisioning',
+            'folder-plus',
+            'tenant.namespace_provisioning',
+            ('tenant.view', 'tenant.manage'),
+        ),
+        CapabilityViewDefinition(
+            'operations', 'Operations', 'activity', 'tenant.operations', ('tenant.view', 'tenant.manage')
+        ),
+    ),
+    'kubernetes_analytics': (
+        CapabilityViewDefinition('overview', 'Overview', 'layout-dashboard', 'analytics.overview', ('analytics.view',)),
+        CapabilityViewDefinition('utilization', 'Usage', 'activity', 'analytics.utilization', ('analytics.view',)),
+        CapabilityViewDefinition('capacity', 'Capacity', 'gauge', 'analytics.capacity', ('analytics.view',)),
+        CapabilityViewDefinition('workloads', 'Workloads', 'boxes', 'analytics.workload', ('analytics.view',)),
+        CapabilityViewDefinition('storage', 'Storage', 'hard-drive', 'analytics.storage', ('analytics.view',)),
+        CapabilityViewDefinition(
+            'consumers', 'Consumers', 'users', 'analytics.top_consumers', ('analytics.view',)
+        ),
+        CapabilityViewDefinition('forecast', 'Forecast', 'line-chart', 'analytics.forecast', ('analytics.view',)),
+        CapabilityViewDefinition('alerts', 'Alerts & Anomalies', 'triangle-alert', 'analytics.alerts', ('analytics.view',)),
+    ),
+    'object_storage_inventory': (
+        CapabilityViewDefinition(
+            'overview',
+            'Overview',
+            'layout-grid',
+            'object_storage_inventory.overview',
+            ('object_storage_inventory.view',),
+        ),
+        CapabilityViewDefinition(
+            'systems',
+            'Systems',
+            'server',
+            'object_storage_inventory.systems',
+            ('object_storage_inventory.view',),
+        ),
+        CapabilityViewDefinition(
+            'buckets',
+            'Buckets & Containers',
+            'container',
+            'object_storage_inventory.buckets',
+            ('object_storage_inventory.view',),
+        ),
+    ),
+    'object_storage_analytics': (
+        CapabilityViewDefinition(
+            'overview',
+            'Overview',
+            'layout-dashboard',
+            'analytics.object_storage_overview',
+            ('object_storage_analytics.view',),
+        ),
+        CapabilityViewDefinition(
+            'capacity',
+            'Capacity & Usage',
+            'database',
+            'analytics.object_storage_capacity',
+            ('object_storage_analytics.view',),
+        ),
+        CapabilityViewDefinition(
+            'performance',
+            'Performance',
+            'activity',
+            'analytics.object_storage_performance',
+            ('object_storage_analytics.view',),
+        ),
+        CapabilityViewDefinition(
+            'forecast',
+            'Forecast',
+            'line-chart',
+            'analytics.object_storage_forecast',
+            ('object_storage_analytics.view',),
+        ),
+        CapabilityViewDefinition(
+            'consumers',
+            'Top Consumers',
+            'users',
+            'analytics.object_storage_top_consumers',
+            ('object_storage_analytics.view',),
+        ),
+        CapabilityViewDefinition(
+            'alerts',
+            'Alerts & Anomalies',
+            'triangle-alert',
+            'analytics.object_storage_alerts',
+            ('object_storage_analytics.view',),
+        ),
+    ),
+}
+
+
+def _capability_key(endpoint: str) -> str | None:
+    if endpoint.startswith('inventory.'):
+        return 'kubernetes_inventory'
+    if endpoint.startswith('kubernetes_operations.'):
+        return 'kubernetes_operations'
+    if endpoint.startswith('governance.'):
+        return 'kubernetes_governance'
+    if endpoint.startswith('tenant.'):
+        return 'kubernetes_tenant'
+    if endpoint.startswith('analytics.object_storage_'):
+        return 'object_storage_analytics'
+    if endpoint.startswith('analytics.'):
+        return 'kubernetes_analytics'
+    if endpoint.startswith('object_storage_inventory.'):
+        return 'object_storage_inventory'
+    return None
+
+
+def _capability_label(capability_key: str) -> str:
+    return {
+        'kubernetes_inventory': 'Inventory',
+        'kubernetes_operations': 'Operations',
+        'kubernetes_governance': 'Governance',
+        'kubernetes_tenant': 'Tenant',
+        'kubernetes_analytics': 'Analytics',
+        'object_storage_inventory': 'Inventory',
+        'object_storage_analytics': 'Analytics',
+    }[capability_key]
+
+
+def _capability_active_key(capability_key: str, endpoint: str) -> str:
+    if capability_key == 'kubernetes_inventory':
+        if endpoint.startswith('inventory.topology'):
+            return 'topology'
+        if endpoint in {'inventory.nodes', 'inventory.node_details'}:
+            return 'nodes'
+        if endpoint in {'inventory.namespaces', 'inventory.namespace_details'}:
+            return 'namespaces'
+        if endpoint in {'inventory.workloads', 'inventory.workload_details'}:
+            return 'workloads'
+        if endpoint in {'inventory.pods', 'inventory.pod_details'}:
+            return 'pods'
+        if endpoint in {'inventory.services', 'inventory.service_details'}:
+            return 'services'
+        if endpoint in {'inventory.ingresses', 'inventory.ingress_details'}:
+            return 'ingresses'
+        if endpoint in {'inventory.storage', 'inventory.storage_details'}:
+            return 'storage'
+        if endpoint in {'inventory.configuration', 'inventory.configuration_details'}:
+            return 'configuration'
+        return 'overview'
+
+    if capability_key == 'kubernetes_operations':
+        return 'configmaps' if endpoint.startswith('kubernetes_operations.configmap') else 'secrets'
+
+    if capability_key == 'kubernetes_governance':
+        return 'tls_certificates' if endpoint.startswith('governance.tls_certificates') else 'overview'
+
+    if capability_key == 'kubernetes_tenant':
+        if endpoint == 'tenant.tenants':
+            return 'tenants'
+        if endpoint == 'tenant.resource_profiles':
+            return 'resource_profiles'
+        if endpoint == 'tenant.namespace_provisioning':
+            return 'namespace_provisioning'
+        if endpoint == 'tenant.operations':
+            return 'operations'
+        return 'overview'
+
+    if capability_key == 'kubernetes_analytics':
+        if endpoint.startswith('analytics.utilization'):
+            return 'utilization'
+        if endpoint == 'analytics.capacity':
+            return 'capacity'
+        if endpoint.startswith('analytics.workload'):
+            return 'workloads'
+        if endpoint.startswith('analytics.storage'):
+            return 'storage'
+        if endpoint.startswith('analytics.top_consumers'):
+            return 'consumers'
+        if endpoint == 'analytics.forecast':
+            return 'forecast'
+        if endpoint.startswith('analytics.alerts'):
+            return 'alerts'
+        return 'overview'
+
+    if capability_key == 'object_storage_inventory':
+        if endpoint in {'object_storage_inventory.systems', 'object_storage_inventory.system_details'}:
+            return 'systems'
+        if endpoint in {'object_storage_inventory.buckets', 'object_storage_inventory.bucket_details'}:
+            return 'buckets'
+        return 'overview'
+
+    if capability_key == 'object_storage_analytics':
+        if endpoint == 'analytics.object_storage_capacity':
+            return 'capacity'
+        if endpoint == 'analytics.object_storage_performance':
+            return 'performance'
+        if endpoint == 'analytics.object_storage_forecast':
+            return 'forecast'
+        if endpoint == 'analytics.object_storage_top_consumers':
+            return 'consumers'
+        if endpoint.startswith('analytics.object_storage_alert'):
+            return 'alerts'
+        return 'overview'
+
+    return 'overview'
+
+
+def build_capability_navigation(endpoint: str | None, user: Any) -> dict[str, Any] | None:
+    if not getattr(user, 'is_authenticated', False):
+        return None
+
+    resolved_endpoint = endpoint or ''
+    capability_key = _capability_key(resolved_endpoint)
+    if capability_key is None:
+        return None
+
+    visible_views = tuple(
+        view for view in _CAPABILITY_VIEWS[capability_key] if _has_any_permission(user, view.permissions)
+    )
+    if len(visible_views) < 2:
+        return None
+
+    active_key = _capability_active_key(capability_key, resolved_endpoint)
+    if active_key not in {view.key for view in visible_views}:
+        active_key = visible_views[0].key
+
+    return {
+        'key': capability_key,
+        'label': _capability_label(capability_key),
+        'active_key': active_key,
+        'tabs': tuple((view.key, view.label, view.icon, url_for(view.endpoint)) for view in visible_views),
+    }
+
+
 
 
 def _has_any_permission(user: Any, permissions: tuple[str, ...]) -> bool:

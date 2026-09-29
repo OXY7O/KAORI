@@ -102,3 +102,35 @@ def test_breadcrumb_hierarchy_matches_workspace_ownership() -> None:
 
     assert "BreadcrumbItem('Dashboards', 'layout-dashboard')" not in breadcrumb
     assert "BreadcrumbItem('Inventory', 'boxes')" not in breadcrumb
+
+
+def test_capability_detail_navigation_replaces_retired_sidebar_submenus() -> None:
+    model = (ROOT / 'app' / 'common' / 'workspace_navigation.py').read_text(encoding='utf-8')
+    layout = (ROOT / 'app' / 'templates' / 'layouts' / 'app.html').read_text(encoding='utf-8')
+
+    for capability in (
+        "'kubernetes_inventory': (",
+        "'kubernetes_operations': (",
+        "'kubernetes_governance': (",
+        "'kubernetes_tenant': (",
+        "'kubernetes_analytics': (",
+        "'object_storage_inventory': (",
+        "'object_storage_analytics': (",
+    ):
+        assert capability in model
+
+    assert 'build_capability_navigation' in model
+    assert '{% import "components/content_tabs.html" as content_tabs %}' in layout
+    assert 'data-kaori-capability-navigation="{{ capability_navigation.key }}"' in layout
+    assert 'content_tabs.render_links(' in layout
+    assert "data_namespace='capability'" in layout
+    assert 'nowrap=true' in layout
+
+    assert "'Overview', 'layout-grid', 'inventory.overview'" in model
+    assert "'Topology', 'waypoints', 'inventory.topology'" in model
+    assert "'ConfigMaps'," in model
+    assert "'Secrets'," in model
+    assert "'TLS Certificates'," in model
+    assert "'Resource Profiles'," in model
+    assert "'Buckets & Containers'," in model
+    assert "'Capacity & Usage'," in model
