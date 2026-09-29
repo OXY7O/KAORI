@@ -111,7 +111,7 @@
         {% endcall %}
     </div>
     {% if tenant_discovery_errors %}
-        <div class="border-b border-status-warning-border bg-status-warning-soft px-5 py-3 text-xs text-status-warning-text">
+        <div class="border-b border-outline-subtle bg-status-warning-soft px-5 py-3 text-xs text-status-warning-text">
             <span class="font-semibold">{{ tenant_discovery_errors|length }} provider read exception{{ '' if tenant_discovery_errors|length == 1 else 's' }}.</span>
             Unreachable clusters are not inferred from stale data; review Tenant Collection Snapshot above.
         </div>
@@ -376,7 +376,7 @@
                                 ('Provider authority preserved', 'Adoption records governance state without replacing the external authority.'),
                                 ('Fail-closed revalidation', 'KAORI rechecks provider state and conflicts again when Adopt is submitted.')
                                 ] %}
-                                <div class="flex gap-3 rounded-lg border border-status-normal-border bg-status-normal-soft p-3">
+                                <div class="flex gap-3 rounded-lg border border-outline-subtle bg-status-normal-soft p-3">
                                     <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-card text-status-normal-text"
                                           aria-hidden="true">
                                         <i data-lucide="check" class="h-3.5 w-3.5"></i>
@@ -389,7 +389,7 @@
                             {% endfor %}
                         </div>
                     </section>
-                    <div class="flex items-start gap-3 rounded-xl border border-status-warning-border bg-status-warning-soft p-4 text-status-warning-text">
+                    <div class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-status-warning-soft p-4 text-status-warning-text">
                         <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-card"
                               aria-hidden="true">
                             <i data-lucide="info" class="h-4 w-4"></i>
