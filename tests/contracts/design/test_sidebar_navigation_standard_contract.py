@@ -135,6 +135,15 @@ def test_level_three_detail_navigation_replaces_sidebar_level_three() -> None:
     assert "workspace_tabs.render_navigation(" in layout
 
 
+def test_kubernetes_operations_workflows_keep_the_correct_active_detail_tab() -> None:
+    model = _read('app/common/workspace_navigation.py')
+
+    assert "operation_endpoint = endpoint.removeprefix('kubernetes_operations.')" in model
+    assert "operation_endpoint.startswith('configmap')" in model
+    for endpoint in ('create_configmap', 'update_configmap', 'delete_configmap'):
+        assert f"'{endpoint}'" in model
+
+
 def test_navigation_context_is_preserved_without_becoming_navigation_identity() -> None:
     model = _read('app/common/workspace_navigation.py')
     presentation = _read('app/bootstrap/presentation.py')

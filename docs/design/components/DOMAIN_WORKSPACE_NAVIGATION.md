@@ -64,6 +64,8 @@ Overview · Topology · Nodes · Namespaces · Workloads · Pods · Services · 
 ConfigMaps · Secrets
 ```
 
+ConfigMap workflow endpoints such as Create, Update, Delete, live target lookup, and editor/validation helpers all retain **ConfigMaps** as the active level-3 detail. Secret CRUD, Reveal, and TLS rotation retain **Secrets**. Active state follows workflow ownership rather than a coincidental endpoint-name prefix.
+
 ### Kubernetes / Governance
 
 ```text

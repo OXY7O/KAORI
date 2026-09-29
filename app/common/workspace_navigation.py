@@ -566,7 +566,14 @@ def _capability_active_key(capability_key: str, endpoint: str) -> str:
         return 'overview'
 
     if capability_key == 'kubernetes_operations':
-        return 'configmaps' if endpoint.startswith('kubernetes_operations.configmap') else 'secrets'
+        operation_endpoint = endpoint.removeprefix('kubernetes_operations.')
+        if operation_endpoint.startswith('configmap') or operation_endpoint in {
+            'create_configmap',
+            'update_configmap',
+            'delete_configmap',
+        }:
+            return 'configmaps'
+        return 'secrets'
 
     if capability_key == 'kubernetes_governance':
         return 'tls_certificates' if endpoint.startswith('governance.tls_certificates') else 'overview'
