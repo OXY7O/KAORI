@@ -16,10 +16,7 @@ from app.kubernetes.tenant.allocation_cutover import (
     reconcile_adopted_native_allocation,
 )
 from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
-from app.kubernetes.tenant.capacity_governance import (
-    enforce_existing_namespace_allocation_preflight,
-    enforce_observed_namespace_allocation_preflight,
-)
+from app.kubernetes.tenant.capacity_governance import enforce_observed_namespace_allocation_preflight
 from app.kubernetes.tenant.validation import COUNT_QUOTA_KEYS, validate_profile_spec
 from app.models import Cluster
 from app.models.tenant import (
