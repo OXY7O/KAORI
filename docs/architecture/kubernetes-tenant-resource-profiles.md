@@ -244,6 +244,7 @@ Resource Profiles now persist **advanced control intent** in addition to allocat
 The profile can enable:
 
 - **Ingress** — canonical exposure policy authority remains #119.
+- **Service Exposure** — ClusterIP/NodePort/LoadBalancer/ExternalName policy remains under #119.
 - **Hostname Reservation** — canonical domain ownership/collision authority remains #119.
 - **Managed TLS** — canonical managed-resource authority remains #118.
 - **Managed Registry** — canonical managed-resource authority remains #118.
