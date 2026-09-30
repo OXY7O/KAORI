@@ -63,6 +63,7 @@
                         hx_sync='this:replace') }}
             <div class="space-y-5 p-4 sm:p-5">
                 {% if active_namespace_view == 'allocation' %}
+                    {% include "kubernetes/tenant/partials/_capsule_shared_allocation_cutover.html" %}
                     {% include "kubernetes/tenant/partials/_allocation_cutover.html" %}
                     {% include "kubernetes/tenant/partials/_allocation_change.html" %}
                 {% elif active_namespace_view == 'decisions' %}
@@ -75,6 +76,7 @@
             <script type="application/json" id="tenant-resource-profile-presets">{{ resource_profile_presets|tojson }}</script>
             <script type="application/json" id="tenant-namespace-allocation-profiles">{{ namespace_allocation_profiles|tojson }}</script>
             <script type="application/json" id="tenant-namespace-allocation-state">{{ namespace_allocation_state|tojson }}</script>
+            <script type="application/json" id="tenant-capsule-shared-allocation-state">{{ capsule_shared_cutover_state|tojson }}</script>
         {% endcall %}
     </section>
 {% endblock tenant_content %}
