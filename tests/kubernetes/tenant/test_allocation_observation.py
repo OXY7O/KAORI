@@ -270,6 +270,40 @@ def test_native_observation_fails_closed_on_unsupported_limit_range_constraints(
 
 
 
+def test_native_observation_maps_pvc_storage_limitrange_without_claiming_quota_authority():
+    pvc_limit = SimpleNamespace(
+        type='PersistentVolumeClaim',
+        default={},
+        default_request={},
+        max={'storage': '50Gi'},
+        min={'storage': '2Gi'},
+        max_limit_request_ratio={},
+    )
+    api = FakeCoreApi(
+        limit_ranges={
+            'api-prod': [
+                SimpleNamespace(
+                    metadata=_metadata('pvc-policy'),
+                    spec=SimpleNamespace(limits=[pvc_limit]),
+                )
+            ]
+        }
+    )
+
+    observed = observe_native_namespace_allocation(api, 'api-prod')
+
+    assert observed['control_state'] == 'observed'
+    assert observed['unsupported_dimensions'] == []
+    assert observed['quota'] == {}
+    assert observed['limits'] == {}
+    constraint = observed['external_limit_constraints'][0]
+    assert constraint['constraint_type'] == 'pvc_storage_limit_range'
+    assert constraint['fields']['min']['storage'] == '2Gi'
+    assert constraint['fields']['max']['storage'] == '50Gi'
+
+
+
+
 def test_capsule_tenant_resource_quota_defaults_scope_to_tenant() -> None:
     client = FakeClient(FakeCoreApi())
     tenant_item = {
@@ -301,7 +335,7 @@ def test_capsule_tenant_resource_quota_defaults_scope_to_tenant() -> None:
     assert observed['authority_ambiguous_dimensions'] == []
 
 
-def test_capsule_tenant_quota_keeps_namespace_pvc_limitrange_as_external_constraint() -> None:
+def test_capsule_tenant_quota_maps_namespace_pvc_limitrange_as_preserved_constraint() -> None:
     namespace = SimpleNamespace(
         metadata=_metadata(
             'partner-pgnpartner-development',
@@ -312,8 +346,8 @@ def test_capsule_tenant_quota_keeps_namespace_pvc_limitrange_as_external_constra
         type='PersistentVolumeClaim',
         default={},
         default_request={},
-        max={},
-        min={},
+        max={'storage': '100Gi'},
+        min={'storage': '1Gi'},
         max_limit_request_ratio={},
     )
     core = FakeCoreApi(
@@ -321,7 +355,7 @@ def test_capsule_tenant_quota_keeps_namespace_pvc_limitrange_as_external_constra
         limit_ranges={
             'partner-pgnpartner-development': [
                 SimpleNamespace(
-                    metadata=_metadata('capsule-partner-0'),
+                    metadata=_metadata('capsule-partner-0', resource_version='22'),
                     spec=SimpleNamespace(limits=[pvc_limit]),
                 )
             ]
@@ -356,10 +390,17 @@ def test_capsule_tenant_quota_keeps_namespace_pvc_limitrange_as_external_constra
     assert observed['allocation_authority'] == 'capsule_tenant_resource_quotas'
     assert observed['authority_unsupported_dimensions'] == []
     assert observed['authority_ambiguous_dimensions'] == []
-    assert any(
-        'LimitRange/capsule-partner-0/type=PersistentVolumeClaim' in item
-        for item in observed['external_constraints']
-    )
+    assert observed['external_constraints'] == []
+    assert observed['correlated_namespaces'][0]['allocation']['unsupported_dimensions'] == []
+
+    constraint = observed['external_constraint_details'][0]
+    assert constraint['constraint_type'] == 'pvc_storage_limit_range'
+    assert constraint['namespace'] == 'partner-pgnpartner-development'
+    assert constraint['name'] == 'capsule-partner-0'
+    assert constraint['resource_version'] == '22'
+    assert constraint['fields']['min']['storage'] == '1Gi'
+    assert constraint['fields']['max']['storage'] == '100Gi'
+    assert constraint['management_state'] == 'observed_preserved'
 
 
 def test_capsule_scoped_resource_quota_item_blocks_governance_authority() -> None:
