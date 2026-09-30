@@ -52,6 +52,12 @@ def test_reviewed_crud_and_protected_reveal_use_form_with_right_context() -> Non
         assert 'information_guide_card.html' in source
 
 
+def test_configmap_creation_flow_uses_compact_helper_copy() -> None:
+    source = read('app/templates/kubernetes/operations/configmaps/create.html')
+    assert 'Definition flow to one audited live ConfigMap.' in source
+    assert 'How a proposed definition becomes one audited live ConfigMap.' not in source
+
+
 def test_reviewed_crud_moves_workflow_guidance_to_right_context() -> None:
     for relative in (
         'app/templates/kubernetes/operations/configmaps/create.html',
