@@ -2,24 +2,13 @@
 {% import "components/destructive_confirmation_modal.html" as destructive_modal %}
 {% import "components/form_field.html" as form_field %}
 {% import "components/table_label.html" as table_label %}
+{% import "kubernetes/tenant/partials/_resource_profile_advanced_controls.html" as advanced_profile_controls %}
 {% set profile_class_labels = {'small': 'Small', 'standard': 'Medium', 'large': 'Large', 'extra_large': 'Extra Large', 'custom': 'Custom'} %}
 {% for profile in profiles %}
     {% set usage = profile_dependencies.get(profile.id) %}
     {% set editable = profile.profile_class == 'custom' %}
     {% set defaults = profile.limit_defaults_json.get('default', {}) if profile.limit_defaults_json else {} %}
     {% set default_requests = profile.limit_defaults_json.get('default_request', {}) if profile.limit_defaults_json else {} %}
-    {% set advanced_controls = [
-        ('ingress', 'Ingress', '#119'),
-        ('service_exposure', 'Service Exposure', '#119'),
-        ('hostname_reservation', 'Hostname Reservation', '#119'),
-        ('managed_tls', 'Managed TLS', '#118'),
-        ('managed_registry', 'Managed Registry', '#118'),
-        ('capsule_namespace_controls', 'Capsule Namespace Controls', '#121/#124'),
-        ('capsule_resource_rules', 'Capsule Resource Rules', '#121/#124'),
-        ('capsule_resource_pools', 'Capsule Resource Pools', '#124'),
-        ('capsule_replication', 'Capsule Replication', '#124'),
-        ('capsule_tenant_cordon', 'Capsule Tenant Cordon', '#124')
-    ] %}
     <dialog id="resource-profile-manage-{{ profile.id }}"
             data-kaori-native-dialog
             aria-labelledby="resource-profile-manage-{{ profile.id }}-title"
@@ -189,28 +178,7 @@
                                 {% endfor %}
                             </div>
                         </section>
-                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                            <h3 class="text-sm font-semibold text-content-primary">Advanced Controls</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Enable reusable governance intent; provider capability is checked when this profile is attached.</p>
-                            <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                {% for key, label, authority in advanced_controls %}
-                                    <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                                        <input type="checkbox"
-                                               name="advanced_control_{{ key }}"
-                                               value="1"
-                                               {% if (profile.advanced_controls_json or {}).get(key) %}checked{% endif %}
-                                               class="mt-0.5 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
-                                        <span class="min-w-0 flex-1">
-                                            <span class="flex items-center justify-between gap-2">
-                                                <span class="text-xs font-semibold text-content-primary">{{ label }}</span>
-                                                <span class="text-[10px] font-semibold text-content-muted">{{ authority }}</span>
-                                            </span>
-                                            <span class="mt-1 block text-[11px] leading-5 text-content-muted">Attachment remains fail-closed when the selected provider does not support this control.</span>
-                                        </span>
-                                    </label>
-                                {% endfor %}
-                            </div>
-                        </section>
+                        {{ advanced_profile_controls.render(profile.advanced_controls_json or {}, true, 'resource-profile-edit-' ~ profile.id) }}
                     </form>
                     <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-4 py-3 text-xs leading-5 text-content-secondary">
                         Existing Namespace allocations keep their committed source version and effective snapshot. This edit changes only the reusable Custom contract used by future allocation or explicit allocation-change workflows.
@@ -272,22 +240,7 @@
                             {% endfor %}
                         </dl>
                     </section>
-                    <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                        <h3 class="text-sm font-semibold text-content-primary">Advanced Controls</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Requested controls are fixed with this preset contract instance and re-evaluated at placement.</p>
-                        <dl class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                            {% for key, label, authority in advanced_controls %}
-                                {% set advanced_enabled = (profile.advanced_controls_json or {}).get(key) %}
-                                <div class="flex items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5">
-                                    <div class="min-w-0">
-                                        <dt class="text-xs font-semibold text-content-primary">{{ label }}</dt>
-                                        <dd class="mt-0.5 text-[10px] text-content-muted">{{ authority }}</dd>
-                                    </div>
-                                    {{ table_label.status_label('Enabled' if advanced_enabled else 'Off', 'normal' if advanced_enabled else 'unknown') }}
-                                </div>
-                            {% endfor %}
-                        </dl>
-                    </section>
+                    {{ advanced_profile_controls.render(profile.advanced_controls_json or {}, false, 'resource-profile-view-' ~ profile.id) }}
                 {% endif %}
             </div>
             <footer class="flex shrink-0 flex-col-reverse gap-2 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
