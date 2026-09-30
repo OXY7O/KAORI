@@ -10,6 +10,11 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.common.pagination import paginate_query
 from app.extensions.db import db
+from app.kubernetes.tenant.allocation_cutover import (
+    allocation_control_state,
+    build_allocation_cutover_state,
+    reconcile_adopted_native_allocation,
+)
 from app.kubernetes.tenant.capacity_governance import (
     build_capacity_governance_summary,
     enforce_existing_namespace_allocation_preflight,
@@ -600,7 +605,7 @@ def change_native_namespace_allocation(source: Mapping[str, Any]) -> TenantNames
         raise ValueError('Tenant is not Ready; namespace allocation changes are frozen during decommission.')
     if record.environment.tenant.provider_key != 'native_kubernetes':
         raise ValueError('This UAT slice can change only Native Kubernetes Tenant allocations.')
-    if record.ownership_status != TenantOwnershipStatus.MANAGED.value:
+    if allocation_control_state(record) != 'kaori_managed':
         raise ValueError(
             'Adopted Baseline allocations are read-only until explicit Allocation Governance Cutover is completed.'
         )
@@ -612,20 +617,33 @@ def change_native_namespace_allocation(source: Mapping[str, Any]) -> TenantNames
         quota_hard=quota,
     )
 
-    record.resource_profile = profile
-    record.resource_profile_id = profile.id
-    record.resource_profile_version = (
+    profile_version = (
         int(RESOURCE_PROFILE_PRESETS[profile.profile_class]['version'])
         if profile.profile_class in RESOURCE_PROFILE_PRESETS
         else profile.version
     )
-    record.allocation_quota_json = quota
-    record.allocation_limit_defaults_json = limits
-    record.allocation_customized = customized
-    record.capacity_decision_id = capacity_decision.id
 
     try:
-        reconcile_native_namespace(record)
+        if record.ownership_status == TenantOwnershipStatus.ADOPTED.value:
+            reconcile_adopted_native_allocation(
+                record,
+                profile=profile,
+                resource_profile_version=profile_version,
+                allocation_customized=customized,
+                capacity_decision_id=capacity_decision.id,
+                quota_hard=quota,
+                limit_defaults=limits,
+                operation='allocation_change',
+            )
+        else:
+            record.resource_profile = profile
+            record.resource_profile_id = profile.id
+            record.resource_profile_version = profile_version
+            record.allocation_quota_json = quota
+            record.allocation_limit_defaults_json = limits
+            record.allocation_customized = customized
+            record.capacity_decision_id = capacity_decision.id
+            reconcile_native_namespace(record)
     except (ApiException, ValueError):
         db.session.commit()
         raise
@@ -640,6 +658,72 @@ def change_native_namespace_allocation_committed(source: Mapping[str, Any]) -> T
         db.session.rollback()
         raise TenantStateConflictError(
             'Committed Tenant namespace allocation changed while this request was being applied. Refresh and retry.'
+        ) from exc
+    except (ApiException, ValueError):
+        db.session.rollback()
+        raise
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+
+
+def cutover_adopted_namespace_allocation(source: Mapping[str, Any]) -> TenantNamespace:
+    try:
+        namespace_id = int(_text(source, 'tenant_namespace_id'))
+        profile_id = int(_text(source, 'resource_profile_id'))
+    except ValueError as exc:
+        raise ValueError('Select an adopted Tenant namespace and Resource Profile for governance cutover.') from exc
+
+    record = db.session.get(TenantNamespace, namespace_id)
+    profile = db.session.get(TenantResourceProfile, profile_id)
+    if record is None:
+        raise ValueError('Selected Tenant namespace no longer exists.')
+    if profile is None or not profile.enabled:
+        raise ValueError('Selected Resource Profile is unavailable.')
+    if record.environment.tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
+        raise ValueError('Tenant is not Ready; allocation governance cutover is unavailable during teardown.')
+
+    cutover = build_allocation_cutover_state(record)
+    if not cutover['supported']:
+        raise ValueError(str(cutover['reason']))
+
+    quota, limits, customized = _namespace_allocation_values(profile)
+    capacity_decision = enforce_existing_namespace_allocation_preflight(
+        record=record,
+        profile=profile,
+        quota_hard=quota,
+    )
+    profile_version = (
+        int(RESOURCE_PROFILE_PRESETS[profile.profile_class]['version'])
+        if profile.profile_class in RESOURCE_PROFILE_PRESETS
+        else profile.version
+    )
+
+    try:
+        reconcile_adopted_native_allocation(
+            record,
+            profile=profile,
+            resource_profile_version=profile_version,
+            allocation_customized=customized,
+            capacity_decision_id=capacity_decision.id,
+            quota_hard=quota,
+            limit_defaults=limits,
+            operation='allocation_governance_cutover',
+        )
+    except (ApiException, ValueError):
+        db.session.commit()
+        raise
+    db.session.commit()
+    return record
+
+
+def cutover_adopted_namespace_allocation_committed(source: Mapping[str, Any]) -> TenantNamespace:
+    try:
+        return cutover_adopted_namespace_allocation(source)
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise TenantStateConflictError(
+            'Committed adopted allocation changed while governance cutover was being applied. Refresh and retry.'
         ) from exc
     except (ApiException, ValueError):
         db.session.rollback()
@@ -976,9 +1060,19 @@ def get_namespace_registry_context(
     namespace_allocation_options = [
         record
         for record in namespace_options
-        if record.ownership_status == TenantOwnershipStatus.MANAGED.value
+        if allocation_control_state(record) == 'kaori_managed'
         and record.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value
     ]
+    namespace_cutover_options = [
+        record
+        for record in namespace_options
+        if record.ownership_status == TenantOwnershipStatus.ADOPTED.value
+        and allocation_control_state(record) != 'kaori_managed'
+        and record.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value
+    ]
+    namespace_cutover_state = {
+        str(record.id): build_allocation_cutover_state(record) for record in namespace_cutover_options
+    }
     profile_options = (
         TenantResourceProfile.query.filter_by(enabled=True).order_by(TenantResourceProfile.name.asc()).all()
     )
@@ -991,6 +1085,9 @@ def get_namespace_registry_context(
         'namespaces': items,
         'namespace_options': namespace_options,
         'namespace_allocation_options': namespace_allocation_options,
+        'namespace_cutover_options': namespace_cutover_options,
+        'namespace_cutover_state': namespace_cutover_state,
+        'namespace_cutover_supported': any(item['supported'] for item in namespace_cutover_state.values()),
         'profiles': profile_options,
         'namespace_pagination': pagination,
         'namespace_registry_filters': {
@@ -1011,7 +1108,7 @@ def get_namespace_registry_context(
                 'quota': record.allocation_quota_json or {},
                 'limits': record.allocation_limit_defaults_json or {},
             }
-            for record in namespace_allocation_options
+            for record in namespace_options
         },
         'namespace_allocation_profiles': {
             str(profile.id): {
