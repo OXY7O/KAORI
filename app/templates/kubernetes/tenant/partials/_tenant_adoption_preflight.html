@@ -332,8 +332,7 @@
                         </div>
                     </section>
 
-                    {% if row.provider_key == 'capsule'
-                          and (allocation.external_constraint_details or allocation.external_constraints) %}
+                    {% if allocation.external_constraint_details or allocation.external_constraints %}
                         <section>
                             <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Provider Constraints</p>
                             <div class="mt-2 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
