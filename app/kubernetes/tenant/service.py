@@ -161,6 +161,15 @@ RESOURCE_PROFILE_ADVANCED_CONTROLS: dict[str, dict[str, Any]] = {
             'capsule': ('resource_rules', 'admission_enforcement'),
         },
     },
+    'service_exposure': {
+        'label': 'Service Exposure',
+        'description': 'Govern ClusterIP, NodePort, LoadBalancer, and ExternalName exposure policy.',
+        'authority': '#119',
+        'providers': {
+            'native_kubernetes': ('service_exposure_preflight', 'admission_enforcement'),
+            'capsule': ('resource_rules', 'admission_enforcement'),
+        },
+    },
     'hostname_reservation': {
         'label': 'Hostname Reservation',
         'description': 'Require canonical hostname ownership and collision checks before exposure.',
