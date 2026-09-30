@@ -13,6 +13,7 @@
 {% else %}
     {% set tenant_page_description = "Inspect provisioning evidence, drift, audit, and activity." %}
 {% endif %}
+{% set registered_cluster_count = cluster_onboarding.cluster_count|default(0) %}
 {% block title %}{{ tenant_page_title }} · Tenant{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6" data-tenant-workspace="{{ tenant_page }}">
@@ -31,20 +32,30 @@
                 </div>
                 {% if not native_available %}
                     <aside class="{{ page_hero.aside_classes() }}"
-                           aria-label="Tenant availability">
-                        {% set registered_cluster_count = cluster_onboarding.cluster_count|default(0) %}
-                        {% set cluster_blocked_scope = "Tenant Readiness" %}
-                        {% if registered_cluster_count > 0 %}
+                           aria-label="Tenant provider readiness">
+                        {% set cluster_blocked_scope = "Tenant Provider" %}
+                        {% if registered_cluster_count > 0
+                              and tenant_live_connection is defined
+                              and tenant_live_connection.status in ['Unavailable', 'Partial'] %}
+                            {% set cluster_blocked_title = "Provider Connectivity Restricted" %}
+                            {% set cluster_blocked_info = "Committed KAORI Tenant state remains available. Provider-backed mutations fail closed until live connectivity and readiness recover." %}
+                            {% set cluster_blocked_cluster_label = "Registered Clusters" %}
+                            {% set cluster_blocked_cluster_value = registered_cluster_count %}
+                            {% set cluster_blocked_cluster_supporting = "Committed state remains readable" %}
+                            {% set cluster_blocked_state_label = "Live Provider" %}
+                            {% set cluster_blocked_state_value = tenant_live_connection.status %}
+                            {% set cluster_blocked_state_supporting = tenant_live_connection.scope_label %}
+                        {% elif registered_cluster_count > 0 %}
                             {% set cluster_blocked_title = "Cluster Validation Required" %}
-                            {% set cluster_blocked_info = "Validate the registered Kubernetes integration to activate Native Tenant workflows." %}
+                            {% set cluster_blocked_info = "Committed KAORI state remains readable. Validate the registered Kubernetes integration before provider-backed mutations." %}
                             {% set cluster_blocked_cluster_label = "Registered Clusters" %}
                             {% set cluster_blocked_cluster_value = registered_cluster_count %}
                             {% set cluster_blocked_cluster_supporting = "Registration exists; readiness requires review" %}
                             {% set cluster_blocked_state_value = "Validation Required" %}
-                            {% set cluster_blocked_state_supporting = "Tenant requires a Ready integration" %}
+                            {% set cluster_blocked_state_supporting = "Provider-backed mutations remain blocked" %}
                         {% else %}
                             {% set cluster_blocked_title = "Cluster Setup Required" %}
-                            {% set cluster_blocked_info = "Add a Kubernetes cluster to activate Native Tenant workflows." %}
+                            {% set cluster_blocked_info = "Add a Kubernetes cluster to enable provider-backed Tenant workflows. Existing committed KAORI records remain readable." %}
                         {% endif %}
                         {% include 'components/cluster/_hero_blocked_context.html' %}
                     </aside>
@@ -66,15 +77,17 @@
                 {% endif %}
             </div>
         </section>
+        {% if tenant_page != 'overview' and tenant_collection_snapshot is defined %}
+            {% include "kubernetes/tenant/partials/_collection_snapshot_context.html" %}
+        {% endif %}
         {% if tenant_page != 'overview' and tenant_live_connection is defined %}
             {% include "kubernetes/tenant/partials/_live_connection_snapshot.html" %}
         {% endif %}
-        {% if not native_available %}
+        {% if registered_cluster_count == 0 %}
             {% include "components/cluster/_onboarding_banner.html" %}
-        {% else %}
-            {% block tenant_content %}
-            {% endblock tenant_content %}
         {% endif %}
+        {% block tenant_content %}
+        {% endblock tenant_content %}
     </div>
 {% endblock dashboard_content %}
 {% block scripts %}
