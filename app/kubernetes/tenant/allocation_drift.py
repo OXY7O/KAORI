@@ -23,6 +23,7 @@ from app.kubernetes.tenant.capacity_governance import (
 from app.kubernetes.tenant.validation import COUNT_QUOTA_KEYS, validate_profile_spec
 from app.models import Cluster
 from app.models.tenant import (
+    TenantLifecycleStatus,
     TenantNamespace,
     TenantNamespaceProvisioningStatus,
     TenantResourceProfile,
@@ -307,6 +308,10 @@ def build_allocation_drift_action_state(record: TenantNamespace) -> dict[str, An
 
     tenant = record.environment.tenant
     blocked = list(drift.get('blocked_reasons') or [])
+    if record.provisioning_status != TenantNamespaceProvisioningStatus.DRIFTED.value:
+        blocked.append('Allocation reconciliation requires a committed Drifted Namespace state.')
+    if tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
+        blocked.append('Tenant is not Ready; allocation reconciliation is unavailable during teardown.')
     if allocation_control_state(record) != 'kaori_managed':
         blocked.append('Allocation control is not KAORI Managed.')
     if tenant.provider_key != 'native_kubernetes' or tenant.reconciliation_authority != 'native_kubernetes':
@@ -368,10 +373,16 @@ def reapply_kaori_allocation_intent(record: TenantNamespace) -> TenantNamespace:
     if not isinstance(observed, Mapping):
         raise ValueError('Committed provider observation is missing.')
 
-    capacity_decision = enforce_existing_namespace_allocation_preflight(
+    # Re-read the provider before capacity admission so the decision is based on
+    # the allocation that would actually be changed. A second hash check inside
+    # reconcile_adopted_native_allocation protects the write from races that
+    # happen after this preflight.
+    live = _live_observation_for_action(record, drift)
+    capacity_decision = enforce_observed_namespace_allocation_preflight(
         record=record,
         profile=profile,
-        quota_hard=record.allocation_quota_json or {},
+        current_quota_hard=dict(live.get('quota') or {}),
+        proposed_quota_hard=record.allocation_quota_json or {},
     )
     reconcile_adopted_native_allocation(
         record,
@@ -382,7 +393,7 @@ def reapply_kaori_allocation_intent(record: TenantNamespace) -> TenantNamespace:
         quota_hard=dict(record.allocation_quota_json or {}),
         limit_defaults=dict(record.allocation_limit_defaults_json or {}),
         operation='reapply_kaori_intent',
-        expected_observed_hash=str(observed.get('effective_hash') or ''),
+        expected_observed_hash=str(live.get('effective_hash') or ''),
         failure_status=TenantNamespaceProvisioningStatus.DRIFTED.value,
     )
     return record
