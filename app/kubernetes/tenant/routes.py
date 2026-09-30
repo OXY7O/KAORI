@@ -85,6 +85,7 @@ from app.kubernetes.tenant.deployer_credential_service import (
 )
 from app.kubernetes.tenant.discovery_service import (
     adopt_discovered_tenant_committed,
+    get_tenant_adoption_preflight_context,
     get_tenant_discovery_context,
 )
 from app.kubernetes.tenant.job_adapter import (
@@ -1052,6 +1053,33 @@ def revoke_access_grant_route(grant_id: int):
             metadata={'grant_id': grant.public_id, 'tenant_id': grant.tenant_id, 'operation': 'revoke_access_grant'},
         )
     return _tenant_section_redirect('access-grants')
+
+
+@tenant_bp.get('/discovery/preflight')
+@permission_required('tenant.manage')
+def tenant_adoption_preflight_route():
+    try:
+        context = get_tenant_adoption_preflight_context(
+            cluster_id=str(request.args.get('cluster_id') or ''),
+            provider_key=str(request.args.get('provider_key') or ''),
+            resource_name=str(request.args.get('resource_name') or ''),
+        )
+    except (ValueError, ApiException) as exc:
+        rendered = render_template(
+            'kubernetes/tenant/partials/_tenant_adoption_preflight_error.html',
+            tenant_adoption_preflight_error=str(exc),
+        )
+    else:
+        rendered = render_template(
+            'kubernetes/tenant/partials/_tenant_adoption_preflight.html',
+            can_manage=True,
+            **context,
+        )
+
+    response = make_response(rendered)
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    return response
 
 
 @tenant_bp.post('/discovery/adopt')
