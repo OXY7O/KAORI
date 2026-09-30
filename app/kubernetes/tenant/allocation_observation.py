@@ -57,11 +57,14 @@ def _metadata_value(metadata: Any, *keys: str) -> str:
 
 def _resource_reference(kind: str, item: Any) -> dict[str, str]:
     metadata = _value(item, 'metadata', {}) or {}
+    labels = dict(_value(metadata, 'labels', {}) or {})
     return {
         'kind': kind,
         'name': _metadata_value(metadata, 'name'),
         'uid': _metadata_value(metadata, 'uid'),
         'resource_version': _metadata_value(metadata, 'resourceVersion', 'resource_version'),
+        'managed_by': str(labels.get('app.kubernetes.io/managed-by') or ''),
+        'tenant_id': str(labels.get('kaori.io/tenant-id') or ''),
     }
 
 
