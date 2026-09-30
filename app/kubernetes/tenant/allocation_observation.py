@@ -100,10 +100,17 @@ def _merge_hard_sources(
 
 def _merge_limit_sources(
     limit_ranges: list[Any],
-) -> tuple[dict[str, dict[str, str]], list[str], list[str], list[dict[str, str]]]:
+) -> tuple[
+    dict[str, dict[str, str]],
+    list[str],
+    list[str],
+    list[dict[str, str]],
+    list[dict[str, Any]],
+]:
     candidates: dict[tuple[str, str], list[tuple[str, str]]] = {}
     unsupported: list[str] = []
     source_refs: list[dict[str, str]] = []
+    external_constraints: list[dict[str, Any]] = []
 
     for limit_range in limit_ranges:
         reference = _resource_reference('LimitRange', limit_range)
@@ -112,6 +119,40 @@ def _merge_limit_sources(
         spec = _value(limit_range, 'spec', {}) or {}
         for item in list(_value(spec, 'limits', []) or []):
             item_type = str(_value(item, 'type', '') or '')
+            if item_type == 'PersistentVolumeClaim':
+                pvc_fields: dict[str, dict[str, str]] = {}
+                for field, attr_names in (
+                    ('min', ('min',)),
+                    ('max', ('max',)),
+                    ('default', ('default',)),
+                    ('default_request', ('default_request', 'defaultRequest')),
+                    ('max_limit_request_ratio', ('max_limit_request_ratio', 'maxLimitRequestRatio')),
+                ):
+                    values: dict[str, Any] = {}
+                    for attr_name in attr_names:
+                        candidate = _value(item, attr_name, {}) or {}
+                        if candidate:
+                            values.update(dict(candidate))
+                    normalized: dict[str, str] = {}
+                    for key, raw_value in values.items():
+                        if str(key) != 'storage':
+                            unsupported.append(f'{source_name}:pvc.{field}.{key}')
+                            continue
+                        normalized['storage'] = str(raw_value).strip()
+                    if normalized:
+                        pvc_fields[field] = normalized
+                external_constraints.append(
+                    {
+                        'constraint_type': 'pvc_storage_limit_range',
+                        'kind': 'LimitRange',
+                        'name': reference['name'],
+                        'uid': reference['uid'],
+                        'resource_version': reference['resource_version'],
+                        'item_type': 'PersistentVolumeClaim',
+                        'fields': pvc_fields,
+                    }
+                )
+                continue
             if item_type and item_type != 'Container':
                 unsupported.append(f'{source_name}:type={item_type}')
                 continue
@@ -143,7 +184,7 @@ def _merge_limit_sources(
             continue
         limits.setdefault(field, {})[key] = values[0][1]
 
-    return limits, unsupported, ambiguous, source_refs
+    return limits, unsupported, ambiguous, source_refs, external_constraints
 
 
 def _quantity_equivalent(key: str, left: str, right: str) -> bool:
@@ -260,7 +301,9 @@ def _native_observation_from_items(
         quota_sources.append((f'ResourceQuota/{reference["name"] or "unknown"}', dict(hard)))
 
     quota, unsupported_quota, ambiguous_quota = _merge_hard_sources(quota_sources)
-    limits, unsupported_limits, ambiguous_limits, limit_refs = _merge_limit_sources(limit_range_items)
+    limits, unsupported_limits, ambiguous_limits, limit_refs, external_limit_constraints = _merge_limit_sources(
+        limit_range_items
+    )
     source_resources.extend(limit_refs)
 
     unsupported = sorted(set(unsupported_quota + unsupported_limits))
@@ -280,6 +323,7 @@ def _native_observation_from_items(
         'limits': limits,
         'display_values': _display_values(quota, limits),
         'source_resources': source_resources,
+        'external_limit_constraints': external_limit_constraints,
         'unsupported_dimensions': unsupported,
         'ambiguous_dimensions': ambiguous,
         'control_state': control_state,
@@ -582,6 +626,7 @@ def observe_capsule_tenant_allocation(
     tenant_ambiguous = list(tenant_quota['ambiguous_dimensions']) if tenant_quota is not None else []
     namespace_unsupported: list[str] = []
     namespace_ambiguous: list[str] = []
+    external_constraint_details: list[dict[str, Any]] = []
     for namespace in namespace_rows:
         name = str(namespace.get('name') or 'unknown')
         namespace_unsupported.extend(
@@ -590,6 +635,15 @@ def observe_capsule_tenant_allocation(
         namespace_ambiguous.extend(
             f'Namespace/{name}: {value}' for value in namespace['allocation']['ambiguous_dimensions']
         )
+        for constraint in namespace['allocation'].get('external_limit_constraints') or []:
+            external_constraint_details.append(
+                {
+                    **dict(constraint),
+                    'namespace': name,
+                    'authority': 'namespace_limit_range',
+                    'management_state': 'observed_preserved',
+                }
+            )
 
     multiple_authority_reason = ''
     if len(authority_paths) > 1:
@@ -686,6 +740,7 @@ def observe_capsule_tenant_allocation(
         'authority_unsupported_dimensions': authority_unsupported,
         'authority_ambiguous_dimensions': authority_ambiguous,
         'external_constraints': external_constraints,
+        'external_constraint_details': external_constraint_details,
         'control_state': control_state,
         'control_reason': control_reason,
         'provenance': 'adopted_observed',
