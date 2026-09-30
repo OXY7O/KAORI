@@ -11,6 +11,7 @@ from typing import Any
 from kubernetes.client.rest import ApiException
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from app.common.pagination import paginate_sequence
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
 from app.kubernetes.tenant.allocation_cutover import _quantity_equal
@@ -738,7 +739,11 @@ def accept_capsule_shared_provider_state_committed(
         raise
 
 
-def get_capsule_shared_allocation_context() -> dict[str, Any]:
+def get_capsule_shared_allocation_context(
+    *,
+    drift_page: int = 1,
+    drift_per_page: int = 5,
+) -> dict[str, Any]:
     tenants = (
         Tenant.query.filter(
             Tenant.provider_key == 'capsule',
@@ -767,14 +772,20 @@ def get_capsule_shared_allocation_context() -> dict[str, Any]:
     drifted = [
         intent for intent in governed if intent.status == TenantAdvancedCapabilityStatus.DRIFTED.value
     ]
+    visible_drifted, drift_pagination = paginate_sequence(
+        drifted,
+        page=drift_page,
+        per_page=drift_per_page,
+    )
     return {
         'capsule_shared_tenants': tenants,
         'capsule_shared_cutover_state': cutover_state,
         'capsule_shared_cutover_supported': any(item['supported'] for item in cutover_state.values()),
         'capsule_shared_intents': governed,
-        'capsule_shared_drift_intents': drifted,
+        'capsule_shared_drift_intents': visible_drifted,
+        'capsule_shared_drift_pagination': drift_pagination,
         'capsule_shared_drift_state': {
             str(intent.id): build_capsule_shared_drift_action_state(intent)
-            for intent in drifted
+            for intent in visible_drifted
         },
     }
