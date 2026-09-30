@@ -38,6 +38,11 @@ from app.kubernetes.tenant.admin_workspace import (
     get_namespace_access_registry_context,
     get_tenant_summary_context,
 )
+from app.kubernetes.tenant.allocation_drift import (
+    accept_provider_allocation_state_committed,
+    build_allocation_drift_action_state,
+    reapply_kaori_allocation_intent_committed,
+)
 from app.kubernetes.tenant.audit import record_tenant_sync_dispatch_audit
 from app.kubernetes.tenant.capacity_governance import (
     TenantCapacityStateConflictError,
@@ -598,6 +603,10 @@ def operations():
         context.update(
             {
                 'operations_drift_rows': drift_context['namespaces'],
+                'operations_allocation_drift_state': {
+                    str(item.id): build_allocation_drift_action_state(item)
+                    for item in drift_context['namespaces']
+                },
                 'operations_drift_pagination': drift_context['namespace_pagination'],
                 'operations_drift_filters': drift_context['namespace_registry_filters'],
                 'operations_drift_tenant_options': drift_context['namespace_registry_tenant_options'],
@@ -1446,6 +1455,84 @@ def provision_namespace_route():
             },
         )
     return redirect(url_for('tenant.namespace_provisioning'))
+
+
+@tenant_bp.post('/namespaces/<int:namespace_id>/allocation/reapply')
+@permission_required('tenant.manage')
+def reapply_namespace_allocation_route(namespace_id: int):
+    try:
+        _csrf()
+        record = reapply_kaori_allocation_intent_committed(namespace_id=namespace_id)
+    except (ValueError, RuntimeError, ApiException) as exc:
+        _record(
+            event_type='kubernetes_tenant_allocation_reapply_failed',
+            status='error',
+            title='Reapply KAORI Intent Failed',
+            message=str(exc),
+            detail=(
+                'Committed desired allocation remains unchanged; review fresh provider drift evidence '
+                'before retrying.'
+            ),
+            metadata={
+                'tenant_namespace_id': namespace_id,
+                'operation': 'reapply_kaori_allocation_intent',
+            },
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_allocation_reapplied',
+            status='success',
+            title='KAORI Allocation Intent Reapplied',
+            message=f'{record.namespace} matches the committed KAORI allocation again.',
+            detail=record.provisioning_message,
+            metadata={
+                'tenant_namespace_id': record.id,
+                'cluster_id': record.cluster_id,
+                'namespace': record.namespace,
+                'capacity_decision_id': record.capacity_decision_id,
+                'allocation_control_state': 'kaori_managed',
+                'operation': 'reapply_kaori_allocation_intent',
+            },
+        )
+    return redirect(url_for('tenant.operations', tab='drift-reconcile'))
+
+
+@tenant_bp.post('/namespaces/<int:namespace_id>/allocation/accept-provider-state')
+@permission_required('tenant.manage')
+def accept_namespace_provider_allocation_route(namespace_id: int):
+    try:
+        _csrf()
+        record = accept_provider_allocation_state_committed(namespace_id=namespace_id)
+    except (ValueError, RuntimeError, ApiException) as exc:
+        _record(
+            event_type='kubernetes_tenant_allocation_accept_provider_failed',
+            status='error',
+            title='Accept Provider State Failed',
+            message=str(exc),
+            detail='KAORI desired allocation was not changed.',
+            metadata={
+                'tenant_namespace_id': namespace_id,
+                'operation': 'accept_provider_allocation_state',
+            },
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_allocation_provider_state_accepted',
+            status='success',
+            title='Provider Allocation State Accepted',
+            message=f'{record.namespace} provider allocation is now the governed KAORI intent.',
+            detail='No provider write was required; the current live allocation passed governance checks.',
+            metadata={
+                'tenant_namespace_id': record.id,
+                'cluster_id': record.cluster_id,
+                'namespace': record.namespace,
+                'capacity_decision_id': record.capacity_decision_id,
+                'allocation_control_state': 'kaori_managed',
+                'provider_mutation_performed': False,
+                'operation': 'accept_provider_allocation_state',
+            },
+        )
+    return redirect(url_for('tenant.operations', tab='drift-reconcile'))
 
 
 @tenant_bp.post('/namespaces/<int:namespace_id>/reconcile')
