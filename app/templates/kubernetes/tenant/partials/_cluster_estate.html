@@ -33,10 +33,12 @@
                     {% for row in tenant_overview_clusters %}
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }} align-middle">
-                                {{ table_ui.cluster_identity(row.name, row.environment) }}
-                                <div class="mt-1.5 pl-10">
-                                    {{ table_label.status_indicator_label(row.provider_status|title, row.provider_tone) }}
-                                </div>
+                                {{ table_ui.cluster_identity_with_status(
+                                    row.name,
+                                    row.environment,
+                                    row.provider_status|title,
+                                    row.provider_tone
+                                ) }}
                             </td>
                             <td class="{{ table_ui.cell_classes() }} align-middle">
                                 <p class="text-base font-semibold tabular-nums leading-5 text-content-primary">{{ row.tenant_count }}</p>
