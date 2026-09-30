@@ -15,6 +15,7 @@ from app.kubernetes.tenant.allocation_observation import (
     observe_capsule_tenant_allocation,
     observe_native_namespace_allocation,
 )
+from app.kubernetes.tenant.capsule_tenant import qualify_capsule_tenant_adoption
 from app.models import Cluster
 from app.models.cluster import ClusterStatus
 from app.models.kubernetes import KubernetesConnection
@@ -620,9 +621,15 @@ def adopt_discovered_tenant_committed(
             tenant_name=resource_name,
             tenant_item=item,
         )
+        capsule_provider_state, capsule_capability_evidence = qualify_capsule_tenant_adoption(
+            cluster=cluster,
+            api_version=capsule_version,
+            tenant_name=resource_name,
+            resource_version=resource_version or None,
+        )
 
         tenant.provider_key = 'capsule'
-        tenant.provider_state = 'capsule'
+        tenant.provider_state = capsule_provider_state
         tenant.reconciliation_authority = 'capsule'
         tenant.provider_reference = resource_name
         tenant.provider_evidence_json = {
@@ -638,6 +645,7 @@ def adopt_discovered_tenant_committed(
             'allocation_baseline': allocation,
             'allocation_provenance': 'adopted_observed',
             'allocation_control_state': allocation['control_state'],
+            'capsule': capsule_capability_evidence,
             'provider_mutation_performed': False,
             'secret_material_persisted': False,
         }
