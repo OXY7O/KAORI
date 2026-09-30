@@ -157,6 +157,7 @@ def test_advanced_profile_controls_are_explicit_persisted_intent() -> None:
 
     assert set(controls) == set(RESOURCE_PROFILE_ADVANCED_CONTROLS)
     assert controls['ingress'] is True
+    assert controls['service_exposure'] is False
     assert controls['managed_tls'] is True
     assert controls['capsule_resource_pools'] is True
     assert controls['hostname_reservation'] is False
