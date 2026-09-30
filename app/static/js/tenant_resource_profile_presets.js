@@ -30,11 +30,55 @@
         }
     }
 
-    const setReadonly = (fields, readonly) => {
+    const setReadonly = (form, fields, readonly) => {
         for (const input of Object.values(fields)) {
             input.readOnly = readonly
             input.setAttribute('aria-readonly', readonly ? 'true' : 'false')
+            input.dataset.locked = readonly ? 'true' : 'false'
+
+            const wrapper = input.closest('[data-tenant-resource-field-wrap]')
+            const modeLabel = wrapper?.querySelector('[data-tenant-resource-mode-label]')
+            const modeText = wrapper?.querySelector('[data-tenant-resource-mode-text]')
+            const modeIcon = modeLabel?.querySelector('[data-lucide]')
+
+            if (modeText) modeText.textContent = readonly ? 'Fixed' : 'Editable'
+            if (modeIcon) modeIcon.setAttribute('data-lucide', readonly ? 'lock-keyhole' : 'pencil')
+            modeLabel?.classList.toggle('bg-surface-hover', readonly)
+            modeLabel?.classList.toggle('text-content-muted', readonly)
+            modeLabel?.classList.toggle('border-outline-subtle', readonly)
+            modeLabel?.classList.toggle('bg-kaori-soft', !readonly)
+            modeLabel?.classList.toggle('text-kaori-primary', !readonly)
+            modeLabel?.classList.toggle('border-kaori-primary/20', !readonly)
         }
+
+        for (const section of form.querySelectorAll('[data-tenant-resource-section]')) {
+            section.classList.toggle('bg-surface-hover', readonly)
+            section.classList.toggle('bg-surface-elevated', !readonly)
+        }
+
+        const modeTitle = form.querySelector('[data-tenant-profile-mode-title]')
+        const modeDetail = form.querySelector('[data-tenant-profile-mode-detail]')
+        const modeBadge = form.querySelector('[data-tenant-profile-mode-badge]')
+        const modeIcon = form.querySelector('[data-tenant-profile-mode-icon] [data-lucide]')
+
+        if (modeTitle) modeTitle.textContent = readonly ? 'KAORI Preset · Fixed' : 'Custom · Editable'
+        if (modeDetail) {
+            modeDetail.textContent = readonly
+                ? 'Preset values are locked. Choose Custom to edit allocation values.'
+                : 'Custom values are operator-managed and validated before use.'
+        }
+        if (modeBadge) {
+            modeBadge.textContent = readonly ? 'Fixed · Locked' : 'Custom · Editable'
+            modeBadge.classList.toggle('bg-surface-hover', readonly)
+            modeBadge.classList.toggle('text-content-muted', readonly)
+            modeBadge.classList.toggle('border-outline-subtle', readonly)
+            modeBadge.classList.toggle('bg-kaori-soft', !readonly)
+            modeBadge.classList.toggle('text-kaori-primary', !readonly)
+            modeBadge.classList.toggle('border-kaori-primary/20', !readonly)
+        }
+        if (modeIcon) modeIcon.setAttribute('data-lucide', readonly ? 'lock-keyhole' : 'pencil')
+
+        window.lucide?.createIcons?.()
     }
 
     const initProfileForm = (form) => {
@@ -53,7 +97,7 @@
 
             if (preset) {
                 applyValues(fields, preset)
-                setReadonly(fields, true)
+                setReadonly(form, fields, true)
                 if (basePreset) {
                     basePreset.value = ''
                     basePreset.disabled = true
@@ -62,7 +106,7 @@
                 return
             }
 
-            setReadonly(fields, false)
+            setReadonly(form, fields, false)
             if (basePreset) basePreset.disabled = false
             if (basePresetWrapper) basePresetWrapper.hidden = false
             applyValues(fields, basePreset?.value ? presets[basePreset.value] : null)
@@ -271,7 +315,7 @@
         const profiles = readJson('tenant-namespace-allocation-profiles')
         const select = form.querySelector('[data-tenant-namespace-profile]')
         const fields = collectFields(form, 'data-tenant-namespace-resource-field')
-        setReadonly(fields, true)
+        setReadonly(form, fields, true)
 
         const applyNamespaceProfile = () => applyValues(fields, profiles[select?.value] || null)
         select?.addEventListener('change', applyNamespaceProfile)
