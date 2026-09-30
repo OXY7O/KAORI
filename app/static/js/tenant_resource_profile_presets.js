@@ -37,11 +37,12 @@
             input.dataset.locked = readonly ? 'true' : 'false'
 
             const wrapper = input.closest('[data-tenant-resource-field-wrap]')
+            if (wrapper) wrapper.dataset.locked = readonly ? 'true' : 'false'
             const modeLabel = wrapper?.querySelector('[data-tenant-resource-mode-label]')
             const modeText = wrapper?.querySelector('[data-tenant-resource-mode-text]')
             const modeIcon = modeLabel?.querySelector('[data-lucide]')
 
-            if (modeText) modeText.textContent = readonly ? 'Fixed' : 'Editable'
+            if (modeText) modeText.textContent = readonly ? 'Fixed' : 'Custom'
             if (modeIcon) modeIcon.setAttribute('data-lucide', readonly ? 'lock-keyhole' : 'pencil')
             modeLabel?.classList.toggle('bg-surface-hover', readonly)
             modeLabel?.classList.toggle('text-content-muted', readonly)
@@ -64,11 +65,11 @@
         if (modeTitle) modeTitle.textContent = readonly ? 'KAORI Preset · Fixed' : 'Custom · Editable'
         if (modeDetail) {
             modeDetail.textContent = readonly
-                ? 'Preset values are locked. Choose Custom to edit allocation values.'
-                : 'Custom values are operator-managed and validated before use.'
+                ? 'Locked preset values. Switch to Custom to edit.'
+                : 'Editable KAORI values; validated before use.'
         }
         if (modeBadge) {
-            modeBadge.textContent = readonly ? 'Fixed · Locked' : 'Custom · Editable'
+            modeBadge.textContent = readonly ? 'Fixed · Read Only' : 'Custom · Editable'
             modeBadge.classList.toggle('bg-surface-hover', readonly)
             modeBadge.classList.toggle('text-content-muted', readonly)
             modeBadge.classList.toggle('border-outline-subtle', readonly)
