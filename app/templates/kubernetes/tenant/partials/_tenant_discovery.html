@@ -208,7 +208,6 @@
                 page_param='discovery_page',
                 per_page_param='discovery_per_page') }}
     {% endif %}
-</section>
 {% for row in tenant_discovery_rows if row.management_status == 'Discovered' and can_manage %}
     <div id="tenant-adoption-modal-{{ row.provider_reference }}"
          data-tenant-adoption-modal
@@ -416,3 +415,4 @@
         </section>
     </div>
 {% endfor %}
+</section>

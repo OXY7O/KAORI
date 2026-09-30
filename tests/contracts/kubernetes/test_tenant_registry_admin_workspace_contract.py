@@ -677,6 +677,12 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert "page_param='discovery_page'" in template
     assert "per_page_param='discovery_per_page'" in template
 
+    # Review buttons and their candidate-local modals must be replaced atomically
+    # by the same HTMX discovery-card swap on every paginated page.
+    modal_loop = "{% for row in tenant_discovery_rows if row.management_status == 'Discovered' and can_manage %}"
+    assert template.index(modal_loop) < template.rindex('</section>')
+    assert template.rstrip().endswith('</section>')
+
     assert 'data-tenant-adoption-open' in modal_js
     assert 'data-tenant-adoption-close' in modal_js
     assert 'htmx:afterRequest' in modal_js
