@@ -477,7 +477,6 @@ def tenants():
     active_section = _tenant_admin_section(request.args.get('section'))
     context = _tenant_workspace_context()
     context.update(get_tenant_summary_context())
-    context.update(get_live_tenant_connection_context())
     context.update(_tenant_active_section_context(active_section))
     return render_template(
         'kubernetes/tenant/tenants.html',
@@ -497,7 +496,6 @@ def resource_profiles():
         active_view = 'profiles'
 
     context = _tenant_workspace_context()
-    context.update(get_live_tenant_connection_context())
     context.update(
         get_resource_profile_registry_context(
             page=request.args.get('page', 1, type=int) or 1,
@@ -544,7 +542,6 @@ def namespace_provisioning():
         active_view = 'provision'
 
     context = _tenant_workspace_context()
-    context.update(get_live_tenant_connection_context())
     context.update(get_capsule_shared_allocation_context())
     context.update(get_capsule_tenant_quota_context())
     context.update(
@@ -584,7 +581,6 @@ def operations():
         active_tab = 'provisioning'
 
     context = _tenant_workspace_context()
-    context.update(get_live_tenant_connection_context())
 
     if active_tab == 'provisioning':
         namespace_context = get_namespace_registry_context(
@@ -2014,7 +2010,6 @@ def generate_credential_material_route(credential_id: int):
         return _tenant_section_redirect('credentials')
 
     context = _tenant_workspace_context()
-    context.update(get_live_tenant_connection_context())
     if isinstance(material, GeneratedTokenMaterial):
         material_kind = 'token'
         material_title = 'JumpServer ServiceAccount Token'
