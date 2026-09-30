@@ -15,7 +15,7 @@
             ('decisions', 'Capacity Decisions', 'shield-check', url_for('tenant.namespace_provisioning', view='decisions'))
         ] %}
     {% set namespace_metrics = [
-            ('folder-tree', 'Managed Namespaces', namespace_total, 'Committed Namespace records retained by KAORI', 'info'),
+            ('folder-tree', 'Namespace Records', namespace_total, 'Committed managed and adopted Namespace records retained by KAORI', 'info'),
             ('circle-check', 'Ready', namespace_ready, 'Provider reconciliation currently verified', 'normal'),
             ('triangle-alert', 'Drifted', namespace_drifted, 'Committed intent differs from provider observation', 'warning' if namespace_drifted else 'normal'),
             ('activity', 'Needs Attention', namespace_attention, 'Pending, drifted, failed, or teardown states', 'warning' if namespace_attention else 'normal')
