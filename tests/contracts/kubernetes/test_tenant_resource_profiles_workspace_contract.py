@@ -41,6 +41,7 @@ def test_resource_profiles_use_server_owned_kaori_content_tabs_and_snapshot_stat
 
 def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None:
     form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
+    advanced = read('app/templates/kubernetes/tenant/partials/_resource_profile_advanced_controls.html')
     script = read('app/static/js/tenant_resource_profile_presets.js')
     form_field = read('app/templates/components/form_field.html')
 
@@ -75,9 +76,12 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'control_contract_present' in form
     assert '>Medium</option>' in form
     assert '>Extra Large</option>' in form
-    assert 'Advanced Controls' in form
+    assert '_resource_profile_advanced_controls.html' in form
+    assert 'advanced_profile_controls.render' in form
     assert 'advanced_control_contract_present' in form
-    assert 'data-tenant-advanced-profile-controls' in form
+    assert 'Advanced Controls' in advanced
+    assert 'data-tenant-advanced-controls' in advanced
+    assert 'data-tenant-advanced-control-group="ingress"' in advanced
     assert 'setReadonly(form, fields, true)' in script
     assert "wrapper.dataset.locked = readonly ? 'true' : 'false'" in script
     assert "fixedLabel.hidden = !readonly" in script
