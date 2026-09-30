@@ -241,6 +241,7 @@ class TenantResourceProfile(db.Model):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     quota_hard_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     limit_defaults_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    advanced_controls_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
