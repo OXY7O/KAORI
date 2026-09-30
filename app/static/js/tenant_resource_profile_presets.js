@@ -38,28 +38,17 @@
 
             const wrapper = input.closest('[data-tenant-resource-field-wrap]')
             if (wrapper) wrapper.dataset.locked = readonly ? 'true' : 'false'
-            const modeLabel = wrapper?.querySelector('[data-tenant-resource-mode-label]')
-            const modeText = wrapper?.querySelector('[data-tenant-resource-mode-text]')
-            const modeIcon = modeLabel?.querySelector('[data-lucide]')
+            const fixedLabel = wrapper?.querySelector('[data-tenant-resource-mode-fixed]')
+            const customLabel = wrapper?.querySelector('[data-tenant-resource-mode-custom]')
 
-            if (modeText) modeText.textContent = readonly ? 'Fixed' : 'Custom'
-            if (modeIcon) modeIcon.setAttribute('data-lucide', readonly ? 'lock-keyhole' : 'pencil')
-            modeLabel?.classList.toggle('bg-surface-hover', readonly)
-            modeLabel?.classList.toggle('text-content-muted', readonly)
-            modeLabel?.classList.toggle('border-outline-subtle', readonly)
-            modeLabel?.classList.toggle('bg-kaori-soft', !readonly)
-            modeLabel?.classList.toggle('text-kaori-primary', !readonly)
-            modeLabel?.classList.toggle('border-kaori-primary/20', !readonly)
-        }
-
-        for (const section of form.querySelectorAll('[data-tenant-resource-section]')) {
-            section.classList.toggle('bg-surface-hover', readonly)
-            section.classList.toggle('bg-surface-elevated', !readonly)
+            if (fixedLabel) fixedLabel.hidden = !readonly
+            if (customLabel) customLabel.hidden = readonly
         }
 
         const modeTitle = form.querySelector('[data-tenant-profile-mode-title]')
         const modeDetail = form.querySelector('[data-tenant-profile-mode-detail]')
-        const modeBadge = form.querySelector('[data-tenant-profile-mode-badge]')
+        const fixedModeLabel = form.querySelector('[data-tenant-profile-mode-fixed-label]')
+        const customModeLabel = form.querySelector('[data-tenant-profile-mode-custom-label]')
         const modeIcon = form.querySelector('[data-tenant-profile-mode-icon] [data-lucide]')
 
         if (modeTitle) modeTitle.textContent = readonly ? 'KAORI Preset · Fixed' : 'Custom · Editable'
@@ -68,15 +57,8 @@
                 ? 'Locked preset values. Switch to Custom to edit.'
                 : 'Editable KAORI values; validated before use.'
         }
-        if (modeBadge) {
-            modeBadge.textContent = readonly ? 'Fixed · Read Only' : 'Custom · Editable'
-            modeBadge.classList.toggle('bg-surface-hover', readonly)
-            modeBadge.classList.toggle('text-content-muted', readonly)
-            modeBadge.classList.toggle('border-outline-subtle', readonly)
-            modeBadge.classList.toggle('bg-kaori-soft', !readonly)
-            modeBadge.classList.toggle('text-kaori-primary', !readonly)
-            modeBadge.classList.toggle('border-kaori-primary/20', !readonly)
-        }
+        if (fixedModeLabel) fixedModeLabel.hidden = !readonly
+        if (customModeLabel) customModeLabel.hidden = readonly
         if (modeIcon) modeIcon.setAttribute('data-lucide', readonly ? 'lock-keyhole' : 'pencil')
 
         window.lucide?.createIcons?.()
