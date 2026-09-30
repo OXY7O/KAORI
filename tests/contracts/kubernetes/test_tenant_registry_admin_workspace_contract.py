@@ -769,9 +769,9 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'Allocation Overview' in preflight
     assert 'Effective Allocation' in preflight
     assert 'Live provider values' in preflight
-    assert 'max-w-[1360px]' in preflight
+    assert 'max-w-[1240px]' in preflight
     assert "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.15fr)]" in preflight
-    assert "lg:grid-cols-[minmax(0,1.35fr)_minmax(460px,1fr)]" in preflight
+    assert "lg:grid-cols-[minmax(0,1.3fr)_minmax(420px,0.9fr)]" in preflight
     assert 'grid-cols-3 gap-px border-t border-outline-subtle bg-outline-subtle' in preflight
     assert 'grid gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' in preflight
     assert "'requests.cpu': 'CPU Requests'" in preflight
@@ -1571,8 +1571,11 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
     assert 'ops_capsule_tenant_quota_page' in routes
 
     assert 'data-tenant-adoption-load' in discovery_ui
-    assert 'External Provider Constraints' in adoption_preflight_ui
-    assert 'Preserved · Not Rewritten' in adoption_preflight_ui
+    assert 'Provider Constraints' in adoption_preflight_ui
+    assert 'Observed · Preserved' in adoption_preflight_ui
+    assert 'PVC Storage Constraint' in adoption_preflight_ui
+    assert "constraint.constraint_type == 'pvc_storage_limit_range'" in adoption_preflight_ui
+    assert 'Known PVC policy · preserved, not Tenant-quota authority.' in adoption_preflight_ui
     assert 'authority_unsupported_dimensions' in adoption_preflight_ui
     assert '_capsule_tenant_quota_cutover.html' in namespace_page
     assert 'tenant-capsule-tenant-quota-state' in namespace_page
