@@ -402,6 +402,8 @@ def test_cluster_estate_uses_compact_shared_table_geometry() -> None:
 
     assert "table_ui.table_classes('min-w-[900px]')" in estate
     assert 'table_ui.cluster_identity_with_status(' in estate
+    assert 'row.provider_status|title' in estate
+    assert 'row.provider_tone' in estate
     for width in ('w-[29%]', 'w-[11%]', 'w-[13%]', 'w-[16%]', 'w-[17%]', 'w-[14%]'):
         assert width in estate
     assert estate.count('align-middle') >= 6
@@ -798,6 +800,7 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'Adopt as Observed' in preflight
     assert 'Adopt as' in preflight
     assert 'remains authoritative' in preflight
+    assert 'KAORI records identity, provider lineage, and read-only allocation evidence without changing existing provider resources.' in preflight
     assert 'Commits identity, provider lineage, Namespace evidence, and observed allocation.' in preflight
     assert 'Read-only until governance cutover.' in preflight
     assert 'Next: review governance cutover.' in preflight
