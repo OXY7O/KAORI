@@ -52,9 +52,13 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'lg:grid-cols-5' in form
     assert 'xl:grid-cols-12' not in form
     assert 'KAORI Preset · Fixed' in form
-    assert 'Fixed · Read Only' in form
-    assert 'Custom · Editable' in script
+    assert 'components/table_label.html' in form
+    assert "table_label.special_label('Fixed · Read Only', 'unknown', 'lock-keyhole')" in form
+    assert "table_label.special_label('Custom · Editable', 'maintenance', 'pencil')" in form
+    assert 'data-tenant-profile-mode-fixed-label' in form
+    assert 'data-tenant-profile-mode-custom-label hidden' in form
     assert 'data-[locked=true]:border-dashed' in form
+    assert 'bg-surface-card transition' in form
     assert 'data-[locked=true]:cursor-not-allowed' in form
     assert 'resource-profile-contract-tip' in form
     assert 'resource-profile-quota-tip' in form
@@ -69,6 +73,8 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'data-tenant-resource-field="{{ field }}"' in form
     assert 'setReadonly(form, fields, true)' in script
     assert "wrapper.dataset.locked = readonly ? 'true' : 'false'" in script
+    assert "fixedLabel.hidden = !readonly" in script
+    assert "customLabel.hidden = readonly" in script
     assert "classSelect?.value === 'custom'" in script
     assert "document.addEventListener('htmx:afterSwap'" in script
     assert 'read-only:bg-surface-disabled' in form_field
