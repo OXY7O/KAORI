@@ -306,7 +306,11 @@ def _mutate_limit_range(
         name=name,
         namespace=record.namespace,
         labels=_labels(record, profile),
-        resource_version=_metadata_value(getattr(existing, 'metadata', None), 'resource_version') if existing else None,
+        resource_version=(
+            _metadata_value(getattr(existing, 'metadata', None), 'resource_version')
+            if existing
+            else None
+        ),
     )
     body = V1LimitRange(
         metadata=metadata,
