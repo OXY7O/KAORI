@@ -659,11 +659,22 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'KAORI Classification' in template
     assert 'Governed Tenant' in template
     assert 'Adoption Preflight' in template
+    assert 'Adoption Decision' in template
+    assert 'Adoption Impact' in template
+    assert 'KAORI records' in template
+    assert 'Provider remains authoritative' in template
+    assert 'After adoption' in template
     assert 'Provider &amp; Live Context' in template
+    assert 'Allocation Overview' in template
+    assert 'Effective Allocation' in template
+    assert 'Namespace Coverage' in template
     assert 'Proposed KAORI Mapping' in template
+    assert 'Adoption Result' in template
     assert 'Governance Checks' in template
+    assert 'Technical Evidence' in template
     assert 'Human confirmation.' in template
-    assert 'Adopt into KAORI' in template
+    assert 'No provider mutation.' in template
+    assert 'Adopt as Observed' in template
     assert 'components/info_tip.html' in template
     assert 'components/status_detail_dialog.html' not in template
     assert 'tenant-discovery-status-tip' in template
@@ -1439,8 +1450,8 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
     assert 'CapsuleTenantQuotaStateConflictError' in routes
     assert 'ops_capsule_tenant_quota_page' in routes
 
-    assert 'External Constraints Preserved' in discovery_ui
-    assert 'Observed · Not Rewritten' in discovery_ui
+    assert 'External Provider Constraints' in discovery_ui
+    assert 'Preserved · Not Rewritten' in discovery_ui
     assert 'authority_unsupported_dimensions' in discovery_ui
     assert '_capsule_tenant_quota_cutover.html' in namespace_page
     assert 'tenant-capsule-tenant-quota-state' in namespace_page
