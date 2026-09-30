@@ -10,6 +10,7 @@
     {% set default_requests = profile.limit_defaults_json.get('default_request', {}) if profile.limit_defaults_json else {} %}
     {% set advanced_controls = [
         ('ingress', 'Ingress', '#119'),
+        ('service_exposure', 'Service Exposure', '#119'),
         ('hostname_reservation', 'Hostname Reservation', '#119'),
         ('managed_tls', 'Managed TLS', '#118'),
         ('managed_registry', 'Managed Registry', '#118'),
