@@ -24,6 +24,23 @@ Tenant-level controls patch only approved `Tenant.spec` fields:
 
 Proxy remains a discovered read-only capability and is not treated as an independent KAORI authority.
 
+## Canonical GlobalResourceQuota allocation bridge
+
+`GlobalResourceQuota` is an executable #124 advanced resource, but generic advanced-resource intent is not automatically Tenant allocation authority. #771 adds the explicit bridge into the canonical allocation lifecycle only when all of the following are true:
+
+- the adopted Tenant remains Capsule-authoritative and healthy;
+- `capsule.clastix.io/v1beta2` is served;
+- committed capability evidence reports `shared_global_quota=available`;
+- exactly one directly correlated GlobalResourceQuota is authoritative;
+- the observed quota dimensions and selector semantics are supported;
+- no competing advanced GlobalResourceQuota intent already owns the same Tenant resource path.
+
+The bridge stores canonical allocation governance on a Tenant-level `TenantAdvancedCapabilityIntent` with `allocation_governance_scope=tenant_shared`. It preserves the provider object's selectors, UID, and resourceVersion and reuses this module's capability-gated CustomObjects reconciliation rather than creating a second Capsule client.
+
+Shared allocation is counted once by Tenant Capacity Governance. It is never copied into every correlated Namespace. Normal sync is observation-only; drift recovery remains explicit through **Reapply KAORI Intent** or **Accept Provider State**.
+
+`Tenant.spec.resourceQuotas` remains outside this admitted bridge. Its mutation semantics require a separate bounded authority; KAORI does not emulate it with Native ResourceQuota.
+
 ## Cross-namespace credentials
 
 Cross-namespace credential scope is evidence-only in this workstream: the specific Capsule capability must be available and the requested namespace set must be a subset of explicitly approved namespaces. Secret or kubeconfig material is never persisted in the advanced intent.
