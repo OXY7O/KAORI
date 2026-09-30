@@ -121,6 +121,7 @@ def test_tenant_overview_keeps_multicluster_posture_compact_and_canonical() -> N
     cluster_estate = (ROOT / 'app/templates/kubernetes/tenant/partials/_cluster_estate.html').read_text(
         encoding='utf-8'
     )
+    table = (ROOT / 'app/templates/components/table.html').read_text(encoding='utf-8')
     routes = (ROOT / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
 
     assert 'Multi-Cluster Posture' in overview
@@ -128,8 +129,8 @@ def test_tenant_overview_keeps_multicluster_posture_compact_and_canonical() -> N
     assert 'components/table.html' in cluster_estate
     assert 'components/pagination.html' in cluster_estate
     assert "table_ui.table_classes('min-w-[900px]')" in cluster_estate
-    assert 'table_ui.cluster_identity(row.name, row.environment)' in cluster_estate
-    assert 'mt-1.5 pl-10' in cluster_estate
+    assert 'table_ui.cluster_identity_with_status(' in cluster_estate
+    assert 'macro cluster_identity_with_status' in table
     assert 'status_indicator_label(row.provider_status|title, row.provider_tone)' in cluster_estate
     assert 'pagination_ui.footer_classes()' in cluster_estate
     assert 'pagination.allowed_per_page' in cluster_estate
