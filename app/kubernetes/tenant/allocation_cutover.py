@@ -150,6 +150,16 @@ def _metadata_value(metadata: Any, key: str, fallback: str = '') -> str:
     return str(value if value not in (None, '') else fallback)
 
 
+def _observed_source(observation: dict[str, Any], kind: str) -> dict[str, str] | None:
+    resources = observation.get('source_resources')
+    if not isinstance(resources, list):
+        return None
+    matches = [dict(item) for item in resources if isinstance(item, dict) and item.get('kind') == kind]
+    if len(matches) > 1:
+        raise ValueError(f'Allocation reconciliation requires one authoritative {kind}; multiple sources remain.')
+    return matches[0] if matches else None
+
+
 def _expected_source(record: TenantNamespace, kind: str) -> dict[str, str] | None:
     evidence = dict(record.provisioning_evidence_json or {})
     managed_names = evidence.get('managed_resource_names')
@@ -370,6 +380,7 @@ def reconcile_adopted_native_allocation(
     quota_hard: dict[str, str],
     limit_defaults: dict[str, dict[str, str]],
     operation: str,
+    expected_observed_hash: str | None = None,
 ) -> TenantNamespace:
     eligibility = build_allocation_cutover_state(record)
     managed = allocation_control_state(record) == 'kaori_managed'
@@ -385,13 +396,21 @@ def reconcile_adopted_native_allocation(
     before = observe_native_namespace_allocation(api, record.namespace)
     if before['control_state'] != 'observed':
         raise ValueError(before['control_reason'])
-    if record.effective_hash and str(before['effective_hash']) != str(record.effective_hash):
-        raise ValueError(
-            'Live provider allocation changed since the last committed observation; sync/review drift before mutation.'
-        )
-
-    quota_expected = _expected_source(record, 'ResourceQuota')
-    limit_expected = _expected_source(record, 'LimitRange')
+    if expected_observed_hash:
+        if str(before['effective_hash']) != str(expected_observed_hash):
+            raise ValueError(
+                'Live provider allocation changed again after the committed drift observation; sync before retrying.'
+            )
+        quota_expected = _observed_source(before, 'ResourceQuota')
+        limit_expected = _observed_source(before, 'LimitRange')
+    else:
+        if record.effective_hash and str(before['effective_hash']) != str(record.effective_hash):
+            raise ValueError(
+                'Live provider allocation changed since the last committed observation; '
+                'sync/review drift before mutation.'
+            )
+        quota_expected = _expected_source(record, 'ResourceQuota')
+        limit_expected = _expected_source(record, 'LimitRange')
     try:
         quota_probe_name = str((quota_expected or {}).get('name') or _DEFAULT_QUOTA_NAME)
         limit_probe_name = str((limit_expected or {}).get('name') or _DEFAULT_LIMIT_RANGE_NAME)
@@ -462,6 +481,12 @@ def reconcile_adopted_native_allocation(
 
     now = datetime.now(UTC)
     evidence = dict(record.provisioning_evidence_json or {})
+    previous_allocation = evidence.get('allocation')
+    previous_provenance = (
+        str(previous_allocation.get('provenance') or '')
+        if isinstance(previous_allocation, dict)
+        else ''
+    ) or ('kaori_managed' if managed else 'adopted_observed')
     history = list(evidence.get('allocation_history') or [])
     history.append(
         {
@@ -491,7 +516,7 @@ def reconcile_adopted_native_allocation(
             'allocation': {
                 **after,
                 'provenance': 'kaori_managed',
-                'previous_provenance': 'adopted_observed',
+                'previous_provenance': previous_provenance,
                 'resource_profile_id': profile.public_id,
                 'resource_profile_version': resource_profile_version,
                 'capacity_decision_id': capacity_decision_id,
@@ -501,6 +526,8 @@ def reconcile_adopted_native_allocation(
             'secret_material_persisted': False,
         }
     )
+    evidence.pop('allocation_drift', None)
+    evidence.pop('allocation_reconcile_failure', None)
     record.resource_profile = profile
     record.resource_profile_id = profile.id
     record.resource_profile_version = resource_profile_version
