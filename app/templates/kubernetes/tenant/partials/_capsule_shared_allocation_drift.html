@@ -1,5 +1,6 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/table_registry.html" as registry_ui %}
 <section class="{{ table_ui.block_classes() }}"
          aria-label="Capsule Shared Allocation Drift">
     {{ table_ui.inventory_block_header('layers-3',
@@ -103,4 +104,17 @@
             </tbody>
         </table>
     </div>
+    {% if capsule_shared_drift_pagination.total_items > 0 %}
+        {{ registry_ui.footer('tenant.operations',
+                'capsule-shared-allocation-drift',
+                none,
+                capsule_shared_drift_pagination,
+                {'tab': 'drift-reconcile'},
+                capsule_shared_drift_pagination.allowed_per_page,
+                resource_label='Shared Allocation Drift',
+                rows_aria_label='Capsule shared drift rows per page',
+                control_name='capsule-shared-drift',
+                page_param='ops_capsule_shared_page',
+                per_page_param='ops_capsule_shared_per_page') }}
+    {% endif %}
 </section>
