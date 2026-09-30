@@ -9,6 +9,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.common.pagination import paginate_query
+from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.kubernetes.tenant.allocation_cutover import (
     allocation_control_state,
@@ -1021,9 +1022,16 @@ def get_capacity_decision_registry_context(
     normalized_search = search.strip()
     normalized_decision = decision.strip().lower()
 
-    query = db.session.query(TenantCapacityDecision, Cluster).join(
-        Cluster,
-        Cluster.id == TenantCapacityDecision.cluster_id,
+    query = (
+        db.session.query(TenantCapacityDecision, Cluster, TenantResourceProfile)
+        .join(
+            Cluster,
+            Cluster.id == TenantCapacityDecision.cluster_id,
+        )
+        .outerjoin(
+            TenantResourceProfile,
+            TenantResourceProfile.id == TenantCapacityDecision.resource_profile_id,
+        )
     )
     if normalized_search:
         pattern = f'%{normalized_search.lower()}%'
@@ -1034,6 +1042,7 @@ def get_capacity_decision_registry_context(
                 func.lower(Cluster.environment).like(pattern),
                 func.lower(TenantCapacityDecision.operation).like(pattern),
                 func.lower(TenantCapacityDecision.capacity_state).like(pattern),
+                func.lower(TenantResourceProfile.name).like(pattern),
             )
         )
 
@@ -1050,8 +1059,14 @@ def get_capacity_decision_registry_context(
 
     return {
         'capacity_decision_rows': [
-            {'decision': decision_row, 'cluster': cluster}
-            for decision_row, cluster in items
+            {
+                'decision': decision_row,
+                'cluster': cluster,
+                'profile': profile,
+                'created_at_label': present_user_datetime(decision_row.created_at, empty='—'),
+                'data_cutoff_label': present_user_datetime(decision_row.data_cutoff, empty='No cutoff'),
+            }
+            for decision_row, cluster, profile in items
         ],
         'capacity_decision_pagination': pagination,
         'capacity_decision_filters': {
