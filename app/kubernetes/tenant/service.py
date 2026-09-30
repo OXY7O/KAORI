@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Mapping
 from typing import Any
@@ -25,6 +26,7 @@ from app.kubernetes.tenant.capsule_tenant import (
     compensate_capsule_tenant_create,
     create_capsule_tenant,
 )
+from app.kubernetes.tenant.domain_exposure import normalize_domain_pattern
 from app.kubernetes.tenant.native_provider import (
     NativeKubernetesTenantProvider,
     tenant_workspace_connection_available,
@@ -46,6 +48,7 @@ from app.models.tenant import (
     TenantResourceProfile,
     TenantResourceProfileClass,
 )
+from app.models.tenant_managed_resource import TenantManagedResourceMode
 
 _TENANT_SLUG_RE = re.compile(r'[^a-z0-9-]+')
 _ALLOWED_ENVIRONMENTS = {item.value for item in TenantEnvironmentName}
@@ -436,14 +439,304 @@ def _advanced_control_contract_present(source: Mapping[str, Any]) -> bool:
     return _text(source, 'advanced_control_contract_present').lower() in _CONTROL_TRUE_VALUES
 
 
-def _advanced_profile_controls(source: Mapping[str, Any]) -> dict[str, bool]:
+def _advanced_enabled(source: Mapping[str, Any], key: str) -> bool:
+    return _text(source, f'advanced_control_{key}').lower() in _CONTROL_TRUE_VALUES
+
+
+def _advanced_choice(
+    source: Mapping[str, Any],
+    key: str,
+    field: str,
+    *,
+    allowed: set[str],
+    default: str,
+) -> str:
+    value = _text(source, f'advanced_control_{key}_{field}').lower() or default
+    if value not in allowed:
+        raise ValueError(f'Select a supported {field.replace("_", " ")} for {RESOURCE_PROFILE_ADVANCED_CONTROLS[key]["label"]}.')
+    return value
+
+
+def _advanced_bool_choice(
+    source: Mapping[str, Any],
+    key: str,
+    field: str,
+    *,
+    default: bool,
+) -> bool:
+    value = _text(source, f'advanced_control_{key}_{field}').lower()
+    if not value:
+        return default
+    if value in {'allow', 'enabled', 'true', '1', 'yes', 'required'}:
+        return True
+    if value in {'deny', 'disabled', 'false', '0', 'no', 'preflight_only'}:
+        return False
+    raise ValueError(f'Select a supported {field.replace("_", " ")} value for {RESOURCE_PROFILE_ADVANCED_CONTROLS[key]["label"]}.')
+
+
+def _advanced_json(
+    source: Mapping[str, Any],
+    key: str,
+    field: str,
+    *,
+    default: object,
+    require_mapping: bool = False,
+    require_non_empty: bool = False,
+) -> object:
+    raw = _text(source, f'advanced_control_{key}_{field}')
+    if not raw:
+        value = default
+    else:
+        try:
+            value = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ValueError(
+                f'{RESOURCE_PROFILE_ADVANCED_CONTROLS[key]["label"]} {field.replace("_", " ")} must be valid JSON.'
+            ) from exc
+    if require_mapping and not isinstance(value, dict):
+        raise ValueError(
+            f'{RESOURCE_PROFILE_ADVANCED_CONTROLS[key]["label"]} {field.replace("_", " ")} must be a JSON object.'
+        )
+    if require_non_empty and not value:
+        raise ValueError(
+            f'{RESOURCE_PROFILE_ADVANCED_CONTROLS[key]["label"]} {field.replace("_", " ")} cannot be empty.'
+        )
+    return value
+
+
+def _advanced_csv(source: Mapping[str, Any], key: str, field: str) -> list[str]:
+    raw = _text(source, f'advanced_control_{key}_{field}')
+    return list(dict.fromkeys(item.strip() for item in raw.split(',') if item.strip()))
+
+
+def _advanced_profile_controls(source: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
     if not _advanced_control_contract_present(source):
         return {}
-    return {
-        key: True
-        for key in RESOURCE_PROFILE_ADVANCED_CONTROLS
-        if _text(source, f'advanced_control_{key}').lower() in _CONTROL_TRUE_VALUES
-    }
+
+    controls: dict[str, dict[str, Any]] = {}
+
+    if _advanced_enabled(source, 'ingress'):
+        controls['ingress'] = {
+            'enabled': True,
+            'enforcement_required': _advanced_bool_choice(
+                source,
+                'ingress',
+                'enforcement_mode',
+                default=True,
+            ),
+        }
+
+    if _advanced_enabled(source, 'service_exposure'):
+        profile_key = _advanced_choice(
+            source,
+            'service_exposure',
+            'profile_key',
+            allowed={'ingress_only', 'custom'},
+            default='ingress_only',
+        )
+        if profile_key == 'ingress_only':
+            exposure = {
+                'allow_cluster_ip': True,
+                'allow_ingress': True,
+                'allow_node_port': False,
+                'allow_load_balancer': False,
+                'allow_external_name': False,
+            }
+        else:
+            exposure = {
+                field: _advanced_bool_choice(
+                    source,
+                    'service_exposure',
+                    field,
+                    default=default,
+                )
+                for field, default in {
+                    'allow_cluster_ip': True,
+                    'allow_ingress': True,
+                    'allow_node_port': False,
+                    'allow_load_balancer': False,
+                    'allow_external_name': False,
+                }.items()
+            }
+        controls['service_exposure'] = {
+            'enabled': True,
+            'profile_key': profile_key,
+            **exposure,
+        }
+
+    if _advanced_enabled(source, 'hostname_reservation'):
+        match_mode = _advanced_choice(
+            source,
+            'hostname_reservation',
+            'match_mode',
+            allowed={'exact', 'wildcard', 'regex'},
+            default='exact',
+        )
+        hostname_pattern = _text(source, 'advanced_control_hostname_reservation_hostname_pattern')
+        if not hostname_pattern:
+            raise ValueError('Hostname Reservation requires a hostname pattern.')
+        controls['hostname_reservation'] = {
+            'enabled': True,
+            'match_mode': match_mode,
+            'hostname_pattern': normalize_domain_pattern(hostname_pattern, match_mode),
+        }
+
+    if _advanced_enabled(source, 'managed_tls'):
+        mode = _advanced_choice(
+            source,
+            'managed_tls',
+            'mode',
+            allowed={
+                TenantManagedResourceMode.PLATFORM_TLS.value,
+                TenantManagedResourceMode.NAMESPACE_TLS_COMPAT.value,
+            },
+            default=TenantManagedResourceMode.PLATFORM_TLS.value,
+        )
+        resource_name = _text(source, 'advanced_control_managed_tls_resource_name') or 'tenant-tls'
+        source_reference = _text(source, 'advanced_control_managed_tls_source_reference') or None
+        if mode == TenantManagedResourceMode.NAMESPACE_TLS_COMPAT.value and not source_reference:
+            raise ValueError('Managed TLS namespace compatibility mode requires a non-secret source reference.')
+        controls['managed_tls'] = {
+            'enabled': True,
+            'mode': mode,
+            'resource_name': resource_name,
+            'source_reference': source_reference,
+        }
+
+    if _advanced_enabled(source, 'managed_registry'):
+        mode = _advanced_choice(
+            source,
+            'managed_registry',
+            'mode',
+            allowed={
+                TenantManagedResourceMode.IMAGE_PULL_SECRET.value,
+                TenantManagedResourceMode.EXTERNAL_CREDENTIAL_PROVIDER.value,
+            },
+            default=TenantManagedResourceMode.IMAGE_PULL_SECRET.value,
+        )
+        resource_name = _text(source, 'advanced_control_managed_registry_resource_name') or 'registry-credentials'
+        source_reference = _text(source, 'advanced_control_managed_registry_source_reference') or None
+        if mode == TenantManagedResourceMode.IMAGE_PULL_SECRET.value and not source_reference:
+            raise ValueError('Managed Registry image-pull Secret mode requires a non-secret source reference.')
+        controls['managed_registry'] = {
+            'enabled': True,
+            'mode': mode,
+            'resource_name': resource_name,
+            'source_reference': source_reference,
+        }
+
+    if _advanced_enabled(source, 'capsule_namespace_controls'):
+        controls['capsule_namespace_controls'] = {
+            'enabled': True,
+            'force_tenant_prefix': _advanced_bool_choice(
+                source,
+                'capsule_namespace_controls',
+                'force_tenant_prefix',
+                default=False,
+            ),
+            'namespace_options': _advanced_json(
+                source,
+                'capsule_namespace_controls',
+                'namespace_options_json',
+                default={},
+                require_mapping=True,
+            ),
+        }
+
+    if _advanced_enabled(source, 'capsule_resource_rules'):
+        controls['capsule_resource_rules'] = {
+            'enabled': True,
+            'container_registries': _advanced_csv(source, 'capsule_resource_rules', 'container_registries'),
+            'priority_classes': _advanced_csv(source, 'capsule_resource_rules', 'priority_classes'),
+            'storage_classes': _advanced_csv(source, 'capsule_resource_rules', 'storage_classes'),
+            'rules': _advanced_json(
+                source,
+                'capsule_resource_rules',
+                'rules_json',
+                default=[],
+            ),
+        }
+
+    if _advanced_enabled(source, 'capsule_resource_pools'):
+        kind = _advanced_choice(
+            source,
+            'capsule_resource_pools',
+            'resource_kind',
+            allowed={'resource_pool', 'resource_pool_claim'},
+            default='resource_pool',
+        )
+        resource_name = _text(source, 'advanced_control_capsule_resource_pools_resource_name')
+        if not resource_name:
+            raise ValueError('Capsule Resource Pools requires a resource name.')
+        controls['capsule_resource_pools'] = {
+            'enabled': True,
+            'resource_kind': kind,
+            'resource_name': resource_name,
+            'spec': _advanced_json(
+                source,
+                'capsule_resource_pools',
+                'spec_json',
+                default={},
+                require_mapping=True,
+                require_non_empty=True,
+            ),
+        }
+
+    if _advanced_enabled(source, 'capsule_replication'):
+        kind = _advanced_choice(
+            source,
+            'capsule_replication',
+            'resource_kind',
+            allowed={'tenant_resource', 'global_tenant_resource'},
+            default='tenant_resource',
+        )
+        resource_name = _text(source, 'advanced_control_capsule_replication_resource_name')
+        if not resource_name:
+            raise ValueError('Capsule Replication requires a resource name.')
+        controls['capsule_replication'] = {
+            'enabled': True,
+            'resource_kind': kind,
+            'resource_name': resource_name,
+            'spec': _advanced_json(
+                source,
+                'capsule_replication',
+                'spec_json',
+                default={},
+                require_mapping=True,
+                require_non_empty=True,
+            ),
+        }
+
+    if _advanced_enabled(source, 'capsule_tenant_cordon'):
+        cordoned = _advanced_bool_choice(
+            source,
+            'capsule_tenant_cordon',
+            'cordoned',
+            default=True,
+        )
+        prevent_deletion = _advanced_bool_choice(
+            source,
+            'capsule_tenant_cordon',
+            'prevent_deletion',
+            default=False,
+        )
+        if not cordoned and not prevent_deletion:
+            raise ValueError('Capsule Tenant Cordon must enable cordon, deletion protection, or both.')
+        controls['capsule_tenant_cordon'] = {
+            'enabled': True,
+            'cordoned': cordoned,
+            'prevent_deletion': prevent_deletion,
+        }
+
+    return controls
+
+
+def _advanced_control_request(value: Any) -> tuple[bool, dict[str, Any]]:
+    if isinstance(value, Mapping):
+        requested = bool(value.get('enabled', True))
+        config = {str(key): item for key, item in value.items() if key != 'enabled'}
+        return requested, config
+    return bool(value), {}
 
 
 def evaluate_resource_profile_advanced_controls(
@@ -457,7 +750,7 @@ def evaluate_resource_profile_advanced_controls(
     result: dict[str, dict[str, Any]] = {}
 
     for key, contract in RESOURCE_PROFILE_ADVANCED_CONTROLS.items():
-        requested = bool(requested_controls.get(key))
+        requested, configuration = _advanced_control_request(requested_controls.get(key))
         provider_requirements = dict(contract.get('providers') or {}).get(provider_key)
         if not requested:
             state = 'disabled'
@@ -484,6 +777,7 @@ def evaluate_resource_profile_advanced_controls(
             'description': contract['description'],
             'authority': contract['authority'],
             'requested': requested,
+            'configuration': configuration,
             'state': state,
             'reason': reason,
         }
