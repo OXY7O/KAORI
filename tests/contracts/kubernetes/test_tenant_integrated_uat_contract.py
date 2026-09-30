@@ -127,8 +127,9 @@ def test_tenant_adoption_preflight_is_compact_and_pvc_bounds_are_explicit() -> N
     assert 'max-w-[1240px]' not in modal
     assert 'Min PVC Size' in modal
     assert 'Max PVC Size' in modal
-    assert 'Per-PVC size bounds from the provider LimitRange' in modal
-    assert 'requests.storage' in modal
+    assert 'Provider LimitRange per-PVC bounds.' in modal
+    assert 'Separate from PVC count and total storage quota.' in modal
+    assert 'Per-PVC size bounds from the provider LimitRange' not in modal
     assert 'Not declared' in modal
     assert "pvc_min is not none and pvc_min != ''" in modal
     assert "pvc_max is not none and pvc_max != ''" in modal
