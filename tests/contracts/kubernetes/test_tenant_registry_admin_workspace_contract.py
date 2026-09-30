@@ -612,12 +612,19 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
 
     assert 'KAORI Preset · Fixed' in profile_form
     assert 'Fixed · Read Only' in profile_form
-    assert 'data-tenant-resource-mode-label' in profile_form
+    assert 'components/table_label.html' in profile_form
+    assert "table_label.special_label('Fixed · Read Only', 'unknown', 'lock-keyhole')" in profile_form
+    assert "table_label.special_label('Custom · Editable', 'maintenance', 'pencil')" in profile_form
+    assert "table_label.special_label('Fixed', 'unknown', 'lock-keyhole')" in profile_form
+    assert "table_label.special_label('Custom', 'maintenance', 'pencil')" in profile_form
+    assert 'data-tenant-resource-mode-fixed' in profile_form
+    assert 'data-tenant-resource-mode-custom hidden' in profile_form
     assert 'data-locked="true"' in profile_form
     assert 'data-[locked=true]:cursor-not-allowed' in profile_form
     assert 'data-[locked=true]:border-dashed' in profile_form
     assert "modeTitle.textContent = readonly ? 'KAORI Preset · Fixed' : 'Custom · Editable'" in profile_js
-    assert "modeText.textContent = readonly ? 'Fixed' : 'Custom'" in profile_js
+    assert "fixedLabel.hidden = !readonly" in profile_js
+    assert "customLabel.hidden = readonly" in profile_js
     assert "wrapper.dataset.locked = readonly ? 'true' : 'false'" in profile_js
 
     assert 'Allocation Change' in allocation
@@ -852,7 +859,7 @@ def test_live_provider_connectivity_uses_compact_non_snapshot_copy() -> None:
     assert 'Registered Kubernetes connections' in partial
     assert 'Provider operations fail closed per target' in partial
     assert 'Live API reachability' in service
-    assert 'KAORI state stays readable; provider operations fail closed.' in service
+    assert 'Kubernetes unreachable. KAORI remains readable; provider mutations are blocked.' in service
     assert "title='Tenant Collection Snapshot'" not in partial
 
 
