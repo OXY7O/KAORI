@@ -134,10 +134,23 @@
                                 <p class="mt-2 max-w-[420px] text-xs leading-5 text-content-muted">
                                     Authority {{ allocation_drift.get('authority')|default('Unknown', true)|replace('_', ' ')|title }}
                                     · observed {{ allocation_drift.get('observed_at')|default('Unknown', true) }}
-                                    {% if observed.get('source_resources') %}
-                                        · {{ observed.get('source_resources')|length }} provider allocation resource(s)
-                                    {% endif %}
                                 </p>
+                                {% if observed.get('source_resources') %}
+                                    <div class="mt-2 space-y-1">
+                                        {% for source in observed.get('source_resources', [])[:3] %}
+                                            <p class="max-w-[420px] break-all text-xs leading-5 text-content-muted">
+                                                {{ source.get('kind')|default('Resource', true) }}/{{ source.get('name')|default('unknown', true) }}
+                                                · UID {{ source.get('uid')|default('Unknown', true) }}
+                                                · resourceVersion {{ source.get('resource_version')|default('Unknown', true) }}
+                                            </p>
+                                        {% endfor %}
+                                        {% if observed.get('source_resources', [])|length > 3 %}
+                                            <p class="text-xs text-content-muted">
+                                                +{{ observed.get('source_resources', [])|length - 3 }} more provider source(s)
+                                            </p>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
                             {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
