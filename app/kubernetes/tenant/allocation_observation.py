@@ -110,7 +110,19 @@ def _merge_limit_sources(
         for item in list(_value(spec, 'limits', []) or []):
             item_type = str(_value(item, 'type', '') or '')
             if item_type and item_type != 'Container':
+                unsupported.append(f'{source_name}:type={item_type}')
                 continue
+            for unsupported_field, attr_name in (
+                ('max', 'max'),
+                ('min', 'min'),
+                ('max_limit_request_ratio', 'max_limit_request_ratio'),
+                ('max_limit_request_ratio', 'maxLimitRequestRatio'),
+            ):
+                values = _value(item, attr_name, {}) or {}
+                if values:
+                    unsupported.extend(
+                        f'{source_name}:{unsupported_field}.{key}' for key in dict(values)
+                    )
             for field, attr_name in (('default', 'default'), ('default_request', 'default_request')):
                 values = _value(item, attr_name, {}) or {}
                 for key, raw_value in dict(values).items():
