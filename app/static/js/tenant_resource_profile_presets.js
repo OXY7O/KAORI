@@ -335,6 +335,54 @@
         render()
     }
 
+    const advancedControlSummary = (key, value) => {
+        if (!value || value === true || typeof value !== 'object') return ''
+        const yesNo = (flag) => (flag ? 'Allow' : 'Deny')
+
+        if (key === 'ingress') {
+            return value.enforcement_required === false ? 'Preflight only' : 'Enforcement required'
+        }
+        if (key === 'service_exposure') {
+            if (value.profile_key === 'ingress_only') return 'Ingress only'
+            return [
+                `ClusterIP ${yesNo(value.allow_cluster_ip)}`,
+                `Ingress ${yesNo(value.allow_ingress)}`,
+                `NodePort ${yesNo(value.allow_node_port)}`,
+                `LoadBalancer ${yesNo(value.allow_load_balancer)}`,
+                `ExternalName ${yesNo(value.allow_external_name)}`,
+            ].join(' · ')
+        }
+        if (key === 'hostname_reservation') {
+            return [value.match_mode, value.hostname_pattern].filter(Boolean).join(' · ')
+        }
+        if (key === 'managed_tls' || key === 'managed_registry') {
+            return [String(value.mode || '').replaceAll('_', ' '), value.resource_name, value.source_reference]
+                .filter(Boolean)
+                .join(' · ')
+        }
+        if (key === 'capsule_namespace_controls') {
+            const optionCount = value.namespace_options && typeof value.namespace_options === 'object'
+                ? Object.keys(value.namespace_options).length
+                : 0
+            return `Tenant prefix ${value.force_tenant_prefix ? 'On' : 'Off'} · ${optionCount} namespace option${optionCount === 1 ? '' : 's'}`
+        }
+        if (key === 'capsule_resource_rules') {
+            const registries = Array.isArray(value.container_registries) ? value.container_registries.length : 0
+            const priority = Array.isArray(value.priority_classes) ? value.priority_classes.length : 0
+            const storage = Array.isArray(value.storage_classes) ? value.storage_classes.length : 0
+            return `${registries} registries · ${priority} priority classes · ${storage} storage classes`
+        }
+        if (key === 'capsule_resource_pools' || key === 'capsule_replication') {
+            return [String(value.resource_kind || '').replaceAll('_', ' '), value.resource_name]
+                .filter(Boolean)
+                .join(' · ')
+        }
+        if (key === 'capsule_tenant_cordon') {
+            return `Cordon ${value.cordoned ? 'On' : 'Off'} · Prevent deletion ${value.prevent_deletion ? 'On' : 'Off'}`
+        }
+        return ''
+    }
+
     const initNamespaceForm = (form) => {
         if (!(form instanceof HTMLFormElement) || form.dataset.kaoriInitialized === 'true') return
         form.dataset.kaoriInitialized = 'true'
@@ -373,6 +421,7 @@
                     rawRequest === true ||
                     (rawRequest && typeof rawRequest === 'object' && rawRequest.enabled !== false)
                 const placement = placementControls[key] || null
+                const configuration = advancedControlSummary(key, rawRequest)
                 const isAvailable = isRequested && placement?.state === 'enabled'
 
                 if (toggle) toggle.checked = isRequested
@@ -388,18 +437,29 @@
 
                 if (!environment) {
                     if (stateLabel) stateLabel.textContent = 'Select placement'
-                    if (reason) reason.textContent = 'Choose a Tenant Environment to evaluate provider support.'
+                    if (reason) {
+                        reason.textContent = configuration
+                            ? `${configuration}. Choose a Tenant Environment to evaluate provider support.`
+                            : 'Choose a Tenant Environment to evaluate provider support.'
+                    }
                     return
                 }
 
                 if (isAvailable) {
                     if (stateLabel) stateLabel.textContent = 'Enabled'
-                    if (reason) reason.textContent = 'Requested by profile and supported by the selected provider.'
+                    if (reason) {
+                        reason.textContent = configuration
+                            ? `${configuration}. Supported by the selected provider.`
+                            : 'Requested by profile and supported by the selected provider.'
+                    }
                     return
                 }
 
                 if (stateLabel) stateLabel.textContent = 'Unavailable'
-                if (reason) reason.textContent = placement?.reason || 'The selected provider cannot enforce this control.'
+                if (reason) {
+                    const unavailableReason = placement?.reason || 'The selected provider cannot enforce this control.'
+                    reason.textContent = configuration ? `${configuration}. ${unavailableReason}` : unavailableReason
+                }
             })
         }
 
