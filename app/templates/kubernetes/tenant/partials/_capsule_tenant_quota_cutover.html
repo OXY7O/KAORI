@@ -167,20 +167,17 @@
         </form>
     </div>
 
-    {% set blocked = capsule_tenant_quota_cutover_state.values()|rejectattr('supported')|list %}
-    {% if blocked %}
+    {% if capsule_tenant_quota_blocked_cutover_tenants %}
         <div class="border-t border-kaori-primary/15 px-5 py-4">
             <div class="rounded-xl border border-outline-subtle bg-status-warning-soft p-4 text-status-warning-text">
                 <p class="text-xs font-semibold uppercase tracking-wide">Control Unavailable / Observed Constraints</p>
                 <div class="mt-2 space-y-2">
-                    {% for tenant in capsule_tenant_quota_cutover_tenants %}
+                    {% for tenant in capsule_tenant_quota_blocked_cutover_tenants %}
                         {% set state = capsule_tenant_quota_cutover_state.get(tenant.id) or {} %}
-                        {% if not state.get('supported') and state.get('authority') == 'capsule_tenant_resource_quotas' %}
-                            <p class="text-xs leading-5">
-                                <span class="font-semibold">{{ tenant.name }}</span>
-                                · {{ state.get('reason') }}
-                            </p>
-                        {% endif %}
+                        <p class="text-xs leading-5">
+                            <span class="font-semibold">{{ tenant.name }}</span>
+                            · {{ state.get('reason') }}
+                        </p>
                         {% if state.get('external_constraints') %}
                             <p class="text-xs leading-5">
                                 <span class="font-semibold">{{ tenant.name }} external constraints</span>
