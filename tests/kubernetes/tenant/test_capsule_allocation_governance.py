@@ -137,7 +137,6 @@ def test_unsupported_capsule_api_version_fails_closed(monkeypatch):
     assert 'requires served capsule.clastix.io/v1beta2' in state['reason']
 
 
-
 def test_existing_advanced_global_quota_intent_blocks_canonical_cutover(monkeypatch):
     generic_intent = SimpleNamespace(
         status='ready',
