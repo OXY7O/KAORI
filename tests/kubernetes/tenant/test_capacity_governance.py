@@ -13,6 +13,7 @@ from app.kubernetes.tenant.capacity import (
 from app.kubernetes.tenant.capacity_governance import (
     _aggregate_committed_allocation,
     _capacity_vector,
+    _capsule_tenant_quota_vector,
     _committed_evidence_reason,
     _unknown_evidence_decision,
 )
@@ -352,3 +353,31 @@ def test_ambiguous_shared_authority_fails_capacity_evidence_closed() -> None:
     assert committed.cpu is None
     assert committed.memory_bytes is None
     assert 'Tenant/capsule-api ambiguous shared allocation' in unbounded
+
+
+def test_capsule_tenant_scope_quota_is_counted_once() -> None:
+    vector = _capsule_tenant_quota_vector(
+        {
+            'requests.cpu': '4',
+            'requests.memory': '8Gi',
+        },
+        scope='Tenant',
+        namespace_count=3,
+    )
+
+    assert vector.cpu == Decimal('4')
+    assert vector.memory_bytes == Decimal(8 * 1024**3)
+
+
+def test_capsule_namespace_scope_quota_is_counted_per_correlated_namespace() -> None:
+    vector = _capsule_tenant_quota_vector(
+        {
+            'requests.cpu': '4',
+            'requests.memory': '8Gi',
+        },
+        scope='Namespace',
+        namespace_count=3,
+    )
+
+    assert vector.cpu == Decimal('12')
+    assert vector.memory_bytes == Decimal(24 * 1024**3)
