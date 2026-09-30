@@ -600,6 +600,10 @@ def change_native_namespace_allocation(source: Mapping[str, Any]) -> TenantNames
         raise ValueError('Tenant is not Ready; namespace allocation changes are frozen during decommission.')
     if record.environment.tenant.provider_key != 'native_kubernetes':
         raise ValueError('This UAT slice can change only Native Kubernetes Tenant allocations.')
+    if record.ownership_status != TenantOwnershipStatus.MANAGED.value:
+        raise ValueError(
+            'Adopted Baseline allocations are read-only until explicit Allocation Governance Cutover is completed.'
+        )
 
     quota, limits, customized = _namespace_allocation_values(profile)
     capacity_decision = enforce_existing_namespace_allocation_preflight(
@@ -969,6 +973,12 @@ def get_namespace_registry_context(
     )
 
     namespace_options = TenantNamespace.query.order_by(TenantNamespace.created_at.desc()).all()
+    namespace_allocation_options = [
+        record
+        for record in namespace_options
+        if record.ownership_status == TenantOwnershipStatus.MANAGED.value
+        and record.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value
+    ]
     profile_options = (
         TenantResourceProfile.query.filter_by(enabled=True).order_by(TenantResourceProfile.name.asc()).all()
     )
@@ -980,6 +990,7 @@ def get_namespace_registry_context(
     return {
         'namespaces': items,
         'namespace_options': namespace_options,
+        'namespace_allocation_options': namespace_allocation_options,
         'profiles': profile_options,
         'namespace_pagination': pagination,
         'namespace_registry_filters': {
@@ -1000,7 +1011,7 @@ def get_namespace_registry_context(
                 'quota': record.allocation_quota_json or {},
                 'limits': record.allocation_limit_defaults_json or {},
             }
-            for record in namespace_options
+            for record in namespace_allocation_options
         },
         'namespace_allocation_profiles': {
             str(profile.id): {
