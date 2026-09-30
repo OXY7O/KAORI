@@ -164,6 +164,7 @@ def _tenant_workspace_context() -> dict[str, Any]:
         **get_tenant_context(),
         **get_tenant_access_context(),
         **get_tenant_workspace_context(),
+        **get_tenant_sync_workspace_context(),
     }
 
 
