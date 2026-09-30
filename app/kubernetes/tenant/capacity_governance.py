@@ -182,6 +182,7 @@ def enforce_namespace_allocation_preflight(
 ) -> TenantCapacityDecision:
     return _enforce_allocation_preflight(
         tenant_environment=tenant_environment,
+        tenant=resolved_tenant,
         profile=profile,
         namespace=namespace,
         current=CapacityVector(cpu=_ZERO, memory_bytes=_ZERO),
@@ -231,14 +232,13 @@ def enforce_observed_namespace_allocation_preflight(
 
 def enforce_shared_tenant_allocation_preflight(
     *,
-    tenant_environment: TenantEnvironment,
+    tenant: Tenant,
     profile: TenantResourceProfile,
     current_quota_hard: Mapping[str, object],
     proposed_quota_hard: Mapping[str, object],
 ) -> TenantCapacityDecision:
     """Evaluate one Tenant-level shared quota exactly once across its namespaces."""
 
-    tenant = tenant_environment.tenant
     current = quota_request_vector(current_quota_hard)
     proposed = quota_request_vector(proposed_quota_hard)
     operation = classify_allocation_change(current=current, proposed=proposed)
@@ -247,7 +247,8 @@ def enforce_shared_tenant_allocation_preflight(
         shared_overrides={tenant.id: current_quota_hard},
     )
     return _enforce_allocation_preflight(
-        tenant_environment=tenant_environment,
+        tenant_environment=None,
+        tenant=tenant,
         profile=profile,
         namespace=f'@tenant:{tenant.slug}',
         current=current,
@@ -260,16 +261,20 @@ def enforce_shared_tenant_allocation_preflight(
 
 def _enforce_allocation_preflight(
     *,
-    tenant_environment: TenantEnvironment,
+    tenant_environment: TenantEnvironment | None,
     profile: TenantResourceProfile,
     namespace: str,
     current: CapacityVector,
     proposed: CapacityVector,
     operation: str,
+    tenant: Tenant | None = None,
     committed_state: tuple[CapacityVector, int, list[str]] | None = None,
     allocation_scope: str = 'namespace',
 ) -> TenantCapacityDecision:
-    cluster_id = tenant_environment.tenant.cluster_id
+    resolved_tenant = tenant or (tenant_environment.tenant if tenant_environment is not None else None)
+    if resolved_tenant is None:
+        raise ValueError('Tenant capacity preflight requires a Tenant authority.')
+    cluster_id = resolved_tenant.cluster_id
     committed, committed_count, unbounded_namespaces = (
         committed_state if committed_state is not None else _committed_tenant_allocation(cluster_id)
     )
@@ -342,7 +347,8 @@ def _enforce_allocation_preflight(
 def _persist_decision(
     *,
     cluster_id: str,
-    tenant_environment: TenantEnvironment,
+    tenant_environment: TenantEnvironment | None,
+    tenant: Tenant,
     profile: TenantResourceProfile,
     namespace: str,
     operation: str,
@@ -352,7 +358,7 @@ def _persist_decision(
 ) -> TenantCapacityDecision:
     record = TenantCapacityDecision()
     record.cluster_id = cluster_id
-    record.tenant_environment_id = tenant_environment.id
+    record.tenant_environment_id = tenant_environment.id if tenant_environment is not None else None
     record.resource_profile_id = profile.id
     record.resource_profile_version = profile.version
     record.namespace = namespace
@@ -364,7 +370,7 @@ def _persist_decision(
         'version': 1,
         'authority': 'tenant_capacity_governance',
         'allocation_scope': allocation_scope,
-        'tenant_id': tenant_environment.tenant_id,
+        'tenant_id': tenant.id,
         'decision': pure.decision,
         'state': pure.state,
         'reason': pure.reason,
