@@ -1145,8 +1145,8 @@ def test_tenant_setup_and_membership_guidance_use_compact_uat_copy() -> None:
     setup = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
     memberships = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
 
-    assert 'Native Kubernetes and supported Capsule clusters allow direct creation.' in setup
-    assert 'Existing Capsule Tenant CRs use Discovery → Adoption.' in setup
+    assert 'Native and supported Capsule clusters allow direct creation.' in setup
+    assert 'Existing Capsule Tenants use Discovery → Adoption.' in setup
     assert 'compatible Capsule clusters support direct Tenant Setup creation' not in setup
 
     assert 'Revoke disables grants permanently. Reactivation does not restore old grants.' in memberships
