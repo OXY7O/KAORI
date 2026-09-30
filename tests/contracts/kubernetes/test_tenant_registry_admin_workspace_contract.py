@@ -250,6 +250,40 @@ def test_namespace_access_is_a_paginated_non_secret_registry() -> None:
     assert 'paginate_sequence(' in read_model
 
 
+def test_tenant_card_guidance_is_title_adjacent_and_hover_overflow_is_visible() -> None:
+    tenant_form = read('app/templates/kubernetes/tenant/partials/_tenant_form.html')
+    memberships = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
+    grants = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    credentials = read('app/templates/kubernetes/tenant/partials/_tenant_credentials_workspace.html')
+    namespace_access = read('app/templates/kubernetes/tenant/partials/_tenant_namespace_access_workspace.html')
+
+    for title, tip_id, source in (
+        ('Add Tenant', 'tenant-setup-form-tip', tenant_form),
+        ('Add User Membership', 'membership-user-tip', memberships),
+        ('Create Tenant Group', 'membership-group-tip', memberships),
+        ('Add Group Membership', 'membership-attach-group-tip', memberships),
+        ('Apply Access Grant', 'access-grant-form-tip', grants),
+        ('Issue Human Access', 'human-credential-tip', credentials),
+        ('Issue CI/CD Deployer', 'deployer-credential-tip', credentials),
+        ('Effective Namespace Access', 'namespace-access-tip', namespace_access),
+    ):
+        title_index = source.index(title)
+        tip_index = source.index(tip_id)
+        assert abs(title_index - tip_index) < 1200, (title, tip_id)
+
+    assert 'flex h-full flex-col overflow-visible' in tenant_form
+    assert memberships.count('flex h-full flex-col overflow-visible') >= 3
+    assert 'flex h-full flex-col overflow-visible' in grants
+    assert credentials.count('flex h-full flex-col overflow-visible') >= 2
+    assert 'overflow-visible rounded-xl' in namespace_access
+
+    # Field-specific guidance remains allowed when semantics are unique to the field.
+    assert 'capsule-owner-kind-tip' in tenant_form
+    assert 'capsule-owner-subject-tip' in tenant_form
+    assert 'access-profile-tip' in grants
+    assert 'access-scope-tip' in grants
+
+
 def test_tenant_registry_shortcuts_use_local_anchors_without_page_reload() -> None:
     memberships = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
     membership_registry = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')

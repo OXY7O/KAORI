@@ -59,7 +59,7 @@
                   hx-swap="outerHTML show:none focus-scroll:false"
                   hx-indicator="#tenant-admin-loading"
                   hx-disabled-elt="find button"
-                  class="flex h-full flex-col rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+                  class="flex h-full flex-col overflow-visible rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-5 flex items-start justify-between gap-3">
                     <div class="flex min-w-0 items-start gap-3">
@@ -68,19 +68,22 @@
                             <i data-lucide="user-plus" class="h-5 w-5"></i>
                         </span>
                         <div>
-                            <h4 class="text-base font-semibold text-content-primary">Add User Membership</h4>
+                            <span class="inline-flex min-h-6 items-center gap-1.5">
+                                <h4 class="text-base font-semibold text-content-primary">Add User Membership</h4>
+                                {{ info_tip.render('membership-user-tip',
+                                                    'User membership',
+                                                    'Use this path for individually accountable human access.',
+                                                    [
+                                                    'The KAORI user remains the ownership anchor.',
+                                                    'Kubernetes Subject is optional and defaults to the KAORI username.',
+                                                    'If this principal was revoked earlier, use Reactivate in the Membership Registry.',
+                                                    'Membership alone does not grant Kubernetes RBAC.'
+                                                    ],
+                                                    placement='right') }}
+                            </span>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Bind one active KAORI user to one Tenant.</p>
                         </div>
                     </div>
-                    {{ info_tip.render('membership-user-tip',
-                                        'User membership',
-                                        'Use this path for individually accountable human access.',
-                                        [
-                                        'The KAORI user remains the ownership anchor.',
-                                        'Kubernetes Subject is optional and defaults to the KAORI username.',
-                                        'If this principal was revoked earlier, use Reactivate in the Membership Registry.',
-                                        'Membership alone does not grant Kubernetes RBAC.'
-                                        ]) }}
                 </div>
                 <div class="flex-1 space-y-4">
                     <label class="block">
@@ -125,7 +128,7 @@
                   hx-swap="outerHTML show:none focus-scroll:false"
                   hx-indicator="#tenant-admin-loading"
                   hx-disabled-elt="find button"
-                  class="flex h-full flex-col rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+                  class="flex h-full flex-col overflow-visible rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-5 flex items-start justify-between gap-3">
                     <div class="flex min-w-0 items-start gap-3">
@@ -134,18 +137,21 @@
                             <i data-lucide="users" class="h-5 w-5"></i>
                         </span>
                         <div>
-                            <h4 class="text-base font-semibold text-content-primary">Create Tenant Group</h4>
+                            <span class="inline-flex min-h-6 items-center gap-1.5">
+                                <h4 class="text-base font-semibold text-content-primary">Create Tenant Group</h4>
+                                {{ info_tip.render('membership-group-tip',
+                                                    'Tenant Group',
+                                                    'Use a Tenant Group when one Kubernetes group subject represents several operators.',
+                                                    [
+                                                    'Group subject is derived by KAORI when omitted.',
+                                                    'The group remains owned by exactly one Tenant.',
+                                                    'Create the group first, then attach it as a membership principal.'
+                                                    ],
+                                                    placement='right') }}
+                            </span>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Define one reusable Kubernetes group subject.</p>
                         </div>
                     </div>
-                    {{ info_tip.render('membership-group-tip',
-                                        'Tenant Group',
-                                        'Use a Tenant Group when one Kubernetes group subject represents several operators.',
-                                        [
-                                        'Group subject is derived by KAORI when omitted.',
-                                        'The group remains owned by exactly one Tenant.',
-                                        'Create the group first, then attach it as a membership principal.'
-                                        ]) }}
                 </div>
                 <div class="flex-1 space-y-4">
                     <label class="block">
@@ -189,7 +195,7 @@
                   hx-swap="outerHTML show:none focus-scroll:false"
                   hx-indicator="#tenant-admin-loading"
                   hx-disabled-elt="find button"
-                  class="flex h-full flex-col rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
+                  class="flex h-full flex-col overflow-visible rounded-xl border border-outline-subtle bg-surface-card p-5 shadow-sm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-5 flex items-start justify-between gap-3">
                     <div class="flex min-w-0 items-start gap-3">
@@ -198,17 +204,20 @@
                             <i data-lucide="user-round-plus" class="h-5 w-5"></i>
                         </span>
                         <div>
-                            <h4 class="text-base font-semibold text-content-primary">Add Group Membership</h4>
+                            <span class="inline-flex min-h-6 items-center gap-1.5">
+                                <h4 class="text-base font-semibold text-content-primary">Add Group Membership</h4>
+                                {{ info_tip.render('membership-attach-group-tip',
+                                                    'Group membership',
+                                                    'Attach only a group owned by the selected Tenant.',
+                                                    [
+                                                    'Cross-Tenant group membership is rejected server-side.',
+                                                    'The group becomes a principal; permissions still require an Access Grant.'
+                                                    ],
+                                                    placement='right') }}
+                            </span>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Attach an enabled Tenant Group as a membership principal.</p>
                         </div>
                     </div>
-                    {{ info_tip.render('membership-attach-group-tip',
-                                        'Group membership',
-                                        'Attach only a group owned by the selected Tenant.',
-                                        [
-                                        'Cross-Tenant group membership is rejected server-side.',
-                                        'The group becomes a principal; permissions still require an Access Grant.'
-                                        ]) }}
                 </div>
                 <div class="flex-1 space-y-4">
                     <label class="block">

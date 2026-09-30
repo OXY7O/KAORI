@@ -24,18 +24,21 @@
                         <i data-lucide="key-round" class="h-5 w-5"></i>
                     </span>
                     <div>
-                        <h3 class="text-base font-semibold text-content-primary">Apply Access Grant</h3>
+                        <span class="inline-flex min-h-6 items-center gap-1.5">
+                            <h3 class="text-base font-semibold text-content-primary">Apply Access Grant</h3>
+                            {{ info_tip.render('access-grant-form-tip',
+                                            'Access Grant rules',
+                                            'An Access Grant binds one committed Tenant principal to one versioned access profile and explicit scope.',
+                                            [
+                                            'Built-in profiles are code-owned security contracts.',
+                                            'Cross-Tenant references fail closed.',
+                                            'Effective access is verified from Kubernetes RBAC.'
+                                            ],
+                                            placement='right') }}
+                        </span>
                         <p class="mt-1 text-sm leading-6 text-content-secondary">Select one principal, profile, and the narrowest required scope.</p>
                     </div>
                 </div>
-                {{ info_tip.render('access-grant-form-tip',
-                                'Access Grant rules',
-                                'An Access Grant binds one committed Tenant principal to one versioned access profile and explicit scope.',
-                                [
-                                'Built-in profiles are code-owned security contracts.',
-                                'Cross-Tenant references fail closed.',
-                                'Effective access is verified from Kubernetes RBAC.'
-                                ]) }}
             </header>
             <div class="flex-1 space-y-4 p-5">
                 <label class="block">
