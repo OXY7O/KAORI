@@ -381,6 +381,7 @@ def reconcile_adopted_native_allocation(
     limit_defaults: dict[str, dict[str, str]],
     operation: str,
     expected_observed_hash: str | None = None,
+    failure_status: str = 'failed',
 ) -> TenantNamespace:
     eligibility = build_allocation_cutover_state(record)
     managed = allocation_control_state(record) == 'kaori_managed'
@@ -411,6 +412,7 @@ def reconcile_adopted_native_allocation(
             )
         quota_expected = _expected_source(record, 'ResourceQuota')
         limit_expected = _expected_source(record, 'LimitRange')
+    mutation_started = False
     try:
         quota_probe_name = str((quota_expected or {}).get('name') or _DEFAULT_QUOTA_NAME)
         limit_probe_name = str((limit_expected or {}).get('name') or _DEFAULT_LIMIT_RANGE_NAME)
@@ -427,6 +429,7 @@ def reconcile_adopted_native_allocation(
             managed=managed,
         )
 
+        mutation_started = True
         quota_name = _mutate_quota(
             api,
             record,
@@ -463,7 +466,7 @@ def reconcile_adopted_native_allocation(
             'at': failed_at.isoformat(),
             'control_state': allocation_control_state(record),
             'provider': 'native_kubernetes',
-            'provider_mutation_may_have_started': True,
+            'provider_mutation_may_have_started': mutation_started,
             'error': str(exc)[:1000],
             'proposed': {
                 'resource_profile_id': profile.public_id,
@@ -474,7 +477,7 @@ def reconcile_adopted_native_allocation(
             'secret_material_persisted': False,
         }
         record.provisioning_evidence_json = evidence
-        record.provisioning_status = 'failed'
+        record.provisioning_status = failure_status
         record.provisioning_message = str(exc)[:1000]
         record.last_reconciled_at = failed_at
         raise
