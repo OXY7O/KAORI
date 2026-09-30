@@ -349,7 +349,7 @@ def test_accept_provider_state_commits_live_quota_without_provider_write(monkeyp
     monkeypatch.setattr(
         governance,
         '_fresh_drift_observation',
-        lambda _tenant: (
+        lambda _tenant, **_kwargs: (
             {},
             source,
             object(),
@@ -464,3 +464,77 @@ def test_reapply_uses_fresh_live_provider_allocation_for_capacity(monkeypatch) -
     }
     assert tenant.provider_evidence_json['allocation_governance']['control_state'] == 'kaori_managed'
     assert tenant.provider_evidence_json['allocation_governance']['provider_mutation_performed'] is True
+
+
+def test_accept_drift_freshness_uses_read_only_capability_validation(monkeypatch) -> None:
+    tenant = _tenant(control_state='drifted')
+    tenant.provider_evidence_json['allocation_governance']['allocation_drift']['observed_hash'] = ''
+    item = {
+        'metadata': {
+            'name': 'partner',
+            'uid': 'tenant-partner',
+            'resourceVersion': '13',
+        },
+        'spec': {
+            'resourceQuotas': {
+                'scope': 'Tenant',
+                'items': [
+                    {
+                        'hard': {
+                            'requests.cpu': '6',
+                            'requests.memory': '10Gi',
+                        }
+                    }
+                ],
+            }
+        },
+    }
+    source = {
+        'kind': 'Tenant',
+        'name': 'partner',
+        'uid': 'tenant-partner',
+        'resource_version': '13',
+        'api_version': 'v1beta2',
+    }
+    client = object()
+    monkeypatch.setattr(
+        governance,
+        '_read_live_tenant',
+        lambda *_args, **_kwargs: (item, source, client),
+    )
+    calls = {'read': 0, 'mutation': 0}
+
+    def read_capability(*_args, **_kwargs):
+        calls['read'] += 1
+
+    def mutation_capability(*_args, **_kwargs):
+        calls['mutation'] += 1
+        raise AssertionError('Accept freshness validation must not issue a mutation dry-run.')
+
+    monkeypatch.setattr(governance, '_prove_read_capability', read_capability)
+    monkeypatch.setattr(governance, '_prove_mutation_capability', mutation_capability)
+    monkeypatch.setattr(
+        governance,
+        '_live_allocation',
+        lambda *_args, **_kwargs: (
+            {
+                'scope': 'Tenant',
+                'quota': {
+                    'requests.cpu': '6',
+                    'requests.memory': '10Gi',
+                },
+                'items': item['spec']['resourceQuotas']['items'],
+            },
+            {
+                'external_constraints': [],
+                'correlated_namespaces': [{'name': 'partner-dev'}],
+            },
+        ),
+    )
+
+    governance._fresh_drift_observation(
+        tenant,
+        require_mutation_capability=False,
+    )
+
+    assert calls == {'read': 1, 'mutation': 0}
