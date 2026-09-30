@@ -102,12 +102,12 @@
                     </span>
                     <div class="min-w-0">
                         <p class="text-xs font-semibold text-content-primary" data-tenant-profile-mode-title>KAORI Preset · Fixed</p>
-                        <p class="mt-0.5 text-xs text-content-muted" data-tenant-profile-mode-detail>Preset values are locked. Choose Custom to edit allocation values.</p>
+                        <p class="mt-0.5 text-xs text-content-muted" data-tenant-profile-mode-detail>Locked preset values. Switch to Custom to edit.</p>
                     </div>
                 </div>
                 <span class="inline-flex w-fit items-center rounded-full border border-outline-subtle bg-surface-hover px-2.5 py-1 text-[11px] font-semibold text-content-muted"
                       data-tenant-profile-mode-badge>
-                    Fixed · Locked
+                    Fixed · Read Only
                 </span>
             </div>
         </section>
@@ -143,7 +143,9 @@
                     ('configmaps', 'ConfigMaps', '50'),
                     ('secrets', 'Secrets', '50')
                     ] %}
-                    <label class="block" data-tenant-resource-field-wrap>
+                    <label class="block rounded-lg border border-transparent p-2 transition data-[locked=true]:border-outline-subtle data-[locked=true]:bg-surface-hover/80"
+                           data-tenant-resource-field-wrap
+                           data-locked="true">
                         <span class="flex min-h-6 items-center justify-between gap-2">
                             <span class="text-xs font-semibold text-content-primary">{{ label }}</span>
                             <span class="inline-flex items-center gap-1 rounded-full border border-outline-subtle bg-surface-hover px-2 py-0.5 text-[10px] font-semibold text-content-muted"
@@ -158,7 +160,7 @@
                                data-locked="true"
                                readonly
                                aria-readonly="true"
-                               class="{{ form_field.input_classes() }} transition data-[locked=true]:cursor-not-allowed data-[locked=true]:border-outline-subtle data-[locked=true]:bg-surface-hover data-[locked=true]:text-content-muted data-[locked=true]:shadow-none data-[locked=true]:focus:ring-0">
+                               class="{{ form_field.input_classes() }} transition data-[locked=true]:cursor-not-allowed data-[locked=true]:border-dashed data-[locked=true]:border-outline-default data-[locked=true]:bg-surface-card/60 data-[locked=true]:text-content-muted data-[locked=true]:shadow-none data-[locked=true]:focus:border-outline-default data-[locked=true]:focus:ring-0">
                     </label>
                 {% endfor %}
             </div>
@@ -199,7 +201,7 @@
                                data-locked="true"
                                readonly
                                aria-readonly="true"
-                               class="{{ form_field.input_classes() }} transition data-[locked=true]:cursor-not-allowed data-[locked=true]:border-outline-subtle data-[locked=true]:bg-surface-hover data-[locked=true]:text-content-muted data-[locked=true]:shadow-none data-[locked=true]:focus:ring-0">
+                               class="{{ form_field.input_classes() }} transition data-[locked=true]:cursor-not-allowed data-[locked=true]:border-dashed data-[locked=true]:border-outline-default data-[locked=true]:bg-surface-card/60 data-[locked=true]:text-content-muted data-[locked=true]:shadow-none data-[locked=true]:focus:border-outline-default data-[locked=true]:focus:ring-0">
                     </label>
                 {% endfor %}
             </div>
