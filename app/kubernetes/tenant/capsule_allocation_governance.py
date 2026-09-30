@@ -480,6 +480,7 @@ def observe_managed_capsule_shared_allocation(
         'desired_quota': desired_quota,
         'observed_quota': observed_quota,
         'differences': differences,
+        'observed_matches_desired': not differences,
         'provider_source': current_source,
         'observed_hash': _canonical_hash(current.get('spec') or {}),
         'provider_mutation_performed': False,
@@ -529,26 +530,28 @@ def apply_managed_capsule_shared_allocation_drift_observation() -> dict[str, Any
             )
             continue
 
-        if observation['differences']:
+        prior_drift = (
+            intent.status == TenantAdvancedCapabilityStatus.DRIFTED.value
+            and isinstance(evidence.get('allocation_drift'), Mapping)
+        )
+        if observation['differences'] or prior_drift:
             intent.status = TenantAdvancedCapabilityStatus.DRIFTED.value
             evidence['allocation_drift'] = {
                 **observation,
                 'blocked_reasons': [],
             }
             intent.reconciliation_evidence_json = evidence
-            intent.reconciliation_message = 'Capsule shared allocation differs from committed KAORI intent.'
+            if observation['observed_matches_desired']:
+                intent.reconciliation_message = (
+                    'Live Capsule shared allocation now matches committed KAORI intent, but prior drift remains '
+                    'pending explicit reconciliation confirmation.'
+                )
+            else:
+                intent.reconciliation_message = (
+                    'Capsule shared allocation differs from committed KAORI intent. '
+                    'Choose Reapply KAORI Intent or Accept Provider State.'
+                )
             drifted_intent_ids.append(intent.id)
-        else:
-            if intent.status == TenantAdvancedCapabilityStatus.DRIFTED.value or evidence.get('allocation_drift'):
-                restored_intent_ids.append(intent.id)
-            intent.status = TenantAdvancedCapabilityStatus.READY.value
-            evidence.pop('allocation_drift', None)
-            evidence['provider_source'] = observation['provider_source']
-            evidence['expected_provider_source'] = observation['provider_source']
-            intent.reconciliation_evidence_json = evidence
-            intent.effective_spec_json = deepcopy(intent.desired_spec_json)
-            intent.effective_hash = intent.desired_hash
-            intent.reconciliation_message = 'Capsule shared allocation matches committed KAORI intent.'
     return {
         'drifted_intent_ids': sorted(set(drifted_intent_ids)),
         'restored_intent_ids': sorted(set(restored_intent_ids)),
