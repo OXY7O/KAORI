@@ -162,7 +162,7 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert (
         'Use the least-privilege profile and narrowest scope that meets the principal’s operational need.' in workspace
     )
-    assert 'Environment/Tenant scope may stay Pending until namespaces exist.' in workspace
+    assert 'Environment/Tenant may stay Pending until namespaces exist. Namespace scope needs one target.' in workspace
     assert 'Access Boundaries' in workspace
     assert 'components/info_tip.html' in workspace
     assert 'access-grant-form-tip' in workspace
@@ -378,11 +378,12 @@ def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None
     assert 'Remove Namespaces' in registry
     assert 'Verify & Retain' in registry
     assert "presentation='steps'" in registry
-    assert 'Governed teardown with provider verification.' in registry
+    assert 'Governed teardown. Provider verification is required.' in registry
     assert 'Block new Tenant changes.' in registry
     assert 'Disable credentials and grants.' in registry
-    assert 'Delete KAORI-managed namespaces and verify absence.' in registry
-    assert 'Terminating' in registry
+    assert 'Delete managed namespaces and verify absence.' in registry
+    assert 'Commit Decommissioned after verified cleanup.' in registry
+    assert 'If deletion is blocked, KAORI keeps the Tenant in Decommissioning for retry.' in registry
 
     assert 'g.tenant_operational_feedback = feedback' in routes
     assert 'toast_oob=True' in routes
@@ -589,8 +590,12 @@ def test_destructive_modal_supports_structured_impact_summary() -> None:
     assert 'impact_items=none' in component
     assert 'warning=none' in component
     assert "presentation='default'" in component
-    assert "'max-w-4xl' if presentation == 'steps'" in component
+    assert "'max-w-6xl' if presentation == 'steps'" in component
+    assert 'max-h-[calc(100dvh-2rem)]' in component
+    assert 'xl:grid-cols-4' in component
     assert "'%02d'|format(loop.index)" in component
+    assert 'Commit Boundary' in component
+    assert 'Fail-Closed' in component
     assert 'What will happen' in component
     assert 'data-destructive-modal-title' in component
     assert 'data-destructive-detail' in component
@@ -606,18 +611,23 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     routes = read('app/kubernetes/tenant/routes.py')
 
     assert 'KAORI Preset · Fixed' in profile_form
-    assert 'Fixed · Locked' in profile_form
+    assert 'Fixed · Read Only' in profile_form
     assert 'data-tenant-resource-mode-label' in profile_form
     assert 'data-locked="true"' in profile_form
     assert 'data-[locked=true]:cursor-not-allowed' in profile_form
+    assert 'data-[locked=true]:border-dashed' in profile_form
     assert "modeTitle.textContent = readonly ? 'KAORI Preset · Fixed' : 'Custom · Editable'" in profile_js
-    assert "modeText.textContent = readonly ? 'Fixed' : 'Editable'" in profile_js
-    assert "input.dataset.locked = readonly ? 'true' : 'false'" in profile_js
+    assert "modeText.textContent = readonly ? 'Fixed' : 'Custom'" in profile_js
+    assert "wrapper.dataset.locked = readonly ? 'true' : 'false'" in profile_js
 
     assert 'Allocation Change' in allocation
-    assert 'Allocation Comparison' in allocation
-    assert 'Capacity gate' in allocation
-    assert 'Current allocation stays active until preflight and reconciliation succeed.' in allocation
+    assert 'Change Request' in allocation
+    assert 'Before &amp; After' in allocation
+    assert 'Governed Change' in allocation
+    assert 'Requests must fit the governed budget.' in allocation
+    assert 'Only the admitted provider path is written.' in allocation
+    assert 'Read-back must match before commit.' in allocation
+    assert 'Current allocation stays active until every gate passes.' in allocation
     assert 'data-tenant-allocation-current-cpu' in allocation
     assert 'data-tenant-allocation-proposed-cpu' in allocation
 
@@ -625,10 +635,17 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     assert 'table_ui.inventory_block_header' in decisions
     assert 'registry_ui.filter_form' in decisions
     assert 'registry_ui.footer' in decisions
+    assert "table_ui.table_classes('min-w-[1180px]')" in decisions
+    assert '>Resource Profile</th>' in decisions
+    assert '>Recorded</th>' in decisions
+    assert 'row.created_at_label' in decisions
+    assert 'row.data_cutoff_label' in decisions
     assert 'decision_page' in decisions
     assert 'decision_per_page' in decisions
     assert 'capacity_decision_pagination.allowed_per_page' in decisions
     assert 'def get_capacity_decision_registry_context(' in service
+    assert 'outerjoin(' in service
+    assert 'present_user_datetime(decision_row.created_at' in service
     assert 'paginate_query(' in service
     assert 'get_capacity_decision_registry_context(' in routes
     assert "request.args.get('decision_per_page', 5" in routes
@@ -1149,7 +1166,7 @@ def test_tenant_setup_and_membership_guidance_use_compact_uat_copy() -> None:
     assert 'Existing Capsule Tenants use Discovery → Adoption.' in setup
     assert 'compatible Capsule clusters support direct Tenant Setup creation' not in setup
 
-    assert 'Revoke disables grants permanently. Reactivation does not restore old grants.' in memberships
+    assert 'Revoke disables grants. Reactivation does not restore old grants.' in memberships
     assert 'Reactivation restores membership only; old grants stay revoked.' not in memberships
 
 
