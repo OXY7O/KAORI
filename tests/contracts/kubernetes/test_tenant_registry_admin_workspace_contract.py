@@ -1189,7 +1189,10 @@ def test_legacy_allocation_adoption_is_observed_and_held_until_cutover() -> None
 
     assert 'namespace_allocation_options' in service
     assert 'record.ownership_status == TenantOwnershipStatus.MANAGED.value' in service
-    assert 'Adopted Baseline allocations are read-only until explicit Allocation Governance Cutover is completed.' in service
+    assert (
+        'Adopted Baseline allocations are read-only until explicit '
+        'Allocation Governance Cutover is completed.'
+    ) in service
     assert 'namespace_allocation_options' in allocation_change
     assert '{% for item in namespace_options %}' not in allocation_change
 
