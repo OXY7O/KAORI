@@ -192,12 +192,10 @@ def _tenant_section_redirect(section: str):
     context = _tenant_workspace_context()
     context.update(get_tenant_summary_context())
     context.update(_tenant_active_section_context(resolved_section))
-    context.update(get_live_tenant_connection_context())
     rendered = render_template(
         'kubernetes/tenant/partials/_tenant_admin_workspace.html',
         active_tenant_section=resolved_section,
         can_manage=current_user.has_permission('tenant.manage'),
-        tenant_live_connection_oob=True,
         **context,
     )
     feedback = getattr(g, 'tenant_operational_feedback', None)
@@ -230,6 +228,20 @@ def index():
         tenant_page_icon='layout-dashboard',
         **context,
     )
+
+
+@tenant_bp.get('/live-provider-connectivity')
+@any_permission_required('tenant.view', 'tenant.manage')
+def live_provider_connectivity():
+    response = make_response(
+        render_template(
+            'kubernetes/tenant/partials/_live_connection_snapshot.html',
+            **get_live_tenant_connection_context(),
+        )
+    )
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    return response
 
 
 @tenant_bp.get('/overview/cluster-estate')
