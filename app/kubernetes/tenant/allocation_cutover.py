@@ -375,33 +375,73 @@ def reconcile_adopted_native_allocation(
 
     quota_expected = _expected_source(record, 'ResourceQuota')
     limit_expected = _expected_source(record, 'LimitRange')
-    quota_name = _mutate_quota(
-        api,
-        record,
-        desired=quota,
-        expected=quota_expected,
-        managed=managed,
-        profile=profile,
-    )
-    limit_name = _mutate_limit_range(
-        api,
-        record,
-        desired=limits,
-        expected=limit_expected,
-        managed=managed,
-        profile=profile,
-    )
+    try:
+        quota_probe_name = str((quota_expected or {}).get('name') or _DEFAULT_QUOTA_NAME)
+        limit_probe_name = str((limit_expected or {}).get('name') or _DEFAULT_LIMIT_RANGE_NAME)
+        _verify_existing(
+            _read_quota(api, namespace=record.namespace, name=quota_probe_name),
+            quota_expected,
+            kind='ResourceQuota',
+            managed=managed,
+        )
+        _verify_existing(
+            _read_limit_range(api, namespace=record.namespace, name=limit_probe_name),
+            limit_expected,
+            kind='LimitRange',
+            managed=managed,
+        )
 
-    after = observe_native_namespace_allocation(api, record.namespace)
-    if after['control_state'] != 'observed':
-        raise ValueError(
-            'Provider mutation completed but effective allocation authority is no longer unambiguous; '
-            'KAORI will not mark cutover successful.'
+        quota_name = _mutate_quota(
+            api,
+            record,
+            desired=quota,
+            expected=quota_expected,
+            managed=managed,
+            profile=profile,
         )
-    if not _quota_equal(dict(after['quota']), quota) or not _limits_equal(dict(after['limits']), limits):
-        raise ValueError(
-            'Provider read-back does not match the proposed allocation; KAORI will not mark allocation control managed.'
+        limit_name = _mutate_limit_range(
+            api,
+            record,
+            desired=limits,
+            expected=limit_expected,
+            managed=managed,
+            profile=profile,
         )
+
+        after = observe_native_namespace_allocation(api, record.namespace)
+        if after['control_state'] != 'observed':
+            raise ValueError(
+                'Provider mutation completed but effective allocation authority is no longer unambiguous; '
+                'KAORI will not mark cutover successful.'
+            )
+        if not _quota_equal(dict(after['quota']), quota) or not _limits_equal(dict(after['limits']), limits):
+            raise ValueError(
+                'Provider read-back does not match the proposed allocation; '
+                'KAORI will not mark allocation control managed.'
+            )
+    except (ApiException, ValueError) as exc:
+        failed_at = datetime.now(UTC)
+        evidence = dict(record.provisioning_evidence_json or {})
+        evidence['allocation_reconcile_failure'] = {
+            'operation': operation,
+            'at': failed_at.isoformat(),
+            'control_state': allocation_control_state(record),
+            'provider': 'native_kubernetes',
+            'provider_mutation_may_have_started': True,
+            'error': str(exc)[:1000],
+            'proposed': {
+                'resource_profile_id': profile.public_id,
+                'resource_profile_version': resource_profile_version,
+                'quota': quota,
+                'limits': limits,
+            },
+            'secret_material_persisted': False,
+        }
+        record.provisioning_evidence_json = evidence
+        record.provisioning_status = 'failed'
+        record.provisioning_message = str(exc)[:1000]
+        record.last_reconciled_at = failed_at
+        raise
 
     now = datetime.now(UTC)
     evidence = dict(record.provisioning_evidence_json or {})
