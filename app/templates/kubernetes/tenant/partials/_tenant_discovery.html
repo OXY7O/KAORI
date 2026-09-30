@@ -259,87 +259,124 @@
                 <input type="hidden" name="provider_key" value="{{ row.provider_key }}">
                 <input type="hidden" name="resource_name" value="{{ row.resource_name }}">
                 <div class="space-y-5 p-5 sm:p-6">
+                    {% set allocation = row.allocation_preflight or {} %}
                     <section>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Candidate Summary</p>
-                        <div class="mt-2 flex items-center gap-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                  aria-hidden="true">
-                                <i data-lucide="{{ 'boxes' if row.provider_key == 'native_kubernetes' else 'waypoints' }}"
-                                   class="h-5 w-5"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <p class="text-sm font-semibold text-content-primary">{{ row.resource_name }}</p>
-                                    {{ table_label.status_label(row.resource_kind, 'info') }}
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Adoption Decision</p>
+                        <div class="mt-2 rounded-xl border border-outline-subtle bg-surface-elevated p-4 sm:p-5">
+                            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="{{ 'boxes' if row.provider_key == 'native_kubernetes' else 'waypoints' }}"
+                                           class="h-5 w-5"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <p class="text-base font-semibold text-content-primary">{{ row.resource_name }}</p>
+                                            {{ table_label.status_label(row.resource_kind, 'info') }}
+                                        </div>
+                                        <p class="mt-1 text-sm leading-6 text-content-secondary">
+                                            Eligible for governed read-only adoption. Provider authority remains
+                                            {{ 'Capsule' if row.provider_key == 'capsule' else 'Native Kubernetes' }}
+                                            until a separate governance cutover is explicitly accepted.
+                                        </p>
+                                    </div>
                                 </div>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.eligibility }}</p>
+                                <div class="grid shrink-0 gap-2 sm:grid-cols-3 lg:min-w-[390px]">
+                                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                        <p class="text-[11px] font-medium uppercase tracking-wide text-content-muted">Live</p>
+                                        <div class="mt-1">{{ table_label.status_label(row.provider_status, row.provider_tone) }}</div>
+                                    </div>
+                                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                        <p class="text-[11px] font-medium uppercase tracking-wide text-content-muted">Ownership</p>
+                                        <p class="mt-1 text-sm font-semibold text-content-primary">Not governed</p>
+                                    </div>
+                                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                        <p class="text-[11px] font-medium uppercase tracking-wide text-content-muted">Allocation</p>
+                                        <div class="mt-1">
+                                            {% if allocation.control_state == 'observed' %}
+                                                {{ table_label.special_label('Observed · Read Only', 'info', 'eye') }}
+                                            {% else %}
+                                                {{ table_label.special_label('Control Unavailable', 'warning', 'shield-alert') }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </section>
+
+                    <section>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Adoption Impact</p>
+                        <div class="mt-2 grid gap-3 lg:grid-cols-3">
+                            <div class="rounded-xl border border-outline-subtle bg-status-normal-soft p-4">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="database" class="h-4 w-4 text-status-normal-text" aria-hidden="true"></i>
+                                    <p class="text-sm font-semibold text-content-primary">KAORI records</p>
+                                </div>
+                                <p class="mt-2 text-xs leading-5 text-content-muted">
+                                    Tenant identity, provider lineage, correlated Namespace evidence, and the observed allocation baseline are committed for governance and audit.
+                                </p>
+                            </div>
+                            <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="shield" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                    <p class="text-sm font-semibold text-content-primary">Provider remains authoritative</p>
+                                </div>
+                                <p class="mt-2 text-xs leading-5 text-content-muted">
+                                    Adoption performs no provider mutation. Kubernetes/Capsule resources and external constraints stay exactly where they are.
+                                </p>
+                            </div>
+                            <div class="rounded-xl border border-outline-subtle bg-kaori-soft p-4">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="arrow-right-circle" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                    <p class="text-sm font-semibold text-content-primary">After adoption</p>
+                                </div>
+                                <p class="mt-2 text-xs leading-5 text-content-muted">
+                                    Ownership becomes <span class="font-semibold text-content-primary">Adopted / Observed</span>.
+                                    {% if allocation.control_state == 'observed' %}
+                                        Allocation governance can then be reviewed for an explicit cutover.
+                                    {% else %}
+                                        Allocation control stays unavailable until the authority or unsupported evidence is resolved.
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
                     <section>
                         <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Provider &amp; Live Context</p>
-                        <dl class="mt-2 grid overflow-hidden rounded-xl border border-outline-subtle md:grid-cols-2 xl:grid-cols-3">
-                            <div class="border-b border-outline-subtle p-4 sm:border-r lg:border-b">
+                        <dl class="mt-2 grid overflow-hidden rounded-xl border border-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
+                            <div class="border-b border-outline-subtle p-4 sm:border-r lg:border-b-0">
                                 <dt class="text-xs text-content-muted">Cluster</dt>
-                                <dd class="mt-1 text-sm font-semibold text-content-primary">
-                                    {{ row.cluster.name }}
-                                </dd>
-                                <dd class="mt-1 text-xs text-content-muted">
-                                    {{ row.cluster.environment|environment_name }}
-                                </dd>
-                            </div>
-                            <div class="border-b border-outline-subtle p-4 lg:border-r lg:border-b">
-                                <dt class="text-xs text-content-muted">Provider</dt>
-                                <dd class="mt-1 text-sm font-semibold text-content-primary">
-                                    {{ row.provider_label }}
-                                </dd>
-                                <dd class="mt-1 break-all text-xs text-content-muted">
-                                    {{ row.provider_reference }}
-                                </dd>
-                            </div>
-                            <div class="border-b border-outline-subtle p-4 sm:border-r lg:border-r-0 lg:border-b">
-                                <dt class="text-xs text-content-muted">Resource Kind</dt>
-                                <dd class="mt-1 text-sm font-semibold text-content-primary">
-                                    {{ row.resource_kind }}
-                                </dd>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ row.cluster.name }}</dd>
+                                <dd class="mt-1 text-xs text-content-muted">{{ row.cluster.environment|environment_name }}</dd>
                             </div>
                             <div class="border-b border-outline-subtle p-4 lg:border-b-0 lg:border-r">
-                                <dt class="text-xs text-content-muted">Live Status</dt>
-                                <dd class="mt-2">
-                                    {{ table_label.status_label(row.provider_status, row.provider_tone) }}
-                                </dd>
+                                <dt class="text-xs text-content-muted">Provider</dt>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ row.provider_label }}</dd>
+                                <dd class="mt-1 text-xs text-content-muted">{{ row.resource_kind }}</dd>
                             </div>
                             <div class="border-b border-outline-subtle p-4 sm:border-r sm:border-b-0 lg:border-r">
                                 <dt class="text-xs text-content-muted">Provider Authority</dt>
                                 <dd class="mt-1 text-sm font-semibold text-content-primary">
                                     {{ 'Capsule' if row.provider_key == 'capsule' else 'Native Kubernetes' }}
                                 </dd>
-                                <dd class="mt-1 text-xs leading-5 text-content-muted">
-                                    Authority remains with the provider after adoption.
-                                </dd>
+                                <dd class="mt-1 text-xs leading-5 text-content-muted">Preserved after adoption.</dd>
                             </div>
                             <div class="p-4">
                                 <dt class="text-xs text-content-muted">Current Ownership</dt>
-                                <dd class="mt-1 text-sm font-semibold text-content-primary">
-                                    Not governed
-                                </dd>
-                                <dd class="mt-1 text-xs leading-5 text-content-muted">
-                                    Observed live; no KAORI mutation yet.
-                                </dd>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">Not governed</dd>
+                                <dd class="mt-1 text-xs leading-5 text-content-muted">Observed live; no KAORI desired intent yet.</dd>
                             </div>
                         </dl>
                     </section>
-                    {% set allocation = row.allocation_preflight or {} %}
+
                     <section>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Observed Allocation Baseline</p>
-                        <div class="mt-2 grid gap-3 md:grid-cols-3">
-                            <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
-                                <p class="text-xs text-content-muted">Provenance</p>
-                                <p class="mt-1 text-sm font-semibold text-content-primary">Adopted Baseline · Observed</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Live provider evidence only; no desired KAORI allocation is created by adoption.</p>
-                            </div>
-                            <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
-                                <p class="text-xs text-content-muted">Allocation Authority</p>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Allocation Overview</p>
+                        <div class="mt-2 grid gap-3 lg:grid-cols-3">
+                            <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                                <p class="text-xs text-content-muted">Authority</p>
                                 <p class="mt-1 text-sm font-semibold text-content-primary">
                                     {% if row.provider_key == 'capsule' %}
                                         {{ allocation.allocation_authority|default('Unproven', true)|replace('_', ' ')|title }}
@@ -347,9 +384,14 @@
                                         Native ResourceQuota / LimitRange
                                     {% endif %}
                                 </p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Provider authority remains external until an explicit governance cutover is accepted.</p>
+                                <p class="mt-2 text-xs leading-5 text-content-muted">Provider authority is not transferred by adoption.</p>
                             </div>
-                            <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                            <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                                <p class="text-xs text-content-muted">Provenance</p>
+                                <p class="mt-1 text-sm font-semibold text-content-primary">Adopted Baseline · Observed</p>
+                                <p class="mt-2 text-xs leading-5 text-content-muted">This is live provider evidence, not KAORI-authored desired state.</p>
+                            </div>
+                            <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                                 <p class="text-xs text-content-muted">Control State</p>
                                 <div class="mt-2">
                                     {% if allocation.control_state == 'observed' %}
@@ -361,67 +403,127 @@
                                 <p class="mt-2 text-xs leading-5 text-content-muted">{{ allocation.control_reason|default('Allocation authority could not be proven.', true) }}</p>
                             </div>
                         </div>
-                        {% if row.provider_key == 'native_kubernetes' %}
-                            <div class="mt-3 rounded-xl border border-outline-subtle bg-surface-card p-4">
-                                <div class="flex flex-wrap items-center justify-between gap-2">
-                                    <p class="text-xs font-semibold text-content-primary">Effective ResourceQuota / LimitRange</p>
-                                    <span class="text-xs text-content-muted">{{ (allocation.get('profile_lineage') or {}).get('label') or 'Adopted Baseline · Observed' }}</span>
+
+                        <div class="mt-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <p class="text-sm font-semibold text-content-primary">Effective Allocation</p>
+                                <span class="text-xs text-content-muted">
+                                    {% if row.provider_key == 'native_kubernetes' %}
+                                        {{ (allocation.get('profile_lineage') or {}).get('label') or 'Adopted Baseline · Observed' }}
+                                    {% else %}
+                                        {{ allocation.shared_scope|default('Provider scope', true) }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                            {% if row.provider_key == 'native_kubernetes' and allocation.display_values %}
+                                <dl class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                    {% for value in allocation.display_values %}
+                                        <div class="rounded-lg bg-surface-card p-3">
+                                            <dt class="text-xs text-content-muted">{{ value.label }}</dt>
+                                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value.value }}</dd>
+                                        </div>
+                                    {% endfor %}
+                                </dl>
+                            {% elif row.provider_key == 'capsule' and allocation.shared_quota %}
+                                <dl class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                    {% for key, value in allocation.shared_quota.items() %}
+                                        <div class="rounded-lg bg-surface-card p-3">
+                                            <dt class="break-all text-xs text-content-muted">{{ key }}</dt>
+                                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value }}</dd>
+                                        </div>
+                                    {% endfor %}
+                                </dl>
+                            {% else %}
+                                <p class="mt-3 text-xs leading-5 text-content-muted">
+                                    No supported allocation dimensions were observed. KAORI preserves this as an observed/unbounded baseline.
+                                </p>
+                            {% endif %}
+                        </div>
+                    </section>
+
+                    <section>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Namespace Coverage</p>
+                        <div class="mt-2 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                            <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 border-b border-outline-subtle bg-surface-elevated px-4 py-3 text-xs font-semibold text-content-muted">
+                                <span>Namespace / observed allocation</span>
+                                <span>Status</span>
+                            </div>
+                            {% if row.provider_key == 'native_kubernetes' %}
+                                <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 px-4 py-3">
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-semibold text-content-primary">{{ row.resource_name }}</p>
+                                        {% if allocation.display_values %}
+                                            <p class="mt-1 text-xs leading-5 text-content-muted">
+                                                {% for value in allocation.display_values %}
+                                                    {{ value.label }} {{ value.value }}{% if not loop.last %} · {% endif %}
+                                                {% endfor %}
+                                            </p>
+                                        {% else %}
+                                            <p class="mt-1 text-xs text-content-muted">No supported quota dimensions observed.</p>
+                                        {% endif %}
+                                    </div>
+                                    <span class="self-start text-xs text-content-muted">Adopted Baseline · Observed</span>
                                 </div>
-                                {% if allocation.display_values %}
-                                    <dl class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                                        {% for value in allocation.display_values %}
-                                            <div class="rounded-lg bg-surface-elevated p-3">
-                                                <dt class="text-xs text-content-muted">{{ value.label }}</dt>
-                                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value.value }}</dd>
-                                            </div>
-                                        {% endfor %}
-                                    </dl>
-                                {% else %}
-                                    <p class="mt-3 text-xs leading-5 text-content-muted">No supported ResourceQuota or Container LimitRange dimensions were observed. This is preserved as an unbounded observed baseline.</p>
-                                {% endif %}
-                            </div>
-                        {% else %}
-                            <div class="mt-3 rounded-xl border border-outline-subtle bg-surface-card p-4">
-                                <p class="text-xs font-semibold text-content-primary">Correlated Namespaces</p>
-                                {% if allocation.correlated_namespaces %}
-                                    <div class="mt-3 space-y-2">
-                                        {% for namespace in allocation.correlated_namespaces %}
-                                            <div class="rounded-lg bg-surface-elevated p-3">
-                                                <div class="flex flex-wrap items-center justify-between gap-2">
-                                                    <p class="text-sm font-semibold text-content-primary">{{ namespace.name }}</p>
-                                                    <span class="text-xs text-content-muted">{{ ((namespace.get('allocation') or {}).get('profile_lineage') or {}).get('label') or 'Adopted Baseline · Observed' }}</span>
-                                                </div>
-                                                {% if (namespace.get('allocation') or {}).get('display_values') %}
-                                                    <p class="mt-1 text-xs leading-5 text-content-muted">
-                                                        {% for value in (namespace.get('allocation') or {}).get('display_values', []) %}
-                                                            {{ value.label }} {{ value.value }}{% if not loop.last %} · {% endif %}
-                                                        {% endfor %}
-                                                    </p>
-                                                {% else %}
-                                                    <p class="mt-1 text-xs leading-5 text-content-muted">No supported namespaced quota/limit dimensions observed.</p>
-                                                {% endif %}
-                                            </div>
-                                        {% endfor %}
+                            {% elif allocation.correlated_namespaces %}
+                                {% for namespace in allocation.correlated_namespaces %}
+                                    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 border-b border-outline-subtle px-4 py-3 last:border-b-0">
+                                        <div class="min-w-0">
+                                            <p class="truncate text-sm font-semibold text-content-primary">{{ namespace.name }}</p>
+                                            {% if (namespace.get('allocation') or {}).get('display_values') %}
+                                                <p class="mt-1 text-xs leading-5 text-content-muted">
+                                                    {% for value in (namespace.get('allocation') or {}).get('display_values', []) %}
+                                                        {{ value.label }} {{ value.value }}{% if not loop.last %} · {% endif %}
+                                                    {% endfor %}
+                                                </p>
+                                            {% else %}
+                                                <p class="mt-1 text-xs text-content-muted">No supported namespaced quota/limit dimensions observed.</p>
+                                            {% endif %}
+                                        </div>
+                                        <span class="self-start text-xs text-content-muted">Adopted Baseline · Observed</span>
                                     </div>
-                                {% else %}
-                                    <p class="mt-2 text-xs leading-5 text-content-muted">No Namespace correlation was proven from Capsule status, labels, or Tenant ownership references.</p>
-                                {% endif %}
-                                {% if allocation.shared_quota %}
-                                    <div class="mt-3 rounded-lg border border-outline-subtle bg-status-warning-soft p-3">
-                                        <p class="text-xs font-semibold text-content-primary">Capsule Shared/Tenant Quota Evidence</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">
-                                            {% for key, value in allocation.shared_quota.items() %}
-                                                {{ key }} {{ value }}{% if not loop.last %} · {% endif %}
-                                            {% endfor %}
-                                        </p>
-                                    </div>
-                                {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <div class="px-4 py-4">
+                                    <p class="text-xs leading-5 text-content-muted">
+                                        No Namespace correlation was proven from the current provider evidence. Adoption may still register the Tenant identity, but Namespace governance remains unclaimed.
+                                    </p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </section>
+
+                    {% if row.provider_key == 'capsule' and allocation.external_constraints %}
+                        <section>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">External Provider Constraints</p>
+                            <div class="mt-2 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <p class="text-sm font-semibold text-content-primary">Preserved outside allocation authority</p>
+                                    {{ table_label.special_label('Preserved · Not Rewritten', 'info', 'eye') }}
+                                </div>
+                                <p class="mt-2 text-xs leading-5 text-content-muted">
+                                    These constraints are outside the selected Capsule allocation authority. KAORI records them as evidence and never removes or rewrites them during Tenant quota governance.
+                                </p>
+                                <ul class="mt-3 space-y-2">
+                                    {% for constraint in allocation.external_constraints %}
+                                        <li class="flex items-start gap-2 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2 text-xs text-content-secondary">
+                                            <i data-lucide="shield-check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                            <span class="break-all">{{ constraint }}</span>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
                             </div>
-                        {% endif %}
-                        {% if row.provider_key == 'capsule' %}
-                            {% if allocation.authority_unsupported_dimensions or allocation.authority_ambiguous_dimensions or allocation.error %}
-                                <div class="mt-3 rounded-xl border border-outline-subtle bg-status-warning-soft p-4 text-status-warning-text">
-                                    <p class="text-xs font-semibold">Allocation Governance Requires Review</p>
+                        </section>
+                    {% endif %}
+
+                    {% if row.provider_key == 'capsule' %}
+                        {% if allocation.authority_unsupported_dimensions or allocation.authority_ambiguous_dimensions or allocation.error %}
+                            <section>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Governance Cutover Readiness</p>
+                                <div class="mt-2 rounded-xl border border-outline-subtle bg-status-warning-soft p-4 text-status-warning-text">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="shield-alert" class="h-4 w-4" aria-hidden="true"></i>
+                                        <p class="text-sm font-semibold">Cutover requires review</p>
+                                    </div>
                                     {% if allocation.authority_unsupported_dimensions %}
                                         <p class="mt-2 text-xs leading-5">Unsupported authority fields: {{ allocation.authority_unsupported_dimensions|join(' · ') }}</p>
                                     {% endif %}
@@ -432,24 +534,13 @@
                                         <p class="mt-2 text-xs leading-5">Observation error: {{ allocation.error }}</p>
                                     {% endif %}
                                 </div>
-                            {% endif %}
-                            {% if allocation.external_constraints %}
-                                <div class="mt-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <p class="text-xs font-semibold text-content-primary">External Constraints Preserved</p>
-                                        {{ table_label.special_label('Observed · Not Rewritten', 'info', 'eye') }}
-                                    </div>
-                                    <p class="mt-2 text-xs leading-5 text-content-muted">
-                                        These provider constraints are outside the selected Capsule allocation authority. KAORI retains them as evidence and does not remove or rewrite them during Tenant quota governance.
-                                    </p>
-                                    <p class="mt-2 text-xs leading-5 text-content-secondary">
-                                        {{ allocation.external_constraints|join(' · ') }}
-                                    </p>
-                                </div>
-                            {% endif %}
-                        {% elif allocation.unsupported_dimensions or allocation.ambiguous_dimensions or allocation.error %}
-                            <div class="mt-3 rounded-xl border border-outline-subtle bg-status-warning-soft p-4 text-status-warning-text">
-                                <p class="text-xs font-semibold">Allocation Governance Requires Review</p>
+                            </section>
+                        {% endif %}
+                    {% elif allocation.unsupported_dimensions or allocation.ambiguous_dimensions or allocation.error %}
+                        <section>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Governance Cutover Readiness</p>
+                            <div class="mt-2 rounded-xl border border-outline-subtle bg-status-warning-soft p-4 text-status-warning-text">
+                                <p class="text-sm font-semibold">Cutover requires review</p>
                                 {% if allocation.unsupported_dimensions %}
                                     <p class="mt-2 text-xs leading-5">Unsupported: {{ allocation.unsupported_dimensions|join(' · ') }}</p>
                                 {% endif %}
@@ -460,8 +551,9 @@
                                     <p class="mt-2 text-xs leading-5">Observation error: {{ allocation.error }}</p>
                                 {% endif %}
                             </div>
-                        {% endif %}
-                    </section>
+                        </section>
+                    {% endif %}
+
                     <section>
                         <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Proposed KAORI Mapping</p>
                         <div class="mt-2 grid gap-4 rounded-xl border border-outline-subtle p-4 md:grid-cols-2">
@@ -492,15 +584,17 @@
                                     <p class="text-xs font-medium text-content-muted">Provider Mapping</p>
                                     <p class="mt-1 text-sm font-semibold text-content-primary">{{ row.provider_label }} · {{ row.resource_kind }}</p>
                                 </div>
-                                <div class="rounded-lg bg-surface-elevated p-3">
-                                    <p class="text-xs font-medium text-content-muted">Adoption Effect</p>
-                                    <p class="mt-1 text-sm font-semibold text-content-primary">
-                                        {{ 'Reference existing namespace' if row.provider_key == 'native_kubernetes' else 'Register existing Capsule Tenant' }}
+                                <div class="rounded-lg bg-kaori-soft p-3">
+                                    <p class="text-xs font-medium text-content-muted">Adoption Result</p>
+                                    <p class="mt-1 text-sm font-semibold text-content-primary">Adopted / Observed</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                                        {{ 'Existing Namespace is referenced; no provider mutation.' if row.provider_key == 'native_kubernetes' else 'Existing Capsule Tenant is registered; Capsule remains authoritative.' }}
                                     </p>
                                 </div>
                             </div>
                         </div>
                     </section>
+
                     <section>
                         <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Governance Checks</p>
                         <div class="mt-2 grid gap-2 sm:grid-cols-2">
@@ -523,6 +617,31 @@
                             {% endfor %}
                         </div>
                     </section>
+
+                    <section>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Technical Evidence</p>
+                        <dl class="mt-2 grid gap-2 rounded-xl border border-outline-subtle bg-surface-elevated p-4 sm:grid-cols-2">
+                            <div>
+                                <dt class="text-xs text-content-muted">Provider reference</dt>
+                                <dd class="mt-1 break-all text-xs font-medium text-content-secondary">{{ row.provider_reference }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs text-content-muted">Allocation authority key</dt>
+                                <dd class="mt-1 break-all text-xs font-medium text-content-secondary">
+                                    {{ allocation.allocation_authority|default('native_namespaced' if row.provider_key == 'native_kubernetes' else 'unproven', true) }}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs text-content-muted">Adoption provenance</dt>
+                                <dd class="mt-1 text-xs font-medium text-content-secondary">adopted_observed</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs text-content-muted">Provider mutation during adoption</dt>
+                                <dd class="mt-1 text-xs font-medium text-content-secondary">No</dd>
+                            </div>
+                        </dl>
+                    </section>
+
                     <div class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-status-warning-soft p-4 text-status-warning-text">
                         <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-card"
                               aria-hidden="true">
@@ -530,19 +649,25 @@
                         </span>
                         <p class="text-xs leading-5">
                             <span class="font-semibold">Human confirmation.</span>
-                            Adoption creates committed KAORI governance records for this existing provider object.
-                            It does not create, patch, delete, restart, or relocate Kubernetes/Capsule resources.
+                            Adoption creates committed KAORI governance records in <span class="font-semibold">Adopted / Observed</span> state.
+                            No provider mutation occurs: KAORI does not create, patch, delete, restart, or relocate Kubernetes/Capsule resources during adoption.
                         </p>
                     </div>
                 </div>
-                <footer class="sticky bottom-0 flex flex-col-reverse gap-2 border-t border-outline-subtle bg-surface-card px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
-                    <button type="button"
-                            data-tenant-adoption-close
-                            class="{{ action_button.classes('secondary') }}">Cancel</button>
-                    <button type="submit" class="{{ action_button.classes('primary') }}">
-                        <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
-                        Adopt into KAORI
-                    </button>
+                <footer class="sticky bottom-0 flex flex-col gap-3 border-t border-outline-subtle bg-surface-card px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <p class="text-xs leading-5 text-content-muted">
+                        <span class="font-semibold text-content-primary">No provider mutation.</span>
+                        This action registers the existing object as Adopted / Observed.
+                    </p>
+                    <div class="flex flex-col-reverse gap-2 sm:flex-row">
+                        <button type="button"
+                                data-tenant-adoption-close
+                                class="{{ action_button.classes('secondary') }}">Cancel</button>
+                        <button type="submit" class="{{ action_button.classes('primary') }}">
+                            <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
+                            Adopt as Observed
+                        </button>
+                    </div>
                 </footer>
             </form>
         </section>
