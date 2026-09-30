@@ -1172,8 +1172,13 @@ def get_tenant_context() -> dict[str, Any]:
         .all()
     )
     ready_clusters = get_ready_native_clusters()
+    registered_clusters = (
+        Cluster.query.join(KubernetesConnection, KubernetesConnection.cluster_id == Cluster.id)
+        .order_by(Cluster.name.asc(), Cluster.id.asc())
+        .all()
+    )
     capacity_governance = [
-        {'cluster': cluster, **build_capacity_governance_summary(cluster.id)} for cluster in ready_clusters
+        {'cluster': cluster, **build_capacity_governance_summary(cluster.id)} for cluster in registered_clusters
     ]
     capacity_decisions = TenantCapacityDecision.query.order_by(TenantCapacityDecision.created_at.desc()).limit(5).all()
     namespace_count = TenantNamespace.query.filter(TenantNamespace.provisioning_status != 'deprovisioned').count()
@@ -1192,6 +1197,7 @@ def get_tenant_context() -> dict[str, Any]:
         'namespaces': namespaces,
         'environment_options': environment_options,
         'ready_clusters': ready_clusters,
+        'registered_clusters': registered_clusters,
         'capacity_governance': capacity_governance,
         'capacity_policy_state': {
             str(item['cluster'].id): item['policy'] for item in capacity_governance if item.get('policy') is not None
