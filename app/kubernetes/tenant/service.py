@@ -440,8 +440,9 @@ def _advanced_profile_controls(source: Mapping[str, Any]) -> dict[str, bool]:
     if not _advanced_control_contract_present(source):
         return {}
     return {
-        key: _text(source, f'advanced_control_{key}').lower() in _CONTROL_TRUE_VALUES
+        key: True
         for key in RESOURCE_PROFILE_ADVANCED_CONTROLS
+        if _text(source, f'advanced_control_{key}').lower() in _CONTROL_TRUE_VALUES
     }
 
 
