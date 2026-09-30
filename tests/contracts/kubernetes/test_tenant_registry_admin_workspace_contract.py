@@ -1247,3 +1247,49 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert 'Select KAORI-managed allocation' in allocation_change
     assert 'KAORI Managed' in namespace_registry
 
+
+
+
+def test_managed_allocation_drift_is_observation_only_and_bidirectionally_reconciled() -> None:
+    drift = read('app/kubernetes/tenant/allocation_drift.py')
+    tasks = read('app/kubernetes/tenant/tasks.py')
+    routes = read('app/kubernetes/tenant/routes.py')
+    registry = read('app/templates/kubernetes/tenant/partials/_operations_drift_registry.html')
+    architecture = read('docs/architecture/kubernetes-tenant-resource-profiles.md')
+    readme = read('app/kubernetes/tenant/README.md')
+
+    assert 'def apply_managed_allocation_drift_observation' in drift
+    assert "'provider_mutation_performed': False" in drift
+    assert "'allocation_drift'" in drift
+    assert "'differences': differences" in drift
+    assert 'def reapply_kaori_allocation_intent' in drift
+    assert 'def accept_provider_allocation_state' in drift
+    assert 'enforce_observed_namespace_allocation_preflight' in drift
+    assert "current_quota_hard=dict(live.get('quota') or {})" in drift
+    assert "proposed_quota_hard=record.allocation_quota_json or {}" in drift
+    assert "provenance': 'accepted_provider_state'" in drift
+    assert 'No admitted reconciliation adapter exists for the current provider authority.' in drift
+    assert 'committed Drifted Namespace state' in drift
+    assert 'unavailable during teardown' in drift
+
+    assert 'apply_managed_allocation_drift_observation()' in tasks
+    assert "snapshot['allocation_drift_count']" in tasks
+
+    assert "@tenant_bp.post('/namespaces/<int:namespace_id>/allocation/reapply')" in routes
+    assert "@tenant_bp.post('/namespaces/<int:namespace_id>/allocation/accept-provider-state')" in routes
+    assert 'kubernetes_tenant_allocation_reapplied' in routes
+    assert 'kubernetes_tenant_allocation_provider_state_accepted' in routes
+
+    assert 'Namespace & Allocation Drift' in registry
+    assert 'Reapply KAORI Intent' in registry
+    assert 'Accept Provider State' in registry
+    assert 'Control Unavailable' in registry
+    assert 'difference.kaori_value' in registry
+    assert 'difference.provider_value' in registry
+
+    assert '## Managed allocation drift and bidirectional reconciliation' in architecture
+    assert 'current live provider allocation as the current state' in architecture
+    assert 'Acceptance performs **no provider write' in architecture
+    assert 'Native managed-allocation drift:' in readme
+    assert 'Bidirectional allocation recovery:' in readme
+    assert 'Capsule allocation-drift boundary:' in readme
