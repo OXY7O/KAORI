@@ -64,8 +64,7 @@ def get_live_tenant_connection_context() -> dict[str, Any]:
     else:
         status, tone = 'Unavailable', 'critical'
         description = (
-            'Kubernetes API is unreachable for the current Tenant provider scope. '
-            'Committed KAORI Tenant state remains readable while provider-backed operations fail closed.'
+            'Kubernetes unreachable. KAORI state stays readable; provider operations fail closed.'
         )
 
     return {
