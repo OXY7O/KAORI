@@ -694,6 +694,7 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert "'requests.memory': 'Memory Requests'" in preflight
     assert "'limits.memory': 'Memory Limits'" in preflight
     assert "'pods': 'Pods'" in preflight
+    assert 'Observed allocation contains unsupported or ambiguous dimensions; governance cutover must fail closed.' in preflight
     assert 'Namespace Coverage' in preflight
     assert 'Proposed KAORI Mapping' in preflight
     assert 'Adoption Result' in preflight
