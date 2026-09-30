@@ -55,45 +55,46 @@
                     {% set allocation = row.allocation_preflight or {} %}
                     <section>
                         <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Adoption Decision</p>
-                        <div class="mt-2 rounded-xl border border-outline-subtle bg-surface-elevated p-4 sm:p-5">
-                            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                <div class="flex min-w-0 items-start gap-3">
-                                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                        <div class="mt-2 overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated">
+                            <div class="grid lg:grid-cols-[minmax(0,1.35fr)_minmax(460px,1fr)]">
+                                <div class="flex min-w-0 items-center gap-3 px-4 py-4 sm:px-5">
+                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
                                           aria-hidden="true">
                                         <i data-lucide="{{ 'boxes' if row.provider_key == 'native_kubernetes' else 'waypoints' }}"
                                            class="h-5 w-5"></i>
                                     </span>
                                     <div class="min-w-0">
                                         <div class="flex flex-wrap items-center gap-2">
-                                            <p class="text-base font-semibold text-content-primary">{{ row.resource_name }}</p>
+                                            <p class="truncate text-base font-semibold text-content-primary">{{ row.resource_name }}</p>
                                             {{ table_label.status_label(row.resource_kind, 'info') }}
                                         </div>
-                                        <p class="mt-1 text-sm leading-6 text-content-secondary">
-                                            Can be adopted as <span class="font-semibold text-content-primary">Observed</span>.
-                                            {{ 'Capsule' if row.provider_key == 'capsule' else 'Native Kubernetes' }} remains authoritative.
+                                        <p class="mt-1 text-sm text-content-secondary">
+                                            Adopt as <span class="font-semibold text-content-primary">Observed</span>
+                                            <span class="text-content-muted">·</span>
+                                            {{ 'Capsule' if row.provider_key == 'capsule' else 'Native Kubernetes' }} remains authoritative
                                         </p>
                                     </div>
                                 </div>
-                                <div class="grid shrink-0 gap-2 sm:grid-cols-3 lg:min-w-[390px]">
-                                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
-                                        <p class="text-[11px] font-medium uppercase tracking-wide text-content-muted">Live</p>
-                                        <div class="mt-1">{{ table_label.status_label(row.provider_status, row.provider_tone) }}</div>
+                                <dl class="grid grid-cols-3 gap-px border-t border-outline-subtle bg-outline-subtle lg:border-l lg:border-t-0">
+                                    <div class="min-w-0 bg-surface-card px-3 py-3 sm:px-4">
+                                        <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Live</dt>
+                                        <dd class="mt-1.5">{{ table_label.status_label(row.provider_status, row.provider_tone) }}</dd>
                                     </div>
-                                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
-                                        <p class="text-[11px] font-medium uppercase tracking-wide text-content-muted">Ownership</p>
-                                        <p class="mt-1 text-sm font-semibold text-content-primary">Not governed</p>
+                                    <div class="min-w-0 bg-surface-card px-3 py-3 sm:px-4">
+                                        <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Ownership</dt>
+                                        <dd class="mt-1.5 truncate text-sm font-semibold text-content-primary">Not governed</dd>
                                     </div>
-                                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
-                                        <p class="text-[11px] font-medium uppercase tracking-wide text-content-muted">Allocation</p>
-                                        <div class="mt-1">
+                                    <div class="min-w-0 bg-surface-card px-3 py-3 sm:px-4">
+                                        <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Allocation</dt>
+                                        <dd class="mt-1.5">
                                             {% if allocation.control_state == 'observed' %}
                                                 {{ table_label.special_label('Observed · Read Only', 'info', 'eye') }}
                                             {% else %}
                                                 {{ table_label.special_label('Control Unavailable', 'warning', 'shield-alert') }}
                                             {% endif %}
-                                        </div>
+                                        </dd>
                                     </div>
-                                </div>
+                                </dl>
                             </div>
                         </div>
                     </section>
@@ -215,15 +216,14 @@
                             </div>
                         </div>
 
-                        <div class="mt-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4 sm:p-5">
-                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                <div>
+                        <div class="mt-3 overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated">
+                            <div class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                                <div class="flex min-w-0 items-center gap-2">
                                     <p class="text-sm font-semibold text-content-primary">Effective Allocation</p>
-                                    <p class="mt-1 text-xs text-content-muted">
-                                        Live provider values normalized for governance review.
-                                    </p>
+                                    <span class="text-content-muted" aria-hidden="true">·</span>
+                                    <p class="truncate text-xs text-content-muted">Live provider values</p>
                                 </div>
-                                <span class="inline-flex w-fit items-center rounded-full border border-outline-subtle bg-surface-card px-2.5 py-1 text-[11px] font-medium text-content-muted">
+                                <span class="inline-flex w-fit items-center rounded-full bg-surface-card px-2.5 py-1 text-[11px] font-medium text-content-muted ring-1 ring-inset ring-outline-subtle">
                                     {% if row.provider_key == 'native_kubernetes' %}
                                         {{ (allocation.get('profile_lineage') or {}).get('label') or 'Adopted Baseline · Observed' }}
                                     {% else %}
@@ -232,11 +232,11 @@
                                 </span>
                             </div>
                             {% if row.provider_key == 'native_kubernetes' and allocation.display_values %}
-                                <dl class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                                <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                                     {% for value in allocation.display_values %}
-                                        <div class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card px-4 py-3">
-                                            <dt class="text-[11px] font-medium uppercase tracking-wide text-content-muted">{{ value.label }}</dt>
-                                            <dd class="mt-2 break-words text-lg font-semibold leading-none text-content-primary">{{ value.value }}</dd>
+                                        <div class="min-w-0 bg-surface-card px-4 py-4 sm:px-5">
+                                            <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">{{ value.label }}</dt>
+                                            <dd class="mt-2 break-words text-xl font-semibold leading-none text-content-primary">{{ value.value }}</dd>
                                         </div>
                                     {% endfor %}
                                 </dl>
@@ -249,18 +249,30 @@
                                     'pods': 'Pods',
                                     'requests.storage': 'Storage Requests'
                                 } %}
-                                <dl class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                                    {% for key, value in allocation.shared_quota.items() %}
-                                        <div class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card px-4 py-3">
-                                            <dt class="text-[11px] font-medium uppercase tracking-wide text-content-muted">
-                                                {{ quota_labels.get(key, key|replace('.', ' ')|title) }}
-                                            </dt>
-                                            <dd class="mt-2 break-words text-lg font-semibold leading-none text-content-primary">{{ value }}</dd>
+                                {% set quota_order = [
+                                    'requests.cpu',
+                                    'limits.cpu',
+                                    'requests.memory',
+                                    'limits.memory',
+                                    'pods',
+                                    'requests.storage'
+                                ] %}
+                                <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                                    {% for key in quota_order if key in allocation.shared_quota %}
+                                        <div class="min-w-0 bg-surface-card px-4 py-4 sm:px-5">
+                                            <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">{{ quota_labels[key] }}</dt>
+                                            <dd class="mt-2 break-words text-xl font-semibold leading-none text-content-primary">{{ allocation.shared_quota[key] }}</dd>
+                                        </div>
+                                    {% endfor %}
+                                    {% for key, value in allocation.shared_quota.items() if key not in quota_order %}
+                                        <div class="min-w-0 bg-surface-card px-4 py-4 sm:px-5">
+                                            <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">{{ key|replace('.', ' ')|title }}</dt>
+                                            <dd class="mt-2 break-words text-xl font-semibold leading-none text-content-primary">{{ value }}</dd>
                                         </div>
                                     {% endfor %}
                                 </dl>
                             {% else %}
-                                <div class="mt-4 rounded-lg border border-dashed border-outline-subtle bg-surface-card px-4 py-3">
+                                <div class="bg-surface-card px-4 py-4 sm:px-5">
                                     <p class="text-xs leading-5 text-content-muted">
                                         No supported allocation dimensions observed; baseline remains unbounded.
                                     </p>
