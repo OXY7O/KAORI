@@ -233,16 +233,17 @@
 {{ destructive_modal.render('tenant-decommission-modal',
 'Decommission Tenant',
 'Selected Tenant',
-'Final state is committed only after the effective provider cleanup is verified. The Tenant record, correlation lineage, and audit evidence remain available as history.',
+'Final state commits only after cleanup verification. Tenant history and audit evidence remain available.',
 'tenant-decommission-submit',
 action_label='Start Decommission',
-notice='Governed asynchronous teardown with fail-closed provider verification.',
+notice='Governed teardown with provider verification.',
 scope_value='Governed Tenant boundary',
 impact_items=[
-('snowflake', 'Freeze Mutations', 'Block new Tenant access, credential, allocation, and provider-authority mutations.') ,
-('key-round', 'Revoke Access', 'Revoke credentials and Access Grants before retiring memberships and groups.'),
-('boxes', 'Remove Namespaces', 'Deprovision every KAORI-managed namespace and wait until Kubernetes reports absence.'),
-('shield-check', 'Verify & Retain', 'Verify provider cleanup, then commit Decommissioned while retaining historical evidence.')
+('snowflake', 'Freeze Mutations', 'Block new Tenant changes.') ,
+('key-round', 'Revoke Access', 'Disable credentials and grants.'),
+('boxes', 'Remove Namespaces', 'Delete KAORI-managed namespaces and verify absence.'),
+('shield-check', 'Verify & Retain', 'Verify cleanup, then commit Decommissioned with history retained.')
 ],
-warning='If Kubernetes remains Terminating or finalizers block deletion, KAORI stops fail-closed and keeps the Tenant in Decommissioning for operator retry.'
+warning='If deletion is blocked by Terminating or finalizers, KAORI keeps the Tenant in Decommissioning for retry.',
+presentation='steps'
 ) }}
