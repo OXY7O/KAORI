@@ -241,6 +241,7 @@ class TenantResourceProfile(db.Model):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     quota_hard_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     limit_defaults_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    storage_policy_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     advanced_controls_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -349,6 +350,7 @@ class TenantNamespace(db.Model):
     )
     allocation_quota_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     allocation_limit_defaults_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    allocation_storage_policy_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     allocation_customized: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     namespace: Mapped[str] = mapped_column(String(253), nullable=False)
     generation: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
