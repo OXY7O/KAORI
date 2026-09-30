@@ -25,7 +25,10 @@ from app.kubernetes.tenant.capsule_tenant import (
     compensate_capsule_tenant_create,
     create_capsule_tenant,
 )
-from app.kubernetes.tenant.native_provider import tenant_workspace_connection_available
+from app.kubernetes.tenant.native_provider import (
+    NativeKubernetesTenantProvider,
+    tenant_workspace_connection_available,
+)
 from app.kubernetes.tenant.provisioning import create_namespace_intent, reconcile_native_namespace
 from app.kubernetes.tenant.validation import validate_profile_spec
 from app.models import Cluster
@@ -147,6 +150,85 @@ _PROFILE_LIMIT_FIELDS = {
     'default_request_memory': ('default_request', 'memory'),
 }
 _CONTROL_TRUE_VALUES = {'1', 'true', 'yes', 'on'}
+
+RESOURCE_PROFILE_ADVANCED_CONTROLS: dict[str, dict[str, Any]] = {
+    'ingress': {
+        'label': 'Ingress',
+        'description': 'Govern Ingress exposure through the canonical Tenant exposure policy.',
+        'authority': '#119',
+        'providers': {
+            'native_kubernetes': ('service_exposure_preflight', 'admission_enforcement'),
+            'capsule': ('resource_rules', 'admission_enforcement'),
+        },
+    },
+    'hostname_reservation': {
+        'label': 'Hostname Reservation',
+        'description': 'Require canonical hostname ownership and collision checks before exposure.',
+        'authority': '#119',
+        'providers': {
+            'native_kubernetes': ('domain_policy_preflight', 'admission_enforcement'),
+            'capsule': ('resource_rules', 'admission_enforcement'),
+        },
+    },
+    'managed_tls': {
+        'label': 'Managed TLS',
+        'description': 'Request the canonical managed TLS capability for the attached placement.',
+        'authority': '#118',
+        'providers': {
+            'native_kubernetes': ('managed_tls',),
+            'capsule': ('replication',),
+        },
+    },
+    'managed_registry': {
+        'label': 'Managed Registry',
+        'description': 'Request managed private-registry credential capability for the placement.',
+        'authority': '#118',
+        'providers': {
+            'native_kubernetes': ('managed_registry',),
+            'capsule': ('replication',),
+        },
+    },
+    'capsule_namespace_controls': {
+        'label': 'Capsule Namespace Controls',
+        'description': 'Request Capsule namespace count/naming and related Tenant namespace controls.',
+        'authority': '#121/#124',
+        'providers': {
+            'capsule': ('namespace_controls',),
+        },
+    },
+    'capsule_resource_rules': {
+        'label': 'Capsule Resource Rules',
+        'description': 'Request Capsule StorageClass, PriorityClass, registry, ingress, and service rules.',
+        'authority': '#121/#124',
+        'providers': {
+            'capsule': ('resource_rules',),
+        },
+    },
+    'capsule_resource_pools': {
+        'label': 'Capsule Resource Pools',
+        'description': 'Request Capsule ResourcePool and claim capability.',
+        'authority': '#124',
+        'providers': {
+            'capsule': ('resource_pools',),
+        },
+    },
+    'capsule_replication': {
+        'label': 'Capsule Replication',
+        'description': 'Request TenantResource / GlobalTenantResource replication capability.',
+        'authority': '#124',
+        'providers': {
+            'capsule': ('replication',),
+        },
+    },
+    'capsule_tenant_cordon': {
+        'label': 'Capsule Tenant Cordon',
+        'description': 'Request Capsule Tenant/namespace cordon capability.',
+        'authority': '#124',
+        'providers': {
+            'capsule': ('tenant_cordon',),
+        },
+    },
+}
 
 
 class TenantStateConflictError(RuntimeError):
@@ -341,6 +423,118 @@ def _control_enabled(source: Mapping[str, Any], field: str) -> bool:
     return _text(source, f'control_{field}').lower() in _CONTROL_TRUE_VALUES
 
 
+def _advanced_control_contract_present(source: Mapping[str, Any]) -> bool:
+    return _text(source, 'advanced_control_contract_present').lower() in _CONTROL_TRUE_VALUES
+
+
+def _advanced_profile_controls(source: Mapping[str, Any]) -> dict[str, bool]:
+    if not _advanced_control_contract_present(source):
+        return {}
+    return {
+        key: _text(source, f'advanced_control_{key}').lower() in _CONTROL_TRUE_VALUES
+        for key in RESOURCE_PROFILE_ADVANCED_CONTROLS
+    }
+
+
+def evaluate_resource_profile_advanced_controls(
+    controls: Mapping[str, Any] | None,
+    *,
+    provider_key: str,
+    capability_statuses: Mapping[str, str] | None = None,
+) -> dict[str, dict[str, Any]]:
+    statuses = {str(key): str(value) for key, value in dict(capability_statuses or {}).items()}
+    requested_controls = dict(controls or {})
+    result: dict[str, dict[str, Any]] = {}
+
+    for key, contract in RESOURCE_PROFILE_ADVANCED_CONTROLS.items():
+        requested = bool(requested_controls.get(key))
+        provider_requirements = dict(contract.get('providers') or {}).get(provider_key)
+        if not requested:
+            state = 'disabled'
+            reason = 'Not enabled in this Resource Profile.'
+        elif provider_requirements is None:
+            state = 'unsupported'
+            reason = f'{contract["label"]} is not supported by the {provider_key.replace("_", " ")} placement.'
+        else:
+            unavailable = [
+                capability
+                for capability in provider_requirements
+                if statuses.get(capability) != 'available'
+            ]
+            if unavailable:
+                state = 'unsupported'
+                reason = 'Required provider capability unavailable: ' + ', '.join(unavailable) + '.'
+            else:
+                state = 'enabled'
+                reason = 'Requested by profile and supported by committed provider capability evidence.'
+
+        result[key] = {
+            'key': key,
+            'label': contract['label'],
+            'description': contract['description'],
+            'authority': contract['authority'],
+            'requested': requested,
+            'state': state,
+            'reason': reason,
+        }
+    return result
+
+
+def _tenant_capability_statuses(tenant: Tenant) -> dict[str, str]:
+    if tenant.provider_key == 'native_kubernetes':
+        cluster = db.session.get(Cluster, tenant.cluster_id)
+        connection = cluster.kubernetes_connection if cluster is not None else None
+        if connection is None:
+            return {}
+        try:
+            provider = NativeKubernetesTenantProvider(connection=connection)
+            return {
+                item.key: item.status.value
+                for item in provider.capabilities(cluster_id=str(tenant.cluster_id))
+            }
+        except Exception:
+            return {}
+
+    evidence = tenant.provider_evidence_json or {}
+    capsule = evidence.get('capsule') if isinstance(evidence, Mapping) else None
+    capsule = capsule if isinstance(capsule, Mapping) else evidence
+    capabilities = capsule.get('capabilities') if isinstance(capsule, Mapping) else {}
+    return {
+        str(key): str(value)
+        for key, value in dict(capabilities or {}).items()
+    }
+
+
+def resource_profile_attachment_controls(
+    profile: TenantResourceProfile,
+    tenant: Tenant,
+) -> dict[str, dict[str, Any]]:
+    return evaluate_resource_profile_advanced_controls(
+        profile.advanced_controls_json or {},
+        provider_key=tenant.provider_key,
+        capability_statuses=_tenant_capability_statuses(tenant),
+    )
+
+
+def _validate_resource_profile_attachment_controls(
+    profile: TenantResourceProfile,
+    tenant: Tenant,
+) -> dict[str, dict[str, Any]]:
+    evaluation = resource_profile_attachment_controls(profile, tenant)
+    unsupported = [
+        item['label']
+        for item in evaluation.values()
+        if item['requested'] and item['state'] == 'unsupported'
+    ]
+    if unsupported:
+        raise ValueError(
+            'Resource Profile advanced controls are unavailable on the selected provider placement: '
+            + ', '.join(unsupported)
+            + '.'
+        )
+    return evaluation
+
+
 def _profile_values(source: Mapping[str, Any]) -> tuple[dict[str, str], dict[str, dict[str, str]]]:
     quota = {
         target: value
@@ -449,6 +643,7 @@ def create_resource_profile(source: Mapping[str, Any]) -> TenantResourceProfile:
     profile.description = _text(source, 'profile_description') or None
     profile.quota_hard_json = quota
     profile.limit_defaults_json = limits
+    profile.advanced_controls_json = _advanced_profile_controls(source)
     profile.enabled = True
     db.session.add(profile)
     db.session.flush()
@@ -502,12 +697,18 @@ def update_resource_profile(profile_id: int, source: Mapping[str, Any]) -> tuple
         raise ValueError('Select whether the Custom Resource Profile is Enabled or Disabled.')
 
     quota, limits = _profile_values(source)
-    contract_changed = quota != (profile.quota_hard_json or {}) or limits != (profile.limit_defaults_json or {})
+    advanced_controls = _advanced_profile_controls(source)
+    contract_changed = (
+        quota != (profile.quota_hard_json or {})
+        or limits != (profile.limit_defaults_json or {})
+        or advanced_controls != (profile.advanced_controls_json or {})
+    )
 
     profile.name = name
     profile.description = _text(source, 'profile_description') or None
     profile.quota_hard_json = quota
     profile.limit_defaults_json = limits
+    profile.advanced_controls_json = advanced_controls
     profile.enabled = enabled_value == 'enabled'
     if contract_changed:
         profile.version = int(profile.version or 1) + 1
@@ -613,6 +814,7 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
         + 1
     )
 
+    attachment_controls = _validate_resource_profile_attachment_controls(profile, tenant)
     quota, limits, customized = _namespace_allocation_values(profile)
     capacity_decision = enforce_namespace_allocation_preflight(
         tenant_environment=environment,
@@ -635,6 +837,15 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
     except (ApiException, ValueError):
         db.session.commit()
         raise
+
+    provisioning_evidence = dict(record.provisioning_evidence_json or {})
+    provisioning_evidence['advanced_profile_controls'] = {
+        'source_profile_id': profile.public_id,
+        'source_profile_version': int(profile.version or 1),
+        'provider_key': tenant.provider_key,
+        'controls': attachment_controls,
+    }
+    record.provisioning_evidence_json = provisioning_evidence
     db.session.commit()
 
     # Explicit namespace provisioning may expand previously committed
@@ -1283,6 +1494,7 @@ def get_namespace_registry_context(
                     else profile.version
                 ),
                 'profile_class': profile.profile_class,
+                'advanced_controls': profile.advanced_controls_json or {},
             }
             for profile in profile_options
         },
@@ -1351,6 +1563,20 @@ def get_tenant_context() -> dict[str, Any]:
         ),
         'native_available': bool(ready_clusters),
         'resource_profile_presets': RESOURCE_PROFILE_PRESETS,
+        'resource_profile_advanced_controls': RESOURCE_PROFILE_ADVANCED_CONTROLS,
+        'tenant_environment_advanced_control_state': {
+            str(environment.id): {
+                'tenant_id': environment.tenant_id,
+                'provider_key': environment.tenant.provider_key,
+                'provider_state': environment.tenant.provider_state,
+                'controls': evaluate_resource_profile_advanced_controls(
+                    {key: True for key in RESOURCE_PROFILE_ADVANCED_CONTROLS},
+                    provider_key=environment.tenant.provider_key,
+                    capability_statuses=_tenant_capability_statuses(environment.tenant),
+                ),
+            }
+            for environment in environment_options
+        },
         'namespace_allocation_state': {
             str(record.id): {
                 'namespace': record.namespace,
@@ -1372,6 +1598,7 @@ def get_tenant_context() -> dict[str, Any]:
                     else profile.version
                 ),
                 'profile_class': profile.profile_class,
+                'advanced_controls': profile.advanced_controls_json or {},
             }
             for profile in profiles
             if profile.enabled
