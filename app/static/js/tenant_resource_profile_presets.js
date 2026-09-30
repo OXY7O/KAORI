@@ -130,8 +130,19 @@
             const key = group.getAttribute('data-tenant-advanced-control-group')
             const toggle = group.querySelector(`[data-tenant-advanced-control-toggle="${key}"]`)
             const fields = Array.from(group.querySelectorAll(`[data-tenant-advanced-control-field="${key}"]`))
+            const statusLabel = group.querySelector('.kaori-semantic-label')
+            const statusText = statusLabel?.querySelector('span:last-child')
 
             if (!(toggle instanceof HTMLInputElement)) return
+
+            const syncStatus = (enabled) => {
+                if (statusText) statusText.textContent = enabled ? 'Enabled' : 'Off'
+                if (!statusLabel) return
+                statusLabel.classList.toggle('bg-status-normal-soft', enabled)
+                statusLabel.classList.toggle('text-status-normal-text', enabled)
+                statusLabel.classList.toggle('bg-status-unknown-soft', !enabled)
+                statusLabel.classList.toggle('text-status-unknown-text', !enabled)
+            }
 
             const sync = () => {
                 const enabled = toggle.checked
@@ -139,11 +150,42 @@
                     field.disabled = !enabled
                     field.setAttribute('aria-disabled', enabled ? 'false' : 'true')
                 })
+
+                if (key === 'service_exposure') {
+                    const profile = group.querySelector('[data-tenant-service-exposure-profile]')
+                    const customFields = group.querySelectorAll('[data-tenant-service-exposure-custom-field]')
+                    const custom = enabled && profile?.value === 'custom'
+                    customFields.forEach((field) => {
+                        field.disabled = !custom
+                        field.setAttribute('aria-disabled', custom ? 'false' : 'true')
+                    })
+                }
+
+                if (key === 'managed_tls') {
+                    const mode = group.querySelector('[data-tenant-managed-tls-mode]')
+                    const source = group.querySelector('[data-tenant-managed-tls-source]')
+                    if (source instanceof HTMLInputElement) {
+                        source.required = enabled && mode?.value === 'namespace_tls_compat'
+                    }
+                }
+
+                if (key === 'managed_registry') {
+                    const mode = group.querySelector('[data-tenant-managed-registry-mode]')
+                    const source = group.querySelector('[data-tenant-managed-registry-source]')
+                    if (source instanceof HTMLInputElement) {
+                        source.required = enabled && mode?.value === 'image_pull_secret'
+                    }
+                }
+
                 group.dataset.enabled = enabled ? 'true' : 'false'
                 group.classList.toggle('opacity-70', !enabled)
+                syncStatus(enabled)
             }
 
             toggle.addEventListener('change', sync)
+            group.querySelector('[data-tenant-service-exposure-profile]')?.addEventListener('change', sync)
+            group.querySelector('[data-tenant-managed-tls-mode]')?.addEventListener('change', sync)
+            group.querySelector('[data-tenant-managed-registry-mode]')?.addEventListener('change', sync)
             sync()
         })
     }
