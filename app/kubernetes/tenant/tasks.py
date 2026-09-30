@@ -6,6 +6,7 @@ from typing import Any
 from celery import shared_task
 
 from app.extensions.db import db
+from app.kubernetes.tenant.allocation_drift import apply_managed_allocation_drift_observation
 from app.kubernetes.tenant.audit import record_tenant_sync_terminal_audit
 from app.kubernetes.tenant.decommission_service import execute_tenant_decommission
 from app.kubernetes.tenant.sync_service import (
@@ -186,9 +187,41 @@ def sync_tenant_inventory_task(
             message='Reading committed Tenant ownership and Kubernetes inventory evidence.',
         )
         snapshot = build_tenant_inventory_snapshot()
-        drifted_namespace_ids = apply_missing_namespace_drift_from_inventory()
+        missing_namespace_drift_ids = apply_missing_namespace_drift_from_inventory()
+        allocation_drift = apply_managed_allocation_drift_observation()
+
+        allocation_drift_ids = list(allocation_drift['drifted_namespace_ids'])
+        drifted_namespace_ids = sorted(set(missing_namespace_drift_ids + allocation_drift_ids))
         snapshot['drifted_namespace_count'] = len(drifted_namespace_ids)
         snapshot['drifted_namespace_ids'] = drifted_namespace_ids
+        snapshot['missing_namespace_drift_count'] = len(missing_namespace_drift_ids)
+        snapshot['allocation_drift_count'] = len(allocation_drift_ids)
+        snapshot['allocation_observation_error_count'] = len(allocation_drift['observation_errors'])
+
+        allocation_exceptions = [
+            {
+                'cluster_id': item.get('cluster_id', ''),
+                'namespace': item.get('namespace', ''),
+                'reason': item.get('reason', 'Allocation drift requires review.'),
+            }
+            for item in allocation_drift['drifted_namespaces']
+        ]
+        observation_exceptions = [
+            {
+                'cluster_id': '',
+                'namespace': item.get('namespace', ''),
+                'reason': f'Allocation observation failed: {item.get("reason", "unknown error")}',
+            }
+            for item in allocation_drift['observation_errors']
+        ]
+        snapshot['exceptions'] = (
+            list(snapshot.get('exceptions') or []) + allocation_exceptions + observation_exceptions
+        )[:25]
+        snapshot['exception_count'] = (
+            int(snapshot.get('exception_count') or 0)
+            + len(allocation_exceptions)
+            + len(observation_exceptions)
+        )
         db.session.commit()
         context.checkpoint(
             current=80,
