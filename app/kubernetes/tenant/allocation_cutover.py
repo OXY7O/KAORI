@@ -22,7 +22,7 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
 from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
 from app.kubernetes.tenant.validation import COUNT_QUOTA_KEYS, validate_profile_spec
 from app.models import Cluster
-from app.models.tenant import TenantNamespace, TenantOwnershipStatus
+from app.models.tenant import TenantNamespace, TenantOwnershipStatus, TenantResourceProfile
 
 _MANAGED_BY_KEY = 'app.kubernetes.io/managed-by'
 _MANAGED_BY_VALUE = 'kaori'
@@ -161,10 +161,7 @@ def _expected_source(record: TenantNamespace, kind: str) -> dict[str, str] | Non
     return matches[0] if matches else None
 
 
-def _labels(record: TenantNamespace) -> dict[str, str]:
-    profile = record.resource_profile
-    if profile is None:
-        raise ValueError('Allocation governance requires a selected Resource Profile.')
+def _labels(record: TenantNamespace, profile: TenantResourceProfile) -> dict[str, str]:
     return {
         _MANAGED_BY_KEY: _MANAGED_BY_VALUE,
         _TENANT_ID_KEY: record.environment.tenant.id,
@@ -229,6 +226,7 @@ def _mutate_quota(
     desired: dict[str, str],
     expected: dict[str, str] | None,
     managed: bool,
+    profile: TenantResourceProfile,
 ) -> str:
     name = str((expected or {}).get('name') or _DEFAULT_QUOTA_NAME)
     existing = _read_quota(api, namespace=record.namespace, name=name)
@@ -246,7 +244,7 @@ def _mutate_quota(
     metadata = V1ObjectMeta(
         name=name,
         namespace=record.namespace,
-        labels=_labels(record),
+        labels=_labels(record, profile),
         resource_version=_metadata_value(getattr(existing, 'metadata', None), 'resource_version') if existing else None,
     )
     body = V1ResourceQuota(metadata=metadata, spec=V1ResourceQuotaSpec(hard=desired))
@@ -276,6 +274,7 @@ def _mutate_limit_range(
     desired: dict[str, dict[str, str]],
     expected: dict[str, str] | None,
     managed: bool,
+    profile: TenantResourceProfile,
 ) -> str:
     name = str((expected or {}).get('name') or _DEFAULT_LIMIT_RANGE_NAME)
     existing = _read_limit_range(api, namespace=record.namespace, name=name)
@@ -293,7 +292,7 @@ def _mutate_limit_range(
     metadata = V1ObjectMeta(
         name=name,
         namespace=record.namespace,
-        labels=_labels(record),
+        labels=_labels(record, profile),
         resource_version=_metadata_value(getattr(existing, 'metadata', None), 'resource_version') if existing else None,
     )
     body = V1LimitRange(
@@ -347,6 +346,10 @@ def _limits_equal(
 def reconcile_adopted_native_allocation(
     record: TenantNamespace,
     *,
+    profile: TenantResourceProfile,
+    resource_profile_version: int,
+    allocation_customized: bool,
+    capacity_decision_id: int | None,
     quota_hard: dict[str, str],
     limit_defaults: dict[str, dict[str, str]],
     operation: str,
@@ -378,6 +381,7 @@ def reconcile_adopted_native_allocation(
         desired=quota,
         expected=quota_expected,
         managed=managed,
+        profile=profile,
     )
     limit_name = _mutate_limit_range(
         api,
@@ -385,6 +389,7 @@ def reconcile_adopted_native_allocation(
         desired=limits,
         expected=limit_expected,
         managed=managed,
+        profile=profile,
     )
 
     after = observe_native_namespace_allocation(api, record.namespace)
@@ -430,15 +435,22 @@ def reconcile_adopted_native_allocation(
                 **after,
                 'provenance': 'kaori_managed',
                 'previous_provenance': 'adopted_observed',
-                'resource_profile_id': record.resource_profile.public_id if record.resource_profile else None,
-                'resource_profile_version': record.resource_profile_version,
-                'capacity_decision_id': record.capacity_decision_id,
+                'resource_profile_id': profile.public_id,
+                'resource_profile_version': resource_profile_version,
+                'capacity_decision_id': capacity_decision_id,
             },
             'allocation_history': history,
             'provider_mutation_performed': True,
             'secret_material_persisted': False,
         }
     )
+    record.resource_profile = profile
+    record.resource_profile_id = profile.id
+    record.resource_profile_version = resource_profile_version
+    record.allocation_quota_json = quota
+    record.allocation_limit_defaults_json = limits
+    record.allocation_customized = allocation_customized
+    record.capacity_decision_id = capacity_decision_id
     record.provisioning_evidence_json = evidence
     record.desired_hash = str(after['effective_hash'])
     record.effective_hash = str(after['effective_hash'])
