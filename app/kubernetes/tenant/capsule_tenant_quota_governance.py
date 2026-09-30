@@ -1170,6 +1170,11 @@ def get_capsule_tenant_quota_context(
         if cutover_state[tenant.id].get('authority') == _AUTHORITY
         and not _managed_state(tenant)
     ]
+    blocked_cutover_tenants = [
+        tenant
+        for tenant in cutover_tenants
+        if not bool(cutover_state[tenant.id].get('supported'))
+    ]
     managed = [
         tenant
         for tenant in tenants
@@ -1190,6 +1195,7 @@ def get_capsule_tenant_quota_context(
     return {
         'capsule_tenant_quota_tenants': tenants,
         'capsule_tenant_quota_cutover_tenants': cutover_tenants,
+        'capsule_tenant_quota_blocked_cutover_tenants': blocked_cutover_tenants,
         'capsule_tenant_quota_cutover_state': cutover_state,
         'capsule_tenant_quota_cutover_supported': any(
             item['supported'] for item in cutover_state.values()
