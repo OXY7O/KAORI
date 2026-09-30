@@ -623,6 +623,8 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     admin = read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
     service = read('app/kubernetes/tenant/discovery_service.py')
     template = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    preflight = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
+    preflight_error = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight_error.html')
     modal_js = read('app/static/js/tenant_adoption_modal.js')
 
     assert "'discovery'" in routes
@@ -658,29 +660,46 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'Live Status' in template
     assert 'KAORI Classification' in template
     assert 'Governed Tenant' in template
-    assert 'Adoption Preflight' in template
-    assert 'Adoption Decision' in template
-    assert 'Adoption Impact' in template
-    assert 'KAORI records' in template
-    assert 'Provider remains authoritative' in template
-    assert 'After adoption' in template
-    assert 'Provider &amp; Live Context' in template
-    assert 'Allocation Overview' in template
-    assert 'Effective Allocation' in template
-    assert 'Namespace Coverage' in template
-    assert 'Proposed KAORI Mapping' in template
-    assert 'Adoption Result' in template
-    assert 'Governance Checks' in template
-    assert 'Technical Evidence' in template
-    assert 'Human confirmation.' in template
-    assert 'No provider mutation.' in template
-    assert 'Adopt as Observed' in template
-    assert 'Can be adopted as' in template
-    assert 'Commits identity, provider lineage, Namespace evidence, and observed allocation.' in template
-    assert 'Read-only until governance cutover.' in template
-    assert 'Next: review governance cutover.' in template
-    assert 'tenant-adoption-control-tip-' in template
-    assert 'Allocation control' in template
+    # Discovery registry stays lightweight. Deep allocation/capability inspection
+    # is loaded only after the operator explicitly requests Adoption Preflight.
+    discovery_context_source = service.split('def get_tenant_adoption_preflight_context', 1)[0]
+    assert 'observe_native_namespace_allocation(' not in discovery_context_source
+    assert 'observe_capsule_tenant_allocation(' not in discovery_context_source
+    assert 'discover_capsule(' not in discovery_context_source
+    assert 'def get_tenant_adoption_preflight_context' in service
+    assert "@tenant_bp.get('/discovery/preflight')" in routes
+    assert 'get_tenant_adoption_preflight_context' in routes
+
+    assert 'data-tenant-adoption-load' in template
+    assert 'tenant.tenant_adoption_preflight_route' in template
+    assert 'hx-target="#tenant-adoption-preflight-slot"' in template
+    assert 'id="tenant-adoption-preflight-slot"' in template
+    assert 'data-tenant-adoption-modal' not in template
+
+    assert 'Adoption Preflight' in preflight
+    assert 'Adoption Decision' in preflight
+    assert 'Adoption Impact' in preflight
+    assert 'KAORI records' in preflight
+    assert 'Provider remains authoritative' in preflight
+    assert 'After adoption' in preflight
+    assert 'Provider &amp; Live Context' in preflight
+    assert 'Allocation Overview' in preflight
+    assert 'Effective Allocation' in preflight
+    assert 'Namespace Coverage' in preflight
+    assert 'Proposed KAORI Mapping' in preflight
+    assert 'Adoption Result' in preflight
+    assert 'Governance Checks' in preflight
+    assert 'Technical Evidence' in preflight
+    assert 'Human confirmation.' in preflight
+    assert 'No provider mutation.' in preflight
+    assert 'Adopt as Observed' in preflight
+    assert 'Can be adopted as' in preflight
+    assert 'Commits identity, provider lineage, Namespace evidence, and observed allocation.' in preflight
+    assert 'Read-only until governance cutover.' in preflight
+    assert 'Next: review governance cutover.' in preflight
+    assert 'tenant-adoption-control-tip' in preflight
+    assert 'Allocation control' in preflight
+
     assert 'components/info_tip.html' in template
     assert 'components/status_detail_dialog.html' not in template
     assert 'tenant-discovery-status-tip' in template
@@ -689,18 +708,15 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'tenant-discovery-action-' not in template
     assert 'Discovery status' in template
     assert 'Provider Missing' in template
-    assert 'data-tenant-adoption-open' in template
-    assert 'data-tenant-adoption-modal' in template
     assert "page_param='discovery_page'" in template
     assert "per_page_param='discovery_per_page'" in template
 
-    # Review buttons and their candidate-local modals must be replaced atomically
-    # by the same HTMX discovery-card swap on every paginated page.
-    modal_loop = "{% for row in tenant_discovery_rows if row.management_status == 'Discovered' and can_manage %}"
-    assert template.index(modal_loop) < template.rindex('</section>')
-    assert template.rstrip().endswith('</section>')
+    assert 'Adoption Preflight Unavailable' in preflight_error
+    assert 'No KAORI or provider state was changed' in preflight_error
 
-    assert 'data-tenant-adoption-open' in modal_js
+    assert 'data-tenant-adoption-load' in modal_js
+    assert 'tenant-adoption-preflight-slot' in modal_js
+    assert 'htmx:afterSwap' in modal_js
     assert 'data-tenant-adoption-close' in modal_js
     assert 'htmx:afterRequest' in modal_js
 
@@ -1407,6 +1423,7 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
     tasks = read('app/kubernetes/tenant/tasks.py')
     routes = read('app/kubernetes/tenant/routes.py')
     discovery_ui = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    adoption_preflight_ui = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
     namespace_page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
     cutover_ui = read('app/templates/kubernetes/tenant/partials/_capsule_tenant_quota_cutover.html')
     operations_page = read('app/templates/kubernetes/tenant/operations.html')
@@ -1456,9 +1473,10 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
     assert 'CapsuleTenantQuotaStateConflictError' in routes
     assert 'ops_capsule_tenant_quota_page' in routes
 
-    assert 'External Provider Constraints' in discovery_ui
-    assert 'Preserved · Not Rewritten' in discovery_ui
-    assert 'authority_unsupported_dimensions' in discovery_ui
+    assert 'data-tenant-adoption-load' in discovery_ui
+    assert 'External Provider Constraints' in adoption_preflight_ui
+    assert 'Preserved · Not Rewritten' in adoption_preflight_ui
+    assert 'authority_unsupported_dimensions' in adoption_preflight_ui
     assert '_capsule_tenant_quota_cutover.html' in namespace_page
     assert 'tenant-capsule-tenant-quota-state' in namespace_page
     assert 'Capsule Tenant Quota Governance' in cutover_ui
