@@ -190,7 +190,7 @@ def test_capsule_tenant_quota_is_preserved_but_control_remains_unavailable():
     }
     assert observed['correlated_namespaces'][0]['name'] == 'api-prod'
     assert observed['control_state'] == 'control_unavailable'
-    assert 'has not admitted that mutation path' in observed['control_reason']
+    assert 'Capability admission is required' in observed['control_reason']
     assert observed['provider_mutation_performed'] is False
 
 def test_capsule_tenant_quota_treats_matching_native_quota_as_materialization():
@@ -268,3 +268,126 @@ def test_native_observation_fails_closed_on_unsupported_limit_range_constraints(
     assert observed['control_state'] == 'control_unavailable'
     assert 'LimitRange/legacy-limits:max.cpu' in observed['unsupported_dimensions']
 
+
+
+def test_capsule_tenant_resource_quota_defaults_scope_to_tenant() -> None:
+    client = FakeClient(FakeCoreApi())
+    tenant_item = {
+        'metadata': {'name': 'estimasi', 'uid': 'tenant-estimasi', 'resourceVersion': '9'},
+        'spec': {
+            'resourceQuotas': {
+                'items': [
+                    {
+                        'hard': {
+                            'limits.cpu': '1',
+                            'limits.memory': '2Gi',
+                            'pods': '10',
+                        }
+                    }
+                ]
+            }
+        },
+    }
+
+    observed = observe_capsule_tenant_allocation(
+        client,
+        tenant_name='estimasi',
+        tenant_item=tenant_item,
+    )
+
+    assert observed['allocation_authority'] == 'capsule_tenant_resource_quotas'
+    assert observed['tenant_resource_quota']['scope'] == 'Tenant'
+    assert observed['authority_unsupported_dimensions'] == []
+    assert observed['authority_ambiguous_dimensions'] == []
+
+
+def test_capsule_tenant_quota_keeps_namespace_pvc_limitrange_as_external_constraint() -> None:
+    namespace = SimpleNamespace(
+        metadata=_metadata(
+            'partner-pgnpartner-development',
+            labels={'capsule.clastix.io/tenant': 'partner'},
+        )
+    )
+    pvc_limit = SimpleNamespace(
+        type='PersistentVolumeClaim',
+        default={},
+        default_request={},
+        max={},
+        min={},
+        max_limit_request_ratio={},
+    )
+    core = FakeCoreApi(
+        namespaces=[namespace],
+        limit_ranges={
+            'partner-pgnpartner-development': [
+                SimpleNamespace(
+                    metadata=_metadata('capsule-partner-0'),
+                    spec=SimpleNamespace(limits=[pvc_limit]),
+                )
+            ]
+        },
+    )
+    client = FakeClient(core)
+    tenant_item = {
+        'metadata': {'name': 'partner', 'uid': 'tenant-partner', 'resourceVersion': '10'},
+        'status': {'namespaces': ['partner-pgnpartner-development']},
+        'spec': {
+            'resourceQuotas': {
+                'scope': 'Tenant',
+                'items': [
+                    {
+                        'hard': {
+                            'limits.cpu': '8',
+                            'limits.memory': '8Gi',
+                            'pods': '20',
+                        }
+                    }
+                ],
+            }
+        },
+    }
+
+    observed = observe_capsule_tenant_allocation(
+        client,
+        tenant_name='partner',
+        tenant_item=tenant_item,
+    )
+
+    assert observed['allocation_authority'] == 'capsule_tenant_resource_quotas'
+    assert observed['authority_unsupported_dimensions'] == []
+    assert observed['authority_ambiguous_dimensions'] == []
+    assert any(
+        'LimitRange/capsule-partner-0/type=PersistentVolumeClaim' in item
+        for item in observed['external_constraints']
+    )
+
+
+def test_capsule_scoped_resource_quota_item_blocks_governance_authority() -> None:
+    client = FakeClient(FakeCoreApi())
+    tenant_item = {
+        'metadata': {'name': 'api', 'uid': 'tenant-api', 'resourceVersion': '11'},
+        'spec': {
+            'resourceQuotas': {
+                'scope': 'Tenant',
+                'items': [
+                    {
+                        'hard': {'pods': '10'},
+                        'scopes': ['BestEffort'],
+                    }
+                ],
+            }
+        },
+    }
+
+    observed = observe_capsule_tenant_allocation(
+        client,
+        tenant_name='api',
+        tenant_item=tenant_item,
+    )
+
+    assert observed['allocation_authority'] == 'capsule_tenant_resource_quotas'
+    assert observed['control_state'] == 'control_unavailable'
+    assert any(
+        'Tenant.spec.resourceQuotas.items[0].scopes' in item
+        for item in observed['authority_unsupported_dimensions']
+    )
