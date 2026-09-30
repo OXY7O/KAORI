@@ -90,7 +90,10 @@ def build_allocation_cutover_state(record: TenantNamespace) -> dict[str, Any]:
         return {
             'supported': False,
             'state': 'control_unavailable',
-            'reason': str(allocation.get('control_reason') or 'Observed allocation authority is not safe for cutover.'),
+            'reason': str(
+                allocation.get('control_reason')
+                or 'Observed allocation authority is not safe for cutover.'
+            ),
             'authority': tenant.reconciliation_authority,
         }
 
@@ -173,7 +176,10 @@ def _labels(record: TenantNamespace, profile: TenantResourceProfile) -> dict[str
 def _verify_existing(existing: Any, expected: dict[str, str] | None, *, kind: str, managed: bool) -> None:
     if existing is None:
         if expected and expected.get('name'):
-            raise ValueError(f'{kind}/{expected["name"]} is no longer present; refresh adoption evidence before cutover.')
+            raise ValueError(
+                f'{kind}/{expected["name"]} is no longer present; '
+                'refresh adoption evidence before cutover.'
+            )
         return
 
     metadata = getattr(existing, 'metadata', None)
@@ -192,7 +198,10 @@ def _verify_existing(existing: Any, expected: dict[str, str] | None, *, kind: st
         if expected_uid and current_uid and expected_uid != current_uid:
             raise ValueError(f'{kind} UID changed since observation; refresh provider evidence before cutover.')
         if expected_rv and current_rv and expected_rv != current_rv:
-            raise ValueError(f'{kind} resourceVersion changed since observation; refresh provider evidence before cutover.')
+            raise ValueError(
+                f'{kind} resourceVersion changed since observation; '
+                'refresh provider evidence before cutover.'
+            )
 
 
 def _read_quota(api: Any, *, namespace: str, name: str) -> Any | None:
@@ -245,7 +254,11 @@ def _mutate_quota(
         name=name,
         namespace=record.namespace,
         labels=_labels(record, profile),
-        resource_version=_metadata_value(getattr(existing, 'metadata', None), 'resource_version') if existing else None,
+        resource_version=(
+            _metadata_value(getattr(existing, 'metadata', None), 'resource_version')
+            if existing
+            else None
+        ),
     )
     body = V1ResourceQuota(metadata=metadata, spec=V1ResourceQuotaSpec(hard=desired))
     if existing is None:
