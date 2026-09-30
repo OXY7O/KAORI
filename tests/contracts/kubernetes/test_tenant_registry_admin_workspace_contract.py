@@ -1151,3 +1151,50 @@ def test_credential_material_delivery_is_one_time_non_cached_and_not_routine_inv
     assert 'Kubernetes may return a shorter actual expiry.' in script
     assert 'pagehide' in script
     assert 'data-kaori-download-button' in clipboard
+
+def test_legacy_allocation_adoption_is_observed_and_held_until_cutover() -> None:
+    observer = read('app/kubernetes/tenant/allocation_observation.py')
+    discovery_service = read('app/kubernetes/tenant/discovery_service.py')
+    discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    namespace_registry = read('app/templates/kubernetes/tenant/partials/_namespace_registry.html')
+    allocation_change = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    service = read('app/kubernetes/tenant/service.py')
+    architecture = read('docs/architecture/kubernetes-tenant-resource-profiles.md')
+    readme = read('app/kubernetes/tenant/README.md')
+
+    assert 'observe_native_namespace_allocation' in observer
+    assert 'observe_capsule_tenant_allocation' in observer
+    assert "'provenance': 'adopted_observed'" in observer
+    assert "'provider_mutation_performed': False" in observer
+    assert "'control_state': 'control_unavailable'" in observer
+    assert 'profile_lineage_for_observed_allocation' in observer
+    assert 'GlobalResourceQuota' in observer
+
+    assert 'allocation = observe_native_namespace_allocation' in discovery_service
+    assert 'allocation = observe_capsule_tenant_allocation' in discovery_service
+    assert "namespace_record.desired_hash = None" in discovery_service
+    assert "namespace_record.effective_hash = str(allocation['effective_hash'])" in discovery_service
+    assert "'allocation_baseline': allocation" in discovery_service
+    assert "TenantOwnershipStatus.ADOPTED.value" in discovery_service
+
+    assert 'Observed Allocation Baseline' in discovery
+    assert 'Adopted Baseline · Observed' in discovery
+    assert 'Control Unavailable' in discovery
+    assert 'Provider authority remains external until an explicit governance cutover is accepted.' in discovery
+
+    assert 'Adopted Baseline · Observed' in namespace_registry
+    assert "item.ownership_status == 'adopted'" in namespace_registry
+    assert 'Control Unavailable' in namespace_registry
+    assert 'Read Only' in namespace_registry
+
+    assert 'namespace_allocation_options' in service
+    assert 'record.ownership_status == TenantOwnershipStatus.MANAGED.value' in service
+    assert 'Adopted Baseline allocations are read-only until explicit Allocation Governance Cutover is completed.' in service
+    assert 'namespace_allocation_options' in allocation_change
+    assert '{% for item in namespace_options %}' not in allocation_change
+
+    assert 'During #768 governed adoption' in architecture
+    assert 'governed mutation fails closed' in architecture
+    assert 'The resulting Namespace is **Adopted Baseline · Observed**' in readme
+    assert 'never turns observed provider state into KAORI-authored desired intent' in readme
+
