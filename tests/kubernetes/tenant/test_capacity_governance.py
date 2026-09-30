@@ -285,7 +285,6 @@ def test_unknown_evidence_blocks_positive_existing_allocation_change() -> None:
     assert decision.state == 'Unknown'
 
 
-
 def _capacity_row(tenant_id: str, namespace: str, cpu: str, memory: str):
     return SimpleNamespace(
         namespace=namespace,
