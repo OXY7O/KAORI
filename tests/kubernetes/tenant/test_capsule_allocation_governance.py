@@ -6,6 +6,7 @@ from app.kubernetes.tenant.capsule_allocation_governance import (
     _quota_differences,
     build_capsule_shared_allocation_cutover_state,
     build_capsule_shared_drift_action_state,
+    observe_managed_capsule_shared_allocation,
 )
 
 
@@ -248,3 +249,70 @@ def test_capsule_shared_reconcile_blocks_when_provider_degrades():
     assert state['reapply_supported'] is False
     assert state['accept_supported'] is False
     assert 'Capsule provider is degraded or unavailable' in state['blocked_reason']
+
+
+
+def test_capsule_shared_observation_blocks_selector_drift(monkeypatch):
+    tenant = _tenant()
+    intent = SimpleNamespace(
+        tenant=tenant,
+        desired_spec_json={
+            'namespaceSelectors': [
+                {
+                    'matchLabels': {
+                        'capsule.clastix.io/tenant': 'api',
+                    }
+                }
+            ],
+            'quota': {
+                'hard': {
+                    'requests.cpu': '4',
+                    'requests.memory': '8Gi',
+                }
+            },
+        },
+        reconciliation_evidence_json={
+            'allocation_governance_scope': 'tenant_shared',
+            'provider_source': {
+                'kind': 'GlobalResourceQuota',
+                'name': 'api-quota',
+                'uid': 'grq-uid',
+                'resource_version': '12',
+            },
+        },
+    )
+    monkeypatch.setattr(
+        capsule_allocation,
+        '_live_global_resource_quota',
+        lambda tenant, expected_source, require_resource_version_match: (
+            {
+                'spec': {
+                    'namespaceSelectors': [
+                        {
+                            'matchLabels': {
+                                'capsule.clastix.io/tenant': 'other-tenant',
+                            }
+                        }
+                    ],
+                    'quota': {
+                        'hard': {
+                            'requests.cpu': '4',
+                            'requests.memory': '8Gi',
+                        }
+                    },
+                }
+            },
+            {
+                'kind': 'GlobalResourceQuota',
+                'name': 'api-quota',
+                'uid': 'grq-uid',
+                'resource_version': '13',
+            },
+        ),
+    )
+
+    observation = observe_managed_capsule_shared_allocation(intent)
+
+    assert observation['differences'] == []
+    assert observation['observed_matches_desired'] is False
+    assert any('selector or non-quota authority fields changed' in reason for reason in observation['blocked_reasons'])
