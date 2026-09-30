@@ -184,6 +184,7 @@ def apply_managed_allocation_drift_observation() -> dict[str, Any]:
     now = datetime.now(UTC)
     clients: dict[str, Any] = {}
     drifted_ids: list[int] = []
+    drifted: list[dict[str, str]] = []
     observed_ids: list[int] = []
     errors: list[dict[str, str]] = []
 
@@ -266,12 +267,21 @@ def apply_managed_allocation_drift_observation() -> dict[str, Any]:
                 'Choose Reapply KAORI Intent or Accept Provider State.'
             )
         drifted_ids.append(record.id)
+        drifted.append(
+            {
+                'tenant_namespace_id': str(record.id),
+                'cluster_id': str(record.cluster_id),
+                'namespace': record.namespace,
+                'reason': record.provisioning_message or 'Allocation drift requires review.',
+            }
+        )
 
     if drifted_ids:
         db.session.flush()
     return {
         'observed_namespace_ids': observed_ids,
         'drifted_namespace_ids': drifted_ids,
+        'drifted_namespaces': drifted,
         'observation_errors': errors,
     }
 
