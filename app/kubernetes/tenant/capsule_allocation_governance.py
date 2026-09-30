@@ -144,12 +144,18 @@ def build_capsule_shared_allocation_cutover_state(tenant: Tenant) -> dict[str, A
     if _capsule_capability_state(tenant, _SHARED_CAPABILITY) != 'available':
         reasons.append('Capsule shared_global_quota capability is unavailable or degraded.')
 
+    active_intents = _active_shared_intents(tenant.id)
     existing = _managed_shared_intent(tenant)
     if existing is not None and existing.status in {
         TenantAdvancedCapabilityStatus.READY.value,
         TenantAdvancedCapabilityStatus.DRIFTED.value,
     }:
         reasons.append('Shared allocation governance is already owned by a canonical KAORI intent.')
+    elif active_intents:
+        reasons.append(
+            'An existing Capsule GlobalResourceQuota advanced intent already owns this Tenant resource path. '
+            'Resolve that authority before allocation governance cutover.'
+        )
 
     source = sources[0] if len(sources) == 1 else {}
     return {
@@ -445,6 +451,13 @@ def _quota_differences(
     return differences
 
 
+def _profile_matches_quota(
+    profile: TenantResourceProfile,
+    quota: Mapping[str, object],
+) -> bool:
+    return not _quota_differences(_profile_quota(profile), quota)
+
+
 def observe_managed_capsule_shared_allocation(
     intent: TenantAdvancedCapabilityIntent,
 ) -> dict[str, Any]:
@@ -684,6 +697,7 @@ def accept_capsule_shared_provider_state(
             'expected_provider_source': current_source,
             'capacity_decision_id': capacity.id,
             'provenance': 'accepted_provider_state',
+            'allocation_customized': not _profile_matches_quota(profile, live_quota),
             'provider_mutation_performed': False,
             'secret_material_persisted': False,
         }
@@ -712,6 +726,11 @@ def reapply_capsule_shared_allocation_intent_committed(
         result = reapply_capsule_shared_allocation_intent(intent)
         db.session.commit()
         return result
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise CapsuleSharedAllocationStateConflictError(
+            'Committed Capsule shared allocation drift changed during Reapply KAORI Intent. Refresh and retry.'
+        ) from exc
     except (ApiException, ValueError):
         db.session.commit()
         raise
@@ -731,6 +750,11 @@ def accept_capsule_shared_provider_state_committed(
         result = accept_capsule_shared_provider_state(intent)
         db.session.commit()
         return result
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise CapsuleSharedAllocationStateConflictError(
+            'Committed Capsule shared allocation drift changed during Accept Provider State. Refresh and retry.'
+        ) from exc
     except (ApiException, ValueError):
         db.session.commit()
         raise
