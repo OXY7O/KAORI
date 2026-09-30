@@ -236,7 +236,7 @@
                     {% endfor %}
                 </div>
                 <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-t border-outline-subtle bg-surface-hover px-4 py-3">
-                    <p class="text-xs leading-5 text-content-muted">Environment/Tenant scope may stay Pending until namespaces exist. Namespace scope requires one target.</p>
+                    <p class="text-xs leading-5 text-content-muted">Environment/Tenant may stay Pending until namespaces exist. Namespace scope needs one target.</p>
                     <a href="{{ url_for('tenant.namespace_provisioning') }}"
                        class="{{ action_button.classes('secondary') }}">
                         <i data-lucide="boxes" class="h-4 w-4" aria-hidden="true"></i>
