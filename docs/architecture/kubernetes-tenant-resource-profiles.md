@@ -101,6 +101,55 @@ Capsule is fail-closed. KAORI does not bypass Capsule by writing Native Resource
 
 Provider mutation failure never marks the allocation KAORI Managed. Failure evidence records the proposed contract and whether provider mutation may have started so later sync/drift reconciliation can determine the effective provider state without pretending the transaction succeeded.
 
+## Managed allocation drift and bidirectional reconciliation
+
+Issue #770 owns out-of-band allocation drift after an allocation contract has become **KAORI Managed**. This is intentionally separate from Namespace provider-absence drift: the Namespace may still exist and be healthy while its ResourceQuota or Container LimitRange differs from committed KAORI intent.
+
+Tenant sync remains observation-only:
+
+```text
+KAORI Managed allocation
+→ live provider observation
+→ compare desired vs observed dimensions
+→ commit allocation_drift evidence
+→ Drifted
+```
+
+The drift evidence retains both sides of the decision:
+
+- the last committed KAORI quota/LimitRange intent and profile/version lineage;
+- the live provider quota/LimitRange snapshot and effective hash;
+- provider allocation source resources, including UID/resourceVersion evidence;
+- dimension-level differences;
+- ownership/authority findings and explicit blocked reasons.
+
+Sync never changes the provider and never changes KAORI desired intent merely because a difference is observed.
+
+### Reapply KAORI Intent
+
+**Reapply KAORI Intent** keeps the committed desired contract. Before mutation KAORI:
+
+1. re-reads the provider and requires the live hash to still match the committed drift observation;
+2. verifies allocation ownership/authority;
+3. evaluates capacity using the **current live provider allocation as the current state** and the committed KAORI allocation as the proposed state;
+4. performs the authoritative provider reconciliation;
+5. reads back the provider allocation;
+6. clears drift only after the effective provider state matches the committed KAORI contract.
+
+The provider is read again at mutation time so a change occurring after capacity preflight still fails closed.
+
+### Accept Provider State
+
+**Accept Provider State** treats the currently observed provider allocation as proposed new KAORI intent. KAORI re-reads the provider, rejects stale drift evidence, validates supported dimensions and ownership, runs capacity/policy admission, and then commits the observed allocation as the new desired/effective snapshot.
+
+Acceptance performs **no provider write merely to accept values that are already live**. The resulting evidence records `provenance=accepted_provider_state`, preserves allocation history, updates desired/effective hashes, and clears the drift evidence only after governance validation succeeds.
+
+Both actions require a committed `Drifted` Namespace state and a Tenant lifecycle state of `Ready`. Teardown/decommission states remain blocked.
+
+### Capsule boundary
+
+The current #770 mutation/reconciliation adapter is admitted for Native Kubernetes allocation authority. Capsule allocation drift can still be observed as evidence, but bidirectional actions remain **Control Unavailable** until the authoritative Capsule allocation capability has a supported mutation/reconciliation adapter. KAORI never substitutes a Native ResourceQuota write for a Capsule-owned contract.
+
 ## Effective allocation evidence
 
 A managed namespace records:
