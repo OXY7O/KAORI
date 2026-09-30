@@ -36,7 +36,7 @@
                         {% set cluster_blocked_scope = "Tenant Provider" %}
                         {% if registered_cluster_count > 0 %}
                             {% set cluster_blocked_title = "Provider Operations Restricted" %}
-                            {% set cluster_blocked_info = "Committed KAORI Tenant state remains available. Provider-backed mutations stay fail-closed until the registered integration is Ready and reachable." %}
+                            {% set cluster_blocked_info = "KAORI state stays available. Provider mutations wait for a Ready, reachable integration." %}
                             {% set cluster_blocked_cluster_label = "Registered Clusters" %}
                             {% set cluster_blocked_cluster_value = registered_cluster_count %}
                             {% set cluster_blocked_cluster_supporting = "Committed state remains readable" %}
