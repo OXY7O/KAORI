@@ -33,10 +33,10 @@ For a canonical registry with shared status or lifecycle vocabulary, place one i
 
 Info Tip uses two existing browser interaction paths rather than trying to position one hover surface everywhere:
 
-- **desktop pointer hover** — show the compact anchored preview bubble;
+- **desktop pointer hover** — show the compact preview through the shared `info_tips.js` positioning controller;
 - **click, touch, or keyboard activation** — open the same guidance in the browser native `<dialog>` top layer through KAORI's existing `native_dialogs.js` contract.
 
-The hover preview is enabled only at the desktop breakpoint. Mobile does not depend on sticky `:hover`, focus-within positioning, transformed ancestors, or table/card overflow. The native dialog owns mobile/touch placement, viewport containment, focus, dismissal, and top-layer stacking.
+The hover preview is enabled only for a fine pointer. While visible, the shared controller temporarily portals the preview to `document.body`, positions it from the trigger, flips above when needed, and clamps it to the viewport. This prevents ordinary card/table overflow from clipping guidance. On hide or HTMX replacement the preview is restored to its owning Info Tip. Mobile does not depend on sticky `:hover`. The native dialog owns mobile/touch placement, viewport containment, focus, dismissal, and top-layer stacking.
 
 Inactive guidance must not reserve document or table layout space.
 

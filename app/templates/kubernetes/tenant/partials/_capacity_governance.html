@@ -23,18 +23,21 @@
                     <i data-lucide="shield-check" class="h-5 w-5"></i>
                 </span>
                 <div>
-                    <h2 class="text-base font-semibold text-content-primary">Capacity Policy</h2>
+                    <span class="inline-flex min-h-6 items-center gap-1.5">
+                        <h2 class="text-base font-semibold text-content-primary">Capacity Policy</h2>
+                        {{ info_tip.render('tenant-capacity-policy-tip',
+                                'Capacity policy',
+                                'Policy values are explicit commitments used with committed cluster capacity evidence.',
+                                [
+                                'Reserve and unmanaged values are request commitments.',
+                                'Safety headroom preserves operational margin.',
+                                'Selecting an existing cluster reloads its committed policy values.'
+                                ],
+                                placement='right') }}
+                    </span>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Define request-budget inputs used before positive Namespace allocation.</p>
                 </div>
             </div>
-            {{ info_tip.render('tenant-capacity-policy-tip',
-                        'Capacity policy',
-                        'Policy values are explicit commitments used with committed cluster capacity evidence.',
-                        [
-                        'Reserve and unmanaged values are request commitments.',
-                        'Safety headroom preserves operational margin.',
-                        'Selecting an existing cluster reloads its committed policy values.'
-                        ]) }}
         </header>
         <div class="space-y-4 p-5">
             <div class="grid gap-4 lg:grid-cols-[minmax(16rem,0.8fr)_minmax(0,2.2fr)] lg:items-end">
@@ -96,7 +99,7 @@
         </footer>
     </form>
     <section id="{{ capacity_registry_id }}"
-             class="{{ table_ui.block_classes() }}"
+             class="{{ table_ui.block_classes(allow_overflow=true) }}"
              aria-labelledby="tenant-allocation-budget-heading">
         {% set header_actions %}
             {% if capacity_filters.search %}
@@ -110,19 +113,20 @@
                 per_page_param='capacity_per_page'
                 ) }}
             {% endif %}
+
+        {% endset %}
+        {% set title_info %}
             {{ info_tip.render('allocation-budget-status-tip',
-                        'Allocation Budget status',
-                        'Capacity state uses committed Budget, active request commitments, and remaining Headroom.',
-                        [
-                        'Healthy — sufficient governed headroom remains.',
-                        'Near Capacity / Critical — headroom is narrowing.',
-                        'Exhausted — committed requests reached the budget.',
-                        'Overcommitted — commitments exceed the governed budget.',
-                        'Unknown — required capacity evidence is incomplete or stale.'
-                        ],
-                        button_text='Status Guide',
-                        button_classes=table_ui.action_classes() 
-            ) }}
+                    'Allocation Budget status',
+                    'Capacity state uses committed Budget, active request commitments, and remaining Headroom.',
+                    [
+                    'Healthy — sufficient governed headroom remains.',
+                    'Near Capacity / Critical — headroom is narrowing.',
+                    'Exhausted — committed requests reached the budget.',
+                    'Overcommitted — commitments exceed the governed budget.',
+                    'Unknown — required capacity evidence is incomplete or stale.'
+                    ],
+                    placement='right') }}
         {% endset %}
         {{ table_ui.inventory_block_header('chart-no-axes-combined',
                 'Allocation Budget',
@@ -131,7 +135,8 @@
                 'Refreshing Allocation Budget',
                 none,
                 none,
-                header_actions=header_actions) }}
+                header_actions=header_actions,
+                title_extra=title_info) }}
         <div class="{{ table_ui.inventory_filter_bar_classes() }}">
             {% call registry_ui.filter_form(
                 'tenant.resource_profiles',

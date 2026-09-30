@@ -55,6 +55,10 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'Custom keeps lineage' in form
     assert 'Different values belong in Custom.' in form
     assert 'resource-profile-contract-tip' in form
+    assert 'resource-profile-quota-tip' in form
+    assert 'resource-profile-limitrange-tip' in form
+    assert "placement='right'" in form
+    assert 'inline-flex min-h-6 items-center gap-1.5' in form
     assert 'resource-profile-class-tip' in form
     assert 'resource-profile-base-tip' in form
     assert 'data-tenant-profile-class' in form
@@ -141,9 +145,12 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert "action_button.classes('primary')" in capacity
     assert "action_button.classes('primary', full=true)" not in capacity
     assert 'components/info_tip.html' in capacity
+    assert 'tenant-capacity-policy-tip' in capacity
     assert 'allocation-budget-status-tip' in capacity
-    assert "button_text='Status Guide'" in capacity
-    assert 'button_classes=table_ui.action_classes()' in capacity
+    assert 'title_extra=title_info' in capacity
+    assert 'table_ui.block_classes(allow_overflow=true)' in capacity
+    assert "button_text='Status Guide'" not in capacity
+    assert 'button_classes=table_ui.action_classes()' not in capacity
     assert 'status_detail_dialog' not in capacity
 
     assert 'tenant-capacity-policy-state' in page

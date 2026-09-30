@@ -1058,7 +1058,10 @@ def test_info_tip_uses_title_level_registry_guidance_and_mobile_top_layer() -> N
     groups = read('app/templates/kubernetes/tenant/partials/_group_registry.html')
 
     assert 'button_text=None, button_classes=None' in component
-    assert 'sm:group-hover:block' in component
+    assert 'data-kaori-info-tip' in component
+    assert 'data-kaori-info-tip-trigger' in component
+    assert 'data-kaori-info-tip-preview' in component
+    assert 'sm:group-hover:block' not in component
     assert 'data-kaori-native-dialog' in component
     assert 'data-kaori-dialog-close' in component
     assert 'fixed inset-x-4 bottom-4' not in component
@@ -1076,7 +1079,17 @@ def test_info_tip_uses_title_level_registry_guidance_and_mobile_top_layer() -> N
     for retired_text_action in ('Status Guide', 'Membership Guide', 'Group Guide'):
         assert all(f"button_text='{retired_text_action}'" not in template for template in (registry, discovery, memberships, groups))
 
+    layout = read('app/templates/layouts/app.html')
+    positioning = read('app/static/js/info_tips.js')
+    assert "filename='js/info_tips.js'" in layout
+    assert "document.body.appendChild(preview)" in positioning
+    assert 'getBoundingClientRect()' in positioning
+    assert 'window.innerWidth' in positioning
+    assert 'window.innerHeight' in positioning
+    assert "document.addEventListener('htmx:beforeSwap'" in positioning
+
     assert 'beside the registry title' in docs
+    assert 'temporarily portals the preview to `document.body`' in docs
     assert 'native `<dialog>` top layer' in docs
 
 

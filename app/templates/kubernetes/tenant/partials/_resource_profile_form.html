@@ -13,19 +13,22 @@
                 <i data-lucide="layers-3" class="h-5 w-5"></i>
             </span>
             <div>
-                <h2 class="text-base font-semibold text-content-primary">Create Resource Profile</h2>
+                <span class="inline-flex min-h-6 items-center gap-1.5">
+                    <h2 class="text-base font-semibold text-content-primary">Create Resource Profile</h2>
+                    {{ info_tip.render('resource-profile-contract-tip',
+                            'Resource Profile contract',
+                            'A Resource Profile is reusable desired allocation intent; a namespace receives a frozen effective snapshot when provisioned.',
+                            [
+                            'Small, Standard, and Large are locked KAORI presets.',
+                            'Custom is the only operator-editable class.',
+                            'Blank supported quota dimensions mean unbounded; zero remains a distinct explicit value.',
+                            'Capacity admission is evaluated separately before provider reconciliation.'
+                            ],
+                            placement='right') }}
+                </span>
                 <p class="mt-1 text-sm leading-6 text-content-secondary">Define one reusable quota and Container LimitRange contract for namespace allocation.</p>
             </div>
         </div>
-        {{ info_tip.render('resource-profile-contract-tip',
-                'Resource Profile contract',
-                'A Resource Profile is reusable desired allocation intent; a namespace receives a frozen effective snapshot when provisioned.',
-                [
-                'Small, Standard, and Large are locked KAORI presets.',
-                'Custom is the only operator-editable class.',
-                'Blank supported quota dimensions mean unbounded; zero remains a distinct explicit value.',
-                'Capacity admission is evaluated separately before provider reconciliation.'
-                ]) }}
     </header>
     <div class="space-y-4 p-5">
         <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4"
@@ -118,20 +121,21 @@
         </section>
         <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4"
                  aria-labelledby="resource-profile-quota-heading">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
+            <div>
+                <span class="inline-flex min-h-6 items-center gap-1.5">
                     <h3 id="resource-profile-quota-heading"
                         class="text-sm font-semibold text-content-primary">Quota Guardrails</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Namespace ResourceQuota contract; CPU/memory requests feed Capacity Governance.</p>
-                </div>
-                {{ info_tip.render('resource-profile-quota-tip',
-                                'Quota semantics',
-                                'These values become the reusable quota contract for the selected profile.',
-                                [
-                                'CPU/memory requests are the baseline capacity-admission commitment dimensions.',
-                                'PVC/storage remains quota evidence; physical storage admission requires separate capability evidence.',
-                                'Built-in preset values are read-only in normal workflows.'
-                                ]) }}
+                    {{ info_tip.render('resource-profile-quota-tip',
+                            'Quota semantics',
+                            'These values become the reusable quota contract for the selected profile.',
+                            [
+                            'CPU/memory requests are the baseline capacity-admission commitment dimensions.',
+                            'PVC/storage remains quota evidence; physical storage admission requires separate capability evidence.',
+                            'Built-in preset values are read-only in normal workflows.'
+                            ],
+                            placement='right') }}
+                </span>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Namespace ResourceQuota contract; CPU/memory requests feed Capacity Governance.</p>
             </div>
             <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 {% for field, label, placeholder in [
@@ -160,15 +164,16 @@
         </section>
         <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4"
                  aria-labelledby="resource-profile-container-heading">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
+            <div>
+                <span class="inline-flex min-h-6 items-center gap-1.5">
                     <h3 id="resource-profile-container-heading"
                         class="text-sm font-semibold text-content-primary">Container Defaults</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">LimitRange defaults used only when a container omits its own request/limit values.</p>
-                </div>
-                {{ info_tip.render('resource-profile-limitrange-tip',
-                                'Container LimitRange',
-                                'These defaults are distinct from namespace ResourceQuota and do not change the profile class semantics.') }}
+                    {{ info_tip.render('resource-profile-limitrange-tip',
+                            'Container LimitRange',
+                            'These defaults are distinct from namespace ResourceQuota and do not change the profile class semantics.',
+                            placement='right') }}
+                </span>
+                <p class="mt-1 text-xs leading-5 text-content-muted">LimitRange defaults used only when a container omits its own request/limit values.</p>
             </div>
             <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {% for field, label, placeholder in [
