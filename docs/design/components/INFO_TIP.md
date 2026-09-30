@@ -25,18 +25,22 @@ Do **not** hide validation errors, destructive confirmation, security incidents,
 
 For genuinely field-specific guidance, the icon trigger may sit inline beside the field label. When two or more controls share the same source, ownership, naming, lifecycle, or selection semantics, prefer **one consolidated Info Tip in the owning form/card/section header** instead of repeating a trigger on each control.
 
-For a form/card section, place the trigger beside the section title or in the header action area so the hover preview is outside dense control geometry. The owning surface must permit visible overflow for the desktop hover preview; do not trap the preview inside an `overflow-hidden` card. Rounded visual containment should be preserved by the card/header geometry rather than by clipping the Info Tip.
+For a form/card section, place the trigger **immediately beside the section title** so the same visual grammar is used across Tenant, Operations, Governance, Integrations, and future domains. The owning surface must permit visible overflow for the desktop hover preview; do not trap the preview inside an `overflow-hidden` card. Rounded visual containment should be preserved by the card/header geometry rather than by clipping the Info Tip.
 
 For a canonical registry with shared status or lifecycle vocabulary, place one icon Info Tip **beside the registry title** through the shared table-header `title_extra` slot. The registry card opts into visible overflow while the table itself stays inside its dedicated `overflow-x-auto` container. Header actions remain reserved for operational actions such as Clear Filters, Add, Create, or navigation.
 
 ## Interaction and responsive behavior
 
-Info Tip uses two existing browser interaction paths rather than trying to position one hover surface everywhere:
+Info Tip uses **one non-modal anchored popover** for every input method.
 
-- **desktop pointer hover** — show the compact preview through the shared `info_tips.js` positioning controller;
-- **click, touch, or keyboard activation** — open the same guidance in the browser native `<dialog>` top layer through KAORI's existing `native_dialogs.js` contract.
+- **desktop hover** opens the shared popover;
+- **keyboard focus** opens the same popover;
+- **click/touch** toggles the same popover;
+- **Escape**, outside click, HTMX replacement, resize, or scroll closes it.
 
-The hover preview is enabled only for a fine pointer. While visible, the shared controller temporarily portals the preview to `document.body`, positions it from the trigger, flips above when needed, and clamps it to the viewport. This prevents ordinary card/table overflow from clipping guidance. On hide or HTMX replacement the preview is restored to its owning Info Tip. Mobile does not depend on sticky `:hover`. The native dialog owns mobile/touch placement, viewport containment, focus, dismissal, and top-layer stacking.
+The shared `info_tips.js` controller temporarily portals the popover to `document.body`, positions it from the trigger, flips above when needed, and clamps it to the viewport. The same element is therefore used on desktop and touch/keyboard paths, and ordinary card/table overflow cannot clip it.
+
+Info Tip is deliberately non-modal: it never traps focus and never owns confirmation or workflow actions. If content requires a form, destructive acknowledgement, security decision, or long interactive workflow, use the relevant KAORI dialog/callout pattern instead.
 
 Inactive guidance must not reserve document or table layout space.
 
@@ -46,7 +50,7 @@ Use one short title, one concise explanation, and only a few supporting points. 
 
 ## Accessibility
 
-The trigger is a real button with `aria-haspopup="dialog"` and `aria-controls`. Keyboard activation opens the native dialog, which provides an explicit Close action. Pointer users retain a non-blocking desktop hover preview.
+The trigger is a real button with `aria-expanded`, `aria-controls`, and `aria-describedby`. Keyboard focus/activation and pointer/touch users all receive the same non-modal popover. The popover uses `role="tooltip"` and does not trap focus.
 
 ## Example
 
