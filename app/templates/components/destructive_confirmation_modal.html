@@ -23,7 +23,7 @@
                  aria-modal="true"
                  aria-labelledby="{{ modal_id }}-title"
                  tabindex="-1"
-                 class="relative w-full {{ 'max-w-4xl' if presentation == 'steps' else 'max-w-xl' }} overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-2xl">
+                 class="relative flex max-h-[calc(100dvh-2rem)] w-full {{ 'max-w-6xl' if presentation == 'steps' else 'max-w-xl' }} flex-col overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-2xl">
             <header class="flex items-start justify-between gap-4 border-b border-outline-subtle {{ 'px-6 py-5' if presentation == 'steps' else 'px-5 py-4' }}">
                 <div class="flex min-w-0 items-start gap-3">
                     <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-status-critical-soft text-status-critical-text"
@@ -46,20 +46,20 @@
                     </button>
                 {% endif %}
             </header>
-            <div class="{{ 'space-y-6 p-6' if presentation == 'steps' else 'space-y-5 p-5' }}">
+            <div class="{{ 'space-y-5 overflow-y-auto p-6 sm:p-7' if presentation == 'steps' else 'space-y-5 p-5' }}">
                 {% if presentation == 'steps' %}
-                    <dl class="grid overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-[minmax(12rem,0.7fr)_minmax(0,1.3fr)]">
-                        <div class="bg-surface-elevated px-4 py-4 sm:px-5">
-                            <dt class="text-[11px] font-semibold uppercase tracking-wider text-content-muted">Target</dt>
+                    <dl class="grid gap-3 sm:grid-cols-[minmax(12rem,0.7fr)_minmax(0,1.3fr)]">
+                        <div class="rounded-xl border border-outline-subtle bg-surface-elevated px-5 py-4">
+                            <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Target</dt>
                             <dd data-destructive-target-name
-                                class="mt-1.5 break-words text-base font-semibold text-content-primary [overflow-wrap:anywhere]">
+                                class="mt-2 break-words text-base font-semibold text-content-primary [overflow-wrap:anywhere]">
                                 {{ target_name or 'Selected Resource' }}
                             </dd>
                         </div>
-                        <div class="border-t border-outline-subtle bg-surface-elevated px-4 py-4 sm:border-l sm:border-t-0 sm:px-5">
-                            <dt class="text-[11px] font-semibold uppercase tracking-wider text-content-muted">Scope</dt>
+                        <div class="rounded-xl border border-outline-subtle bg-surface-elevated px-5 py-4">
+                            <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Scope</dt>
                             <dd data-destructive-target-scope
-                                class="mt-1.5 break-words text-sm font-medium leading-5 text-content-secondary [overflow-wrap:anywhere]">
+                                class="mt-2 break-words text-sm font-medium leading-5 text-content-secondary [overflow-wrap:anywhere]">
                                 {{ scope_value }}
                             </dd>
                         </div>
@@ -86,20 +86,18 @@
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">What will happen</p>
                         {% if presentation == 'steps' %}
-                            <ol class="mt-3 grid overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle md:grid-cols-2">
+                            <ol class="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                                 {% for icon, item_title, item_detail in impact_items %}
-                                    <li class="flex min-w-0 gap-3 bg-surface-card px-4 py-4 sm:px-5">
-                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                              aria-hidden="true">
-                                            <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                                        </span>
-                                        <div class="min-w-0">
-                                            <div class="flex items-center gap-2">
-                                                <span class="text-[10px] font-semibold tracking-wider text-content-muted">{{ '%02d'|format(loop.index) }}</span>
-                                                <p class="text-sm font-semibold text-content-primary">{{ item_title }}</p>
-                                            </div>
-                                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ item_detail }}</p>
+                                    <li class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4">
+                                        <div class="flex items-center justify-between gap-3">
+                                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                                  aria-hidden="true">
+                                                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                                            </span>
+                                            <span class="text-[10px] font-semibold tracking-wider text-content-muted">{{ '%02d'|format(loop.index) }}</span>
                                         </div>
+                                        <p class="mt-3 text-sm font-semibold text-content-primary">{{ item_title }}</p>
+                                        <p class="mt-1.5 text-xs leading-5 text-content-muted">{{ item_detail }}</p>
                                     </li>
                                 {% endfor %}
                             </ol>
@@ -122,26 +120,43 @@
                     </div>
                 {% endif %}
                 {% if presentation == 'steps' %}
-                    <div class="flex items-start gap-3 rounded-xl border border-kaori-primary/15 bg-kaori-soft px-4 py-3.5">
-                        <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
-                              aria-hidden="true">
-                            <i data-lucide="file-check-2" class="h-4 w-4"></i>
-                        </span>
-                        <p data-destructive-detail
-                           class="break-words text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ consequence }}</p>
+                    <div class="grid gap-3 {{ 'lg:grid-cols-2' if warning else '' }}">
+                        <div class="flex items-start gap-3 rounded-xl border border-kaori-primary/15 bg-kaori-soft px-4 py-3.5">
+                            <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="file-check-2" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-content-primary">Commit Boundary</p>
+                                <p data-destructive-detail
+                                   class="mt-1 break-words text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ consequence }}</p>
+                            </div>
+                        </div>
+                        {% if warning %}
+                            <div class="flex items-start gap-3 rounded-xl border border-status-critical-border bg-status-critical-soft px-4 py-3.5 text-status-critical-text">
+                                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card/70"
+                                      aria-hidden="true">
+                                    <i data-lucide="shield-alert" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-semibold">Fail-Closed</p>
+                                    <p class="mt-1 text-xs leading-5">{{ warning }}</p>
+                                </div>
+                            </div>
+                        {% endif %}
                     </div>
                 {% else %}
                     <p data-destructive-detail
                        class="break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ consequence }}</p>
-                {% endif %}
-                {% if warning %}
-                    <div class="flex items-start gap-3 rounded-lg border border-status-critical-border bg-status-critical-soft px-4 py-3 text-status-critical-text">
-                        <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-card/70"
-                              aria-hidden="true">
-                            <i data-lucide="shield-alert" class="h-4 w-4"></i>
-                        </span>
-                        <p class="text-xs leading-5">{{ warning }}</p>
-                    </div>
+                    {% if warning %}
+                        <div class="flex items-start gap-3 rounded-lg border border-status-critical-border bg-status-critical-soft px-4 py-3 text-status-critical-text">
+                            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-card/70"
+                                  aria-hidden="true">
+                                <i data-lucide="shield-alert" class="h-4 w-4"></i>
+                            </span>
+                            <p class="text-xs leading-5">{{ warning }}</p>
+                        </div>
+                    {% endif %}
                 {% endif %}
             </div>
             <footer class="flex flex-col-reverse gap-2 border-t border-outline-subtle bg-surface-hover {{ 'px-6 py-4' if presentation == 'steps' else 'px-5 py-4' }} sm:flex-row sm:justify-end">
