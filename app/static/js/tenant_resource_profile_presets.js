@@ -314,12 +314,73 @@
         form.dataset.kaoriInitialized = 'true'
 
         const profiles = readJson('tenant-namespace-allocation-profiles')
-        const select = form.querySelector('[data-tenant-namespace-profile]')
+        const environments = readJson('tenant-environment-advanced-control-state')
+        const profileSelect = form.querySelector('[data-tenant-namespace-profile]')
+        const environmentSelect = form.querySelector('[data-tenant-namespace-environment]')
+        const providerLabel = form.querySelector('[data-tenant-namespace-provider-label]')
         const fields = collectFields(form, 'data-tenant-namespace-resource-field')
         setReadonly(form, fields, true)
 
-        const applyNamespaceProfile = () => applyValues(fields, profiles[select?.value] || null)
-        select?.addEventListener('change', applyNamespaceProfile)
+        const renderAdvancedControls = () => {
+            const profile = profiles[profileSelect?.value] || null
+            const environment = environments[environmentSelect?.value] || null
+            const requested = profile?.advanced_controls || {}
+            const placementControls = environment?.controls || {}
+
+            if (providerLabel) {
+                if (!environment) {
+                    providerLabel.textContent = 'No placement selected'
+                } else {
+                    const provider = environment.provider_key === 'capsule' ? 'Capsule' : 'Native Kubernetes'
+                    const state = String(environment.provider_state || '').replaceAll('_', ' ')
+                    providerLabel.textContent = state ? `${provider} · ${state}` : provider
+                }
+            }
+
+            form.querySelectorAll('[data-tenant-namespace-advanced-control]').forEach((card) => {
+                const key = card.getAttribute('data-tenant-namespace-advanced-control')
+                const toggle = card.querySelector('[data-tenant-namespace-advanced-toggle]')
+                const stateLabel = card.querySelector('[data-tenant-namespace-advanced-state]')
+                const reason = card.querySelector('[data-tenant-namespace-advanced-reason]')
+                const isRequested = requested[key] === true
+                const placement = placementControls[key] || null
+                const isAvailable = isRequested && placement?.state === 'enabled'
+
+                if (toggle) toggle.checked = isRequested
+                card.dataset.requested = isRequested ? 'true' : 'false'
+                card.dataset.available = isAvailable ? 'true' : 'false'
+                card.classList.toggle('opacity-60', isRequested && !isAvailable)
+
+                if (!isRequested) {
+                    if (stateLabel) stateLabel.textContent = 'Off'
+                    if (reason) reason.textContent = 'Not enabled in the selected Resource Profile.'
+                    return
+                }
+
+                if (!environment) {
+                    if (stateLabel) stateLabel.textContent = 'Select placement'
+                    if (reason) reason.textContent = 'Choose a Tenant Environment to evaluate provider support.'
+                    return
+                }
+
+                if (isAvailable) {
+                    if (stateLabel) stateLabel.textContent = 'Enabled'
+                    if (reason) reason.textContent = 'Requested by profile and supported by the selected provider.'
+                    return
+                }
+
+                if (stateLabel) stateLabel.textContent = 'Unavailable'
+                if (reason) reason.textContent = placement?.reason || 'The selected provider cannot enforce this control.'
+            })
+        }
+
+        const applyNamespaceProfile = () => {
+            applyValues(fields, profiles[profileSelect?.value] || null)
+            renderAdvancedControls()
+        }
+
+        profileSelect?.addEventListener('change', applyNamespaceProfile)
+        environmentSelect?.addEventListener('change', renderAdvancedControls)
         applyNamespaceProfile()
     }
 
