@@ -330,6 +330,16 @@ def _prove_mutation_capability(
         raise ValueError(f'Capsule Tenant quota mutation preflight failed: {str(exc)[:700]}') from exc
 
 
+def _prove_read_capability(tenant: Tenant, *, client: Any) -> None:
+    if tenant.provider_state != TenantProviderState.CAPSULE.value:
+        raise ValueError('Capsule provider is degraded or unavailable.')
+    snapshot = discover_capsule(client.custom_objects_api().api_client)
+    status = snapshot.capabilities.get(_CAPABILITY)
+    status_value = str(getattr(status, 'value', status) or '')
+    if status_value != 'available':
+        raise ValueError('Capsule tenant_resource_quotas capability is unavailable in the live served CRD schema.')
+
+
 def _live_allocation(
     tenant: Tenant,
     *,
@@ -956,6 +966,8 @@ def build_capsule_tenant_quota_drift_action_state(tenant: Tenant) -> dict[str, A
 
 def _fresh_drift_observation(
     tenant: Tenant,
+    *,
+    require_mutation_capability: bool = True,
 ) -> tuple[dict[str, Any], dict[str, str], Any, dict[str, Any], dict[str, Any]]:
     state = build_capsule_tenant_quota_drift_action_state(tenant)
     if not state['reapply_supported']:
@@ -972,7 +984,10 @@ def _fresh_drift_observation(
     expected_hash = str(drift.get('observed_hash') or '')
     if expected_hash and _canonical_hash(current_resource_quotas) != expected_hash:
         raise ValueError('Capsule provider state changed since drift observation; run Tenant Sync and review again.')
-    _prove_mutation_capability(tenant, item=item, source=current_source, client=client)
+    if require_mutation_capability:
+        _prove_mutation_capability(tenant, item=item, source=current_source, client=client)
+    else:
+        _prove_read_capability(tenant, client=client)
     live_tenant_quota, allocation = _live_allocation(tenant, item=item, client=client)
     return item, current_source, client, live_tenant_quota, allocation
 
@@ -1063,7 +1078,10 @@ def reapply_capsule_tenant_quota_intent_committed(*, tenant_id: str) -> Tenant:
 
 def accept_capsule_tenant_provider_state(tenant: Tenant) -> Tenant:
     governance = _governance(tenant)
-    _item, source, _client, live_tenant_quota, allocation = _fresh_drift_observation(tenant)
+    _item, source, _client, live_tenant_quota, allocation = _fresh_drift_observation(
+        tenant,
+        require_mutation_capability=False,
+    )
     profile = _lineage_profile(tenant)
     committed_quota = dict(governance.get('desired_quota') or {})
     committed_scope = str(governance.get('scope') or 'Tenant')
