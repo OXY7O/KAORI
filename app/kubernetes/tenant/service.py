@@ -752,6 +752,19 @@ def evaluate_resource_profile_advanced_controls(
     for key, contract in RESOURCE_PROFILE_ADVANCED_CONTROLS.items():
         requested, configuration = _advanced_control_request(requested_controls.get(key))
         provider_requirements = dict(contract.get('providers') or {}).get(provider_key)
+        if provider_requirements is not None:
+            provider_requirements = tuple(provider_requirements)
+            if key == 'ingress' and not bool(configuration.get('enforcement_required', True)):
+                provider_requirements = tuple(
+                    capability for capability in provider_requirements if capability != 'admission_enforcement'
+                )
+            if (
+                key == 'managed_registry'
+                and provider_key == 'native_kubernetes'
+                and configuration.get('mode') == TenantManagedResourceMode.EXTERNAL_CREDENTIAL_PROVIDER.value
+            ):
+                provider_requirements = (*provider_requirements, 'external_registry_provider')
+
         if not requested:
             state = 'disabled'
             reason = 'Not enabled in this Resource Profile.'
