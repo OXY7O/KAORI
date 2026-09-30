@@ -192,3 +192,54 @@ def test_capsule_tenant_quota_is_preserved_but_control_remains_unavailable():
     assert observed['control_state'] == 'control_unavailable'
     assert 'has not admitted that mutation path' in observed['control_reason']
     assert observed['provider_mutation_performed'] is False
+
+def test_capsule_tenant_quota_treats_matching_native_quota_as_materialization():
+    namespace = SimpleNamespace(
+        metadata=_metadata(
+            'api-prod',
+            labels={'capsule.clastix.io/tenant': 'api'},
+        )
+    )
+    core = FakeCoreApi(
+        namespaces=[namespace],
+        quotas={
+            'api-prod': [
+                _quota(
+                    'capsule-api-0',
+                    {
+                        'limits.cpu': '4',
+                        'limits.memory': '8Gi',
+                        'pods': '10',
+                    },
+                )
+            ]
+        },
+    )
+    client = FakeClient(core)
+    tenant_item = {
+        'metadata': {'name': 'api', 'uid': 'tenant-api', 'resourceVersion': '7'},
+        'status': {'namespaces': ['api-prod']},
+        'spec': {
+            'resourceQuotas': {
+                'scope': 'Tenant',
+                'items': [
+                    {'hard': {'limits.cpu': '4', 'limits.memory': '8Gi'}},
+                    {'hard': {'pods': '10'}},
+                ],
+            }
+        },
+    }
+
+    observed = observe_capsule_tenant_allocation(
+        client,
+        tenant_name='api',
+        tenant_item=tenant_item,
+    )
+
+    assert observed['allocation_authority'] == 'capsule_tenant_resource_quotas'
+    assert observed['authority_paths'] == ['capsule_tenant_resource_quotas']
+    assert not any(
+        'Multiple effective allocation authority paths' in item
+        for item in observed['ambiguous_dimensions']
+    )
+
