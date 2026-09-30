@@ -627,6 +627,23 @@ def adopt_discovered_tenant_committed(
             tenant_name=resource_name,
             resource_version=resource_version or None,
         )
+        capsule_capabilities = capsule_capability_evidence.get('capabilities')
+        shared_quota_admitted = (
+            capsule_provider_state == 'capsule'
+            and isinstance(capsule_capabilities, Mapping)
+            and str(capsule_capabilities.get('shared_global_quota') or '') == 'available'
+        )
+        if (
+            allocation.get('allocation_authority') == 'capsule_global_resource_quota'
+            and shared_quota_admitted
+            and not allocation.get('unsupported_dimensions')
+            and not allocation.get('ambiguous_dimensions')
+        ):
+            allocation['control_state'] = 'observed'
+            allocation['control_reason'] = (
+                'Capsule GlobalResourceQuota authority is observed and the shared_global_quota capability is admitted. '
+                'Provider state remains read-only until explicit governance cutover.'
+            )
 
         tenant.provider_key = 'capsule'
         tenant.provider_state = capsule_provider_state
