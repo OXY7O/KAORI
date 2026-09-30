@@ -26,7 +26,7 @@
                             ],
                             placement='right') }}
                 </span>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Define one reusable quota and Container LimitRange contract for namespace allocation.</p>
+                <p class="mt-1 text-sm text-content-secondary">Define one reusable quota and Container LimitRange contract.</p>
             </div>
         </div>
     </header>
@@ -36,7 +36,7 @@
             <div>
                 <h3 id="resource-profile-identity-heading"
                     class="text-sm font-semibold text-content-primary">Identity &amp; Lineage</h3>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Name the reusable contract and keep preset/custom lineage explicit.</p>
+                <p class="mt-1 text-xs text-content-muted">Name the contract and choose its governance mode.</p>
             </div>
             <div class="mt-4 grid gap-4 lg:grid-cols-4">
                 <label class="block">
@@ -92,34 +92,27 @@
                            class="{{ form_field.input_classes() }}">
                 </label>
             </div>
-            <div class="mt-4 grid gap-3 lg:grid-cols-2">
-                <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-3.5 py-3">
-                    <div class="flex items-start gap-2.5">
-                        <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
-                              aria-hidden="true">
-                            <i data-lucide="lock-keyhole" class="h-3.5 w-3.5"></i>
-                        </span>
-                        <div>
-                            <p class="text-xs font-semibold text-content-primary">Operator rule</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Keep Small, Standard, and Large truthful. Different values belong in Custom.</p>
-                        </div>
+            <div class="mt-4 flex flex-col gap-3 rounded-xl border border-outline-subtle bg-surface-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                 data-tenant-profile-mode-banner>
+                <div class="flex min-w-0 items-center gap-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-hover text-content-muted"
+                          data-tenant-profile-mode-icon
+                          aria-hidden="true">
+                        <i data-lucide="lock-keyhole" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-content-primary" data-tenant-profile-mode-title>KAORI Preset · Fixed</p>
+                        <p class="mt-0.5 text-xs text-content-muted" data-tenant-profile-mode-detail>Preset values are locked. Choose Custom to edit allocation values.</p>
                     </div>
                 </div>
-                <div class="rounded-xl border border-outline-subtle bg-surface-hover px-3.5 py-3">
-                    <div class="flex items-start gap-2.5">
-                        <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
-                              aria-hidden="true">
-                            <i data-lucide="git-branch" class="h-3.5 w-3.5"></i>
-                        </span>
-                        <div>
-                            <p class="text-xs font-semibold text-content-primary">Custom keeps lineage</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">A Custom profile may start from a preset while retaining explicit base class/version evidence.</p>
-                        </div>
-                    </div>
-                </div>
+                <span class="inline-flex w-fit items-center rounded-full border border-outline-subtle bg-surface-hover px-2.5 py-1 text-[11px] font-semibold text-content-muted"
+                      data-tenant-profile-mode-badge>
+                    Fixed · Locked
+                </span>
             </div>
         </section>
-        <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4"
+        <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4 transition"
+                 data-tenant-resource-section
                  aria-labelledby="resource-profile-quota-heading">
             <div>
                 <span class="inline-flex min-h-6 items-center gap-1.5">
@@ -135,7 +128,7 @@
                             ],
                             placement='right') }}
                 </span>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Namespace ResourceQuota contract; CPU/memory requests feed Capacity Governance.</p>
+                <p class="mt-1 text-xs text-content-muted">Namespace quota; CPU/memory requests feed Capacity Governance.</p>
             </div>
             <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 {% for field, label, placeholder in [
@@ -150,19 +143,28 @@
                     ('configmaps', 'ConfigMaps', '50'),
                     ('secrets', 'Secrets', '50')
                     ] %}
-                    <label class="block">
-                        {{ form_field.label_row(label) }}
+                    <label class="block" data-tenant-resource-field-wrap>
+                        <span class="flex min-h-6 items-center justify-between gap-2">
+                            <span class="text-xs font-semibold text-content-primary">{{ label }}</span>
+                            <span class="inline-flex items-center gap-1 rounded-full border border-outline-subtle bg-surface-hover px-2 py-0.5 text-[10px] font-semibold text-content-muted"
+                                  data-tenant-resource-mode-label>
+                                <i data-lucide="lock-keyhole" class="h-3 w-3" aria-hidden="true"></i>
+                                <span data-tenant-resource-mode-text>Fixed</span>
+                            </span>
+                        </span>
                         <input name="{{ field }}"
                                placeholder="{{ placeholder }}"
                                data-tenant-resource-field="{{ field }}"
+                               data-locked="true"
                                readonly
                                aria-readonly="true"
-                               class="{{ form_field.input_classes() }}">
+                               class="{{ form_field.input_classes() }} transition data-[locked=true]:cursor-not-allowed data-[locked=true]:border-outline-subtle data-[locked=true]:bg-surface-hover data-[locked=true]:text-content-muted data-[locked=true]:shadow-none data-[locked=true]:focus:ring-0">
                     </label>
                 {% endfor %}
             </div>
         </section>
-        <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4"
+        <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4 transition"
+                 data-tenant-resource-section
                  aria-labelledby="resource-profile-container-heading">
             <div>
                 <span class="inline-flex min-h-6 items-center gap-1.5">
@@ -173,7 +175,7 @@
                             'These defaults are distinct from namespace ResourceQuota and do not change the profile class semantics.',
                             placement='right') }}
                 </span>
-                <p class="mt-1 text-xs leading-5 text-content-muted">LimitRange defaults used only when a container omits its own request/limit values.</p>
+                <p class="mt-1 text-xs text-content-muted">Used only when a container omits request/limit values.</p>
             </div>
             <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {% for field, label, placeholder in [
@@ -182,21 +184,29 @@
                     ('default_request_memory', 'Default Memory Request', '128Mi'),
                     ('default_memory', 'Default Memory Limit', '512Mi')
                     ] %}
-                    <label class="block">
-                        {{ form_field.label_row(label) }}
+                    <label class="block" data-tenant-resource-field-wrap>
+                        <span class="flex min-h-6 items-center justify-between gap-2">
+                            <span class="text-xs font-semibold text-content-primary">{{ label }}</span>
+                            <span class="inline-flex items-center gap-1 rounded-full border border-outline-subtle bg-surface-hover px-2 py-0.5 text-[10px] font-semibold text-content-muted"
+                                  data-tenant-resource-mode-label>
+                                <i data-lucide="lock-keyhole" class="h-3 w-3" aria-hidden="true"></i>
+                                <span data-tenant-resource-mode-text>Fixed</span>
+                            </span>
+                        </span>
                         <input name="{{ field }}"
                                placeholder="{{ placeholder }}"
                                data-tenant-resource-field="{{ field }}"
+                               data-locked="true"
                                readonly
                                aria-readonly="true"
-                               class="{{ form_field.input_classes() }}">
+                               class="{{ form_field.input_classes() }} transition data-[locked=true]:cursor-not-allowed data-[locked=true]:border-outline-subtle data-[locked=true]:bg-surface-hover data-[locked=true]:text-content-muted data-[locked=true]:shadow-none data-[locked=true]:focus:ring-0">
                     </label>
                 {% endfor %}
             </div>
         </section>
     </div>
     <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <p class="max-w-2xl text-xs leading-5 text-content-muted">Profile intent is reusable; Namespace allocation is admitted and reconciled separately.</p>
+        <p class="max-w-2xl text-xs text-content-muted">Profiles define intent; Namespace allocation is admitted separately.</p>
         <button type="submit"
                 {% if not can_manage %}disabled aria-disabled="true"{% endif %}
                 class="{{ action_button.classes('primary') }}">
