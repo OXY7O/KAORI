@@ -324,6 +324,7 @@ def _native_observation_from_items(
         'display_values': _display_values(quota, limits),
         'source_resources': source_resources,
         'external_limit_constraints': external_limit_constraints,
+        'external_constraint_details': external_limit_constraints,
         'unsupported_dimensions': unsupported,
         'ambiguous_dimensions': ambiguous,
         'control_state': control_state,
