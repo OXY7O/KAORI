@@ -56,6 +56,10 @@
                                         </p>
                                     {% endif %}
                                 </div>
+                            {% elif drift.get('observed_matches_desired') %}
+                                <p class="mt-2 text-xs leading-5 text-status-success-text">
+                                    Provider values now match KAORI intent; explicit reconciliation confirmation is still required.
+                                </p>
                             {% endif %}
                             {% if state.get('blocked_reason') %}
                                 <p class="mt-2 max-w-[420px] text-xs leading-5 text-status-warning-text">
