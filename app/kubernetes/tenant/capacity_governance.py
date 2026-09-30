@@ -182,7 +182,6 @@ def enforce_namespace_allocation_preflight(
 ) -> TenantCapacityDecision:
     return _enforce_allocation_preflight(
         tenant_environment=tenant_environment,
-        tenant=resolved_tenant,
         profile=profile,
         namespace=namespace,
         current=CapacityVector(cpu=_ZERO, memory_bytes=_ZERO),
@@ -323,6 +322,7 @@ def _enforce_allocation_preflight(
     decision = _persist_decision(
         cluster_id=cluster_id,
         tenant_environment=tenant_environment,
+        tenant=resolved_tenant,
         profile=profile,
         namespace=namespace,
         operation=operation,
