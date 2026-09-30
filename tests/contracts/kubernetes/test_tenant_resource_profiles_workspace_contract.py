@@ -93,6 +93,7 @@ def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() 
     assert "table_ui.table_classes('min-w-[900px]')" in registry
     assert 'resource-profile-manage-' in registry
     assert "{{ 'Manage' if profile.profile_class == 'custom' else 'View' }}" in registry
+    assert "{{ table_label.status_label('Editable' if profile.profile_class == 'custom' else 'Locked'" in registry
     assert '_resource_profile_management_dialogs.html' in registry
     assert 'Requests</th>' not in registry
     assert 'Namespace Quota</th>' not in registry

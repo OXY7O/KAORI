@@ -94,6 +94,7 @@
                         <td class="{{ table_ui.cell_classes() }} align-middle">
                             <div class="flex flex-wrap items-center gap-2">
                                 {{ table_label.status_label(profile.profile_class|title, 'info' if profile.profile_class == 'custom' else 'normal') }}
+                                {{ table_label.status_label('Editable' if profile.profile_class == 'custom' else 'Locked', 'info' if profile.profile_class == 'custom' else 'unknown') }}
                                 {{ table_label.status_label('Enabled' if profile.enabled else 'Disabled', 'normal' if profile.enabled else 'unknown') }}
                             </div>
                             <p class="mt-1 text-xs text-content-muted">

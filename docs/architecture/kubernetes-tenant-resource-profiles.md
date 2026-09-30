@@ -58,6 +58,16 @@ Supported baseline quota keys:
 
 Changing these values is a governed product change and requires a new preset version. Existing namespace allocations do not silently inherit a later preset version.
 
+## Resource Profile control-state UX
+
+Resource Profile mutability is visible before an operator opens the detail dialog:
+
+- **KAORI Preset · Locked** — Small, Standard, and Large are code-owned/versioned baselines. Registry action is **View**.
+- **Custom · Editable** — operator-managed reusable allocation contract. Registry action is **Manage**.
+- A future **Adopted Baseline · Observed** state from #762 is allocation provenance, not a new built-in preset class. It remains read-only until explicit allocation-governance cutover.
+
+Editing a Custom Resource Profile changes the reusable contract version only. It never silently rewrites an existing Namespace allocation snapshot.
+
 ## Effective allocation evidence
 
 A managed namespace records:
