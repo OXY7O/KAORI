@@ -36,7 +36,10 @@
                         {% set cluster_blocked_scope = "Tenant Provider" %}
                         {% if registered_cluster_count > 0 %}
                             {% set cluster_blocked_title = "Provider Operations Restricted" %}
-                            {% set cluster_blocked_info = "KAORI state stays available. Provider mutations wait for a Ready, reachable integration." %}
+                            {% set cluster_blocked_info = "Provider mutations require a Ready Kubernetes integration." %}
+                            {% set cluster_blocked_action_label = "Review Cluster Integrations" %}
+                            {% set cluster_blocked_action_href = url_for('integrations.kubernetes') %}
+                            {% set cluster_blocked_action_icon = "server-cog" %}
                             {% set cluster_blocked_cluster_label = "Registered Clusters" %}
                             {% set cluster_blocked_cluster_value = registered_cluster_count %}
                             {% set cluster_blocked_cluster_supporting = "Committed state remains readable" %}
@@ -45,7 +48,10 @@
                             {% set cluster_blocked_state_supporting = "Live connectivity is checked separately below" %}
                         {% else %}
                             {% set cluster_blocked_title = "Cluster Setup Required" %}
-                            {% set cluster_blocked_info = "Add a Kubernetes cluster to enable provider-backed Tenant workflows. Existing committed KAORI records remain readable." %}
+                            {% set cluster_blocked_info = "Add a Kubernetes cluster to enable provider-backed Tenant workflows." %}
+                            {% set cluster_blocked_action_label = "Open Cluster Integrations" %}
+                            {% set cluster_blocked_action_href = url_for('integrations.kubernetes') %}
+                            {% set cluster_blocked_action_icon = "server-cog" %}
                         {% endif %}
                         {% include 'components/cluster/_hero_blocked_context.html' %}
                     </aside>
