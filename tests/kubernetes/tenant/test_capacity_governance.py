@@ -1,4 +1,5 @@
 from decimal import Decimal
+from types import SimpleNamespace
 
 from app.kubernetes.analytics.materialization.service import SnapshotResult
 from app.kubernetes.tenant.capacity import (
@@ -10,6 +11,7 @@ from app.kubernetes.tenant.capacity import (
     quota_request_vector,
 )
 from app.kubernetes.tenant.capacity_governance import (
+    _aggregate_committed_allocation,
     _capacity_vector,
     _committed_evidence_reason,
     _unknown_evidence_decision,
@@ -281,3 +283,73 @@ def test_unknown_evidence_blocks_positive_existing_allocation_change() -> None:
     assert decision.allowed is False
     assert decision.decision == 'block'
     assert decision.state == 'Unknown'
+
+
+
+def _capacity_row(tenant_id: str, namespace: str, cpu: str, memory: str):
+    return SimpleNamespace(
+        namespace=namespace,
+        environment=SimpleNamespace(tenant_id=tenant_id),
+        allocation_quota_json={
+            'requests.cpu': cpu,
+            'requests.memory': memory,
+        },
+    )
+
+
+def test_shared_tenant_allocation_is_counted_once_instead_of_per_namespace() -> None:
+    rows = [
+        _capacity_row('capsule-api', 'api-a', '4', '8Gi'),
+        _capacity_row('capsule-api', 'api-b', '4', '8Gi'),
+        _capacity_row('capsule-api', 'api-c', '4', '8Gi'),
+    ]
+
+    committed, unbounded = _aggregate_committed_allocation(
+        rows,
+        shared_quota_by_tenant={
+            'capsule-api': {
+                'requests.cpu': '4',
+                'requests.memory': '8Gi',
+            }
+        },
+    )
+
+    assert committed.cpu == Decimal('4')
+    assert committed.memory_bytes == Decimal(8 * 1024**3)
+    assert unbounded == []
+
+
+def test_shared_and_namespace_commitments_can_coexist_without_double_counting() -> None:
+    rows = [
+        _capacity_row('capsule-api', 'api-a', '4', '8Gi'),
+        _capacity_row('capsule-api', 'api-b', '4', '8Gi'),
+        _capacity_row('native-payments', 'payments-prod', '2', '4Gi'),
+    ]
+
+    committed, unbounded = _aggregate_committed_allocation(
+        rows,
+        shared_quota_by_tenant={
+            'capsule-api': {
+                'requests.cpu': '4',
+                'requests.memory': '8Gi',
+            }
+        },
+    )
+
+    assert committed.cpu == Decimal('6')
+    assert committed.memory_bytes == Decimal(12 * 1024**3)
+    assert unbounded == []
+
+
+def test_ambiguous_shared_authority_fails_capacity_evidence_closed() -> None:
+    rows = [_capacity_row('capsule-api', 'api-a', '4', '8Gi')]
+
+    committed, unbounded = _aggregate_committed_allocation(
+        rows,
+        shared_quota_by_tenant={},
+        ambiguous_shared_tenants=['capsule-api'],
+    )
+
+    assert committed.cpu is None
+    assert committed.memory_bytes is None
+    assert 'Tenant/capsule-api ambiguous shared allocation' in unbounded
