@@ -63,6 +63,7 @@
                         hx_sync='this:replace') }}
             <div class="space-y-5 p-4 sm:p-5">
                 {% if active_namespace_view == 'allocation' %}
+                    {% include "kubernetes/tenant/partials/_allocation_cutover.html" %}
                     {% include "kubernetes/tenant/partials/_allocation_change.html" %}
                 {% elif active_namespace_view == 'decisions' %}
                     {% include "kubernetes/tenant/partials/_capacity_decisions.html" %}
