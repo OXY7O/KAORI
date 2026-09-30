@@ -166,7 +166,47 @@ Cutover preserves the existing GlobalResourceQuota selectors and provider object
 
 Tenant Sync remains observation-only. GlobalResourceQuota resourceVersion changes are valid drift evidence rather than an observation error; UID replacement, capability degradation, ambiguous ownership, or unsupported authority still fail closed. **Reapply KAORI Intent** performs fresh-provider and shared-capacity checks before Capsule mutation. **Accept Provider State** performs the same governance checks but makes no redundant provider write and records whether the accepted values are customized relative to the retained Resource Profile lineage.
 
-`Tenant.spec.resourceQuotas` is intentionally not admitted by #771 and remains **Control Unavailable**. KAORI never substitutes a Native ResourceQuota write for a Capsule-owned contract.
+#771 does not admit `Tenant.spec.resourceQuotas`; #773 is the separate bounded authority for that legacy Capsule compatibility path. KAORI never substitutes a Native ResourceQuota write for a Capsule-owned contract.
+
+### Capsule Tenant resource-quota authority
+
+#773 admits an unambiguous Capsule `Tenant.spec.resourceQuotas` contract into the same canonical allocation lifecycle without merging it with GlobalResourceQuota authority.
+
+The path is capability-gated. KAORI requires a healthy Capsule authority, a supported served Tenant CR API version, and live CRD schema evidence that `spec.resourceQuotas` exists. A no-op server-side dry-run is used only on explicit human mutation/reconciliation actions to prove the admission path before the real write; normal Tenant Sync remains read-only.
+
+`resourceQuotas.scope` retains Capsule semantics:
+
+- `Tenant` is one shared allocation contract for capacity accounting and is counted once for the Tenant;
+- `Namespace` is a per-Namespace template and capacity accounting multiplies the governed request vector by the currently correlated Namespace count.
+
+KAORI never silently changes scope during normal allocation changes. A manual scope change becomes drift and requires an explicit **Reapply KAORI Intent** or **Accept Provider State** decision.
+
+For adopted legacy Tenants, the observed ordered `items` structure and hard-key ownership are preserved. Governed Resource Profile values update the supported `hard` dimensions in place. Non-hard quota semantics such as `scopes` / `scopeSelector`, unsupported quota keys, ambiguous duplicated dimensions, stale Tenant UID/resourceVersion evidence, or competing allocation authorities fail closed.
+
+Namespace-side constraints that are not the selected allocation authority remain external evidence. For example, a Capsule-generated `LimitRange` with `type=PersistentVolumeClaim` can remain visible on an adopted Tenant while an unambiguous Tenant-scope `spec.resourceQuotas` contract is governed. Cutover and later changes do not delete or rewrite that external LimitRange.
+
+The managed lifecycle is:
+
+```text
+Discovered
+→ Adopted / Observed
+→ explicit Tenant quota governance cutover
+→ KAORI Managed
+→ normal governed allocation changes through Tenant.spec.resourceQuotas
+→ Tenant Sync observes provider state
+→ Drifted on out-of-band change
+→ {Reapply KAORI Intent | Accept Provider State}
+```
+
+Cutover and normal KAORI-managed changes re-read the Tenant CR, reject stale UID/resourceVersion evidence, run #654 capacity admission, patch only `spec.resourceQuotas`, and require provider read-back before committing effective state.
+
+Tenant Sync performs no provider write. Drift evidence retains the last KAORI desired quota/scope, the current provider quota/scope, dimension-level differences, provider UID/resourceVersion, and external constraints.
+
+**Reapply KAORI Intent** uses the fresh live provider quota as the current capacity state and the committed KAORI contract as the proposed state, then patches the authoritative Tenant CR and verifies read-back.
+
+**Accept Provider State** treats the fresh live Tenant quota as proposed new intent, validates authority/scope/capacity, performs no redundant provider write, commits the live contract with `provenance=accepted_provider_state`, and returns allocation control to **KAORI Managed**.
+
+Capsule now recommends newer Rules-based quota capabilities for new designs; KAORI treats `Tenant.spec.resourceQuotas` as a legacy compatibility authority for estates that already use it. #773 does not auto-migrate a legacy Tenant to another Capsule quota model because the external provider remains authoritative for that transition.
 
 ## Effective allocation evidence
 
