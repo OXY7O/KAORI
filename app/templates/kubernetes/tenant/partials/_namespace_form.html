@@ -40,6 +40,7 @@
                     {{ form_field.label_row("Tenant Environment") }}
                     <select name="tenant_environment_id"
                             required
+                            data-tenant-namespace-environment
                             class="{{ form_field.select_classes() }}">
                         <option value="">Select Tenant environment</option>
                         {% for environment in environment_options %}
@@ -129,6 +130,50 @@
                         {% endfor %}
                     </div>
                 </div>
+            </div>
+        </section>
+        <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4"
+                 aria-labelledby="namespace-advanced-controls-heading">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h3 id="namespace-advanced-controls-heading"
+                        class="text-sm font-semibold text-content-primary">Advanced Controls Preview</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Requested profile controls are evaluated against the selected Tenant provider placement.</p>
+                </div>
+                <span class="inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-card px-2.5 text-xs font-semibold text-content-muted"
+                      data-tenant-namespace-provider-label>No placement selected</span>
+            </div>
+            {% set advanced_controls = [
+                ('ingress', 'Ingress'),
+                ('hostname_reservation', 'Hostname Reservation'),
+                ('managed_tls', 'Managed TLS'),
+                ('managed_registry', 'Managed Registry'),
+                ('capsule_namespace_controls', 'Capsule Namespace Controls'),
+                ('capsule_resource_rules', 'Capsule Resource Rules'),
+                ('capsule_resource_pools', 'Capsule Resource Pools'),
+                ('capsule_replication', 'Capsule Replication'),
+                ('capsule_tenant_cordon', 'Capsule Tenant Cordon')
+            ] %}
+            <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {% for key, label in advanced_controls %}
+                    <div class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card p-3"
+                         data-tenant-namespace-advanced-control="{{ key }}">
+                        <input type="checkbox"
+                               disabled
+                               aria-disabled="true"
+                               data-tenant-namespace-advanced-toggle
+                               class="mt-0.5 h-4 w-4 shrink-0 rounded border-outline-default text-kaori-primary">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <p class="text-xs font-semibold text-content-primary">{{ label }}</p>
+                                <span class="text-[10px] font-semibold text-content-muted"
+                                      data-tenant-namespace-advanced-state>Off</span>
+                            </div>
+                            <p class="mt-1 text-[11px] leading-5 text-content-muted"
+                               data-tenant-namespace-advanced-reason>Not enabled in the selected Resource Profile.</p>
+                        </div>
+                    </div>
+                {% endfor %}
             </div>
         </section>
         <div class="flex items-start gap-3 rounded-xl border border-kaori-primary/20 bg-kaori-soft px-4 py-3">
