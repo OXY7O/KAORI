@@ -2,7 +2,10 @@ from types import SimpleNamespace
 
 import app.kubernetes.tenant.capsule_allocation_governance as capsule_allocation
 from app.kubernetes.tenant.capsule_allocation_governance import (
+    _desired_shared_spec,
+    _quota_differences,
     build_capsule_shared_allocation_cutover_state,
+    build_capsule_shared_drift_action_state,
 )
 
 
@@ -58,6 +61,7 @@ def _tenant(
 
 
 def _no_existing_intent(monkeypatch):
+    monkeypatch.setattr(capsule_allocation, '_active_shared_intents', lambda tenant_id: [])
     monkeypatch.setattr(
         capsule_allocation,
         '_managed_shared_intent',
@@ -131,3 +135,117 @@ def test_unsupported_capsule_api_version_fails_closed(monkeypatch):
 
     assert state['supported'] is False
     assert 'requires served capsule.clastix.io/v1beta2' in state['reason']
+
+
+
+def test_existing_advanced_global_quota_intent_blocks_canonical_cutover(monkeypatch):
+    generic_intent = SimpleNamespace(
+        status='ready',
+        reconciliation_evidence_json={},
+    )
+    monkeypatch.setattr(
+        capsule_allocation,
+        '_active_shared_intents',
+        lambda tenant_id: [generic_intent],
+    )
+    monkeypatch.setattr(
+        capsule_allocation,
+        '_managed_shared_intent',
+        lambda tenant: None,
+    )
+
+    state = build_capsule_shared_allocation_cutover_state(_tenant())
+
+    assert state['supported'] is False
+    assert 'advanced intent already owns this Tenant resource path' in state['reason']
+
+
+def test_shared_spec_cutover_preserves_capsule_namespace_selectors():
+    current = {
+        'spec': {
+            'namespaceSelectors': [
+                {
+                    'matchLabels': {
+                        'capsule.clastix.io/tenant': 'api',
+                    }
+                }
+            ],
+            'quota': {
+                'hard': {
+                    'requests.cpu': '4',
+                    'requests.memory': '8Gi',
+                }
+            },
+        }
+    }
+
+    desired = _desired_shared_spec(
+        current,
+        {
+            'requests.cpu': '6',
+            'requests.memory': '12Gi',
+        },
+    )
+
+    assert desired['namespaceSelectors'] == current['spec']['namespaceSelectors']
+    assert desired['quota']['hard']['requests.cpu'] == '6'
+    assert desired['quota']['hard']['requests.memory'] == '12Gi'
+
+
+def test_capsule_shared_quota_diff_uses_kubernetes_quantity_semantics():
+    differences = _quota_differences(
+        {
+            'requests.cpu': '1',
+            'requests.memory': '1024Mi',
+        },
+        {
+            'requests.cpu': '1000m',
+            'requests.memory': '1Gi',
+        },
+    )
+
+    assert differences == []
+
+
+def test_capsule_shared_reconcile_requires_committed_drift_state():
+    tenant = _tenant()
+    intent = SimpleNamespace(
+        tenant=tenant,
+        status='ready',
+        reconciliation_evidence_json={
+            'allocation_governance_scope': 'tenant_shared',
+        },
+    )
+
+    state = build_capsule_shared_drift_action_state(intent)
+
+    assert state['reapply_supported'] is False
+    assert state['accept_supported'] is False
+    assert 'requires committed Drifted state' in state['blocked_reason']
+
+
+def test_capsule_shared_reconcile_blocks_when_provider_degrades():
+    tenant = _tenant(provider_state='capsule_degraded')
+    intent = SimpleNamespace(
+        tenant=tenant,
+        status='drifted',
+        reconciliation_evidence_json={
+            'allocation_governance_scope': 'tenant_shared',
+            'allocation_drift': {
+                'differences': [
+                    {
+                        'dimension': 'requests.cpu',
+                        'kaori_value': '4',
+                        'provider_value': '6',
+                    }
+                ],
+                'blocked_reasons': [],
+            },
+        },
+    )
+
+    state = build_capsule_shared_drift_action_state(intent)
+
+    assert state['reapply_supported'] is False
+    assert state['accept_supported'] is False
+    assert 'Capsule provider is degraded or unavailable' in state['blocked_reason']
