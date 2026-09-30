@@ -31,15 +31,20 @@ Operations task views stay inside the page so the sidebar remains exactly two in
 
 ## Evidence and provider authority
 
-Normal Tenant workspace reads are composed from committed KAORI state. Live provider calls remain inside the owning mutation/reconciliation adapters, plus the explicitly live Tenant connection/discovery surfaces described below.
+Normal Tenant workspace reads are composed from committed KAORI state. Live provider calls remain inside the owning mutation/reconciliation adapters, plus explicitly live surfaces such as Provider Connectivity and Tenant Discovery.
 
-### Native Kubernetes prerequisite rendering
+### Committed read model and Native provider readiness
 
-Native Kubernetes remains the mandatory baseline for Tenant workflows. Tenant does **not** depend on Analytics, Metrics Source, or Alertmanager. Workspace availability follows the canonical Kubernetes runtime contract: the cluster must be connected, explicit `ready` or `degraded` validation states are operational, and a connected legacy registration with a null readiness field uses the connected-implies-ready compatibility fallback. `validation_required`, `blocked`, unavailable, failed, or disconnected states remain blocked. Tenant mutation authorization is evaluated separately from the relevant `tenant.*` capability evidence, so an unrelated global warning does not automatically disable every Tenant capability.
+Native Kubernetes remains the mandatory baseline provider for Native Tenant mutations. Tenant does **not** depend on Analytics, Metrics Source, or Alertmanager. Provider-backed mutation readiness follows the canonical Kubernetes runtime contract: the cluster must be connected, explicit `ready` or `degraded` validation states are operational, and a connected legacy registration with a null readiness field uses the connected-implies-ready compatibility fallback. `validation_required`, `blocked`, unavailable, failed, or disconnected states remain fail-closed for provider-backed mutations.
 
-When no Tenant-ready Native Kubernetes cluster is available, Tenant uses the same general Kubernetes prerequisite grammar as Dashboard, Inventory, Operations, and Governance. With zero registrations the shared blocker owns the setup sequence `Open Cluster Integrations → Register Cluster → Run Sync`. When a cluster is already registered but explicitly not Ready, the same blocker switches to the validation sequence `Open Cluster Integrations → Validate Cluster → Confirm Ready`; it must not claim that zero clusters are connected. Page-specific Tenant operational content remains terminal/hidden beneath that blocker. Once a Tenant-ready Native Kubernetes cluster exists, the normal Overview, Tenants, Resource Profiles, Namespace Provisioning, or Operations content is rendered unchanged.
+Provider readiness is **not** a page-level read gate. Tenant Registry, Resource Profiles, committed Namespace state, access/credential metadata, Operations evidence, and committed capacity/snapshot evidence remain readable from KAORI state even when the Kubernetes API is unavailable. With zero cluster registrations the setup guidance remains visible, but committed KAORI records are not hidden. With a registered but non-Ready provider, the Hero reports **Provider Operations Restricted** while the committed workspace remains available.
 
-This is a presentation boundary only. It does not add a live provider read, mutate Kubernetes state, or replace the existing committed-state authority.
+The two snapshot concepts are intentionally separate:
+
+- **Tenant Collection Snapshot** — committed evidence produced by `kubernetes.tenant.sync`; it retains last-success, source cutoff, scope, coverage, and exceptions while the provider is offline.
+- **Live Provider Connectivity** — a short live Kubernetes API reachability probe. Non-Overview pages load it asynchronously through HTMX after committed content is rendered, so provider timeout does not block the normal read path. It is supplemental operational context and never replaces the committed snapshot.
+
+This boundary does not weaken mutation safety. Create/provision/reconcile/credential/provider mutations continue to use their owning readiness/capability checks and fail closed. Discovery from #736 remains the explicit live-provider read exception.
 
 Tenant Overview owns a registered **Tenant inventory correlation** job while Kubernetes remains authoritative for observed cluster resources:
 
@@ -56,7 +61,7 @@ KAORI Tenant state + committed Kubernetes inventory
 
 `kubernetes.tenant.sync` runs through the canonical Platform Operations registered-job scheduler and the existing `inventory` worker queue. It does not introduce a Tenant-specific scheduler framework and it does not perform Tenant reconciliation or provider mutation.
 
-Non-Overview Tenant pages use a shared **Tenant Collection Snapshot** directly below the page Hero. This is not the Overview worker-generated snapshot and has no cadence. It performs a short live Kubernetes API reachability probe on the page request. Tenant administration HTMX mutations also return an out-of-band refresh of this connection bar, so the displayed connection status can change immediately after a provider-backed operation. If the page stays idle, no polling or worker schedule runs; the displayed timestamp remains the last page/operation check.
+Non-Overview Tenant pages show the same committed **Tenant Collection Snapshot** evidence below the Hero, followed by the separately labeled **Live Provider Connectivity** surface when a Kubernetes connection is registered. The committed snapshot is rendered synchronously from KAORI state; the live provider probe is lazy and non-cacheable.
 
 Overview actions follow the established operational sync pattern:
 
@@ -221,7 +226,8 @@ Native-provider acceptance is mandatory. Final UAT must exercise, as applicable:
 23. Capsule Tenant quota bidirectional recovery: after #773 allocation control is **KAORI Managed**, change `Tenant.spec.resourceQuotas` directly during a simulated KAORI outage. Run Tenant Sync and prove it performs no write, commits **Drifted** evidence with desired/provider values plus Tenant UID/resourceVersion, then exercise **Reapply KAORI Intent** and **Accept Provider State** separately. Reapply must use fresh live allocation for capacity admission and require provider read-back; Accept must perform no provider write and commit the live quota/scope with `provenance=accepted_provider_state`. Change the Tenant CR again between Sync and either action and prove stale resourceVersion/hash fails closed.
 24. Capsule Tenant quota safety boundaries: prove non-empty `scopes` / `scopeSelector`, unsupported authoritative hard dimensions, ambiguous duplicated quota dimensions, competing allocation authority, degraded Capsule, missing `spec.resourceQuotas` CRD schema, and incompatible API versions remain **Control Unavailable**. No path may fall back to namespaced Native ResourceQuota mutation.
 25. Discovery performance boundary: open, filter, and paginate **Tenant Discovery** and verify the registry performs candidate enumeration only; ResourceQuota/LimitRange, Capsule allocation authority, GlobalResourceQuota, and Capsule CRD capability inspection must not run per visible row. Click **Review Adoption** and verify exactly that selected candidate receives the deep live HTMX preflight, with a visible fail-closed error state if revalidation fails. Submit **Adopt as Observed** and verify adoption performs a new live provider/conflict revalidation instead of trusting the preflight response.
-26. Light/dark, responsive, loading/empty/error/degraded, keyboard/focus, and normal KAORI not-found behavior for unsupported Tenant URLs.
+26. Offline committed-read boundary: complete at least one Tenant sync, record the committed snapshot cutoff/coverage, then make the Kubernetes API unreachable. Open **Tenants**, **Resource Profiles**, **Namespace Provisioning**, and **Operations** and verify committed KAORI content still renders immediately. **Tenant Collection Snapshot** must retain the last committed evidence, **Live Provider Connectivity** must independently become Unavailable/Partial after its lazy probe, Resource Profile/capacity committed evidence must remain visible for registered clusters, and provider-backed mutations must continue to fail closed. Repeat with no successful Tenant sync and prove **Not Collected** is distinct from provider connectivity failure.
+27. Light/dark, responsive, loading/empty/error/degraded, keyboard/focus, and normal KAORI not-found behavior for unsupported Tenant URLs.
 
 Capsule UAT is capability-conditional and must record the exact compatible Capsule evidence when available. Fixture-only Capsule state is not acceptance evidence.
 
