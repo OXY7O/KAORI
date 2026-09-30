@@ -1,8 +1,10 @@
 from types import SimpleNamespace
 
+import app.kubernetes.tenant.allocation_drift as allocation_drift
 from app.kubernetes.tenant.allocation_drift import (
     allocation_differences,
     build_allocation_drift_action_state,
+    reapply_kaori_allocation_intent,
 )
 
 
@@ -11,6 +13,7 @@ def _record(*, drift=None, provider_key='native_kubernetes', authority='native_k
         id='tenant-api',
         provider_key=provider_key,
         reconciliation_authority=authority,
+        lifecycle_status='ready',
     )
     profile = SimpleNamespace(
         public_id='profile-standard',
@@ -35,6 +38,12 @@ def _record(*, drift=None, provider_key='native_kubernetes', authority='native_k
             'default_request': {'cpu': '100m', 'memory': '128Mi'},
             'default': {'cpu': '500m', 'memory': '512Mi'},
         },
+        provisioning_status='drifted',
+        allocation_customized=False,
+        capacity_decision_id=None,
+        effective_hash='kaori-hash',
+        desired_hash='kaori-hash',
+        provisioning_message='Allocation drift requires review.',
         provisioning_evidence_json={
             'allocation_control_state': 'kaori_managed',
             'allocation': {'provenance': 'kaori_managed'},
@@ -132,3 +141,97 @@ def test_capsule_allocation_drift_stays_control_unavailable_without_admitted_ada
     assert state['reapply_supported'] is False
     assert state['accept_supported'] is False
     assert 'No admitted reconciliation adapter' in state['blocked_reason']
+
+
+
+def test_reapply_capacity_preflight_uses_live_provider_allocation_as_current(monkeypatch):
+    drift = {
+        'blocked_reasons': [],
+        'observed': {
+            'effective_hash': 'provider-hash',
+            'quota': {'requests.cpu': '1'},
+            'limits': {},
+        },
+        'differences': [
+            {
+                'dimension': 'requests.cpu',
+                'kaori_value': '2',
+                'provider_value': '1',
+            }
+        ],
+    }
+    record = _record(drift=drift)
+    live = {
+        'control_state': 'observed',
+        'effective_hash': 'provider-hash',
+        'quota': {'requests.cpu': '1'},
+        'limits': {},
+        'source_resources': [],
+    }
+    captured = {}
+
+    monkeypatch.setattr(
+        allocation_drift,
+        '_live_observation_for_action',
+        lambda current_record, current_drift: live,
+    )
+
+    def fake_capacity_preflight(*, record, profile, current_quota_hard, proposed_quota_hard):
+        captured['current'] = dict(current_quota_hard)
+        captured['proposed'] = dict(proposed_quota_hard)
+        return SimpleNamespace(id=88)
+
+    def fake_reconcile(current_record, **kwargs):
+        captured['reconcile'] = kwargs
+        return current_record
+
+    monkeypatch.setattr(
+        allocation_drift,
+        'enforce_observed_namespace_allocation_preflight',
+        fake_capacity_preflight,
+    )
+    monkeypatch.setattr(
+        allocation_drift,
+        'reconcile_adopted_native_allocation',
+        fake_reconcile,
+    )
+
+    reapply_kaori_allocation_intent(record)
+
+    assert captured['current'] == {'requests.cpu': '1'}
+    assert captured['proposed']['requests.cpu'] == '2'
+    assert captured['reconcile']['capacity_decision_id'] == 88
+    assert captured['reconcile']['expected_observed_hash'] == 'provider-hash'
+    assert captured['reconcile']['failure_status'] == 'drifted'
+
+
+def test_allocation_reconciliation_is_blocked_outside_committed_drift_state():
+    drift = {
+        'blocked_reasons': [],
+        'observed': {'effective_hash': 'provider-hash'},
+        'differences': [],
+    }
+    record = _record(drift=drift)
+    record.provisioning_status = 'ready'
+
+    state = build_allocation_drift_action_state(record)
+
+    assert state['reapply_supported'] is False
+    assert state['accept_supported'] is False
+    assert 'committed Drifted Namespace state' in state['blocked_reason']
+
+
+def test_allocation_reconciliation_is_blocked_during_tenant_teardown():
+    drift = {
+        'blocked_reasons': [],
+        'observed': {'effective_hash': 'provider-hash'},
+        'differences': [],
+    }
+    record = _record(drift=drift)
+    record.environment.tenant.lifecycle_status = 'decommissioning'
+
+    state = build_allocation_drift_action_state(record)
+
+    assert state['reapply_supported'] is False
+    assert state['accept_supported'] is False
+    assert 'unavailable during teardown' in state['blocked_reason']
