@@ -233,17 +233,17 @@
 {{ destructive_modal.render('tenant-decommission-modal',
 'Decommission Tenant',
 'Selected Tenant',
-'Final state commits only after cleanup verification. Tenant history and audit evidence remain available.',
+'Commit only after verified cleanup. Tenant history and audit evidence remain.',
 'tenant-decommission-submit',
 action_label='Start Decommission',
-notice='Governed teardown with provider verification.',
+notice='Governed teardown. Provider verification is required.',
 scope_value='Governed Tenant boundary',
 impact_items=[
 ('snowflake', 'Freeze Mutations', 'Block new Tenant changes.') ,
 ('key-round', 'Revoke Access', 'Disable credentials and grants.'),
-('boxes', 'Remove Namespaces', 'Delete KAORI-managed namespaces and verify absence.'),
-('shield-check', 'Verify & Retain', 'Verify cleanup, then commit Decommissioned with history retained.')
+('boxes', 'Remove Namespaces', 'Delete managed namespaces and verify absence.'),
+('shield-check', 'Verify & Retain', 'Commit Decommissioned after verified cleanup.')
 ],
-warning='If deletion is blocked by Terminating or finalizers, KAORI keeps the Tenant in Decommissioning for retry.',
+warning='If deletion is blocked, KAORI keeps the Tenant in Decommissioning for retry.',
 presentation='steps'
 ) }}
