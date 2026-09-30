@@ -2,6 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% set registry_id = "resource-profile-registry-card" %}
+{% set profile_class_labels = {'small': 'Small', 'standard': 'Medium', 'large': 'Large', 'extra_large': 'Extra Large', 'custom': 'Custom'} %}
 {% set loading_id = "resource-profile-registry-loading" %}
 {% set query_params = {
     'view': 'profiles',
@@ -48,7 +49,7 @@
                     <option value="">All Classes</option>
                     {% for item in profile_class_filter_options %}
                         <option value="{{ item }}"
-                                {% if profile_registry_filters.profile_class == item %}selected{% endif %}>{{ item|title }}</option>
+                                {% if profile_registry_filters.profile_class == item %}selected{% endif %}>{{ profile_class_labels.get(item, item|replace('_', ' ')|title) }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -93,14 +94,14 @@
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
                             <div class="flex flex-wrap items-center gap-2">
-                                {{ table_label.status_label(profile.profile_class|title, 'info' if profile.profile_class == 'custom' else 'normal') }}
+                                {{ table_label.status_label(profile_class_labels.get(profile.profile_class, profile.profile_class|replace('_', ' ')|title), 'info' if profile.profile_class == 'custom' else 'normal') }}
                                 {{ table_label.status_label('Editable' if profile.profile_class == 'custom' else 'Locked', 'info' if profile.profile_class == 'custom' else 'unknown') }}
                                 {{ table_label.status_label('Enabled' if profile.enabled else 'Disabled', 'normal' if profile.enabled else 'unknown') }}
                             </div>
                             <p class="mt-1 text-xs text-content-muted">
                                 v{{ profile.version }} ·
                                 {% if profile.profile_class == 'custom' and profile.base_preset_class %}
-                                    Based on {{ profile.base_preset_class|title }} v{{ profile.base_preset_version or '—' }}
+                                    Based on {{ profile_class_labels.get(profile.base_preset_class, profile.base_preset_class|replace('_', ' ')|title) }} v{{ profile.base_preset_version or '—' }}
                                 {% elif profile.profile_class == 'custom' %}
                                     Independent Custom
                                 {% else %}

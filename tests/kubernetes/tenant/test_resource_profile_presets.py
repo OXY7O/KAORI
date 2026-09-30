@@ -86,3 +86,58 @@ def test_namespace_allocation_uses_committed_custom_profile_snapshot() -> None:
     assert quota == {'requests.cpu': '3'}
     assert limits == {'default': {'cpu': '750m'}}
     assert customized is True
+
+
+
+def test_extra_large_preset_exposes_canonical_fixed_values() -> None:
+    extra_large = RESOURCE_PROFILE_PRESETS['extra_large']
+
+    assert extra_large['version'] == 1
+    assert extra_large['quota']['requests.cpu'] == '8'
+    assert extra_large['quota']['requests.memory'] == '16Gi'
+    assert extra_large['quota']['requests.storage'] == '400Gi'
+
+
+def test_builtin_preset_control_mask_keeps_values_fixed_and_omits_unmanaged_dimensions() -> None:
+    quota, limits, version, base_class, base_version = _resource_profile_values(
+        'standard',
+        {
+            'control_contract_present': '1',
+            'control_requests_cpu': '1',
+            'control_requests_memory': '1',
+            'control_default_cpu': '1',
+            'requests_cpu': '99',
+            'requests_memory': '99Gi',
+            'default_cpu': '99',
+        },
+    )
+
+    assert quota == {
+        'requests.cpu': RESOURCE_PROFILE_PRESETS['standard']['quota']['requests.cpu'],
+        'requests.memory': RESOURCE_PROFILE_PRESETS['standard']['quota']['requests.memory'],
+    }
+    assert limits == {
+        'default': {'cpu': RESOURCE_PROFILE_PRESETS['standard']['limits']['default']['cpu']}
+    }
+    assert version == RESOURCE_PROFILE_PRESETS['standard']['version']
+    assert base_class is None
+    assert base_version is None
+
+
+def test_namespace_builtin_snapshot_uses_stored_control_mask_with_canonical_values() -> None:
+    profile = SimpleNamespace(
+        profile_class='standard',
+        quota_hard_json={'requests.cpu': '999', 'pods': '999'},
+        limit_defaults_json={'default': {'cpu': '999'}},
+    )
+
+    quota, limits, customized = _namespace_allocation_values(profile)
+
+    assert quota == {
+        'requests.cpu': RESOURCE_PROFILE_PRESETS['standard']['quota']['requests.cpu'],
+        'pods': RESOURCE_PROFILE_PRESETS['standard']['quota']['pods'],
+    }
+    assert limits == {
+        'default': {'cpu': RESOURCE_PROFILE_PRESETS['standard']['limits']['default']['cpu']}
+    }
+    assert customized is False

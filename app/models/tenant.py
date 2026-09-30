@@ -49,6 +49,7 @@ class TenantResourceProfileClass(StrEnum):
     SMALL = 'small'
     STANDARD = 'standard'
     LARGE = 'large'
+    EXTRA_LARGE = 'extra_large'
     CUSTOM = 'custom'
 
 
@@ -254,7 +255,7 @@ class TenantResourceProfile(db.Model):
         UniqueConstraint('public_id', name='uq_tenant_resource_profiles_public_id'),
         UniqueConstraint('name', name='uq_tenant_resource_profiles_name'),
         CheckConstraint(
-            "profile_class IN ('small', 'standard', 'large', 'custom')",
+            "profile_class IN ('small', 'standard', 'large', 'extra_large', 'custom')",
             name='ck_tenant_resource_profiles_class',
         ),
         Index('ix_tenant_resource_profiles_class_enabled', 'profile_class', 'enabled'),

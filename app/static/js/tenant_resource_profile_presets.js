@@ -54,8 +54,8 @@
         if (modeTitle) modeTitle.textContent = readonly ? 'KAORI Preset · Fixed' : 'Custom · Editable'
         if (modeDetail) {
             modeDetail.textContent = readonly
-                ? 'Locked preset values. Switch to Custom to edit.'
-                : 'Editable KAORI values; validated before use.'
+                ? 'Values are fixed; Managed toggles choose which dimensions KAORI owns.'
+                : 'Editable values; Managed toggles choose which dimensions KAORI owns.'
         }
         if (fixedModeLabel) fixedModeLabel.hidden = !readonly
         if (customModeLabel) customModeLabel.hidden = readonly
@@ -73,6 +73,20 @@
         const basePreset = form.querySelector('[data-tenant-base-preset]')
         const basePresetWrapper = form.querySelector('[data-tenant-base-preset-wrapper]')
         const fields = collectFields(form, 'data-tenant-resource-field')
+        const controls = collectFields(form, 'data-tenant-resource-control')
+
+        const syncManagedState = () => {
+            for (const [name, input] of Object.entries(fields)) {
+                const managed = controls[name]?.checked !== false
+                input.disabled = !managed
+                input.setAttribute('aria-disabled', managed ? 'false' : 'true')
+                const wrapper = input.closest('[data-tenant-resource-field-wrap]')
+                if (wrapper) {
+                    wrapper.dataset.controlled = managed ? 'true' : 'false'
+                    wrapper.classList.toggle('opacity-60', !managed)
+                }
+            }
+        }
 
         const applyProfileMode = () => {
             const profileClass = classSelect?.value || ''
@@ -86,6 +100,7 @@
                     basePreset.disabled = true
                 }
                 if (basePresetWrapper) basePresetWrapper.hidden = true
+                syncManagedState()
                 return
             }
 
@@ -93,14 +108,17 @@
             if (basePreset) basePreset.disabled = false
             if (basePresetWrapper) basePresetWrapper.hidden = false
             applyValues(fields, basePreset?.value ? presets[basePreset.value] : null)
+            syncManagedState()
         }
 
         classSelect?.addEventListener('change', applyProfileMode)
         basePreset?.addEventListener('change', () => {
             if (classSelect?.value === 'custom') {
                 applyValues(fields, basePreset.value ? presets[basePreset.value] : null)
+                syncManagedState()
             }
         })
+        Object.values(controls).forEach((control) => control.addEventListener('change', syncManagedState))
         applyProfileMode()
     }
 

@@ -107,7 +107,46 @@ RESOURCE_PROFILE_PRESETS: dict[str, dict[str, Any]] = {
             'default': {'cpu': '1', 'memory': '1Gi'},
         },
     },
+    'extra_large': {
+        'version': 1,
+        'quota': {
+            'requests.cpu': '8',
+            'limits.cpu': '16',
+            'requests.memory': '16Gi',
+            'limits.memory': '32Gi',
+            'pods': '80',
+            'persistentvolumeclaims': '40',
+            'requests.storage': '400Gi',
+            'services': '40',
+            'configmaps': '200',
+            'secrets': '200',
+        },
+        'limits': {
+            'default_request': {'cpu': '500m', 'memory': '512Mi'},
+            'default': {'cpu': '2', 'memory': '2Gi'},
+        },
+    },
 }
+
+_PROFILE_QUOTA_FIELDS = {
+    'requests_cpu': 'requests.cpu',
+    'limits_cpu': 'limits.cpu',
+    'requests_memory': 'requests.memory',
+    'limits_memory': 'limits.memory',
+    'pods': 'pods',
+    'persistentvolumeclaims': 'persistentvolumeclaims',
+    'requests_storage': 'requests.storage',
+    'services': 'services',
+    'configmaps': 'configmaps',
+    'secrets': 'secrets',
+}
+_PROFILE_LIMIT_FIELDS = {
+    'default_cpu': ('default', 'cpu'),
+    'default_memory': ('default', 'memory'),
+    'default_request_cpu': ('default_request', 'cpu'),
+    'default_request_memory': ('default_request', 'memory'),
+}
+_CONTROL_TRUE_VALUES = {'1', 'true', 'yes', 'on'}
 
 
 class TenantStateConflictError(RuntimeError):
@@ -292,30 +331,49 @@ def create_tenant_committed(source: Mapping[str, Any]) -> tuple[Tenant, TenantEn
         raise
 
 
-def _profile_values(source: Mapping[str, Any]) -> tuple[dict[str, str], dict[str, dict[str, str]]]:
-    quota_fields = {
-        'requests_cpu': 'requests.cpu',
-        'limits_cpu': 'limits.cpu',
-        'requests_memory': 'requests.memory',
-        'limits_memory': 'limits.memory',
-        'pods': 'pods',
-        'persistentvolumeclaims': 'persistentvolumeclaims',
-        'requests_storage': 'requests.storage',
-        'services': 'services',
-        'configmaps': 'configmaps',
-        'secrets': 'secrets',
-    }
-    quota = {target: value for field, target in quota_fields.items() if (value := _text(source, field))}
+def _control_contract_present(source: Mapping[str, Any]) -> bool:
+    return _text(source, 'control_contract_present').lower() in _CONTROL_TRUE_VALUES
 
-    limit_fields = {
-        'default_cpu': ('default', 'cpu'),
-        'default_memory': ('default', 'memory'),
-        'default_request_cpu': ('default_request', 'cpu'),
-        'default_request_memory': ('default_request', 'memory'),
+
+def _control_enabled(source: Mapping[str, Any], field: str) -> bool:
+    if not _control_contract_present(source):
+        return True
+    return _text(source, f'control_{field}').lower() in _CONTROL_TRUE_VALUES
+
+
+def _profile_values(source: Mapping[str, Any]) -> tuple[dict[str, str], dict[str, dict[str, str]]]:
+    quota = {
+        target: value
+        for field, target in _PROFILE_QUOTA_FIELDS.items()
+        if _control_enabled(source, field) and (value := _text(source, field))
+    }
+
+    limits: dict[str, dict[str, str]] = {}
+    for field, (group, resource) in _PROFILE_LIMIT_FIELDS.items():
+        value = _text(source, field)
+        if _control_enabled(source, field) and value:
+            limits.setdefault(group, {})[resource] = value
+
+    return validate_profile_spec(quota, limits)
+
+
+def _preset_controlled_values(
+    preset: Mapping[str, Any],
+    source: Mapping[str, Any],
+) -> tuple[dict[str, str], dict[str, dict[str, str]]]:
+    if not _control_contract_present(source):
+        return validate_profile_spec(preset['quota'], preset['limits'])
+
+    quota = {
+        target: preset['quota'][target]
+        for field, target in _PROFILE_QUOTA_FIELDS.items()
+        if _control_enabled(source, field) and target in preset['quota']
     }
     limits: dict[str, dict[str, str]] = {}
-    for field, (group, resource) in limit_fields.items():
-        value = _text(source, field)
+    for field, (group, resource) in _PROFILE_LIMIT_FIELDS.items():
+        if not _control_enabled(source, field):
+            continue
+        value = (preset['limits'].get(group) or {}).get(resource)
         if value:
             limits.setdefault(group, {})[resource] = value
 
@@ -328,7 +386,7 @@ def _resource_profile_values(
 ) -> tuple[dict[str, str], dict[str, dict[str, str]], int, str | None, int | None]:
     if profile_class in RESOURCE_PROFILE_PRESETS:
         preset = RESOURCE_PROFILE_PRESETS[profile_class]
-        quota, limits = validate_profile_spec(preset['quota'], preset['limits'])
+        quota, limits = _preset_controlled_values(preset, source)
         return quota, limits, int(preset['version']), None, None
 
     base_preset_class = _text(source, 'base_preset_class').lower() or None
@@ -347,7 +405,20 @@ def _namespace_allocation_values(
 ) -> tuple[dict[str, str], dict[str, dict[str, str]], bool]:
     if profile.profile_class in RESOURCE_PROFILE_PRESETS:
         preset = RESOURCE_PROFILE_PRESETS[profile.profile_class]
-        quota, limits = validate_profile_spec(preset['quota'], preset['limits'])
+        stored_quota = profile.quota_hard_json or {}
+        stored_limits = profile.limit_defaults_json or {}
+        quota = {
+            key: preset['quota'][key]
+            for key in stored_quota
+            if key in preset['quota']
+        }
+        limits: dict[str, dict[str, str]] = {}
+        for group, resources in stored_limits.items():
+            preset_group = preset['limits'].get(group) or {}
+            for resource in (resources or {}):
+                if resource in preset_group:
+                    limits.setdefault(group, {})[resource] = preset_group[resource]
+        quota, limits = validate_profile_spec(quota, limits)
         return quota, limits, False
 
     quota, limits = validate_profile_spec(
@@ -1204,16 +1275,8 @@ def get_namespace_registry_context(
         },
         'namespace_allocation_profiles': {
             str(profile.id): {
-                'quota': (
-                    RESOURCE_PROFILE_PRESETS[profile.profile_class]['quota']
-                    if profile.profile_class in RESOURCE_PROFILE_PRESETS
-                    else profile.quota_hard_json or {}
-                ),
-                'limits': (
-                    RESOURCE_PROFILE_PRESETS[profile.profile_class]['limits']
-                    if profile.profile_class in RESOURCE_PROFILE_PRESETS
-                    else profile.limit_defaults_json or {}
-                ),
+                'quota': profile.quota_hard_json or {},
+                'limits': profile.limit_defaults_json or {},
                 'version': (
                     int(RESOURCE_PROFILE_PRESETS[profile.profile_class]['version'])
                     if profile.profile_class in RESOURCE_PROFILE_PRESETS
@@ -1301,16 +1364,8 @@ def get_tenant_context() -> dict[str, Any]:
         },
         'namespace_allocation_profiles': {
             str(profile.id): {
-                'quota': (
-                    RESOURCE_PROFILE_PRESETS[profile.profile_class]['quota']
-                    if profile.profile_class in RESOURCE_PROFILE_PRESETS
-                    else profile.quota_hard_json or {}
-                ),
-                'limits': (
-                    RESOURCE_PROFILE_PRESETS[profile.profile_class]['limits']
-                    if profile.profile_class in RESOURCE_PROFILE_PRESETS
-                    else profile.limit_defaults_json or {}
-                ),
+                'quota': profile.quota_hard_json or {},
+                'limits': profile.limit_defaults_json or {},
                 'version': (
                     int(RESOURCE_PROFILE_PRESETS[profile.profile_class]['version'])
                     if profile.profile_class in RESOURCE_PROFILE_PRESETS
