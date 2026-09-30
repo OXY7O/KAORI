@@ -233,7 +233,7 @@
                             <h2 id="tenant-adoption-title-{{ loop.index }}"
                                 class="text-lg font-semibold text-content-primary">Adoption Preflight</h2>
                             <p class="mt-1 text-sm leading-6 text-content-secondary">
-                                Review live provider identity, authority, and the KAORI mapping before adopting this candidate.
+                                Review authority, adoption effect, and observed allocation before registering this candidate.
                             </p>
                         </div>
                     </div>
@@ -276,9 +276,8 @@
                                             {{ table_label.status_label(row.resource_kind, 'info') }}
                                         </div>
                                         <p class="mt-1 text-sm leading-6 text-content-secondary">
-                                            Eligible for governed read-only adoption. Provider authority remains
-                                            {{ 'Capsule' if row.provider_key == 'capsule' else 'Native Kubernetes' }}
-                                            until a separate governance cutover is explicitly accepted.
+                                            Can be adopted as <span class="font-semibold text-content-primary">Observed</span>.
+                                            {{ 'Capsule' if row.provider_key == 'capsule' else 'Native Kubernetes' }} remains authoritative.
                                         </p>
                                     </div>
                                 </div>
@@ -315,7 +314,7 @@
                                     <p class="text-sm font-semibold text-content-primary">KAORI records</p>
                                 </div>
                                 <p class="mt-2 text-xs leading-5 text-content-muted">
-                                    Tenant identity, provider lineage, correlated Namespace evidence, and the observed allocation baseline are committed for governance and audit.
+                                    Commits identity, provider lineage, Namespace evidence, and observed allocation.
                                 </p>
                             </div>
                             <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
@@ -324,7 +323,7 @@
                                     <p class="text-sm font-semibold text-content-primary">Provider remains authoritative</p>
                                 </div>
                                 <p class="mt-2 text-xs leading-5 text-content-muted">
-                                    Adoption performs no provider mutation. Kubernetes/Capsule resources and external constraints stay exactly where they are.
+                                    Kubernetes/Capsule resources and external constraints are not changed.
                                 </p>
                             </div>
                             <div class="rounded-xl border border-outline-subtle bg-kaori-soft p-4">
@@ -333,11 +332,11 @@
                                     <p class="text-sm font-semibold text-content-primary">After adoption</p>
                                 </div>
                                 <p class="mt-2 text-xs leading-5 text-content-muted">
-                                    Ownership becomes <span class="font-semibold text-content-primary">Adopted / Observed</span>.
+                                    Ownership → <span class="font-semibold text-content-primary">Adopted / Observed</span>.
                                     {% if allocation.control_state == 'observed' %}
-                                        Allocation governance can then be reviewed for an explicit cutover.
+                                        Next: review governance cutover.
                                     {% else %}
-                                        Allocation control stays unavailable until the authority or unsupported evidence is resolved.
+                                        Resolve the blocking evidence before cutover.
                                     {% endif %}
                                 </p>
                             </div>
@@ -362,12 +361,12 @@
                                 <dd class="mt-1 text-sm font-semibold text-content-primary">
                                     {{ 'Capsule' if row.provider_key == 'capsule' else 'Native Kubernetes' }}
                                 </dd>
-                                <dd class="mt-1 text-xs leading-5 text-content-muted">Preserved after adoption.</dd>
+                                <dd class="mt-1 text-xs text-content-muted">Preserved after adoption.</dd>
                             </div>
                             <div class="p-4">
                                 <dt class="text-xs text-content-muted">Current Ownership</dt>
                                 <dd class="mt-1 text-sm font-semibold text-content-primary">Not governed</dd>
-                                <dd class="mt-1 text-xs leading-5 text-content-muted">Observed live; no KAORI desired intent yet.</dd>
+                                <dd class="mt-1 text-xs text-content-muted">Observed only. No KAORI intent.</dd>
                             </div>
                         </dl>
                     </section>
@@ -384,15 +383,26 @@
                                         Native ResourceQuota / LimitRange
                                     {% endif %}
                                 </p>
-                                <p class="mt-2 text-xs leading-5 text-content-muted">Provider authority is not transferred by adoption.</p>
+                                <p class="mt-2 text-xs text-content-muted">Provider authority is preserved.</p>
                             </div>
                             <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                                 <p class="text-xs text-content-muted">Provenance</p>
                                 <p class="mt-1 text-sm font-semibold text-content-primary">Adopted Baseline · Observed</p>
-                                <p class="mt-2 text-xs leading-5 text-content-muted">This is live provider evidence, not KAORI-authored desired state.</p>
+                                <p class="mt-2 text-xs text-content-muted">Live evidence; not KAORI desired state.</p>
                             </div>
                             <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                                <p class="text-xs text-content-muted">Control State</p>
+                                <div class="flex items-center gap-1.5">
+                                    <p class="text-xs text-content-muted">Control State</p>
+                                    {{ info_tip.render('tenant-adoption-control-tip-' ~ loop.index,
+                                            'Allocation control',
+                                            'Adoption records provider evidence only; it does not create KAORI desired allocation intent.',
+                                            [
+                                            'Observed · Read Only — authority is recognized, but mutation remains disabled until explicit governance cutover.',
+                                            'Control Unavailable — authority or capability evidence is incomplete, ambiguous, or unsupported.',
+                                            'Provider capability and authority are revalidated before any later governed mutation.'
+                                            ],
+                                            placement='right') }}
+                                </div>
                                 <div class="mt-2">
                                     {% if allocation.control_state == 'observed' %}
                                         {{ table_label.special_label('Observed · Read Only', 'info', 'eye') }}
@@ -400,7 +410,11 @@
                                         {{ table_label.special_label('Control Unavailable', 'warning', 'shield-alert') }}
                                     {% endif %}
                                 </div>
-                                <p class="mt-2 text-xs leading-5 text-content-muted">{{ allocation.control_reason|default('Allocation authority could not be proven.', true) }}</p>
+                                {% if allocation.control_state == 'observed' %}
+                                    <p class="mt-2 text-xs text-content-muted">Read-only until governance cutover.</p>
+                                {% else %}
+                                    <p class="mt-2 text-xs leading-5 text-status-warning-text">{{ allocation.control_reason|default('Allocation authority could not be proven.', true) }}</p>
+                                {% endif %}
                             </div>
                         </div>
 
@@ -435,7 +449,7 @@
                                 </dl>
                             {% else %}
                                 <p class="mt-3 text-xs leading-5 text-content-muted">
-                                    No supported allocation dimensions were observed. KAORI preserves this as an observed/unbounded baseline.
+                                    No supported allocation dimensions observed; baseline remains unbounded.
                                 </p>
                             {% endif %}
                         </div>
@@ -485,7 +499,7 @@
                             {% else %}
                                 <div class="px-4 py-4">
                                     <p class="text-xs leading-5 text-content-muted">
-                                        No Namespace correlation was proven from the current provider evidence. Adoption may still register the Tenant identity, but Namespace governance remains unclaimed.
+                                        No Namespace correlation proven. Tenant identity can still be adopted; Namespace governance stays unclaimed.
                                     </p>
                                 </div>
                             {% endif %}
@@ -501,7 +515,7 @@
                                     {{ table_label.special_label('Preserved · Not Rewritten', 'info', 'eye') }}
                                 </div>
                                 <p class="mt-2 text-xs leading-5 text-content-muted">
-                                    These constraints are outside the selected Capsule allocation authority. KAORI records them as evidence and never removes or rewrites them during Tenant quota governance.
+                                    Outside the selected allocation authority. Preserved as evidence and never rewritten.
                                 </p>
                                 <ul class="mt-3 space-y-2">
                                     {% for constraint in allocation.external_constraints %}
@@ -599,10 +613,10 @@
                         <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Governance Checks</p>
                         <div class="mt-2 grid gap-2 sm:grid-cols-2">
                             {% for title, detail in [
-                                ('Provider object exists', 'Observed from the live provider on this request.'),
-                                ('No active KAORI owner', 'Discovery classified this object as Discovered, not Managed.'),
-                                ('Provider authority preserved', 'Adoption records governance state without replacing the external authority.'),
-                                ('Fail-closed revalidation', 'KAORI rechecks provider state and conflicts again when Adopt is submitted.')
+                                ('Provider object exists', 'Live object confirmed.'),
+                                ('No active KAORI owner', 'No duplicate governance owner.'),
+                                ('Provider authority preserved', 'Adoption does not replace provider authority.'),
+                                ('Fail-closed revalidation', 'Provider state is rechecked on submit.')
                                 ] %}
                                 <div class="flex gap-3 rounded-lg border border-outline-subtle bg-status-normal-soft p-3">
                                     <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-card text-status-normal-text"
@@ -620,7 +634,7 @@
 
                     <section>
                         <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Technical Evidence</p>
-                        <dl class="mt-2 grid gap-2 rounded-xl border border-outline-subtle bg-surface-elevated p-4 sm:grid-cols-2">
+                        <dl class="mt-2 grid gap-x-6 gap-y-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4 sm:grid-cols-2">
                             <div>
                                 <dt class="text-xs text-content-muted">Provider reference</dt>
                                 <dd class="mt-1 break-all text-xs font-medium text-content-secondary">{{ row.provider_reference }}</dd>
@@ -649,8 +663,8 @@
                         </span>
                         <p class="text-xs leading-5">
                             <span class="font-semibold">Human confirmation.</span>
-                            Adoption creates committed KAORI governance records in <span class="font-semibold">Adopted / Observed</span> state.
-                            No provider mutation occurs: KAORI does not create, patch, delete, restart, or relocate Kubernetes/Capsule resources during adoption.
+                            Adoption registers <span class="font-semibold">Adopted / Observed</span> evidence only.
+                            Kubernetes/Capsule resources remain unchanged.
                         </p>
                     </div>
                 </div>
