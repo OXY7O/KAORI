@@ -11,6 +11,10 @@ from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
+from app.kubernetes.tenant.allocation_observation import (
+    observe_capsule_tenant_allocation,
+    observe_native_namespace_allocation,
+)
 from app.models import Cluster
 from app.models.cluster import ClusterStatus
 from app.models.kubernetes import KubernetesConnection
@@ -352,6 +356,45 @@ def get_tenant_discovery_context(
         )
     )
     visible_rows, pagination = paginate_sequence(rows, page=page, per_page=per_page)
+    client_cache: dict[str, Any] = {}
+    for row in visible_rows:
+        if row['management_status'] != 'Discovered':
+            continue
+        try:
+            row_cluster_id = str(row['cluster_id'])
+            client = client_cache.get(row_cluster_id)
+            if client is None:
+                client = runtime_adapter.build_client(row['cluster'])
+                client_cache[row_cluster_id] = client
+            if row['provider_key'] == 'native_kubernetes':
+                allocation_preflight = observe_native_namespace_allocation(
+                    client.core_api(),
+                    str(row['resource_name']),
+                )
+            else:
+                _version, capsule_item = _read_capsule_tenant(client, str(row['resource_name']))
+                allocation_preflight = observe_capsule_tenant_allocation(
+                    client,
+                    tenant_name=str(row['resource_name']),
+                    tenant_item=capsule_item,
+                )
+            row['allocation_preflight'] = allocation_preflight
+        except Exception as exc:
+            row['allocation_preflight'] = {
+                'provenance': 'adopted_observed',
+                'control_state': 'control_unavailable',
+                'control_reason': (
+                    'KAORI could not prove the effective legacy allocation contract from the live provider. '
+                    'Adoption may preserve identity, but allocation governance must remain read-only.'
+                ),
+                'unsupported_dimensions': [],
+                'ambiguous_dimensions': [],
+                'display_values': [],
+                'correlated_namespaces': [],
+                'error': str(exc)[:500],
+                'provider_mutation_performed': False,
+                'secret_material_persisted': False,
+            }
 
     return {
         'tenant_discovery_rows': visible_rows,
@@ -502,6 +545,7 @@ def adopt_discovered_tenant_committed(
         )
         provider_uid = str(getattr(metadata, 'uid', None) or resource_name)
         resource_version = str(getattr(metadata, 'resource_version', None) or '')
+        allocation = observe_native_namespace_allocation(client.core_api(), resource_name)
 
         tenant.provider_key = 'native_kubernetes'
         tenant.provider_state = 'native'
@@ -515,6 +559,8 @@ def adopt_discovered_tenant_committed(
             'provider_uid': provider_uid,
             'resource_version': resource_version,
             'adopted_at': now.isoformat(),
+            'allocation_provenance': 'adopted_observed',
+            'allocation_control_state': allocation['control_state'],
             'provider_mutation_performed': False,
             'secret_material_persisted': False,
         }
@@ -533,7 +579,16 @@ def adopt_discovered_tenant_committed(
         namespace_record.generation = namespace_generation
         namespace_record.ownership_status = TenantOwnershipStatus.ADOPTED.value
         namespace_record.provisioning_status = TenantNamespaceProvisioningStatus.READY.value
-        namespace_record.provisioning_message = 'Existing Kubernetes namespace adopted without provider mutation.'
+        namespace_record.provisioning_message = (
+            'Adopted Baseline · Observed. Existing Kubernetes allocation is read-only until governance cutover.'
+            if allocation['control_state'] == 'observed'
+            else 'Adopted Baseline · Control Unavailable. Review ambiguous or unsupported allocation evidence.'
+        )
+        namespace_record.allocation_quota_json = dict(allocation['quota'])
+        namespace_record.allocation_limit_defaults_json = dict(allocation['limits'])
+        namespace_record.allocation_customized = allocation['profile_lineage']['kind'] != 'kaori_preset'
+        namespace_record.desired_hash = None
+        namespace_record.effective_hash = str(allocation['effective_hash'])
         namespace_record.provider_reference = provider_uid
         namespace_record.last_reconciled_at = now
         namespace_record.provisioning_evidence_json = {
@@ -543,6 +598,7 @@ def adopt_discovered_tenant_committed(
             'resource_version': resource_version,
             'observed_present': True,
             'adopted_at': now.isoformat(),
+            'allocation': allocation,
             'provider_mutation_performed': False,
             'secret_material_persisted': False,
         }
@@ -559,6 +615,11 @@ def adopt_discovered_tenant_committed(
         metadata = item.get('metadata') or {}
         provider_uid = str(metadata.get('uid') or resource_name)
         resource_version = str(metadata.get('resourceVersion') or '')
+        allocation = observe_capsule_tenant_allocation(
+            client,
+            tenant_name=resource_name,
+            tenant_item=item,
+        )
 
         tenant.provider_key = 'capsule'
         tenant.provider_state = 'capsule'
@@ -574,6 +635,9 @@ def adopt_discovered_tenant_committed(
             'resource_version': resource_version,
             'provider_status': status,
             'adopted_at': now.isoformat(),
+            'allocation_baseline': allocation,
+            'allocation_provenance': 'adopted_observed',
+            'allocation_control_state': allocation['control_state'],
             'provider_mutation_performed': False,
             'secret_material_persisted': False,
         }
@@ -584,6 +648,58 @@ def adopt_discovered_tenant_committed(
         environment.tenant = tenant
         environment.environment = environment_name
         db.session.add(environment)
+        db.session.flush()
+
+        adopted_namespaces: list[TenantNamespace] = []
+        for correlated in allocation['correlated_namespaces']:
+            namespace_name = str(correlated.get('name') or '').strip()
+            if not namespace_name:
+                continue
+            namespace_generation = _next_namespace_generation(
+                cluster_id=str(cluster.id),
+                namespace=namespace_name,
+            )
+            namespace_allocation = dict(correlated.get('allocation') or {})
+            namespace_record_item = TenantNamespace()
+            namespace_record_item.environment = environment
+            namespace_record_item.cluster_id = cluster.id
+            namespace_record_item.namespace = namespace_name
+            namespace_record_item.generation = namespace_generation
+            namespace_record_item.ownership_status = TenantOwnershipStatus.ADOPTED.value
+            namespace_record_item.provisioning_status = TenantNamespaceProvisioningStatus.READY.value
+            namespace_record_item.provisioning_message = (
+                'Adopted Baseline · Observed. Capsule remains provider authority; allocation is read-only until '
+                'governance cutover.'
+                if allocation['control_state'] == 'observed'
+                else 'Adopted Baseline · Control Unavailable. Capsule allocation authority requires review.'
+            )
+            namespace_record_item.allocation_quota_json = dict(namespace_allocation.get('quota') or {})
+            namespace_record_item.allocation_limit_defaults_json = dict(namespace_allocation.get('limits') or {})
+            lineage = dict(namespace_allocation.get('profile_lineage') or {})
+            namespace_record_item.allocation_customized = lineage.get('kind') != 'kaori_preset'
+            namespace_record_item.desired_hash = None
+            namespace_record_item.effective_hash = (
+                str(namespace_allocation.get('effective_hash') or '') or None
+            )
+            namespace_record_item.provider_reference = str(correlated.get('uid') or namespace_name)
+            namespace_record_item.last_reconciled_at = now
+            namespace_record_item.provisioning_evidence_json = {
+                'source': 'tenant_discovery_adoption',
+                'provider': 'capsule',
+                'provider_uid': str(correlated.get('uid') or ''),
+                'resource_version': str(correlated.get('resource_version') or ''),
+                'observed_present': True,
+                'adopted_at': now.isoformat(),
+                'allocation': namespace_allocation,
+                'allocation_authority': allocation['allocation_authority'],
+                'allocation_control_state': allocation['control_state'],
+                'provider_mutation_performed': False,
+                'secret_material_persisted': False,
+            }
+            db.session.add(namespace_record_item)
+            adopted_namespaces.append(namespace_record_item)
+
+        namespace_record = adopted_namespaces[0] if adopted_namespaces else None
 
     try:
         db.session.commit()
