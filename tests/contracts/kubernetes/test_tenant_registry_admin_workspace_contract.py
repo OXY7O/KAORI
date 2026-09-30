@@ -1249,7 +1249,6 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
 
 
 
-
 def test_managed_allocation_drift_is_observation_only_and_bidirectionally_reconciled() -> None:
     drift = read('app/kubernetes/tenant/allocation_drift.py')
     tasks = read('app/kubernetes/tenant/tasks.py')
@@ -1299,7 +1298,6 @@ def test_managed_allocation_drift_is_observation_only_and_bidirectionally_reconc
     assert 'Capsule allocation-drift boundary:' in readme
 
 
-
 def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -> None:
     adoption = read('app/kubernetes/tenant/discovery_service.py')
     qualifier = read('app/kubernetes/tenant/capsule_tenant.py')
@@ -1327,7 +1325,10 @@ def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -
     assert 'def build_capsule_shared_allocation_cutover_state' in governance
     assert "baseline.get('allocation_authority') != 'capsule_global_resource_quota'" in governance
     assert "_capsule_capability_state(tenant, _SHARED_CAPABILITY) != 'available'" in governance
-    assert 'An existing Capsule GlobalResourceQuota advanced intent already owns this Tenant resource path.' in governance
+    assert (
+        'An existing Capsule GlobalResourceQuota advanced intent already owns this Tenant resource path.'
+        in governance
+    )
     assert "intent.resource_kind = 'global_resource_quota'" in governance
     assert "'allocation_governance_scope': _SHARED_SCOPE" in governance
     assert 'enforce_shared_tenant_allocation_preflight' in governance
