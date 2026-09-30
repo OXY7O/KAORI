@@ -53,7 +53,7 @@
                             data-tenant-quota-tenant
                             class="{{ form_field.select_classes() }}">
                         <option value="">Select adopted Tenant quota</option>
-                        {% for tenant in capsule_tenant_quota_tenants %}
+                        {% for tenant in capsule_tenant_quota_cutover_tenants %}
                             {% set state = capsule_tenant_quota_cutover_state.get(tenant.id) or {} %}
                             <option value="{{ tenant.id }}"
                                     {% if not state.get('supported') %}disabled{% endif %}>
@@ -173,7 +173,7 @@
             <div class="rounded-xl border border-outline-subtle bg-status-warning-soft p-4 text-status-warning-text">
                 <p class="text-xs font-semibold uppercase tracking-wide">Control Unavailable / Observed Constraints</p>
                 <div class="mt-2 space-y-2">
-                    {% for tenant in capsule_tenant_quota_tenants %}
+                    {% for tenant in capsule_tenant_quota_cutover_tenants %}
                         {% set state = capsule_tenant_quota_cutover_state.get(tenant.id) or {} %}
                         {% if not state.get('supported') and state.get('authority') == 'capsule_tenant_resource_quotas' %}
                             <p class="text-xs leading-5">
