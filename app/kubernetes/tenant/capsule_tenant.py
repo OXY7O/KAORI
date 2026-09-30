@@ -204,6 +204,74 @@ def create_capsule_tenant(
     )
 
 
+def qualify_capsule_tenant_adoption(
+    *,
+    cluster: Cluster,
+    api_version: str,
+    tenant_name: str,
+    resource_version: str | None,
+) -> tuple[str, dict[str, object]]:
+    """Prove the current Capsule admission/capability path without mutating the provider."""
+
+    client = runtime_adapter.build_client(cluster)
+    api = client.custom_objects_api()
+    metadata: dict[str, object] = {'name': tenant_name}
+    if resource_version:
+        metadata['resourceVersion'] = resource_version
+
+    admission_verified = False
+    admission_error: str | None = None
+    try:
+        # A no-op dry-run patch exercises the served Tenant API and admission
+        # path while preserving the existing provider object byte-for-byte.
+        api.patch_cluster_custom_object(
+            _CAPSULE_GROUP,
+            api_version,
+            _CAPSULE_PLURAL,
+            tenant_name,
+            {'metadata': metadata},
+            dry_run='All',
+            _request_timeout=5,
+        )
+        admission_verified = True
+    except Exception as exc:
+        admission_error = str(exc)[:700]
+
+    try:
+        snapshot = discover_capsule(
+            api.api_client,
+            probes={'admission_enforcement': admission_verified},
+        )
+        provider = CapsuleTenantProvider(snapshot=snapshot)
+        binding = provider.validate_binding(cluster_id=str(cluster.id))
+        evidence = {
+            **snapshot.as_dict(),
+            'provider_state': binding.state.value,
+            'adoption_admission_dry_run_verified': admission_verified,
+        }
+        if admission_error:
+            evidence['adoption_admission_dry_run_error'] = admission_error
+        return binding.state.value, evidence
+    except Exception as exc:
+        # Adoption itself remains observation-only and may preserve identity
+        # while capability execution fails closed. Do not convert an
+        # unproven provider into healthy Capsule authority.
+        evidence = {
+            'installed': True,
+            'reported_version': None,
+            'tenant_api_versions': [api_version],
+            'crds': [],
+            'capabilities': {},
+            'provider_state': TenantProviderState.CAPSULE_DEGRADED.value,
+            'adoption_admission_dry_run_verified': admission_verified,
+            'capability_discovery_error': str(exc)[:700],
+            'secret_material_persisted': False,
+        }
+        if admission_error:
+            evidence['adoption_admission_dry_run_error'] = admission_error
+        return TenantProviderState.CAPSULE_DEGRADED.value, evidence
+
+
 def compensate_capsule_tenant_create(
     *,
     cluster: Cluster,
