@@ -116,3 +116,19 @@ def test_tenant_operations_uses_shared_content_tabs_without_sidebar_third_level(
     for label in ('Provisioning', 'Runs & Evidence', 'Drift & Reconcile', 'Activity'):
         assert label in operations
         assert f'>{label}</span>' not in menu
+
+
+
+def test_tenant_adoption_preflight_is_compact_and_pvc_bounds_are_explicit() -> None:
+    modal = _read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
+    tenants = _read('app/templates/kubernetes/tenant/tenants.html')
+
+    assert 'max-w-5xl' in modal
+    assert 'max-w-[1240px]' not in modal
+    assert 'Min PVC Size' in modal
+    assert 'Max PVC Size' in modal
+    assert 'Not declared' in modal
+    assert "pvc_min is not none and pvc_min != ''" in modal
+    assert "pvc_max is not none and pvc_max != ''" in modal
+    assert 'Active principals' in tenants
+    assert 'Active user, group, and machine principals' not in tenants
