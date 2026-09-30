@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 import app.kubernetes.tenant.allocation_drift as allocation_drift
 from app.kubernetes.tenant.allocation_drift import (
+    accept_provider_allocation_state,
     allocation_differences,
     build_allocation_drift_action_state,
     reapply_kaori_allocation_intent,
@@ -235,3 +236,72 @@ def test_allocation_reconciliation_is_blocked_during_tenant_teardown():
     assert state['reapply_supported'] is False
     assert state['accept_supported'] is False
     assert 'unavailable during teardown' in state['blocked_reason']
+
+
+
+def test_accept_provider_state_commits_live_allocation_without_provider_write(monkeypatch):
+    drift = {
+        'blocked_reasons': [],
+        'observed': {
+            'effective_hash': 'provider-hash',
+            'quota': {'requests.cpu': '3'},
+            'limits': {},
+        },
+        'differences': [
+            {
+                'dimension': 'requests.cpu',
+                'kaori_value': '2',
+                'provider_value': '3',
+            }
+        ],
+    }
+    record = _record(drift=drift)
+    live = {
+        'control_state': 'observed',
+        'control_reason': '',
+        'effective_hash': 'provider-hash',
+        'quota': {'requests.cpu': '3'},
+        'limits': {},
+        'source_resources': [
+            {
+                'kind': 'ResourceQuota',
+                'name': 'kaori-tenant-quota',
+                'uid': 'quota-uid',
+                'resource_version': '44',
+                'managed_by': 'kaori',
+                'tenant_id': 'tenant-api',
+            }
+        ],
+    }
+    captured = {}
+
+    monkeypatch.setattr(
+        allocation_drift,
+        '_live_observation_for_action',
+        lambda current_record, current_drift: live,
+    )
+
+    def fake_capacity_preflight(*, record, profile, current_quota_hard, proposed_quota_hard):
+        captured['current'] = dict(current_quota_hard)
+        captured['proposed'] = dict(proposed_quota_hard)
+        return SimpleNamespace(id=91)
+
+    monkeypatch.setattr(
+        allocation_drift,
+        'enforce_observed_namespace_allocation_preflight',
+        fake_capacity_preflight,
+    )
+
+    accept_provider_allocation_state(record)
+
+    assert record.ownership_status == 'adopted'
+    assert captured['current']['requests.cpu'] == '2'
+    assert captured['proposed']['requests.cpu'] == '3'
+    assert record.allocation_quota_json == {'requests.cpu': '3'}
+    assert record.desired_hash == 'provider-hash'
+    assert record.effective_hash == 'provider-hash'
+    assert record.provisioning_status == 'ready'
+    assert record.capacity_decision_id == 91
+    assert record.provisioning_evidence_json['provider_mutation_performed'] is False
+    assert record.provisioning_evidence_json['allocation']['provenance'] == 'accepted_provider_state'
+    assert 'allocation_drift' not in record.provisioning_evidence_json
