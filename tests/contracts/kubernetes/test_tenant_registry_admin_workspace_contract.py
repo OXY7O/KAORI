@@ -381,8 +381,10 @@ def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None
     assert 'Governed teardown. Provider verification is required.' in registry
     assert 'Block new Tenant changes.' in registry
     assert 'Disable credentials and grants.' in registry
-    assert 'Delete managed namespaces and verify absence.' in registry
-    assert 'Commit Decommissioned after verified cleanup.' in registry
+    assert 'Delete managed namespaces.' in registry
+    assert 'Commit after verified cleanup.' in registry
+    assert 'Delete managed namespaces and verify absence.' not in registry
+    assert 'Commit Decommissioned after verified cleanup.' not in registry
     assert 'If deletion is blocked, KAORI keeps the Tenant in Decommissioning for retry.' in registry
 
     assert 'g.tenant_operational_feedback = feedback' in routes
@@ -694,7 +696,8 @@ def test_committed_tenant_snapshot_is_separate_from_lazy_live_provider_connectiv
     assert '{% block tenant_content %}' in base
     assert '{% if not native_available %}\n            {% include "components/cluster/_onboarding_banner.html" %}' not in base
     assert 'Provider Operations Restricted' in base
-    assert 'KAORI state stays available. Provider mutations wait for a Ready, reachable integration.' in base
+    assert 'Review Cluster Integrations' in base
+    assert 'KAORI state stays available. Provider mutations wait for a Ready, reachable integration.' not in base
 
     assert 'registered_clusters = (' in service
     assert "for cluster in registered_clusters" in service
@@ -769,11 +772,14 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'Allocation Overview' in preflight
     assert 'Effective Allocation' in preflight
     assert 'Live provider values' in preflight
-    assert 'max-w-[1240px]' in preflight
+    assert 'max-w-5xl' in preflight
+    assert 'max-w-[1240px]' not in preflight
     assert "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.15fr)]" in preflight
-    assert "lg:grid-cols-[minmax(0,1.3fr)_minmax(420px,0.9fr)]" in preflight
-    assert 'grid-cols-3 gap-px border-t border-outline-subtle bg-outline-subtle' in preflight
-    assert 'grid gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' in preflight
+    assert "lg:grid-cols-[minmax(0,1.3fr)_minmax(420px,0.9fr)]" not in preflight
+    assert 'grid grid-cols-3 gap-px border-t border-outline-subtle bg-outline-subtle' in preflight
+    assert 'divide-y divide-outline-subtle overflow-hidden rounded-xl border border-outline-subtle bg-surface-card' in preflight
+    assert '[grid-template-columns:repeat(auto-fit,minmax(9rem,1fr))]' in preflight
+    assert "table_label.metadata_label('Scope · ' ~ (allocation.shared_scope|default('Provider', true)), 'scan-search')" in preflight
     assert "'requests.cpu': 'CPU Requests'" in preflight
     assert "'limits.cpu': 'CPU Limits'" in preflight
     assert "'requests.memory': 'Memory Requests'" in preflight
@@ -859,7 +865,8 @@ def test_live_provider_connectivity_uses_compact_non_snapshot_copy() -> None:
     assert 'Registered Kubernetes connections' in partial
     assert 'Provider operations fail closed per target' in partial
     assert 'Live API reachability' in service
-    assert 'Kubernetes unreachable. KAORI remains readable; provider mutations are blocked.' in service
+    assert 'Kubernetes unreachable. Mutations blocked.' in service
+    assert 'Kubernetes unreachable. KAORI remains readable; provider mutations are blocked.' not in service
     assert "title='Tenant Collection Snapshot'" not in partial
 
 
