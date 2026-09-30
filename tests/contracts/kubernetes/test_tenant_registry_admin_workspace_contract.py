@@ -1295,7 +1295,7 @@ def test_managed_allocation_drift_is_observation_only_and_bidirectionally_reconc
     assert 'Bidirectional allocation recovery:' in readme
     assert '**API**' in readme
     assert '**APE**' in readme
-    assert 'Capsule allocation-drift boundary:' in readme
+    assert 'Capsule Tenant quota bidirectional recovery:' in readme
 
 
 def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -> None:
@@ -1373,8 +1373,94 @@ def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -
     assert 'Capsule shared allocation authority' in architecture
     assert 'allocation_governance_scope=tenant_shared' in architecture
     assert 'counted once' in architecture
-    assert '`Tenant.spec.resourceQuotas` is intentionally not admitted by #771' in architecture
+    assert '#771 does not admit `Tenant.spec.resourceQuotas`; #773 is the separate bounded authority' in architecture
     assert 'Canonical GlobalResourceQuota allocation bridge' in capsule_architecture
     assert 'never copied into every correlated Namespace' in capsule_architecture
     assert 'Capsule GlobalResourceQuota governance:' in readme
-    assert '`Tenant.spec.resourceQuotas` is intentionally not admitted by #771' in readme
+    assert 'Legacy Capsule Tenant quota — **estimasi** case:' in readme
+
+
+
+def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_native_bypass() -> None:
+    provider = read('app/kubernetes/tenant/capsule_provider.py')
+    observer = read('app/kubernetes/tenant/allocation_observation.py')
+    adoption = read('app/kubernetes/tenant/discovery_service.py')
+    governance = read('app/kubernetes/tenant/capsule_tenant_quota_governance.py')
+    capacity = read('app/kubernetes/tenant/capacity_governance.py')
+    tasks = read('app/kubernetes/tenant/tasks.py')
+    routes = read('app/kubernetes/tenant/routes.py')
+    discovery_ui = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    namespace_page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
+    cutover_ui = read('app/templates/kubernetes/tenant/partials/_capsule_tenant_quota_cutover.html')
+    operations_page = read('app/templates/kubernetes/tenant/operations.html')
+    drift_ui = read('app/templates/kubernetes/tenant/partials/_capsule_tenant_quota_drift.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+    architecture = read('docs/architecture/kubernetes-tenant-resource-profiles.md')
+    readme = read('app/kubernetes/tenant/README.md')
+
+    assert "('spec', 'resourceQuotas')" in provider
+    assert "'tenant_resource_quotas': _dependent_status(" in provider
+    assert 'def observe_capsule_tenant_resource_quota' in observer
+    assert "scope = str(resource_quotas.get('scope') or 'Tenant')" in observer
+    assert "'authority_unsupported_dimensions': authority_unsupported" in observer
+    assert "'external_constraints': external_constraints" in observer
+
+    assert 'def _apply_capsule_allocation_capability_state' in adoption
+    assert "capability = 'tenant_resource_quotas'" in adoption
+    assert "allocation['control_state'] = 'observed'" in adoption
+
+    assert 'def build_capsule_tenant_quota_cutover_state' in governance
+    assert "baseline.get('allocation_authority') != _AUTHORITY" in governance
+    assert "_capsule_capability_state(tenant, _CAPABILITY) != 'available'" in governance
+    assert 'def cutover_capsule_tenant_resource_quota' in governance
+    assert 'def change_capsule_tenant_resource_quota' in governance
+    assert "'spec': {'resourceQuotas':" in governance
+    assert "dry_run='All'" in governance
+    assert 'Capsule Tenant resourceVersion changed' in governance
+    assert 'Capsule Tenant UID changed' in governance
+    assert 'def apply_managed_capsule_tenant_quota_drift_observation' in governance
+    assert 'def reapply_capsule_tenant_quota_intent' in governance
+    assert 'def accept_capsule_tenant_provider_state' in governance
+    assert "'provider_mutation_performed': False" in governance
+    assert "provenance='accepted_provider_state'" in governance
+
+    assert 'def enforce_capsule_tenant_resource_quota_preflight' in capacity
+    assert "normalized_scope = str(scope or 'Tenant')" in capacity
+    assert "factor = 1 if normalized_scope == 'Tenant'" in capacity
+    assert "'tenant_namespace_template'" in capacity
+
+    assert 'apply_managed_capsule_tenant_quota_drift_observation()' in tasks
+    assert "snapshot['capsule_tenant_quota_drift_count']" in tasks
+
+    assert "@tenant_bp.post('/tenant-quota/cutover')" in routes
+    assert "@tenant_bp.post('/tenant-quota/change')" in routes
+    assert "@tenant_bp.post('/tenant-quota/<string:tenant_id>/reapply')" in routes
+    assert "@tenant_bp.post('/tenant-quota/<string:tenant_id>/accept-provider-state')" in routes
+    assert 'CapsuleTenantQuotaStateConflictError' in routes
+    assert 'ops_capsule_tenant_quota_page' in routes
+
+    assert 'External Constraints Preserved' in discovery_ui
+    assert 'Observed · Not Rewritten' in discovery_ui
+    assert 'authority_unsupported_dimensions' in discovery_ui
+    assert '_capsule_tenant_quota_cutover.html' in namespace_page
+    assert 'tenant-capsule-tenant-quota-state' in namespace_page
+    assert 'Capsule Tenant Quota Governance' in cutover_ui
+    assert 'Tenant.spec.resourceQuotas' in cutover_ui
+    assert 'Take Over Allocation Governance' in cutover_ui
+    assert 'Change Governed Allocation' in cutover_ui
+    assert 'Native ResourceQuota' in cutover_ui
+    assert 'data-tenant-quota-allocation-form' in script
+    assert 'data-tenant-quota-managed-form' in script
+
+    assert '_capsule_tenant_quota_drift.html' in operations_page
+    assert 'Capsule Tenant Quota Drift' in drift_ui
+    assert 'Reapply KAORI Intent' in drift_ui
+    assert 'Accept Provider State' in drift_ui
+    assert "source.get('uid')" in drift_ui
+    assert "source.get('resource_version')" in drift_ui
+
+    assert 'Capsule Tenant resource-quota authority' in architecture
+    assert 'Tenant Sync performs no provider write' in architecture
+    assert 'Legacy Capsule Tenant quota — **estimasi** case:' in readme
+    assert 'Legacy Capsule Tenant quota — **partner** case:' in readme
+    assert 'Capsule Tenant quota bidirectional recovery:' in readme
