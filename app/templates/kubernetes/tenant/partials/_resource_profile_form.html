@@ -1,7 +1,6 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/form_field.html" as form_field %}
 {% import "components/info_tip.html" as info_tip %}
-{% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 <form method="post"
       action="{{ url_for('tenant.create_resource_profile_route') }}"
@@ -9,6 +8,7 @@
       data-tenant-resource-profile-form>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="control_contract_present" value="1">
+    <input type="hidden" name="advanced_control_contract_present" value="1">
     <header class="flex items-start justify-between gap-4 rounded-t-xl border-b border-outline-subtle px-5 py-4">
         <div class="flex min-w-0 items-start gap-3">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
@@ -225,216 +225,66 @@
             </div>
         </section>
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated"
-                 data-tenant-placement-control-matrix
-                 aria-labelledby="resource-profile-placement-heading">
+                 data-tenant-advanced-profile-controls
+                 aria-labelledby="resource-profile-advanced-heading">
             <div class="border-b border-outline-subtle px-4 py-3.5">
                 <span class="inline-flex min-h-6 items-center gap-1.5">
-                    <h3 id="resource-profile-placement-heading"
-                        class="text-sm font-semibold text-content-primary">Placement-Gated Controls</h3>
-                    {{ info_tip.render('resource-profile-placement-tip',
-                            'Placement control evaluation',
-                            'A control becomes Managed only when requested intent, canonical KAORI configuration, and authoritative provider capability all agree.',
+                    <h3 id="resource-profile-advanced-heading"
+                        class="text-sm font-semibold text-content-primary">Advanced Controls</h3>
+                    {{ info_tip.render('resource-profile-advanced-tip',
+                            'Advanced profile controls',
+                            'Enable the governance capabilities this profile requests. Final availability is evaluated when the profile is attached to a Native or Capsule placement.',
                             [
-                            'Managed — KAORI has admitted ownership and the active provider can enforce the control.',
-                            'Not Managed — the profile does not own that policy domain or required canonical configuration is absent.',
-                            'Unsupported — the authoritative provider cannot enforce the requested control; the control remains disabled.',
-                            'Provider degradation or capability changes fail closed; KAORI never silently falls back to another provider.'
+                            'Enabled here means requested by the profile; it does not bypass the owning KAORI domain.',
+                            'Unsupported controls are disabled at attachment and fail closed server-side.',
+                            'Ingress/hostname reuse #119; TLS/registry reuse #118; Capsule-only controls reuse #121/#124.',
+                            'Provider capability changes are re-evaluated at mutation time.'
                             ],
                             placement='right') }}
                 </span>
-                <p class="mt-1 text-xs text-content-muted">
-                    The profile stays portable. Allocation is owned here; exposure, hostname, managed-resource, and Capsule controls keep their existing canonical authorities.
-                </p>
+                <p class="mt-1 text-xs text-content-muted">Choose the extra governance controls this profile should request beyond quota and Container defaults.</p>
             </div>
-            <div class="space-y-3 p-4">
-                <div class="overflow-x-auto rounded-xl border border-outline-subtle bg-surface-card">
-                    <table class="{{ table_ui.table_classes('min-w-[980px]') }}">
-                        <caption class="sr-only">Resource Profile placement-gated control matrix.</caption>
-                        <thead class="{{ table_ui.head_classes() }}">
-                            <tr>
-                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Control Pack</th>
-                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Profile Intent</th>
-                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Native</th>
-                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Capsule</th>
-                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Authority</th>
-                            </tr>
-                        </thead>
-                        <tbody class="{{ table_ui.body_classes() }}">
-                            <tr class="{{ table_ui.row_classes() }}">
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    <p class="text-sm font-semibold text-content-primary">Resource Allocation</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">CPU, memory, pods, PVC count, storage, Services, ConfigMaps, and Secrets.</p>
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Managed', 'normal', 'check-circle-2') }}
-                                    <p class="mt-1 text-xs text-content-muted">Per-dimension Managed toggles define the ownership mask.</p>
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Managed', 'normal', 'check-circle-2') }}
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Capability Gated', 'warning', 'shield-check') }}
-                                    <p class="mt-1 text-xs text-content-muted">Uses admitted Capsule quota authority only.</p>
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    <p class="text-xs font-semibold text-content-primary">#113</p>
-                                    <p class="mt-1 text-xs text-content-muted">Resource Profile / allocation contract</p>
-                                </td>
-                            </tr>
-                            <tr class="{{ table_ui.row_classes() }}">
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    <p class="text-sm font-semibold text-content-primary">Container Defaults</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Default CPU and memory requests/limits through Container LimitRange.</p>
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Managed', 'normal', 'check-circle-2') }}
-                                    <p class="mt-1 text-xs text-content-muted">Per-dimension Managed toggles define the ownership mask.</p>
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Managed', 'normal', 'check-circle-2') }}
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Capability Gated', 'warning', 'shield-check') }}
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    <p class="text-xs font-semibold text-content-primary">#113</p>
-                                    <p class="mt-1 text-xs text-content-muted">Container LimitRange contract</p>
-                                </td>
-                            </tr>
-                            <tr class="{{ table_ui.row_classes() }}">
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    <p class="text-sm font-semibold text-content-primary">Ingress &amp; Service Exposure</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Ingress plus ClusterIP / NodePort / LoadBalancer / ExternalName policy.</p>
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Not Managed', 'unknown', 'circle-minus') }}
-                                    <p class="mt-1 text-xs text-content-muted">Resolved by the canonical exposure policy at attachment.</p>
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Capability Gated', 'warning', 'shield-check') }}
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Capability Gated', 'warning', 'shield-check') }}
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    <p class="text-xs font-semibold text-content-primary">#119</p>
-                                    <p class="mt-1 text-xs text-content-muted">Tenant exposure policy</p>
-                                </td>
-                            </tr>
-                            <tr class="{{ table_ui.row_classes() }}">
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    <p class="text-sm font-semibold text-content-primary">Hostname Reservation</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Exact/wildcard/regex ownership and collision-safe hostname governance.</p>
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Not Managed', 'unknown', 'circle-minus') }}
-                                    <p class="mt-1 text-xs text-content-muted">Hostname ownership stays outside Resource Profile allocation state.</p>
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Capability Gated', 'warning', 'shield-check') }}
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Capability Gated', 'warning', 'shield-check') }}
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    <p class="text-xs font-semibold text-content-primary">#119</p>
-                                    <p class="mt-1 text-xs text-content-muted">Domain reservation authority</p>
-                                </td>
-                            </tr>
-                            <tr class="{{ table_ui.row_classes() }}">
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    <p class="text-sm font-semibold text-content-primary">Managed TLS</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Platform TLS preferred; namespace Secret replication remains explicit compatibility mode.</p>
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Not Managed', 'unknown', 'circle-minus') }}
-                                    <p class="mt-1 text-xs text-content-muted">Requires committed managed-resource configuration.</p>
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Capability Gated', 'warning', 'shield-check') }}
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Capability Gated', 'warning', 'shield-check') }}
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    <p class="text-xs font-semibold text-content-primary">#118</p>
-                                    <p class="mt-1 text-xs text-content-muted">Tenant managed-resource authority</p>
-                                </td>
-                            </tr>
-                            <tr class="{{ table_ui.row_classes() }}">
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    <p class="text-sm font-semibold text-content-primary">Managed Registry</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Private registry credential capability and stronger external mechanisms when supported.</p>
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Not Managed', 'unknown', 'circle-minus') }}
-                                    <p class="mt-1 text-xs text-content-muted">Requires committed managed-resource configuration.</p>
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Capability Gated', 'warning', 'shield-check') }}
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Capability Gated', 'warning', 'shield-check') }}
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    <p class="text-xs font-semibold text-content-primary">#118</p>
-                                    <p class="mt-1 text-xs text-content-muted">Tenant managed-resource authority</p>
-                                </td>
-                            </tr>
-                            <tr class="{{ table_ui.row_classes() }}">
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    <p class="text-sm font-semibold text-content-primary">Capsule Advanced</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Shared quota, resource pools, replication, cordon, and provider-specific policy controls.</p>
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Not Managed', 'unknown', 'circle-minus') }}
-                                    <p class="mt-1 text-xs text-content-muted">Requested only through admitted Capsule capability intents.</p>
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Unsupported', 'unknown', 'ban') }}
-                                    <p class="mt-1 text-xs text-content-muted">No Native emulation or implicit fallback.</p>
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ table_label.special_label('Capability Gated', 'warning', 'shield-check') }}
-                                </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    <p class="text-xs font-semibold text-content-primary">#121 / #124</p>
-                                    <p class="mt-1 text-xs text-content-muted">Capsule authority and advanced capability intents</p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="grid gap-3 md:grid-cols-3">
-                    <div class="rounded-lg border border-outline-subtle bg-status-normal-soft p-3">
-                        <div class="flex items-center gap-2">
-                            {{ table_label.special_label('Managed', 'normal', 'check-circle-2') }}
-                            <p class="text-xs font-semibold text-content-primary">Effective ownership</p>
-                        </div>
-                        <p class="mt-2 text-xs leading-5 text-content-muted">Requested intent + canonical configuration + provider capability are all available.</p>
-                    </div>
-                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
-                        <div class="flex items-center gap-2">
-                            {{ table_label.special_label('Not Managed', 'unknown', 'circle-minus') }}
-                            <p class="text-xs font-semibold text-content-primary">No active ownership</p>
-                        </div>
-                        <p class="mt-2 text-xs leading-5 text-content-muted">The profile does not own the domain or required configuration is not committed.</p>
-                    </div>
-                    <div class="rounded-lg border border-outline-subtle bg-status-warning-soft p-3">
-                        <div class="flex items-center gap-2">
-                            {{ table_label.special_label('Unsupported', 'unknown', 'ban') }}
-                            <p class="text-xs font-semibold text-content-primary">Disabled at placement</p>
-                        </div>
-                        <p class="mt-2 text-xs leading-5 text-content-muted">The authoritative provider cannot safely enforce the control; KAORI fails closed.</p>
-                    </div>
-                </div>
-                <div class="rounded-lg border border-kaori-primary/20 bg-kaori-soft px-4 py-3">
-                    <p class="text-xs font-semibold text-content-primary">Effective control rule</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">
-                        Requested control <span aria-hidden="true">∩</span> canonical configuration <span aria-hidden="true">∩</span> provider capability
-                        <span class="font-semibold text-content-primary">= effective Managed control</span>.
-                    </p>
-                </div>
+            {% set advanced_controls = [
+                ('ingress', 'route', 'Ingress', 'Govern Ingress exposure through the canonical Tenant exposure policy.', '#119'),
+                ('hostname_reservation', 'globe-2', 'Hostname Reservation', 'Require registered hostname ownership and collision checks.', '#119'),
+                ('managed_tls', 'lock-keyhole', 'Managed TLS', 'Request the canonical managed TLS capability for the target placement.', '#118'),
+                ('managed_registry', 'package-check', 'Managed Registry', 'Request governed private-registry credential capability.', '#118'),
+                ('capsule_namespace_controls', 'folder-cog', 'Capsule Namespace Controls', 'Namespace count, naming, and related Capsule Tenant controls.', '#121/#124'),
+                ('capsule_resource_rules', 'shield-check', 'Capsule Resource Rules', 'StorageClass, PriorityClass, registry, ingress, and service rules.', '#121/#124'),
+                ('capsule_resource_pools', 'layers-3', 'Capsule Resource Pools', 'ResourcePool and ResourcePoolClaim capability.', '#124'),
+                ('capsule_replication', 'copy', 'Capsule Replication', 'TenantResource / GlobalTenantResource replication.', '#124'),
+                ('capsule_tenant_cordon', 'octagon-pause', 'Capsule Tenant Cordon', 'Tenant/namespace cordon capability.', '#124')
+            ] %}
+            <div class="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
+                {% for key, icon, label, description, authority in advanced_controls %}
+                    <label class="group flex cursor-pointer items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5 transition hover:border-brand-outline hover:bg-surface-hover"
+                           data-tenant-advanced-control-card="{{ key }}">
+                        <input type="checkbox"
+                               name="advanced_control_{{ key }}"
+                               value="1"
+                               data-tenant-advanced-control="{{ key }}"
+                               class="mt-1 h-4 w-4 shrink-0 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                        <span class="min-w-0 flex-1">
+                            <span class="flex items-start justify-between gap-2">
+                                <span class="inline-flex min-w-0 items-center gap-2">
+                                    <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                    <span class="text-xs font-semibold text-content-primary">{{ label }}</span>
+                                </span>
+                                <span class="shrink-0 text-[10px] font-semibold text-content-muted">{{ authority }}</span>
+                            </span>
+                            <span class="mt-1.5 block text-xs leading-5 text-content-muted">{{ description }}</span>
+                            <span class="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-content-muted">
+                                <i data-lucide="waypoints" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                Placement gated
+                            </span>
+                        </span>
+                    </label>
+                {% endfor %}
+            </div>
+            <div class="border-t border-outline-subtle bg-surface-card px-4 py-3">
+                <p class="text-xs leading-5 text-content-muted">
+                    Capsule-only controls may be enabled in the reusable profile, but they become unavailable when attached to Native. Native/Capsule capability checks are authoritative at attachment and mutation time.
+                </p>
             </div>
         </section>
     </div>
