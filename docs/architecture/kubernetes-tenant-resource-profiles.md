@@ -9,7 +9,7 @@ Issue #113 owns the first managed Tenant mutation slice: administrator-driven na
 - This slice implements only the Native Kubernetes namespace/quota/limit baseline needed by #113.
 - #120 remains authority for the broader Native Kubernetes Tenant capability/enforcement contract.
 - #654 owns Tenant Allocation Budget arithmetic, aggregate commitment, capacity state, and allocation allow/block decisions.
-- Capsule-specific shared/global quota and advanced enforcement remain out of scope.
+- The original #113 baseline remains Native Kubernetes. Later bounded authorities #771 and #773 extend the same allocation lifecycle to admitted Capsule GlobalResourceQuota and legacy Tenant.spec.resourceQuotas paths without changing #113 ownership.
 
 ## Resource Profile contract
 
