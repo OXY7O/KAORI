@@ -30,12 +30,12 @@
     <div class="space-y-5 p-5">
         <div class="grid gap-4 md:grid-cols-2">
             <label class="block">
-                {{ form_field.label_row("Managed Namespace") }}
+                {{ form_field.label_row("KAORI-Managed Allocation") }}
                 <select name="tenant_namespace_id"
                         required
                         data-tenant-allocation-change-namespace
                         class="{{ form_field.select_classes() }}">
-                    <option value="">Select managed namespace</option>
+                    <option value="">Select KAORI-managed allocation</option>
                     {% for item in namespace_allocation_options %}
                         <option value="{{ item.id }}">{{ item.namespace }} · {{ item.environment.tenant.name }} · {{ item.environment.environment|title }}</option>
                     {% endfor %}
