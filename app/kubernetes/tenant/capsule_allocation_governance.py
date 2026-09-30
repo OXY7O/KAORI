@@ -18,7 +18,11 @@ from app.kubernetes.tenant.allocation_cutover import _quantity_equal
 from app.kubernetes.tenant.capacity_governance import enforce_shared_tenant_allocation_preflight
 from app.kubernetes.tenant.capsule_advanced import reconcile_capsule_advanced_intent
 from app.kubernetes.tenant.capsule_advanced_service import _provider_from_committed_evidence
-from app.kubernetes.tenant.service import _namespace_allocation_values
+from app.kubernetes.tenant.service import (
+    _namespace_allocation_values,
+    _validate_resource_profile_attachment_controls,
+    resource_profile_attachment_controls,
+)
 from app.kubernetes.tenant.validation import validate_profile_spec
 from app.models import Cluster
 from app.models.tenant import (
@@ -315,6 +319,7 @@ def _commit_tenant_governance_evidence(
         'effective_hash': intent.effective_hash,
         'provider_source': dict(source),
         'provenance': provenance,
+        'advanced_profile_controls': resource_profile_attachment_controls(profile, tenant),
         'updated_at': datetime.now(UTC).isoformat(),
         'secret_material_persisted': False,
     }
@@ -333,6 +338,7 @@ def cutover_capsule_global_quota_allocation(
     if profile is None or not profile.enabled:
         raise ValueError('Selected Resource Profile is unavailable.')
 
+    attachment_controls = _validate_resource_profile_attachment_controls(profile, tenant)
     state = build_capsule_shared_allocation_cutover_state(tenant)
     if not state['supported']:
         raise ValueError(str(state['reason']))
@@ -357,6 +363,10 @@ def cutover_capsule_global_quota_allocation(
         desired_spec=desired_spec,
         capacity_decision_id=capacity.id,
     )
+    intent.reconciliation_evidence_json = {
+        **(intent.reconciliation_evidence_json or {}),
+        'advanced_profile_controls': attachment_controls,
+    }
 
     provider = _provider_from_committed_evidence(tenant)
     try:
