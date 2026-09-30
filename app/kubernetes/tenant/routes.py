@@ -102,6 +102,7 @@ from app.kubernetes.tenant.service import (
     create_resource_profile_committed,
     create_tenant_committed,
     delete_resource_profile_committed,
+    get_capacity_decision_registry_context,
     get_namespace_registry_context,
     get_resource_profile_registry_context,
     get_tenant_context,
@@ -556,6 +557,15 @@ def namespace_provisioning():
             status=str(request.args.get('namespace_status') or ''),
         )
     )
+    if active_view == 'decisions':
+        context.update(
+            get_capacity_decision_registry_context(
+                page=request.args.get('decision_page', 1, type=int) or 1,
+                per_page=request.args.get('decision_per_page', 5, type=int) or 5,
+                search=str(request.args.get('decision_search') or ''),
+                decision=str(request.args.get('decision_result') or ''),
+            )
+        )
     return render_template(
         'kubernetes/tenant/namespace_provisioning.html',
         tenant_page='namespace_provisioning',
