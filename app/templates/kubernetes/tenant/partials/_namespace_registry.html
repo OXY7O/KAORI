@@ -110,8 +110,23 @@
                             <p class="mt-1 text-xs text-content-muted">{{ item.environment.environment|title }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-sm font-semibold text-content-primary">{{ item.resource_profile.name if item.resource_profile else 'No profile' }}</p>
-                            <p class="mt-1 text-xs text-content-muted">Snapshot v{{ item.resource_profile_version or '—' }}</p>
+                            {% set allocation_evidence = (item.provisioning_evidence_json or {}).get('allocation') or {} %}
+                            {% set adopted_observed = item.ownership_status == 'adopted' and allocation_evidence.get('provenance') == 'adopted_observed' %}
+                            {% if adopted_observed %}
+                                <p class="text-sm font-semibold text-content-primary">Adopted Baseline · Observed</p>
+                                <p class="mt-1 text-xs text-content-muted">
+                                    {{ (allocation_evidence.get('profile_lineage') or {}).get('label') or 'Custom observed allocation' }}
+                                </p>
+                                {% set allocation_control = (item.provisioning_evidence_json or {}).get('allocation_control_state') or allocation_evidence.get('control_state') %}
+                                {% if allocation_control == 'control_unavailable' %}
+                                    <div class="mt-2">{{ table_label.special_label('Control Unavailable', 'warning', 'shield-alert') }}</div>
+                                {% else %}
+                                    <div class="mt-2">{{ table_label.special_label('Read Only', 'info', 'eye') }}</div>
+                                {% endif %}
+                            {% else %}
+                                <p class="text-sm font-semibold text-content-primary">{{ item.resource_profile.name if item.resource_profile else 'No profile' }}</p>
+                                <p class="mt-1 text-xs text-content-muted">Snapshot v{{ item.resource_profile_version or '—' }}</p>
+                            {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             <p class="text-sm font-semibold text-content-primary">{{ item.environment.tenant.provider_key|replace('_', ' ') |title }}</p>
