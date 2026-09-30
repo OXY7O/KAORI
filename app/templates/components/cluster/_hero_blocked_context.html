@@ -11,19 +11,18 @@
 {% set blocked_action_label = cluster_blocked_action_label|default(none) %}
 {% set blocked_action_href = cluster_blocked_action_href|default(none) %}
 {% set blocked_action_icon = cluster_blocked_action_icon|default('server-cog') %}
-<div class="{{ page_hero.context_panel_classes() }}" data-kaori-blocked-state>
-    {{ page_hero.context_header(blocked_scope, blocked_title, 'lock-keyhole') }}
-    <div class="{{ page_hero.context_panel_metrics_classes() }}">
-        {{ page_hero.context_metric('boxes', blocked_cluster_label, blocked_cluster_value, blocked_cluster_supporting) }}
-        {{ page_hero.context_metric('circle-dot-dashed', blocked_state_label, blocked_state_value, blocked_state_supporting, 'text-sm font-semibold leading-5') }}
-    </div>
-    {% if blocked_action_label and blocked_action_href %}
-        <a href="{{ blocked_action_href }}"
-           class="{{ page_hero.context_single_action_classes() }}">
-            <i data-lucide="{{ blocked_action_icon }}" class="h-4 w-4" aria-hidden="true"></i>
-            {{ blocked_action_label }}
-        </a>
-    {% else %}
-        {{ page_hero.context_info('triangle-alert', blocked_info) }}
-    {% endif %}
-</div>
+{{ page_hero.blocked_context_body(blocked_scope,
+blocked_title,
+[
+('boxes', blocked_cluster_label, blocked_cluster_value, blocked_cluster_supporting) ,
+('circle-dot-dashed', blocked_state_label, blocked_state_value, blocked_state_supporting, 'text-sm font-semibold leading-5')
+],
+blocked_info,
+none,
+'warning',
+'lock-keyhole',
+'triangle-alert',
+blocked_action_label,
+blocked_action_href,
+blocked_action_icon
+) }}
