@@ -36,6 +36,20 @@ def test_native_provider_reuses_canonical_provider_contract() -> None:
     assert 'secret_material_persisted' in native
 
 
+def test_native_provider_readiness_is_capability_scoped_for_degraded_integrations() -> None:
+    native = (ROOT / 'app/kubernetes/tenant/native_provider.py').read_text(encoding='utf-8')
+    service = (ROOT / 'app/kubernetes/tenant/service.py').read_text(encoding='utf-8')
+    discovery = (ROOT / 'app/kubernetes/tenant/discovery_service.py').read_text(encoding='utf-8')
+
+    assert "_WORKSPACE_READINESS = frozenset({'ready', 'degraded'})" in native
+    assert 'def effective_native_connection_readiness' in native
+    assert 'def tenant_workspace_connection_available' in native
+    assert 'readiness not in _WORKSPACE_READINESS' in native
+    assert 'tenant_workspace_connection_available(cluster.kubernetes_connection)' in service
+    assert 'tenant_workspace_connection_available(cluster.kubernetes_connection)' in discovery
+    assert "KubernetesConnection.readiness_status == 'ready'" not in discovery
+
+
 def test_native_provider_wraps_existing_reconcilers_instead_of_cloning_them() -> None:
     native = (ROOT / 'app/kubernetes/tenant/native_provider.py').read_text(encoding='utf-8')
 

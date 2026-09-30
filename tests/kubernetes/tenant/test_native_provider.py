@@ -9,12 +9,13 @@ from app.kubernetes.tenant.native_provider import (
 from app.kubernetes.tenant.providers import TenantCapabilityStatus, TenantProviderError, TenantProviderState
 
 
-def _connection(*, readiness='ready', features=None):
+def _connection(*, readiness='ready', features=None, cluster_status='connected'):
     return SimpleNamespace(
         readiness_status=readiness,
         compatibility_status='compatible',
         detected_version='v1.29.5',
         discovery_summary={'features': features or {}, 'api_profile': 'kubernetes-core-v1'},
+        cluster=SimpleNamespace(status=cluster_status),
     )
 
 
@@ -44,12 +45,43 @@ def test_native_capability_matrix_distinguishes_available_degraded_unavailable_a
     assert capabilities['external_registry_provider'].status is TenantCapabilityStatus.NOT_APPLICABLE
 
 
-def test_connection_degraded_propagates_to_baseline_capabilities() -> None:
-    provider = NativeKubernetesTenantProvider(connection=_connection(readiness='degraded'))
-    capabilities = provider.capabilities(cluster_id='cluster-a')
-    assert all(
-        item.status in {TenantCapabilityStatus.DEGRADED, TenantCapabilityStatus.NOT_APPLICABLE} for item in capabilities
+def test_degraded_connection_uses_tenant_feature_evidence_instead_of_global_degradation() -> None:
+    features = {
+        'tenant.namespaces': _feature(),
+        'tenant.resourcequotas': _feature(),
+        'tenant.limitranges': _feature(),
+        'tenant.rbac.roles': _feature(),
+        'tenant.rbac.rolebindings': _feature(),
+        'tenant.serviceaccounts': _feature(),
+        'tenant.serviceaccount_tokens': _feature(),
+        'tenant.secrets': _feature(),
+        'tenant.admission.validatingpolicies': _feature(),
+        'tenant.admission.validatingpolicybindings': _feature(),
+    }
+    provider = NativeKubernetesTenantProvider(connection=_connection(readiness='degraded', features=features))
+    capabilities = {item.key: item for item in provider.capabilities(cluster_id='cluster-a')}
+
+    assert capabilities['namespace'].status is TenantCapabilityStatus.AVAILABLE
+    assert capabilities['namespaced_rbac'].status is TenantCapabilityStatus.AVAILABLE
+    assert capabilities['service_account_token'].status is TenantCapabilityStatus.AVAILABLE
+    assert capabilities['admission_enforcement'].status is TenantCapabilityStatus.AVAILABLE
+
+
+def test_connected_legacy_null_readiness_uses_runtime_fallback() -> None:
+    from app.kubernetes.tenant.native_provider import (
+        effective_native_connection_readiness,
+        tenant_workspace_connection_available,
     )
+
+    connection = _connection(readiness=None)
+    assert effective_native_connection_readiness(connection) == 'ready'
+    assert tenant_workspace_connection_available(connection) is True
+
+
+def test_validation_required_connection_remains_unavailable() -> None:
+    from app.kubernetes.tenant.native_provider import tenant_workspace_connection_available
+
+    assert tenant_workspace_connection_available(_connection(readiness='validation_required')) is False
 
 
 def test_security_sensitive_capability_fails_closed() -> None:

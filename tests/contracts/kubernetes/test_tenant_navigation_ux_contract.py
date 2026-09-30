@@ -174,10 +174,14 @@ def test_tenant_readiness_matches_runtime_fallback_and_blocker_distinguishes_val
     hero_blocker = (ROOT / 'app/templates/components/cluster/_hero_blocked_context.html').read_text(encoding='utf-8')
     onboarding = (ROOT / 'app/templates/components/cluster/_onboarding_banner.html').read_text(encoding='utf-8')
 
-    assert 'def _native_connection_ready_filter()' in service
-    assert "KubernetesConnection.readiness_status == 'ready'" in service
-    assert 'KubernetesConnection.readiness_status.is_(None)' in service
-    assert service.count('_native_connection_ready_filter()') >= 3
+    native_provider = (ROOT / 'app/kubernetes/tenant/native_provider.py').read_text(encoding='utf-8')
+    discovery = (ROOT / 'app/kubernetes/tenant/discovery_service.py').read_text(encoding='utf-8')
+
+    assert 'tenant_workspace_connection_available' in service
+    assert "frozenset({'ready', 'degraded'})" in native_provider
+    assert "return 'ready' if str(getattr(cluster, 'status', '')" in native_provider
+    assert 'effective_native_connection_readiness(connection)' in native_provider
+    assert 'tenant_workspace_connection_available(cluster.kubernetes_connection)' in discovery
     assert 'Metrics Source' not in service
     assert 'Alertmanager' not in service
 

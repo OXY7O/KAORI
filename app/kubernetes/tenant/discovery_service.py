@@ -446,12 +446,13 @@ def adopt_discovered_tenant_committed(
         .filter(
             Cluster.id == cluster_id,
             Cluster.status == ClusterStatus.CONNECTED.value,
-            KubernetesConnection.readiness_status == 'ready',
         )
         .first()
     )
-    if cluster is None:
-        raise ValueError('The selected Kubernetes cluster is no longer available for Tenant adoption.')
+    from app.kubernetes.tenant.native_provider import tenant_workspace_connection_available
+
+    if cluster is None or not tenant_workspace_connection_available(cluster.kubernetes_connection):
+        raise ValueError('The selected Kubernetes cluster is not available for Tenant adoption.')
 
     client = runtime_adapter.build_client(cluster)
     now = datetime.now(UTC)

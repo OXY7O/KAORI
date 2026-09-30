@@ -19,6 +19,7 @@ from app.kubernetes.tenant.capsule_tenant import (
     compensate_capsule_tenant_create,
     create_capsule_tenant,
 )
+from app.kubernetes.tenant.native_provider import tenant_workspace_connection_available
 from app.kubernetes.tenant.provisioning import create_namespace_intent, reconcile_native_namespace
 from app.kubernetes.tenant.validation import validate_profile_spec
 from app.models import Cluster
@@ -119,23 +120,18 @@ def normalize_tenant_slug(value: str) -> str:
     return slug
 
 
-def _native_connection_ready_filter():
-    return or_(
-        KubernetesConnection.readiness_status == 'ready',
-        KubernetesConnection.readiness_status.is_(None),
-    )
-
-
 def get_ready_native_clusters() -> list[Cluster]:
-    return (
+    clusters = (
         Cluster.query.join(KubernetesConnection, KubernetesConnection.cluster_id == Cluster.id)
-        .filter(
-            Cluster.status == ClusterStatus.CONNECTED.value,
-            _native_connection_ready_filter(),
-        )
+        .filter(Cluster.status == ClusterStatus.CONNECTED.value)
         .order_by(Cluster.name.asc())
         .all()
     )
+    return [
+        cluster
+        for cluster in clusters
+        if tenant_workspace_connection_available(cluster.kubernetes_connection)
+    ]
 
 
 def create_tenant(source: Mapping[str, Any]) -> tuple[Tenant, TenantEnvironment]:
@@ -158,12 +154,11 @@ def create_tenant(source: Mapping[str, Any]) -> tuple[Tenant, TenantEnvironment]
         .filter(
             Cluster.id == cluster_id,
             Cluster.status == ClusterStatus.CONNECTED.value,
-            _native_connection_ready_filter(),
         )
         .first()
     )
-    if cluster is None:
-        raise ValueError('Select a connected Kubernetes cluster with Ready integration capability.')
+    if cluster is None or not tenant_workspace_connection_available(cluster.kubernetes_connection):
+        raise ValueError('Select a connected Kubernetes cluster with a validated Tenant integration.')
 
     prior_generations = (
         Tenant.query.filter_by(cluster_id=cluster.id, slug=slug)
