@@ -1,10 +1,13 @@
 from types import SimpleNamespace
 
 from app.kubernetes.tenant.service import (
+    RESOURCE_PROFILE_ADVANCED_CONTROLS,
     RESOURCE_PROFILE_PRESETS,
+    _advanced_profile_controls,
     _namespace_allocation_values,
     _profile_values,
     _resource_profile_values,
+    evaluate_resource_profile_advanced_controls,
 )
 
 
@@ -141,3 +144,54 @@ def test_namespace_builtin_snapshot_uses_stored_control_mask_with_canonical_valu
         'default': {'cpu': RESOURCE_PROFILE_PRESETS['standard']['limits']['default']['cpu']}
     }
     assert customized is False
+
+def test_advanced_profile_controls_are_explicit_persisted_intent() -> None:
+    controls = _advanced_profile_controls(
+        {
+            'advanced_control_contract_present': '1',
+            'advanced_control_ingress': 'on',
+            'advanced_control_managed_tls': '1',
+            'advanced_control_capsule_resource_pools': 'true',
+        }
+    )
+
+    assert set(controls) == set(RESOURCE_PROFILE_ADVANCED_CONTROLS)
+    assert controls['ingress'] is True
+    assert controls['managed_tls'] is True
+    assert controls['capsule_resource_pools'] is True
+    assert controls['hostname_reservation'] is False
+    assert controls['managed_registry'] is False
+
+
+def test_advanced_profile_controls_are_gated_by_provider_capability() -> None:
+    controls = {
+        'ingress': True,
+        'managed_tls': True,
+        'capsule_resource_pools': True,
+    }
+    state = evaluate_resource_profile_advanced_controls(
+        controls,
+        provider_key='native_kubernetes',
+        capability_statuses={
+            'service_exposure_preflight': 'available',
+            'admission_enforcement': 'available',
+            'managed_tls': 'unavailable',
+        },
+    )
+
+    assert state['ingress']['state'] == 'enabled'
+    assert state['managed_tls']['state'] == 'unsupported'
+    assert state['capsule_resource_pools']['state'] == 'unsupported'
+    assert state['hostname_reservation']['state'] == 'disabled'
+
+
+def test_capsule_advanced_control_requires_specific_capsule_capability() -> None:
+    state = evaluate_resource_profile_advanced_controls(
+        {'capsule_resource_pools': True},
+        provider_key='capsule',
+        capability_statuses={'resource_pools': 'available'},
+    )
+
+    assert state['capsule_resource_pools']['state'] == 'enabled'
+    assert state['capsule_resource_pools']['requested'] is True
+
