@@ -137,6 +137,25 @@ Capsule adoption registers the existing Capsule Tenant while Capsule remains rec
 
 Adoption evidence records `provenance=adopted_observed` and `provider_mutation_performed=false`. Adoption never silently converts provider owners into KAORI Membership/Access Grants and never turns observed provider state into KAORI-authored desired intent.
 
+### Allocation Governance Cutover
+
+An adopted Namespace remains lifecycle-owned by the external/provider estate. #769 introduces a separate allocation-control transition:
+
+```text
+Adopted Namespace
+└── allocation: Adopted / Observed
+      ↓ explicit operator cutover
+    KAORI Managed allocation
+```
+
+The cutover action is available only when the allocation authority is proven and supported. It compares the current observed snapshot with a selected enabled Resource Profile, runs #654 capacity admission, revalidates provider UID/resourceVersion and ownership, performs the authoritative provider mutation, then requires provider read-back before committing the managed allocation state.
+
+For Native Kubernetes, KAORI adopts control of the single authoritative ResourceQuota / Container LimitRange without taking Namespace lifecycle ownership. Existing legacy resource names are preserved when safely identifiable. Missing allocation resources may be materialized using the canonical KAORI resource names. Foreign-manager resources, multiple competing sources, unsupported LimitRange semantics, stale provider evidence, or read-back mismatch fail closed.
+
+For Capsule, the cutover action remains **Control Unavailable** unless a specific admitted Capsule mutation capability owns the observed allocation contract. KAORI never bypasses Capsule authority with a direct Native quota write. Shared/global Tenant quota and related advanced Capsule controls remain #124 capability-gated work.
+
+After successful cutover, normal governed allocation changes can operate on that allocation contract while the Namespace itself remains `ownership_status=adopted`. A provider failure before verification preserves the prior allocation-control state and records failure evidence for later drift/reconciliation review.
+
 Tenant workspace mutations that are progressively enhanced with HTMX render operational feedback as an out-of-band KAORI toast in the same response. Success and failure feedback therefore appears immediately without requiring a full-page reload; persisted Notification Deck evidence remains synchronized through the standard toast notification-refresh contract.
 
 The former monolithic UAT-only Members & Access and Credential Management partials are retired. Final UX does not expose `Functional UAT Surface` copy or render all administration forms simultaneously.
