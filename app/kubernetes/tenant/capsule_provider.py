@@ -81,6 +81,24 @@ def _served_versions(item: Any) -> tuple[str, ...]:
     return tuple(sorted(set(versions)))
 
 
+def _served_version_has_schema_path(item: Any, version_name: str, path: tuple[str, ...]) -> bool:
+    spec = _value(item, 'spec', default={}) or {}
+    for version in _items(spec, 'versions'):
+        if str(_value(version, 'name', default='') or '') != version_name:
+            continue
+        if not bool(_value(version, 'served', default=False)):
+            continue
+        schema = _value(version, 'schema', default={}) or {}
+        node = _value(schema, 'openAPIV3Schema', default={}) or {}
+        for segment in path:
+            properties = _value(node, 'properties', default={}) or {}
+            node = _value(properties, segment, default={}) or {}
+            if not node:
+                return False
+        return True
+    return False
+
+
 def _controller_status(tenant_versions: tuple[str, ...]) -> TenantCapabilityStatus:
     if not tenant_versions:
         return TenantCapabilityStatus.UNAVAILABLE
@@ -140,9 +158,19 @@ def discover_capsule(
             if reported_version is not None:
                 break
 
+    tenant_resource_quotas_ready = any(
+        version in _SUPPORTED_API_VERSIONS
+        and _served_version_has_schema_path(tenant_item, version, ('spec', 'resourceQuotas'))
+        for version in tenant_versions
+    )
+
     capabilities = {
         'tenant_controller': controller_status,
         'supported_crd_version': controller_status,
+        'tenant_resource_quotas': _dependent_status(
+            controller_status=controller_status,
+            ready=tenant_resource_quotas_ready,
+        ),
         'admission_enforcement': _dependent_status(
             controller_status=controller_status,
             ready=bool(probes.get('admission_enforcement')),
