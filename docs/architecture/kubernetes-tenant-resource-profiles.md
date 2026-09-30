@@ -71,6 +71,36 @@ Resource Profile mutability is visible before an operator opens the detail dialo
 
 Editing a Custom Resource Profile changes the reusable contract version only. It never silently rewrites an existing Namespace allocation snapshot.
 
+## Adopted allocation governance cutover
+
+Issue #769 owns the explicit transition from an observed legacy allocation to KAORI-managed allocation intent. Namespace lifecycle ownership and allocation reconciliation ownership are separate contracts:
+
+```text
+Namespace ownership: Adopted
+Allocation control: Adopted / Observed → KAORI Managed
+```
+
+A successful allocation cutover does **not** relabel an adopted Namespace as KAORI-created or transfer Namespace deletion/lifecycle ownership. It authorizes KAORI to govern only the admitted allocation resources.
+
+For the Native Kubernetes path, cutover performs:
+
+1. read the committed Adopted / Observed allocation and provider UID/resourceVersion evidence;
+2. compare the selected Resource Profile with the observed allocation;
+3. run the existing #654 capacity admission;
+4. re-read provider allocation and reject stale committed evidence;
+5. verify ResourceQuota / LimitRange source ownership, UID, and resourceVersion before the first provider write;
+6. patch the single authoritative legacy ResourceQuota / LimitRange in place, or create the canonical KAORI resource only when that resource type was absent;
+7. read back the effective allocation;
+8. mark `allocation_control_state=kaori_managed` only when provider read-back semantically equals the proposed contract.
+
+The initial cutover supports at most one authoritative ResourceQuota and one Container LimitRange. Multiple legacy sources, unsupported LimitRange constraints, foreign controller ownership, stale UID/resourceVersion evidence, or ambiguous authority remain **Control Unavailable** until the operator resolves the provider state.
+
+After successful cutover, subsequent allocation changes continue through the governed capacity/preflight and provider-verification path while Namespace `ownership_status` remains `adopted`.
+
+Capsule is fail-closed. KAORI does not bypass Capsule by writing Native ResourceQuota when the adopted Tenant's effective allocation authority is Capsule. Shared/global quota and other Capsule-specific mutation paths remain governed by the admitted #121/#124 capability contracts; until such a path is proven, the UI presents **Control Unavailable**.
+
+Provider mutation failure never marks the allocation KAORI Managed. Failure evidence records the proposed contract and whether provider mutation may have started so later sync/drift reconciliation can determine the effective provider state without pretending the transaction succeeded.
+
 ## Effective allocation evidence
 
 A managed namespace records:
