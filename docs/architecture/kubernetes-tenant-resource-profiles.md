@@ -183,7 +183,7 @@ KAORI never silently changes scope during normal allocation changes. A manual sc
 
 For adopted legacy Tenants, the observed ordered `items` structure and hard-key ownership are preserved. Governed Resource Profile values update the supported `hard` dimensions in place. Non-hard quota semantics such as `scopes` / `scopeSelector`, unsupported quota keys, ambiguous duplicated dimensions, stale Tenant UID/resourceVersion evidence, or competing allocation authorities fail closed.
 
-Namespace-side constraints that are not the selected allocation authority remain external evidence. For example, a Capsule-generated `LimitRange` with `type=PersistentVolumeClaim` can remain visible on an adopted Tenant while an unambiguous Tenant-scope `spec.resourceQuotas` contract is governed. Cutover and later changes do not delete or rewrite that external LimitRange.
+Namespace-side constraints that are not the selected allocation authority remain external evidence. A Capsule-generated `LimitRange` with `type=PersistentVolumeClaim` is parsed as a known **PVC Storage Constraint** rather than an opaque unsupported type: KAORI preserves the Namespace, LimitRange provider identity, UID/resourceVersion, and supported `storage` min/max/default evidence when present. This mapping is observational only and does not merge PVC size policy into `Tenant.spec.resourceQuotas`, ResourceQuota PVC count, or total `requests.storage` authority. Cutover and later Tenant-quota changes never delete or rewrite that external LimitRange.
 
 The managed lifecycle is:
 
