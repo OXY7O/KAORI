@@ -77,6 +77,7 @@ from app.kubernetes.tenant.overview import dispatch_tenant_inventory_sync
 from app.kubernetes.tenant.service import (
     TenantStateConflictError,
     change_native_namespace_allocation_committed,
+    cutover_adopted_namespace_allocation_committed,
     create_resource_profile_committed,
     create_tenant_committed,
     delete_resource_profile_committed,
@@ -1330,6 +1331,46 @@ def update_capacity_policy_route():
             },
         )
     return redirect(url_for('tenant.resource_profiles', view='capacity'))
+
+
+@tenant_bp.post('/namespace-allocation/cutover')
+@permission_required('tenant.manage')
+def cutover_namespace_allocation_route():
+    try:
+        _csrf()
+        record = cutover_adopted_namespace_allocation_committed(request.form)
+    except (ValueError, ApiException, TenantStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_allocation_cutover_failed',
+            status='error',
+            title='Allocation Governance Cutover Failed',
+            message=str(exc),
+            detail='Adopted provider state remains authoritative unless provider mutation and read-back both succeed.',
+            metadata={
+                'tenant_namespace_id': request.form.get('tenant_namespace_id'),
+                'resource_profile_id': request.form.get('resource_profile_id'),
+                'operation': 'allocation_governance_cutover',
+            },
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_allocation_cutover_completed',
+            status='success',
+            title='Allocation Governance Cutover Completed',
+            message=f'{record.namespace} allocation is now KAORI Managed.',
+            detail=record.provisioning_message,
+            metadata={
+                'tenant_namespace_id': record.id,
+                'cluster_id': record.cluster_id,
+                'namespace': record.namespace,
+                'resource_profile_id': record.resource_profile_id,
+                'capacity_decision_id': record.capacity_decision_id,
+                'namespace_ownership_status': record.ownership_status,
+                'allocation_control_state': 'kaori_managed',
+                'operation': 'allocation_governance_cutover',
+            },
+        )
+    return redirect(url_for('tenant.namespace_provisioning', view='allocation'))
 
 
 @tenant_bp.post('/namespace-allocation')
