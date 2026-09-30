@@ -97,7 +97,7 @@ The initial cutover supports at most one authoritative ResourceQuota and one Con
 
 After successful cutover, subsequent allocation changes continue through the governed capacity/preflight and provider-verification path while Namespace `ownership_status` remains `adopted`.
 
-Capsule is fail-closed. KAORI does not bypass Capsule by writing Native ResourceQuota when the adopted Tenant's effective allocation authority is Capsule. Shared/global quota and other Capsule-specific mutation paths remain governed by the admitted #121/#124 capability contracts; until such a path is proven, the UI presents **Control Unavailable**.
+Capsule is fail-closed. KAORI does not bypass Capsule by writing Native ResourceQuota when the adopted Tenant's effective allocation authority is Capsule. #771 admits exactly one shared Capsule allocation path: an unambiguous `GlobalResourceQuota` served through `capsule.clastix.io/v1beta2` while committed Capsule evidence reports `shared_global_quota=available`. The existing #124 CustomObjects executor remains the provider mutation primitive. `Tenant.spec.resourceQuotas`, multiple GlobalResourceQuota sources, unsupported selectors/dimensions, degraded Capsule, and unsupported API versions remain **Control Unavailable**.
 
 Provider mutation failure never marks the allocation KAORI Managed. Failure evidence records the proposed contract and whether provider mutation may have started so later sync/drift reconciliation can determine the effective provider state without pretending the transaction succeeded.
 
@@ -146,9 +146,27 @@ Acceptance performs **no provider write merely to accept values that are already
 
 Both actions require a committed `Drifted` Namespace state and a Tenant lifecycle state of `Ready`. Teardown/decommission states remain blocked.
 
-### Capsule boundary
+### Capsule shared allocation authority
 
-The current #770 mutation/reconciliation adapter is admitted for Native Kubernetes allocation authority. Capsule allocation drift can still be observed as evidence, but bidirectional actions remain **Control Unavailable** until the authoritative Capsule allocation capability has a supported mutation/reconciliation adapter. KAORI never substitutes a Native ResourceQuota write for a Capsule-owned contract.
+#771 extends the same human-controlled lifecycle to the admitted Capsule `GlobalResourceQuota` path without converting shared quota into per-Namespace quota.
+
+```text
+Adopted Capsule Tenant
+→ observed GlobalResourceQuota + capability evidence
+→ explicit shared-allocation cutover
+→ Tenant-level KAORI Managed allocation intent
+→ Tenant Sync observes GlobalResourceQuota
+→ Drifted when live quota differs
+→ {Reapply KAORI Intent | Accept Provider State}
+```
+
+The canonical shared contract is stored as a Tenant-level `TenantAdvancedCapabilityIntent` with `allocation_governance_scope=tenant_shared`. Capacity governance counts that shared quota exactly once for the Tenant and excludes its correlated Namespace allocation snapshots from commitment arithmetic while shared authority is active. This prevents a 4 CPU / 8 GiB Tenant quota from being counted once per Namespace.
+
+Cutover preserves the existing GlobalResourceQuota selectors and provider object identity, verifies UID/resourceVersion before mutation, changes only the governed quota contract, reuses the #124 capability-gated CustomObjects executor, and requires provider read-back before committing **KAORI Managed**.
+
+Tenant Sync remains observation-only. GlobalResourceQuota resourceVersion changes are valid drift evidence rather than an observation error; UID replacement, capability degradation, ambiguous ownership, or unsupported authority still fail closed. **Reapply KAORI Intent** performs fresh-provider and shared-capacity checks before Capsule mutation. **Accept Provider State** performs the same governance checks but makes no redundant provider write and records whether the accepted values are customized relative to the retained Resource Profile lineage.
+
+`Tenant.spec.resourceQuotas` is intentionally not admitted by #771 and remains **Control Unavailable**. KAORI never substitutes a Native ResourceQuota write for a Capsule-owned contract.
 
 ## Effective allocation evidence
 
