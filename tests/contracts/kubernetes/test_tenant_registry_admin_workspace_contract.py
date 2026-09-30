@@ -685,6 +685,15 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'Provider &amp; Live Context' in preflight
     assert 'Allocation Overview' in preflight
     assert 'Effective Allocation' in preflight
+    assert 'Live provider values normalized for governance review.' in preflight
+    assert 'max-w-[1360px]' in preflight
+    assert "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.15fr)]" in preflight
+    assert 'xl:grid-cols-5' in preflight
+    assert "'requests.cpu': 'CPU Requests'" in preflight
+    assert "'limits.cpu': 'CPU Limits'" in preflight
+    assert "'requests.memory': 'Memory Requests'" in preflight
+    assert "'limits.memory': 'Memory Limits'" in preflight
+    assert "'pods': 'Pods'" in preflight
     assert 'Namespace Coverage' in preflight
     assert 'Proposed KAORI Mapping' in preflight
     assert 'Adoption Result' in preflight
