@@ -111,7 +111,9 @@ def _managed_shared_intent(tenant: Tenant) -> TenantAdvancedCapabilityIntent | N
         if (intent.reconciliation_evidence_json or {}).get('allocation_governance_scope') == _SHARED_SCOPE
     ]
     if len(matches) > 1:
-        raise ValueError('Multiple canonical shared allocation intents exist for this Tenant; reconciliation fails closed.')
+        raise ValueError(
+            'Multiple canonical shared allocation intents exist for this Tenant; reconciliation fails closed.'
+        )
     return matches[0] if matches else None
 
 
@@ -253,7 +255,8 @@ def _new_shared_intent(
     conflicts = _active_shared_intents(tenant.id)
     if conflicts:
         raise ValueError(
-            'A GlobalResourceQuota intent already exists for this Tenant. Resolve the existing authority before cutover.'
+            'A GlobalResourceQuota intent already exists for this Tenant. '
+            'Resolve the existing authority before cutover.'
         )
 
     intent = TenantAdvancedCapabilityIntent()
