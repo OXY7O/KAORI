@@ -326,7 +326,7 @@ def test_resource_profile_advanced_controls_are_real_profile_intent_and_placemen
     assert "stateLabel.textContent = 'Enabled'" in script
 
     assert '## Advanced profile controls' in docs
-    assert 'real reusable profile controls, not a status/TODO matrix' in docs
+    assert 'operator-editable reusable contract, not a status/TODO matrix' in docs
     assert 'requested but unavailable advanced control blocks the provider mutation' in docs
     assert 'never substitutes Native behavior for Capsule-only controls' in docs
 
