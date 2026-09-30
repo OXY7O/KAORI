@@ -296,6 +296,7 @@ def test_native_observation_maps_pvc_storage_limitrange_without_claiming_quota_a
     assert observed['unsupported_dimensions'] == []
     assert observed['quota'] == {}
     assert observed['limits'] == {}
+    assert observed['external_constraint_details'] == observed['external_limit_constraints']
     constraint = observed['external_limit_constraints'][0]
     assert constraint['constraint_type'] == 'pvc_storage_limit_range'
     assert constraint['fields']['min']['storage'] == '2Gi'
