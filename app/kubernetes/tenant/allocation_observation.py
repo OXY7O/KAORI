@@ -484,10 +484,12 @@ def observe_capsule_tenant_allocation(
     )
 
     namespace_rows: list[dict[str, Any]] = []
-    native_allocation_present = False
+    native_quota_present = False
+    native_limits_present = False
     for namespace in correlated:
         observation = observe_native_namespace_allocation(core_api, namespace['name'])
-        native_allocation_present = native_allocation_present or bool(observation['quota'] or observation['limits'])
+        native_quota_present = native_quota_present or bool(observation['quota'])
+        native_limits_present = native_limits_present or bool(observation['limits'])
         namespace_rows.append({**namespace, 'allocation': observation})
 
     tenant_quota = _capsule_tenant_quota(tenant_item)
@@ -495,13 +497,35 @@ def observe_capsule_tenant_allocation(
     global_quota_present = bool(global_quota['source_resources'])
     tenant_quota_present = tenant_quota is not None
 
+    shared_quota: dict[str, str] = {}
+    shared_scope: str | None = None
+    if tenant_quota_present and tenant_quota is not None:
+        shared_quota = dict(tenant_quota['quota'])
+        shared_scope = str(tenant_quota['scope'])
+    elif global_quota_present:
+        shared_quota = dict(global_quota['quota'])
+        shared_scope = 'Tenant'
+
+    native_quota_matches_shared = bool(shared_quota)
+    if native_quota_matches_shared:
+        observed_quota_rows = [
+            dict(namespace['allocation'].get('quota') or {})
+            for namespace in namespace_rows
+            if namespace['allocation'].get('quota')
+        ]
+        native_quota_matches_shared = bool(observed_quota_rows) and all(
+            _mapping_equivalent(quota, shared_quota) for quota in observed_quota_rows
+        )
+
     authority_paths: list[str] = []
-    if native_allocation_present:
-        authority_paths.append('native_namespaced')
     if tenant_quota_present:
         authority_paths.append('capsule_tenant_resource_quotas')
     if global_quota_present:
         authority_paths.append('capsule_global_resource_quota')
+    if (native_quota_present and not native_quota_matches_shared) or (
+        not tenant_quota_present and not global_quota_present and (native_quota_present or native_limits_present)
+    ):
+        authority_paths.append('native_namespaced')
 
     unsupported = list(global_quota['unsupported_dimensions'])
     ambiguous = list(correlation_ambiguities) + list(global_quota['ambiguous_dimensions'])
@@ -545,15 +569,6 @@ def observe_capsule_tenant_allocation(
             'Capsule namespace allocation is observed without provider mutation and remains read-only until explicit '
             'governance cutover.'
         )
-
-    shared_quota: dict[str, str] = {}
-    shared_scope: str | None = None
-    if tenant_quota_present and tenant_quota is not None:
-        shared_quota = dict(tenant_quota['quota'])
-        shared_scope = str(tenant_quota['scope'])
-    elif global_quota_present:
-        shared_quota = dict(global_quota['quota'])
-        shared_scope = 'Tenant'
 
     return {
         'provider': 'capsule',
