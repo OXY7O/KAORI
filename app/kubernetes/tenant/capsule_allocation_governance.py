@@ -13,6 +13,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
+from app.kubernetes.tenant.allocation_cutover import _quantity_equal
 from app.kubernetes.tenant.capacity_governance import enforce_shared_tenant_allocation_preflight
 from app.kubernetes.tenant.capsule_advanced import reconcile_capsule_advanced_intent
 from app.kubernetes.tenant.capsule_advanced_service import _provider_from_committed_evidence
@@ -432,7 +433,7 @@ def _quota_differences(
     for key in sorted(set(desired) | set(observed)):
         left = str(desired.get(key) or 'Unbounded')
         right = str(observed.get(key) or 'Unbounded')
-        if left != right:
+        if not _quantity_equal(key, left, right):
             differences.append(
                 {
                     'dimension': key,
