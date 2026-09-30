@@ -7,57 +7,46 @@
       class="overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true">
-                    <i data-lucide="refresh-cw" class="h-5 w-5"></i>
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="refresh-cw" class="h-5 w-5"></i>
+            </span>
+            <div class="min-w-0">
+                <span class="inline-flex min-h-6 items-center gap-1.5">
+                    <h2 class="text-base font-semibold text-content-primary">Allocation Change</h2>
+                    {{ info_tip.render('namespace-allocation-change-tip',
+                            'Governed allocation change',
+                            'Change one KAORI-managed allocation without replacing its history.',
+                            [
+                            'Capacity admission runs before provider reconciliation.',
+                            'Provider read-back must match before the new intent is committed.'
+                            ],
+                            placement='right') }}
                 </span>
-                <div class="min-w-0">
-                    <div class="inline-flex min-h-6 items-center gap-1.5">
-                        <h2 class="text-base font-semibold text-content-primary">Allocation Change</h2>
-                        {{ info_tip.render('namespace-allocation-change-tip',
-                                'Governed allocation change',
-                                'A change creates new admitted intent while retaining historical allocation evidence.',
-                                [
-                                'Capacity admission runs before provider reconciliation.',
-                                'Blocked requests leave the current allocation unchanged.'
-                                ],
-                                placement='right') }}
-                    </div>
-                    <p class="mt-1 text-sm text-content-secondary">Compare current intent with one proposed Resource Profile.</p>
-                </div>
+                <p class="mt-1 text-sm text-content-secondary">Select a managed Namespace and its next Resource Profile.</p>
             </div>
-            <ol class="grid shrink-0 grid-cols-3 overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated text-[11px] font-semibold text-content-muted"
-                aria-label="Allocation change workflow">
-                <li class="flex items-center gap-1.5 border-r border-outline-subtle px-3 py-2">
-                    <span class="text-kaori-primary">1</span> Target
-                </li>
-                <li class="flex items-center gap-1.5 border-r border-outline-subtle px-3 py-2">
-                    <span class="text-kaori-primary">2</span> Compare
-                </li>
-                <li class="flex items-center gap-1.5 px-3 py-2">
-                    <span class="text-kaori-primary">3</span> Preflight
-                </li>
-            </ol>
         </div>
+        <span class="inline-flex w-fit items-center gap-1.5 rounded-full border border-kaori-primary/20 bg-kaori-soft px-3 py-1.5 text-[11px] font-semibold text-kaori-primary">
+            <i data-lucide="shield-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
+            Governed Change
+        </span>
     </header>
 
     <div class="space-y-5 p-5 sm:p-6">
-        <section aria-labelledby="allocation-change-request-heading">
-            <div class="flex items-center justify-between gap-3">
+        <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4 sm:p-5"
+                 aria-labelledby="allocation-change-request-heading">
+            <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h3 id="allocation-change-request-heading" class="text-sm font-semibold text-content-primary">Change Request</h3>
-                    <p class="mt-1 text-xs text-content-muted">Choose one managed allocation and its proposed contract.</p>
+                    <p class="mt-1 text-xs text-content-muted">Choose the current managed allocation and proposed contract.</p>
                 </div>
-                <span class="inline-flex items-center rounded-full bg-kaori-soft px-2.5 py-1 text-[11px] font-semibold text-kaori-primary">
-                    Governed
-                </span>
+                <p class="text-xs text-content-muted">Only enabled Resource Profiles are selectable.</p>
             </div>
 
-            <div class="mt-3 grid gap-4 rounded-xl border border-outline-subtle bg-surface-elevated p-4 lg:grid-cols-2">
-                <label class="block">
+            <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                <label class="block rounded-lg border border-outline-subtle bg-surface-card p-3">
                     {{ form_field.label_row("Managed Namespace") }}
                     <select name="tenant_namespace_id"
                             required
@@ -70,7 +59,7 @@
                     </select>
                 </label>
 
-                <label class="block">
+                <label class="block rounded-lg border border-kaori-primary/15 bg-kaori-soft/30 p-3">
                     {{ form_field.label_row("Proposed Resource Profile") }}
                     <select name="resource_profile_id"
                             required
@@ -86,85 +75,106 @@
         </section>
 
         <section aria-labelledby="allocation-comparison-heading">
-            <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div class="flex items-center justify-between gap-3">
                 <div>
-                    <h3 id="allocation-comparison-heading" class="text-sm font-semibold text-content-primary">Allocation Comparison</h3>
-                    <p class="mt-1 text-xs text-content-muted">Request-based capacity dimensions are highlighted below.</p>
+                    <h3 id="allocation-comparison-heading" class="text-sm font-semibold text-content-primary">Before &amp; After</h3>
+                    <p class="mt-1 text-xs text-content-muted">Capacity admission uses CPU and memory requests.</p>
                 </div>
-                <span class="text-xs text-content-muted">Other quota/default values reconcile from the selected profile.</span>
+                <span class="hidden text-xs text-content-muted sm:inline">Full quota/defaults reconcile from the selected profile.</span>
             </div>
 
-            <div class="mt-3 grid overflow-hidden rounded-xl border border-outline-subtle lg:grid-cols-[1fr_auto_1fr]">
-                <section class="bg-surface-card p-4 sm:p-5" aria-label="Current allocation">
-                    <div class="flex items-center justify-between gap-3">
-                        <div>
-                            <p class="text-[11px] font-semibold uppercase tracking-wider text-content-muted">Current</p>
-                            <p class="mt-1 text-sm font-semibold text-content-primary" data-tenant-allocation-current-profile>—</p>
+            <div class="mt-3 grid overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle lg:grid-cols-2">
+                <section class="min-w-0 bg-surface-card p-4 sm:p-5" aria-label="Current allocation">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Current</p>
+                            <p class="mt-1 truncate text-sm font-semibold text-content-primary"
+                               data-tenant-allocation-current-profile>—</p>
                         </div>
-                        <span class="inline-flex items-center gap-1 rounded-full border border-outline-subtle bg-surface-hover px-2.5 py-1 text-[11px] font-semibold text-content-muted">
+                        <span class="inline-flex shrink-0 items-center gap-1 rounded-full border border-outline-subtle bg-surface-hover px-2.5 py-1 text-[11px] font-semibold text-content-muted">
                             <i data-lucide="snowflake" class="h-3 w-3" aria-hidden="true"></i>
-                            Frozen
+                            Active
                         </span>
                     </div>
                     <dl class="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg bg-outline-subtle">
-                        <div class="bg-surface-elevated px-3 py-3">
+                        <div class="bg-surface-elevated px-4 py-3">
                             <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">CPU Requests</dt>
-                            <dd class="mt-1.5 text-lg font-semibold text-content-primary" data-tenant-allocation-current-cpu>—</dd>
+                            <dd class="mt-2 text-xl font-semibold leading-none text-content-primary"
+                                data-tenant-allocation-current-cpu>—</dd>
                         </div>
-                        <div class="bg-surface-elevated px-3 py-3">
+                        <div class="bg-surface-elevated px-4 py-3">
                             <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Memory Requests</dt>
-                            <dd class="mt-1.5 text-lg font-semibold text-content-primary" data-tenant-allocation-current-memory>—</dd>
+                            <dd class="mt-2 text-xl font-semibold leading-none text-content-primary"
+                                data-tenant-allocation-current-memory>—</dd>
                         </div>
                     </dl>
                 </section>
 
-                <div class="hidden items-center justify-center border-x border-outline-subtle bg-surface-hover px-3 lg:flex"
-                     aria-hidden="true">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-card text-kaori-primary">
-                        <i data-lucide="arrow-right" class="h-4 w-4"></i>
-                    </span>
-                </div>
-
-                <section class="border-t border-outline-subtle bg-kaori-soft/40 p-4 sm:p-5 lg:border-t-0"
+                <section class="min-w-0 border-t border-outline-subtle bg-kaori-soft/40 p-4 sm:p-5 lg:border-l lg:border-t-0"
                          aria-label="Proposed allocation">
-                    <div class="flex items-center justify-between gap-3">
-                        <div>
-                            <p class="text-[11px] font-semibold uppercase tracking-wider text-kaori-primary">Proposed</p>
-                            <p class="mt-1 text-sm font-semibold text-content-primary" data-tenant-allocation-proposed-profile>—</p>
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-[10px] font-semibold uppercase tracking-wider text-kaori-primary">Proposed</p>
+                            <p class="mt-1 truncate text-sm font-semibold text-content-primary"
+                               data-tenant-allocation-proposed-profile>—</p>
                         </div>
-                        <span class="inline-flex items-center gap-1 rounded-full bg-surface-card px-2.5 py-1 text-[11px] font-semibold text-kaori-primary ring-1 ring-inset ring-kaori-primary/20">
+                        <span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-card px-2.5 py-1 text-[11px] font-semibold text-kaori-primary ring-1 ring-inset ring-kaori-primary/20">
                             <i data-lucide="gauge" class="h-3 w-3" aria-hidden="true"></i>
-                            Capacity Preflight
+                            Preflight
                         </span>
                     </div>
                     <dl class="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg bg-outline-subtle">
-                        <div class="bg-surface-card px-3 py-3">
+                        <div class="bg-surface-card px-4 py-3">
                             <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">CPU Requests</dt>
-                            <dd class="mt-1.5 text-lg font-semibold text-content-primary" data-tenant-allocation-proposed-cpu>—</dd>
+                            <dd class="mt-2 text-xl font-semibold leading-none text-content-primary"
+                                data-tenant-allocation-proposed-cpu>—</dd>
                         </div>
-                        <div class="bg-surface-card px-3 py-3">
+                        <div class="bg-surface-card px-4 py-3">
                             <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Memory Requests</dt>
-                            <dd class="mt-1.5 text-lg font-semibold text-content-primary" data-tenant-allocation-proposed-memory>—</dd>
+                            <dd class="mt-2 text-xl font-semibold leading-none text-content-primary"
+                                data-tenant-allocation-proposed-memory>—</dd>
                         </div>
                     </dl>
                 </section>
             </div>
         </section>
 
-        <div class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-elevated px-4 py-3">
-            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                  aria-hidden="true">
-                <i data-lucide="shield-check" class="h-4 w-4"></i>
-            </span>
-            <div>
-                <p class="text-xs font-semibold text-content-primary">Capacity gate</p>
-                <p class="mt-1 text-xs text-content-muted">CPU/memory requests are admitted before provider mutation. Blocked requests change nothing.</p>
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle"
+                 aria-label="Allocation change guardrails">
+            <div class="grid gap-px sm:grid-cols-3">
+                <div class="flex items-start gap-3 bg-surface-card px-4 py-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="gauge" class="h-4 w-4" aria-hidden="true"></i>
+                    </span>
+                    <div>
+                        <p class="text-xs font-semibold text-content-primary">Capacity</p>
+                        <p class="mt-1 text-xs text-content-muted">Requests must fit the governed budget.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3 bg-surface-card px-4 py-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="waypoints" class="h-4 w-4" aria-hidden="true"></i>
+                    </span>
+                    <div>
+                        <p class="text-xs font-semibold text-content-primary">Reconcile</p>
+                        <p class="mt-1 text-xs text-content-muted">Only the admitted provider path is written.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3 bg-surface-card px-4 py-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="badge-check" class="h-4 w-4" aria-hidden="true"></i>
+                    </span>
+                    <div>
+                        <p class="text-xs font-semibold text-content-primary">Verify</p>
+                        <p class="mt-1 text-xs text-content-muted">Read-back must match before commit.</p>
+                    </div>
+                </div>
             </div>
-        </div>
+        </section>
     </div>
 
     <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <p class="text-xs text-content-muted">Current allocation stays active until preflight and reconciliation succeed.</p>
+        <p class="text-xs text-content-muted">Current allocation stays active until every gate passes.</p>
         <button type="submit"
                 {% if not can_manage or not namespace_allocation_options or not profiles %}disabled aria-disabled="true"{% endif %}
                 class="{{ action_button.classes('primary') }}">
