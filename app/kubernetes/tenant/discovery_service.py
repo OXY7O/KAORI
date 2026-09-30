@@ -400,54 +400,6 @@ def get_tenant_discovery_context(
         )
     )
     visible_rows, pagination = paginate_sequence(rows, page=page, per_page=per_page)
-    client_cache: dict[str, Any] = {}
-    for row in visible_rows:
-        if row['management_status'] != 'Discovered':
-            continue
-        try:
-            row_cluster_id = str(row['cluster_id'])
-            client = client_cache.get(row_cluster_id)
-            if client is None:
-                client = runtime_adapter.build_client(row['cluster'])
-                client_cache[row_cluster_id] = client
-            if row['provider_key'] == 'native_kubernetes':
-                allocation_preflight = observe_native_namespace_allocation(
-                    client.core_api(),
-                    str(row['resource_name']),
-                )
-            else:
-                _version, capsule_item = _read_capsule_tenant(client, str(row['resource_name']))
-                allocation_preflight = observe_capsule_tenant_allocation(
-                    client,
-                    tenant_name=str(row['resource_name']),
-                    tenant_item=capsule_item,
-                )
-                capsule_snapshot = discover_capsule(client.custom_objects_api().api_client)
-                capsule_capability_evidence = capsule_snapshot.as_dict()
-                _apply_capsule_allocation_capability_state(
-                    allocation_preflight,
-                    provider_state='preview',
-                    capability_evidence=capsule_capability_evidence,
-                    preview_only=True,
-                )
-                row['capsule_capability_preflight'] = capsule_capability_evidence
-            row['allocation_preflight'] = allocation_preflight
-        except Exception as exc:
-            row['allocation_preflight'] = {
-                'provenance': 'adopted_observed',
-                'control_state': 'control_unavailable',
-                'control_reason': (
-                    'KAORI could not prove the effective legacy allocation contract from the live provider. '
-                    'Adoption may preserve identity, but allocation governance must remain read-only.'
-                ),
-                'unsupported_dimensions': [],
-                'ambiguous_dimensions': [],
-                'display_values': [],
-                'correlated_namespaces': [],
-                'error': str(exc)[:500],
-                'provider_mutation_performed': False,
-                'secret_material_persisted': False,
-            }
 
     return {
         'tenant_discovery_rows': visible_rows,
@@ -466,6 +418,141 @@ def get_tenant_discovery_context(
         'tenant_discovery_checked_at': present_user_datetime(checked_at),
         'tenant_discovery_errors': errors,
         'tenant_discovery_total': len(rows),
+    }
+
+
+def get_tenant_adoption_preflight_context(
+    *,
+    cluster_id: str,
+    provider_key: str,
+    resource_name: str,
+) -> dict[str, Any]:
+    """Build one deep, live Adoption Preflight only after explicit operator review."""
+
+    normalized_cluster = str(cluster_id or '').strip()
+    normalized_provider = str(provider_key or '').strip().lower()
+    normalized_resource = str(resource_name or '').strip()
+    if normalized_provider not in {'native_kubernetes', 'capsule'}:
+        raise ValueError('Unsupported Tenant discovery provider.')
+    if not normalized_cluster or not normalized_resource:
+        raise ValueError('Select a discovered provider object.')
+
+    cluster = (
+        Cluster.query.join(KubernetesConnection, KubernetesConnection.cluster_id == Cluster.id)
+        .filter(Cluster.id == normalized_cluster)
+        .first()
+    )
+    if cluster is None:
+        raise ValueError('The selected Kubernetes cluster is no longer available.')
+
+    client = runtime_adapter.build_client(cluster)
+
+    if normalized_provider == 'native_kubernetes':
+        try:
+            item = client.core_api().read_namespace(normalized_resource, _request_timeout=5)
+        except ApiException as exc:
+            if exc.status == 404:
+                raise ValueError('The discovered namespace is no longer present in Kubernetes.') from exc
+            raise
+
+        metadata = getattr(item, 'metadata', None)
+        labels = dict(getattr(metadata, 'labels', None) or {})
+        managed_record = _managed_namespace_map([normalized_cluster]).get(
+            (normalized_cluster, normalized_resource)
+        )
+        provider_status = _namespace_phase(item)
+        management_status, eligibility = _native_management(
+            namespace=normalized_resource,
+            labels=labels,
+            managed_record=managed_record,
+        )
+        if managed_record is None and provider_status == 'Terminating':
+            management_status = 'Blocked'
+            eligibility = 'Namespace is terminating and cannot enter governed adoption.'
+        if management_status != 'Discovered':
+            raise ValueError(eligibility)
+
+        allocation = observe_native_namespace_allocation(
+            client.core_api(),
+            normalized_resource,
+        )
+        row = {
+            'cluster': cluster,
+            'cluster_id': normalized_cluster,
+            'provider_key': 'native_kubernetes',
+            'provider_label': 'Native Kubernetes',
+            'resource_kind': 'Namespace',
+            'resource_name': normalized_resource,
+            'provider_status': provider_status,
+            'provider_tone': _tone(provider_status),
+            'management_status': management_status,
+            'management_tone': 'info',
+            'tenant_name': None,
+            'tenant_id': None,
+            'eligibility': eligibility,
+            'provider_reference': str(getattr(metadata, 'uid', None) or normalized_resource),
+            'allocation_preflight': allocation,
+        }
+    else:
+        capsule_version, item = _read_capsule_tenant(client, normalized_resource)
+        tenant = _managed_capsule_map([normalized_cluster]).get(
+            (normalized_cluster, normalized_resource)
+        )
+        provider_status = _capsule_phase(item)
+        management_status = (
+            'Managed'
+            if tenant is not None
+            else ('Blocked' if provider_status == 'Terminating' else 'Discovered')
+        )
+        eligibility = (
+            'Already governed by KAORI.'
+            if tenant is not None
+            else (
+                'Capsule Tenant is terminating and cannot be adopted.'
+                if management_status == 'Blocked'
+                else 'Candidate for governed Capsule adoption preflight; provider authority remains Capsule.'
+            )
+        )
+        if management_status != 'Discovered':
+            raise ValueError(eligibility)
+
+        allocation = observe_capsule_tenant_allocation(
+            client,
+            tenant_name=normalized_resource,
+            tenant_item=item,
+        )
+        capsule_snapshot = discover_capsule(client.custom_objects_api().api_client)
+        capsule_capability_evidence = capsule_snapshot.as_dict()
+        _apply_capsule_allocation_capability_state(
+            allocation,
+            provider_state='preview',
+            capability_evidence=capsule_capability_evidence,
+            preview_only=True,
+        )
+        metadata = item.get('metadata') or {}
+        row = {
+            'cluster': cluster,
+            'cluster_id': normalized_cluster,
+            'provider_key': 'capsule',
+            'provider_label': 'Capsule',
+            'resource_kind': 'Tenant CR',
+            'resource_name': normalized_resource,
+            'provider_status': provider_status,
+            'provider_tone': _tone(provider_status),
+            'management_status': management_status,
+            'management_tone': 'info',
+            'tenant_name': None,
+            'tenant_id': None,
+            'eligibility': eligibility,
+            'provider_reference': str(metadata.get('uid') or normalized_resource),
+            'provider_api_version': capsule_version,
+            'allocation_preflight': allocation,
+            'capsule_capability_preflight': capsule_capability_evidence,
+        }
+
+    return {
+        'tenant_adoption_row': row,
+        'tenant_adoption_checked_at': present_user_datetime(datetime.now(UTC)),
     }
 
 
