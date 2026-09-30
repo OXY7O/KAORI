@@ -204,6 +204,26 @@ def enforce_existing_namespace_allocation_preflight(
     )
 
 
+def enforce_observed_namespace_allocation_preflight(
+    *,
+    record: TenantNamespace,
+    profile: TenantResourceProfile,
+    current_quota_hard: Mapping[str, object],
+    proposed_quota_hard: Mapping[str, object],
+) -> TenantCapacityDecision:
+    current = quota_request_vector(current_quota_hard)
+    proposed = quota_request_vector(proposed_quota_hard)
+    operation = classify_allocation_change(current=current, proposed=proposed)
+    return _enforce_allocation_preflight(
+        tenant_environment=record.environment,
+        profile=profile,
+        namespace=record.namespace,
+        current=current,
+        proposed=proposed,
+        operation=operation,
+    )
+
+
 def _enforce_allocation_preflight(
     *,
     tenant_environment: TenantEnvironment,
