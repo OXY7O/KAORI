@@ -244,3 +244,42 @@ def test_resource_profile_management_dialogs_explain_preset_lock_and_govern_cust
     assert 'resource-profile-delete-modal' in dialogs
     assert 'zero Namespace and zero Capacity Decision references remain' in dialogs
     assert 'KAORI does not detach historical evidence automatically.' in dialogs
+
+def test_resource_profile_placement_control_matrix_preserves_canonical_authority() -> None:
+    form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
+    docs = read('docs/architecture/kubernetes-tenant-resource-profiles.md')
+
+    assert 'data-tenant-placement-control-matrix' in form
+    assert 'Placement-Gated Controls' in form
+    assert 'resource-profile-placement-tip' in form
+    assert 'Resource Allocation' in form
+    assert 'Container Defaults' in form
+    assert 'Ingress &amp; Service Exposure' in form
+    assert 'Hostname Reservation' in form
+    assert 'Managed TLS' in form
+    assert 'Managed Registry' in form
+    assert 'Capsule Advanced' in form
+    assert "table_label.special_label('Managed', 'normal', 'check-circle-2')" in form
+    assert "table_label.special_label('Not Managed', 'unknown', 'circle-minus')" in form
+    assert "table_label.special_label('Unsupported', 'unknown', 'ban')" in form
+    assert "table_label.special_label('Capability Gated', 'warning', 'shield-check')" in form
+    assert '#113' in form
+    assert '#118' in form
+    assert '#119' in form
+    assert '#121 / #124' in form
+    assert 'No Native emulation or implicit fallback.' in form
+    assert 'Requested control' in form
+    assert 'canonical configuration' in form
+    assert 'provider capability' in form
+
+    assert '## Placement-gated controls' in docs
+    assert '**Managed**' in docs
+    assert '**Not Managed**' in docs
+    assert '**Unsupported**' in docs
+    assert '**Capability Gated**' in docs
+    assert 'does not create duplicate Ingress, DNS, TLS, registry, or Capsule policy models' in docs
+    assert 'does not fall back from Capsule to Native' in docs
+    assert '| Ingress & Service Exposure |' in docs
+    assert '| Hostname Reservation |' in docs
+    assert '| Capsule Advanced |' in docs
+
