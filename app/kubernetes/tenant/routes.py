@@ -48,6 +48,13 @@ from app.kubernetes.tenant.capacity_governance import (
     TenantCapacityStateConflictError,
     upsert_capacity_policy_committed,
 )
+from app.kubernetes.tenant.capsule_allocation_governance import (
+    CapsuleSharedAllocationStateConflictError,
+    accept_capsule_shared_provider_state_committed,
+    cutover_capsule_global_quota_allocation_committed,
+    get_capsule_shared_allocation_context,
+    reapply_capsule_shared_allocation_intent_committed,
+)
 from app.kubernetes.tenant.credential_service import (
     GeneratedKubeconfigMaterial,
     GeneratedTokenMaterial,
@@ -515,6 +522,7 @@ def namespace_provisioning():
 
     context = _tenant_workspace_context()
     context.update(get_live_tenant_connection_context())
+    context.update(get_capsule_shared_allocation_context())
     context.update(
         get_namespace_registry_context(
             page=request.args.get('page', 1, type=int) or 1,
@@ -600,6 +608,7 @@ def operations():
             scope_type=str(request.args.get('ops_access_scope') or ''),
             search=str(request.args.get('ops_access_search') or ''),
         )
+        context.update(get_capsule_shared_allocation_context())
         context.update(
             {
                 'operations_drift_rows': drift_context['namespaces'],
@@ -1340,6 +1349,103 @@ def update_capacity_policy_route():
             },
         )
     return redirect(url_for('tenant.resource_profiles', view='capacity'))
+
+
+@tenant_bp.post('/shared-allocation/cutover')
+@permission_required('tenant.manage')
+def cutover_capsule_shared_allocation_route():
+    try:
+        _csrf()
+        intent = cutover_capsule_global_quota_allocation_committed(
+            tenant_id=str(request.form.get('tenant_id') or ''),
+            profile_id=_required_int('resource_profile_id'),
+        )
+    except (ValueError, ApiException, CapsuleSharedAllocationStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_shared_allocation_cutover_failed',
+            status='error',
+            title='Capsule Shared Allocation Cutover Failed',
+            message=str(exc),
+            detail='Capsule remains authoritative; KAORI does not fall back to Native quota mutation.',
+            metadata={
+                'tenant_id': request.form.get('tenant_id'),
+                'resource_profile_id': request.form.get('resource_profile_id'),
+                'operation': 'capsule_shared_allocation_cutover',
+            },
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_shared_allocation_cutover_completed',
+            status='success',
+            title='Capsule Shared Allocation Governance Enabled',
+            message=f'{intent.tenant.name} shared allocation is now KAORI Managed through GlobalResourceQuota.',
+            metadata={
+                'tenant_id': intent.tenant_id,
+                'advanced_intent_id': intent.id,
+                'advanced_intent_public_id': intent.public_id,
+                'resource_name': intent.resource_name,
+                'operation': 'capsule_shared_allocation_cutover',
+            },
+        )
+    return redirect(url_for('tenant.namespace_provisioning', view='allocation'))
+
+
+@tenant_bp.post('/shared-allocation/<int:intent_id>/reapply')
+@permission_required('tenant.manage')
+def reapply_capsule_shared_allocation_route(intent_id: int):
+    try:
+        _csrf()
+        intent = reapply_capsule_shared_allocation_intent_committed(intent_id=intent_id)
+    except (ValueError, ApiException) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_shared_allocation_reapply_failed',
+            status='error',
+            title='Capsule Shared Allocation Reapply Failed',
+            message=str(exc),
+            metadata={'advanced_intent_id': intent_id, 'operation': 'reapply_kaori_intent'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_shared_allocation_reapplied',
+            status='success',
+            title='KAORI Shared Allocation Reapplied',
+            message=f'{intent.tenant.name} GlobalResourceQuota matches committed KAORI intent.',
+            metadata={
+                'tenant_id': intent.tenant_id,
+                'advanced_intent_id': intent.id,
+                'operation': 'reapply_kaori_intent',
+            },
+        )
+    return redirect(url_for('tenant.operations', tab='drift-reconcile'))
+
+
+@tenant_bp.post('/shared-allocation/<int:intent_id>/accept-provider-state')
+@permission_required('tenant.manage')
+def accept_capsule_shared_provider_allocation_route(intent_id: int):
+    try:
+        _csrf()
+        intent = accept_capsule_shared_provider_state_committed(intent_id=intent_id)
+    except (ValueError, ApiException) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_shared_allocation_accept_failed',
+            status='error',
+            title='Capsule Provider State Acceptance Failed',
+            message=str(exc),
+            metadata={'advanced_intent_id': intent_id, 'operation': 'accept_provider_state'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_shared_allocation_provider_state_accepted',
+            status='success',
+            title='Capsule Provider State Accepted',
+            message=f'{intent.tenant.name} live GlobalResourceQuota is now the governed KAORI intent.',
+            metadata={
+                'tenant_id': intent.tenant_id,
+                'advanced_intent_id': intent.id,
+                'operation': 'accept_provider_state',
+            },
+        )
+    return redirect(url_for('tenant.operations', tab='drift-reconcile'))
 
 
 @tenant_bp.post('/namespace-allocation/cutover')
