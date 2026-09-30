@@ -326,7 +326,11 @@ def _capsule_namespace_correlation(
         }
         owner_claims = {
             str(_value(owner, 'name', '') or '').strip()
-            for owner in list(_value(metadata, 'owner_references', None) or _value(metadata, 'ownerReferences', []) or [])
+            for owner in list(
+                _value(metadata, 'owner_references', None)
+                or _value(metadata, 'ownerReferences', [])
+                or []
+            )
             if str(_value(owner, 'kind', '') or '') == 'Tenant'
             and str(_value(owner, 'api_version', None) or _value(owner, 'apiVersion', '') or '').startswith(
                 f'{_CAPSULE_GROUP}/'
@@ -562,7 +566,8 @@ def observe_capsule_tenant_allocation(
         )
     elif control_state == 'control_unavailable':
         control_reason = (
-            'Capsule allocation authority or dimensions are ambiguous/unsupported; governance cutover must fail closed.'
+            'Capsule allocation authority or dimensions are ambiguous/unsupported; '
+            'governance cutover must fail closed.'
         )
     else:
         control_reason = (
