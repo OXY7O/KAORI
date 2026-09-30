@@ -137,6 +137,47 @@
         renderAllocationChange()
     }
 
+    const initSharedAllocationForm = (form) => {
+        if (!(form instanceof HTMLFormElement) || form.dataset.kaoriInitialized === 'true') return
+        form.dataset.kaoriInitialized = 'true'
+
+        const profiles = readJson('tenant-namespace-allocation-profiles')
+        const tenants = readJson('tenant-capsule-shared-allocation-state')
+        const tenantSelect = form.querySelector('[data-tenant-shared-allocation-tenant]')
+        const profileSelect = form.querySelector('[data-tenant-shared-allocation-profile]')
+
+        const currentSource = form.querySelector('[data-tenant-shared-current-source]')
+        const currentCpu = form.querySelector('[data-tenant-shared-current-cpu]')
+        const currentMemory = form.querySelector('[data-tenant-shared-current-memory]')
+        const proposedProfile = form.querySelector('[data-tenant-shared-proposed-profile]')
+        const proposedCpu = form.querySelector('[data-tenant-shared-proposed-cpu]')
+        const proposedMemory = form.querySelector('[data-tenant-shared-proposed-memory]')
+
+        const requestValue = (quota, resource) => quota?.[`requests.${resource}`] || 'Unbounded'
+
+        const render = () => {
+            const current = tenants[tenantSelect?.value] || null
+            const proposed = profiles[profileSelect?.value] || null
+            const proposedLabel = profileSelect?.selectedOptions?.[0]?.textContent?.trim() || '—'
+            const source = current?.source || {}
+
+            if (currentSource) {
+                currentSource.textContent = current
+                    ? `GlobalResourceQuota/${source.name || 'unknown'} · ${current.provider_api_version || 'unknown'}`
+                    : '—'
+            }
+            if (currentCpu) currentCpu.textContent = current ? requestValue(current.current_quota, 'cpu') : '—'
+            if (currentMemory) currentMemory.textContent = current ? requestValue(current.current_quota, 'memory') : '—'
+            if (proposedProfile) proposedProfile.textContent = proposed ? proposedLabel : '—'
+            if (proposedCpu) proposedCpu.textContent = proposed ? requestValue(proposed.quota, 'cpu') : '—'
+            if (proposedMemory) proposedMemory.textContent = proposed ? requestValue(proposed.quota, 'memory') : '—'
+        }
+
+        tenantSelect?.addEventListener('change', render)
+        profileSelect?.addEventListener('change', render)
+        render()
+    }
+
     const initNamespaceForm = (form) => {
         if (!(form instanceof HTMLFormElement) || form.dataset.kaoriInitialized === 'true') return
         form.dataset.kaoriInitialized = 'true'
@@ -156,6 +197,7 @@
         scope.querySelectorAll('[data-tenant-resource-profile-form]').forEach(initProfileForm)
         scope.querySelectorAll('[data-tenant-capacity-policy-form]').forEach(initCapacityPolicyForm)
         scope.querySelectorAll('[data-tenant-allocation-change-form]').forEach(initAllocationChangeForm)
+        scope.querySelectorAll('[data-tenant-shared-allocation-form]').forEach(initSharedAllocationForm)
         scope.querySelectorAll('[data-tenant-namespace-allocation-form]').forEach(initNamespaceForm)
     }
 
