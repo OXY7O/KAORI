@@ -763,14 +763,17 @@ def get_capsule_shared_allocation_context() -> dict[str, Any]:
         for intent in shared_intents
         if (intent.reconciliation_evidence_json or {}).get('allocation_governance_scope') == _SHARED_SCOPE
     ]
+    drifted = [
+        intent for intent in governed if intent.status == TenantAdvancedCapabilityStatus.DRIFTED.value
+    ]
     return {
         'capsule_shared_tenants': tenants,
         'capsule_shared_cutover_state': cutover_state,
         'capsule_shared_cutover_supported': any(item['supported'] for item in cutover_state.values()),
         'capsule_shared_intents': governed,
+        'capsule_shared_drift_intents': drifted,
         'capsule_shared_drift_state': {
             str(intent.id): build_capsule_shared_drift_action_state(intent)
-            for intent in governed
-            if intent.status == TenantAdvancedCapabilityStatus.DRIFTED.value
+            for intent in drifted
         },
     }
