@@ -608,7 +608,12 @@ def operations():
             scope_type=str(request.args.get('ops_access_scope') or ''),
             search=str(request.args.get('ops_access_search') or ''),
         )
-        context.update(get_capsule_shared_allocation_context())
+        context.update(
+            get_capsule_shared_allocation_context(
+                drift_page=request.args.get('ops_capsule_shared_page', 1, type=int) or 1,
+                drift_per_page=request.args.get('ops_capsule_shared_per_page', 5, type=int) or 5,
+            )
+        )
         context.update(
             {
                 'operations_drift_rows': drift_context['namespaces'],
