@@ -365,7 +365,7 @@
                             <div class="mt-3 rounded-xl border border-outline-subtle bg-surface-card p-4">
                                 <div class="flex flex-wrap items-center justify-between gap-2">
                                     <p class="text-xs font-semibold text-content-primary">Effective ResourceQuota / LimitRange</p>
-                                    <span class="text-xs text-content-muted">{{ allocation.profile_lineage.label|default('Adopted Baseline · Observed', true) }}</span>
+                                    <span class="text-xs text-content-muted">{{ (allocation.get('profile_lineage') or {}).get('label') or 'Adopted Baseline · Observed' }}</span>
                                 </div>
                                 {% if allocation.display_values %}
                                     <dl class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -389,11 +389,11 @@
                                             <div class="rounded-lg bg-surface-elevated p-3">
                                                 <div class="flex flex-wrap items-center justify-between gap-2">
                                                     <p class="text-sm font-semibold text-content-primary">{{ namespace.name }}</p>
-                                                    <span class="text-xs text-content-muted">{{ namespace.allocation.profile_lineage.label|default('Adopted Baseline · Observed', true) }}</span>
+                                                    <span class="text-xs text-content-muted">{{ ((namespace.get('allocation') or {}).get('profile_lineage') or {}).get('label') or 'Adopted Baseline · Observed' }}</span>
                                                 </div>
-                                                {% if namespace.allocation.display_values %}
+                                                {% if (namespace.get('allocation') or {}).get('display_values') %}
                                                     <p class="mt-1 text-xs leading-5 text-content-muted">
-                                                        {% for value in namespace.allocation.display_values %}
+                                                        {% for value in (namespace.get('allocation') or {}).get('display_values', []) %}
                                                             {{ value.label }} {{ value.value }}{% if not loop.last %} · {% endif %}
                                                         {% endfor %}
                                                     </p>
