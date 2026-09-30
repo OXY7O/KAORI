@@ -258,6 +258,123 @@ def enforce_shared_tenant_allocation_preflight(
     )
 
 
+def _scale_capacity_vector(vector: CapacityVector, factor: int) -> CapacityVector:
+    if factor <= 0:
+        return CapacityVector(cpu=_ZERO, memory_bytes=_ZERO)
+    return CapacityVector(
+        cpu=vector.cpu * factor if vector.cpu is not None else None,
+        memory_bytes=vector.memory_bytes * factor if vector.memory_bytes is not None else None,
+    )
+
+
+def _add_capacity_vectors(left: CapacityVector, right: CapacityVector) -> CapacityVector:
+    return CapacityVector(
+        cpu=(left.cpu + right.cpu) if left.cpu is not None and right.cpu is not None else None,
+        memory_bytes=(
+            left.memory_bytes + right.memory_bytes
+            if left.memory_bytes is not None and right.memory_bytes is not None
+            else None
+        ),
+    )
+
+
+def _capsule_tenant_quota_vector(
+    quota_hard: Mapping[str, object],
+    *,
+    scope: str,
+    namespace_count: int,
+) -> CapacityVector:
+    normalized_scope = str(scope or 'Tenant')
+    if normalized_scope not in {'Tenant', 'Namespace'}:
+        raise ValueError('Capsule Tenant resource quota scope must be Tenant or Namespace.')
+    factor = 1 if normalized_scope == 'Tenant' else max(int(namespace_count), 0)
+    return _scale_capacity_vector(quota_request_vector(quota_hard), factor)
+
+
+def _committed_allocation_with_tenant_override(
+    *,
+    tenant: Tenant,
+    quota_hard: Mapping[str, object],
+    scope: str,
+    namespace_count: int,
+) -> tuple[CapacityVector, int, list[str]]:
+    rows = (
+        TenantNamespace.query.filter(
+            TenantNamespace.cluster_id == tenant.cluster_id,
+            TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+        )
+        .order_by(TenantNamespace.namespace.asc())
+        .all()
+    )
+    tenant_id = str(tenant.id)
+    other_rows = [row for row in rows if str(row.environment.tenant_id) != tenant_id]
+    shared, ambiguous = _canonical_shared_allocation_quota(tenant.cluster_id)
+    shared.pop(tenant_id, None)
+    ambiguous = [item for item in ambiguous if item != tenant_id]
+    committed, unbounded = _aggregate_committed_allocation(
+        other_rows,
+        shared_quota_by_tenant=shared,
+        ambiguous_shared_tenants=ambiguous,
+    )
+    override = _capsule_tenant_quota_vector(
+        quota_hard,
+        scope=scope,
+        namespace_count=namespace_count,
+    )
+    committed = _add_capacity_vectors(committed, override)
+    if override.cpu is None or override.memory_bytes is None:
+        unbounded.append(
+            f'Tenant/{tenant.id} Capsule resourceQuotas scope={scope}'
+        )
+    return committed, len(rows), unbounded
+
+
+def enforce_capsule_tenant_resource_quota_preflight(
+    *,
+    tenant: Tenant,
+    profile: TenantResourceProfile,
+    current_quota_hard: Mapping[str, object],
+    proposed_quota_hard: Mapping[str, object],
+    current_scope: str,
+    proposed_scope: str,
+    namespace_count: int,
+) -> TenantCapacityDecision:
+    """Evaluate Capsule Tenant.spec.resourceQuotas using its actual scope semantics."""
+
+    current = _capsule_tenant_quota_vector(
+        current_quota_hard,
+        scope=current_scope,
+        namespace_count=namespace_count,
+    )
+    proposed = _capsule_tenant_quota_vector(
+        proposed_quota_hard,
+        scope=proposed_scope,
+        namespace_count=namespace_count,
+    )
+    operation = classify_allocation_change(current=current, proposed=proposed)
+    committed_state = _committed_allocation_with_tenant_override(
+        tenant=tenant,
+        quota_hard=current_quota_hard,
+        scope=current_scope,
+        namespace_count=namespace_count,
+    )
+    return _enforce_allocation_preflight(
+        tenant_environment=None,
+        tenant=tenant,
+        profile=profile,
+        namespace=f'@tenant:{tenant.slug}:resource-quotas',
+        current=current,
+        proposed=proposed,
+        operation=operation,
+        committed_state=committed_state,
+        allocation_scope=(
+            'tenant_shared'
+            if str(proposed_scope or 'Tenant') == 'Tenant'
+            else 'tenant_namespace_template'
+        ),
+    )
+
+
 def _enforce_allocation_preflight(
     *,
     tenant_environment: TenantEnvironment | None,
@@ -486,6 +603,31 @@ def _canonical_shared_allocation_quota(
         quota = desired.get('quota') if isinstance(desired, Mapping) else None
         hard = quota.get('hard') if isinstance(quota, Mapping) else None
         selected[tenant_id] = dict(hard) if isinstance(hard, Mapping) else {}
+    for tenant_id in ambiguous:
+        selected.pop(tenant_id, None)
+
+    capsule_tenants = Tenant.query.filter(
+        Tenant.cluster_id == cluster_id,
+        Tenant.provider_key == 'capsule',
+    ).all()
+    for tenant in capsule_tenants:
+        governance = (tenant.provider_evidence_json or {}).get('allocation_governance')
+        if not isinstance(governance, Mapping):
+            continue
+        if governance.get('authority') != 'capsule_tenant_resource_quotas':
+            continue
+        if governance.get('control_state') not in {'kaori_managed', 'drifted'}:
+            continue
+        if governance.get('allocation_scope') != 'tenant_shared':
+            continue
+        tenant_id = str(tenant.id)
+        quota = governance.get('desired_quota')
+        if tenant_id in selected or not isinstance(quota, Mapping):
+            ambiguous.add(tenant_id)
+            selected.pop(tenant_id, None)
+            continue
+        selected[tenant_id] = dict(quota)
+
     for tenant_id in ambiguous:
         selected.pop(tenant_id, None)
     return selected, sorted(ambiguous)
