@@ -1606,3 +1606,18 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
     assert 'Legacy Capsule Tenant quota — **estimasi** case:' in readme
     assert 'Legacy Capsule Tenant quota — **partner** case:' in readme
     assert 'Capsule Tenant quota bidirectional recovery:' in readme
+
+def test_tenant_decommission_steps_use_one_divided_sequence_container() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    modal = read('app/templates/components/destructive_confirmation_modal.html')
+
+    assert "presentation='steps'" in registry
+    assert 'Delete managed namespaces.' in registry
+    assert 'Commit after verified cleanup.' in registry
+    assert 'Delete managed namespaces and verify absence.' not in registry
+    assert 'Commit Decommissioned after verified cleanup.' not in registry
+
+    assert 'grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle md:grid-cols-2 xl:grid-cols-4' in modal
+    assert 'li class="min-w-0 bg-surface-card p-4"' in modal
+    assert 'li class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4"' not in modal
+
