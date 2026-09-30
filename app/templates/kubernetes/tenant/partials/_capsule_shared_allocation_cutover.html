@@ -1,0 +1,145 @@
+{% import "components/action_button.html" as action_button %}
+{% import "components/form_field.html" as form_field %}
+{% import "components/info_tip.html" as info_tip %}
+{% import "components/table_label.html" as table_label %}
+<section class="overflow-visible rounded-xl border border-kaori-primary/20 bg-kaori-soft/40 shadow-sm"
+         aria-labelledby="capsule-shared-cutover-heading">
+    <header class="flex items-start justify-between gap-4 border-b border-kaori-primary/15 px-5 py-4">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="layers-3" class="h-5 w-5"></i>
+            </span>
+            <div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 id="capsule-shared-cutover-heading"
+                        class="text-base font-semibold text-content-primary">Capsule Shared Allocation Governance</h2>
+                    {{ table_label.special_label('GlobalResourceQuota', 'info', 'shield-check') }}
+                </div>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">
+                    Take over one proven Tenant-level GlobalResourceQuota without copying the shared quota into each Namespace.
+                </p>
+            </div>
+        </div>
+        {{ info_tip.render('capsule-shared-cutover-tip',
+                'Capsule shared allocation',
+                'GlobalResourceQuota is one Tenant-level allocation contract. KAORI counts it once for capacity governance.',
+                [
+                'Capsule must be healthy and shared_global_quota capability must be available.',
+                'Exactly one authoritative GlobalResourceQuota with stable UID/resourceVersion is required.',
+                'Resource Profile quota values become the proposed shared contract; Namespace LimitRange evidence remains separate.',
+                'KAORI never substitutes a Native ResourceQuota write for Capsule-owned shared quota.'
+                ]) }}
+    </header>
+    <form method="post"
+          action="{{ url_for('tenant.cutover_capsule_shared_allocation_route') }}"
+          data-tenant-shared-allocation-form>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="space-y-5 p-5">
+            <div class="grid gap-4 md:grid-cols-2">
+                <label class="block">
+                    {{ form_field.label_row("Capsule Tenant") }}
+                    <select name="tenant_id"
+                            required
+                            data-tenant-shared-allocation-tenant
+                            class="{{ form_field.select_classes() }}">
+                        <option value="">Select Capsule shared allocation</option>
+                        {% for tenant in capsule_shared_tenants %}
+                            {% set state = capsule_shared_cutover_state.get(tenant.id) or {} %}
+                            <option value="{{ tenant.id }}"
+                                    {% if not state.get('supported') %}disabled{% endif %}>
+                                {{ tenant.name }} · {{ 'Eligible' if state.get('supported') else 'Control Unavailable' }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="block">
+                    {{ form_field.label_row("Governed Resource Profile") }}
+                    <select name="resource_profile_id"
+                            required
+                            data-tenant-shared-allocation-profile
+                            class="{{ form_field.select_classes() }}">
+                        <option value="">Select Resource Profile</option>
+                        {% for profile in profiles if profile.enabled %}
+                            <option value="{{ profile.id }}">
+                                {{ profile.name }} · {{ 'KAORI Preset · Locked' if profile.profile_class != 'custom' else 'Custom · Editable' }} · v{{ profile.version }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </label>
+            </div>
+            <div class="grid gap-4 md:grid-cols-2">
+                <section class="rounded-xl border border-outline-subtle bg-surface-card p-4"
+                         aria-label="Observed Capsule shared allocation">
+                    <div class="flex items-center justify-between gap-3">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Observed Shared Baseline</p>
+                        {{ table_label.special_label('Adopted · Observed', 'info', 'eye') }}
+                    </div>
+                    <p class="mt-3 text-sm font-semibold text-content-primary"
+                       data-tenant-shared-current-source>—</p>
+                    <dl class="mt-4 grid grid-cols-2 gap-3">
+                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                            <dt class="text-xs text-content-muted">CPU requests</dt>
+                            <dd class="mt-1 text-sm font-semibold text-content-primary"
+                                data-tenant-shared-current-cpu>—</dd>
+                        </div>
+                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                            <dt class="text-xs text-content-muted">Memory requests</dt>
+                            <dd class="mt-1 text-sm font-semibold text-content-primary"
+                                data-tenant-shared-current-memory>—</dd>
+                        </div>
+                    </dl>
+                </section>
+                <section class="rounded-xl border border-kaori-primary/20 bg-surface-card p-4"
+                         aria-label="Proposed Capsule shared allocation">
+                    <div class="flex items-center justify-between gap-3">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Proposed Governed Contract</p>
+                        {{ table_label.special_label('Capacity Preflight', 'warning', 'shield-check') }}
+                    </div>
+                    <p class="mt-3 text-sm font-semibold text-content-primary"
+                       data-tenant-shared-proposed-profile>—</p>
+                    <dl class="mt-4 grid grid-cols-2 gap-3">
+                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                            <dt class="text-xs text-content-muted">CPU requests</dt>
+                            <dd class="mt-1 text-sm font-semibold text-content-primary"
+                                data-tenant-shared-proposed-cpu>—</dd>
+                        </div>
+                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                            <dt class="text-xs text-content-muted">Memory requests</dt>
+                            <dd class="mt-1 text-sm font-semibold text-content-primary"
+                                data-tenant-shared-proposed-memory>—</dd>
+                        </div>
+                    </dl>
+                </section>
+            </div>
+            {% set blocked = capsule_shared_cutover_state.values()|rejectattr('supported')|list %}
+            {% if blocked %}
+                <div class="rounded-xl border border-outline-subtle bg-status-warning-soft p-4 text-status-warning-text">
+                    <p class="text-xs font-semibold uppercase tracking-wide">Control Unavailable</p>
+                    <div class="mt-2 space-y-1">
+                        {% for tenant in capsule_shared_tenants %}
+                            {% set state = capsule_shared_cutover_state.get(tenant.id) or {} %}
+                            {% if not state.get('supported') %}
+                                <p class="text-xs leading-5">
+                                    <span class="font-semibold">{{ tenant.name }}</span>
+                                    · {{ state.get('reason') }}
+                                </p>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        <footer class="flex flex-col gap-3 rounded-b-xl border-t border-kaori-primary/15 bg-surface-card px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p class="max-w-2xl text-xs leading-5 text-content-muted">
+                Provider identity and resourceVersion are revalidated before mutation. Success requires Capsule read-back verification.
+            </p>
+            <button type="submit"
+                    {% if not can_manage or not capsule_shared_cutover_supported or not profiles %}disabled aria-disabled="true"{% endif %}
+                    class="{{ action_button.classes('primary') }}">
+                <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
+                Cut Over Shared Governance
+            </button>
+        </footer>
+    </form>
+</section>
