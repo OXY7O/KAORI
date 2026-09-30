@@ -1198,3 +1198,49 @@ def test_legacy_allocation_adoption_is_observed_and_held_until_cutover() -> None
     assert 'The resulting Namespace is **Adopted Baseline · Observed**' in readme
     assert 'never turns observed provider state into KAORI-authored desired intent' in readme
 
+def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_from_namespace_ownership() -> None:
+    cutover = read('app/kubernetes/tenant/allocation_cutover.py')
+    service = read('app/kubernetes/tenant/service.py')
+    routes = read('app/kubernetes/tenant/routes.py')
+    page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
+    cutover_ui = read('app/templates/kubernetes/tenant/partials/_allocation_cutover.html')
+    allocation_change = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    namespace_registry = read('app/templates/kubernetes/tenant/partials/_namespace_registry.html')
+
+    assert 'def build_allocation_cutover_state' in cutover
+    assert 'def reconcile_adopted_native_allocation' in cutover
+    assert "record.ownership_status != TenantOwnershipStatus.ADOPTED.value" in cutover
+    assert "'allocation_control_state': 'kaori_managed'" in cutover
+    assert 'Namespace lifecycle ownership remains adopted.' in cutover
+    assert 'resourceVersion changed since observation' in cutover
+    assert 'UID changed since observation' in cutover
+    assert 'Provider read-back does not match the proposed allocation' in cutover
+    assert 'KAORI will not bypass Capsule by writing Native quota directly.' in cutover
+    assert 'provider_mutation_may_have_started' in cutover
+
+    assert 'def cutover_adopted_namespace_allocation' in service
+    assert 'enforce_existing_namespace_allocation_preflight' in service
+    assert "operation='allocation_governance_cutover'" in service
+    assert "allocation_control_state(record) != 'kaori_managed'" in service
+    assert 'namespace_cutover_options' in service
+    assert 'namespace_cutover_state' in service
+
+    assert "@tenant_bp.post('/namespace-allocation/cutover')" in routes
+    assert 'cutover_adopted_namespace_allocation_committed' in routes
+    assert 'kubernetes_tenant_allocation_cutover_completed' in routes
+    assert "'namespace_ownership_status': record.ownership_status" in routes
+
+    assert '_allocation_cutover.html' in page
+    assert 'Allocation Governance Cutover' in cutover_ui
+    assert 'KAORI Preset · Locked' in cutover_ui
+    assert 'Custom · Editable' in cutover_ui
+    assert 'Adopted Baseline · Observed' in cutover_ui
+    assert 'KAORI Managed' in cutover_ui
+    assert 'Cut Over Governance' in cutover_ui
+    assert 'Control Unavailable' in cutover_ui
+    assert 'Namespace lifecycle ownership stays adopted.' in cutover_ui
+
+    assert 'KAORI-Managed Allocation' in allocation_change
+    assert 'Select KAORI-managed allocation' in allocation_change
+    assert 'KAORI Managed' in namespace_registry
+
