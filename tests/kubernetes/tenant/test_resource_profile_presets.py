@@ -145,31 +145,74 @@ def test_namespace_builtin_snapshot_uses_stored_control_mask_with_canonical_valu
     }
     assert customized is False
 
-def test_advanced_profile_controls_are_explicit_persisted_intent() -> None:
+def test_advanced_profile_controls_persist_real_values() -> None:
     controls = _advanced_profile_controls(
         {
             'advanced_control_contract_present': '1',
             'advanced_control_ingress': 'on',
+            'advanced_control_ingress_enforcement_mode': 'required',
+            'advanced_control_service_exposure': 'on',
+            'advanced_control_service_exposure_profile_key': 'custom',
+            'advanced_control_service_exposure_allow_cluster_ip': 'allow',
+            'advanced_control_service_exposure_allow_ingress': 'allow',
+            'advanced_control_service_exposure_allow_node_port': 'deny',
+            'advanced_control_service_exposure_allow_load_balancer': 'deny',
+            'advanced_control_service_exposure_allow_external_name': 'deny',
+            'advanced_control_hostname_reservation': 'on',
+            'advanced_control_hostname_reservation_match_mode': 'wildcard',
+            'advanced_control_hostname_reservation_hostname_pattern': '*.example.com',
             'advanced_control_managed_tls': '1',
+            'advanced_control_managed_tls_mode': 'platform_tls',
+            'advanced_control_managed_tls_resource_name': 'tenant-tls',
             'advanced_control_capsule_resource_pools': 'true',
+            'advanced_control_capsule_resource_pools_resource_kind': 'resource_pool',
+            'advanced_control_capsule_resource_pools_resource_name': 'team-pool',
+            'advanced_control_capsule_resource_pools_spec_json': '{"quota":{"hard":{"requests.cpu":"4"}}}',
         }
     )
 
-    assert controls == {
-        'ingress': True,
-        'managed_tls': True,
-        'capsule_resource_pools': True,
+    assert controls['ingress'] == {
+        'enabled': True,
+        'enforcement_required': True,
     }
-    assert 'service_exposure' in RESOURCE_PROFILE_ADVANCED_CONTROLS
-    assert 'hostname_reservation' in RESOURCE_PROFILE_ADVANCED_CONTROLS
-    assert 'managed_registry' in RESOURCE_PROFILE_ADVANCED_CONTROLS
+    assert controls['service_exposure'] == {
+        'enabled': True,
+        'profile_key': 'custom',
+        'allow_cluster_ip': True,
+        'allow_ingress': True,
+        'allow_node_port': False,
+        'allow_load_balancer': False,
+        'allow_external_name': False,
+    }
+    assert controls['hostname_reservation'] == {
+        'enabled': True,
+        'match_mode': 'wildcard',
+        'hostname_pattern': '*.example.com',
+    }
+    assert controls['managed_tls'] == {
+        'enabled': True,
+        'mode': 'platform_tls',
+        'resource_name': 'tenant-tls',
+        'source_reference': None,
+    }
+    assert controls['capsule_resource_pools'] == {
+        'enabled': True,
+        'resource_kind': 'resource_pool',
+        'resource_name': 'team-pool',
+        'spec': {'quota': {'hard': {'requests.cpu': '4'}}},
+    }
 
 
-def test_advanced_profile_controls_are_gated_by_provider_capability() -> None:
+def test_advanced_profile_controls_are_gated_by_provider_capability_and_keep_configuration() -> None:
     controls = {
-        'ingress': True,
-        'managed_tls': True,
-        'capsule_resource_pools': True,
+        'ingress': {'enabled': True, 'enforcement_required': True},
+        'managed_tls': {'enabled': True, 'mode': 'platform_tls', 'resource_name': 'tenant-tls'},
+        'capsule_resource_pools': {
+            'enabled': True,
+            'resource_kind': 'resource_pool',
+            'resource_name': 'team-pool',
+            'spec': {'quota': {'hard': {'requests.cpu': '4'}}},
+        },
     }
     state = evaluate_resource_profile_advanced_controls(
         controls,
@@ -182,6 +225,7 @@ def test_advanced_profile_controls_are_gated_by_provider_capability() -> None:
     )
 
     assert state['ingress']['state'] == 'enabled'
+    assert state['ingress']['configuration'] == {'enforcement_required': True}
     assert state['managed_tls']['state'] == 'unsupported'
     assert state['capsule_resource_pools']['state'] == 'unsupported'
     assert state['hostname_reservation']['state'] == 'disabled'
@@ -189,11 +233,19 @@ def test_advanced_profile_controls_are_gated_by_provider_capability() -> None:
 
 def test_capsule_advanced_control_requires_specific_capsule_capability() -> None:
     state = evaluate_resource_profile_advanced_controls(
-        {'capsule_resource_pools': True},
+        {
+            'capsule_resource_pools': {
+                'enabled': True,
+                'resource_kind': 'resource_pool',
+                'resource_name': 'team-pool',
+                'spec': {'quota': {'hard': {'requests.cpu': '4'}}},
+            }
+        },
         provider_key='capsule',
         capability_statuses={'resource_pools': 'available'},
     )
 
     assert state['capsule_resource_pools']['state'] == 'enabled'
     assert state['capsule_resource_pools']['requested'] is True
+    assert state['capsule_resource_pools']['configuration']['resource_name'] == 'team-pool'
 
