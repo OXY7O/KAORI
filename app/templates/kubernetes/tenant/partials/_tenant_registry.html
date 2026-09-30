@@ -241,8 +241,8 @@ scope_value='Governed Tenant boundary',
 impact_items=[
 ('snowflake', 'Freeze Mutations', 'Block new Tenant changes.') ,
 ('key-round', 'Revoke Access', 'Disable credentials and grants.'),
-('boxes', 'Remove Namespaces', 'Delete managed namespaces and verify absence.'),
-('shield-check', 'Verify & Retain', 'Commit Decommissioned after verified cleanup.')
+('boxes', 'Remove Namespaces', 'Delete managed namespaces.'),
+('shield-check', 'Verify & Retain', 'Commit after verified cleanup.')
 ],
 warning='If deletion is blocked, KAORI keeps the Tenant in Decommissioning for retry.',
 presentation='steps'
