@@ -122,6 +122,32 @@
         applyProfileMode()
     }
 
+    const initAdvancedControls = (container) => {
+        if (!(container instanceof HTMLElement) || container.dataset.kaoriAdvancedInitialized === 'true') return
+        container.dataset.kaoriAdvancedInitialized = 'true'
+
+        container.querySelectorAll('[data-tenant-advanced-control-group]').forEach((group) => {
+            const key = group.getAttribute('data-tenant-advanced-control-group')
+            const toggle = group.querySelector(`[data-tenant-advanced-control-toggle="${key}"]`)
+            const fields = Array.from(group.querySelectorAll(`[data-tenant-advanced-control-field="${key}"]`))
+
+            if (!(toggle instanceof HTMLInputElement)) return
+
+            const sync = () => {
+                const enabled = toggle.checked
+                fields.forEach((field) => {
+                    field.disabled = !enabled
+                    field.setAttribute('aria-disabled', enabled ? 'false' : 'true')
+                })
+                group.dataset.enabled = enabled ? 'true' : 'false'
+                group.classList.toggle('opacity-70', !enabled)
+            }
+
+            toggle.addEventListener('change', sync)
+            sync()
+        })
+    }
+
     const initCapacityPolicyForm = (form) => {
         if (!(form instanceof HTMLFormElement) || form.dataset.kaoriInitialized === 'true') return
         form.dataset.kaoriInitialized = 'true'
@@ -342,7 +368,10 @@
                 const toggle = card.querySelector('[data-tenant-namespace-advanced-toggle]')
                 const stateLabel = card.querySelector('[data-tenant-namespace-advanced-state]')
                 const reason = card.querySelector('[data-tenant-namespace-advanced-reason]')
-                const isRequested = requested[key] === true
+                const rawRequest = requested[key]
+                const isRequested =
+                    rawRequest === true ||
+                    (rawRequest && typeof rawRequest === 'object' && rawRequest.enabled !== false)
                 const placement = placementControls[key] || null
                 const isAvailable = isRequested && placement?.state === 'enabled'
 
@@ -387,6 +416,7 @@
     const init = (root = document) => {
         const scope = root instanceof Element || root instanceof Document ? root : document
         scope.querySelectorAll('[data-tenant-resource-profile-form]').forEach(initProfileForm)
+        scope.querySelectorAll('[data-tenant-advanced-controls]').forEach(initAdvancedControls)
         scope.querySelectorAll('[data-tenant-capacity-policy-form]').forEach(initCapacityPolicyForm)
         scope.querySelectorAll('[data-tenant-allocation-change-form]').forEach(initAllocationChangeForm)
         scope.querySelectorAll('[data-tenant-shared-allocation-form]').forEach(initSharedAllocationForm)
