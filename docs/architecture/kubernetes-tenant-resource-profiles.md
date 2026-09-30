@@ -64,7 +64,10 @@ Resource Profile mutability is visible before an operator opens the detail dialo
 
 - **KAORI Preset · Locked** — Small, Standard, and Large are code-owned/versioned baselines. Registry action is **View**.
 - **Custom · Editable** — operator-managed reusable allocation contract. Registry action is **Manage**.
-- A future **Adopted Baseline · Observed** state from #762 is allocation provenance, not a new built-in preset class. It remains read-only until explicit allocation-governance cutover.
+- **Adopted Baseline · Observed** is allocation provenance, not a new built-in preset class. During #768 governed adoption, KAORI reads the live legacy ResourceQuota/LimitRange or admitted Capsule allocation evidence, commits the observed snapshot, and performs no provider mutation. It remains read-only until explicit allocation-governance cutover.
+- If an observed baseline semantically matches a versioned Small/Standard/Large preset, KAORI records that preset only as lineage. The adopted Namespace still remains **Observed**, not KAORI-managed.
+- A non-matching legacy allocation is preserved as a custom observed baseline snapshot without silently creating or mutating a reusable Custom Resource Profile.
+- Unsupported dimensions, conflicting quota owners, ambiguous Capsule authority, or Capsule shared/global quota paths that do not yet have an admitted mutation contract are surfaced as **Control Unavailable**. Adoption may retain the provider evidence, but governed mutation fails closed.
 
 Editing a Custom Resource Profile changes the reusable contract version only. It never silently rewrites an existing Namespace allocation snapshot.
 
