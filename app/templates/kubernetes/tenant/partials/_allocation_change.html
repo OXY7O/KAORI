@@ -36,7 +36,7 @@
                         data-tenant-allocation-change-namespace
                         class="{{ form_field.select_classes() }}">
                     <option value="">Select managed namespace</option>
-                    {% for item in namespace_options %}
+                    {% for item in namespace_allocation_options %}
                         <option value="{{ item.id }}">{{ item.namespace }} · {{ item.environment.tenant.name }} · {{ item.environment.environment|title }}</option>
                     {% endfor %}
                 </select>
@@ -111,7 +111,7 @@
     <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <p class="max-w-2xl text-xs leading-5 text-content-muted">No committed allocation changes until preflight allows the request.</p>
         <button type="submit"
-                {% if not can_manage or not namespace_options or not profiles %}disabled aria-disabled="true"{% endif %}
+                {% if not can_manage or not namespace_allocation_options or not profiles %}disabled aria-disabled="true"{% endif %}
                 class="{{ action_button.classes('primary') }}">
             <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
             Preflight &amp; Apply
