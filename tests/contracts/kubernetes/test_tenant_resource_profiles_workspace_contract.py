@@ -266,6 +266,7 @@ def test_resource_profile_advanced_controls_are_real_profile_intent_and_placemen
 
     for key in (
         'ingress',
+        'service_exposure',
         'hostname_reservation',
         'managed_tls',
         'managed_registry',
