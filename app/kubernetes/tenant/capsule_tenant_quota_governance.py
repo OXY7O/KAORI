@@ -26,7 +26,11 @@ from app.kubernetes.tenant.capsule_provider import (
     require_capsule_capability,
 )
 from app.kubernetes.tenant.providers import TenantProviderState
-from app.kubernetes.tenant.service import _namespace_allocation_values
+from app.kubernetes.tenant.service import (
+    _namespace_allocation_values,
+    _validate_resource_profile_attachment_controls,
+    resource_profile_attachment_controls,
+)
 from app.kubernetes.tenant.validation import COUNT_QUOTA_KEYS, SUPPORTED_QUOTA_KEYS, validate_profile_spec
 from app.models import Cluster
 from app.models.tenant import (
@@ -537,6 +541,7 @@ def _commit_governance(
         'external_constraints': list(external_constraints),
         'correlated_namespace_count': namespace_count,
         'provenance': provenance,
+        'advanced_profile_controls': resource_profile_attachment_controls(profile, tenant),
         'history': list(history or []),
         'updated_at': datetime.now(UTC).isoformat(),
         'provider_mutation_performed': provider_mutation_performed,
@@ -592,6 +597,7 @@ def cutover_capsule_tenant_resource_quota(
     if tenant is None:
         raise ValueError('Selected Tenant no longer exists.')
     profile = _profile(profile_id)
+    _validate_resource_profile_attachment_controls(profile, tenant)
     state = build_capsule_tenant_quota_cutover_state(tenant)
     if not state['supported']:
         raise ValueError(str(state['reason']))
@@ -711,6 +717,7 @@ def change_capsule_tenant_resource_quota(
         raise ValueError('Drifted Capsule Tenant allocation must be reconciled before a new allocation change.')
 
     profile = _profile(profile_id)
+    _validate_resource_profile_attachment_controls(profile, tenant)
     expected_source = governance.get('provider_source')
     expected_source = expected_source if isinstance(expected_source, Mapping) else {}
     provider_mutation_started = False
