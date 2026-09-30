@@ -596,9 +596,11 @@ def apply_managed_capsule_shared_allocation_drift_observation() -> dict[str, Any
 
 def build_capsule_shared_drift_action_state(intent: TenantAdvancedCapabilityIntent) -> dict[str, Any]:
     evidence = intent.reconciliation_evidence_json or {}
-    drift = evidence.get('allocation_drift')
-    drift = dict(drift) if isinstance(drift, Mapping) else {}
+    drift_value = evidence.get('allocation_drift')
+    drift = dict(drift_value) if isinstance(drift_value, Mapping) else {}
     reasons = list(drift.get('blocked_reasons') or [])
+    if not isinstance(drift_value, Mapping):
+        reasons.append('No committed Capsule shared allocation-drift evidence is available.')
     if evidence.get('allocation_governance_scope') != _SHARED_SCOPE:
         reasons.append('Intent is not the canonical Tenant shared allocation authority.')
     if intent.status != TenantAdvancedCapabilityStatus.DRIFTED.value:
