@@ -675,6 +675,12 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'Human confirmation.' in template
     assert 'No provider mutation.' in template
     assert 'Adopt as Observed' in template
+    assert 'Can be adopted as' in template
+    assert 'Commits identity, provider lineage, Namespace evidence, and observed allocation.' in template
+    assert 'Read-only until governance cutover.' in template
+    assert 'Next: review governance cutover.' in template
+    assert 'tenant-adoption-control-tip-' in template
+    assert 'Allocation control' in template
     assert 'components/info_tip.html' in template
     assert 'components/status_detail_dialog.html' not in template
     assert 'tenant-discovery-status-tip' in template
