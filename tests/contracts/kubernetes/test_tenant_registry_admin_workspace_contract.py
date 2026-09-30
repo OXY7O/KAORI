@@ -685,15 +685,19 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'Provider &amp; Live Context' in preflight
     assert 'Allocation Overview' in preflight
     assert 'Effective Allocation' in preflight
-    assert 'Live provider values normalized for governance review.' in preflight
+    assert 'Live provider values' in preflight
     assert 'max-w-[1360px]' in preflight
     assert "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.15fr)]" in preflight
-    assert 'xl:grid-cols-5' in preflight
+    assert "lg:grid-cols-[minmax(0,1.35fr)_minmax(460px,1fr)]" in preflight
+    assert 'grid-cols-3 gap-px border-t border-outline-subtle bg-outline-subtle' in preflight
+    assert 'grid gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' in preflight
     assert "'requests.cpu': 'CPU Requests'" in preflight
     assert "'limits.cpu': 'CPU Limits'" in preflight
     assert "'requests.memory': 'Memory Requests'" in preflight
     assert "'limits.memory': 'Memory Limits'" in preflight
     assert "'pods': 'Pods'" in preflight
+    assert "{% set quota_order = [" in preflight
+    assert "{% for key in quota_order if key in allocation.shared_quota %}" in preflight
     assert 'Observed allocation contains unsupported or ambiguous dimensions; governance cutover must fail closed.' in preflight
     assert 'Namespace Coverage' in preflight
     assert 'Proposed KAORI Mapping' in preflight
@@ -703,7 +707,8 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'Human confirmation.' in preflight
     assert 'No provider mutation.' in preflight
     assert 'Adopt as Observed' in preflight
-    assert 'Can be adopted as' in preflight
+    assert 'Adopt as' in preflight
+    assert 'remains authoritative' in preflight
     assert 'Commits identity, provider lineage, Namespace evidence, and observed allocation.' in preflight
     assert 'Read-only until governance cutover.' in preflight
     assert 'Next: review governance cutover.' in preflight
