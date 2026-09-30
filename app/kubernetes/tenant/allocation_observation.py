@@ -282,6 +282,9 @@ def _native_observation_from_items(
         'source_resources': source_resources,
         'unsupported_dimensions': unsupported,
         'ambiguous_dimensions': ambiguous,
+        'authority_unsupported_dimensions': authority_unsupported,
+        'authority_ambiguous_dimensions': authority_ambiguous,
+        'external_constraints': external_constraints,
         'control_state': control_state,
         'control_reason': control_reason,
         'provenance': 'adopted_observed',
@@ -392,19 +395,43 @@ def _capsule_tenant_quota(tenant_item: Mapping[str, Any]) -> dict[str, Any] | No
     if not items:
         return None
 
-    hard_sources = [
-        (f'Tenant.spec.resourceQuotas.items[{index}]', dict(item.get('hard') or {}))
-        for index, item in enumerate(items)
-    ]
-    quota, unsupported, ambiguous = _merge_hard_sources(hard_sources)
+    scope = str(resource_quotas.get('scope') or 'Tenant')
+    unsupported: list[str] = []
+    if scope not in {'Tenant', 'Namespace'}:
+        unsupported.append(f'Tenant.spec.resourceQuotas.scope={scope}')
+
+    hard_sources: list[tuple[str, Mapping[str, Any]]] = []
+    observed_items: list[dict[str, Any]] = []
+    for index, item in enumerate(items):
+        hard = item.get('hard') or {}
+        if not isinstance(hard, Mapping):
+            unsupported.append(f'Tenant.spec.resourceQuotas.items[{index}].hard')
+            hard = {}
+        hard_sources.append((f'Tenant.spec.resourceQuotas.items[{index}]', dict(hard)))
+
+        scopes = item.get('scopes')
+        if scopes:
+            unsupported.append(f'Tenant.spec.resourceQuotas.items[{index}].scopes')
+        scope_selector = item.get('scopeSelector')
+        if scope_selector:
+            unsupported.append(f'Tenant.spec.resourceQuotas.items[{index}].scopeSelector')
+        for field, value in item.items():
+            if field in {'hard', 'scopes', 'scopeSelector'}:
+                continue
+            if value not in (None, '', [], {}):
+                unsupported.append(f'Tenant.spec.resourceQuotas.items[{index}].{field}')
+        observed_items.append(dict(item))
+
+    quota, quota_unsupported, ambiguous = _merge_hard_sources(hard_sources)
+    unsupported.extend(quota_unsupported)
     return {
-        'scope': str(resource_quotas.get('scope') or 'Namespace'),
+        'scope': scope,
         'quota': quota,
+        'items': observed_items,
         'source_count': len(items),
-        'unsupported_dimensions': unsupported,
+        'unsupported_dimensions': sorted(set(unsupported)),
         'ambiguous_dimensions': ambiguous,
     }
-
 
 def _selector_targets_tenant(selector: Mapping[str, Any], tenant_name: str) -> tuple[bool, bool]:
     match_labels = selector.get('matchLabels') or {}
@@ -546,18 +573,24 @@ def observe_capsule_tenant_allocation(
     ):
         authority_paths.append('native_namespaced')
 
-    unsupported = list(global_quota['unsupported_dimensions'])
-    ambiguous = list(correlation_ambiguities) + list(global_quota['ambiguous_dimensions'])
-    if tenant_quota is not None:
-        unsupported.extend(tenant_quota['unsupported_dimensions'])
-        ambiguous.extend(tenant_quota['ambiguous_dimensions'])
-
+    global_unsupported = list(global_quota['unsupported_dimensions'])
+    global_ambiguous = list(global_quota['ambiguous_dimensions'])
+    tenant_unsupported = list(tenant_quota['unsupported_dimensions']) if tenant_quota is not None else []
+    tenant_ambiguous = list(tenant_quota['ambiguous_dimensions']) if tenant_quota is not None else []
+    namespace_unsupported: list[str] = []
+    namespace_ambiguous: list[str] = []
     for namespace in namespace_rows:
-        unsupported.extend(namespace['allocation']['unsupported_dimensions'])
-        ambiguous.extend(namespace['allocation']['ambiguous_dimensions'])
+        name = str(namespace.get('name') or 'unknown')
+        namespace_unsupported.extend(
+            f'Namespace/{name}: {value}' for value in namespace['allocation']['unsupported_dimensions']
+        )
+        namespace_ambiguous.extend(
+            f'Namespace/{name}: {value}' for value in namespace['allocation']['ambiguous_dimensions']
+        )
 
+    multiple_authority_reason = ''
     if len(authority_paths) > 1:
-        ambiguous.append(
+        multiple_authority_reason = (
             'Multiple effective allocation authority paths were detected: '
             + ', '.join(authority_paths)
             + '.'
@@ -570,14 +603,59 @@ def observe_capsule_tenant_allocation(
     else:
         allocation_authority = 'ambiguous'
 
-    unsupported = sorted(set(unsupported))
-    ambiguous = sorted(set(ambiguous))
-    control_state = 'observed' if not unsupported and not ambiguous else 'control_unavailable'
+    authority_unsupported: list[str] = []
+    authority_ambiguous: list[str] = []
+    external_constraints: list[str] = []
+    if allocation_authority == 'capsule_tenant_resource_quotas':
+        authority_unsupported.extend(tenant_unsupported)
+        authority_ambiguous.extend(tenant_ambiguous)
+        if tenant_quota is not None and tenant_quota.get('scope') == 'Namespace':
+            authority_ambiguous.extend(correlation_ambiguities)
+        else:
+            external_constraints.extend(correlation_ambiguities)
+        external_constraints.extend(namespace_unsupported)
+        external_constraints.extend(namespace_ambiguous)
+    elif allocation_authority == 'capsule_global_resource_quota':
+        authority_unsupported.extend(global_unsupported)
+        authority_ambiguous.extend(global_ambiguous)
+        external_constraints.extend(correlation_ambiguities)
+        external_constraints.extend(namespace_unsupported)
+        external_constraints.extend(namespace_ambiguous)
+    elif allocation_authority == 'native_namespaced':
+        authority_unsupported.extend(namespace_unsupported)
+        authority_ambiguous.extend(correlation_ambiguities)
+        authority_ambiguous.extend(namespace_ambiguous)
+    elif allocation_authority == 'ambiguous':
+        authority_unsupported.extend(global_unsupported)
+        authority_unsupported.extend(tenant_unsupported)
+        authority_unsupported.extend(namespace_unsupported)
+        authority_ambiguous.extend(correlation_ambiguities)
+        authority_ambiguous.extend(global_ambiguous)
+        authority_ambiguous.extend(tenant_ambiguous)
+        authority_ambiguous.extend(namespace_ambiguous)
+        if multiple_authority_reason:
+            authority_ambiguous.append(multiple_authority_reason)
+
+    unsupported = sorted(set(global_unsupported + tenant_unsupported + namespace_unsupported))
+    ambiguous = sorted(
+        set(
+            list(correlation_ambiguities)
+            + global_ambiguous
+            + tenant_ambiguous
+            + namespace_ambiguous
+            + ([multiple_authority_reason] if multiple_authority_reason else [])
+        )
+    )
+    authority_unsupported = sorted(set(authority_unsupported))
+    authority_ambiguous = sorted(set(authority_ambiguous))
+    external_constraints = sorted(set(external_constraints))
+
+    control_state = 'observed' if not authority_unsupported and not authority_ambiguous else 'control_unavailable'
     if allocation_authority in {'capsule_tenant_resource_quotas', 'capsule_global_resource_quota'}:
         control_state = 'control_unavailable'
         control_reason = (
-            'Capsule shared/Tenant quota is observed and preserved as provider evidence, but KAORI has not admitted '
-            'that mutation path for governance cutover yet.'
+            'Capsule shared/Tenant quota is observed and preserved as provider evidence. '
+            'Capability admission is required before governance cutover.'
         )
     elif control_state == 'control_unavailable':
         control_reason = (
