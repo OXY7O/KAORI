@@ -589,33 +589,47 @@ def test_destructive_modal_supports_structured_impact_summary() -> None:
     assert 'data-destructive-action-label' in component
 
 
-def test_live_tenant_collection_snapshot_is_shared_below_hero_and_provider_probe_only() -> None:
+def test_committed_tenant_snapshot_is_separate_from_lazy_live_provider_connectivity() -> None:
     routes = read('app/kubernetes/tenant/routes.py')
-    service = read('app/kubernetes/tenant/live_connection.py')
-    partial = read('app/templates/kubernetes/tenant/partials/_live_connection_snapshot.html')
+    live_service = read('app/kubernetes/tenant/live_connection.py')
+    live_partial = read('app/templates/kubernetes/tenant/partials/_live_connection_snapshot.html')
+    live_loader = read('app/templates/kubernetes/tenant/partials/_live_connection_loader.html')
+    committed_partial = read('app/templates/kubernetes/tenant/partials/_collection_snapshot_context.html')
+    sync_workspace = read('app/templates/kubernetes/tenant/partials/_sync_workspace.html')
     base = read('app/templates/kubernetes/tenant/base.html')
-    admin = read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
-    namespace_page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
-    overview = read('app/templates/kubernetes/tenant/overview.html')
+    service = read('app/kubernetes/tenant/service.py')
 
-    assert 'get_live_tenant_connection_context' in routes
-    assert 'version_api().get_code(_request_timeout=3)' in service
-    assert "title='Tenant Collection Snapshot'" in partial
-    assert 'source_label=tenant_live_connection.source_label' in partial
-    assert 'No worker sync' in partial
-    assert 'Checked on page load or operation' in partial
-    assert 'tenant-live-connection-snapshot' in partial
-    assert 'hx-swap-oob="true"' in partial
+    assert 'version_api().get_code(_request_timeout=3)' in live_service
+    assert "@tenant_bp.get('/live-provider-connectivity')" in routes
+    assert "render_template(\n            'kubernetes/tenant/partials/_live_connection_snapshot.html'" in routes
+    assert "context.update(get_live_tenant_connection_context())" not in routes
 
-    assert "tenant_page != 'overview'" in base
-    assert '_live_connection_snapshot.html' in base
-    assert '_live_connection_snapshot.html' not in admin
-    assert '_live_connection_snapshot.html' not in namespace_page
-    assert '_live_connection_snapshot.html' not in overview
-    assert '_sync_workspace.html' in overview
+    assert "title='Live Provider Connectivity'" in live_partial
+    assert 'Live probe; not committed inventory' in live_partial
+    assert 'Provider operations fail closed per target' in live_partial
+    assert 'tenant-live-provider-connectivity' in live_partial
 
-    assert 'context.update(get_live_tenant_connection_context())' in routes
-    assert 'tenant_live_connection_oob=True' in routes
+    assert 'hx-get="{{ url_for(\'tenant.live_provider_connectivity\') }}"' in live_loader
+    assert 'hx-trigger="load"' in live_loader
+    assert 'Committed KAORI Tenant state is already loaded.' in live_loader
+    assert "title='Live Provider Connectivity'" in live_loader
+
+    assert "title='Tenant Collection Snapshot'" in committed_partial
+    assert 'Committed Tenant snapshot evidence' in committed_partial
+    assert "latest_label='Last Successful'" in committed_partial
+    assert "scope_metric_label='Committed Scope'" in committed_partial
+    assert '_collection_snapshot_context.html' in sync_workspace
+
+    assert '_collection_snapshot_context.html' in base
+    assert '_live_connection_loader.html' in base
+    assert '{% block tenant_content %}' in base
+    assert '{% if not native_available %}\n            {% include "components/cluster/_onboarding_banner.html" %}' not in base
+    assert 'Provider Operations Restricted' in base
+    assert 'Committed KAORI Tenant state remains available.' in base
+
+    assert 'registered_clusters = (' in service
+    assert "for cluster in registered_clusters" in service
+    assert "'registered_clusters': registered_clusters" in service
 
 
 def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_preflight() -> None:
@@ -768,17 +782,16 @@ def test_tenant_estate_header_does_not_repeat_pagination_summary() -> None:
     assert 'Compact Tenant posture from committed evidence.' not in estate
 
 
-def test_live_tenant_snapshot_uses_compact_supporting_copy() -> None:
+def test_live_provider_connectivity_uses_compact_non_snapshot_copy() -> None:
     partial = read('app/templates/kubernetes/tenant/partials/_live_connection_snapshot.html')
     service = read('app/kubernetes/tenant/live_connection.py')
 
-    assert 'Checked on page load or operation' in partial
-    assert 'Kubernetes connections' in partial
-    assert 'No worker sync' in partial
+    assert 'Live probe; not committed inventory' in partial
+    assert 'Registered Kubernetes connections' in partial
+    assert 'Provider operations fail closed per target' in partial
     assert 'Live API reachability' in service
-    assert 'page request or operation response' not in partial
-    assert 'No worker schedule or inventory synchronization' not in partial
-    assert 'not committed inventory sync' not in service
+    assert 'Committed KAORI Tenant state remains readable' in service
+    assert "title='Tenant Collection Snapshot'" not in partial
 
 
 def test_tenant_status_actions_use_semantic_labels() -> None:
