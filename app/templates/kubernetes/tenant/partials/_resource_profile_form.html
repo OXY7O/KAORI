@@ -186,7 +186,9 @@
                     ('default_request_memory', 'Default Memory Request', '128Mi'),
                     ('default_memory', 'Default Memory Limit', '512Mi')
                     ] %}
-                    <label class="block" data-tenant-resource-field-wrap>
+                    <label class="block rounded-lg border border-transparent p-2 transition data-[locked=true]:border-outline-subtle data-[locked=true]:bg-surface-hover/80"
+                           data-tenant-resource-field-wrap
+                           data-locked="true">
                         <span class="flex min-h-6 items-center justify-between gap-2">
                             <span class="text-xs font-semibold text-content-primary">{{ label }}</span>
                             <span class="inline-flex items-center gap-1 rounded-full border border-outline-subtle bg-surface-hover px-2 py-0.5 text-[10px] font-semibold text-content-muted"
