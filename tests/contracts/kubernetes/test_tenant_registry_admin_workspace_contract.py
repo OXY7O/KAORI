@@ -1286,10 +1286,14 @@ def test_managed_allocation_drift_is_observation_only_and_bidirectionally_reconc
     assert 'Control Unavailable' in registry
     assert 'difference.kaori_value' in registry
     assert 'difference.provider_value' in registry
+    assert "source.get('uid')" in registry
+    assert "source.get('resource_version')" in registry
 
     assert '## Managed allocation drift and bidirectional reconciliation' in architecture
     assert 'current live provider allocation as the current state' in architecture
     assert 'Acceptance performs **no provider write' in architecture
     assert 'Native managed-allocation drift:' in readme
     assert 'Bidirectional allocation recovery:' in readme
+    assert '**API**' in readme
+    assert '**APE**' in readme
     assert 'Capsule allocation-drift boundary:' in readme
