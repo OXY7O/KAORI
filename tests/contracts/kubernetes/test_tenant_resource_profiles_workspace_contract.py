@@ -51,9 +51,11 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'lg:grid-cols-4' in form
     assert 'lg:grid-cols-5' in form
     assert 'xl:grid-cols-12' not in form
-    assert 'Operator rule' in form
-    assert 'Custom keeps lineage' in form
-    assert 'Different values belong in Custom.' in form
+    assert 'KAORI Preset · Fixed' in form
+    assert 'Fixed · Read Only' in form
+    assert 'Custom · Editable' in script
+    assert 'data-[locked=true]:border-dashed' in form
+    assert 'data-[locked=true]:cursor-not-allowed' in form
     assert 'resource-profile-contract-tip' in form
     assert 'resource-profile-quota-tip' in form
     assert 'resource-profile-limitrange-tip' in form
@@ -65,7 +67,8 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'data-tenant-base-preset-wrapper hidden' in form
     assert 'data-tenant-base-preset' in form
     assert 'data-tenant-resource-field="{{ field }}"' in form
-    assert 'setReadonly(fields, true)' in script
+    assert 'setReadonly(form, fields, true)' in script
+    assert "wrapper.dataset.locked = readonly ? 'true' : 'false'" in script
     assert "classSelect?.value === 'custom'" in script
     assert "document.addEventListener('htmx:afterSwap'" in script
     assert 'read-only:bg-surface-disabled' in form_field
