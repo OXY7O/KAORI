@@ -137,6 +137,39 @@ def _capsule_items(client) -> tuple[str | None, list[dict[str, Any]]]:
     return None, []
 
 
+def _apply_capsule_allocation_capability_state(
+    allocation: dict[str, Any],
+    *,
+    provider_state: str,
+    capability_evidence: Mapping[str, Any],
+) -> None:
+    capabilities = capability_evidence.get('capabilities')
+    capabilities = capabilities if isinstance(capabilities, Mapping) else {}
+    if provider_state != 'capsule':
+        return
+    if allocation.get('authority_unsupported_dimensions') or allocation.get('authority_ambiguous_dimensions'):
+        return
+
+    authority = str(allocation.get('allocation_authority') or '')
+    capability = ''
+    label = ''
+    if authority == 'capsule_global_resource_quota':
+        capability = 'shared_global_quota'
+        label = 'Capsule GlobalResourceQuota'
+    elif authority == 'capsule_tenant_resource_quotas':
+        capability = 'tenant_resource_quotas'
+        label = 'Capsule Tenant.spec.resourceQuotas'
+    if not capability or str(capabilities.get(capability) or '') != 'available':
+        return
+
+    allocation['control_state'] = 'observed'
+    allocation['control_reason'] = (
+        f'{label} authority is observed and the {capability} capability is admitted. '
+        'Provider state remains read-only until explicit governance cutover.'
+    )
+    allocation['admitted_capability'] = capability
+
+
 def get_tenant_discovery_context(
     *,
     page: int = 1,
@@ -379,6 +412,20 @@ def get_tenant_discovery_context(
                     tenant_name=str(row['resource_name']),
                     tenant_item=capsule_item,
                 )
+                metadata = capsule_item.get('metadata') if isinstance(capsule_item, Mapping) else {}
+                metadata = metadata if isinstance(metadata, Mapping) else {}
+                capsule_provider_state, capsule_capability_evidence = qualify_capsule_tenant_adoption(
+                    cluster=row['cluster'],
+                    api_version=_version,
+                    tenant_name=str(row['resource_name']),
+                    resource_version=str(metadata.get('resourceVersion') or '') or None,
+                )
+                _apply_capsule_allocation_capability_state(
+                    allocation_preflight,
+                    provider_state=capsule_provider_state,
+                    capability_evidence=capsule_capability_evidence,
+                )
+                row['capsule_capability_preflight'] = capsule_capability_evidence
             row['allocation_preflight'] = allocation_preflight
         except Exception as exc:
             row['allocation_preflight'] = {
@@ -627,23 +674,11 @@ def adopt_discovered_tenant_committed(
             tenant_name=resource_name,
             resource_version=resource_version or None,
         )
-        capsule_capabilities = capsule_capability_evidence.get('capabilities')
-        shared_quota_admitted = (
-            capsule_provider_state == 'capsule'
-            and isinstance(capsule_capabilities, Mapping)
-            and str(capsule_capabilities.get('shared_global_quota') or '') == 'available'
+        _apply_capsule_allocation_capability_state(
+            allocation,
+            provider_state=capsule_provider_state,
+            capability_evidence=capsule_capability_evidence,
         )
-        if (
-            allocation.get('allocation_authority') == 'capsule_global_resource_quota'
-            and shared_quota_admitted
-            and not allocation.get('unsupported_dimensions')
-            and not allocation.get('ambiguous_dimensions')
-        ):
-            allocation['control_state'] = 'observed'
-            allocation['control_reason'] = (
-                'Capsule GlobalResourceQuota authority is observed and the shared_global_quota capability is admitted. '
-                'Provider state remains read-only until explicit governance cutover.'
-            )
 
         tenant.provider_key = 'capsule'
         tenant.provider_state = capsule_provider_state
