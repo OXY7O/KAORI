@@ -20,7 +20,7 @@
                     <h2 class="text-base font-semibold text-content-primary">Add Tenant</h2>
                     {{ info_tip.render('tenant-setup-form-tip',
                             'Tenant setup',
-                            'Choose the provider authority for a new Tenant. Native Kubernetes commits the KAORI boundary; Capsule also creates the authoritative Capsule Tenant CR after live preflight.',
+                            'Create Native or supported Capsule Tenants directly. Existing Capsule Tenants use Discovery → Adoption.',
                             [
                             'Slug is derived from the Tenant name when omitted.',
                             'Only Ready clusters are eligible for creation.',
