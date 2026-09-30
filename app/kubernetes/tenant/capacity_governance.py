@@ -23,12 +23,17 @@ from app.kubernetes.tenant.capacity import (
 )
 from app.models import Cluster
 from app.models.tenant import (
+    Tenant,
     TenantCapacityDecision,
     TenantCapacityPolicy,
     TenantEnvironment,
     TenantNamespace,
     TenantNamespaceProvisioningStatus,
     TenantResourceProfile,
+)
+from app.models.tenant_advanced import (
+    TenantAdvancedCapabilityIntent,
+    TenantAdvancedCapabilityStatus,
 )
 
 _GIB = Decimal(1024**3)
@@ -224,6 +229,35 @@ def enforce_observed_namespace_allocation_preflight(
     )
 
 
+def enforce_shared_tenant_allocation_preflight(
+    *,
+    tenant_environment: TenantEnvironment,
+    profile: TenantResourceProfile,
+    current_quota_hard: Mapping[str, object],
+    proposed_quota_hard: Mapping[str, object],
+) -> TenantCapacityDecision:
+    """Evaluate one Tenant-level shared quota exactly once across its namespaces."""
+
+    tenant = tenant_environment.tenant
+    current = quota_request_vector(current_quota_hard)
+    proposed = quota_request_vector(proposed_quota_hard)
+    operation = classify_allocation_change(current=current, proposed=proposed)
+    committed_state = _committed_tenant_allocation(
+        tenant.cluster_id,
+        shared_overrides={tenant.id: current_quota_hard},
+    )
+    return _enforce_allocation_preflight(
+        tenant_environment=tenant_environment,
+        profile=profile,
+        namespace=f'@tenant:{tenant.slug}',
+        current=current,
+        proposed=proposed,
+        operation=operation,
+        committed_state=committed_state,
+        allocation_scope='tenant_shared',
+    )
+
+
 def _enforce_allocation_preflight(
     *,
     tenant_environment: TenantEnvironment,
@@ -232,9 +266,13 @@ def _enforce_allocation_preflight(
     current: CapacityVector,
     proposed: CapacityVector,
     operation: str,
+    committed_state: tuple[CapacityVector, int, list[str]] | None = None,
+    allocation_scope: str = 'namespace',
 ) -> TenantCapacityDecision:
     cluster_id = tenant_environment.tenant.cluster_id
-    committed, committed_count, unbounded_namespaces = _committed_tenant_allocation(cluster_id)
+    committed, committed_count, unbounded_namespaces = (
+        committed_state if committed_state is not None else _committed_tenant_allocation(cluster_id)
+    )
     policy = TenantCapacityPolicy.query.filter_by(cluster_id=cluster_id).first()
     snapshot_result = _read_capacity_snapshot(cluster_id)
     capacity, capacity_reason = _capacity_vector(snapshot_result)
@@ -293,6 +331,7 @@ def _enforce_allocation_preflight(
             committed_count=committed_count,
             snapshot_result=snapshot_result,
         ),
+        allocation_scope=allocation_scope,
     )
     if not pure.allowed:
         db.session.commit()
@@ -309,6 +348,7 @@ def _persist_decision(
     operation: str,
     pure: AllocationPreflightDecision,
     evidence: _DecisionEvidenceContext,
+    allocation_scope: str,
 ) -> TenantCapacityDecision:
     record = TenantCapacityDecision()
     record.cluster_id = cluster_id
@@ -323,6 +363,8 @@ def _persist_decision(
     record.evidence_json = {
         'version': 1,
         'authority': 'tenant_capacity_governance',
+        'allocation_scope': allocation_scope,
+        'tenant_id': tenant_environment.tenant_id,
         'decision': pure.decision,
         'state': pure.state,
         'reason': pure.reason,
@@ -400,7 +442,94 @@ def _capacity_vector(result: SnapshotResult) -> tuple[CapacityVector | None, str
     return CapacityVector(cpu=cpu_value, memory_bytes=memory_value), ''
 
 
-def _committed_tenant_allocation(cluster_id: str) -> tuple[CapacityVector, int, list[str]]:
+def _canonical_shared_allocation_quota(
+    cluster_id: str,
+) -> tuple[dict[str, Mapping[str, object]], list[str]]:
+    candidates = (
+        TenantAdvancedCapabilityIntent.query.join(
+            Tenant,
+            TenantAdvancedCapabilityIntent.tenant_id == Tenant.id,
+        )
+        .filter(
+            Tenant.cluster_id == cluster_id,
+            TenantAdvancedCapabilityIntent.resource_kind == 'global_resource_quota',
+            TenantAdvancedCapabilityIntent.status.in_(
+                (
+                    TenantAdvancedCapabilityStatus.READY.value,
+                    TenantAdvancedCapabilityStatus.DRIFTED.value,
+                )
+            ),
+        )
+        .order_by(
+            TenantAdvancedCapabilityIntent.tenant_id.asc(),
+            TenantAdvancedCapabilityIntent.updated_at.desc(),
+        )
+        .all()
+    )
+    selected: dict[str, Mapping[str, object]] = {}
+    ambiguous: set[str] = set()
+    for intent in candidates:
+        evidence = intent.reconciliation_evidence_json or {}
+        if evidence.get('allocation_governance_scope') != 'tenant_shared':
+            continue
+        tenant_id = str(intent.tenant_id)
+        if tenant_id in selected:
+            ambiguous.add(tenant_id)
+            continue
+        desired = intent.desired_spec_json or {}
+        quota = desired.get('quota') if isinstance(desired, Mapping) else None
+        hard = quota.get('hard') if isinstance(quota, Mapping) else None
+        selected[tenant_id] = dict(hard) if isinstance(hard, Mapping) else {}
+    for tenant_id in ambiguous:
+        selected.pop(tenant_id, None)
+    return selected, sorted(ambiguous)
+
+
+def _aggregate_committed_allocation(
+    rows: list[TenantNamespace],
+    *,
+    shared_quota_by_tenant: Mapping[str, Mapping[str, object]],
+    ambiguous_shared_tenants: list[str] | None = None,
+) -> tuple[CapacityVector, list[str]]:
+    cpu_total: Decimal | None = _ZERO
+    memory_total: Decimal | None = _ZERO
+    unbounded: list[str] = []
+    shared_tenant_ids = set(shared_quota_by_tenant)
+
+    for row in rows:
+        tenant_id = str(row.environment.tenant_id)
+        if tenant_id in shared_tenant_ids:
+            continue
+        vector = quota_request_vector(row.allocation_quota_json or {})
+        if vector.cpu is None or vector.memory_bytes is None:
+            unbounded.append(row.namespace)
+        if cpu_total is not None:
+            cpu_total = cpu_total + vector.cpu if vector.cpu is not None else None
+        if memory_total is not None:
+            memory_total = memory_total + vector.memory_bytes if vector.memory_bytes is not None else None
+
+    for tenant_id, quota in shared_quota_by_tenant.items():
+        vector = quota_request_vector(quota)
+        if vector.cpu is None or vector.memory_bytes is None:
+            unbounded.append(f'Tenant/{tenant_id} shared allocation')
+        if cpu_total is not None:
+            cpu_total = cpu_total + vector.cpu if vector.cpu is not None else None
+        if memory_total is not None:
+            memory_total = memory_total + vector.memory_bytes if vector.memory_bytes is not None else None
+
+    for tenant_id in ambiguous_shared_tenants or []:
+        unbounded.append(f'Tenant/{tenant_id} ambiguous shared allocation')
+        cpu_total = None
+        memory_total = None
+
+    return CapacityVector(cpu=cpu_total, memory_bytes=memory_total), unbounded
+
+
+def _committed_tenant_allocation(
+    cluster_id: str,
+    *,
+    shared_overrides: Mapping[str, Mapping[str, object]] | None = None,
+) -> tuple[CapacityVector, int, list[str]]:
     rows = (
         TenantNamespace.query.filter(
             TenantNamespace.cluster_id == cluster_id,
@@ -409,20 +538,18 @@ def _committed_tenant_allocation(cluster_id: str) -> tuple[CapacityVector, int, 
         .order_by(TenantNamespace.namespace.asc())
         .all()
     )
-    cpu_total: Decimal | None = _ZERO
-    memory_total: Decimal | None = _ZERO
-    unbounded_namespaces: list[str] = []
+    shared, ambiguous = _canonical_shared_allocation_quota(cluster_id)
+    for tenant_id, quota in dict(shared_overrides or {}).items():
+        shared[str(tenant_id)] = dict(quota)
+        if str(tenant_id) in ambiguous:
+            ambiguous.remove(str(tenant_id))
 
-    for row in rows:
-        vector = quota_request_vector(row.allocation_quota_json or {})
-        if vector.cpu is None or vector.memory_bytes is None:
-            unbounded_namespaces.append(row.namespace)
-        if cpu_total is not None:
-            cpu_total = cpu_total + vector.cpu if vector.cpu is not None else None
-        if memory_total is not None:
-            memory_total = memory_total + vector.memory_bytes if vector.memory_bytes is not None else None
-
-    return CapacityVector(cpu=cpu_total, memory_bytes=memory_total), len(rows), unbounded_namespaces
+    committed, unbounded = _aggregate_committed_allocation(
+        rows,
+        shared_quota_by_tenant=shared,
+        ambiguous_shared_tenants=ambiguous,
+    )
+    return committed, len(rows), unbounded
 
 
 def _committed_evidence_reason(
