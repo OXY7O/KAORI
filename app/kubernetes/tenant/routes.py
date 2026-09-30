@@ -1039,8 +1039,11 @@ def adopt_discovered_tenant_route():
         _record(
             event_type='kubernetes_tenant_discovery_adopted',
             status='success',
-            title='Tenant Adopted',
-            message=f'{tenant.name} is now governed by KAORI.',
+            title='Tenant Adopted · Observed',
+            message=(
+                f'{tenant.name} is adopted into KAORI. Existing provider allocation remains read-only '
+                'until explicit governance cutover.'
+            ),
             detail=(
                 f'{environment.environment.title()} · '
                 f'{tenant.provider_key.replace("_", " ").title()} · '
