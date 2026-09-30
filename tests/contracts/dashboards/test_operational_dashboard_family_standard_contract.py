@@ -132,6 +132,13 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert 'Low-risk operational signal. Validate relevance, recurrence, and scope.' in object_alert_guidance
     assert 'Object Storage report output, definitions, schedules, and recent generation activity.' in object_summary
 
+    kubernetes_response = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
+    kubernetes_summary = read('app/templates/kubernetes/dashboard/partials/_reporting_summary.html')
+    assert 'Run the approved response for the confirmed scope within permission and safety guardrails.' in kubernetes_response
+    assert 'Run the approved storage response for the confirmed scope within safety guardrails.' in object_alert_guidance
+    assert 'Recurring plans for automatic report generation.' in kubernetes_summary
+    assert 'Recurring plans for automatic report generation.' in object_summary
+
     forbidden = (
         'Committed analytics snapshot available',
         'Generated reports are retained operational artifacts, separate from current Kubernetes health signals.',
@@ -150,6 +157,9 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
         'Capacity, request-path, or availability risk is developing. Investigate before escalation.',
         'Operational context or low-risk signal. Validate relevance, recurrence, and affected scope.',
         'Object Storage report output, reusable definitions',
+        'Execute only the approved runbook or governed change for the confirmed scope while preserving permission and safety guardrails.',
+        'Execute only the approved runbook or governed storage change for the confirmed scope while preserving safety guardrails.',
+        'Configured recurring plans that define when reports are generated automatically.',
     )
     all_source = '\n'.join(
         (
