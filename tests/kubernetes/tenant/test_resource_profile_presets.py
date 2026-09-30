@@ -155,13 +155,14 @@ def test_advanced_profile_controls_are_explicit_persisted_intent() -> None:
         }
     )
 
-    assert set(controls) == set(RESOURCE_PROFILE_ADVANCED_CONTROLS)
-    assert controls['ingress'] is True
-    assert controls['service_exposure'] is False
-    assert controls['managed_tls'] is True
-    assert controls['capsule_resource_pools'] is True
-    assert controls['hostname_reservation'] is False
-    assert controls['managed_registry'] is False
+    assert controls == {
+        'ingress': True,
+        'managed_tls': True,
+        'capsule_resource_pools': True,
+    }
+    assert 'service_exposure' in RESOURCE_PROFILE_ADVANCED_CONTROLS
+    assert 'hostname_reservation' in RESOURCE_PROFILE_ADVANCED_CONTROLS
+    assert 'managed_registry' in RESOURCE_PROFILE_ADVANCED_CONTROLS
 
 
 def test_advanced_profile_controls_are_gated_by_provider_capability() -> None:
