@@ -1011,6 +1011,56 @@ def get_resource_profile_registry_context(
     }
 
 
+def get_capacity_decision_registry_context(
+    *,
+    page: int = 1,
+    per_page: int = 5,
+    search: str = '',
+    decision: str = '',
+) -> dict[str, Any]:
+    normalized_search = search.strip()
+    normalized_decision = decision.strip().lower()
+
+    query = db.session.query(TenantCapacityDecision, Cluster).join(
+        Cluster,
+        Cluster.id == TenantCapacityDecision.cluster_id,
+    )
+    if normalized_search:
+        pattern = f'%{normalized_search.lower()}%'
+        query = query.filter(
+            or_(
+                func.lower(TenantCapacityDecision.namespace).like(pattern),
+                func.lower(Cluster.name).like(pattern),
+                func.lower(Cluster.environment).like(pattern),
+                func.lower(TenantCapacityDecision.operation).like(pattern),
+                func.lower(TenantCapacityDecision.capacity_state).like(pattern),
+            )
+        )
+
+    if normalized_decision in {'allow', 'block'}:
+        query = query.filter(TenantCapacityDecision.decision == normalized_decision)
+    else:
+        normalized_decision = ''
+
+    items, pagination = paginate_query(
+        query.order_by(TenantCapacityDecision.created_at.desc(), TenantCapacityDecision.id.desc()),
+        page=page,
+        per_page=per_page,
+    )
+
+    return {
+        'capacity_decision_rows': [
+            {'decision': decision_row, 'cluster': cluster}
+            for decision_row, cluster in items
+        ],
+        'capacity_decision_pagination': pagination,
+        'capacity_decision_filters': {
+            'search': normalized_search,
+            'decision': normalized_decision,
+        },
+    }
+
+
 def get_namespace_registry_context(
     *,
     page: int = 1,
