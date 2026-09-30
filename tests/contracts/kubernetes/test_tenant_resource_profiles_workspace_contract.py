@@ -75,7 +75,9 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'control_contract_present' in form
     assert '>Medium</option>' in form
     assert '>Extra Large</option>' in form
-    assert 'Placement-Gated Controls' in form
+    assert 'Advanced Controls' in form
+    assert 'advanced_control_contract_present' in form
+    assert 'data-tenant-advanced-profile-controls' in form
     assert 'setReadonly(form, fields, true)' in script
     assert "wrapper.dataset.locked = readonly ? 'true' : 'false'" in script
     assert "fixedLabel.hidden = !readonly" in script
@@ -245,41 +247,74 @@ def test_resource_profile_management_dialogs_explain_preset_lock_and_govern_cust
     assert 'zero Namespace and zero Capacity Decision references remain' in dialogs
     assert 'KAORI does not detach historical evidence automatically.' in dialogs
 
-def test_resource_profile_placement_control_matrix_preserves_canonical_authority() -> None:
+def test_resource_profile_advanced_controls_are_real_profile_intent_and_placement_gated() -> None:
     form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
+    dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
+    namespace_form = read('app/templates/kubernetes/tenant/partials/_namespace_form.html')
+    namespace_page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+    service = read('app/kubernetes/tenant/service.py')
+    model = read('app/models/tenant.py')
+    migration = read('migrations/versions/20261001_profile_adv_controls.py')
     docs = read('docs/architecture/kubernetes-tenant-resource-profiles.md')
 
-    assert 'data-tenant-placement-control-matrix' in form
-    assert 'Placement-Gated Controls' in form
-    assert 'resource-profile-placement-tip' in form
-    assert 'Resource Allocation' in form
-    assert 'Container Defaults' in form
-    assert 'Ingress &amp; Service Exposure' in form
-    assert 'Hostname Reservation' in form
-    assert 'Managed TLS' in form
-    assert 'Managed Registry' in form
-    assert 'Capsule Advanced' in form
-    assert "table_label.special_label('Managed', 'normal', 'check-circle-2')" in form
-    assert "table_label.special_label('Not Managed', 'unknown', 'circle-minus')" in form
-    assert "table_label.special_label('Unsupported', 'unknown', 'ban')" in form
-    assert "table_label.special_label('Capability Gated', 'warning', 'shield-check')" in form
-    assert '#113' in form
-    assert '#118' in form
-    assert '#119' in form
-    assert '#121 / #124' in form
-    assert 'No Native emulation or implicit fallback.' in form
-    assert 'Requested control' in form
-    assert 'canonical configuration' in form
-    assert 'provider capability' in form
+    assert 'data-tenant-placement-control-matrix' not in form
+    assert 'Placement-Gated Controls' not in form
+    assert 'data-tenant-advanced-profile-controls' in form
+    assert 'Advanced Controls' in form
+    assert 'advanced_control_contract_present' in form
 
-    assert '## Placement-gated controls' in docs
-    assert '**Managed**' in docs
-    assert '**Not Managed**' in docs
-    assert '**Unsupported**' in docs
-    assert '**Capability Gated**' in docs
-    assert 'does not create duplicate Ingress, DNS, TLS, registry, or Capsule policy models' in docs
-    assert 'does not fall back from Capsule to Native' in docs
-    assert '| Ingress & Service Exposure |' in docs
-    assert '| Hostname Reservation |' in docs
-    assert '| Capsule Advanced |' in docs
+    for key in (
+        'ingress',
+        'hostname_reservation',
+        'managed_tls',
+        'managed_registry',
+        'capsule_namespace_controls',
+        'capsule_resource_rules',
+        'capsule_resource_pools',
+        'capsule_replication',
+        'capsule_tenant_cordon',
+    ):
+        assert f'advanced_control_{{{{ key }}}}' in form or key in form
+        assert key in service
 
+    assert 'profile.advanced_controls_json = _advanced_profile_controls(source)' in service
+    assert 'def evaluate_resource_profile_advanced_controls(' in service
+    assert 'def resource_profile_attachment_controls(' in service
+    assert 'def _validate_resource_profile_attachment_controls(' in service
+    assert 'attachment_controls = _validate_resource_profile_attachment_controls(profile, tenant)' in service
+    assert "'advanced_profile_controls'" in service
+    assert 'advanced_controls_json: Mapped[dict]' in model
+    assert "'advanced_controls_json'" in migration
+
+    assert 'advanced_control_contract_present' in dialogs
+    assert 'profile.advanced_controls_json' in dialogs
+    assert 'data-tenant-namespace-environment' in namespace_form
+    assert 'Advanced Controls Preview' in namespace_form
+    assert 'data-tenant-namespace-advanced-control' in namespace_form
+    assert 'tenant-environment-advanced-control-state' in namespace_page
+    assert "const environments = readJson('tenant-environment-advanced-control-state')" in script
+    assert "stateLabel.textContent = 'Unavailable'" in script
+    assert "stateLabel.textContent = 'Enabled'" in script
+
+    assert '## Advanced profile controls' in docs
+    assert 'real reusable profile controls, not a status/TODO matrix' in docs
+    assert 'requested but unavailable advanced control blocks the provider mutation' in docs
+    assert 'never substitutes Native behavior for Capsule-only controls' in docs
+
+
+def test_tenant_provider_unavailable_copy_is_compact_and_uses_standard_hero_action() -> None:
+    tenants = read('app/templates/kubernetes/tenant/tenants.html')
+    base = read('app/templates/kubernetes/tenant/base.html')
+    live = read('app/kubernetes/tenant/live_connection.py')
+    blocked = read('app/templates/components/cluster/_hero_blocked_context.html')
+
+    assert 'Active principals' in tenants
+    assert 'Active user, group, and machine principals' not in tenants
+    assert 'Kubernetes unreachable. Mutations blocked.' in live
+    assert 'Kubernetes unreachable. KAORI remains readable; provider mutations are blocked.' not in live
+    assert 'KAORI state stays available. Provider mutations wait for a Ready, reachable integration.' not in base
+    assert 'Review Cluster Integrations' in base
+    assert 'Open Cluster Integrations' in base
+    assert 'cluster_blocked_action_href' in base
+    assert 'context_single_action_classes()' in blocked
