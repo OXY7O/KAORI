@@ -15,6 +15,7 @@ from app.kubernetes.tenant.allocation_observation import (
     observe_capsule_tenant_allocation,
     observe_native_namespace_allocation,
 )
+from app.kubernetes.tenant.capsule_provider import discover_capsule
 from app.kubernetes.tenant.capsule_tenant import qualify_capsule_tenant_adoption
 from app.models import Cluster
 from app.models.cluster import ClusterStatus
@@ -142,10 +143,11 @@ def _apply_capsule_allocation_capability_state(
     *,
     provider_state: str,
     capability_evidence: Mapping[str, Any],
+    preview_only: bool = False,
 ) -> None:
     capabilities = capability_evidence.get('capabilities')
     capabilities = capabilities if isinstance(capabilities, Mapping) else {}
-    if provider_state != 'capsule':
+    if not preview_only and provider_state != 'capsule':
         return
     if allocation.get('authority_unsupported_dimensions') or allocation.get('authority_ambiguous_dimensions'):
         return
@@ -164,10 +166,18 @@ def _apply_capsule_allocation_capability_state(
 
     allocation['control_state'] = 'observed'
     allocation['control_reason'] = (
-        f'{label} authority is observed and the {capability} capability is admitted. '
-        'Provider state remains read-only until explicit governance cutover.'
+        (
+            f'{label} authority and the {capability} CRD/schema capability are observed. '
+            'Adoption revalidates the admission path before committing governance evidence.'
+        )
+        if preview_only
+        else (
+            f'{label} authority is observed and the {capability} capability is admitted. '
+            'Provider state remains read-only until explicit governance cutover.'
+        )
     )
-    allocation['admitted_capability'] = capability
+    allocation['admitted_capability'] = capability if not preview_only else None
+    allocation['capability_preview'] = capability if preview_only else None
 
 
 def get_tenant_discovery_context(
@@ -412,18 +422,13 @@ def get_tenant_discovery_context(
                     tenant_name=str(row['resource_name']),
                     tenant_item=capsule_item,
                 )
-                metadata = capsule_item.get('metadata') if isinstance(capsule_item, Mapping) else {}
-                metadata = metadata if isinstance(metadata, Mapping) else {}
-                capsule_provider_state, capsule_capability_evidence = qualify_capsule_tenant_adoption(
-                    cluster=row['cluster'],
-                    api_version=_version,
-                    tenant_name=str(row['resource_name']),
-                    resource_version=str(metadata.get('resourceVersion') or '') or None,
-                )
+                capsule_snapshot = discover_capsule(client.custom_objects_api().api_client)
+                capsule_capability_evidence = capsule_snapshot.as_dict()
                 _apply_capsule_allocation_capability_state(
                     allocation_preflight,
-                    provider_state=capsule_provider_state,
+                    provider_state='preview',
                     capability_evidence=capsule_capability_evidence,
+                    preview_only=True,
                 )
                 row['capsule_capability_preflight'] = capsule_capability_evidence
             row['allocation_preflight'] = allocation_preflight
