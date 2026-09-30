@@ -1297,3 +1297,83 @@ def test_managed_allocation_drift_is_observation_only_and_bidirectionally_reconc
     assert '**API**' in readme
     assert '**APE**' in readme
     assert 'Capsule allocation-drift boundary:' in readme
+
+
+
+def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -> None:
+    adoption = read('app/kubernetes/tenant/discovery_service.py')
+    qualifier = read('app/kubernetes/tenant/capsule_tenant.py')
+    governance = read('app/kubernetes/tenant/capsule_allocation_governance.py')
+    advanced = read('app/kubernetes/tenant/capsule_advanced.py')
+    capacity = read('app/kubernetes/tenant/capacity_governance.py')
+    tasks = read('app/kubernetes/tenant/tasks.py')
+    routes = read('app/kubernetes/tenant/routes.py')
+    namespace_page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
+    cutover_ui = read('app/templates/kubernetes/tenant/partials/_capsule_shared_allocation_cutover.html')
+    operations_page = read('app/templates/kubernetes/tenant/operations.html')
+    drift_ui = read('app/templates/kubernetes/tenant/partials/_capsule_shared_allocation_drift.html')
+    architecture = read('docs/architecture/kubernetes-tenant-resource-profiles.md')
+    capsule_architecture = read('docs/architecture/kubernetes-tenant-capsule-advanced.md')
+    readme = read('app/kubernetes/tenant/README.md')
+
+    assert 'qualify_capsule_tenant_adoption' in qualifier
+    assert "dry_run='All'" in qualifier
+    assert "'adoption_admission_dry_run_verified': admission_verified" in qualifier
+    assert 'capsule_capability_evidence' in adoption
+    assert "'capsule': capsule_capability_evidence" in adoption
+    assert "allocation['control_state'] = 'observed'" in adoption
+    assert 'shared_global_quota' in adoption
+
+    assert 'def build_capsule_shared_allocation_cutover_state' in governance
+    assert "baseline.get('allocation_authority') != 'capsule_global_resource_quota'" in governance
+    assert "_capsule_capability_state(tenant, _SHARED_CAPABILITY) != 'available'" in governance
+    assert 'An existing Capsule GlobalResourceQuota advanced intent already owns this Tenant resource path.' in governance
+    assert "intent.resource_kind = 'global_resource_quota'" in governance
+    assert "'allocation_governance_scope': _SHARED_SCOPE" in governance
+    assert 'enforce_shared_tenant_allocation_preflight' in governance
+    assert 'reconcile_capsule_advanced_intent(intent, provider=provider)' in governance
+    assert "'provider_mutation_performed': False" in governance
+    assert "'provenance': 'accepted_provider_state'" in governance
+    assert "'allocation_customized': not _profile_matches_quota(profile, live_quota)" in governance
+
+    assert 'expected_provider_source' in advanced
+    assert 'Capsule provider resource UID changed' in advanced
+    assert 'Capsule provider resourceVersion changed' in advanced
+
+    assert 'def _canonical_shared_allocation_quota' in capacity
+    assert "evidence.get('allocation_governance_scope') != 'tenant_shared'" in capacity
+    assert 'def enforce_shared_tenant_allocation_preflight' in capacity
+    assert "allocation_scope='tenant_shared'" in capacity
+    assert 'shared_quota_by_tenant=shared' in capacity
+
+    assert 'apply_managed_capsule_shared_allocation_drift_observation' in tasks
+    assert "snapshot['capsule_shared_allocation_drift_count']" in tasks
+
+    assert "@tenant_bp.post('/shared-allocation/cutover')" in routes
+    assert "@tenant_bp.post('/shared-allocation/<int:intent_id>/reapply')" in routes
+    assert "@tenant_bp.post('/shared-allocation/<int:intent_id>/accept-provider-state')" in routes
+    assert 'CapsuleSharedAllocationStateConflictError' in routes
+
+    assert '_capsule_shared_allocation_cutover.html' in namespace_page
+    assert 'Capsule Shared Allocation Governance' in cutover_ui
+    assert 'GlobalResourceQuota' in cutover_ui
+    assert 'Cut Over Shared Governance' in cutover_ui
+    assert 'Control Unavailable' in cutover_ui
+
+    assert '_capsule_shared_allocation_drift.html' in operations_page
+    assert 'Capsule Shared Allocation Drift' in drift_ui
+    assert 'Reapply KAORI Intent' in drift_ui
+    assert 'Accept Provider State' in drift_ui
+    assert "source.get('uid')" in drift_ui
+    assert "source.get('resource_version')" in drift_ui
+    assert 'ops_capsule_shared_page' in routes
+    assert 'ops_capsule_shared_per_page' in routes
+
+    assert 'Capsule shared allocation authority' in architecture
+    assert 'allocation_governance_scope=tenant_shared' in architecture
+    assert 'counted once' in architecture
+    assert '`Tenant.spec.resourceQuotas` is intentionally not admitted by #771' in architecture
+    assert 'Canonical GlobalResourceQuota allocation bridge' in capsule_architecture
+    assert 'never copied into every correlated Namespace' in capsule_architecture
+    assert 'Capsule GlobalResourceQuota governance:' in readme
+    assert '`Tenant.spec.resourceQuotas` is intentionally not admitted by #771' in readme
