@@ -304,6 +304,8 @@ def test_resource_profile_advanced_controls_are_real_profile_intent_and_placemen
     assert 'Registry credentials are not stored in Resource Profile JSON.' in advanced
     assert 'const initAdvancedControls = (container) =>' in script
     assert "scope.querySelectorAll('[data-tenant-advanced-controls]').forEach(initAdvancedControls)" in script
+    assert 'const advancedControlSummary = (key, value) =>' in script
+    assert 'configuration = advancedControlSummary(key, rawRequest)' in script
 
     assert 'profile.advanced_controls_json = _advanced_profile_controls(source)' in service
     assert 'def evaluate_resource_profile_advanced_controls(' in service
