@@ -55,6 +55,14 @@ from app.kubernetes.tenant.capsule_allocation_governance import (
     get_capsule_shared_allocation_context,
     reapply_capsule_shared_allocation_intent_committed,
 )
+from app.kubernetes.tenant.capsule_tenant_quota_governance import (
+    CapsuleTenantQuotaStateConflictError,
+    accept_capsule_tenant_provider_state_committed,
+    change_capsule_tenant_resource_quota_committed,
+    cutover_capsule_tenant_resource_quota_committed,
+    get_capsule_tenant_quota_context,
+    reapply_capsule_tenant_quota_intent_committed,
+)
 from app.kubernetes.tenant.credential_service import (
     GeneratedKubeconfigMaterial,
     GeneratedTokenMaterial,
@@ -523,6 +531,7 @@ def namespace_provisioning():
     context = _tenant_workspace_context()
     context.update(get_live_tenant_connection_context())
     context.update(get_capsule_shared_allocation_context())
+    context.update(get_capsule_tenant_quota_context())
     context.update(
         get_namespace_registry_context(
             page=request.args.get('page', 1, type=int) or 1,
@@ -612,6 +621,12 @@ def operations():
             get_capsule_shared_allocation_context(
                 drift_page=request.args.get('ops_capsule_shared_page', 1, type=int) or 1,
                 drift_per_page=request.args.get('ops_capsule_shared_per_page', 5, type=int) or 5,
+            )
+        )
+        context.update(
+            get_capsule_tenant_quota_context(
+                drift_page=request.args.get('ops_capsule_tenant_quota_page', 1, type=int) or 1,
+                drift_per_page=request.args.get('ops_capsule_tenant_quota_per_page', 5, type=int) or 5,
             )
         )
         context.update(
@@ -1448,6 +1463,138 @@ def accept_capsule_shared_provider_allocation_route(intent_id: int):
                 'tenant_id': intent.tenant_id,
                 'advanced_intent_id': intent.id,
                 'operation': 'accept_provider_state',
+            },
+        )
+    return redirect(url_for('tenant.operations', tab='drift-reconcile'))
+
+
+@tenant_bp.post('/tenant-quota/cutover')
+@permission_required('tenant.manage')
+def cutover_capsule_tenant_quota_route():
+    try:
+        _csrf()
+        tenant = cutover_capsule_tenant_resource_quota_committed(
+            tenant_id=str(request.form.get('tenant_id') or ''),
+            profile_id=_required_int('resource_profile_id'),
+        )
+    except (ValueError, ApiException, CapsuleTenantQuotaStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_tenant_quota_cutover_failed',
+            status='error',
+            title='Capsule Tenant Quota Cutover Failed',
+            message=str(exc),
+            detail='Capsule remains authoritative; KAORI never substitutes a Native ResourceQuota write.',
+            metadata={
+                'tenant_id': request.form.get('tenant_id'),
+                'resource_profile_id': request.form.get('resource_profile_id'),
+                'operation': 'capsule_tenant_quota_cutover',
+            },
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_tenant_quota_cutover_completed',
+            status='success',
+            title='Capsule Tenant Quota Governance Enabled',
+            message=f'{tenant.name} allocation is now KAORI Managed through Tenant.spec.resourceQuotas.',
+            metadata={
+                'tenant_id': tenant.id,
+                'operation': 'capsule_tenant_quota_cutover',
+                'allocation_authority': 'capsule_tenant_resource_quotas',
+            },
+        )
+    return redirect(url_for('tenant.namespace_provisioning', view='allocation'))
+
+
+@tenant_bp.post('/tenant-quota/change')
+@permission_required('tenant.manage')
+def change_capsule_tenant_quota_route():
+    try:
+        _csrf()
+        tenant = change_capsule_tenant_resource_quota_committed(
+            tenant_id=str(request.form.get('tenant_id') or ''),
+            profile_id=_required_int('resource_profile_id'),
+        )
+    except (ValueError, ApiException, CapsuleTenantQuotaStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_tenant_quota_change_failed',
+            status='error',
+            title='Capsule Tenant Allocation Change Failed',
+            message=str(exc),
+            detail='Existing KAORI intent remains committed unless provider mutation and read-back both succeed.',
+            metadata={
+                'tenant_id': request.form.get('tenant_id'),
+                'resource_profile_id': request.form.get('resource_profile_id'),
+                'operation': 'capsule_tenant_quota_change',
+            },
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_tenant_quota_changed',
+            status='success',
+            title='Capsule Tenant Allocation Changed',
+            message=f'{tenant.name} Tenant.spec.resourceQuotas matches the new governed allocation.',
+            metadata={
+                'tenant_id': tenant.id,
+                'operation': 'capsule_tenant_quota_change',
+                'allocation_authority': 'capsule_tenant_resource_quotas',
+            },
+        )
+    return redirect(url_for('tenant.namespace_provisioning', view='allocation'))
+
+
+@tenant_bp.post('/tenant-quota/<string:tenant_id>/reapply')
+@permission_required('tenant.manage')
+def reapply_capsule_tenant_quota_route(tenant_id: str):
+    try:
+        _csrf()
+        tenant = reapply_capsule_tenant_quota_intent_committed(tenant_id=tenant_id)
+    except (ValueError, ApiException, CapsuleTenantQuotaStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_tenant_quota_reapply_failed',
+            status='error',
+            title='Capsule Tenant Quota Reapply Failed',
+            message=str(exc),
+            metadata={'tenant_id': tenant_id, 'operation': 'reapply_kaori_intent'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_tenant_quota_reapplied',
+            status='success',
+            title='KAORI Tenant Quota Intent Reapplied',
+            message=f'{tenant.name} Tenant.spec.resourceQuotas matches committed KAORI intent.',
+            metadata={
+                'tenant_id': tenant.id,
+                'operation': 'reapply_kaori_intent',
+                'allocation_authority': 'capsule_tenant_resource_quotas',
+            },
+        )
+    return redirect(url_for('tenant.operations', tab='drift-reconcile'))
+
+
+@tenant_bp.post('/tenant-quota/<string:tenant_id>/accept-provider-state')
+@permission_required('tenant.manage')
+def accept_capsule_tenant_provider_state_route(tenant_id: str):
+    try:
+        _csrf()
+        tenant = accept_capsule_tenant_provider_state_committed(tenant_id=tenant_id)
+    except (ValueError, ApiException, CapsuleTenantQuotaStateConflictError) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_tenant_quota_accept_failed',
+            status='error',
+            title='Capsule Tenant Provider State Acceptance Failed',
+            message=str(exc),
+            metadata={'tenant_id': tenant_id, 'operation': 'accept_provider_state'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_tenant_quota_provider_state_accepted',
+            status='success',
+            title='Capsule Tenant Provider State Accepted',
+            message=f'{tenant.name} live Tenant.spec.resourceQuotas is now the governed KAORI intent.',
+            metadata={
+                'tenant_id': tenant.id,
+                'operation': 'accept_provider_state',
+                'allocation_authority': 'capsule_tenant_resource_quotas',
             },
         )
     return redirect(url_for('tenant.operations', tab='drift-reconcile'))
