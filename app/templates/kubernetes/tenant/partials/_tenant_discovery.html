@@ -418,7 +418,36 @@
                                 {% endif %}
                             </div>
                         {% endif %}
-                        {% if allocation.unsupported_dimensions or allocation.ambiguous_dimensions or allocation.error %}
+                        {% if row.provider_key == 'capsule' %}
+                            {% if allocation.authority_unsupported_dimensions or allocation.authority_ambiguous_dimensions or allocation.error %}
+                                <div class="mt-3 rounded-xl border border-outline-subtle bg-status-warning-soft p-4 text-status-warning-text">
+                                    <p class="text-xs font-semibold">Allocation Governance Requires Review</p>
+                                    {% if allocation.authority_unsupported_dimensions %}
+                                        <p class="mt-2 text-xs leading-5">Unsupported authority fields: {{ allocation.authority_unsupported_dimensions|join(' · ') }}</p>
+                                    {% endif %}
+                                    {% if allocation.authority_ambiguous_dimensions %}
+                                        <p class="mt-2 text-xs leading-5">Ambiguous authority: {{ allocation.authority_ambiguous_dimensions|join(' · ') }}</p>
+                                    {% endif %}
+                                    {% if allocation.error %}
+                                        <p class="mt-2 text-xs leading-5">Observation error: {{ allocation.error }}</p>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            {% if allocation.external_constraints %}
+                                <div class="mt-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <p class="text-xs font-semibold text-content-primary">External Constraints Preserved</p>
+                                        {{ table_label.special_label('Observed · Not Rewritten', 'info', 'eye') }}
+                                    </div>
+                                    <p class="mt-2 text-xs leading-5 text-content-muted">
+                                        These provider constraints are outside the selected Capsule allocation authority. KAORI retains them as evidence and does not remove or rewrite them during Tenant quota governance.
+                                    </p>
+                                    <p class="mt-2 text-xs leading-5 text-content-secondary">
+                                        {{ allocation.external_constraints|join(' · ') }}
+                                    </p>
+                                </div>
+                            {% endif %}
+                        {% elif allocation.unsupported_dimensions or allocation.ambiguous_dimensions or allocation.error %}
                             <div class="mt-3 rounded-xl border border-outline-subtle bg-status-warning-soft p-4 text-status-warning-text">
                                 <p class="text-xs font-semibold">Allocation Governance Requires Review</p>
                                 {% if allocation.unsupported_dimensions %}
