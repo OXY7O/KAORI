@@ -241,10 +241,44 @@ The committed desired contract and verified effective contract are independently
 
 Resource Profiles remain the allocation-control contract; they do not absorb unrelated policy domains.
 
-When a profile is attached to a Native or Capsule placement, KAORI evaluates additional controls against the active provider capability evidence:
+The Resource Profile workspace exposes a placement-control matrix so operators can see the control boundary before attachment. The matrix is descriptive of authority and capability evaluation; it does not create duplicate Ingress, DNS, TLS, registry, or Capsule policy models inside Resource Profiles.
 
-- **Resource allocation / Container defaults** — owned by the Resource Profile contract.
-- **Ingress, Service exposure, and hostname reservation** — reuse the Tenant exposure/domain authority from #119. Resource Profiles must not create a second hostname or Ingress policy model.
-- **Native/Capsule-specific controls** — become actionable only when #120/#121/#124 capability evidence proves that the authoritative provider path supports them. Unsupported controls remain visible but disabled with an operator-readable reason.
+### Terminal control states
 
-This keeps the profile portable while preventing a control from appearing actionable on a provider that cannot enforce it.
+- **Managed** — requested intent exists, the canonical owning KAORI domain has sufficient committed configuration, and the authoritative provider reports the required capability as available.
+- **Not Managed** — the Resource Profile does not own the policy domain, the control was not requested through its canonical authority, or required configuration is absent.
+- **Unsupported** — the authoritative provider cannot enforce the control. The control remains visible but disabled with an operator-readable reason.
+- **Capability Gated** is the pre-attachment/conditional presentation for a control whose final terminal state depends on the selected provider placement.
+
+The effective rule is:
+
+```text
+Requested control
+∩ canonical KAORI configuration
+∩ authoritative provider capability
+= effective Managed control
+```
+
+A provider-state or capability change between preview and commit fails closed. KAORI does not silently drop requested controls and does not fall back from Capsule to Native (or Native to Capsule) merely to make an unavailable control appear successful.
+
+### Control matrix authority
+
+| Control pack | Resource Profile behavior | Native placement | Capsule placement | Canonical authority |
+| --- | --- | --- | --- | --- |
+| Resource Allocation | Managed by per-dimension ownership mask | Managed through admitted Native ResourceQuota path | Capability gated through admitted Capsule quota authority | #113 |
+| Container Defaults | Managed by per-dimension ownership mask | Managed through admitted Native Container LimitRange path | Capability gated; only admitted authority may mutate | #113 |
+| Ingress & Service Exposure | Not duplicated into profile allocation state | Capability gated | Capability gated | #119 |
+| Hostname Reservation | Not duplicated into profile allocation state | Capability gated | Capability gated | #119 |
+| Managed TLS | Requires canonical managed-resource intent/configuration | Capability gated | Capability gated | #118 |
+| Managed Registry | Requires canonical managed-resource intent/configuration | Capability gated | Capability gated | #118 |
+| Capsule Advanced | Requested only through admitted Capsule capability intents | Unsupported; no Native emulation | Capability gated | #121 / #124 |
+
+When a profile is attached to a Native or Capsule placement:
+
+- quota and Container defaults use the Resource Profile ownership mask from #113;
+- Ingress, Service exposure, and hostname reservation reuse #119;
+- Managed TLS and registry controls reuse #118;
+- Native and Capsule capability readiness comes from #120/#121;
+- Capsule-only advanced controls remain under #124 and are never projected onto Native as an implicit fallback.
+
+This keeps the profile portable while making unsupported or not-yet-configured controls explicit instead of silently ignoring them.
