@@ -308,6 +308,7 @@ def test_tenant_provider_unavailable_copy_is_compact_and_uses_standard_hero_acti
     base = read('app/templates/kubernetes/tenant/base.html')
     live = read('app/kubernetes/tenant/live_connection.py')
     blocked = read('app/templates/components/cluster/_hero_blocked_context.html')
+    hero = read('app/templates/components/page_hero.html')
 
     assert 'Active principals' in tenants
     assert 'Active user, group, and machine principals' not in tenants
@@ -317,4 +318,6 @@ def test_tenant_provider_unavailable_copy_is_compact_and_uses_standard_hero_acti
     assert 'Review Cluster Integrations' in base
     assert 'Open Cluster Integrations' in base
     assert 'cluster_blocked_action_href' in base
-    assert 'context_single_action_classes()' in blocked
+    assert 'blocked_action_label' in blocked
+    assert 'action_label=None' in hero
+    assert 'context_single_action_classes()' in hero
