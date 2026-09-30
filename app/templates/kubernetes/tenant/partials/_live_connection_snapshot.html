@@ -1,6 +1,5 @@
 {% import "components/snapshot_context_bar.html" as snapshot_context %}
-<div id="tenant-live-connection-snapshot"
-     {% if tenant_live_connection_oob|default(false) %}hx-swap-oob="true"{% endif %}>
+<div id="tenant-live-provider-connectivity">
     {{ snapshot_context.render(source_label=tenant_live_connection.source_label,
         status=tenant_live_connection.status,
         tone=tenant_live_connection.tone,
