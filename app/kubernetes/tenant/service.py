@@ -893,6 +893,7 @@ def change_native_namespace_allocation(source: Mapping[str, Any]) -> TenantNames
             'Adopted Baseline allocations are read-only until explicit Allocation Governance Cutover is completed.'
         )
 
+    attachment_controls = _validate_resource_profile_attachment_controls(profile, record.environment.tenant)
     quota, limits, customized = _namespace_allocation_values(profile)
     capacity_decision = enforce_existing_namespace_allocation_preflight(
         record=record,
@@ -930,6 +931,14 @@ def change_native_namespace_allocation(source: Mapping[str, Any]) -> TenantNames
     except (ApiException, ValueError):
         db.session.commit()
         raise
+    evidence = dict(record.provisioning_evidence_json or {})
+    evidence['advanced_profile_controls'] = {
+        'source_profile_id': profile.public_id,
+        'source_profile_version': int(profile.version or 1),
+        'provider_key': record.environment.tenant.provider_key,
+        'controls': attachment_controls,
+    }
+    record.provisioning_evidence_json = evidence
     db.session.commit()
     return record
 
@@ -970,6 +979,7 @@ def cutover_adopted_namespace_allocation(source: Mapping[str, Any]) -> TenantNam
     if not cutover['supported']:
         raise ValueError(str(cutover['reason']))
 
+    attachment_controls = _validate_resource_profile_attachment_controls(profile, record.environment.tenant)
     quota, limits, customized = _namespace_allocation_values(profile)
     capacity_decision = enforce_existing_namespace_allocation_preflight(
         record=record,
@@ -996,6 +1006,14 @@ def cutover_adopted_namespace_allocation(source: Mapping[str, Any]) -> TenantNam
     except (ApiException, ValueError):
         db.session.commit()
         raise
+    evidence = dict(record.provisioning_evidence_json or {})
+    evidence['advanced_profile_controls'] = {
+        'source_profile_id': profile.public_id,
+        'source_profile_version': int(profile.version or 1),
+        'provider_key': record.environment.tenant.provider_key,
+        'controls': attachment_controls,
+    }
+    record.provisioning_evidence_json = evidence
     db.session.commit()
     return record
 
