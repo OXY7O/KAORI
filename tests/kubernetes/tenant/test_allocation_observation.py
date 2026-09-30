@@ -243,3 +243,28 @@ def test_capsule_tenant_quota_treats_matching_native_quota_as_materialization():
         for item in observed['ambiguous_dimensions']
     )
 
+def test_native_observation_fails_closed_on_unsupported_limit_range_constraints():
+    item = SimpleNamespace(
+        type='Container',
+        default={'cpu': '500m'},
+        default_request={'cpu': '100m'},
+        max={'cpu': '2'},
+        min={},
+        max_limit_request_ratio={},
+    )
+    api = FakeCoreApi(
+        limit_ranges={
+            'api-prod': [
+                SimpleNamespace(
+                    metadata=_metadata('legacy-limits'),
+                    spec=SimpleNamespace(limits=[item]),
+                )
+            ]
+        }
+    )
+
+    observed = observe_native_namespace_allocation(api, 'api-prod')
+
+    assert observed['control_state'] == 'control_unavailable'
+    assert 'LimitRange/legacy-limits:max.cpu' in observed['unsupported_dimensions']
+
