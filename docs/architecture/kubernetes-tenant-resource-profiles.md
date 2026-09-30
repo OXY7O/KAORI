@@ -239,29 +239,39 @@ The committed desired contract and verified effective contract are independently
 
 ## Advanced profile controls
 
-Resource Profiles now persist **advanced control intent** in addition to allocation and Container LimitRange dimensions. These are real reusable profile controls, not a status/TODO matrix.
+Resource Profiles persist **advanced control intent and its non-secret configuration values** in addition to allocation and Container LimitRange dimensions. This is an operator-editable reusable contract, not a status/TODO matrix and not an issue-reference UI.
 
-The profile can enable:
+The expandable Advanced Controls editor uses values that map to the already approved canonical KAORI contracts:
 
-- **Ingress** — canonical exposure policy authority remains #119.
-- **Service Exposure** — ClusterIP/NodePort/LoadBalancer/ExternalName policy remains under #119.
-- **Hostname Reservation** — canonical domain ownership/collision authority remains #119.
-- **Managed TLS** — canonical managed-resource authority remains #118.
-- **Managed Registry** — canonical managed-resource authority remains #118.
-- **Capsule Namespace Controls** — capability-gated by #121/#124.
-- **Capsule Resource Rules** — capability-gated by #121/#124.
-- **Capsule Resource Pools** — Capsule-only authority from #124.
-- **Capsule Replication** — Capsule-only authority from #124.
-- **Capsule Tenant Cordon** — Capsule-only authority from #124.
+| Control | Persisted profile values |
+| --- | --- |
+| Ingress | enforcement mode (required or preflight-only) |
+| Service Exposure | policy profile plus explicit ClusterIP / Ingress / NodePort / LoadBalancer / ExternalName allow/deny decisions |
+| Hostname Reservation | exact/wildcard/regex match mode plus normalized hostname pattern |
+| Managed TLS | platform/namespace-compatibility mode, resource name, and non-secret source reference |
+| Managed Registry | image-pull/external-provider mode, resource name, and non-secret source reference |
+| Capsule Namespace Controls | forceTenantPrefix intent plus namespaceOptions JSON |
+| Capsule Resource Rules | container registry, PriorityClass, StorageClass lists, and Capsule rules JSON |
+| Capsule Resource Pools | ResourcePool/ResourcePoolClaim kind, resource name, and desired spec JSON |
+| Capsule Replication | TenantResource/GlobalTenantResource kind, resource name, and desired spec JSON |
+| Capsule Tenant Cordon | cordon and deletion-protection booleans |
 
-The profile stores whether each control is enabled. It does **not** duplicate the detailed Ingress, hostname, TLS, registry, or Capsule provider configuration owned by those canonical domains.
+Secret/private-key/registry credential material is never persisted in Resource Profile JSON. The profile stores only non-secret configuration and source references.
+
+Detailed reconciliation authority still stays in the canonical domain implementations:
+
+- exposure/hostname values align with the existing Tenant exposure-policy and domain-reservation contracts;
+- TLS/registry values align with the existing Tenant managed-resource modes;
+- Capsule values align with the admitted Tenant.spec fields or advanced resource kinds already enforced by the Capsule advanced provider path.
+
+The Resource Profile does not become a second provider model. It supplies reusable desired values to the existing canonical domains and keeps provider-specific execution capability-gated.
 
 ### Attachment evaluation
 
 Advanced controls are evaluated when the Resource Profile is attached to a Tenant placement.
 
 ```text
-profile advanced control enabled
+profile control enabled + committed non-secret values
 → inspect Tenant provider authority
 → inspect committed provider capability evidence
 → enabled on placement OR unavailable
@@ -273,20 +283,14 @@ The Namespace Provisioning attachment preview shows the selected profile control
 - **Unavailable** when the provider does not implement that control, is degraded, or required capability evidence is unavailable;
 - **Off** when the Resource Profile did not enable the control.
 
-The server re-evaluates this contract before Native Namespace provisioning. A requested but unavailable advanced control blocks the provider mutation before Namespace/ResourceQuota/LimitRange reconciliation starts. Successful provisioning records the evaluated advanced-control snapshot in provisioning evidence.
+The server re-evaluates this contract before Native Namespace provisioning. A requested but unavailable advanced control blocks the provider mutation before Namespace/ResourceQuota/LimitRange reconciliation starts. Successful provisioning records both the evaluated state and the persisted configuration snapshot in provisioning evidence.
 
-This prevents UI-only optimism. For example:
-
-- a Capsule-only Resource Pool control attached to Native is unavailable and blocks mutation;
-- an Ingress control attached to Native requires committed exposure-preflight and admission-enforcement capability;
-- a Capsule Ingress/resource-rule control requires Capsule resource-rule and admission capability;
-- provider degradation between preview and submit fails closed.
+Configuration validation is server-side. Invalid hostname patterns, unsupported managed-resource modes, malformed JSON, missing required resource names/specs, or a no-op Capsule cordon contract are rejected before commit.
 
 KAORI never silently drops an enabled advanced control and never substitutes Native behavior for Capsule-only controls.
 
 ### Profile mutability
 
-Small, Medium, Large, and Extra Large retain fixed numeric preset values. Their per-resource Managed ownership mask and selected advanced controls are committed as part of the created profile contract.
+Small, Medium, Large, and Extra Large retain fixed numeric preset values. Their per-resource Managed ownership mask and selected advanced-control values are committed as part of the created profile contract.
 
-Custom profiles can edit both numeric allocation intent and advanced-control intent. Changing either increments the Custom profile contract version. Existing Namespace snapshots remain frozen until an explicit governed allocation/attachment workflow changes them.
-
+Custom profiles can edit both numeric allocation intent and advanced-control values. Changing either increments the Custom profile contract version. Existing Namespace snapshots remain frozen until an explicit governed allocation/attachment workflow changes them.
