@@ -71,11 +71,18 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'data-tenant-base-preset-wrapper hidden' in form
     assert 'data-tenant-base-preset' in form
     assert 'data-tenant-resource-field="{{ field }}"' in form
+    assert 'data-tenant-resource-control="{{ field }}"' in form
+    assert 'control_contract_present' in form
+    assert '>Medium</option>' in form
+    assert '>Extra Large</option>' in form
+    assert 'Placement-Gated Controls' in form
     assert 'setReadonly(form, fields, true)' in script
     assert "wrapper.dataset.locked = readonly ? 'true' : 'false'" in script
     assert "fixedLabel.hidden = !readonly" in script
     assert "customLabel.hidden = readonly" in script
     assert "classSelect?.value === 'custom'" in script
+    assert 'syncManagedState' in script
+    assert "wrapper.dataset.controlled = managed ? 'true' : 'false'" in script
     assert "document.addEventListener('htmx:afterSwap'" in script
     assert 'read-only:bg-surface-disabled' in form_field
     assert 'read-only:text-content-muted' in form_field

@@ -2,6 +2,7 @@
 {% import "components/destructive_confirmation_modal.html" as destructive_modal %}
 {% import "components/form_field.html" as form_field %}
 {% import "components/table_label.html" as table_label %}
+{% set profile_class_labels = {'small': 'Small', 'standard': 'Medium', 'large': 'Large', 'extra_large': 'Extra Large', 'custom': 'Custom'} %}
 {% for profile in profiles %}
     {% set usage = profile_dependencies.get(profile.id) %}
     {% set editable = profile.profile_class == 'custom' %}
@@ -50,7 +51,7 @@
                     <div class="bg-surface-card p-3.5">
                         <dt class="text-xs uppercase tracking-wide text-content-muted">Contract</dt>
                         <dd class="mt-1 text-sm font-semibold text-content-primary">
-                            {{ profile.profile_class|title }} · v{{ profile.version }}
+                            {{ profile_class_labels.get(profile.profile_class, profile.profile_class|replace('_', ' ')|title) }} · v{{ profile.version }}
                         </dd>
                         <dd class="mt-1 text-xs text-content-muted">
                             {{ 'Operator managed' if editable else 'KAORI owned · Locked' }}
@@ -60,7 +61,7 @@
                         <dt class="text-xs uppercase tracking-wide text-content-muted">Lineage</dt>
                         <dd class="mt-1 text-sm font-semibold text-content-primary">
                             {% if editable and profile.base_preset_class %}
-                                Based on {{ profile.base_preset_class|title }}
+                                Based on {{ profile_class_labels.get(profile.base_preset_class, profile.base_preset_class|replace('_', ' ')|title) }}
                             {% elif editable %}
                                 Independent Custom
                             {% else %}
@@ -189,7 +190,7 @@
                             <div>
                                 <p class="text-sm font-semibold text-content-primary">Why this preset is locked</p>
                                 <p class="mt-1 text-xs leading-5 text-content-secondary">
-                                    Small, Standard, and Large are canonical versioned baselines. Editing them in place would make the same preset identity mean different resources over time. Create a Custom profile from this preset when different values are required; KAORI keeps the base preset/version as lineage evidence.
+                                    Small, Medium, Large, and Extra Large are canonical versioned baselines. Their numeric values stay fixed; the profile's Managed dimensions define which controls KAORI owns. Create a Custom profile when different numeric values are required; KAORI keeps the base preset/version as lineage evidence.
                                 </p>
                             </div>
                         </div>
@@ -212,7 +213,7 @@
                                 <div class="bg-surface-card p-3">
                                     <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
                                     <dd class="mt-1 text-sm font-semibold text-content-primary">
-                                        {{ value or 'Unbounded' }}
+                                        {{ value or 'Not Managed' }}
                                     </dd>
                                 </div>
                             {% endfor %}

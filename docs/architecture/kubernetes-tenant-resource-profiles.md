@@ -1,6 +1,6 @@
 # Tenant Resource Profiles and Namespace Provisioning
 
-Issue #113 owns the first managed Tenant mutation slice: administrator-driven namespace creation plus ResourceQuota and LimitRange intent/evidence.
+Issue #113 owns the first managed Tenant mutation slice: administrator-driven namespace creation plus ResourceQuota and LimitRange intent/evidence. Fast Track review #777 extends the Resource Profile operator-control contract without reopening the completed #113 baseline.
 
 ## Ownership boundary
 
@@ -13,18 +13,21 @@ Issue #113 owns the first managed Tenant mutation slice: administrator-driven na
 
 ## Resource Profile contract
 
-KAORI exposes four Resource Profile classes:
+KAORI exposes five operator-facing Resource Profile classes:
 
-- `small` — built-in, KAORI-owned, versioned, and locked in normal operator workflows.
-- `standard` — built-in, KAORI-owned, versioned, and locked in normal operator workflows.
-- `large` — built-in, KAORI-owned, versioned, and locked in normal operator workflows.
-- `custom` — operator-managed and editable within the supported validation contract.
+- **Small** (`small`) — built-in, KAORI-owned, versioned, and fixed.
+- **Medium** (`standard`) — built-in, KAORI-owned, versioned, and fixed. The persisted `standard` key is intentionally retained for backward compatibility.
+- **Large** (`large`) — built-in, KAORI-owned, versioned, and fixed.
+- **Extra Large** (`extra_large`) — built-in, KAORI-owned, versioned, and fixed.
+- **Custom** (`custom`) — operator-managed and editable within the supported validation contract.
 
-Small, Standard, and Large are canonical presets. Their ResourceQuota and Container LimitRange values are server-authoritative; caller-supplied field overrides are ignored for those classes.
+Built-in numeric values are server-authoritative; caller-supplied numeric overrides are ignored. Each supported quota or Container LimitRange dimension also has an explicit **Managed by KAORI** control. Checked means KAORI owns and materializes that dimension using the fixed preset value. Unchecked means the dimension is omitted from the committed profile/effective allocation and KAORI does not claim control over it.
 
-When different values are required, the operator must use a Custom profile. Custom may start empty or be **based on** Small, Standard, or Large. KAORI records the base preset class/version as lineage evidence while the resulting Custom values remain independently editable.
+The managed-dimension selection is therefore an **ownership mask**, not an inline preset override. A built-in profile can control only the dimensions required by an operator while preserving stable preset semantics.
 
-Blank/null supported quota or LimitRange dimensions mean **no Tenant limit configured for that dimension**. Blank is distinct from zero.
+When different numeric values are required, the operator must use a Custom profile. Custom may start empty or be **based on** Small, Medium, Large, or Extra Large. KAORI records the base preset class/version as lineage evidence while the resulting Custom values remain independently editable.
+
+Blank/null or unmanaged supported quota/LimitRange dimensions mean **KAORI does not configure that dimension**. Zero remains a distinct explicit value and must not be conflated with missing/unmanaged state.
 
 Supported baseline quota keys:
 
@@ -39,22 +42,22 @@ Supported baseline quota keys:
 
 ### Built-in preset values — version 1
 
-| Resource | Small | Standard | Large |
-| --- | ---: | ---: | ---: |
-| CPU requests | `1` | `2` | `4` |
-| CPU limits | `2` | `4` | `8` |
-| Memory requests | `2Gi` | `4Gi` | `8Gi` |
-| Memory limits | `4Gi` | `8Gi` | `16Gi` |
-| Pods | `10` | `20` | `40` |
-| PVCs | `5` | `10` | `20` |
-| Storage requests | `50Gi` | `100Gi` | `200Gi` |
-| Services | `5` | `10` | `20` |
-| ConfigMaps | `25` | `50` | `100` |
-| Secrets | `25` | `50` | `100` |
-| Default CPU request | `100m` | `100m` | `250m` |
-| Default CPU limit | `250m` | `500m` | `1` |
-| Default memory request | `128Mi` | `128Mi` | `256Mi` |
-| Default memory limit | `256Mi` | `512Mi` | `1Gi` |
+| Resource | Small | Medium | Large | Extra Large |
+| --- | ---: | ---: | ---: | ---: |
+| CPU requests | `1` | `2` | `4` | `8` |
+| CPU limits | `2` | `4` | `8` | `16` |
+| Memory requests | `2Gi` | `4Gi` | `8Gi` | `16Gi` |
+| Memory limits | `4Gi` | `8Gi` | `16Gi` | `32Gi` |
+| Pods | `10` | `20` | `40` | `80` |
+| PVCs | `5` | `10` | `20` | `40` |
+| Storage requests | `50Gi` | `100Gi` | `200Gi` | `400Gi` |
+| Services | `5` | `10` | `20` | `40` |
+| ConfigMaps | `25` | `50` | `100` | `200` |
+| Secrets | `25` | `50` | `100` | `200` |
+| Default CPU request | `100m` | `100m` | `250m` | `500m` |
+| Default CPU limit | `250m` | `500m` | `1` | `2` |
+| Default memory request | `128Mi` | `128Mi` | `256Mi` | `512Mi` |
+| Default memory limit | `256Mi` | `512Mi` | `1Gi` | `2Gi` |
 
 Changing these values is a governed product change and requires a new preset version. Existing namespace allocations do not silently inherit a later preset version.
 
@@ -62,7 +65,7 @@ Changing these values is a governed product change and requires a new preset ver
 
 Resource Profile mutability is visible before an operator opens the detail dialog:
 
-- **KAORI Preset · Locked** — Small, Standard, and Large are code-owned/versioned baselines. Registry action is **View**.
+- **KAORI Preset · Locked** — Small, Medium, Large, and Extra Large are code-owned/versioned baselines. Registry action is **View**. Numeric values are immutable; Managed toggles select the KAORI-owned subset.
 - **Custom · Editable** — operator-managed reusable allocation contract. Registry action is **Manage**.
 - **Adopted Baseline · Observed** is allocation provenance, not a new built-in preset class. During #768 governed adoption, KAORI reads the live legacy ResourceQuota/LimitRange or admitted Capsule allocation evidence, commits the observed snapshot, and performs no provider mutation. It remains read-only until explicit allocation-governance cutover.
 - If an observed baseline semantically matches a versioned Small/Standard/Large preset, KAORI records that preset only as lineage. The adopted Namespace still remains **Observed**, not KAORI-managed.
@@ -219,7 +222,7 @@ A managed namespace records:
 - whether the selected profile is Custom;
 - desired/effective hashes and provider read-back evidence.
 
-For a built-in profile, namespace provisioning snapshots the canonical preset values; per-namespace inline overrides are not accepted.
+For a built-in profile, namespace provisioning snapshots only the profile's managed dimensions, rehydrating every selected key from the canonical preset value so stored/operator input cannot mutate a fixed preset. Per-namespace inline numeric overrides are not accepted.
 
 For a Custom profile, namespace provisioning snapshots the committed Custom profile values. If the Custom profile was based on a built-in preset, the Resource Profile also retains the base preset class/version lineage.
 
@@ -232,3 +235,16 @@ Namespace names use the Kubernetes DNS-label contract. Native reconciliation alw
 KAORI labels managed resources with `app.kubernetes.io/managed-by=kaori`. Existing resources that declare another manager are not silently overwritten. Provider errors and contract mismatches leave explicit failed or drifted provisioning evidence rather than a false Ready state.
 
 The committed desired contract and verified effective contract are independently hashed. Ready requires hash equality after provider read-back.
+
+
+## Placement-gated controls
+
+Resource Profiles remain the allocation-control contract; they do not absorb unrelated policy domains.
+
+When a profile is attached to a Native or Capsule placement, KAORI evaluates additional controls against the active provider capability evidence:
+
+- **Resource allocation / Container defaults** — owned by the Resource Profile contract.
+- **Ingress, Service exposure, and hostname reservation** — reuse the Tenant exposure/domain authority from #119. Resource Profiles must not create a second hostname or Ingress policy model.
+- **Native/Capsule-specific controls** — become actionable only when #120/#121/#124 capability evidence proves that the authoritative provider path supports them. Unsupported controls remain visible but disabled with an operator-readable reason.
+
+This keeps the profile portable while preventing a control from appearing actionable on a provider that cannot enforce it.
