@@ -168,6 +168,7 @@ def _live_global_resource_quota(
     tenant: Tenant,
     *,
     expected_source: Mapping[str, Any] | None = None,
+    require_resource_version_match: bool = True,
 ) -> tuple[dict[str, Any], dict[str, str]]:
     state = build_capsule_shared_allocation_cutover_state(tenant)
     managed_intent = _managed_shared_intent(tenant)
@@ -214,7 +215,12 @@ def _live_global_resource_quota(
     expected_rv = str(source.get('resource_version') or '')
     if expected_uid and current_source['uid'] and expected_uid != current_source['uid']:
         raise ValueError('GlobalResourceQuota UID changed; refresh provider evidence before governance mutation.')
-    if expected_rv and current_source['resource_version'] and expected_rv != current_source['resource_version']:
+    if (
+        require_resource_version_match
+        and expected_rv
+        and current_source['resource_version']
+        and expected_rv != current_source['resource_version']
+    ):
         raise ValueError(
             'GlobalResourceQuota resourceVersion changed; refresh provider evidence before governance mutation.'
         )
@@ -445,7 +451,11 @@ def observe_managed_capsule_shared_allocation(
         raise ValueError('Advanced Capsule intent is not the canonical Tenant shared allocation authority.')
     source = (intent.reconciliation_evidence_json or {}).get('provider_source')
     source = source if isinstance(source, Mapping) else {}
-    current, current_source = _live_global_resource_quota(tenant, expected_source=source)
+    current, current_source = _live_global_resource_quota(
+        tenant,
+        expected_source=source,
+        require_resource_version_match=False,
+    )
     observed_quota = _quota_from_global_resource(current)
     desired_spec = intent.desired_spec_json or {}
     desired_quota = dict((desired_spec.get('quota') or {}).get('hard') or {})
