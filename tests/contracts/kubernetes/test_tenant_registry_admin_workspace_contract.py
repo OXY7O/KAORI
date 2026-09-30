@@ -401,7 +401,7 @@ def test_cluster_estate_uses_compact_shared_table_geometry() -> None:
     estate = read('app/templates/kubernetes/tenant/partials/_cluster_estate.html')
 
     assert "table_ui.table_classes('min-w-[900px]')" in estate
-    assert 'table_ui.cluster_identity(row.name, row.environment)' in estate
+    assert 'table_ui.cluster_identity_with_status(' in estate
     for width in ('w-[29%]', 'w-[11%]', 'w-[13%]', 'w-[16%]', 'w-[17%]', 'w-[14%]'):
         assert width in estate
     assert estate.count('align-middle') >= 6
