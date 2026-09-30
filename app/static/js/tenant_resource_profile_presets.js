@@ -178,6 +178,92 @@
         render()
     }
 
+    const quotaSummary = (quota) => {
+        if (!quota) return '—'
+        const parts = [
+            ['CPU requests', quota['requests.cpu']],
+            ['CPU limits', quota['limits.cpu']],
+            ['Memory requests', quota['requests.memory']],
+            ['Memory limits', quota['limits.memory']],
+            ['Pods', quota.pods],
+            ['Storage', quota['requests.storage']],
+        ]
+            .filter(([, value]) => value !== undefined && value !== null && String(value) !== '')
+            .map(([label, value]) => `${label} ${value}`)
+        return parts.length ? parts.join(' · ') : 'No bounded supported dimensions'
+    }
+
+    const initTenantQuotaCutoverForm = (form) => {
+        if (!(form instanceof HTMLFormElement) || form.dataset.kaoriInitialized === 'true') return
+        form.dataset.kaoriInitialized = 'true'
+
+        const profiles = readJson('tenant-namespace-allocation-profiles')
+        const tenants = readJson('tenant-capsule-tenant-quota-state')
+        const tenantSelect = form.querySelector('[data-tenant-quota-tenant]')
+        const profileSelect = form.querySelector('[data-tenant-quota-profile]')
+        const currentSource = form.querySelector('[data-tenant-quota-current-source]')
+        const currentScope = form.querySelector('[data-tenant-quota-current-scope]')
+        const proposedProfile = form.querySelector('[data-tenant-quota-proposed-profile]')
+        const proposedSummary = form.querySelector('[data-tenant-quota-proposed-summary]')
+
+        const render = () => {
+            const current = tenants[tenantSelect?.value] || null
+            const proposed = profiles[profileSelect?.value] || null
+            const proposedLabel = profileSelect?.selectedOptions?.[0]?.textContent?.trim() || '—'
+            const source = current?.source || {}
+            if (currentSource) {
+                currentSource.textContent = current
+                    ? `Tenant/${source.name || 'unknown'} · ${source.api_version || 'unknown'}`
+                    : '—'
+            }
+            if (currentScope) {
+                currentScope.textContent = current
+                    ? `Scope ${current.scope || 'Tenant'} · ${quotaSummary(current.current_quota)}`
+                    : '—'
+            }
+            if (proposedProfile) proposedProfile.textContent = proposed ? proposedLabel : '—'
+            if (proposedSummary) proposedSummary.textContent = proposed ? quotaSummary(proposed.quota) : '—'
+        }
+
+        tenantSelect?.addEventListener('change', render)
+        profileSelect?.addEventListener('change', render)
+        render()
+    }
+
+    const initTenantQuotaManagedForm = (form) => {
+        if (!(form instanceof HTMLFormElement) || form.dataset.kaoriInitialized === 'true') return
+        form.dataset.kaoriInitialized = 'true'
+
+        const profiles = readJson('tenant-namespace-allocation-profiles')
+        const governance = readJson('tenant-capsule-tenant-quota-governance')
+        const tenantSelect = form.querySelector('[data-tenant-quota-managed-tenant]')
+        const profileSelect = form.querySelector('[data-tenant-quota-managed-profile]')
+        const current = form.querySelector('[data-tenant-quota-managed-current]')
+        const summary = form.querySelector('[data-tenant-quota-managed-summary]')
+
+        const render = () => {
+            const state = governance[tenantSelect?.value] || null
+            const proposed = profiles[profileSelect?.value] || null
+            const proposedLabel = profileSelect?.selectedOptions?.[0]?.textContent?.trim() || '—'
+            if (current) {
+                current.textContent = state
+                    ? `${state.scope || 'Tenant'} · ${state.provenance || 'kaori_managed'}`
+                    : '—'
+            }
+            if (summary) {
+                const currentSummary = state ? quotaSummary(state.desired_quota) : '—'
+                const nextSummary = proposed ? quotaSummary(proposed.quota) : '—'
+                summary.textContent = proposed
+                    ? `Current: ${currentSummary} → Proposed: ${proposedLabel} · ${nextSummary}`
+                    : `Current: ${currentSummary}`
+            }
+        }
+
+        tenantSelect?.addEventListener('change', render)
+        profileSelect?.addEventListener('change', render)
+        render()
+    }
+
     const initNamespaceForm = (form) => {
         if (!(form instanceof HTMLFormElement) || form.dataset.kaoriInitialized === 'true') return
         form.dataset.kaoriInitialized = 'true'
@@ -198,6 +284,8 @@
         scope.querySelectorAll('[data-tenant-capacity-policy-form]').forEach(initCapacityPolicyForm)
         scope.querySelectorAll('[data-tenant-allocation-change-form]').forEach(initAllocationChangeForm)
         scope.querySelectorAll('[data-tenant-shared-allocation-form]').forEach(initSharedAllocationForm)
+        scope.querySelectorAll('[data-tenant-quota-allocation-form]').forEach(initTenantQuotaCutoverForm)
+        scope.querySelectorAll('[data-tenant-quota-managed-form]').forEach(initTenantQuotaManagedForm)
         scope.querySelectorAll('[data-tenant-namespace-allocation-form]').forEach(initNamespaceForm)
     }
 
