@@ -102,6 +102,7 @@
                         {{ form_field.label_row('Policy Profile') }}
                         <select name="advanced_control_service_exposure_profile_key"
                                 data-tenant-advanced-control-field="service_exposure"
+                                data-tenant-service-exposure-profile
                                 {% if not editable or not enabled %}disabled{% endif %}
                                 class="{{ form_field.select_classes() }}">
                             <option value="ingress_only" {% if exposure_profile == 'ingress_only' %}selected{% endif %}>Ingress only</option>
@@ -119,6 +120,7 @@
                             {{ form_field.label_row(label) }}
                             <select name="advanced_control_service_exposure_{{ field }}"
                                     data-tenant-advanced-control-field="service_exposure"
+                                    data-tenant-service-exposure-custom-field
                                     {% if not editable or not enabled %}disabled{% endif %}
                                     class="{{ form_field.select_classes() }}">
                                 {% set selected_value = config.get(field, default_value) %}
@@ -174,6 +176,7 @@
                         {{ form_field.label_row('Hostname Pattern') }}
                         <input type="text"
                                name="advanced_control_hostname_reservation_hostname_pattern"
+                               required
                                value="{{ config.get('hostname_pattern', '') }}"
                                placeholder="app.example.com"
                                data-tenant-advanced-control-field="hostname_reservation"
@@ -216,6 +219,7 @@
                         {{ form_field.label_row('Mode') }}
                         <select name="advanced_control_managed_tls_mode"
                                 data-tenant-advanced-control-field="managed_tls"
+                                data-tenant-managed-tls-mode
                                 {% if not editable or not enabled %}disabled{% endif %}
                                 class="{{ form_field.select_classes() }}">
                             <option value="platform_tls" {% if config.get('mode', 'platform_tls') == 'platform_tls' %}selected{% endif %}>Platform TLS</option>
@@ -226,6 +230,7 @@
                         {{ form_field.label_row('Resource Name') }}
                         <input type="text"
                                name="advanced_control_managed_tls_resource_name"
+                               required
                                value="{{ config.get('resource_name', 'tenant-tls') }}"
                                data-tenant-advanced-control-field="managed_tls"
                                {% if not editable or not enabled %}disabled{% endif %}
@@ -236,6 +241,7 @@
                         <input type="text"
                                name="advanced_control_managed_tls_source_reference"
                                value="{{ config.get('source_reference') or '' }}"
+                               data-tenant-managed-tls-source
                                placeholder="vault://pki/team-a"
                                data-tenant-advanced-control-field="managed_tls"
                                {% if not editable or not enabled %}disabled{% endif %}
@@ -278,6 +284,7 @@
                         {{ form_field.label_row('Mode') }}
                         <select name="advanced_control_managed_registry_mode"
                                 data-tenant-advanced-control-field="managed_registry"
+                                data-tenant-managed-registry-mode
                                 {% if not editable or not enabled %}disabled{% endif %}
                                 class="{{ form_field.select_classes() }}">
                             <option value="image_pull_secret" {% if config.get('mode', 'image_pull_secret') == 'image_pull_secret' %}selected{% endif %}>Image pull Secret</option>
@@ -288,6 +295,7 @@
                         {{ form_field.label_row('Resource Name') }}
                         <input type="text"
                                name="advanced_control_managed_registry_resource_name"
+                               required
                                value="{{ config.get('resource_name', 'registry-credentials') }}"
                                data-tenant-advanced-control-field="managed_registry"
                                {% if not editable or not enabled %}disabled{% endif %}
@@ -298,6 +306,7 @@
                         <input type="text"
                                name="advanced_control_managed_registry_source_reference"
                                value="{{ config.get('source_reference') or '' }}"
+                               data-tenant-managed-registry-source
                                placeholder="vault://registry/team-a"
                                data-tenant-advanced-control-field="managed_registry"
                                {% if not editable or not enabled %}disabled{% endif %}
@@ -456,6 +465,7 @@
                         {{ form_field.label_row('Resource Name') }}
                         <input type="text"
                                name="advanced_control_capsule_resource_pools_resource_name"
+                               required
                                value="{{ config.get('resource_name', '') }}"
                                placeholder="team-pool"
                                data-tenant-advanced-control-field="capsule_resource_pools"
@@ -466,6 +476,7 @@
                         {{ form_field.label_row('Spec JSON') }}
                         <textarea name="advanced_control_capsule_resource_pools_spec_json"
                                   rows="4"
+                                  required
                                   data-tenant-advanced-control-field="capsule_resource_pools"
                                   {% if not editable or not enabled %}disabled{% endif %}
                                   class="mt-2 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 py-3 font-mono text-xs leading-5 text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-content-muted">{{ config.get('spec', {})|tojson }}</textarea>
@@ -516,6 +527,7 @@
                         {{ form_field.label_row('Resource Name') }}
                         <input type="text"
                                name="advanced_control_capsule_replication_resource_name"
+                               required
                                value="{{ config.get('resource_name', '') }}"
                                placeholder="tenant-resource"
                                data-tenant-advanced-control-field="capsule_replication"
@@ -526,6 +538,7 @@
                         {{ form_field.label_row('Spec JSON') }}
                         <textarea name="advanced_control_capsule_replication_spec_json"
                                   rows="4"
+                                  required
                                   data-tenant-advanced-control-field="capsule_replication"
                                   {% if not editable or not enabled %}disabled{% endif %}
                                   class="mt-2 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 py-3 font-mono text-xs leading-5 text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-content-muted">{{ config.get('spec', {})|tojson }}</textarea>
