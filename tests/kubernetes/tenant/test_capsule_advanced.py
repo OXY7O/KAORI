@@ -4,6 +4,7 @@ import pytest
 
 from app.kubernetes.tenant.capsule_advanced import (
     CapsuleAdvancedResourceKind,
+    _write_custom_object,
     capsule_resource_descriptor,
     validate_advanced_intent,
 )
@@ -98,3 +99,75 @@ def test_namespaced_advanced_resource_requires_governed_namespace() -> None:
 def test_self_service_namespace_creation_is_not_an_executable_resource_kind() -> None:
     with pytest.raises(ValueError):
         CapsuleAdvancedResourceKind('self_service_namespace')
+
+
+
+class _ExistingGlobalQuotaApi:
+    def __init__(self, *, resource_version='8'):
+        self.resource_version = resource_version
+        self.patches = []
+
+    def get_cluster_custom_object(self, group, version, plural, name):
+        return {
+            'metadata': {
+                'name': name,
+                'uid': 'quota-uid',
+                'resourceVersion': self.resource_version,
+            },
+            'spec': {
+                'quota': {
+                    'hard': {
+                        'requests.cpu': '4',
+                    }
+                }
+            },
+        }
+
+    def patch_cluster_custom_object(self, group, version, plural, name, body):
+        self.patches.append(body)
+
+
+def _adopted_global_quota_intent(*, expected_resource_version='8'):
+    return SimpleNamespace(
+        public_id='intent-1',
+        tenant_id='tenant-api',
+        resource_kind='global_resource_quota',
+        provider_key='capsule',
+        desired_spec_json={
+            'quota': {
+                'hard': {
+                    'requests.cpu': '6',
+                }
+            }
+        },
+        namespace=None,
+        resource_name='api-quota',
+        reconciliation_evidence_json={
+            'expected_provider_source': {
+                'uid': 'quota-uid',
+                'resource_version': expected_resource_version,
+            }
+        },
+    )
+
+
+def test_adopted_capsule_resource_rejects_stale_resource_version_before_patch() -> None:
+    api = _ExistingGlobalQuotaApi(resource_version='9')
+    intent = _adopted_global_quota_intent(expected_resource_version='8')
+    descriptor = capsule_resource_descriptor('global_resource_quota')
+
+    with pytest.raises(ValueError, match='resourceVersion changed'):
+        _write_custom_object(api, intent, descriptor)
+
+    assert api.patches == []
+
+
+def test_adopted_capsule_resource_patch_carries_current_resource_version() -> None:
+    api = _ExistingGlobalQuotaApi(resource_version='8')
+    intent = _adopted_global_quota_intent(expected_resource_version='8')
+    descriptor = capsule_resource_descriptor('global_resource_quota')
+
+    _write_custom_object(api, intent, descriptor)
+
+    assert len(api.patches) == 1
+    assert api.patches[0]['metadata']['resourceVersion'] == '8'
