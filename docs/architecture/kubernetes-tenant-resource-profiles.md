@@ -237,48 +237,55 @@ KAORI labels managed resources with `app.kubernetes.io/managed-by=kaori`. Existi
 The committed desired contract and verified effective contract are independently hashed. Ready requires hash equality after provider read-back.
 
 
-## Placement-gated controls
+## Advanced profile controls
 
-Resource Profiles remain the allocation-control contract; they do not absorb unrelated policy domains.
+Resource Profiles now persist **advanced control intent** in addition to allocation and Container LimitRange dimensions. These are real reusable profile controls, not a status/TODO matrix.
 
-The Resource Profile workspace exposes a placement-control matrix so operators can see the control boundary before attachment. The matrix is descriptive of authority and capability evaluation; it does not create duplicate Ingress, DNS, TLS, registry, or Capsule policy models inside Resource Profiles.
+The profile can enable:
 
-### Terminal control states
+- **Ingress** — canonical exposure policy authority remains #119.
+- **Hostname Reservation** — canonical domain ownership/collision authority remains #119.
+- **Managed TLS** — canonical managed-resource authority remains #118.
+- **Managed Registry** — canonical managed-resource authority remains #118.
+- **Capsule Namespace Controls** — capability-gated by #121/#124.
+- **Capsule Resource Rules** — capability-gated by #121/#124.
+- **Capsule Resource Pools** — Capsule-only authority from #124.
+- **Capsule Replication** — Capsule-only authority from #124.
+- **Capsule Tenant Cordon** — Capsule-only authority from #124.
 
-- **Managed** — requested intent exists, the canonical owning KAORI domain has sufficient committed configuration, and the authoritative provider reports the required capability as available.
-- **Not Managed** — the Resource Profile does not own the policy domain, the control was not requested through its canonical authority, or required configuration is absent.
-- **Unsupported** — the authoritative provider cannot enforce the control. The control remains visible but disabled with an operator-readable reason.
-- **Capability Gated** is the pre-attachment/conditional presentation for a control whose final terminal state depends on the selected provider placement.
+The profile stores whether each control is enabled. It does **not** duplicate the detailed Ingress, hostname, TLS, registry, or Capsule provider configuration owned by those canonical domains.
 
-The effective rule is:
+### Attachment evaluation
+
+Advanced controls are evaluated when the Resource Profile is attached to a Tenant placement.
 
 ```text
-Requested control
-∩ canonical KAORI configuration
-∩ authoritative provider capability
-= effective Managed control
+profile advanced control enabled
+→ inspect Tenant provider authority
+→ inspect committed provider capability evidence
+→ enabled on placement OR unavailable
 ```
 
-A provider-state or capability change between preview and commit fails closed. KAORI does not silently drop requested controls and does not fall back from Capsule to Native (or Native to Capsule) merely to make an unavailable control appear successful.
+The Namespace Provisioning attachment preview shows the selected profile controls against the selected Tenant Environment. A requested control is:
 
-### Control matrix authority
+- **Enabled** when the selected authoritative provider reports every required capability as available;
+- **Unavailable** when the provider does not implement that control, is degraded, or required capability evidence is unavailable;
+- **Off** when the Resource Profile did not enable the control.
 
-| Control pack | Resource Profile behavior | Native placement | Capsule placement | Canonical authority |
-| --- | --- | --- | --- | --- |
-| Resource Allocation | Managed by per-dimension ownership mask | Managed through admitted Native ResourceQuota path | Capability gated through admitted Capsule quota authority | #113 |
-| Container Defaults | Managed by per-dimension ownership mask | Managed through admitted Native Container LimitRange path | Capability gated; only admitted authority may mutate | #113 |
-| Ingress & Service Exposure | Not duplicated into profile allocation state | Capability gated | Capability gated | #119 |
-| Hostname Reservation | Not duplicated into profile allocation state | Capability gated | Capability gated | #119 |
-| Managed TLS | Requires canonical managed-resource intent/configuration | Capability gated | Capability gated | #118 |
-| Managed Registry | Requires canonical managed-resource intent/configuration | Capability gated | Capability gated | #118 |
-| Capsule Advanced | Requested only through admitted Capsule capability intents | Unsupported; no Native emulation | Capability gated | #121 / #124 |
+The server re-evaluates this contract before Native Namespace provisioning. A requested but unavailable advanced control blocks the provider mutation before Namespace/ResourceQuota/LimitRange reconciliation starts. Successful provisioning records the evaluated advanced-control snapshot in provisioning evidence.
 
-When a profile is attached to a Native or Capsule placement:
+This prevents UI-only optimism. For example:
 
-- quota and Container defaults use the Resource Profile ownership mask from #113;
-- Ingress, Service exposure, and hostname reservation reuse #119;
-- Managed TLS and registry controls reuse #118;
-- Native and Capsule capability readiness comes from #120/#121;
-- Capsule-only advanced controls remain under #124 and are never projected onto Native as an implicit fallback.
+- a Capsule-only Resource Pool control attached to Native is unavailable and blocks mutation;
+- an Ingress control attached to Native requires committed exposure-preflight and admission-enforcement capability;
+- a Capsule Ingress/resource-rule control requires Capsule resource-rule and admission capability;
+- provider degradation between preview and submit fails closed.
 
-This keeps the profile portable while making unsupported or not-yet-configured controls explicit instead of silently ignoring them.
+KAORI never silently drops an enabled advanced control and never substitutes Native behavior for Capsule-only controls.
+
+### Profile mutability
+
+Small, Medium, Large, and Extra Large retain fixed numeric preset values. Their per-resource Managed ownership mask and selected advanced controls are committed as part of the created profile contract.
+
+Custom profiles can edit both numeric allocation intent and advanced-control intent. Changing either increments the Custom profile contract version. Existing Namespace snapshots remain frozen until an explicit governed allocation/attachment workflow changes them.
+
