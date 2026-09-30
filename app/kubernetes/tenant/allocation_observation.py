@@ -433,6 +433,12 @@ def _capsule_tenant_quota(tenant_item: Mapping[str, Any]) -> dict[str, Any] | No
         'ambiguous_dimensions': ambiguous,
     }
 
+def observe_capsule_tenant_resource_quota(tenant_item: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Normalize the legacy Capsule Tenant.spec.resourceQuotas authority without provider mutation."""
+
+    return _capsule_tenant_quota(tenant_item)
+
+
 def _selector_targets_tenant(selector: Mapping[str, Any], tenant_name: str) -> tuple[bool, bool]:
     match_labels = selector.get('matchLabels') or {}
     if isinstance(match_labels, Mapping):
