@@ -156,13 +156,13 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'Targets are filtered automatically.' not in workspace
     assert 'Effective RBAC remains provider-verified.' not in workspace
     assert 'Tenant and scope are validated before commit.' in workspace
-    assert 'Namespace needs one target; broader scopes reconcile as namespaces become available.' in workspace
+    assert 'Namespace scope requires one target.' in workspace
     assert 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3' in workspace
     assert 'Start from one active Membership that identifies the principal and fixes its Tenant boundary.' in workspace
     assert (
         'Use the least-privilege profile and narrowest scope that meets the principal’s operational need.' in workspace
     )
-    assert 'Environment/Tenant scope may stay Pending until a namespace exists.' in workspace
+    assert 'Environment/Tenant scope may stay Pending until namespaces exist.' in workspace
     assert 'Access Boundaries' in workspace
     assert 'components/info_tip.html' in workspace
     assert 'access-grant-form-tip' in workspace
@@ -377,6 +377,11 @@ def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None
     assert 'Freeze Mutations' in registry
     assert 'Remove Namespaces' in registry
     assert 'Verify & Retain' in registry
+    assert "presentation='steps'" in registry
+    assert 'Governed teardown with provider verification.' in registry
+    assert 'Block new Tenant changes.' in registry
+    assert 'Disable credentials and grants.' in registry
+    assert 'Delete KAORI-managed namespaces and verify absence.' in registry
     assert 'Terminating' in registry
 
     assert 'g.tenant_operational_feedback = feedback' in routes
@@ -583,10 +588,50 @@ def test_destructive_modal_supports_structured_impact_summary() -> None:
 
     assert 'impact_items=none' in component
     assert 'warning=none' in component
+    assert "presentation='default'" in component
+    assert "'max-w-4xl' if presentation == 'steps'" in component
+    assert "'%02d'|format(loop.index)" in component
     assert 'What will happen' in component
     assert 'data-destructive-modal-title' in component
     assert 'data-destructive-detail' in component
     assert 'data-destructive-action-label' in component
+
+
+def test_resource_profile_editability_allocation_change_and_capacity_decisions_follow_kaori_ux() -> None:
+    profile_form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
+    profile_js = read('app/static/js/tenant_resource_profile_presets.js')
+    allocation = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    decisions = read('app/templates/kubernetes/tenant/partials/_capacity_decisions.html')
+    service = read('app/kubernetes/tenant/service.py')
+    routes = read('app/kubernetes/tenant/routes.py')
+
+    assert 'KAORI Preset · Fixed' in profile_form
+    assert 'Fixed · Locked' in profile_form
+    assert 'data-tenant-resource-mode-label' in profile_form
+    assert 'data-locked="true"' in profile_form
+    assert 'data-[locked=true]:cursor-not-allowed' in profile_form
+    assert "modeTitle.textContent = readonly ? 'KAORI Preset · Fixed' : 'Custom · Editable'" in profile_js
+    assert "modeText.textContent = readonly ? 'Fixed' : 'Editable'" in profile_js
+    assert "input.dataset.locked = readonly ? 'true' : 'false'" in profile_js
+
+    assert 'Allocation Change' in allocation
+    assert 'Allocation Comparison' in allocation
+    assert 'Capacity gate' in allocation
+    assert 'Current allocation stays active until preflight and reconciliation succeed.' in allocation
+    assert 'data-tenant-allocation-current-cpu' in allocation
+    assert 'data-tenant-allocation-proposed-cpu' in allocation
+
+    assert 'components/table_registry.html' in decisions
+    assert 'table_ui.inventory_block_header' in decisions
+    assert 'registry_ui.filter_form' in decisions
+    assert 'registry_ui.footer' in decisions
+    assert 'decision_page' in decisions
+    assert 'decision_per_page' in decisions
+    assert 'capacity_decision_pagination.allowed_per_page' in decisions
+    assert 'def get_capacity_decision_registry_context(' in service
+    assert 'paginate_query(' in service
+    assert 'get_capacity_decision_registry_context(' in routes
+    assert "request.args.get('decision_per_page', 5" in routes
 
 
 def test_committed_tenant_snapshot_is_separate_from_lazy_live_provider_connectivity() -> None:
@@ -625,7 +670,7 @@ def test_committed_tenant_snapshot_is_separate_from_lazy_live_provider_connectiv
     assert '{% block tenant_content %}' in base
     assert '{% if not native_available %}\n            {% include "components/cluster/_onboarding_banner.html" %}' not in base
     assert 'Provider Operations Restricted' in base
-    assert 'Committed KAORI Tenant state remains available.' in base
+    assert 'KAORI state stays available. Provider mutations wait for a Ready, reachable integration.' in base
 
     assert 'registered_clusters = (' in service
     assert "for cluster in registered_clusters" in service
@@ -790,7 +835,7 @@ def test_live_provider_connectivity_uses_compact_non_snapshot_copy() -> None:
     assert 'Registered Kubernetes connections' in partial
     assert 'Provider operations fail closed per target' in partial
     assert 'Live API reachability' in service
-    assert 'Committed KAORI Tenant state remains readable' in service
+    assert 'KAORI state stays readable; provider operations fail closed.' in service
     assert "title='Tenant Collection Snapshot'" not in partial
 
 
@@ -820,8 +865,8 @@ def test_tenant_setup_explains_capsule_adoption_boundary() -> None:
     assert '<option value="native_kubernetes" selected>Native Kubernetes</option>' in form
     assert '<option value="capsule">Capsule</option>' in form
     assert 'Existing Capsule Tenant CRs use Discovery → Adoption.' in form
-    assert 'Native Kubernetes and supported Capsule clusters allow direct creation.' in setup
-    assert 'Existing Capsule Tenant CRs use Discovery → Adoption.' in setup
+    assert 'Native and supported Capsule clusters allow direct creation.' in setup
+    assert 'Existing Capsule Tenants use Discovery → Adoption.' in setup
 
 
 def test_tenant_sync_marks_fresh_missing_namespaces_as_observational_drift() -> None:
@@ -1104,7 +1149,7 @@ def test_tenant_setup_and_membership_guidance_use_compact_uat_copy() -> None:
     assert 'Existing Capsule Tenant CRs use Discovery → Adoption.' in setup
     assert 'compatible Capsule clusters support direct Tenant Setup creation' not in setup
 
-    assert 'Revoke disables grants; reactivation does not restore them.' in memberships
+    assert 'Revoke disables grants permanently. Reactivation does not restore old grants.' in memberships
     assert 'Reactivation restores membership only; old grants stay revoked.' not in memberships
 
 
