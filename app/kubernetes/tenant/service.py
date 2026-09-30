@@ -1103,10 +1103,37 @@ def get_namespace_registry_context(
             str(record.id): {
                 'namespace': record.namespace,
                 'profile_id': str(record.resource_profile_id) if record.resource_profile_id is not None else None,
-                'profile_name': record.resource_profile.name if record.resource_profile is not None else 'Unknown',
-                'profile_version': record.resource_profile_version,
+                'profile_name': (
+                    record.resource_profile.name
+                    if record.resource_profile is not None
+                    else str(
+                        (
+                            (
+                                (record.provisioning_evidence_json or {}).get('allocation')
+                                if isinstance((record.provisioning_evidence_json or {}).get('allocation'), dict)
+                                else {}
+                            ).get('profile_lineage')
+                            or {}
+                        ).get('label')
+                        or 'Adopted Baseline · Observed'
+                    )
+                ),
+                'profile_version': (
+                    record.resource_profile_version
+                    or (
+                        (
+                            (
+                                (record.provisioning_evidence_json or {}).get('allocation')
+                                if isinstance((record.provisioning_evidence_json or {}).get('allocation'), dict)
+                                else {}
+                            ).get('profile_lineage')
+                            or {}
+                        ).get('profile_version')
+                    )
+                ),
                 'quota': record.allocation_quota_json or {},
                 'limits': record.allocation_limit_defaults_json or {},
+                'control_state': allocation_control_state(record),
             }
             for record in namespace_options
         },
