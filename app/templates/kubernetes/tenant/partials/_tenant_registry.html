@@ -12,7 +12,7 @@
     'environment': tenant_registry_filters.environment,
     'lifecycle_status': tenant_registry_filters.lifecycle_status
 } %}
-<section id="{{ registry_id }}" class="{{ table_ui.block_classes() }}">
+<section id="{{ registry_id }}" class="{{ table_ui.block_classes(allow_overflow=true) }}">
     {% set header_actions %}
         {% if tenant_registry_filters.search or tenant_registry_filters.cluster_id or tenant_registry_filters.environment or tenant_registry_filters.lifecycle_status %}
             {{ registry_ui.clear_filters_link('tenant.tenants',
@@ -23,6 +23,8 @@
             query_params={'section': 'registry'}
             ) }}
         {% endif %}
+    {% endset %}
+    {% set title_info %}
         {{ info_tip.render('tenant-registry-status-tip',
                 'Tenant Registry status',
                 'Lifecycle describes committed Tenant state; Actions show whether teardown is currently admitted.',
@@ -33,8 +35,7 @@
                 'History Retained — decommission is complete and audit history remains.',
                 'Unavailable — no admitted lifecycle action is available.'
                 ],
-                button_text='Status Guide',
-                button_classes=table_ui.action_classes() 
+                placement='right'
         ) }}
     {% endset %}
     {{ table_ui.inventory_block_header('building-2',
@@ -44,7 +45,8 @@
         'Refreshing Tenant Registry',
         url_for('tenant.tenants', section='tenant-setup') ,
     'Add Tenant',
-    header_actions=header_actions
+    header_actions=header_actions,
+    title_extra=title_info
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(

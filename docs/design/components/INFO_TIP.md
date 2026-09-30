@@ -4,9 +4,9 @@
 
 `components/info_tip.html` is the canonical compact guidance pattern for dense forms and operational controls where permanent helper copy would make the interface unnecessarily tall.
 
-The default field trigger remains the compact icon-only affordance. A block header may use a short text trigger such as **Status Guide**, **Membership Guide**, or **Group Guide** when an isolated icon would be ambiguous beside operational actions.
+The default trigger is the compact icon-only affordance. In canonical registries, shared status/lifecycle guidance belongs **inline beside the registry title**; do not add separate text actions such as **Status Guide**, **Membership Guide**, or **Group Guide**.
 
-A text trigger must reuse the owning surface's existing button primitive. For canonical registries, pass `table_ui.action_classes()`; do not introduce page-local button styling.
+Text-trigger Info Tips remain an exception for surfaces where an icon-only trigger would be genuinely ambiguous and must reuse the owning surface's existing button primitive rather than introducing page-local styling.
 
 ## Use
 
@@ -25,7 +25,9 @@ Do **not** hide validation errors, destructive confirmation, security incidents,
 
 For genuinely field-specific guidance, the icon trigger may sit inline beside the field label. When two or more controls share the same source, ownership, naming, lifecycle, or selection semantics, prefer **one consolidated Info Tip in the owning form/card/section header** instead of repeating a trigger on each control.
 
-For a form/card section, place the trigger beside the section title or in the header action area so the hover preview is outside dense control geometry. The owning surface must permit visible overflow for the desktop hover preview; do not trap the preview inside an `overflow-hidden` card. Rounded visual containment should be preserved by the card/header geometry rather than by clipping the Info Tip. For a registry with shared status or lifecycle vocabulary, place one text-trigger Info Tip in the **block header action area**, outside the horizontal table scroll container. Keep table rows to semantic labels and real actions.
+For a form/card section, place the trigger beside the section title or in the header action area so the hover preview is outside dense control geometry. The owning surface must permit visible overflow for the desktop hover preview; do not trap the preview inside an `overflow-hidden` card. Rounded visual containment should be preserved by the card/header geometry rather than by clipping the Info Tip.
+
+For a canonical registry with shared status or lifecycle vocabulary, place one icon Info Tip **beside the registry title** through the shared table-header `title_extra` slot. The registry card opts into visible overflow while the table itself stays inside its dedicated `overflow-x-auto` container. Header actions remain reserved for operational actions such as Clear Filters, Add, Create, or navigation.
 
 ## Interaction and responsive behavior
 
@@ -51,16 +53,28 @@ The trigger is a real button with `aria-haspopup="dialog"` and `aria-controls`. 
 ```jinja
 {% import "components/info_tip.html" as info_tip %}
 
-{{ info_tip.render(
-    'tenant-registry-status-tip',
-    'Tenant Registry status',
-    'Lifecycle is committed Tenant state; Actions show current operation readiness.',
-    [
-        'Ready — Tenant governance is active.',
-        'Blocked — the Tenant stays valid while an action fails closed.'
-    ],
-    button_text='Status Guide',
-    button_classes=table_ui.action_classes()
+{% set title_info %}
+    {{ info_tip.render(
+        'tenant-registry-status-tip',
+        'Tenant Registry status',
+        'Lifecycle is committed Tenant state; Actions show current operation readiness.',
+        [
+            'Ready — Tenant governance is active.',
+            'Blocked — the Tenant stays valid while an action fails closed.'
+        ],
+        placement='right'
+    ) }}
+{% endset %}
+
+{{ table_ui.inventory_block_header(
+    'building-2',
+    'Tenant Registry',
+    'Committed Tenant ownership and lifecycle state.',
+    'tenant-registry-loading',
+    'Refreshing Tenant Registry',
+    none,
+    none,
+    title_extra=title_info
 ) }}
 ```
 

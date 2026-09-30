@@ -128,11 +128,11 @@ def test_memberships_use_symmetric_actions_and_scalable_registries() -> None:
 
     assert 'components/info_tip.html' in memberships
     assert 'tenant-membership-lifecycle-tip' in memberships
-    assert "button_text='Membership Guide'" in memberships
-    assert 'button_classes=table_ui.action_classes()' in memberships
+    assert 'title_extra=title_info' in memberships
+    assert "button_text='Membership Guide'" not in memberships
     assert 'tenant-group-lifecycle-tip' in groups
-    assert "button_text='Group Guide'" in groups
-    assert 'button_classes=table_ui.action_classes()' in groups
+    assert 'title_extra=title_info' in groups
+    assert "button_text='Group Guide'" not in groups
 
     assert 'def get_membership_registry_context(' in read_model
     assert 'def get_group_registry_context(' in read_model
@@ -842,8 +842,8 @@ def test_tenant_group_registry_uses_governed_lifecycle_actions_without_hard_dele
     assert '>Actions</th>' in registry
     assert 'components/info_tip.html' in registry
     assert 'tenant-group-lifecycle-tip' in registry
-    assert "button_text='Group Guide'" in registry
-    assert 'button_classes=table_ui.action_classes()' in registry
+    assert 'title_extra=title_info' in registry
+    assert "button_text='Group Guide'" not in registry
     assert 'Use Edit for mistakes; Retire removes future use while preserving history.' in registry
     assert 'data-tenant-group-edit-open' in registry
     assert "url_for('tenant.retire_tenant_group_route', group_id=group.id)" in registry
@@ -1007,29 +1007,36 @@ def test_tenant_setup_and_membership_guidance_use_compact_uat_copy() -> None:
     assert 'Reactivation restores membership only; old grants stay revoked.' not in memberships
 
 
-def test_info_tip_supports_standard_header_buttons_and_mobile_top_layer() -> None:
+def test_info_tip_uses_title_level_registry_guidance_and_mobile_top_layer() -> None:
     component = read('app/templates/components/info_tip.html')
     docs = read('docs/design/components/INFO_TIP.md')
+    table = read('app/templates/components/table.html')
+    table_primitives = read('app/templates/components/table_primitives.html')
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
     discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
     memberships = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
     groups = read('app/templates/kubernetes/tenant/partials/_group_registry.html')
 
     assert 'button_text=None, button_classes=None' in component
-    assert 'button_classes if button_classes else action_button.classes' in component
     assert 'sm:group-hover:block' in component
     assert 'data-kaori-native-dialog' in component
     assert 'data-kaori-dialog-close' in component
     assert 'fixed inset-x-4 bottom-4' not in component
 
-    for template in (registry, discovery):
-        assert "button_text='Status Guide'" in template
-        assert 'button_classes=table_ui.action_classes()' in template
+    assert "title_extra=''" in table
+    assert '{% if title_extra %}{{ title_extra }}{% endif %}' in table
+    assert 'allow_overflow=false' in table_primitives
+    assert "'overflow-visible' if allow_overflow else 'overflow-hidden'" in table_primitives
 
-    assert "button_text='Membership Guide'" in memberships
-    assert 'button_classes=table_ui.action_classes()' in memberships
-    assert "button_text='Group Guide'" in groups
-    assert 'button_classes=table_ui.action_classes()' in groups
+    for template in (registry, discovery, memberships, groups):
+        assert 'table_ui.block_classes(allow_overflow=true)' in template
+        assert 'title_extra=title_info' in template
+        assert "placement='right'" in template
+
+    for retired_text_action in ('Status Guide', 'Membership Guide', 'Group Guide'):
+        assert all(f"button_text='{retired_text_action}'" not in template for template in (registry, discovery, memberships, groups))
+
+    assert 'beside the registry title' in docs
     assert 'native `<dialog>` top layer' in docs
 
 

@@ -13,7 +13,7 @@
     'discovery_management': tenant_discovery_filters.management,
     'discovery_search': tenant_discovery_filters.search
 } %}
-<section id="{{ registry_id }}" class="{{ table_ui.block_classes() }}">
+<section id="{{ registry_id }}" class="{{ table_ui.block_classes(allow_overflow=true) }}">
     {% set header_actions %}
         {% if tenant_discovery_filters.cluster_id or tenant_discovery_filters.provider or tenant_discovery_filters.management or tenant_discovery_filters.search %}
             {{ registry_ui.clear_filters_link('tenant.tenants',
@@ -26,6 +26,8 @@
             per_page_param='discovery_per_page'
             ) }}
         {% endif %}
+    {% endset %}
+    {% set title_info %}
         {{ info_tip.render('tenant-discovery-status-tip',
                 'Discovery status',
                 'Discovery is live and read-only; status labels do not mutate or adopt provider objects.',
@@ -36,8 +38,7 @@
                 'Blocked — adoption fails closed until eligibility is resolved.',
                 'Provider Missing — KAORI ownership exists but the provider object is absent.'
                 ],
-                button_text='Status Guide',
-                button_classes=table_ui.action_classes() 
+                placement='right'
         ) }}
     {% endset %}
     {{ table_ui.inventory_block_header('radar',
@@ -47,7 +48,8 @@
         'Reading live Tenant provider state',
         none,
         none,
-        header_actions=header_actions) }}
+        header_actions=header_actions,
+        title_extra=title_info) }}
     <div class="border-b border-outline-subtle bg-surface-hover px-5 py-3">
         <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-content-muted">
             <span>Live check: {{ tenant_discovery_checked_at }}</span>
