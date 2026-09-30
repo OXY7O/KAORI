@@ -249,6 +249,7 @@ def test_resource_profile_management_dialogs_explain_preset_lock_and_govern_cust
 
 def test_resource_profile_advanced_controls_are_real_profile_intent_and_placement_gated() -> None:
     form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
+    advanced = read('app/templates/kubernetes/tenant/partials/_resource_profile_advanced_controls.html')
     dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
     namespace_form = read('app/templates/kubernetes/tenant/partials/_namespace_form.html')
     namespace_page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
@@ -260,9 +261,16 @@ def test_resource_profile_advanced_controls_are_real_profile_intent_and_placemen
 
     assert 'data-tenant-placement-control-matrix' not in form
     assert 'Placement-Gated Controls' not in form
-    assert 'data-tenant-advanced-profile-controls' in form
-    assert 'Advanced Controls' in form
+    assert '_resource_profile_advanced_controls.html' in form
+    assert 'advanced_profile_controls.render' in form
     assert 'advanced_control_contract_present' in form
+    assert 'data-tenant-advanced-controls' in advanced
+    assert 'Advanced Controls' in advanced
+    assert '<details' in advanced
+    assert '#118' not in advanced
+    assert '#119' not in advanced
+    assert '#121' not in advanced
+    assert '#124' not in advanced
 
     for key in (
         'ingress',
@@ -276,8 +284,22 @@ def test_resource_profile_advanced_controls_are_real_profile_intent_and_placemen
         'capsule_replication',
         'capsule_tenant_cordon',
     ):
-        assert f'advanced_control_{{{{ key }}}}' in form or key in form
+        assert key in advanced
         assert key in service
+
+    assert 'advanced_control_service_exposure_profile_key' in advanced
+    assert 'advanced_control_hostname_reservation_hostname_pattern' in advanced
+    assert 'advanced_control_managed_tls_mode' in advanced
+    assert 'advanced_control_managed_registry_source_reference' in advanced
+    assert 'advanced_control_capsule_namespace_controls_namespace_options_json' in advanced
+    assert 'advanced_control_capsule_resource_rules_storage_classes' in advanced
+    assert 'advanced_control_capsule_resource_pools_spec_json' in advanced
+    assert 'advanced_control_capsule_replication_spec_json' in advanced
+    assert 'advanced_control_capsule_tenant_cordon_prevent_deletion' in advanced
+    assert 'Secret/private-key material is never stored in the profile.' in advanced
+    assert 'Registry credentials are not stored in Resource Profile JSON.' in advanced
+    assert 'const initAdvancedControls = (container) =>' in script
+    assert "scope.querySelectorAll('[data-tenant-advanced-controls]').forEach(initAdvancedControls)" in script
 
     assert 'profile.advanced_controls_json = _advanced_profile_controls(source)' in service
     assert 'def evaluate_resource_profile_advanced_controls(' in service
@@ -289,7 +311,8 @@ def test_resource_profile_advanced_controls_are_real_profile_intent_and_placemen
     assert "'advanced_controls_json'" in migration
 
     assert 'advanced_control_contract_present' in dialogs
-    assert 'profile.advanced_controls_json' in dialogs
+    assert 'advanced_profile_controls.render(profile.advanced_controls_json or {}, true' in dialogs
+    assert 'advanced_profile_controls.render(profile.advanced_controls_json or {}, false' in dialogs
     assert 'data-tenant-namespace-environment' in namespace_form
     assert 'Advanced Controls Preview' in namespace_form
     assert 'data-tenant-namespace-advanced-control' in namespace_form
