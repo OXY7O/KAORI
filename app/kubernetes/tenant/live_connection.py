@@ -63,9 +63,7 @@ def get_live_tenant_connection_context() -> dict[str, Any]:
         )
     else:
         status, tone = 'Unavailable', 'critical'
-        description = (
-            'Kubernetes unreachable. KAORI remains readable; provider mutations are blocked.'
-        )
+        description = 'Kubernetes unreachable. Mutations blocked.'
 
     return {
         'tenant_live_connection': {
