@@ -32,7 +32,7 @@ from app.kubernetes.tenant.native_provider import (
     tenant_workspace_connection_available,
 )
 from app.kubernetes.tenant.provisioning import create_namespace_intent, reconcile_native_namespace
-from app.kubernetes.tenant.validation import validate_profile_spec
+from app.kubernetes.tenant.validation import validate_profile_spec, validate_storage_policy
 from app.models import Cluster
 from app.models.cluster import ClusterStatus
 from app.models.kubernetes import KubernetesConnection
@@ -151,6 +151,12 @@ _PROFILE_LIMIT_FIELDS = {
     'default_memory': ('default', 'memory'),
     'default_request_cpu': ('default_request', 'cpu'),
     'default_request_memory': ('default_request', 'memory'),
+}
+_PROFILE_STORAGE_FIELDS = {
+    'pvc_min_storage': 'min',
+    'pvc_max_storage': 'max',
+    'pvc_default_request_storage': 'default_request',
+    'pvc_default_storage': 'default',
 }
 _CONTROL_TRUE_VALUES = {'1', 'true', 'yes', 'on'}
 
@@ -868,6 +874,39 @@ def _profile_values(source: Mapping[str, Any]) -> tuple[dict[str, str], dict[str
     return validate_profile_spec(quota, limits)
 
 
+def _storage_policy_values(source: Mapping[str, Any]) -> dict[str, str]:
+    policy = {
+        target: value
+        for field, target in _PROFILE_STORAGE_FIELDS.items()
+        if _control_enabled(source, field) and (value := _text(source, field))
+    }
+    return validate_storage_policy(policy)
+
+
+def _preset_storage_policy_values(
+    preset: Mapping[str, Any],
+    source: Mapping[str, Any],
+) -> dict[str, str]:
+    policy = dict(preset.get('storage_policy') or {})
+    if not _control_contract_present(source):
+        return validate_storage_policy(policy)
+    selected = {
+        target: policy[target]
+        for field, target in _PROFILE_STORAGE_FIELDS.items()
+        if _control_enabled(source, field) and target in policy
+    }
+    return validate_storage_policy(selected)
+
+
+def _resource_profile_storage_values(
+    profile_class: str,
+    source: Mapping[str, Any],
+) -> dict[str, str]:
+    if profile_class in RESOURCE_PROFILE_PRESETS:
+        return _preset_storage_policy_values(RESOURCE_PROFILE_PRESETS[profile_class], source)
+    return _storage_policy_values(source)
+
+
 def _preset_controlled_values(
     preset: Mapping[str, Any],
     source: Mapping[str, Any],
@@ -913,7 +952,7 @@ def _resource_profile_values(
 
 def _namespace_allocation_values(
     profile: TenantResourceProfile,
-) -> tuple[dict[str, str], dict[str, dict[str, str]], bool]:
+) -> tuple[dict[str, str], dict[str, dict[str, str]], dict[str, str], bool]:
     if profile.profile_class in RESOURCE_PROFILE_PRESETS:
         preset = RESOURCE_PROFILE_PRESETS[profile.profile_class]
         stored_quota = profile.quota_hard_json or {}
@@ -930,13 +969,15 @@ def _namespace_allocation_values(
                 if resource in preset_group:
                     limits.setdefault(group, {})[resource] = preset_group[resource]
         quota, limits = validate_profile_spec(quota, limits)
-        return quota, limits, False
+        storage_policy = validate_storage_policy(profile.storage_policy_json or {})
+        return quota, limits, storage_policy, False
 
     quota, limits = validate_profile_spec(
         profile.quota_hard_json or {},
         profile.limit_defaults_json or {},
     )
-    return quota, limits, True
+    storage_policy = validate_storage_policy(profile.storage_policy_json or {})
+    return quota, limits, storage_policy, True
 
 
 def create_resource_profile(source: Mapping[str, Any]) -> TenantResourceProfile:
@@ -951,6 +992,7 @@ def create_resource_profile(source: Mapping[str, Any]) -> TenantResourceProfile:
         raise ValueError('Select a supported Resource Profile class.')
 
     quota, limits, version, base_preset_class, base_preset_version = _resource_profile_values(profile_class, source)
+    storage_policy = _resource_profile_storage_values(profile_class, source)
     profile = TenantResourceProfile()
     profile.name = name
     profile.profile_class = profile_class
@@ -960,6 +1002,7 @@ def create_resource_profile(source: Mapping[str, Any]) -> TenantResourceProfile:
     profile.description = _text(source, 'profile_description') or None
     profile.quota_hard_json = quota
     profile.limit_defaults_json = limits
+    profile.storage_policy_json = storage_policy
     profile.advanced_controls_json = _advanced_profile_controls(source)
     profile.enabled = True
     db.session.add(profile)
@@ -1014,10 +1057,12 @@ def update_resource_profile(profile_id: int, source: Mapping[str, Any]) -> tuple
         raise ValueError('Select whether the Custom Resource Profile is Enabled or Disabled.')
 
     quota, limits = _profile_values(source)
+    storage_policy = _storage_policy_values(source)
     advanced_controls = _advanced_profile_controls(source)
     contract_changed = (
         quota != (profile.quota_hard_json or {})
         or limits != (profile.limit_defaults_json or {})
+        or storage_policy != (profile.storage_policy_json or {})
         or advanced_controls != (profile.advanced_controls_json or {})
     )
 
@@ -1025,6 +1070,7 @@ def update_resource_profile(profile_id: int, source: Mapping[str, Any]) -> tuple
     profile.description = _text(source, 'profile_description') or None
     profile.quota_hard_json = quota
     profile.limit_defaults_json = limits
+    profile.storage_policy_json = storage_policy
     profile.advanced_controls_json = advanced_controls
     profile.enabled = enabled_value == 'enabled'
     if contract_changed:
@@ -1132,7 +1178,7 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
     )
 
     attachment_controls = _validate_resource_profile_attachment_controls(profile, tenant)
-    quota, limits, customized = _namespace_allocation_values(profile)
+    quota, limits, storage_policy, customized = _namespace_allocation_values(profile)
     capacity_decision = enforce_namespace_allocation_preflight(
         tenant_environment=environment,
         profile=profile,
@@ -1145,6 +1191,7 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
         namespace=namespace,
         quota_hard=quota,
         limit_defaults=limits,
+        storage_policy=storage_policy,
         allocation_customized=customized,
     )
     record.capacity_decision_id = capacity_decision.id
@@ -1211,7 +1258,7 @@ def change_native_namespace_allocation(source: Mapping[str, Any]) -> TenantNames
         )
 
     attachment_controls = _validate_resource_profile_attachment_controls(profile, record.environment.tenant)
-    quota, limits, customized = _namespace_allocation_values(profile)
+    quota, limits, storage_policy, customized = _namespace_allocation_values(profile)
     capacity_decision = enforce_existing_namespace_allocation_preflight(
         record=record,
         profile=profile,
@@ -1297,7 +1344,7 @@ def cutover_adopted_namespace_allocation(source: Mapping[str, Any]) -> TenantNam
         raise ValueError(str(cutover['reason']))
 
     attachment_controls = _validate_resource_profile_attachment_controls(profile, record.environment.tenant)
-    quota, limits, customized = _namespace_allocation_values(profile)
+    quota, limits, storage_policy, customized = _namespace_allocation_values(profile)
     capacity_decision = enforce_existing_namespace_allocation_preflight(
         record=record,
         profile=profile,
@@ -1318,6 +1365,7 @@ def cutover_adopted_namespace_allocation(source: Mapping[str, Any]) -> TenantNam
             capacity_decision_id=capacity_decision.id,
             quota_hard=quota,
             limit_defaults=limits,
+            storage_policy=storage_policy,
             operation='allocation_governance_cutover',
         )
     except (ApiException, ValueError):
