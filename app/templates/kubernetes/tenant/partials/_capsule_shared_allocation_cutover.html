@@ -132,7 +132,7 @@
         </div>
         <footer class="flex flex-col gap-3 rounded-b-xl border-t border-kaori-primary/15 bg-surface-card px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p class="max-w-2xl text-xs leading-5 text-content-muted">
-                Provider identity and resourceVersion are revalidated before mutation. Success requires Capsule read-back verification.
+                Provider identity and resourceVersion are rechecked before mutation. Success requires Capsule read-back.
             </p>
             <button type="submit"
                     {% if not can_manage or not capsule_shared_cutover_supported or not profiles %}disabled aria-disabled="true"{% endif %}
