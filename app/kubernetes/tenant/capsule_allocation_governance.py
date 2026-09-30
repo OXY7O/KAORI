@@ -19,6 +19,7 @@ from app.kubernetes.tenant.capacity_governance import enforce_shared_tenant_allo
 from app.kubernetes.tenant.capsule_advanced import reconcile_capsule_advanced_intent
 from app.kubernetes.tenant.capsule_advanced_service import _provider_from_committed_evidence
 from app.kubernetes.tenant.service import _namespace_allocation_values
+from app.kubernetes.tenant.validation import validate_profile_spec
 from app.models import Cluster
 from app.models.tenant import (
     Tenant,
@@ -432,6 +433,19 @@ def cutover_capsule_global_quota_allocation_committed(
         raise
 
 
+def _shared_authority_context(spec: Mapping[str, Any]) -> dict[str, Any]:
+    context = deepcopy(dict(spec))
+    quota = context.get('quota')
+    if isinstance(quota, Mapping):
+        quota_context = deepcopy(dict(quota))
+        quota_context.pop('hard', None)
+        if quota_context:
+            context['quota'] = quota_context
+        else:
+            context.pop('quota', None)
+    return context
+
+
 def _quota_differences(
     desired: Mapping[str, object],
     observed: Mapping[str, object],
@@ -474,15 +488,35 @@ def observe_managed_capsule_shared_allocation(
     observed_quota = _quota_from_global_resource(current)
     desired_spec = intent.desired_spec_json or {}
     desired_quota = dict((desired_spec.get('quota') or {}).get('hard') or {})
-    differences = _quota_differences(desired_quota, observed_quota)
+    blocked_reasons: list[str] = []
+    try:
+        normalized_observed_quota, _ = validate_profile_spec(observed_quota, {})
+    except ValueError as exc:
+        normalized_observed_quota = observed_quota
+        blocked_reasons.append(
+            'Observed GlobalResourceQuota contains unsupported or invalid allocation dimensions: '
+            + str(exc)
+        )
+
+    current_spec = current.get('spec') if isinstance(current, Mapping) else {}
+    current_spec = current_spec if isinstance(current_spec, Mapping) else {}
+    if _canonical_hash(_shared_authority_context(desired_spec)) != _canonical_hash(
+        _shared_authority_context(current_spec)
+    ):
+        blocked_reasons.append(
+            'GlobalResourceQuota selector or non-quota authority fields changed outside KAORI allocation intent.'
+        )
+
+    differences = _quota_differences(desired_quota, normalized_observed_quota)
     return {
         'observed_at': datetime.now(UTC).isoformat(),
         'desired_quota': desired_quota,
-        'observed_quota': observed_quota,
+        'observed_quota': dict(normalized_observed_quota),
         'differences': differences,
-        'observed_matches_desired': not differences,
+        'blocked_reasons': blocked_reasons,
+        'observed_matches_desired': not differences and not blocked_reasons,
         'provider_source': current_source,
-        'observed_hash': _canonical_hash(current.get('spec') or {}),
+        'observed_hash': _canonical_hash(current_spec),
         'provider_mutation_performed': False,
     }
 
@@ -534,14 +568,15 @@ def apply_managed_capsule_shared_allocation_drift_observation() -> dict[str, Any
             intent.status == TenantAdvancedCapabilityStatus.DRIFTED.value
             and isinstance(evidence.get('allocation_drift'), Mapping)
         )
-        if observation['differences'] or prior_drift:
+        if observation['differences'] or observation['blocked_reasons'] or prior_drift:
             intent.status = TenantAdvancedCapabilityStatus.DRIFTED.value
-            evidence['allocation_drift'] = {
-                **observation,
-                'blocked_reasons': [],
-            }
+            evidence['allocation_drift'] = observation
             intent.reconciliation_evidence_json = evidence
-            if observation['observed_matches_desired']:
+            if observation['blocked_reasons']:
+                intent.reconciliation_message = (
+                    'Capsule shared allocation drift requires authority review before reconciliation.'
+                )
+            elif observation['observed_matches_desired']:
                 intent.reconciliation_message = (
                     'Live Capsule shared allocation now matches committed KAORI intent, but prior drift remains '
                     'pending explicit reconciliation confirmation.'
