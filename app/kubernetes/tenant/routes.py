@@ -1401,7 +1401,7 @@ def reapply_capsule_shared_allocation_route(intent_id: int):
     try:
         _csrf()
         intent = reapply_capsule_shared_allocation_intent_committed(intent_id=intent_id)
-    except (ValueError, ApiException) as exc:
+    except (ValueError, ApiException, CapsuleSharedAllocationStateConflictError) as exc:
         _record(
             event_type='kubernetes_tenant_capsule_shared_allocation_reapply_failed',
             status='error',
@@ -1430,7 +1430,7 @@ def accept_capsule_shared_provider_allocation_route(intent_id: int):
     try:
         _csrf()
         intent = accept_capsule_shared_provider_state_committed(intent_id=intent_id)
-    except (ValueError, ApiException) as exc:
+    except (ValueError, ApiException, CapsuleSharedAllocationStateConflictError) as exc:
         _record(
             event_type='kubernetes_tenant_capsule_shared_allocation_accept_failed',
             status='error',
