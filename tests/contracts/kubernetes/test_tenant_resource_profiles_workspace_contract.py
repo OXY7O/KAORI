@@ -41,50 +41,53 @@ def test_resource_profiles_use_server_owned_kaori_content_tabs_and_snapshot_stat
 
 def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None:
     form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
+    management = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
     advanced = read('app/templates/kubernetes/tenant/partials/_resource_profile_advanced_controls.html')
     script = read('app/static/js/tenant_resource_profile_presets.js')
+    service = read('app/kubernetes/tenant/service.py')
     form_field = read('app/templates/components/form_field.html')
 
     assert 'Create Resource Profile' in form
     assert 'Identity &amp; Lineage' in form
-    assert 'Compute &amp; Workload' in form
+    assert 'Basic Resources' in form
     assert 'Storage Guardrails' in form
     assert 'Object Limits' in form
     assert 'Container Defaults' in form
-    assert 'lg:grid-cols-4' in form
-    assert 'lg:grid-cols-5' in form
-    assert 'xl:grid-cols-6' in form
-    assert 'xl:grid-cols-12' not in form
+    assert '[grid-template-columns:repeat(auto-fit,minmax(14rem,1fr))]' in form
+    assert 'resource-profile-identity-tip' in form
+    assert 'resource-profile-contract-tip' not in form
+    assert 'resource-profile-class-tip' not in form
+    assert 'resource-profile-base-tip' not in form
     assert 'KAORI Preset · Fixed' in form
-    assert 'components/table_label.html' in form
-    assert "table_label.special_label('Fixed · Read Only', 'unknown', 'lock-keyhole')" in form
+    assert 'data-mode="fixed"' in form
+    assert 'data-[mode=fixed]:bg-kaori-primary/15' in form
+    assert "table_label.special_label('Fixed · Read Only', 'maintenance', 'lock-keyhole')" in form
     assert "table_label.special_label('Custom · Editable', 'maintenance', 'pencil')" in form
-    assert 'data-tenant-profile-mode-fixed-label' in form
-    assert 'data-tenant-profile-mode-custom-label hidden' in form
+    assert "modeBanner.dataset.mode = readonly ? 'fixed' : 'custom'" in script
     assert 'data-[locked=true]:border-dashed' in form
-    assert 'bg-surface-card transition' in form
     assert 'data-[locked=true]:cursor-not-allowed' in form
-    assert 'resource-profile-contract-tip' in form
-    assert 'resource-profile-compute-tip' in form
-    assert 'resource-profile-storage-tip' in form
-    assert 'resource-profile-object-tip' in form
-    assert 'resource-profile-limitrange-tip' in form
-    assert "placement='right'" in form
-    assert 'inline-flex min-h-6 items-center gap-1.5' in form
-    assert 'resource-profile-class-tip' in form
-    assert 'resource-profile-base-tip' in form
-    assert 'data-tenant-profile-class' in form
-    assert 'data-tenant-base-preset-wrapper hidden' in form
-    assert 'data-tenant-base-preset' in form
-    assert 'data-tenant-resource-field="{{ field }}"' in form
-    assert 'data-tenant-resource-control="{{ field }}"' in form
+
+    assert 'Namespace Quota' in form
+    assert 'Per-PVC Policy' in form
+    assert 'PVCs' in form
+    assert 'Total Storage' in form
     assert 'pvc_min_storage' in form
     assert 'pvc_max_storage' in form
-    assert 'pvc_default_request_storage' in form
-    assert 'pvc_default_storage' in form
+    assert 'pvc_default_request_storage' not in form
+    assert 'pvc_default_storage' not in form
+    assert 'PVC Default Request' not in management
+    assert 'PVC Default Limit' not in management
     assert "pvc_min_storage: ['storage_policy', 'min']" in script
     assert "pvc_max_storage: ['storage_policy', 'max']" in script
+    assert "pvc_default_request_storage:" not in script
+    assert "pvc_default_storage:" not in script
     assert "wrapper?.dataset.controlRequiresValue === 'true'" in script
+
+    for key in ("'small': {", "'standard': {", "'large': {", "'extra_large': {"):
+        assert key in service
+    assert service.count("'storage_policy': {'min': '1Gi', 'max': '10Gi'}") == 4
+    assert service.count("'version': 2") >= 4
+
     assert 'control_contract_present' in form
     assert '>Medium</option>' in form
     assert '>Extra Large</option>' in form
@@ -96,8 +99,6 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'data-tenant-advanced-control-group="ingress"' in advanced
     assert 'setReadonly(form, fields, true)' in script
     assert "wrapper.dataset.locked = readonly ? 'true' : 'false'" in script
-    assert "fixedLabel.hidden = !readonly" in script
-    assert "customLabel.hidden = readonly" in script
     assert "classSelect?.value === 'custom'" in script
     assert 'syncManagedState' in script
     assert "wrapper.dataset.controlled = managed ? 'true' : 'false'" in script
@@ -105,7 +106,6 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'read-only:bg-surface-disabled' in form_field
     assert 'read-only:text-content-muted' in form_field
     assert 'read-only:shadow-none' in form_field
-
 
 def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_resource_profile_registry.html')
