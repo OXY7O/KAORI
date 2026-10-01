@@ -218,8 +218,8 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'Tenant Storage Budget (GiB)' in capacity
     assert 'name="tenant_storage_budget_gib"' in capacity
     assert 'type="number"' in capacity
-    assert 'min="1"' in capacity
-    assert 'step="1"' in capacity
+    assert 'min="0.01"' in capacity
+    assert 'step="0.01"' in capacity
     assert 'placeholder="2048"' in capacity
     assert '2048 = 2 TiB' in capacity
     assert 'Compute evidence required' in capacity
