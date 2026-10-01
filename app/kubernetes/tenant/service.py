@@ -1577,7 +1577,11 @@ def _materialize_adopted_baseline_profile(record: TenantNamespace) -> TenantReso
 
 
 def cutover_adopted_namespace_allocation(source: Mapping[str, Any]) -> TenantNamespace:
-    namespace_id = _integer(source, 'tenant_namespace_id')
+    try:
+        namespace_id = int(_text(source, 'tenant_namespace_id'))
+    except ValueError as exc:
+        raise ValueError('Select an adopted Tenant namespace.') from exc
+
     record = db.session.get(TenantNamespace, namespace_id)
     if record is None:
         raise ValueError('Select an adopted Tenant namespace.')
@@ -1596,7 +1600,10 @@ def cutover_adopted_namespace_allocation(source: Mapping[str, Any]) -> TenantNam
     if profile_selector == 'adopted_baseline':
         profile = _materialize_adopted_baseline_profile(record)
     else:
-        profile_id = _integer(source, 'resource_profile_id')
+        try:
+            profile_id = int(profile_selector)
+        except ValueError as exc:
+            raise ValueError('Select an enabled Resource Profile.') from exc
         profile = db.session.get(TenantResourceProfile, profile_id)
         if profile is None or not profile.enabled:
             raise ValueError('Select an enabled Resource Profile.')
@@ -1609,9 +1616,6 @@ def cutover_adopted_namespace_allocation(source: Mapping[str, Any]) -> TenantNam
         profile=profile,
         quota_hard=quota,
     )
-    if capacity_decision.decision != TenantCapacityDecisionState.ALLOW.value:
-        raise ValueError(_capacity_decision_message(capacity_decision))
-
     reconcile_adopted_native_allocation(
         record,
         profile=profile,
