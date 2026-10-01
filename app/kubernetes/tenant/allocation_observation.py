@@ -175,9 +175,7 @@ def _merge_limit_sources(
             ):
                 values = _value(item, attr_name, {}) or {}
                 if values:
-                    unsupported.extend(
-                        f'{source_name}:{unsupported_field}.{key}' for key in dict(values)
-                    )
+                    unsupported.extend(f'{source_name}:{unsupported_field}.{key}' for key in dict(values))
             for field, attr_name in (('default', 'default'), ('default_request', 'default_request')):
                 values = _value(item, attr_name, {}) or {}
                 for key, raw_value in dict(values).items():
@@ -314,11 +312,13 @@ def _display_values(
     }
     for field in ('min', 'max'):
         if field in (storage_policy or {}):
-            rows.append({
-                'key': f'pvc.{field}.storage',
-                'label': storage_labels[field],
-                'value': str((storage_policy or {})[field]),
-            })
+            rows.append(
+                {
+                    'key': f'pvc.{field}.storage',
+                    'label': storage_labels[field],
+                    'value': str((storage_policy or {})[field]),
+                }
+            )
     return rows
 
 
@@ -396,11 +396,7 @@ def _capsule_status_namespace_names(tenant_item: Mapping[str, Any]) -> set[str]:
     status = tenant_item.get('status') or {}
     if not isinstance(status, Mapping):
         return set()
-    return {
-        str(name).strip()
-        for name in list(status.get('namespaces') or [])
-        if str(name).strip()
-    }
+    return {str(name).strip() for name in list(status.get('namespaces') or []) if str(name).strip()}
 
 
 def _capsule_namespace_correlation(
@@ -424,16 +420,12 @@ def _capsule_namespace_correlation(
         observed_names.add(name)
         labels = dict(_value(metadata, 'labels', {}) or {})
         label_claims = {
-            str(labels[key]).strip()
-            for key in _CAPSULE_TENANT_LABEL_KEYS
-            if key in labels and str(labels[key]).strip()
+            str(labels[key]).strip() for key in _CAPSULE_TENANT_LABEL_KEYS if key in labels and str(labels[key]).strip()
         }
         owner_claims = {
             str(_value(owner, 'name', '') or '').strip()
             for owner in list(
-                _value(metadata, 'owner_references', None)
-                or _value(metadata, 'ownerReferences', [])
-                or []
+                _value(metadata, 'owner_references', None) or _value(metadata, 'ownerReferences', []) or []
             )
             if str(_value(owner, 'kind', '') or '') == 'Tenant'
             and str(_value(owner, 'api_version', None) or _value(owner, 'apiVersion', '') or '').startswith(
@@ -518,6 +510,7 @@ def _capsule_tenant_quota(tenant_item: Mapping[str, Any]) -> dict[str, Any] | No
         'unsupported_dimensions': sorted(set(unsupported)),
         'ambiguous_dimensions': ambiguous,
     }
+
 
 def observe_capsule_tenant_resource_quota(tenant_item: Mapping[str, Any]) -> dict[str, Any] | None:
     """Normalize the legacy Capsule Tenant.spec.resourceQuotas authority without provider mutation."""
@@ -707,10 +700,7 @@ def observe_capsule_tenant_allocation(
                     'uid': str(limit_source.get('uid') or ''),
                     'resource_version': str(limit_source.get('resource_version') or ''),
                     'item_type': 'PersistentVolumeClaim',
-                    'fields': {
-                        field: {'storage': value}
-                        for field, value in storage_policy.items()
-                    },
+                    'fields': {field: {'storage': value} for field, value in storage_policy.items()},
                     'namespace': name,
                     'authority': 'namespace_limit_range',
                     'management_state': 'observed_preserved',
@@ -720,9 +710,7 @@ def observe_capsule_tenant_allocation(
     multiple_authority_reason = ''
     if len(authority_paths) > 1:
         multiple_authority_reason = (
-            'Multiple effective allocation authority paths were detected: '
-            + ', '.join(authority_paths)
-            + '.'
+            'Multiple effective allocation authority paths were detected: ' + ', '.join(authority_paths) + '.'
         )
 
     if not authority_paths:
@@ -788,8 +776,7 @@ def observe_capsule_tenant_allocation(
         )
     elif control_state == 'control_unavailable':
         control_reason = (
-            'Capsule allocation authority or dimensions are ambiguous/unsupported; '
-            'governance cutover must fail closed.'
+            'Capsule allocation authority or dimensions are ambiguous/unsupported; governance cutover must fail closed.'
         )
     else:
         control_reason = (
