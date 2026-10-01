@@ -606,6 +606,93 @@ def _read_capsule_tenant(client, name: str) -> tuple[str, dict[str, Any]]:
     raise ValueError('The Capsule Tenant is no longer present in the provider.')
 
 
+def _materialize_capsule_adoption_profile(
+    tenant: Tenant,
+    allocation: Mapping[str, Any],
+):
+    from app.models.tenant import TenantResourceProfile, TenantResourceProfileClass
+
+    quota = dict(allocation.get('shared_quota') or {})
+    profile = TenantResourceProfile()
+    profile.name = f'Adopted {tenant.name} Allocation · {tenant.id}'
+    profile.profile_class = TenantResourceProfileClass.CUSTOM.value
+    profile.version = 1
+    profile.description = (
+        'Provider-equivalent Capsule allocation baseline imported during managed adoption. '
+        'Effective provider values are preserved while KAORI takes governance ownership.'
+    )
+    profile.quota_hard_json = quota
+    profile.limit_defaults_json = {}
+    profile.storage_policy_json = {}
+    profile.advanced_controls_json = {}
+    profile.enabled = True
+    db.session.add(profile)
+    db.session.flush()
+    return profile
+
+
+def _materialize_capsule_namespace_policy_profile(
+    tenant: Tenant,
+    record: TenantNamespace,
+    observation: Mapping[str, Any],
+):
+    from app.models.tenant import TenantResourceProfile, TenantResourceProfileClass
+
+    profile = TenantResourceProfile()
+    profile.name = f'Adopted {tenant.name}/{record.namespace} Policy · {record.id}'
+    profile.profile_class = TenantResourceProfileClass.CUSTOM.value
+    profile.version = 1
+    profile.description = (
+        'Provider-equivalent namespaced Container/PVC policy imported during Capsule adoption. '
+        'Capsule remains authoritative for Tenant quota.'
+    )
+    profile.quota_hard_json = {}
+    profile.limit_defaults_json = dict(observation.get('limits') or {})
+    profile.storage_policy_json = dict(observation.get('storage_policy') or {})
+    profile.advanced_controls_json = {}
+    profile.enabled = True
+    db.session.add(profile)
+    db.session.flush()
+    return profile
+
+
+def _take_over_capsule_allocation(
+    *,
+    tenant: Tenant,
+    allocation: Mapping[str, Any],
+):
+    authority = str(allocation.get('allocation_authority') or '')
+    shared_quota = dict(allocation.get('shared_quota') or {})
+
+    if authority == 'none_observed' and not shared_quota:
+        return None
+    if authority not in {'capsule_global_resource_quota', 'capsule_tenant_resource_quotas'}:
+        raise ValueError(
+            'Capsule adoption requires one admitted Capsule quota authority before KAORI can take full governance.'
+        )
+
+    profile = _materialize_capsule_adoption_profile(tenant, allocation)
+    if authority == 'capsule_global_resource_quota':
+        from app.kubernetes.tenant.capsule_allocation_governance import (
+            cutover_capsule_global_quota_allocation,
+        )
+
+        cutover_capsule_global_quota_allocation(
+            tenant_id=tenant.id,
+            profile_id=profile.id,
+        )
+    else:
+        from app.kubernetes.tenant.capsule_tenant_quota_governance import (
+            cutover_capsule_tenant_resource_quota,
+        )
+
+        cutover_capsule_tenant_resource_quota(
+            tenant_id=tenant.id,
+            profile_id=profile.id,
+        )
+    return profile
+
+
 def adopt_discovered_tenant_committed(
     source: Mapping[str, Any],
 ) -> tuple[Tenant, TenantEnvironment, TenantNamespace | None]:
@@ -908,6 +995,56 @@ def adopt_discovered_tenant_committed(
             db.session.add(namespace_record_item)
             adopted_namespaces.append(namespace_record_item)
 
+        from app.kubernetes.tenant.allocation_cutover import reconcile_adopted_namespace_policy
+
+        for record in adopted_namespaces:
+            observation_value = (record.provisioning_evidence_json or {}).get('allocation')
+            observation = dict(observation_value) if isinstance(observation_value, Mapping) else {}
+            if observation.get('unsupported_dimensions') or observation.get('ambiguous_dimensions'):
+                raise ValueError(
+                    f'Namespace/{record.namespace} contains unsupported or ambiguous policy dimensions; '
+                    'managed adoption fails closed.'
+                )
+            if observation.get('limits') or observation.get('storage_policy'):
+                policy_profile = _materialize_capsule_namespace_policy_profile(
+                    tenant,
+                    record,
+                    observation,
+                )
+                reconcile_adopted_namespace_policy(
+                    record,
+                    profile=policy_profile,
+                    resource_profile_version=int(policy_profile.version or 1),
+                    limit_defaults=dict(policy_profile.limit_defaults_json or {}),
+                    storage_policy=dict(policy_profile.storage_policy_json or {}),
+                    operation='capsule_adoption_policy_takeover',
+                )
+
+        shared_profile = _take_over_capsule_allocation(
+            tenant=tenant,
+            allocation=allocation,
+        )
+        tenant_evidence = dict(tenant.provider_evidence_json or {})
+        tenant_evidence.update(
+            {
+                'allocation_control_state': 'kaori_managed',
+                'adoption_takeover': {
+                    'profile_id': shared_profile.public_id if shared_profile is not None else None,
+                    'profile_version': int(shared_profile.version or 1) if shared_profile is not None else None,
+                    'provider_value_change_requested': False,
+                    'effective_values_preserved': True,
+                    'namespaced_policy_profiles': [
+                        record.resource_profile.public_id
+                        for record in adopted_namespaces
+                        if record.resource_profile is not None
+                    ],
+                    'provider_mutation_performed': True,
+                    'taken_over_at': datetime.now(UTC).isoformat(),
+                },
+                'provider_mutation_performed': True,
+            }
+        )
+        tenant.provider_evidence_json = tenant_evidence
         namespace_record = adopted_namespaces[0] if adopted_namespaces else None
 
     try:
