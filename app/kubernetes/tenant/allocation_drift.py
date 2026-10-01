@@ -17,7 +17,7 @@ from app.kubernetes.tenant.allocation_cutover import (
 )
 from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
 from app.kubernetes.tenant.capacity_governance import enforce_observed_namespace_allocation_preflight
-from app.kubernetes.tenant.validation import COUNT_QUOTA_KEYS, validate_profile_spec
+from app.kubernetes.tenant.validation import COUNT_QUOTA_KEYS, validate_profile_spec, validate_storage_policy
 from app.models import Cluster
 from app.models.tenant import (
     TenantLifecycleStatus,
@@ -44,8 +44,10 @@ def _quantity_equal(key: str, left: str, right: str) -> bool:
 def _dimension_rows(
     desired_quota: Mapping[str, str],
     desired_limits: Mapping[str, Mapping[str, str]],
+    desired_storage: Mapping[str, str],
     observed_quota: Mapping[str, str],
     observed_limits: Mapping[str, Mapping[str, str]],
+    observed_storage: Mapping[str, str],
 ) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     for key in sorted(set(desired_quota) | set(observed_quota)):
@@ -86,6 +88,25 @@ def _dimension_rows(
                     'provider_value': observed or 'Unbounded',
                 }
             )
+    for field in sorted(set(desired_storage) | set(observed_storage)):
+        desired = str(desired_storage.get(field) or '')
+        observed = str(observed_storage.get(field) or '')
+        if desired and observed:
+            try:
+                if parse_quantity(desired) == parse_quantity(observed):
+                    continue
+            except (InvalidOperation, TypeError, ValueError):
+                if desired == observed:
+                    continue
+        elif desired == observed:
+            continue
+        rows.append(
+            {
+                'dimension': f'pvc.{field}.storage',
+                'kaori_value': desired or 'Unbounded',
+                'provider_value': observed or 'Unbounded',
+            }
+        )
     return rows
 
 
@@ -96,8 +117,10 @@ def allocation_differences(
     return _dimension_rows(
         dict(record.allocation_quota_json or {}),
         dict(record.allocation_limit_defaults_json or {}),
+        dict(record.allocation_storage_policy_json or {}),
         dict(observation.get('quota') or {}),
         dict(observation.get('limits') or {}),
+        dict(observation.get('storage_policy') or {}),
     )
 
 
@@ -148,6 +171,7 @@ def _allocation_drift_payload(
         'desired': {
             'quota': dict(record.allocation_quota_json or {}),
             'limits': dict(record.allocation_limit_defaults_json or {}),
+            'storage_policy': dict(record.allocation_storage_policy_json or {}),
             'effective_hash': record.effective_hash,
             'resource_profile_id': (
                 record.resource_profile.public_id if record.resource_profile is not None else None
@@ -389,6 +413,7 @@ def reapply_kaori_allocation_intent(record: TenantNamespace) -> TenantNamespace:
         capacity_decision_id=capacity_decision.id,
         quota_hard=dict(record.allocation_quota_json or {}),
         limit_defaults=dict(record.allocation_limit_defaults_json or {}),
+        storage_policy=dict(record.allocation_storage_policy_json or {}),
         operation='reapply_kaori_intent',
         expected_observed_hash=str(live.get('effective_hash') or ''),
         failure_status=TenantNamespaceProvisioningStatus.DRIFTED.value,
@@ -404,11 +429,14 @@ def _profile_matches_observation(
         profile.quota_hard_json or {},
         profile.limit_defaults_json or {},
     )
+    profile_storage = validate_storage_policy(profile.storage_policy_json or {})
     return not _dimension_rows(
         profile_quota,
         profile_limits,
+        profile_storage,
         dict(observation.get('quota') or {}),
         dict(observation.get('limits') or {}),
+        dict(observation.get('storage_policy') or {}),
     )
 
 
@@ -426,6 +454,7 @@ def accept_provider_allocation_state(record: TenantNamespace) -> TenantNamespace
         dict(live.get('quota') or {}),
         dict(live.get('limits') or {}),
     )
+    storage_policy = validate_storage_policy(dict(live.get('storage_policy') or {}))
 
     capacity_decision = enforce_observed_namespace_allocation_preflight(
         record=record,
@@ -451,12 +480,14 @@ def accept_provider_allocation_state(record: TenantNamespace) -> TenantNamespace
                 'control_state': 'kaori_managed',
                 'quota': dict(record.allocation_quota_json or {}),
                 'limits': dict(record.allocation_limit_defaults_json or {}),
+                'storage_policy': dict(record.allocation_storage_policy_json or {}),
                 'effective_hash': record.effective_hash,
             },
             'to': {
                 'control_state': 'kaori_managed',
                 'quota': quota,
                 'limits': limits,
+                'storage_policy': storage_policy,
                 'effective_hash': live['effective_hash'],
             },
         }
@@ -502,6 +533,7 @@ def accept_provider_allocation_state(record: TenantNamespace) -> TenantNamespace
 
     record.allocation_quota_json = quota
     record.allocation_limit_defaults_json = limits
+    record.allocation_storage_policy_json = storage_policy
     record.allocation_customized = not _profile_matches_observation(profile, live)
     record.capacity_decision_id = capacity_decision.id
     record.provisioning_evidence_json = evidence
