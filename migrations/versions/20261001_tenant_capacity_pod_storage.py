@@ -1,6 +1,6 @@
 """extend Tenant capacity governance to Pods and logical storage budget
 
-Revision ID: 20261001_tenant_capacity_pod_storage
+Revision ID: 20261001_tenant_cap_pod_storage
 Revises: 20261001_profile_storage_policy
 Create Date: 2026-10-01
 """
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = '20261001_tenant_capacity_pod_storage'
+revision = '20261001_tenant_cap_pod_storage'
 down_revision = '20261001_profile_storage_policy'
 branch_labels = None
 depends_on = None
