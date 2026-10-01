@@ -9,7 +9,13 @@ from app.kubernetes.tenant.allocation_drift import (
 )
 
 
-def _record(*, drift=None, provider_key='native_kubernetes', authority='native_kubernetes'):
+def _record(
+    *,
+    drift=None,
+    provider_key='native_kubernetes',
+    authority='native_kubernetes',
+    control_state='kaori_managed',
+):
     tenant = SimpleNamespace(
         id='tenant-api',
         provider_key=provider_key,
@@ -19,6 +25,8 @@ def _record(*, drift=None, provider_key='native_kubernetes', authority='native_k
     profile = SimpleNamespace(
         public_id='profile-standard',
         version=1,
+        profile_class='custom',
+        description='Explicit governance-cutover profile materialized from the adopted provider baseline.',
         quota_hard_json={},
         limit_defaults_json={},
         storage_policy_json={},
@@ -48,11 +56,11 @@ def _record(*, drift=None, provider_key='native_kubernetes', authority='native_k
         desired_hash='kaori-hash',
         provisioning_message='Allocation drift requires review.',
         provisioning_evidence_json={
-            'allocation_control_state': 'kaori_managed',
-            'allocation': {'provenance': 'kaori_managed'},
+            'allocation_control_state': control_state,
+            'allocation': {'provenance': control_state},
             **({'allocation_drift': drift} if drift is not None else {}),
         },
-        ownership_status='adopted',
+        ownership_status='managed' if provider_key == 'native_kubernetes' else 'adopted',
     )
 
 
@@ -105,7 +113,7 @@ def test_bidirectional_actions_are_available_for_native_managed_allocation_drift
 
     state = build_allocation_drift_action_state(record)
 
-    assert record.ownership_status == 'adopted'
+    assert record.ownership_status == 'managed'
     assert state['is_allocation_drift'] is True
     assert state['reapply_supported'] is True
     assert state['accept_supported'] is True
@@ -128,7 +136,7 @@ def test_bidirectional_actions_fail_closed_when_provider_ownership_is_ambiguous(
     assert 'allocation ownership metadata' in state['blocked_reason']
 
 
-def test_capsule_allocation_drift_stays_control_unavailable_without_admitted_adapter():
+def test_capsule_tenant_quota_drift_stays_outside_namespaced_policy_adapter():
     drift = {
         'blocked_reasons': [],
         'observed': {'effective_hash': 'provider-hash'},
@@ -138,6 +146,7 @@ def test_capsule_allocation_drift_stays_control_unavailable_without_admitted_ada
         drift=drift,
         provider_key='capsule',
         authority='capsule',
+        control_state='kaori_managed',
     )
 
     state = build_allocation_drift_action_state(record)
@@ -145,6 +154,59 @@ def test_capsule_allocation_drift_stays_control_unavailable_without_admitted_ada
     assert state['reapply_supported'] is False
     assert state['accept_supported'] is False
     assert 'No admitted reconciliation adapter' in state['blocked_reason']
+
+
+def test_capsule_managed_policy_drift_ignores_capsule_quota_and_tracks_pvc_policy():
+    record = _record(
+        provider_key='capsule',
+        authority='capsule',
+        control_state='kaori_managed_policy',
+    )
+    record.allocation_quota_json = {}
+    record.allocation_limit_defaults_json = {}
+    record.allocation_storage_policy_json = {'min': '1Gi', 'max': '10Gi'}
+    observation = {
+        'quota': {'requests.cpu': '99'},
+        'limits': {},
+        'storage_policy': {'min': '2Gi', 'max': '20Gi'},
+    }
+
+    differences = allocation_differences(record, observation)
+    dimensions = {row['dimension'] for row in differences}
+
+    assert dimensions == {'pvc.min.storage', 'pvc.max.storage'}
+    assert 'requests.cpu' not in dimensions
+
+
+def test_capsule_managed_policy_drift_supports_two_way_reconciliation():
+    drift = {
+        'blocked_reasons': [],
+        'observed': {
+            'effective_hash': 'provider-hash',
+            'quota': {'requests.cpu': '4'},
+            'limits': {},
+            'storage_policy': {'min': '2Gi', 'max': '20Gi'},
+        },
+        'differences': [
+            {
+                'dimension': 'pvc.min.storage',
+                'kaori_value': '1Gi',
+                'provider_value': '2Gi',
+            }
+        ],
+    }
+    record = _record(
+        drift=drift,
+        provider_key='capsule',
+        authority='capsule',
+        control_state='kaori_managed_policy',
+    )
+
+    state = build_allocation_drift_action_state(record)
+
+    assert record.ownership_status == 'adopted'
+    assert state['reapply_supported'] is True
+    assert state['accept_supported'] is True
 
 
 
@@ -300,7 +362,7 @@ def test_accept_provider_state_commits_live_allocation_without_provider_write(mo
 
     accept_provider_allocation_state(record)
 
-    assert record.ownership_status == 'adopted'
+    assert record.ownership_status == 'managed'
     assert captured['current']['requests.cpu'] == '2'
     assert captured['proposed']['requests.cpu'] == '3'
     assert record.allocation_quota_json == {'requests.cpu': '3'}
@@ -337,3 +399,114 @@ def test_pvc_storage_policy_drift_is_dimension_level_and_bidirectional() -> None
             'provider_value': '2Gi',
         },
     }
+
+def test_capsule_policy_reapply_uses_namespaced_policy_reconciler(monkeypatch) -> None:
+    drift = {
+        'blocked_reasons': [],
+        'observed': {
+            'effective_hash': 'provider-hash',
+            'quota': {'requests.cpu': '4'},
+            'limits': {},
+            'storage_policy': {'min': '2Gi', 'max': '20Gi'},
+        },
+        'differences': [
+            {
+                'dimension': 'pvc.min.storage',
+                'kaori_value': '1Gi',
+                'provider_value': '2Gi',
+            }
+        ],
+    }
+    record = _record(
+        drift=drift,
+        provider_key='capsule',
+        authority='capsule',
+        control_state='kaori_managed_policy',
+    )
+    record.allocation_quota_json = {}
+    captured = {}
+
+    monkeypatch.setattr(
+        allocation_drift,
+        '_live_observation_for_action',
+        lambda current_record, current_drift: dict(drift['observed']),
+    )
+
+    import app.kubernetes.tenant.allocation_cutover as allocation_cutover
+
+    def fake_policy_reconcile(current_record, **kwargs):
+        captured.update(kwargs)
+        return current_record
+
+    monkeypatch.setattr(
+        allocation_cutover,
+        'reconcile_adopted_namespace_policy',
+        fake_policy_reconcile,
+    )
+
+    reapply_kaori_allocation_intent(record)
+
+    assert captured['storage_policy'] == {'min': '1Gi', 'max': '10Gi'}
+    assert captured['limit_defaults'] == record.allocation_limit_defaults_json
+    assert captured['operation'] == 'reapply_kaori_policy_intent'
+
+
+def test_capsule_policy_accept_provider_state_updates_auto_imported_profile(monkeypatch) -> None:
+    drift = {
+        'blocked_reasons': [],
+        'observed': {
+            'effective_hash': 'provider-hash',
+            'quota': {'requests.cpu': '4'},
+            'limits': {},
+            'storage_policy': {'min': '2Gi', 'max': '20Gi'},
+        },
+        'differences': [
+            {
+                'dimension': 'pvc.min.storage',
+                'kaori_value': '1Gi',
+                'provider_value': '2Gi',
+            }
+        ],
+    }
+    record = _record(
+        drift=drift,
+        provider_key='capsule',
+        authority='capsule',
+        control_state='kaori_managed_policy',
+    )
+    record.resource_profile.description = (
+        'Provider-equivalent namespaced Container/PVC policy imported during Capsule adoption.'
+    )
+    record.allocation_quota_json = {}
+    live = {
+        'control_state': 'observed',
+        'control_reason': '',
+        'effective_hash': 'provider-hash',
+        'quota': {'requests.cpu': '4'},
+        'limits': {},
+        'storage_policy': {'min': '2Gi', 'max': '20Gi'},
+        'source_resources': [
+            {
+                'kind': 'LimitRange',
+                'name': 'capsule-generated',
+                'managed_by': 'kaori',
+                'tenant_id': 'tenant-api',
+            }
+        ],
+    }
+    monkeypatch.setattr(
+        allocation_drift,
+        '_live_observation_for_action',
+        lambda current_record, current_drift: live,
+    )
+
+    accept_provider_allocation_state(record)
+
+    assert record.allocation_quota_json == {}
+    assert record.allocation_storage_policy_json == {'min': '2Gi', 'max': '20Gi'}
+    assert record.resource_profile.storage_policy_json == {'min': '2Gi', 'max': '20Gi'}
+    assert record.resource_profile.version == 2
+    assert record.resource_profile_version == 2
+    assert record.capacity_decision_id is None
+    assert record.provisioning_evidence_json['provider_state_profile_sync']['provider_values_accepted'] is True
+
