@@ -60,7 +60,9 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'resource-profile-base-tip' not in form
     assert 'KAORI Preset · Fixed' in form
     assert 'data-mode="fixed"' in form
-    assert 'data-[mode=fixed]:bg-kaori-primary/15' in form
+    assert 'data-[mode=fixed]:border-kaori-primary/20' in form
+    assert 'data-[mode=fixed]:bg-kaori-soft' in form
+    assert 'data-[mode=fixed]:bg-kaori-primary/15' not in form
     assert "table_label.special_label('Fixed · Read Only', 'maintenance', 'lock-keyhole')" in form
     assert "table_label.special_label('Custom · Editable', 'maintenance', 'pencil')" in form
     assert "modeBanner.dataset.mode = readonly ? 'fixed' : 'custom'" in script
@@ -97,6 +99,30 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'Advanced Controls' in advanced
     assert 'data-tenant-advanced-controls' in advanced
     assert 'data-tenant-advanced-control-group="ingress"' in advanced
+    assert 'components/info_tip.html' in advanced
+    assert "id_prefix ~ '-overview-tip'" in advanced
+    assert 'Optional governance beyond basic allocation, storage, object limits, and container defaults.' in advanced
+    assert 'Placement is checked at attachment and again before mutation.' in advanced
+    assert "'ingress'" in advanced
+    assert 'Ingress exposure governance for namespaces using this profile.' in advanced
+    assert "'service-exposure'" in advanced
+    assert 'ClusterIP, Ingress, NodePort, LoadBalancer, and ExternalName exposure decisions for attached namespaces.' in advanced
+    assert "'hostname-reservation'" in advanced
+    assert 'Exact, wildcard, or regex hostname ownership and collision protection for Tenant exposure.' in advanced
+    assert "'managed-tls'" in advanced
+    assert 'TLS delivery for attached workloads using platform TLS or namespace compatibility mode.' in advanced
+    assert "'managed-registry'" in advanced
+    assert 'Private image-registry credential delivery for namespaces attached to this profile.' in advanced
+    assert "'capsule-namespace-controls'" in advanced
+    assert 'Capsule Tenant namespace naming and namespaceOptions policy.' in advanced
+    assert "'capsule-resource-rules'" in advanced
+    assert 'Capsule Tenant policy for container registries, PriorityClasses, StorageClasses, and admitted rule payloads.' in advanced
+    assert "'capsule-resource-pools'" in advanced
+    assert 'Capsule ResourcePool or ResourcePoolClaim association and desired spec.' in advanced
+    assert "'capsule-replication'" in advanced
+    assert 'Capsule TenantResource or GlobalTenantResource replication intent.' in advanced
+    assert "'capsule-tenant-cordon'" in advanced
+    assert 'Capsule Tenant spec cordoned and preventDeletion state.' in advanced
     assert 'setReadonly(form, fields, true)' in script
     assert "wrapper.dataset.locked = readonly ? 'true' : 'false'" in script
     assert "classSelect?.value === 'custom'" in script
