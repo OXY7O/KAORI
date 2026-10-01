@@ -12,8 +12,6 @@
         secrets: ['quota', 'secrets'],
         pvc_min_storage: ['storage_policy', 'min'],
         pvc_max_storage: ['storage_policy', 'max'],
-        pvc_default_request_storage: ['storage_policy', 'default_request'],
-        pvc_default_storage: ['storage_policy', 'default'],
         default_request_cpu: ['limits', 'default_request', 'cpu'],
         default_cpu: ['limits', 'default', 'cpu'],
         default_request_memory: ['limits', 'default_request', 'memory'],
@@ -49,12 +47,14 @@
             if (customLabel) customLabel.hidden = readonly
         }
 
+        const modeBanner = form.querySelector('[data-tenant-profile-mode-banner]')
         const modeTitle = form.querySelector('[data-tenant-profile-mode-title]')
         const modeDetail = form.querySelector('[data-tenant-profile-mode-detail]')
         const fixedModeLabel = form.querySelector('[data-tenant-profile-mode-fixed-label]')
         const customModeLabel = form.querySelector('[data-tenant-profile-mode-custom-label]')
         const modeIcon = form.querySelector('[data-tenant-profile-mode-icon] [data-lucide]')
 
+        if (modeBanner) modeBanner.dataset.mode = readonly ? 'fixed' : 'custom'
         if (modeTitle) modeTitle.textContent = readonly ? 'KAORI Preset · Fixed' : 'Custom · Editable'
         if (modeDetail) {
             modeDetail.textContent = readonly
@@ -134,7 +134,14 @@
         classSelect?.addEventListener('change', applyProfileMode)
         basePreset?.addEventListener('change', () => {
             if (classSelect?.value === 'custom') {
-                applyValues(fields, basePreset.value ? presets[basePreset.value] : null)
+                const inherited = basePreset.value ? presets[basePreset.value] : null
+                applyValues(fields, inherited)
+                for (const [name, control] of Object.entries(controls)) {
+                    const wrapper = fields[name]?.closest('[data-tenant-resource-field-wrap]')
+                    if (wrapper?.dataset.controlRequiresValue === 'true') {
+                        control.checked = inherited ? readPath(inherited, fieldMap[name]) !== undefined : false
+                    }
+                }
                 syncManagedState()
             }
         })
