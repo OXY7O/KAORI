@@ -1332,7 +1332,11 @@ def update_resource_profile_route(profile_id: int):
                 if contract_changed
                 else f'{profile.name} metadata/state updated. Allocation contract remains v{profile.version}.'
             ),
-            detail='Custom Resource Profile',
+            detail=(
+                'Custom Resource Profile'
+                if profile.profile_class == 'custom'
+                else 'KAORI Built-in Preset · Versioned Controls'
+            ),
             metadata={
                 'resource_profile_id': profile.public_id,
                 'profile_class': profile.profile_class,
