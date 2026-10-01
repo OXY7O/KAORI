@@ -873,15 +873,19 @@ def adopt_discovered_tenant_committed(
         tenant_evidence.update(
             {
                 'allocation_control_state': 'kaori_managed',
+                'allocation_provenance': 'kaori_managed',
                 'adoption_takeover': {
                     'profile_id': profile.public_id,
                     'profile_version': int(profile.version or 1),
                     'provider_value_change_requested': False,
                     'effective_values_preserved': True,
-                    'provider_mutation_performed': shared_profile is not None,
+                    'storage_policy': dict(profile.storage_policy_json or {}),
+                    'provider_mutation_performed': True,
+                    'provider_readback_verified': namespace_record.provisioning_status
+                    == TenantNamespaceProvisioningStatus.READY.value,
                     'taken_over_at': datetime.now(UTC).isoformat(),
                 },
-                'provider_mutation_performed': shared_profile is not None,
+                'provider_mutation_performed': True,
             }
         )
         tenant.provider_evidence_json = tenant_evidence
