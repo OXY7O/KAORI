@@ -242,14 +242,28 @@
         const currentProfile = form.querySelector('[data-tenant-allocation-current-profile]')
         const currentCpu = form.querySelector('[data-tenant-allocation-current-cpu]')
         const currentMemory = form.querySelector('[data-tenant-allocation-current-memory]')
+        const currentPvcMin = form.querySelector('[data-tenant-allocation-current-pvc-min]')
+        const currentPvcMax = form.querySelector('[data-tenant-allocation-current-pvc-max]')
         const proposedProfile = form.querySelector('[data-tenant-allocation-proposed-profile]')
         const proposedCpu = form.querySelector('[data-tenant-allocation-proposed-cpu]')
         const proposedMemory = form.querySelector('[data-tenant-allocation-proposed-memory]')
+        const proposedPvcMin = form.querySelector('[data-tenant-allocation-proposed-pvc-min]')
+        const proposedPvcMax = form.querySelector('[data-tenant-allocation-proposed-pvc-max]')
 
         const requestValue = (valueSet, resource) => valueSet?.quota?.[`requests.${resource}`] || 'Unbounded'
+        const storageValue = (valueSet, field) => valueSet?.storage_policy?.[field] || 'Unbounded'
 
-        const renderAllocationChange = () => {
+        const renderAllocationChange = ({preferCurrentProfile = false} = {}) => {
             const current = namespaces[namespaceSelect?.value] || null
+
+            if (
+                preferCurrentProfile &&
+                current?.profile_id &&
+                profileSelect?.querySelector(`option[value="${current.profile_id}"]`)
+            ) {
+                profileSelect.value = String(current.profile_id)
+            }
+
             const proposed = profiles[profileSelect?.value] || null
             const proposedLabel = profileSelect?.selectedOptions?.[0]?.textContent?.trim() || '—'
 
@@ -260,14 +274,18 @@
             }
             if (currentCpu) currentCpu.textContent = current ? requestValue(current, 'cpu') : '—'
             if (currentMemory) currentMemory.textContent = current ? requestValue(current, 'memory') : '—'
+            if (currentPvcMin) currentPvcMin.textContent = current ? storageValue(current, 'min') : '—'
+            if (currentPvcMax) currentPvcMax.textContent = current ? storageValue(current, 'max') : '—'
             if (proposedProfile) proposedProfile.textContent = proposed ? proposedLabel : '—'
             if (proposedCpu) proposedCpu.textContent = proposed ? requestValue(proposed, 'cpu') : '—'
             if (proposedMemory) proposedMemory.textContent = proposed ? requestValue(proposed, 'memory') : '—'
+            if (proposedPvcMin) proposedPvcMin.textContent = proposed ? storageValue(proposed, 'min') : '—'
+            if (proposedPvcMax) proposedPvcMax.textContent = proposed ? storageValue(proposed, 'max') : '—'
         }
 
-        namespaceSelect?.addEventListener('change', renderAllocationChange)
-        profileSelect?.addEventListener('change', renderAllocationChange)
-        renderAllocationChange()
+        namespaceSelect?.addEventListener('change', () => renderAllocationChange({preferCurrentProfile: true}))
+        profileSelect?.addEventListener('change', () => renderAllocationChange())
+        renderAllocationChange({preferCurrentProfile: true})
     }
 
     const initSharedAllocationForm = (form) => {
