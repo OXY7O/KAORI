@@ -94,7 +94,6 @@ def test_namespace_allocation_uses_committed_custom_profile_snapshot() -> None:
     assert customized is True
 
 
-
 def test_extra_large_preset_exposes_canonical_fixed_values() -> None:
     extra_large = RESOURCE_PROFILE_PRESETS['extra_large']
 
@@ -129,9 +128,7 @@ def test_builtin_preset_control_mask_keeps_values_fixed_and_omits_unmanaged_dime
         'requests.cpu': RESOURCE_PROFILE_PRESETS['standard']['quota']['requests.cpu'],
         'requests.memory': RESOURCE_PROFILE_PRESETS['standard']['quota']['requests.memory'],
     }
-    assert limits == {
-        'default': {'cpu': RESOURCE_PROFILE_PRESETS['standard']['limits']['default']['cpu']}
-    }
+    assert limits == {'default': {'cpu': RESOURCE_PROFILE_PRESETS['standard']['limits']['default']['cpu']}}
     assert version == RESOURCE_PROFILE_PRESETS['standard']['version']
     assert base_class is None
     assert base_version is None
@@ -151,11 +148,10 @@ def test_namespace_builtin_snapshot_uses_stored_control_mask_with_canonical_valu
         'requests.cpu': RESOURCE_PROFILE_PRESETS['standard']['quota']['requests.cpu'],
         'pods': RESOURCE_PROFILE_PRESETS['standard']['quota']['pods'],
     }
-    assert limits == {
-        'default': {'cpu': RESOURCE_PROFILE_PRESETS['standard']['limits']['default']['cpu']}
-    }
+    assert limits == {'default': {'cpu': RESOURCE_PROFILE_PRESETS['standard']['limits']['default']['cpu']}}
     assert storage_policy == {'min': '1Gi'}
     assert customized is False
+
 
 def test_advanced_profile_controls_persist_real_values() -> None:
     controls = _advanced_profile_controls(
@@ -260,7 +256,6 @@ def test_capsule_advanced_control_requires_specific_capsule_capability() -> None
     assert state['capsule_resource_pools']['state'] == 'enabled'
     assert state['capsule_resource_pools']['requested'] is True
     assert state['capsule_resource_pools']['configuration']['resource_name'] == 'team-pool'
-
 
 
 def test_custom_profile_storage_policy_is_managed_and_validated() -> None:
