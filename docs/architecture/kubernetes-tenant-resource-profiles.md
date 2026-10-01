@@ -398,15 +398,17 @@ An adopted provider value such as PVC min/max is therefore imported into `storag
 
 Capsule remains the authoritative execution path for Tenant/shared quota. KAORI never replaces Capsule quota with a Native namespaced ResourceQuota.
 
-Where correlated Namespaces expose supported Container/PVC LimitRange policy, KAORI manages that namespaced policy through Kubernetes while retaining Capsule authority for Tenant quota. The committed state records the split explicitly:
+Where correlated Namespaces expose Capsule-generated Container/PVC LimitRange policy, KAORI does **not** take direct write ownership of the generated object unless Capsule exposes an admitted source-control contract for that field. The committed state records the authority split explicitly:
 
 ```text
-Tenant/shared quota     → Capsule authority
-Namespace LimitRange    → Kubernetes namespaced policy authority
-KAORI                   → desired state + orchestration + evidence + drift governance
+Tenant/shared quota     → Capsule authority + KAORI managed intent
+Generated LimitRange    → Capsule provider authority + KAORI committed mirror
+KAORI                   → normalization + profile mirror + evidence + safe drift governance
 ```
 
-A Capsule-generated PVC LimitRange is no longer evidence-only after successful managed adoption. Its supported min/max/default/defaultRequest values are imported into an auto-generated profile, written back equivalently, and monitored as `kaori_managed_policy`.
+A Capsule-generated PVC LimitRange is no longer an unstructured external constraint after adoption. Supported min/max/default/defaultRequest values are imported into an auto-generated profile as `provider_mirrored_policy`. Tenant Sync refreshes that committed mirror when Capsule changes the generated policy, so provider-owned PVC changes do not create false KAORI drift.
+
+True two-way write control is enabled only when the authoritative provider exposes an admitted mutation path. KAORI does not patch a Capsule controller-owned generated LimitRange merely to claim ownership.
 
 ### Two-way drift governance
 
@@ -415,6 +417,6 @@ Once a control is Managed, sync/observation remains read-only and records drift.
 - **Reapply KAORI Intent** — write committed KAORI values back through the admitted provider authority and require read-back.
 - **Accept Provider State** — perform no redundant provider write; import the fresh provider values as the new committed KAORI intent.
 
-For auto-imported adoption profiles, Accept Provider State also advances the profile version and updates its committed quota/Container/PVC policy values. This prevents the profile from retaining stale PVC min/max values after provider-state acceptance.
+For auto-imported Native adoption profiles, Accept Provider State also advances the profile version and updates its committed quota/Container/PVC policy values. For Capsule-generated Namespace policy, provider mirroring performs the same profile-version advancement automatically during sync because Capsule remains the write authority. This prevents the profile from retaining stale PVC min/max values without creating artificial drift.
 
 Adoption origin remains retained as audit evidence even when operational ownership becomes Managed.
