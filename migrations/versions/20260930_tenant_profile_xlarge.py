@@ -27,10 +27,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.execute(
-        "UPDATE tenant_resource_profiles SET profile_class = 'large' "
-        "WHERE profile_class = 'extra_large'"
-    )
+    op.execute("UPDATE tenant_resource_profiles SET profile_class = 'large' WHERE profile_class = 'extra_large'")
     op.drop_constraint(
         'ck_tenant_resource_profiles_class',
         'tenant_resource_profiles',
