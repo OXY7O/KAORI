@@ -239,9 +239,9 @@ def test_intelligence_overview_uses_non_redundant_hero_identity() -> None:
 def test_kubernetes_blocker_families_are_locked_to_general_and_analytics() -> None:
     standard = (ROOT / 'docs' / 'design' / 'components' / 'HERO.md').read_text(encoding='utf-8')
     tenant = (ROOT / 'app' / 'templates' / 'kubernetes' / 'tenant' / 'base.html').read_text(encoding='utf-8')
-    analytics = (
-        ROOT / 'app' / 'templates' / 'kubernetes' / 'analytics' / 'overview' / 'index.html'
-    ).read_text(encoding='utf-8')
+    analytics = (ROOT / 'app' / 'templates' / 'kubernetes' / 'analytics' / 'overview' / 'index.html').read_text(
+        encoding='utf-8'
+    )
 
     assert 'Kubernetes has exactly two prerequisite blocker families' in standard
     assert 'components/cluster/_hero_blocked_context.html' in tenant
@@ -297,21 +297,14 @@ def test_reports_and_integrations_hero_identity_follow_sidebar_vocabulary() -> N
     assert 'page_hero.intro(domain.icon, "Integrations", domain.icon)' in integration_domain
     assert '>{{ domain.label }}</h1>' in integration_domain
 
-
-    general = (
-        ROOT / 'app/templates/settings/general/partials/_hero.html'
-    ).read_text(encoding='utf-8')
-    account = (
-        ROOT / 'app/templates/settings/account/partials/_hero.html'
-    ).read_text(encoding='utf-8')
+    general = (ROOT / 'app/templates/settings/general/partials/_hero.html').read_text(encoding='utf-8')
+    account = (ROOT / 'app/templates/settings/account/partials/_hero.html').read_text(encoding='utf-8')
     assert "page_hero.intro('settings-2', 'Settings'," in general
     assert '>General</h1>' in general
     assert "page_hero.intro('settings-2', 'Settings'," in account
     assert '>Account</h1>' in account
 
-    object_storage_pages = (
-        ROOT / 'app/storage/object_storage/analytics/pages.py'
-    ).read_text(encoding='utf-8')
+    object_storage_pages = (ROOT / 'app/storage/object_storage/analytics/pages.py').read_text(encoding='utf-8')
     assert object_storage_pages.count("'Object Storage Analytics',") == 6
     for title in ('Overview', 'Capacity & Usage', 'Performance', 'Forecast', 'Top Consumers', 'Alerts & Anomalies'):
         assert f"        '{title}'," in object_storage_pages
