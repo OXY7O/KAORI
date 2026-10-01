@@ -290,6 +290,8 @@ def test_resource_profile_management_dialogs_support_versioned_builtin_governanc
 
     assert 'data-kaori-native-dialog' in dialogs
     assert 'resource-profile-manage-{{ profile.id }}' in dialogs
+    assert 'max-w-7xl' in dialogs
+    assert 'max-w-6xl' not in dialogs
     assert 'KAORI Built-in Preset' in dialogs
     assert 'Fixed values · Versioned controls' in dialogs
     assert 'Why this preset is locked' not in dialogs
@@ -352,6 +354,10 @@ def test_resource_profile_advanced_controls_are_real_profile_intent_and_placemen
     assert 'advanced_control_hostname_reservation_hostname_pattern' in advanced
     assert 'advanced_control_managed_tls_mode' in advanced
     assert 'advanced_control_managed_registry_source_reference' in advanced
+    assert 'block sm:col-span-2' in advanced
+    assert 'Required fails closed when admission enforcement is unavailable.' not in advanced
+    assert 'Reference only. Secret/private-key material is never stored in the profile.' not in advanced
+    assert 'Reference only. Registry credentials are not stored in Resource Profile JSON.' not in advanced
     assert 'advanced_control_capsule_namespace_controls_namespace_options_json' in advanced
     assert 'advanced_control_capsule_resource_rules_storage_classes' in advanced
     assert 'advanced_control_capsule_resource_pools_spec_json' in advanced
