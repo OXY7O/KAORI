@@ -338,20 +338,20 @@ For Capsule, writable quota authority uses the Capsule reconciliation path. Cont
 
 Resource Profiles persist **advanced control intent and its non-secret configuration values** in addition to allocation and Container LimitRange dimensions. This is an operator-editable reusable contract, not a status/TODO matrix and not an issue-reference UI.
 
-The expandable Advanced Controls editor uses values that map to the already approved canonical KAORI contracts:
+The expandable Advanced Controls editor uses values that map to the already approved canonical KAORI contracts. The UI exposes the same scope/effect guidance through contextual Info Tips instead of issue references:
 
-| Control | Persisted profile values |
-| --- | --- |
-| Ingress | enforcement mode (required or preflight-only) |
-| Service Exposure | policy profile plus explicit ClusterIP / Ingress / NodePort / LoadBalancer / ExternalName allow/deny decisions |
-| Hostname Reservation | exact/wildcard/regex match mode plus normalized hostname pattern |
-| Managed TLS | platform/namespace-compatibility mode, resource name, and non-secret source reference |
-| Managed Registry | image-pull/external-provider mode, resource name, and non-secret source reference |
-| Capsule Namespace Controls | forceTenantPrefix intent plus namespaceOptions JSON |
-| Capsule Resource Rules | container registry, PriorityClass, StorageClass lists, and Capsule rules JSON |
-| Capsule Resource Pools | ResourcePool/ResourcePoolClaim kind, resource name, and desired spec JSON |
-| Capsule Replication | TenantResource/GlobalTenantResource kind, resource name, and desired spec JSON |
-| Capsule Tenant Cordon | cordon and deletion-protection booleans |
+| Control | Scope | Effect when enabled | Persisted profile values |
+| --- | --- | --- | --- |
+| Ingress | Ingress exposure governance on attached namespaces | evaluates canonical exposure policy; Required mode additionally requires admission enforcement | enforcement mode (required or preflight-only) |
+| Service Exposure | ClusterIP, Ingress, NodePort, LoadBalancer, and ExternalName exposure | selected allow/deny policy becomes reusable desired exposure intent and must pass provider capability checks | policy profile plus explicit exposure allow/deny decisions |
+| Hostname Reservation | exact/wildcard/regex hostname ownership and collision protection | hostname ownership/collision checks must pass before exposure mutation | match mode plus normalized hostname pattern |
+| Managed TLS | workload TLS delivery | requests the canonical TLS delivery path without storing secret/private-key material | platform/namespace-compatibility mode, resource name, and non-secret source reference |
+| Managed Registry | private image-registry credential delivery | requests image-pull Secret or external credential-provider delivery without storing credential values | image-pull/external-provider mode, resource name, and non-secret source reference |
+| Capsule Namespace Controls | Capsule Tenant namespace naming/options | writes forceTenantPrefix/namespaceOptions through Capsule authority; unavailable on Native | forceTenantPrefix intent plus namespaceOptions JSON |
+| Capsule Resource Rules | Capsule registry/PriorityClass/StorageClass/rules policy | reconciles admitted Capsule Tenant resource-rule fields when capability is available | container registry, PriorityClass, StorageClass lists, and Capsule rules JSON |
+| Capsule Resource Pools | Capsule ResourcePool/ResourcePoolClaim association | reconciles selected pool/claim resource and desired spec through Capsule authority | ResourcePool/ResourcePoolClaim kind, resource name, and desired spec JSON |
+| Capsule Replication | TenantResource/GlobalTenantResource replication | reconciles selected replication resource through Capsule authority; Native does not emulate it | TenantResource/GlobalTenantResource kind, resource name, and desired spec JSON |
+| Capsule Tenant Cordon | Capsule Tenant cordon/deletion protection | reconciles cordoned/preventDeletion flags; at least one protection must remain enabled | cordon and deletion-protection booleans |
 
 Secret/private-key/registry credential material is never persisted in Resource Profile JSON. The profile stores only non-secret configuration and source references.
 
