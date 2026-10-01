@@ -6,7 +6,10 @@ from typing import Any
 from celery import shared_task
 
 from app.extensions.db import db
-from app.kubernetes.tenant.allocation_drift import apply_managed_allocation_drift_observation
+from app.kubernetes.tenant.allocation_drift import (
+    apply_managed_allocation_drift_observation,
+    apply_provider_mirrored_policy_observation,
+)
 from app.kubernetes.tenant.audit import record_tenant_sync_terminal_audit
 from app.kubernetes.tenant.capsule_allocation_governance import (
     apply_managed_capsule_shared_allocation_drift_observation,
@@ -195,6 +198,7 @@ def sync_tenant_inventory_task(
         snapshot = build_tenant_inventory_snapshot()
         missing_namespace_drift_ids = apply_missing_namespace_drift_from_inventory()
         allocation_drift = apply_managed_allocation_drift_observation()
+        provider_policy_mirror = apply_provider_mirrored_policy_observation()
         capsule_shared_drift = apply_managed_capsule_shared_allocation_drift_observation()
         capsule_tenant_quota_drift = apply_managed_capsule_tenant_quota_drift_observation()
 
@@ -205,6 +209,9 @@ def sync_tenant_inventory_task(
         snapshot['missing_namespace_drift_count'] = len(missing_namespace_drift_ids)
         snapshot['allocation_drift_count'] = len(allocation_drift_ids)
         snapshot['allocation_observation_error_count'] = len(allocation_drift['observation_errors'])
+        snapshot['provider_mirrored_policy_count'] = len(provider_policy_mirror['mirrored_namespace_ids'])
+        snapshot['provider_mirrored_policy_updated_count'] = len(provider_policy_mirror['updated_namespace_ids'])
+        snapshot['provider_mirrored_policy_error_count'] = len(provider_policy_mirror['observation_errors'])
         snapshot['capsule_shared_allocation_drift_count'] = len(capsule_shared_drift['drifted_intent_ids'])
         snapshot['capsule_shared_allocation_drift_ids'] = capsule_shared_drift['drifted_intent_ids']
         snapshot['capsule_shared_allocation_restored_ids'] = capsule_shared_drift['restored_intent_ids']
@@ -235,6 +242,14 @@ def sync_tenant_inventory_task(
             }
             for item in allocation_drift['observation_errors']
         ]
+        provider_policy_exceptions = [
+            {
+                'cluster_id': '',
+                'namespace': item.get('namespace', ''),
+                'reason': f'Provider policy mirror failed: {item.get("reason", "unknown error")}',
+            }
+            for item in provider_policy_mirror['observation_errors']
+        ]
         capsule_shared_exceptions = [
             {
                 'cluster_id': '',
@@ -261,6 +276,7 @@ def sync_tenant_inventory_task(
             list(snapshot.get('exceptions') or [])
             + allocation_exceptions
             + observation_exceptions
+            + provider_policy_exceptions
             + capsule_shared_exceptions
             + capsule_tenant_quota_exceptions
         )[:25]
@@ -268,6 +284,7 @@ def sync_tenant_inventory_task(
             int(snapshot.get('exception_count') or 0)
             + len(allocation_exceptions)
             + len(observation_exceptions)
+            + len(provider_policy_exceptions)
             + len(capsule_shared_exceptions)
             + len(capsule_tenant_quota_exceptions)
         )
