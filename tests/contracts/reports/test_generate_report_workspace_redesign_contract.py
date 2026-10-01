@@ -439,8 +439,10 @@ def test_generate_report_final_submit_is_backend_authoritative() -> None:
 def test_generate_report_review_recomputes_live_readiness_state() -> None:
     runtime = read(RUNTIME)
 
-    assert "if (currentWizardStep === 5) {" in runtime
-    assert "syncClusterGuard()" in runtime
+    show_step = runtime[runtime.index("function showWizardStep"):runtime.index("function validateWizardStep")]
+    assert "if (nextStep === 5) {" in show_step
+    assert show_step.index("syncClusterGuard()") < show_step.index("currentWizardStep = nextStep")
+    assert "if (currentWizardStep === 5) {" not in show_step
     assert "clusterSelect.addEventListener('input', syncClusterSelection)" in runtime
     assert "clusterSelect.addEventListener('change', syncClusterSelection)" in runtime
 

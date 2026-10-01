@@ -728,13 +728,13 @@
         function showWizardStep(step, focusPanel) {
             const nextStep = Math.min(5, Math.max(1, step))
             if (nextStep > highestVisitedWizardStep) return
-            currentWizardStep = nextStep
-            if (currentWizardStep === 5) {
-                // Recompute from the live form before rendering Review & Queue.
-                // This prevents stale readiness copy after the user has already
-                // selected a valid cluster/system and report sections.
+            if (nextStep === 5) {
+                // Refresh readiness while the current step is still stable.
+                // Updating currentWizardStep first can leave the wizard half
+                // transitioned if readiness rendering raises an exception.
                 syncClusterGuard()
             }
+            currentWizardStep = nextStep
             wizardPanels.forEach(function (panel) {
                 panel.classList.toggle('hidden', Number(panel.dataset.wizardPanel) !== currentWizardStep)
             })
