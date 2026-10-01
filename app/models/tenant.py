@@ -271,9 +271,12 @@ class TenantCapacityPolicy(db.Model):
     cluster_id: Mapped[str] = mapped_column(ForeignKey('clusters.id', ondelete='CASCADE'), nullable=False)
     platform_reserve_cpu: Mapped[str] = mapped_column(String(50), nullable=False, default='0')
     platform_reserve_memory: Mapped[str] = mapped_column(String(50), nullable=False, default='0')
+    platform_reserve_pods: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     safety_headroom_percent: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     unmanaged_commitment_cpu: Mapped[str] = mapped_column(String(50), nullable=False, default='0')
     unmanaged_commitment_memory: Mapped[str] = mapped_column(String(50), nullable=False, default='0')
+    unmanaged_commitment_pods: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    tenant_storage_budget: Mapped[str | None] = mapped_column(String(50), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )
