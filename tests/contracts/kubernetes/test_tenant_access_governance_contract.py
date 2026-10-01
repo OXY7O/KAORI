@@ -221,3 +221,38 @@ def test_access_profiles_render_in_least_privilege_operator_order() -> None:
     service = read('app/kubernetes/tenant/access_service.py')
 
     assert "profile_order = ('viewer', 'operator', 'tenant_admin', 'deployer')" in service
+
+def test_apply_access_grant_form_uses_context_preview_instead_of_redundant_helper_copy() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    script = read('app/static/js/tenant_access_grant_form.js')
+
+    assert 'Apply Access Grant' in workspace
+    assert 'access-membership-tip' in workspace
+    assert 'access-profile-tip' in workspace
+    assert 'access-scope-tip' in workspace
+    assert 'data-access-profile-guidance' not in workspace
+    assert 'data-access-scope-guidance' not in workspace
+    assert 'Select Membership first; incompatible profiles are filtered automatically.' not in workspace
+    assert 'Tenant and scope are validated before commit.' not in workspace
+
+    assert 'data-access-grant-context' in workspace
+    assert 'Grant Context' in workspace
+    assert 'Live preview of the authorization intent before commit.' in workspace
+    assert 'data-access-context-principal' in workspace
+    assert 'data-access-context-tenant' in workspace
+    assert 'data-access-context-profile' in workspace
+    assert 'data-access-context-scope' in workspace
+    assert 'data-access-context-provider' in workspace
+    assert 'flex min-h-[14rem] flex-1 flex-col' in workspace
+    assert 'sm:grid-cols-2' in workspace
+    assert 'Filtered by Membership Tenant' in workspace
+
+    assert 'const syncContext = (' in script
+    assert 'membershipOption?.dataset.subjectName' in script
+    assert "target.matches('[data-access-environment]')" in script
+    assert "target.matches('[data-access-namespace]')" in script
+    assert 'Native Kubernetes authority selected.' in script
+    assert 'provider mutation remains blocked.' in script
+    assert 'data-access-profile-guidance' not in script
+    assert 'data-access-scope-guidance' not in script
+
