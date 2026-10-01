@@ -1116,25 +1116,32 @@ def update_resource_profile(profile_id: int, source: Mapping[str, Any]) -> tuple
     profile = db.session.get(TenantResourceProfile, profile_id)
     if profile is None:
         raise ValueError('Selected Resource Profile no longer exists.')
-    if profile.profile_class != TenantResourceProfileClass.CUSTOM.value:
-        raise ValueError('Built-in Resource Profiles are locked. Create or edit a Custom profile instead.')
 
-    name = _text(source, 'profile_name')
-    if not name or len(name) > 120:
-        raise ValueError('Resource Profile name is required and must be at most 120 characters.')
-    duplicate = TenantResourceProfile.query.filter(
-        func.lower(TenantResourceProfile.name) == name.lower(),
-        TenantResourceProfile.id != profile.id,
-    ).first()
-    if duplicate is not None:
-        raise ValueError('A Resource Profile with this name already exists.')
+    is_builtin = profile.profile_class in RESOURCE_PROFILE_PRESETS
+    if is_builtin:
+        # Built-in profile identity and numeric sizing remain canonical. Operators
+        # may revise the ownership mask and advanced-control intent as a new
+        # contract version under the same logical profile.
+        name = profile.name
+        quota, limits = _preset_controlled_values(RESOURCE_PROFILE_PRESETS[profile.profile_class], source)
+        storage_policy = _preset_storage_policy_values(RESOURCE_PROFILE_PRESETS[profile.profile_class], source)
+    else:
+        name = _text(source, 'profile_name')
+        if not name or len(name) > 120:
+            raise ValueError('Resource Profile name is required and must be at most 120 characters.')
+        duplicate = TenantResourceProfile.query.filter(
+            func.lower(TenantResourceProfile.name) == name.lower(),
+            TenantResourceProfile.id != profile.id,
+        ).first()
+        if duplicate is not None:
+            raise ValueError('A Resource Profile with this name already exists.')
+        quota, limits = _profile_values(source)
+        storage_policy = _storage_policy_values(source)
 
-    enabled_value = _text(source, 'profile_enabled').lower()
+    enabled_value = _text(source, 'profile_enabled').lower() or ('enabled' if profile.enabled else 'disabled')
     if enabled_value not in {'enabled', 'disabled'}:
-        raise ValueError('Select whether the Custom Resource Profile is Enabled or Disabled.')
+        raise ValueError('Select whether the Resource Profile is Enabled or Disabled.')
 
-    quota, limits = _profile_values(source)
-    storage_policy = _storage_policy_values(source)
     advanced_controls = _advanced_profile_controls(source)
     contract_changed = (
         quota != (profile.quota_hard_json or {})
@@ -1144,7 +1151,8 @@ def update_resource_profile(profile_id: int, source: Mapping[str, Any]) -> tuple
     )
 
     profile.name = name
-    profile.description = _text(source, 'profile_description') or None
+    if 'profile_description' in source:
+        profile.description = _text(source, 'profile_description') or None
     profile.quota_hard_json = quota
     profile.limit_defaults_json = limits
     profile.storage_policy_json = storage_policy
@@ -1155,7 +1163,6 @@ def update_resource_profile(profile_id: int, source: Mapping[str, Any]) -> tuple
 
     db.session.flush()
     return profile, contract_changed
-
 
 def update_resource_profile_committed(
     profile_id: int,
@@ -1174,6 +1181,131 @@ def update_resource_profile_committed(
         db.session.rollback()
         raise
 
+
+
+def _resource_profile_rollout_targets(profile_ids: list[int]) -> dict[int, list[dict[str, Any]]]:
+    if not profile_ids:
+        return {}
+
+    rows = (
+        db.session.query(
+            TenantNamespace.resource_profile_id,
+            Tenant.id,
+            Tenant.name,
+            Tenant.provider_key,
+            func.count(TenantNamespace.id),
+            func.sum(
+                case(
+                    (TenantNamespace.resource_profile_version != TenantResourceProfile.version, 1),
+                    else_=0,
+                )
+            ),
+        )
+        .join(TenantEnvironment, TenantEnvironment.id == TenantNamespace.tenant_environment_id)
+        .join(Tenant, Tenant.id == TenantEnvironment.tenant_id)
+        .join(TenantResourceProfile, TenantResourceProfile.id == TenantNamespace.resource_profile_id)
+        .filter(
+            TenantNamespace.resource_profile_id.in_(profile_ids),
+            TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+        )
+        .group_by(
+            TenantNamespace.resource_profile_id,
+            Tenant.id,
+            Tenant.name,
+            Tenant.provider_key,
+        )
+        .order_by(Tenant.name.asc())
+        .all()
+    )
+
+    result: dict[int, list[dict[str, Any]]] = {profile_id: [] for profile_id in profile_ids}
+    for profile_id, tenant_id, tenant_name, provider_key, count, outdated in rows:
+        if profile_id is None:
+            continue
+        result.setdefault(int(profile_id), []).append(
+            {
+                'tenant_id': str(tenant_id),
+                'tenant_name': str(tenant_name),
+                'provider_key': str(provider_key),
+                'namespaces': int(count or 0),
+                'outdated': int(outdated or 0),
+            }
+        )
+    return result
+
+
+def rollout_resource_profile_to_tenant_committed(
+    *,
+    profile_id: int,
+    tenant_id: str,
+) -> dict[str, Any]:
+    profile = db.session.get(TenantResourceProfile, profile_id)
+    if profile is None or not profile.enabled:
+        raise ValueError('Selected Resource Profile is unavailable.')
+
+    tenant = db.session.get(Tenant, tenant_id)
+    if tenant is None:
+        raise ValueError('Selected Tenant no longer exists.')
+    if tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
+        raise ValueError('Tenant is not Ready; Resource Profile rollout is unavailable.')
+    if tenant.provider_key != 'native_kubernetes':
+        raise ValueError(
+            'Bulk Namespace profile rollout currently uses Native Kubernetes authority only. '
+            'Capsule allocations must use their admitted Capsule governance workflow.'
+        )
+
+    records = (
+        TenantNamespace.query.join(
+            TenantEnvironment,
+            TenantEnvironment.id == TenantNamespace.tenant_environment_id,
+        )
+        .filter(
+            TenantNamespace.resource_profile_id == profile.id,
+            TenantEnvironment.tenant_id == tenant.id,
+            TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+        )
+        .order_by(TenantNamespace.namespace.asc(), TenantNamespace.id.asc())
+        .all()
+    )
+    if not records:
+        raise ValueError('No active Namespace attachment uses this Resource Profile for the selected Tenant.')
+
+    summary: dict[str, Any] = {
+        'profile_id': profile.public_id,
+        'profile_name': profile.name,
+        'profile_version': int(profile.version or 1),
+        'tenant_id': tenant.id,
+        'tenant_name': tenant.name,
+        'total': len(records),
+        'updated': 0,
+        'already_current': 0,
+        'failed': [],
+    }
+
+    for record in records:
+        if (
+            int(record.resource_profile_version or 0) == int(profile.version or 1)
+            and dict(record.allocation_quota_json or {}) == _namespace_allocation_values(profile)[0]
+            and dict(record.allocation_limit_defaults_json or {}) == _namespace_allocation_values(profile)[1]
+            and dict(record.allocation_storage_policy_json or {}) == _namespace_allocation_values(profile)[2]
+        ):
+            summary['already_current'] += 1
+            continue
+
+        try:
+            change_native_namespace_allocation_committed(
+                {
+                    'tenant_namespace_id': str(record.id),
+                    'resource_profile_id': str(profile.id),
+                }
+            )
+        except (ApiException, ValueError, TenantStateConflictError) as exc:
+            summary['failed'].append({'namespace': record.namespace, 'reason': str(exc)})
+            continue
+
+        summary['updated'] += 1
+
+    return summary
 
 def delete_resource_profile(profile_id: int) -> dict[str, Any]:
     profile = db.session.get(TenantResourceProfile, profile_id)
@@ -1344,11 +1476,7 @@ def change_native_namespace_allocation(source: Mapping[str, Any]) -> TenantNames
         quota_hard=quota,
     )
 
-    profile_version = (
-        int(RESOURCE_PROFILE_PRESETS[profile.profile_class]['version'])
-        if profile.profile_class in RESOURCE_PROFILE_PRESETS
-        else profile.version
-    )
+    profile_version = int(profile.version or 1)
 
     try:
         if record.ownership_status == TenantOwnershipStatus.ADOPTED.value:
@@ -1996,11 +2124,7 @@ def get_namespace_registry_context(
                 'quota': profile.quota_hard_json or {},
                 'limits': profile.limit_defaults_json or {},
                 'storage_policy': getattr(profile, 'storage_policy_json', {}) or {},
-                'version': (
-                    int(RESOURCE_PROFILE_PRESETS[profile.profile_class]['version'])
-                    if profile.profile_class in RESOURCE_PROFILE_PRESETS
-                    else profile.version
-                ),
+                'version': int(profile.version or 1),
                 'profile_class': profile.profile_class,
                 'advanced_controls': profile.advanced_controls_json or {},
             }
@@ -2102,11 +2226,7 @@ def get_tenant_context() -> dict[str, Any]:
                 'quota': profile.quota_hard_json or {},
                 'limits': profile.limit_defaults_json or {},
                 'storage_policy': getattr(profile, 'storage_policy_json', {}) or {},
-                'version': (
-                    int(RESOURCE_PROFILE_PRESETS[profile.profile_class]['version'])
-                    if profile.profile_class in RESOURCE_PROFILE_PRESETS
-                    else profile.version
-                ),
+                'version': int(profile.version or 1),
                 'profile_class': profile.profile_class,
                 'advanced_controls': profile.advanced_controls_json or {},
             }
