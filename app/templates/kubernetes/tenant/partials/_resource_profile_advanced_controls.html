@@ -9,14 +9,14 @@
             {{ info_tip.render(
                 id_prefix ~ '-' ~ key ~ '-scope-tip',
                 label ~ ' scope & effect',
-                scope,
+                'Scope: ' ~ scope,
                 [
-                    'When enabled: ' ~ effect,
-                    'Placement is checked at attachment and again before mutation. Unsupported provider capability becomes Unavailable and fails closed.'
+                    'Effect when enabled: ' ~ effect,
+                    'Provider behavior: placement capability is checked at attachment and again before mutation. Unsupported capability becomes Unavailable and fails closed.'
                 ],
                 placement='right') }}
         </span>
-        <p class="mt-0.5 text-xs text-content-muted">{{ description }}</p>
+        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
     </div>
 {%- endmacro %}
 
@@ -675,3 +675,253 @@
         </div>
     </details>
 {%- endmacro %}
+
+{% macro view_control(icon, label, scope, effect, enabled, config_rows=[]) -%}
+    <div class="rounded-lg border border-outline-subtle bg-surface-card px-3.5 py-3"
+         data-tenant-advanced-view-control="{{ label|lower|replace(' ', '-') }}">
+        <div class="flex min-w-0 items-start justify-between gap-3">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-content-primary">{{ label }}</p>
+                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ scope }}</p>
+                </div>
+            </div>
+            {{ table_label.status_label('Enabled' if enabled else 'Off', 'normal' if enabled else 'unknown') }}
+        </div>
+        {% if enabled %}
+            <p class="mt-3 text-xs leading-5 text-content-secondary">{{ effect }}</p>
+            {% if config_rows %}
+                <dl class="mt-3 grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2">
+                    {% for key, value in config_rows %}
+                        <div class="min-w-0 bg-surface-elevated px-3 py-2.5">
+                            <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ key }}</dt>
+                            <dd class="mt-1 break-words text-xs font-semibold leading-5 text-content-primary">{{ value or '—' }}</dd>
+                        </div>
+                    {% endfor %}
+                </dl>
+            {% endif %}
+        {% else %}
+            <p class="mt-3 text-xs leading-5 text-content-muted">No managed intent is enabled for this control.</p>
+        {% endif %}
+    </div>
+{%- endmacro %}
+
+{% macro render_view(values=none, id_prefix='resource-profile-advanced-view') -%}
+    {% set values = values or {} %}
+    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+             data-tenant-advanced-controls-view
+             aria-labelledby="{{ id_prefix }}-heading">
+        <div class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-start sm:justify-between">
+            <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
+                    </span>
+                    <div>
+                        <h3 id="{{ id_prefix }}-heading" class="text-sm font-semibold text-content-primary">Advanced Controls</h3>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Read-only governance intent grouped by operational scope.</p>
+                    </div>
+                </div>
+            </div>
+            {{ table_label.metadata_label('Profile Contract', 'layers-3') }}
+        </div>
+
+        <div class="grid gap-4 p-4 xl:grid-cols-3">
+            <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
+                <div class="mb-3">
+                    <p class="text-xs font-semibold text-content-primary">Exposure &amp; Access</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Network exposure, hostname ownership, TLS, and registry delivery.</p>
+                </div>
+                <div class="space-y-2.5">
+                    {% set raw = values.get('ingress') %}
+                    {% set config = raw if raw is mapping else {} %}
+                    {% set enabled = (raw is sameas true) or (config and config.get('enabled', true)) %}
+                    {{ view_control(
+                        'route',
+                        'Ingress',
+                        'Namespace ingress exposure governance.',
+                        'Validates the canonical exposure policy; Required mode also requires admitted enforcement before mutation.',
+                        enabled,
+                        [('Enforcement', 'Required' if config.get('enforcement_required', true) else 'Preflight only')] if enabled else []
+                    ) }}
+
+                    {% set raw = values.get('service_exposure') %}
+                    {% set config = raw if raw is mapping else {} %}
+                    {% set enabled = (raw is sameas true) or (config and config.get('enabled', true)) %}
+                    {% set exposure = [] %}
+                    {% if enabled %}
+                        {% set exposure = [
+                            ('Policy', (config.get('profile_key') or 'ingress_only')|replace('_', ' ')|title),
+                            ('ClusterIP', 'Allow' if config.get('allow_cluster_ip', true) else 'Deny'),
+                            ('Ingress', 'Allow' if config.get('allow_ingress', true) else 'Deny'),
+                            ('NodePort', 'Allow' if config.get('allow_node_port', false) else 'Deny'),
+                            ('LoadBalancer', 'Allow' if config.get('allow_load_balancer', false) else 'Deny'),
+                            ('ExternalName', 'Allow' if config.get('allow_external_name', false) else 'Deny')
+                        ] %}
+                    {% endif %}
+                    {{ view_control(
+                        'network',
+                        'Service Exposure',
+                        'Allowed Kubernetes Service and Ingress exposure types.',
+                        'Turns the selected exposure decisions into reusable governed intent for the attached placement.',
+                        enabled,
+                        exposure
+                    ) }}
+
+                    {% set raw = values.get('hostname_reservation') %}
+                    {% set config = raw if raw is mapping else {} %}
+                    {% set enabled = (raw is sameas true) or (config and config.get('enabled', true)) %}
+                    {{ view_control(
+                        'globe-2',
+                        'Hostname Reservation',
+                        'Hostname ownership and collision protection.',
+                        'Requires the configured hostname pattern to pass canonical ownership checks before exposure.',
+                        enabled,
+                        [
+                            ('Match Mode', (config.get('match_mode') or 'exact')|title),
+                            ('Hostname Pattern', config.get('hostname_pattern') or '—')
+                        ] if enabled else []
+                    ) }}
+
+                    {% set raw = values.get('managed_tls') %}
+                    {% set config = raw if raw is mapping else {} %}
+                    {% set enabled = (raw is sameas true) or (config and config.get('enabled', true)) %}
+                    {{ view_control(
+                        'lock-keyhole',
+                        'Managed TLS',
+                        'Governed TLS delivery for attached workloads.',
+                        'Requests the selected managed TLS mode; secret and private-key material remains outside the profile.',
+                        enabled,
+                        [
+                            ('Mode', (config.get('mode') or 'platform_tls')|replace('_', ' ')|title),
+                            ('Resource', config.get('resource_name') or 'tenant-tls'),
+                            ('Source Reference', config.get('source_reference') or '—')
+                        ] if enabled else []
+                    ) }}
+
+                    {% set raw = values.get('managed_registry') %}
+                    {% set config = raw if raw is mapping else {} %}
+                    {% set enabled = (raw is sameas true) or (config and config.get('enabled', true)) %}
+                    {{ view_control(
+                        'package-check',
+                        'Managed Registry',
+                        'Private image-registry credential delivery.',
+                        'Requests governed registry access through the selected provider mechanism; credential material is never stored in profile JSON.',
+                        enabled,
+                        [
+                            ('Mode', (config.get('mode') or 'image_pull_secret')|replace('_', ' ')|title),
+                            ('Resource', config.get('resource_name') or 'registry-credentials'),
+                            ('Source Reference', config.get('source_reference') or '—')
+                        ] if enabled else []
+                    ) }}
+                </div>
+            </section>
+
+            <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
+                <div class="mb-3">
+                    <p class="text-xs font-semibold text-content-primary">Capsule Namespace Governance</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Capsule-native namespace, resource-rule, and cordon state.</p>
+                </div>
+                <div class="space-y-2.5">
+                    {% set raw = values.get('capsule_namespace_controls') %}
+                    {% set config = raw if raw is mapping else {} %}
+                    {% set enabled = (raw is sameas true) or (config and config.get('enabled', true)) %}
+                    {{ view_control(
+                        'folder-cog',
+                        'Capsule Namespace Controls',
+                        'Tenant naming and namespaceOptions policy.',
+                        'Carries Capsule Tenant namespace controls as desired state when Capsule is authoritative.',
+                        enabled,
+                        [
+                            ('Force Tenant Prefix', 'Enabled' if config.get('force_tenant_prefix', false) else 'Disabled'),
+                            ('namespaceOptions', (config.get('namespace_options', {})|tojson))
+                        ] if enabled else []
+                    ) }}
+
+                    {% set raw = values.get('capsule_resource_rules') %}
+                    {% set config = raw if raw is mapping else {} %}
+                    {% set enabled = (raw is sameas true) or (config and config.get('enabled', true)) %}
+                    {{ view_control(
+                        'shield-check',
+                        'Capsule Resource Rules',
+                        'Registry, PriorityClass, StorageClass, and admitted resource rules.',
+                        'Reconciles the configured Capsule Tenant resource-rule values when the capability is admitted.',
+                        enabled,
+                        [
+                            ('Registries', (config.get('container_registries', [])|join(', ')) or '—'),
+                            ('Priority Classes', (config.get('priority_classes', [])|join(', ')) or '—'),
+                            ('Storage Classes', (config.get('storage_classes', [])|join(', ')) or '—'),
+                            ('Rules', (config.get('rules', [])|tojson))
+                        ] if enabled else []
+                    ) }}
+
+                    {% set raw = values.get('capsule_tenant_cordon') %}
+                    {% set config = raw if raw is mapping else {} %}
+                    {% set enabled = (raw is sameas true) or (config and config.get('enabled', true)) %}
+                    {{ view_control(
+                        'octagon-pause',
+                        'Capsule Tenant Cordon',
+                        'Tenant cordon and deletion-protection state.',
+                        'Applies Capsule-native operational restrictions without emulating them on Native placement.',
+                        enabled,
+                        [
+                            ('Cordoned', 'Enabled' if config.get('cordoned', true) else 'Disabled'),
+                            ('Prevent Deletion', 'Enabled' if config.get('prevent_deletion', false) else 'Disabled')
+                        ] if enabled else []
+                    ) }}
+                </div>
+            </section>
+
+            <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
+                <div class="mb-3">
+                    <p class="text-xs font-semibold text-content-primary">Capsule Platform Extensions</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Resource-pool and replicated-resource desired state.</p>
+                </div>
+                <div class="space-y-2.5">
+                    {% set raw = values.get('capsule_resource_pools') %}
+                    {% set config = raw if raw is mapping else {} %}
+                    {% set enabled = (raw is sameas true) or (config and config.get('enabled', true)) %}
+                    {{ view_control(
+                        'layers-3',
+                        'Capsule Resource Pools',
+                        'ResourcePool or ResourcePoolClaim association.',
+                        'Requests the configured pool object only when the Capsule resource-pool capability is available.',
+                        enabled,
+                        [
+                            ('Kind', (config.get('resource_kind') or 'resource_pool')|replace('_', ' ')|title),
+                            ('Resource Name', config.get('resource_name') or '—'),
+                            ('Spec', (config.get('spec', {})|tojson))
+                        ] if enabled else []
+                    ) }}
+
+                    {% set raw = values.get('capsule_replication') %}
+                    {% set config = raw if raw is mapping else {} %}
+                    {% set enabled = (raw is sameas true) or (config and config.get('enabled', true)) %}
+                    {{ view_control(
+                        'copy',
+                        'Capsule Replication',
+                        'TenantResource or GlobalTenantResource replication.',
+                        'Reconciles the configured replicated-resource contract through Capsule authority.',
+                        enabled,
+                        [
+                            ('Kind', (config.get('resource_kind') or 'tenant_resource')|replace('_', ' ')|title),
+                            ('Resource Name', config.get('resource_name') or '—'),
+                            ('Spec', (config.get('spec', {})|tojson))
+                        ] if enabled else []
+                    ) }}
+
+                    <div class="rounded-lg border border-kaori-primary/20 bg-kaori-soft px-3.5 py-3">
+                        <p class="text-xs font-semibold text-content-primary">Capability boundary</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Capsule-only controls remain unavailable on Native placement. KAORI does not silently emulate or fall back across providers.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </section>
+{%- endmacro %}
+
