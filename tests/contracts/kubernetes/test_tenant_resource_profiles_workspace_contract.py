@@ -210,7 +210,7 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'space-y-3 p-4' not in capacity
     assert 'section class="space-y-5"' in capacity
     assert 'xl:grid-cols-12' not in capacity
-    assert 'Uses fresh committed capacity evidence.' in capacity
+    assert 'Uses fresh committed capacity evidence and recalculates governed CPU, memory, Pod, and logical storage headroom before this cluster policy is saved.' in capacity
     assert 'Quota enforces limits; admission governs CPU, memory, Pods, and logical storage commitment without claiming physical reservation.' in capacity
     assert 'Compute &amp; Pod Budget' in capacity
     assert 'platform_reserve_pods' in capacity
