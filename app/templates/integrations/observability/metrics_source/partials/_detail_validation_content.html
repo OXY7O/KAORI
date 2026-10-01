@@ -11,7 +11,7 @@
 {% set capability_metrics = [
     {'icon': 'braces', 'tone': 'normal', 'label': 'Validated Capabilities', 'value': capability_summary.observed ~ '/' ~ capability_summary.total, 'description': 'Provider-neutral Metrics Source adapter and query capabilities.'},
     {'icon': 'shield-x', 'tone': 'critical' if capability_summary.required_missing else 'normal', 'label': 'Required Gaps', 'value': capability_summary.required_missing, 'description': 'Provider-level capabilities that block use as a metrics runtime.'},
-    {'icon': 'link-2', 'tone': 'normal', 'label': 'Consumer Bindings', 'value': binding_rows|length, 'description': 'Kubernetes, Object Storage, and future consumers validate independently per binding.'}
+    {'icon': 'link-2', 'tone': 'normal', 'label': 'Consumer Bindings', 'value': binding_rows|length, 'description': 'Consumers validate independently per binding.'}
 ] %}
 {% set capability_metadata = [
     'Profile · ' ~ query_contract_label
@@ -19,7 +19,7 @@
 {% if capability_summary.required_missing %}
     {% set next_action = "Restore blocked core APIs, then rerun Full Validation." %}
 {% else %}
-    {% set next_action = "Validate consumer bindings for asset-specific metric evidence." %}
+    {% set next_action = "Validate each consumer binding to confirm asset-specific metric identity, labels, and usable evidence." %}
 {% endif %}
 <section id="metrics-source-validation-workspace"
          class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm font-sans"
@@ -55,7 +55,7 @@
     {{ provider_job_status.render(validation_job, 'Metrics Source validation running in worker', 'Metrics Source') }}
     <div class="space-y-4 p-4 sm:p-5">
         {{ capability_readiness.render('Metrics Source Provider Readiness',
-                'Core API evidence determines provider readiness; consumer capabilities stay outside this registry.',
+                'Core API evidence sets provider readiness; consumer evidence stays binding-scoped.',
                 readiness,
                 readiness|replace('_', ' ') |title,
         'Validated Capabilities',
