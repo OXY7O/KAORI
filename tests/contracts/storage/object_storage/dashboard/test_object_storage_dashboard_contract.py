@@ -279,10 +279,9 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     assert 'Recent Report Activity' in reporting_workspace
     assert 'Reporting Interpretation & Next Steps' in reporting_workspace
     assert 'Reporting Control' in reporting_workspace
-    assert 'Governed Reporting Loop' in reporting_workspace
-    assert 'Prepare' in reporting_workspace
-    assert 'Produce' in reporting_workspace
-    assert 'Govern' in reporting_workspace
+    assert 'KAORI Reporting Workflow' in reporting_workspace
+    assert 'Lifecycle Intent' in reporting_workspace
+    assert '6 Steps' in reporting_workspace
     assert 'components/numbered_governance_steps.html' not in reporting_workspace
     assert 'components/operational_flow_steps.html' not in reporting_workspace
     assert 'components/reporting_dashboard_workspace.html' in kubernetes_reporting

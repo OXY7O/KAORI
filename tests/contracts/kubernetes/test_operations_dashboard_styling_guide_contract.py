@@ -109,8 +109,8 @@ def test_primary_and_peer_operational_flows_are_static_and_controlled_flows_reus
     assert 'components/reporting_dashboard_workspace.html' in reporting_guidance
     assert 'components/numbered_governance_steps.html' not in reporting_workspace
     assert 'components/operational_flow_steps.html' not in reporting_workspace
-    assert 'reporting_phases' in reporting_workspace
-    assert 'Governed Reporting Loop' in reporting_workspace
+    assert 'reporting_steps' in reporting_workspace
+    assert 'KAORI Reporting Workflow' in reporting_workspace
     assert 'sm:grid-cols-2' in reporting_workspace
     assert 'auto-rows-fr' in reporting_workspace
     assert 'components/operational_flow_steps.html' in capacity
@@ -224,9 +224,9 @@ def test_dashboard_restores_card_grid_freshness_and_visible_action_flows() -> No
     assert 'Recommended Capacity Action Flow' in capacity
     assert 'Controlled Alert Response Flow' in alert
     assert 'components/reporting_dashboard_workspace.html' in reporting
-    assert 'Governed Reporting Loop' in reporting_workspace
-    assert "body_classes='flex flex-1 flex-col gap-4 p-5'" in reporting_workspace
-    assert "extra_classes='flex h-full flex-col'" in reporting_workspace
+    assert 'KAORI Reporting Workflow' in reporting_workspace
+    assert "body_classes='space-y-4 p-5'" in reporting_workspace
+    assert "extra_classes='h-full'" in reporting_workspace
     assert 'Reporting Tip' in reporting_workspace
     assert 'Use schedules for recurring operational evidence.' in reporting_workspace
     assert "icon='lightbulb'" in reporting_workspace
