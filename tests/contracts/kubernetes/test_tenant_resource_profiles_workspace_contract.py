@@ -97,6 +97,14 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'advanced_profile_controls.render' in form
     assert 'advanced_control_contract_present' in form
     assert 'Advanced Controls' in advanced
+    assert "'Scope: ' ~ scope" in advanced
+    assert "'Effect when enabled: ' ~ effect" in advanced
+    assert 'Provider behavior: placement capability is checked at attachment and again before mutation.' in advanced
+    assert 'show_tips=true' in advanced
+    assert 'data-tenant-advanced-controls-view' in advanced
+    assert 'Exposure &amp; Access' in advanced
+    assert 'Capsule Namespace Governance' in advanced
+    assert 'Capsule Platform Extensions' in advanced
     assert 'data-tenant-advanced-controls' in advanced
     assert 'data-tenant-advanced-control-group="ingress"' in advanced
     assert 'components/info_tip.html' in advanced
@@ -279,6 +287,9 @@ def test_resource_profile_management_dialogs_explain_preset_lock_and_govern_cust
     assert 'resource-profile-manage-{{ profile.id }}' in dialogs
     assert 'KAORI Built-in Preset' in dialogs
     assert 'Why this preset is locked' in dialogs
+    assert 'border border-kaori-primary/20 bg-kaori-soft px-4 py-3' in dialogs
+    assert 'bg-kaori-primary/15 px-4 py-3 dark:bg-kaori-primary/25' not in dialogs
+    assert 'Read-only governance intent grouped by operational scope.' in advanced
     assert 'same preset identity mean different resources over time' in dialogs
     assert 'Create a Custom profile from this preset' in dialogs
     assert "url_for('tenant.update_resource_profile_route'" in dialogs
@@ -355,8 +366,8 @@ def test_resource_profile_advanced_controls_are_real_profile_intent_and_placemen
     assert "'advanced_controls_json'" in migration
 
     assert 'advanced_control_contract_present' in dialogs
-    assert 'advanced_profile_controls.render(profile.advanced_controls_json or {}, true' in dialogs
-    assert 'advanced_profile_controls.render(profile.advanced_controls_json or {}, false' in dialogs
+    assert "advanced_profile_controls.render(profile.advanced_controls_json or {}, true, 'resource-profile-edit-' ~ profile.id, false)" in dialogs
+    assert "advanced_profile_controls.render_view(profile.advanced_controls_json or {}, 'resource-profile-view-' ~ profile.id)" in dialogs
     assert 'data-tenant-namespace-environment' in namespace_form
     assert 'Advanced Controls Preview' in namespace_form
     assert 'data-tenant-namespace-advanced-control' in namespace_form
