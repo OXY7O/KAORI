@@ -109,9 +109,10 @@ class _FakeCoreApi:
         self.patched_namespaces = []
 
     def read_namespace(self, name):
+        labels = self.patched_namespaces[-1][1]['metadata']['labels'] if self.patched_namespaces else {}
         return SimpleNamespace(
             metadata=SimpleNamespace(
-                labels={},
+                labels=labels,
                 resource_version='1',
             )
         )
