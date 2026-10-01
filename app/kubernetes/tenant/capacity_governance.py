@@ -395,9 +395,7 @@ def enforce_capsule_tenant_resource_quota_preflight(
         operation=operation,
         committed_state=committed_state,
         allocation_scope=(
-            'tenant_shared'
-            if str(proposed_scope or 'Tenant') == 'Tenant'
-            else 'tenant_namespace_template'
+            'tenant_shared' if str(proposed_scope or 'Tenant') == 'Tenant' else 'tenant_namespace_template'
         ),
     )
 
@@ -580,10 +578,7 @@ def _capacity_vector(result: SnapshotResult) -> tuple[CapacityVector | None, str
     if not isinstance(cpu, dict) or not isinstance(memory, dict) or not isinstance(pods, dict):
         return None, 'Committed Capacity Analytics evidence is missing CPU, memory, or Pod capacity.'
 
-    if any(
-        resource.get('capacity_evidence_available') is not True
-        for resource in (cpu, memory, pods)
-    ):
+    if any(resource.get('capacity_evidence_available') is not True for resource in (cpu, memory, pods)):
         return (
             None,
             'Committed Capacity Analytics evidence does not contain Ready-worker CPU, memory, and Pod allocatable capacity.',
@@ -604,6 +599,7 @@ def _capacity_vector(result: SnapshotResult) -> tuple[CapacityVector | None, str
         pods=pods_value,
         storage_bytes=None,
     ), ''
+
 
 def _canonical_shared_allocation_quota(
     cluster_id: str,
@@ -714,6 +710,7 @@ def _aggregate_committed_allocation(
         storage_bytes=totals[3],
     ), unbounded
 
+
 def _committed_tenant_allocation(
     cluster_id: str,
     *,
@@ -774,11 +771,7 @@ def _committed_evidence_reason(
 
 
 def _budget(policy: TenantCapacityPolicy, capacity: CapacityVector) -> TenantAllocationBudget:
-    storage_budget = (
-        _quantity(policy.tenant_storage_budget)
-        if policy.tenant_storage_budget not in (None, '')
-        else None
-    )
+    storage_budget = _quantity(policy.tenant_storage_budget) if policy.tenant_storage_budget not in (None, '') else None
     return build_tenant_allocation_budget(
         allocatable=capacity,
         reserve=CapacityVector(
@@ -794,6 +787,7 @@ def _budget(policy: TenantCapacityPolicy, capacity: CapacityVector) -> TenantAll
         ),
         logical_storage_budget=storage_budget,
     )
+
 
 def _unknown_evidence_decision(
     *,
@@ -894,11 +888,7 @@ def _quantity_gib_text(value: object | None) -> str | None:
 
 
 def _logical_storage_budget_vector(policy: TenantCapacityPolicy) -> CapacityVector:
-    storage_budget = (
-        _quantity(policy.tenant_storage_budget)
-        if policy.tenant_storage_budget not in (None, '')
-        else None
-    )
+    storage_budget = _quantity(policy.tenant_storage_budget) if policy.tenant_storage_budget not in (None, '') else None
     return CapacityVector(
         cpu=None,
         memory_bytes=None,

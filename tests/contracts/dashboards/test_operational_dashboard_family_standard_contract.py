@@ -134,8 +134,13 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
 
     kubernetes_response = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     kubernetes_summary = read('app/templates/kubernetes/dashboard/partials/_reporting_summary.html')
-    assert 'Run the approved response for the confirmed scope within permission and safety guardrails.' in kubernetes_response
-    assert 'Run the approved storage response for the confirmed scope within safety guardrails.' in object_alert_guidance
+    assert (
+        'Run the approved response for the confirmed scope within permission and safety guardrails.'
+        in kubernetes_response
+    )
+    assert (
+        'Run the approved storage response for the confirmed scope within safety guardrails.' in object_alert_guidance
+    )
     assert 'Recurring plans for automatic report generation.' in kubernetes_summary
     assert 'Recurring plans for automatic report generation.' in object_summary
 
@@ -230,9 +235,7 @@ def test_recent_report_activity_is_bounded_to_five_in_both_reference_dashboards(
 
 def test_operational_dashboard_standard_is_family_owned() -> None:
     standard = read('docs/design/patterns/OPERATIONAL_DASHBOARD.md')
-    audit = read(
-        'docs/design/audits/OPERATIONAL_DASHBOARD_FAMILY_FAST_TRACK_ALIGNMENT_AUDIT_2026_09_29.md'
-    )
+    audit = read('docs/design/audits/OPERATIONAL_DASHBOARD_FAMILY_FAST_TRACK_ALIGNMENT_AUDIT_2026_09_29.md')
 
     assert '# KAORI Operational Dashboard Pattern v1.6' in standard
     assert 'Kubernetes Operations Dashboard and Object Storage Operations Dashboard' in standard

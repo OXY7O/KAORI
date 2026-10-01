@@ -199,6 +199,5 @@ def test_kubernetes_detail_copy_balance_follows_review_contract() -> None:
     assert 'Revalidate after Kubernetes upgrades, served-API changes, or RBAC policy changes.' in capability_workspace
     assert 'Required verbs are evaluated across all namespaces for this cluster-wide contract.' in capability_registry
     assert (
-        'Required verbs are evaluated only in the approved namespace '
-        'for this optional contract.'
+        'Required verbs are evaluated only in the approved namespace for this optional contract.'
     ) in capability_registry

@@ -17,10 +17,10 @@ def test_kubernetes_forecast_resource_palette_is_shared_across_overview_surfaces
     analytics_forecast = read('app/templates/kubernetes/analytics/forecast/partials/_forecast_section.html')
 
     expected = {
-        'cpu': ('bg-status-info', 'stroke-status-info', "--kaori-status-info"),
-        'memory': ('bg-kaori-primary', 'stroke-kaori-primary', "--kaori-brand-primary"),
-        'storage': ('bg-status-normal', 'stroke-status-normal', "--kaori-status-normal"),
-        'pods': ('bg-status-warning', 'stroke-status-warning', "--kaori-status-warning"),
+        'cpu': ('bg-status-info', 'stroke-status-info', '--kaori-status-info'),
+        'memory': ('bg-kaori-primary', 'stroke-kaori-primary', '--kaori-brand-primary'),
+        'storage': ('bg-status-normal', 'stroke-status-normal', '--kaori-status-normal'),
+        'pods': ('bg-status-warning', 'stroke-status-warning', '--kaori-status-warning'),
     }
     for key, (surface, stroke, css_token) in expected.items():
         assert f"resource_key == '{key}'" in legend

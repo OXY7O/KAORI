@@ -358,7 +358,6 @@ def _runtime_primary_summary(
     return 'No current runtime issue was recorded.'
 
 
-
 def _runtime_decision_summary(
     *,
     integration_type: str,
@@ -385,6 +384,7 @@ def _runtime_decision_summary(
             return 'Kubernetes API ' + value[len('Provider ') :]
         return value
     return 'No current runtime issue was recorded.'
+
 
 def _message_repeats_diagnostic(message: str, diagnostics: list[dict[str, object]]) -> bool:
     normalized = ' '.join(str(message or '').split()).strip().lower()

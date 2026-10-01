@@ -81,8 +81,8 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'PVC Default Limit' not in management
     assert "pvc_min_storage: ['storage_policy', 'min']" in script
     assert "pvc_max_storage: ['storage_policy', 'max']" in script
-    assert "pvc_default_request_storage:" not in script
-    assert "pvc_default_storage:" not in script
+    assert 'pvc_default_request_storage:' not in script
+    assert 'pvc_default_storage:' not in script
     assert "wrapper?.dataset.controlRequiresValue === 'true'" in script
 
     for key in ("'small': {", "'standard': {", "'large': {", "'extra_large': {"):
@@ -109,12 +109,21 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'data-tenant-advanced-control-group="ingress"' in advanced
     assert 'components/info_tip.html' in advanced
     assert "id_prefix ~ '-overview-tip'" in advanced
-    assert 'Scope: optional governance beyond basic allocation, storage, object limits, and container defaults.' in advanced
-    assert 'Provider behavior: the selected Native or Capsule placement is evaluated at attachment and again before mutation' in advanced
+    assert (
+        'Scope: optional governance beyond basic allocation, storage, object limits, and container defaults.'
+        in advanced
+    )
+    assert (
+        'Provider behavior: the selected Native or Capsule placement is evaluated at attachment and again before mutation'
+        in advanced
+    )
     assert "'ingress'" in advanced
     assert 'Ingress exposure governance for namespaces using this profile.' in advanced
     assert "'service-exposure'" in advanced
-    assert 'ClusterIP, Ingress, NodePort, LoadBalancer, and ExternalName exposure decisions for attached namespaces.' in advanced
+    assert (
+        'ClusterIP, Ingress, NodePort, LoadBalancer, and ExternalName exposure decisions for attached namespaces.'
+        in advanced
+    )
     assert "'hostname-reservation'" in advanced
     assert 'Exact, wildcard, or regex hostname ownership and collision protection for Tenant exposure.' in advanced
     assert "'managed-tls'" in advanced
@@ -124,7 +133,10 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert "'capsule-namespace-controls'" in advanced
     assert 'Capsule Tenant namespace naming and namespaceOptions policy.' in advanced
     assert "'capsule-resource-rules'" in advanced
-    assert 'Capsule Tenant policy for container registries, PriorityClasses, StorageClasses, and admitted rule payloads.' in advanced
+    assert (
+        'Capsule Tenant policy for container registries, PriorityClasses, StorageClasses, and admitted rule payloads.'
+        in advanced
+    )
     assert "'capsule-resource-pools'" in advanced
     assert 'Capsule ResourcePool or ResourcePoolClaim association and desired spec.' in advanced
     assert "'capsule-replication'" in advanced
@@ -140,6 +152,7 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'read-only:bg-surface-disabled' in form_field
     assert 'read-only:text-content-muted' in form_field
     assert 'read-only:shadow-none' in form_field
+
 
 def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_resource_profile_registry.html')
@@ -223,7 +236,10 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'section class="space-y-5"' in capacity
     assert 'xl:grid-cols-12' not in capacity
     assert 'Recalculates governed CPU, memory, Pod, and storage headroom before save.' in capacity
-    assert 'Quota enforces limits; admission governs CPU, memory, Pods, and logical storage commitment without claiming physical reservation.' not in capacity
+    assert (
+        'Quota enforces limits; admission governs CPU, memory, Pods, and logical storage commitment without claiming physical reservation.'
+        not in capacity
+    )
     assert 'Compute &amp; Pod Budget' in capacity
     assert 'platform_reserve_pods' in capacity
     assert 'unmanaged_commitment_pods' in capacity
@@ -316,6 +332,7 @@ def test_resource_profile_revision_preserves_fixed_preset_values_and_dependency_
     assert 'same profile identity' in docs
     assert 'Small-2' in docs
 
+
 def test_resource_profile_registry_context_exposes_dependency_counts_for_actions() -> None:
     service = read('app/kubernetes/tenant/service.py')
 
@@ -343,13 +360,17 @@ def test_resource_profile_management_dialogs_support_versioned_builtin_governanc
     assert 'Each Namespace runs its own capacity admission, provider mutation, and read-back.' in dialogs
     assert 'Capsule workflow' in dialogs
 
-    assert "advanced_profile_controls.render(profile.advanced_controls_json or {}, true, 'resource-profile-edit-' ~ profile.id, false)" in dialogs
+    assert (
+        "advanced_profile_controls.render(profile.advanced_controls_json or {}, true, 'resource-profile-edit-' ~ profile.id, false)"
+        in dialogs
+    )
     assert 'show_tips' in advanced
     assert 'Read-only governance intent grouped by operational scope.' in advanced
 
     assert 'resource-profile-delete-modal' in dialogs
     assert 'zero Namespace and zero Capacity Decision references remain' in dialogs
     assert 'KAORI does not detach historical evidence automatically.' in dialogs
+
 
 def test_resource_profile_advanced_controls_are_real_profile_intent_and_placement_gated() -> None:
     form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
@@ -421,8 +442,16 @@ def test_resource_profile_advanced_controls_are_real_profile_intent_and_placemen
     assert "'advanced_controls_json'" in migration
 
     assert 'advanced_control_contract_present' in dialogs
-    assert dialogs.count("advanced_profile_controls.render(profile.advanced_controls_json or {}, true, 'resource-profile-edit-' ~ profile.id, false)") >= 2
-    assert "advanced_profile_controls.render_view(profile.advanced_controls_json or {}, 'resource-profile-view-' ~ profile.id)" not in dialogs
+    assert (
+        dialogs.count(
+            "advanced_profile_controls.render(profile.advanced_controls_json or {}, true, 'resource-profile-edit-' ~ profile.id, false)"
+        )
+        >= 2
+    )
+    assert (
+        "advanced_profile_controls.render_view(profile.advanced_controls_json or {}, 'resource-profile-view-' ~ profile.id)"
+        not in dialogs
+    )
     assert 'data-tenant-namespace-environment' in namespace_form
     assert 'Effective Allocation Preview' in namespace_form
     assert 'data-tenant-value-display' in namespace_form
@@ -499,8 +528,8 @@ def test_resource_profile_storage_policy_is_persisted_and_bidirectional() -> Non
     assert 'not _storage_policy_equal' in cutover
     assert 'record.allocation_storage_policy_json = storage' in cutover
 
-    assert "dict(record.allocation_storage_policy_json or {})" in drift
-    assert "storage_policy=dict(record.allocation_storage_policy_json or {})" in drift
+    assert 'dict(record.allocation_storage_policy_json or {})' in drift
+    assert 'storage_policy=dict(record.allocation_storage_policy_json or {})' in drift
     assert 'record.allocation_storage_policy_json = storage_policy' in drift
 
     assert 'def _create_adopted_baseline_profile(' not in adoption
@@ -514,14 +543,19 @@ def test_resource_profile_storage_policy_is_persisted_and_bidirectional() -> Non
         assert label in dialogs
 
 
-
 def test_resource_profile_copy_is_compact_and_version_intent_remains_clear() -> None:
     dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
     adoption = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
 
-    assert 'Preset sizing stays fixed. Control changes create a new version; Namespace snapshots stay pinned until rollout.' in dialogs
+    assert (
+        'Preset sizing stays fixed. Control changes create a new version; Namespace snapshots stay pinned until rollout.'
+        in dialogs
+    )
     assert 'sizing stays canonical.' in dialogs
-    assert 'Control changes create v{{ (profile.version or 1) + 1 }}; Namespace snapshots stay pinned until rollout.' in dialogs
+    assert (
+        'Control changes create v{{ (profile.version or 1) + 1 }}; Namespace snapshots stay pinned until rollout.'
+        in dialogs
+    )
     assert 'Managed takeover where authority exists; provider-owned constraints stay mirrored.' not in adoption
     assert 'Adopt managed authority; keep provider constraints mirrored.' in adoption
     assert 'Result: Adopted / Observed.' in adoption

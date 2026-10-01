@@ -334,9 +334,7 @@ def test_sidebar_v21_two_level_navigation_and_page_workspace_across_canonical_vi
         expect(page.locator('[data-kaori-domain-workspace-nav]')).to_have_count(0)
         inventory_views = page.locator('[data-kaori-capability-navigation="kubernetes_inventory"]')
         expect(inventory_views).to_be_visible()
-        expect(
-            inventory_views.locator('[data-kaori-tab-variant="integrated-workspace-server"]')
-        ).to_be_visible()
+        expect(inventory_views.locator('[data-kaori-tab-variant="integrated-workspace-server"]')).to_be_visible()
         expect(inventory_views.locator('[data-kaori-tab-variant="content-tabs"]')).to_have_count(0)
         for label in (
             'Overview',
@@ -359,9 +357,9 @@ def test_sidebar_v21_two_level_navigation_and_page_workspace_across_canonical_vi
 
         kubernetes = sidebar.locator('[data-kaori-sidebar-workspace="kubernetes"]')
         expect(kubernetes).to_have_attribute('open', '')
-        expect(
-            kubernetes.locator('[data-kaori-sidebar-capability="inventory"]')
-        ).to_have_attribute('aria-current', 'page')
+        expect(kubernetes.locator('[data-kaori-sidebar-capability="inventory"]')).to_have_attribute(
+            'aria-current', 'page'
+        )
 
         if width < 1024:
             page.locator('[data-mobile-navigation-close]').click()
@@ -377,14 +375,10 @@ def test_sidebar_v21_two_level_navigation_and_page_workspace_across_canonical_vi
         assert response is not None
         assert response.ok
         if page.locator('[data-kaori-blocked-state]').count() > 0:
-            analytics_blocked_views = page.locator(
-                '[data-kaori-capability-navigation="kubernetes_analytics"]'
-            )
+            analytics_blocked_views = page.locator('[data-kaori-capability-navigation="kubernetes_analytics"]')
             expect(analytics_blocked_views).to_be_visible()
             expect(
-                analytics_blocked_views.locator(
-                    '[data-kaori-tab-variant="integrated-workspace-server"]'
-                )
+                analytics_blocked_views.locator('[data-kaori-tab-variant="integrated-workspace-server"]')
             ).to_be_visible()
 
         response = page.goto(
@@ -419,9 +413,9 @@ def test_sidebar_v21_two_level_navigation_and_page_workspace_across_canonical_vi
         intelligence_children = intelligence.locator('[data-kaori-sidebar-capabilities="intelligence"]')
         for label in ('Overview', 'Recommendations', 'Alert Intelligence', 'Rule Catalog', 'Automation Control'):
             expect(intelligence_children.get_by_role('link', name=label, exact=True)).to_be_visible()
-        expect(
-            intelligence.locator('[data-kaori-sidebar-capability="overview"]')
-        ).to_have_attribute('aria-current', 'page')
+        expect(intelligence.locator('[data-kaori-sidebar-capability="overview"]')).to_have_attribute(
+            'aria-current', 'page'
+        )
 
         if width < 1024:
             page.locator('[data-mobile-navigation-close]').click()
@@ -435,9 +429,7 @@ def test_sidebar_v21_two_level_navigation_and_page_workspace_across_canonical_vi
         expect(page.locator('[data-kaori-domain-workspace-nav]')).to_have_count(0)
         object_views = page.locator('[data-kaori-capability-navigation="object_storage_inventory"]')
         expect(object_views).to_be_visible()
-        expect(
-            object_views.locator('[data-kaori-tab-variant="integrated-workspace-server"]')
-        ).to_be_visible()
+        expect(object_views.locator('[data-kaori-tab-variant="integrated-workspace-server"]')).to_be_visible()
         for label in ('Overview', 'Systems', 'Buckets & Containers'):
             expect(object_views.get_by_role('link', name=label, exact=True)).to_be_visible()
 

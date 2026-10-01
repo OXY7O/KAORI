@@ -148,6 +148,7 @@ def test_namespace_allocation_selector_is_not_limited_by_visible_page() -> None:
     assert '{% for item in namespace_options %}' in allocation
     assert '{% for item in namespaces %}' not in allocation
 
+
 def test_tenant_blocked_state_reuses_general_kubernetes_prerequisite_family() -> None:
     base = (ROOT / 'app/templates/kubernetes/tenant/base.html').read_text(encoding='utf-8')
 
@@ -156,17 +157,18 @@ def test_tenant_blocked_state_reuses_general_kubernetes_prerequisite_family() ->
     else_index = base.index('{% else %}', terminal_index)
     content_index = base.index('{% block tenant_content %}', terminal_index)
 
-    assert "components/cluster/_hero_blocked_context.html" in base
-    assert "components/cluster/_onboarding_banner.html" in base[terminal_index:else_index]
-    assert "components/states/_blocked_state.html" not in base
-    assert "Tenant capability is blocked" not in base
-    assert "Return to Tenant" not in base
+    assert 'components/cluster/_hero_blocked_context.html' in base
+    assert 'components/cluster/_onboarding_banner.html' in base[terminal_index:else_index]
+    assert 'components/states/_blocked_state.html' not in base
+    assert 'Tenant capability is blocked' not in base
+    assert 'Return to Tenant' not in base
     assert "page_hero.context_card('Tenant context'" in base
     assert blocked_index < terminal_index < else_index < content_index
 
-    blocked_hero = base[blocked_index:base.index('{% else %}', blocked_index)]
+    blocked_hero = base[blocked_index : base.index('{% else %}', blocked_index)]
     assert "page_hero.context_card('Tenant context'" not in blocked_hero
     assert 'Open Cluster Integrations' not in blocked_hero
+
 
 def test_tenant_readiness_matches_runtime_fallback_and_blocker_distinguishes_validation() -> None:
     service = (ROOT / 'app/kubernetes/tenant/service.py').read_text(encoding='utf-8')
@@ -193,8 +195,10 @@ def test_tenant_readiness_matches_runtime_fallback_and_blocker_distinguishes_val
     assert 'blocked_cluster_value' in hero_blocker
     assert 'blocked_cluster_supporting' in hero_blocker
     assert 'Validate Your Kubernetes Cluster' in onboarding
-    assert 'Cluster registered, but this workspace needs a Ready integration or pending legacy readiness persistence.' in onboarding
+    assert (
+        'Cluster registered, but this workspace needs a Ready integration or pending legacy readiness persistence.'
+        in onboarding
+    )
     assert 'Open Cluster Integrations' in onboarding
     assert 'Validate Cluster' in onboarding
     assert 'Confirm Ready' in onboarding
-

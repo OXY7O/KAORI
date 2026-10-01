@@ -431,9 +431,7 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
         CapabilityViewDefinition('capacity', 'Capacity', 'gauge', 'analytics.capacity', ('analytics.view',)),
         CapabilityViewDefinition('workloads', 'Workloads', 'boxes', 'analytics.workload', ('analytics.view',)),
         CapabilityViewDefinition('storage', 'Storage', 'hard-drive', 'analytics.storage', ('analytics.view',)),
-        CapabilityViewDefinition(
-            'consumers', 'Consumers', 'users', 'analytics.top_consumers', ('analytics.view',)
-        ),
+        CapabilityViewDefinition('consumers', 'Consumers', 'users', 'analytics.top_consumers', ('analytics.view',)),
         CapabilityViewDefinition('forecast', 'Forecast', 'line-chart', 'analytics.forecast', ('analytics.view',)),
         CapabilityViewDefinition(
             'alerts',
@@ -873,9 +871,7 @@ def build_sidebar_navigation(
             continue
 
         active_capability = (
-            _active_capability_key(workspace.key, resolved_endpoint)
-            if active_workspace == workspace.key
-            else None
+            _active_capability_key(workspace.key, resolved_endpoint) if active_workspace == workspace.key else None
         )
         context = _preserved_context(
             query_args,
@@ -890,10 +886,7 @@ def build_sidebar_navigation(
                     _resolved_capability_endpoint(workspace.key, capability, user),
                     **context,
                 ),
-                'active': (
-                    active_workspace == workspace.key
-                    and capability.key == active_capability
-                ),
+                'active': (active_workspace == workspace.key and capability.key == active_capability),
             }
             for capability in visible_capabilities
         )
@@ -909,7 +902,5 @@ def build_sidebar_navigation(
         )
 
     return tuple(
-        {'label': section, 'items': tuple(sections[section])}
-        for section in _SECTION_ORDER
-        if sections[section]
+        {'label': section, 'items': tuple(sections[section])} for section in _SECTION_ORDER if sections[section]
     )

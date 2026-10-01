@@ -26,12 +26,12 @@ def test_info_tip_uses_one_non_modal_popover_for_all_input_methods() -> None:
     assert 'data-kaori-native-dialog' not in component
 
     for token in (
-        "document.body.appendChild(preview)",
+        'document.body.appendChild(preview)',
         "document.addEventListener('pointerover'",
         "document.addEventListener('focusin'",
         "document.addEventListener('click'",
         "event.key === 'Escape'",
-        "active.preview.contains(event.target)",
+        'active.preview.contains(event.target)',
         "trigger.setAttribute('aria-expanded', 'true')",
         "preview.setAttribute('aria-hidden', 'false')",
     ):

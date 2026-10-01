@@ -93,7 +93,7 @@ def wait_for_schema() -> None:
             current_heads = frozenset()
 
         if current_heads == expected_heads:
-            print(f"Database schema ready at migration head(s): {', '.join(sorted(expected_heads))}")
+            print(f'Database schema ready at migration head(s): {", ".join(sorted(expected_heads))}')
             return
 
         if not announced:

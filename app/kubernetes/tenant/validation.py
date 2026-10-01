@@ -101,6 +101,4 @@ def validate_storage_policy(
                 raise
             raise ValueError('PVC min/max must be valid Kubernetes storage quantities') from exc
 
-
-
     return normalized

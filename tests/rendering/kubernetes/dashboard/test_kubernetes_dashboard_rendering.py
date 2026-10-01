@@ -33,7 +33,6 @@ def test_dashboard_uses_canonical_hero_tabs_table_status_and_pagination_componen
     assert '[5, 10, 25, 50]' in cluster_health
 
 
-
 def test_shared_operational_dashboard_framework_is_valid_jinja() -> None:
     environment = Environment(autoescape=True)
     framework = ROOT / 'app/templates/components/operational_dashboard_workspace.html'

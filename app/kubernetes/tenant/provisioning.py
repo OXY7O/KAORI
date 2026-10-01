@@ -223,11 +223,7 @@ def _effective_contract(api, desired: dict[str, Any]) -> dict[str, Any]:
 
     container_item = None
     pvc_item = None
-    for item in list(
-        (limit_range.spec.limits or [])
-        if limit_range is not None and limit_range.spec
-        else []
-    ):
+    for item in list((limit_range.spec.limits or []) if limit_range is not None and limit_range.spec else []):
         item_type = str(getattr(item, 'type', '') or '')
         if item_type == 'Container':
             container_item = item
@@ -237,14 +233,8 @@ def _effective_contract(api, desired: dict[str, Any]) -> dict[str, Any]:
     effective_limits = {}
     if container_item is not None:
         effective_limits = {
-            'default': {
-                key: str(value)
-                for key, value in dict(container_item.default or {}).items()
-            },
-            'default_request': {
-                key: str(value)
-                for key, value in dict(container_item.default_request or {}).items()
-            },
+            'default': {key: str(value) for key, value in dict(container_item.default or {}).items()},
+            'default_request': {key: str(value) for key, value in dict(container_item.default_request or {}).items()},
         }
         effective_limits = {key: value for key, value in effective_limits.items() if value}
 

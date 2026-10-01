@@ -275,11 +275,7 @@ def get_ready_native_clusters() -> list[Cluster]:
         .order_by(Cluster.name.asc())
         .all()
     )
-    return [
-        cluster
-        for cluster in clusters
-        if tenant_workspace_connection_available(cluster.kubernetes_connection)
-    ]
+    return [cluster for cluster in clusters if tenant_workspace_connection_available(cluster.kubernetes_connection)]
 
 
 def create_tenant(source: Mapping[str, Any]) -> tuple[Tenant, TenantEnvironment]:
@@ -433,7 +429,6 @@ def create_tenant_committed(source: Mapping[str, Any]) -> tuple[Tenant, TenantEn
         _compensate_capsule_create(cleanup_context)
         raise
 
-
 def _control_contract_present(source: Mapping[str, Any]) -> bool:
     return _text(source, 'control_contract_present').lower() in _CONTROL_TRUE_VALUES
 
@@ -462,7 +457,9 @@ def _advanced_choice(
 ) -> str:
     value = _text(source, f'advanced_control_{key}_{field}').lower() or default
     if value not in allowed:
-        raise ValueError(f'Select a supported {field.replace("_", " ")} for {RESOURCE_PROFILE_ADVANCED_CONTROLS[key]["label"]}.')
+        raise ValueError(
+            f'Select a supported {field.replace("_", " ")} for {RESOURCE_PROFILE_ADVANCED_CONTROLS[key]["label"]}.'
+        )
     return value
 
 
@@ -480,7 +477,9 @@ def _advanced_bool_choice(
         return True
     if value in {'deny', 'disabled', 'false', '0', 'no', 'preflight_only'}:
         return False
-    raise ValueError(f'Select a supported {field.replace("_", " ")} value for {RESOURCE_PROFILE_ADVANCED_CONTROLS[key]["label"]}.')
+    raise ValueError(
+        f'Select a supported {field.replace("_", " ")} value for {RESOURCE_PROFILE_ADVANCED_CONTROLS[key]["label"]}.'
+    )
 
 
 def _advanced_json(
@@ -782,9 +781,7 @@ def evaluate_resource_profile_advanced_controls(
             reason = f'{contract["label"]} is not supported by the {provider_key.replace("_", " ")} placement.'
         else:
             unavailable = [
-                capability
-                for capability in provider_requirements
-                if statuses.get(capability) != 'available'
+                capability for capability in provider_requirements if statuses.get(capability) != 'available'
             ]
             if unavailable:
                 state = 'unsupported'
@@ -814,10 +811,7 @@ def _tenant_capability_statuses(tenant: Tenant) -> dict[str, str]:
             return {}
         try:
             provider = NativeKubernetesTenantProvider(connection=connection)
-            return {
-                item.key: item.status.value
-                for item in provider.capabilities(cluster_id=str(tenant.cluster_id))
-            }
+            return {item.key: item.status.value for item in provider.capabilities(cluster_id=str(tenant.cluster_id))}
         except Exception:
             return {}
 
@@ -825,10 +819,7 @@ def _tenant_capability_statuses(tenant: Tenant) -> dict[str, str]:
     capsule = evidence.get('capsule') if isinstance(evidence, Mapping) else None
     capsule = capsule if isinstance(capsule, Mapping) else evidence
     capabilities = capsule.get('capabilities') if isinstance(capsule, Mapping) else {}
-    return {
-        str(key): str(value)
-        for key, value in dict(capabilities or {}).items()
-    }
+    return {str(key): str(value) for key, value in dict(capabilities or {}).items()}
 
 
 def resource_profile_base_control_state(
@@ -863,13 +854,7 @@ def resource_profile_base_control_state(
             'key': key,
             'label': labels[key],
             'configured': value,
-            'state': (
-                'managed'
-                if value and supported.get(key) is True
-                else 'unsupported'
-                if value
-                else 'off'
-            ),
+            'state': ('managed' if value and supported.get(key) is True else 'unsupported' if value else 'off'),
             'reason': (
                 'Configured profile control is supported by the authoritative provider path.'
                 if value and supported.get(key) is True
@@ -890,11 +875,7 @@ def _validate_resource_profile_base_controls(
     tenant: Tenant,
 ) -> dict[str, dict[str, Any]]:
     state = resource_profile_base_control_state(profile, provider_key=tenant.provider_key)
-    unsupported = [
-        item['label']
-        for item in state.values()
-        if item['configured'] and item['state'] == 'unsupported'
-    ]
+    unsupported = [item['label'] for item in state.values() if item['configured'] and item['state'] == 'unsupported']
     if unsupported:
         raise ValueError(
             'Resource Profile contains controls without admitted '
@@ -922,9 +903,7 @@ def _validate_resource_profile_attachment_controls(
 ) -> dict[str, dict[str, Any]]:
     evaluation = resource_profile_attachment_controls(profile, tenant)
     unsupported = [
-        item['label']
-        for item in evaluation.values()
-        if item['requested'] and item['state'] == 'unsupported'
+        item['label'] for item in evaluation.values() if item['requested'] and item['state'] == 'unsupported'
     ]
     if unsupported:
         raise ValueError(
@@ -1034,15 +1013,11 @@ def _namespace_allocation_values(
         preset = RESOURCE_PROFILE_PRESETS[profile.profile_class]
         stored_quota = profile.quota_hard_json or {}
         stored_limits = profile.limit_defaults_json or {}
-        quota = {
-            key: preset['quota'][key]
-            for key in stored_quota
-            if key in preset['quota']
-        }
+        quota = {key: preset['quota'][key] for key in stored_quota if key in preset['quota']}
         limits: dict[str, dict[str, str]] = {}
         for group, resources in stored_limits.items():
             preset_group = preset['limits'].get(group) or {}
-            for resource in (resources or {}):
+            for resource in resources or {}:
                 if resource in preset_group:
                     limits.setdefault(group, {})[resource] = preset_group[resource]
         quota, limits = validate_profile_spec(quota, limits)
@@ -1163,6 +1138,7 @@ def update_resource_profile(profile_id: int, source: Mapping[str, Any]) -> tuple
 
     db.session.flush()
     return profile, contract_changed
+
 
 def update_resource_profile_committed(
     profile_id: int,
@@ -1314,6 +1290,7 @@ def rollout_resource_profile_to_tenant_committed(
         summary['updated'] += 1
 
     return summary
+
 
 def delete_resource_profile(profile_id: int) -> dict[str, Any]:
     profile = db.session.get(TenantResourceProfile, profile_id)
@@ -1553,9 +1530,7 @@ def _materialize_adopted_baseline_profile(record: TenantNamespace) -> TenantReso
     profile.profile_class = TenantResourceProfileClass.CUSTOM.value
     profile.version = 1
     profile.base_preset_class = (
-        str(lineage.get('profile_class') or '').strip()
-        if lineage.get('kind') == 'kaori_preset'
-        else None
+        str(lineage.get('profile_class') or '').strip() if lineage.get('kind') == 'kaori_preset' else None
     )
     profile.base_preset_version = (
         int(lineage.get('profile_version'))

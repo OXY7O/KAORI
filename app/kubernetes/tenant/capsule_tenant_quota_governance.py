@@ -249,9 +249,7 @@ def _read_live_tenant(
     api = client.custom_objects_api()
     name = str(expected_source.get('name') or tenant.provider_reference or '').strip()
     api_version = str(
-        expected_source.get('api_version')
-        or _tenant_evidence(tenant).get('provider_api_version')
-        or ''
+        expected_source.get('api_version') or _tenant_evidence(tenant).get('provider_api_version') or ''
     ).strip()
     if not name or not api_version:
         raise ValueError('Committed Capsule Tenant provider identity is incomplete.')
@@ -386,7 +384,9 @@ def _desired_resource_quotas(
     desired = deepcopy(dict(current))
     desired['scope'] = scope
     raw_items = desired.get('items')
-    items = [deepcopy(dict(item)) for item in raw_items if isinstance(item, Mapping)] if isinstance(raw_items, list) else []
+    items = (
+        [deepcopy(dict(item)) for item in raw_items if isinstance(item, Mapping)] if isinstance(raw_items, list) else []
+    )
     if not items:
         items = [{'hard': {}}]
 
@@ -397,11 +397,7 @@ def _desired_resource_quotas(
         for key in hard:
             if key in SUPPORTED_QUOTA_KEYS and key not in owner_index:
                 owner_index[str(key)] = index
-        item['hard'] = {
-            str(key): str(value)
-            for key, value in hard.items()
-            if key not in SUPPORTED_QUOTA_KEYS
-        }
+        item['hard'] = {str(key): str(value) for key, value in hard.items() if key not in SUPPORTED_QUOTA_KEYS}
 
     for key, value in proposed_quota.items():
         index = owner_index.get(str(key), 0)
@@ -733,7 +729,9 @@ def change_capsule_tenant_resource_quota(
         current_scope = str(current_tenant_quota.get('scope') or 'Tenant')
         proposed_scope = str(governance.get('scope') or current_scope)
         if current_scope != proposed_scope:
-            raise ValueError('Capsule Tenant quota scope changed outside KAORI; run Tenant Sync before changing allocation.')
+            raise ValueError(
+                'Capsule Tenant quota scope changed outside KAORI; run Tenant Sync before changing allocation.'
+            )
         proposed_quota = _quota_for_profile(profile)
         capacity = enforce_capsule_tenant_resource_quota_preflight(
             tenant=tenant,
@@ -843,15 +841,9 @@ def observe_managed_capsule_tenant_quota(tenant: Tenant) -> dict[str, Any]:
         observed_scope = str(live_tenant_quota.get('scope') or 'Tenant')
         observed_resource_quotas = _resource_quotas(item)
         if observed_scope != desired_scope:
-            blocked_reasons.append(
-                f'Capsule Tenant quota scope changed from {desired_scope} to {observed_scope}.'
-            )
+            blocked_reasons.append(f'Capsule Tenant quota scope changed from {desired_scope} to {observed_scope}.')
         desired_resource_quotas = governance.get('desired_resource_quotas')
-        desired_resource_quotas = (
-            dict(desired_resource_quotas)
-            if isinstance(desired_resource_quotas, Mapping)
-            else {}
-        )
+        desired_resource_quotas = dict(desired_resource_quotas) if isinstance(desired_resource_quotas, Mapping) else {}
         if _canonical_hash(_resource_quota_authority_context(desired_resource_quotas)) != _canonical_hash(
             _resource_quota_authority_context(observed_resource_quotas)
         ):
@@ -1005,11 +997,7 @@ def reapply_capsule_tenant_quota_intent(tenant: Tenant) -> Tenant:
     profile = _lineage_profile(tenant)
     desired_quota = dict(governance.get('desired_quota') or {})
     desired_resource_quotas = governance.get('desired_resource_quotas')
-    desired_resource_quotas = (
-        dict(desired_resource_quotas)
-        if isinstance(desired_resource_quotas, Mapping)
-        else {}
-    )
+    desired_resource_quotas = dict(desired_resource_quotas) if isinstance(desired_resource_quotas, Mapping) else {}
     desired_scope = str(governance.get('scope') or 'Tenant')
     live_quota = dict(live_tenant_quota.get('quota') or {})
     live_scope = str(live_tenant_quota.get('scope') or 'Tenant')
@@ -1167,20 +1155,14 @@ def get_capsule_tenant_quota_context(
         .order_by(Tenant.name.asc())
         .all()
     )
-    cutover_state = {
-        tenant.id: build_capsule_tenant_quota_cutover_state(tenant)
-        for tenant in tenants
-    }
+    cutover_state = {tenant.id: build_capsule_tenant_quota_cutover_state(tenant) for tenant in tenants}
     cutover_tenants = [
         tenant
         for tenant in tenants
-        if cutover_state[tenant.id].get('authority') == _AUTHORITY
-        and not _managed_state(tenant)
+        if cutover_state[tenant.id].get('authority') == _AUTHORITY and not _managed_state(tenant)
     ]
     blocked_cutover_tenants = [
-        tenant
-        for tenant in cutover_tenants
-        if not bool(cutover_state[tenant.id].get('supported'))
+        tenant for tenant in cutover_tenants if not bool(cutover_state[tenant.id].get('supported'))
     ]
     managed = [
         tenant
@@ -1204,19 +1186,14 @@ def get_capsule_tenant_quota_context(
         'capsule_tenant_quota_cutover_tenants': cutover_tenants,
         'capsule_tenant_quota_blocked_cutover_tenants': blocked_cutover_tenants,
         'capsule_tenant_quota_cutover_state': cutover_state,
-        'capsule_tenant_quota_cutover_supported': any(
-            item['supported'] for item in cutover_state.values()
-        ),
+        'capsule_tenant_quota_cutover_supported': any(item['supported'] for item in cutover_state.values()),
         'capsule_tenant_quota_managed': managed,
         'capsule_tenant_quota_drifted': visible_drifted,
         'capsule_tenant_quota_drift_pagination': pagination,
         'capsule_tenant_quota_drift_state': {
-            tenant.id: build_capsule_tenant_quota_drift_action_state(tenant)
-            for tenant in visible_drifted
+            tenant.id: build_capsule_tenant_quota_drift_action_state(tenant) for tenant in visible_drifted
         },
         'capsule_tenant_quota_governance': {
-            tenant.id: _governance(tenant)
-            for tenant in tenants
-            if _governance(tenant).get('authority') == _AUTHORITY
+            tenant.id: _governance(tenant) for tenant in tenants if _governance(tenant).get('authority') == _AUTHORITY
         },
     }

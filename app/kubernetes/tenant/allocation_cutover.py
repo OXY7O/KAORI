@@ -90,21 +90,14 @@ def build_allocation_cutover_state(record: TenantNamespace) -> dict[str, Any]:
         return {
             'supported': False,
             'state': 'control_unavailable',
-            'reason': str(
-                allocation.get('control_reason')
-                or 'Observed allocation authority is not safe for cutover.'
-            ),
+            'reason': str(allocation.get('control_reason') or 'Observed allocation authority is not safe for cutover.'),
             'authority': tenant.reconciliation_authority,
         }
 
     if tenant.provider_key == 'capsule':
         tenant_evidence = dict(tenant.provider_evidence_json or {})
         baseline = tenant_evidence.get('allocation_baseline')
-        authority = (
-            str(baseline.get('allocation_authority') or 'capsule')
-            if isinstance(baseline, dict)
-            else 'capsule'
-        )
+        authority = str(baseline.get('allocation_authority') or 'capsule') if isinstance(baseline, dict) else 'capsule'
         return {
             'supported': False,
             'state': 'control_unavailable',
@@ -187,8 +180,7 @@ def _verify_existing(existing: Any, expected: dict[str, str] | None, *, kind: st
     if existing is None:
         if expected and expected.get('name'):
             raise ValueError(
-                f'{kind}/{expected["name"]} is no longer present; '
-                'refresh adoption evidence before cutover.'
+                f'{kind}/{expected["name"]} is no longer present; refresh adoption evidence before cutover.'
             )
         return
 
@@ -209,8 +201,7 @@ def _verify_existing(existing: Any, expected: dict[str, str] | None, *, kind: st
             raise ValueError(f'{kind} UID changed since observation; refresh provider evidence before cutover.')
         if expected_rv and current_rv and expected_rv != current_rv:
             raise ValueError(
-                f'{kind} resourceVersion changed since observation; '
-                'refresh provider evidence before cutover.'
+                f'{kind} resourceVersion changed since observation; refresh provider evidence before cutover.'
             )
 
 
@@ -300,9 +291,7 @@ def _mutate_quota(
         namespace=record.namespace,
         labels={**existing_labels, **_labels(record, profile)},
         resource_version=(
-            _metadata_value(getattr(existing, 'metadata', None), 'resource_version')
-            if existing
-            else None
+            _metadata_value(getattr(existing, 'metadata', None), 'resource_version') if existing else None
         ),
     )
     body = V1ResourceQuota(metadata=metadata, spec=V1ResourceQuotaSpec(hard=desired))
@@ -367,9 +356,7 @@ def _mutate_limit_range(
         namespace=record.namespace,
         labels={**existing_labels, **_labels(record, profile)},
         resource_version=(
-            _metadata_value(getattr(existing, 'metadata', None), 'resource_version')
-            if existing
-            else None
+            _metadata_value(getattr(existing, 'metadata', None), 'resource_version') if existing else None
         ),
     )
     body = V1LimitRange(
@@ -434,7 +421,6 @@ def _storage_policy_equal(
             if str(observed[field]) != str(desired[field]):
                 return False
     return True
-
 
 
 def reconcile_adopted_native_allocation(
@@ -566,9 +552,7 @@ def reconcile_adopted_native_allocation(
     evidence = dict(record.provisioning_evidence_json or {})
     previous_allocation = evidence.get('allocation')
     previous_provenance = (
-        str(previous_allocation.get('provenance') or '')
-        if isinstance(previous_allocation, dict)
-        else ''
+        str(previous_allocation.get('provenance') or '') if isinstance(previous_allocation, dict) else ''
     ) or ('kaori_managed' if managed else 'adopted_observed')
     history = list(evidence.get('allocation_history') or [])
     history.append(

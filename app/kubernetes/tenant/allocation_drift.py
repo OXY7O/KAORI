@@ -136,13 +136,9 @@ def _ownership_findings(record: TenantNamespace, observation: Mapping[str, Any])
         manager = str(item.get('managed_by') or '')
         observed_tenant_id = str(item.get('tenant_id') or '')
         if manager != _MANAGED_BY_VALUE:
-            findings.append(
-                f'{kind}/{name} no longer carries KAORI allocation ownership metadata.'
-            )
+            findings.append(f'{kind}/{name} no longer carries KAORI allocation ownership metadata.')
         if observed_tenant_id != tenant_id:
-            findings.append(
-                f'{kind}/{name} no longer maps to the committed KAORI Tenant identity.'
-            )
+            findings.append(f'{kind}/{name} no longer maps to the committed KAORI Tenant identity.')
     return findings
 
 
@@ -158,10 +154,7 @@ def _allocation_drift_payload(
     blocked_reasons = list(ownership_findings)
     if control_state != 'observed':
         blocked_reasons.append(
-            str(
-                observation.get('control_reason')
-                or 'Provider allocation authority is ambiguous or unsupported.'
-            )
+            str(observation.get('control_reason') or 'Provider allocation authority is ambiguous or unsupported.')
         )
     return {
         'source': 'live_provider_observation',
@@ -173,9 +166,7 @@ def _allocation_drift_payload(
             'limits': dict(record.allocation_limit_defaults_json or {}),
             'storage_policy': dict(record.allocation_storage_policy_json or {}),
             'effective_hash': record.effective_hash,
-            'resource_profile_id': (
-                record.resource_profile.public_id if record.resource_profile is not None else None
-            ),
+            'resource_profile_id': (record.resource_profile.public_id if record.resource_profile is not None else None),
             'resource_profile_version': record.resource_profile_version,
         },
         'observed': dict(observation),
@@ -361,9 +352,7 @@ def apply_provider_mirrored_policy_observation() -> dict[str, Any]:
                 record.namespace,
             )
             if observation.get('unsupported_dimensions') or observation.get('ambiguous_dimensions'):
-                raise ValueError(
-                    'Capsule-generated Namespace policy contains unsupported or ambiguous dimensions.'
-                )
+                raise ValueError('Capsule-generated Namespace policy contains unsupported or ambiguous dimensions.')
 
             limits = validate_profile_spec({}, dict(observation.get('limits') or {}))[1]
             storage_policy = validate_storage_policy(dict(observation.get('storage_policy') or {}))
@@ -378,9 +367,8 @@ def apply_provider_mirrored_policy_observation() -> dict[str, Any]:
             continue
 
         mirrored_ids.append(record.id)
-        changed = (
-            limits != dict(record.allocation_limit_defaults_json or {})
-            or storage_policy != dict(record.allocation_storage_policy_json or {})
+        changed = limits != dict(record.allocation_limit_defaults_json or {}) or storage_policy != dict(
+            record.allocation_storage_policy_json or {}
         )
 
         record.allocation_quota_json = {}
@@ -397,9 +385,8 @@ def apply_provider_mirrored_policy_observation() -> dict[str, Any]:
 
         profile = record.resource_profile
         if profile is not None:
-            profile_changed = (
-                limits != dict(profile.limit_defaults_json or {})
-                or storage_policy != dict(getattr(profile, 'storage_policy_json', {}) or {})
+            profile_changed = limits != dict(profile.limit_defaults_json or {}) or storage_policy != dict(
+                getattr(profile, 'storage_policy_json', {}) or {}
             )
             if profile_changed:
                 profile.limit_defaults_json = limits
@@ -596,9 +583,7 @@ def accept_provider_allocation_state(record: TenantNamespace) -> TenantNamespace
     evidence = dict(record.provisioning_evidence_json or {})
     previous_allocation = evidence.get('allocation')
     previous_provenance = (
-        str(previous_allocation.get('provenance') or '')
-        if isinstance(previous_allocation, Mapping)
-        else ''
+        str(previous_allocation.get('provenance') or '') if isinstance(previous_allocation, Mapping) else ''
     ) or 'kaori_managed'
     history = list(evidence.get('allocation_history') or [])
     history.append(
@@ -661,13 +646,10 @@ def accept_provider_allocation_state(record: TenantNamespace) -> TenantNamespace
     evidence.pop('allocation_reconcile_failure', None)
 
     description = str(profile.description or '')
-    auto_imported_profile = (
-        profile.profile_class == 'custom'
-        and (
-            description.startswith('Explicit governance-cutover profile materialized')
-            or description.startswith('Provider-equivalent namespaced')
-            or description.startswith('Provider-equivalent Capsule')
-        )
+    auto_imported_profile = profile.profile_class == 'custom' and (
+        description.startswith('Explicit governance-cutover profile materialized')
+        or description.startswith('Provider-equivalent namespaced')
+        or description.startswith('Provider-equivalent Capsule')
     )
     if auto_imported_profile:
         profile.quota_hard_json = quota

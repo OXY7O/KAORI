@@ -422,6 +422,7 @@ def test_capsule_namespace_scope_quota_is_counted_per_correlated_namespace() -> 
     assert vector.cpu == Decimal('12')
     assert vector.memory_bytes == Decimal(24 * 1024**3)
 
+
 def test_quota_request_vector_includes_pods_and_storage_commitment() -> None:
     gib = Decimal(1024**3)
 
@@ -518,6 +519,7 @@ def test_storage_budget_is_optional_without_claiming_physical_capacity() -> None
     assert budget.available.storage_bytes is None
     assert budget.logical_storage_budget is None
 
+
 def test_storage_budget_ui_accepts_numeric_gib_and_persists_canonical_quantity() -> None:
     assert _optional_positive_gib_quantity('2048', label='Tenant Storage Budget') == '2048Gi'
     assert _optional_positive_gib_quantity('1536.5', label='Tenant Storage Budget') == '1536.5Gi'
@@ -535,6 +537,7 @@ def test_logical_storage_budget_remains_available_without_compute_capacity_snaps
     assert budget.memory_bytes is None
     assert budget.pods is None
     assert budget.storage_bytes == Decimal('2048') * gib
+
 
 def test_missing_compute_snapshot_keeps_logical_storage_budget_visible(monkeypatch) -> None:
     gib = Decimal(1024**3)
@@ -588,4 +591,3 @@ def test_missing_compute_snapshot_keeps_logical_storage_budget_visible(monkeypat
     assert summary['display']['budget']['pods'] == 'N/A'
     assert summary['display']['budget']['storage'] == '2048.00 GiB'
     assert summary['display']['headroom']['storage'] == '1948.00 GiB'
-

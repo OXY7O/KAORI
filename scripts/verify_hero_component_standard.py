@@ -133,15 +133,15 @@ OPERATIONAL_DASHBOARD_DESCRIPTION_PATTERN = re.compile(
 )
 STATIC_INTRO_IDENTITY_PATTERN = re.compile(
     r"{%\s*call\s+page_hero\.intro\(\s*[^,]+,\s*(?P<quote>['\"])"
-    r"(?P<eyebrow>.*?)(?P=quote)\s*,[^%]*%}(?P<body>.*?){%\s*endcall\s*%}",
+    r'(?P<eyebrow>.*?)(?P=quote)\s*,[^%]*%}(?P<body>.*?){%\s*endcall\s*%}',
     flags=re.DOTALL,
 )
 STATIC_H1_IDENTITY_PATTERN = re.compile(
-    r"<h1\b[^>]*>(?P<title>[^<{]+)</h1>",
+    r'<h1\b[^>]*>(?P<title>[^<{]+)</h1>',
     flags=re.IGNORECASE | re.DOTALL,
 )
 OPERATIONAL_DASHBOARD_IDENTITY_PATTERN = re.compile(
-    r"page_hero\.operational_dashboard\(\s*"
+    r'page_hero\.operational_dashboard\(\s*'
     r"(?P<q1>['\"])(?P<eyebrow>.*?)(?P=q1)\s*,\s*"
     r"(?P<q2>['\"])(?P<icon>.*?)(?P=q2)\s*,\s*"
     r"(?P<q3>['\"])(?P<title>.*?)(?P=q3)",
@@ -351,7 +351,7 @@ def _verify_non_redundant_hero_identity() -> int:
             audited += 1
             if overlap:
                 failures.append(
-                    f"{relative}: eyebrow={eyebrow!r} and title={title!r} repeat semantic token(s): "
+                    f'{relative}: eyebrow={eyebrow!r} and title={title!r} repeat semantic token(s): '
                     + ', '.join(overlap)
                 )
 
@@ -362,7 +362,7 @@ def _verify_non_redundant_hero_identity() -> int:
             audited += 1
             if overlap:
                 failures.append(
-                    f"{relative}: dashboard eyebrow={eyebrow!r} and title={title!r} repeat semantic token(s): "
+                    f'{relative}: dashboard eyebrow={eyebrow!r} and title={title!r} repeat semantic token(s): '
                     + ', '.join(overlap)
                 )
 

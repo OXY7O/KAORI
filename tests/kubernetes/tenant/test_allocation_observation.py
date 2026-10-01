@@ -193,6 +193,7 @@ def test_capsule_tenant_quota_is_preserved_but_control_remains_unavailable():
     assert 'Capability admission is required' in observed['control_reason']
     assert observed['provider_mutation_performed'] is False
 
+
 def test_capsule_tenant_quota_treats_matching_native_quota_as_materialization():
     namespace = SimpleNamespace(
         metadata=_metadata(
@@ -238,10 +239,8 @@ def test_capsule_tenant_quota_treats_matching_native_quota_as_materialization():
 
     assert observed['allocation_authority'] == 'capsule_tenant_resource_quotas'
     assert observed['authority_paths'] == ['capsule_tenant_resource_quotas']
-    assert not any(
-        'Multiple effective allocation authority paths' in item
-        for item in observed['ambiguous_dimensions']
-    )
+    assert not any('Multiple effective allocation authority paths' in item for item in observed['ambiguous_dimensions'])
+
 
 def test_native_observation_fails_closed_on_unsupported_limit_range_constraints():
     item = SimpleNamespace(
@@ -267,7 +266,6 @@ def test_native_observation_fails_closed_on_unsupported_limit_range_constraints(
 
     assert observed['control_state'] == 'control_unavailable'
     assert 'LimitRange/legacy-limits:max.cpu' in observed['unsupported_dimensions']
-
 
 
 def test_native_observation_normalizes_pvc_storage_limitrange_as_managed_policy():
@@ -303,9 +301,6 @@ def test_native_observation_normalizes_pvc_storage_limitrange_as_managed_policy(
     assert any(item['key'] == 'pvc.max.storage' and item['value'] == '50Gi' for item in observed['display_values'])
 
 
-
-
-
 def test_native_observation_rejects_noncanonical_pvc_default_fields() -> None:
     pvc_limit = SimpleNamespace(
         type='PersistentVolumeClaim',
@@ -333,6 +328,7 @@ def test_native_observation_rejects_noncanonical_pvc_default_fields() -> None:
     assert 'LimitRange/legacy-pvc-policy:pvc.default.storage' in observed['unsupported_dimensions']
     assert 'LimitRange/legacy-pvc-policy:pvc.default_request.storage' in observed['unsupported_dimensions']
     assert observed['external_constraint_details'][0]['constraint_type'] == 'unsupported_pvc_limit_range'
+
 
 def test_capsule_tenant_resource_quota_defaults_scope_to_tenant() -> None:
     client = FakeClient(FakeCoreApi())
@@ -463,8 +459,7 @@ def test_capsule_scoped_resource_quota_item_blocks_governance_authority() -> Non
     assert observed['allocation_authority'] == 'capsule_tenant_resource_quotas'
     assert observed['control_state'] == 'control_unavailable'
     assert any(
-        'Tenant.spec.resourceQuotas.items[0].scopes' in item
-        for item in observed['authority_unsupported_dimensions']
+        'Tenant.spec.resourceQuotas.items[0].scopes' in item for item in observed['authority_unsupported_dimensions']
     )
 
 
@@ -493,6 +488,5 @@ def test_native_observation_rejects_ambiguous_pvc_storage_policy_sources() -> No
     assert observed['control_state'] == 'control_unavailable'
     assert observed['storage_policy'] == {}
     assert any(
-        'pvc.min.storage is defined by multiple LimitRange sources' in item
-        for item in observed['ambiguous_dimensions']
+        'pvc.min.storage is defined by multiple LimitRange sources' in item for item in observed['ambiguous_dimensions']
     )

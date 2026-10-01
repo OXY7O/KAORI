@@ -662,8 +662,8 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     assert 'data-tenant-allocation-proposed-pvc-min' in allocation
     assert 'data-tenant-allocation-proposed-pvc-max' in allocation
     assert "const quotaValue = (valueSet, field) => valueSet?.quota?.[field] || 'Unbounded'" in profile_js
-    assert "currentPods.textContent" in profile_js
-    assert "proposedStorage.textContent" in profile_js
+    assert 'currentPods.textContent' in profile_js
+    assert 'proposedStorage.textContent' in profile_js
 
     assert 'components/table_registry.html' in decisions
     assert 'table_ui.inventory_block_header' in decisions
@@ -671,7 +671,7 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     assert 'registry_ui.footer' in decisions
     assert "table_ui.table_classes('table-fixed')" in decisions
     assert 'overflow-x-auto' not in decisions
-    assert "min-w-[1180px]" not in decisions
+    assert 'min-w-[1180px]' not in decisions
     assert '>Target</th>' in decisions
     assert '>Contract</th>' in decisions
     assert '>Admission</th>' in decisions
@@ -695,6 +695,7 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     assert 'Capsule Allocation Governance' in namespace_page
     assert namespace_page.index('_allocation_change.html') < namespace_page.index('_allocation_cutover.html')
 
+
 def test_committed_tenant_snapshot_is_separate_from_lazy_live_provider_connectivity() -> None:
     routes = read('app/kubernetes/tenant/routes.py')
     live_service = read('app/kubernetes/tenant/live_connection.py')
@@ -708,7 +709,7 @@ def test_committed_tenant_snapshot_is_separate_from_lazy_live_provider_connectiv
     assert 'version_api().get_code(_request_timeout=3)' in live_service
     assert "@tenant_bp.get('/live-provider-connectivity')" in routes
     assert "render_template(\n            'kubernetes/tenant/partials/_live_connection_snapshot.html'" in routes
-    assert "context.update(get_live_tenant_connection_context())" not in routes
+    assert 'context.update(get_live_tenant_connection_context())' not in routes
 
     assert "title='Live Provider Connectivity'" in live_partial
     assert 'Live probe; not committed inventory' in live_partial
@@ -729,13 +730,16 @@ def test_committed_tenant_snapshot_is_separate_from_lazy_live_provider_connectiv
     assert '_collection_snapshot_context.html' in base
     assert '_live_connection_loader.html' in base
     assert '{% block tenant_content %}' in base
-    assert '{% if not native_available %}\n            {% include "components/cluster/_onboarding_banner.html" %}' not in base
+    assert (
+        '{% if not native_available %}\n            {% include "components/cluster/_onboarding_banner.html" %}'
+        not in base
+    )
     assert 'Provider Operations Restricted' in base
     assert 'Review Cluster Integrations' in base
     assert 'KAORI state stays available. Provider mutations wait for a Ready, reachable integration.' not in base
 
     assert 'registered_clusters = (' in service
-    assert "for cluster in registered_clusters" in service
+    assert 'for cluster in registered_clusters' in service
     assert "'registered_clusters': registered_clusters" in service
 
 
@@ -785,7 +789,7 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'cutover_capsule_tenant_resource_quota(' in service
     assert "'provider_mutation_performed': shared_profile is not None" in service
     assert 'TenantOwnershipStatus.ADOPTED.value' in service
-    assert "record.ownership_status = TenantOwnershipStatus.MANAGED.value" in cutover
+    assert 'record.ownership_status = TenantOwnershipStatus.MANAGED.value' in cutover
 
     assert 'Tenant Discovery' in template
     assert 'Live Status' in template
@@ -823,9 +827,15 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'max-w-5xl' in preflight
     assert 'max-w-[1240px]' not in preflight
     assert 'grid grid-cols-3 gap-px border-t border-outline-subtle bg-outline-subtle' in preflight
-    assert 'divide-y divide-outline-subtle overflow-hidden rounded-xl border border-outline-subtle bg-surface-card' in preflight
+    assert (
+        'divide-y divide-outline-subtle overflow-hidden rounded-xl border border-outline-subtle bg-surface-card'
+        in preflight
+    )
     assert '[grid-template-columns:repeat(auto-fit,minmax(9rem,1fr))]' in preflight
-    assert "table_label.metadata_label('Scope · ' ~ (allocation.shared_scope|default('Provider', true)), 'scan-search')" in preflight
+    assert (
+        "table_label.metadata_label('Scope · ' ~ (allocation.shared_scope|default('Provider', true)), 'scan-search')"
+        in preflight
+    )
     assert "'requests.cpu': 'CPU Requests'" in preflight
     assert "'limits.cpu': 'CPU Limits'" in preflight
     assert "'requests.memory': 'Memory Requests'" in preflight
@@ -867,6 +877,7 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'htmx:afterSwap' in modal_js
     assert 'data-tenant-adoption-close' in modal_js
     assert 'htmx:afterRequest' in modal_js
+
 
 def test_decommissioned_tenant_and_namespace_identity_can_be_recreated_as_new_generation() -> None:
     models = read('app/models/tenant.py')
@@ -1257,12 +1268,15 @@ def test_info_tip_uses_title_level_registry_guidance_and_mobile_top_layer() -> N
         assert "placement='right'" in template
 
     for retired_text_action in ('Status Guide', 'Membership Guide', 'Group Guide'):
-        assert all(f"button_text='{retired_text_action}'" not in template for template in (registry, discovery, memberships, groups))
+        assert all(
+            f"button_text='{retired_text_action}'" not in template
+            for template in (registry, discovery, memberships, groups)
+        )
 
     layout = read('app/templates/layouts/app.html')
     positioning = read('app/static/js/info_tips.js')
     assert "filename='js/info_tips.js'" in layout
-    assert "document.body.appendChild(preview)" in positioning
+    assert 'document.body.appendChild(preview)' in positioning
     assert 'getBoundingClientRect()' in positioning
     assert 'window.innerWidth' in positioning
     assert 'window.innerHeight' in positioning
@@ -1332,6 +1346,7 @@ def test_credential_material_delivery_is_one_time_non_cached_and_not_routine_inv
     assert 'pagehide' in script
     assert 'data-kaori-download-button' in clipboard
 
+
 def test_legacy_allocation_adoption_is_observed_and_held_until_cutover() -> None:
     observer = read('app/kubernetes/tenant/allocation_observation.py')
     discovery_service = read('app/kubernetes/tenant/discovery_service.py')
@@ -1352,14 +1367,14 @@ def test_legacy_allocation_adoption_is_observed_and_held_until_cutover() -> None
 
     assert 'allocation = observe_native_namespace_allocation' in discovery_service
     assert 'allocation = observe_capsule_tenant_allocation' in discovery_service
-    assert "namespace_record.desired_hash = None" in discovery_service
+    assert 'namespace_record.desired_hash = None' in discovery_service
     assert "namespace_record.effective_hash = str(allocation['effective_hash'])" in discovery_service
     assert 'def _create_adopted_baseline_profile(' not in discovery_service
     assert 'namespace_record.allocation_storage_policy_json' in discovery_service
     assert 'def _materialize_adopted_baseline_profile(' in service
     assert "profile_selector == 'adopted_baseline'" in service
     assert "'allocation_baseline': allocation" in discovery_service
-    assert "TenantOwnershipStatus.ADOPTED.value" in discovery_service
+    assert 'TenantOwnershipStatus.ADOPTED.value' in discovery_service
 
     assert 'Observed Allocation Baseline' in discovery
     assert 'Adopted Baseline · Observed' in discovery
@@ -1374,8 +1389,7 @@ def test_legacy_allocation_adoption_is_observed_and_held_until_cutover() -> None
     assert 'namespace_allocation_options' in service
     assert 'record.ownership_status == TenantOwnershipStatus.MANAGED.value' in service
     assert (
-        'Adopted Baseline allocations are read-only until explicit '
-        'Allocation Governance Cutover is completed.'
+        'Adopted Baseline allocations are read-only until explicit Allocation Governance Cutover is completed.'
     ) in service
     assert 'namespace_allocation_options' in allocation_change
     assert '{% for item in namespace_options %}' not in allocation_change
@@ -1384,6 +1398,7 @@ def test_legacy_allocation_adoption_is_observed_and_held_until_cutover() -> None
     assert 'governed mutation fails closed' in architecture
     assert 'The resulting Namespace is **Adopted Baseline · Observed**' in readme
     assert 'never turns observed provider state into KAORI-authored desired intent' in readme
+
 
 def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_from_namespace_ownership() -> None:
     cutover = read('app/kubernetes/tenant/allocation_cutover.py')
@@ -1396,7 +1411,7 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
 
     assert 'def build_allocation_cutover_state' in cutover
     assert 'def reconcile_adopted_native_allocation' in cutover
-    assert "record.ownership_status != TenantOwnershipStatus.ADOPTED.value" in cutover
+    assert 'record.ownership_status != TenantOwnershipStatus.ADOPTED.value' in cutover
     assert "'allocation_control_state': 'kaori_managed'" in cutover
     assert 'Namespace lifecycle ownership remains adopted.' in cutover
     assert 'resourceVersion changed since observation' in cutover
@@ -1416,7 +1431,7 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert 'current?.profile_id' in script
     assert "profileSelect.value = 'adopted_baseline'" in script
     assert "profileSelect?.value === 'adopted_baseline'" in script
-    assert "valueSet?.storage_policy?.[field]" in script
+    assert 'valueSet?.storage_policy?.[field]' in script
 
     assert "@tenant_bp.post('/namespace-allocation/cutover')" in routes
     assert 'cutover_adopted_namespace_allocation_committed' in routes
@@ -1431,7 +1446,10 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert 'KAORI Managed' in cutover_ui
     assert 'Cut Over Governance' in cutover_ui
     assert 'Use current provider baseline · Custom' in cutover_ui
-    assert 'Provider-equivalent baseline; selecting the same profile keeps current values unchanged during takeover.' in cutover_ui
+    assert (
+        'Provider-equivalent baseline; selecting the same profile keeps current values unchanged during takeover.'
+        in cutover_ui
+    )
     assert 'data-tenant-allocation-current-pvc-min' in cutover_ui
     assert 'data-tenant-allocation-current-pvc-max' in cutover_ui
     assert 'data-tenant-allocation-proposed-pvc-min' in cutover_ui
@@ -1442,7 +1460,6 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert 'KAORI-Managed Allocation' in allocation_change
     assert 'Select KAORI-managed allocation' in allocation_change
     assert 'KAORI Managed' in namespace_registry
-
 
 
 def test_managed_allocation_drift_is_observation_only_and_bidirectionally_reconciled() -> None:
@@ -1461,7 +1478,7 @@ def test_managed_allocation_drift_is_observation_only_and_bidirectionally_reconc
     assert 'def accept_provider_allocation_state' in drift
     assert 'enforce_observed_namespace_allocation_preflight' in drift
     assert "current_quota_hard=dict(live.get('quota') or {})" in drift
-    assert "proposed_quota_hard=record.allocation_quota_json or {}" in drift
+    assert 'proposed_quota_hard=record.allocation_quota_json or {}' in drift
     assert "provenance': 'accepted_provider_state'" in drift
     assert 'No admitted reconciliation adapter exists for the current provider authority.' in drift
     assert 'committed Drifted Namespace state' in drift
@@ -1527,8 +1544,7 @@ def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -
     assert "baseline.get('allocation_authority') != 'capsule_global_resource_quota'" in governance
     assert "_capsule_capability_state(tenant, _SHARED_CAPABILITY) != 'available'" in governance
     assert (
-        'An existing Capsule GlobalResourceQuota advanced intent already owns this Tenant resource path.'
-        in governance
+        'An existing Capsule GlobalResourceQuota advanced intent already owns this Tenant resource path.' in governance
     )
     assert "intent.resource_kind = 'global_resource_quota'" in governance
     assert "'allocation_governance_scope': _SHARED_SCOPE" in governance
@@ -1579,7 +1595,6 @@ def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -
     assert 'never copied into every correlated Namespace' in capsule_architecture
     assert 'Capsule GlobalResourceQuota governance:' in readme
     assert 'Legacy Capsule Tenant quota — **estimasi** case:' in readme
-
 
 
 def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_native_bypass() -> None:
@@ -1671,6 +1686,7 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
     assert 'Legacy Capsule Tenant quota — **partner** case:' in readme
     assert 'Capsule Tenant quota bidirectional recovery:' in readme
 
+
 def test_tenant_decommission_steps_use_one_divided_sequence_container() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
     modal = read('app/templates/components/destructive_confirmation_modal.html')
@@ -1681,7 +1697,9 @@ def test_tenant_decommission_steps_use_one_divided_sequence_container() -> None:
     assert 'Delete managed namespaces and verify absence.' not in registry
     assert 'Commit Decommissioned after verified cleanup.' not in registry
 
-    assert 'grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle md:grid-cols-2 xl:grid-cols-4' in modal
+    assert (
+        'grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle md:grid-cols-2 xl:grid-cols-4'
+        in modal
+    )
     assert 'li class="min-w-0 bg-surface-card p-4"' in modal
     assert 'li class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4"' not in modal
-
