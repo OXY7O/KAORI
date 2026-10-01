@@ -57,7 +57,7 @@ def desired_namespace_contract(
     normalized_namespace = validate_namespace_name(namespace)
     quota_source = profile.quota_hard_json if quota_hard is None else quota_hard
     limits_source = profile.limit_defaults_json if limit_defaults is None else limit_defaults
-    storage_source = profile.storage_policy_json if storage_policy is None else storage_policy
+    storage_source = getattr(profile, 'storage_policy_json', {}) if storage_policy is None else storage_policy
     quota, limits = validate_profile_spec(quota_source or {}, limits_source or {})
     normalized_storage = validate_storage_policy(storage_source or {})
     return {
@@ -95,7 +95,7 @@ def create_namespace_intent(
 
     quota_source = profile.quota_hard_json if quota_hard is None else quota_hard
     limits_source = profile.limit_defaults_json if limit_defaults is None else limit_defaults
-    storage_source = profile.storage_policy_json if storage_policy is None else storage_policy
+    storage_source = getattr(profile, 'storage_policy_json', {}) if storage_policy is None else storage_policy
     quota, limits = validate_profile_spec(quota_source or {}, limits_source or {})
     normalized_storage = validate_storage_policy(storage_source or {})
     desired = desired_namespace_contract(
