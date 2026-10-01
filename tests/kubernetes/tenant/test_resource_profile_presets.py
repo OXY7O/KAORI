@@ -14,11 +14,12 @@ from app.kubernetes.tenant.service import (
 def test_standard_preset_exposes_canonical_versioned_values() -> None:
     standard = RESOURCE_PROFILE_PRESETS['standard']
 
-    assert standard['version'] == 1
+    assert standard['version'] == 2
     assert standard['quota']['requests.cpu'] == '2'
     assert standard['quota']['requests.memory'] == '4Gi'
     assert standard['limits']['default']['cpu'] == '500m'
     assert standard['limits']['default_request']['memory'] == '128Mi'
+    assert standard['storage_policy'] == {'min': '1Gi', 'max': '10Gi'}
 
 
 def test_builtin_preset_ignores_submitted_resource_overrides() -> None:
