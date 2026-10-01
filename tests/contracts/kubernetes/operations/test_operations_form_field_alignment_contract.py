@@ -68,6 +68,7 @@ def test_secret_reveal_step_up_aligns_password_and_verify_action() -> None:
         and 'Step-up is required only before consuming an approved reveal request.' in step_up
     )
 
+
 def test_operations_consolidate_routine_guidance_at_section_headers_but_keep_required_state_visible() -> None:
     header_owners = {
         'app/templates/kubernetes/operations/configmaps/create.html': 'configmap-create-guidance-tip',
@@ -148,4 +149,3 @@ def test_operations_consolidate_routine_guidance_at_section_headers_but_keep_req
     assert 'must exactly match the selected live Secret name' in delete_secret
     assert 'TLS private keys and SSH private keys are never revealable.' in reveal_request
     assert 'Step-up is required only before consuming an approved reveal request.' in step_up
-
