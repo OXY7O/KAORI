@@ -34,7 +34,7 @@
                                 {% if editable %}
                                     Edit the reusable Custom contract. Allocation changes create the next version for future use; existing Namespace snapshots remain frozen.
                                 {% else %}
-                                    Built-in presets are versioned KAORI standards. They stay immutable so the same preset name/version always means the same allocation contract across Namespace snapshots, Capacity Decisions, audit evidence, and environments.
+                                    Built-in presets keep fixed canonical sizing values, while Managed dimensions and Advanced Controls can be revised as a new profile version. Existing Namespace snapshots remain pinned until rollout.
                                 {% endif %}
                             </p>
                         </div>
@@ -55,7 +55,7 @@
                             {{ profile_class_labels.get(profile.profile_class, profile.profile_class|replace('_', ' ')|title) }} · v{{ profile.version }}
                         </dd>
                         <dd class="mt-1 text-xs text-content-muted">
-                            {{ 'Operator managed' if editable else 'KAORI owned · Locked' }}
+                            {{ 'Operator managed' if editable else 'Fixed values · Versioned controls' }}
                         </dd>
                     </div>
                     <div class="bg-surface-card p-3.5">
@@ -268,107 +268,239 @@
                         Existing Namespace allocations keep their committed source version and effective snapshot. This edit changes only the reusable Custom contract used by future allocation or explicit allocation-change workflows.
                     </div>
                 {% else %}
-                    <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-4 py-3">
-                        <div class="flex items-start gap-3">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
-                                  aria-hidden="true">
-                                <i data-lucide="lock-keyhole" class="h-4 w-4"></i>
-                            </span>
+                    {% set preset = resource_profile_presets.get(profile.profile_class, {}) %}
+                    {% set preset_quota = preset.get('quota', {}) %}
+                    {% set preset_limits = preset.get('limits', {}) %}
+                    {% set preset_defaults = preset_limits.get('default', {}) %}
+                    {% set preset_default_requests = preset_limits.get('default_request', {}) %}
+                    {% set preset_storage = preset.get('storage_policy', {}) %}
+                    <form id="resource-profile-update-form-{{ profile.id }}"
+                          method="post"
+                          action="{{ url_for('tenant.update_resource_profile_route', profile_id=profile.id) }}"
+                          class="space-y-5">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="profile_name" value="{{ profile.name }}">
+                        <input type="hidden" name="profile_enabled" value="{{ 'enabled' if profile.enabled else 'disabled' }}">
+                        <input type="hidden" name="profile_description" value="{{ profile.description or '' }}">
+                        <input type="hidden" name="control_contract_present" value="1">
+                        <input type="hidden" name="advanced_control_contract_present" value="1">
+
+                        <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-4 py-3">
+                            <div class="flex items-start gap-3">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="lock-keyhole" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-semibold text-content-primary">Fixed values · Versioned controls</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                        Numeric {{ profile_class_labels.get(profile.profile_class, profile.profile_class|title) }} values stay canonical.
+                                        Change Managed dimensions or Advanced Controls here to create v{{ (profile.version or 1) + 1 }} under the same profile identity.
+                                        Existing Namespace snapshots remain unchanged until an explicit rollout.
+                                    </p>
+                                </div>
+                                {{ table_label.special_label('Versioned', 'maintenance', 'history') }}
+                            </div>
+                        </div>
+
+                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="text-sm font-semibold text-content-primary">Basic Resources</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Fixed sizing values; Managed toggles define KAORI ownership.</p>
+                                </div>
+                                {{ table_label.metadata_label('Fixed Values', 'lock-keyhole') }}
+                            </div>
+                            <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                                {% for field, label, quota_key in [
+                                    ('requests_cpu', 'CPU Requests', 'requests.cpu'),
+                                    ('limits_cpu', 'CPU Limits', 'limits.cpu'),
+                                    ('requests_memory', 'Memory Requests', 'requests.memory'),
+                                    ('limits_memory', 'Memory Limits', 'limits.memory'),
+                                    ('pods', 'Pods', 'pods')
+                                ] %}
+                                    <label class="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
+                                        <span class="min-w-0">
+                                            <span class="block text-xs font-semibold text-content-primary">{{ label }}</span>
+                                            <span class="mt-1 block text-sm font-semibold text-content-primary">{{ preset_quota.get(quota_key) or '—' }}</span>
+                                        </span>
+                                        <span class="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-content-muted">
+                                            <input type="checkbox"
+                                                   name="control_{{ field }}"
+                                                   value="1"
+                                                   {% if quota_key in (profile.quota_hard_json or {}) %}checked{% endif %}
+                                                   class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                            Managed
+                                        </span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </section>
+
+                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="text-sm font-semibold text-content-primary">Storage Guardrails</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Namespace quota and per-PVC bounds stay one managed storage contract.</p>
+                                </div>
+                                {{ table_label.metadata_label('Fixed Values', 'lock-keyhole') }}
+                            </div>
+                            <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                                <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
+                                    <p class="text-xs font-semibold text-content-primary">Namespace Quota</p>
+                                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                                        {% for field, label, quota_key in [
+                                            ('persistentvolumeclaims', 'PVCs', 'persistentvolumeclaims'),
+                                            ('requests_storage', 'Total Storage', 'requests.storage')
+                                        ] %}
+                                            <label class="flex items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3">
+                                                <span>
+                                                    <span class="block text-xs font-semibold text-content-primary">{{ label }}</span>
+                                                    <span class="mt-1 block text-sm font-semibold text-content-primary">{{ preset_quota.get(quota_key) or '—' }}</span>
+                                                </span>
+                                                <span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-content-muted">
+                                                    <input type="checkbox" name="control_{{ field }}" value="1"
+                                                           {% if quota_key in (profile.quota_hard_json or {}) %}checked{% endif %}
+                                                           class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                                    Managed
+                                                </span>
+                                            </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
+                                    <p class="text-xs font-semibold text-content-primary">Per-PVC Policy</p>
+                                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                                        {% for field, label, policy_key in [
+                                            ('pvc_min_storage', 'Min PVC Size', 'min'),
+                                            ('pvc_max_storage', 'Max PVC Size', 'max')
+                                        ] %}
+                                            <label class="flex items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3">
+                                                <span>
+                                                    <span class="block text-xs font-semibold text-content-primary">{{ label }}</span>
+                                                    <span class="mt-1 block text-sm font-semibold text-content-primary">{{ preset_storage.get(policy_key) or '—' }}</span>
+                                                </span>
+                                                <span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-content-muted">
+                                                    <input type="checkbox" name="control_{{ field }}" value="1"
+                                                           {% if policy_key in (profile.storage_policy_json or {}) %}checked{% endif %}
+                                                           class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                                    Managed
+                                                </span>
+                                            </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="text-sm font-semibold text-content-primary">Object Limits</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Namespace object-count ownership.</p>
+                                </div>
+                                {{ table_label.metadata_label('Fixed Values', 'lock-keyhole') }}
+                            </div>
+                            <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                                {% for field, label, quota_key in [
+                                    ('services', 'Services', 'services'),
+                                    ('configmaps', 'ConfigMaps', 'configmaps'),
+                                    ('secrets', 'Secrets', 'secrets')
+                                ] %}
+                                    <label class="flex items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
+                                        <span>
+                                            <span class="block text-xs font-semibold text-content-primary">{{ label }}</span>
+                                            <span class="mt-1 block text-sm font-semibold text-content-primary">{{ preset_quota.get(quota_key) or '—' }}</span>
+                                        </span>
+                                        <span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-content-muted">
+                                            <input type="checkbox" name="control_{{ field }}" value="1"
+                                                   {% if quota_key in (profile.quota_hard_json or {}) %}checked{% endif %}
+                                                   class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                            Managed
+                                        </span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </section>
+
+                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="text-sm font-semibold text-content-primary">Container Defaults</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Fixed Container LimitRange defaults with versioned ownership.</p>
+                                </div>
+                                {{ table_label.metadata_label('Fixed Values', 'lock-keyhole') }}
+                            </div>
+                            <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                {% for field, label, group, resource in [
+                                    ('default_request_cpu', 'CPU Request', 'default_request', 'cpu'),
+                                    ('default_cpu', 'CPU Limit', 'default', 'cpu'),
+                                    ('default_request_memory', 'Memory Request', 'default_request', 'memory'),
+                                    ('default_memory', 'Memory Limit', 'default', 'memory')
+                                ] %}
+                                    {% set preset_group = preset_limits.get(group, {}) %}
+                                    {% set managed_group = (profile.limit_defaults_json or {}).get(group, {}) %}
+                                    <label class="flex items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
+                                        <span>
+                                            <span class="block text-xs font-semibold text-content-primary">{{ label }}</span>
+                                            <span class="mt-1 block text-sm font-semibold text-content-primary">{{ preset_group.get(resource) or '—' }}</span>
+                                        </span>
+                                        <span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-content-muted">
+                                            <input type="checkbox" name="control_{{ field }}" value="1"
+                                                   {% if resource in managed_group %}checked{% endif %}
+                                                   class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                            Managed
+                                        </span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </section>
+
+                        {{ advanced_profile_controls.render(profile.advanced_controls_json or {}, true, 'resource-profile-edit-' ~ profile.id, false) }}
+                    </form>
+                {% endif %}
+                {% set rollout_targets = profile_rollout_targets.get(profile.id, []) %}
+                {% if rollout_targets %}
+                    <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                             <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Why this preset is locked</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">
-                                    Built-in presets are canonical versioned baselines. Numeric values stay fixed so one preset/version keeps the same meaning across Namespace snapshots, Capacity Decisions, drift evidence, and environments. Use Custom when different values are required.
+                                <div class="flex items-center gap-2">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                        <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                                    </span>
+                                    <div>
+                                        <h3 class="text-sm font-semibold text-content-primary">Attached Namespace Rollout</h3>
+                                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Apply v{{ profile.version }} to every active Namespace using this profile within one Tenant.</p>
+                                    </div>
+                                </div>
+                                <p class="mt-3 text-xs leading-5 text-content-muted">
+                                    Each Namespace runs its own capacity admission, provider mutation, and read-back. A blocked Namespace stays on its previous committed version.
                                 </p>
                             </div>
-                        </div>
-                    </div>
-                    <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                        <h3 class="text-sm font-semibold text-content-primary">Basic Resources</h3>
-                        <dl class="mt-4 grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:grid-cols-5">
-                            {% for label, value in [
-                                ('CPU Requests', profile.quota_hard_json.get('requests.cpu')),
-                                ('CPU Limits', profile.quota_hard_json.get('limits.cpu')),
-                                ('Memory Requests', profile.quota_hard_json.get('requests.memory')),
-                                ('Memory Limits', profile.quota_hard_json.get('limits.memory')),
-                                ('Pods', profile.quota_hard_json.get('pods'))
-                                ] %}
-                                <div class="bg-surface-card p-3">
-                                    <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
-                                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value or 'Not Managed' }}</dd>
-                                </div>
-                            {% endfor %}
-                        </dl>
-                    </section>
-                    <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                        <h3 class="text-sm font-semibold text-content-primary">Storage Guardrails</h3>
-                        {% set storage_policy = profile.storage_policy_json or {} %}
-                        <div class="mt-4 grid gap-4 lg:grid-cols-2">
-                            <div class="overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle">
-                                <div class="bg-surface-elevated px-3 py-2.5">
-                                    <p class="text-xs font-semibold text-content-primary">Namespace Quota</p>
-                                </div>
-                                <dl class="grid gap-px sm:grid-cols-2">
-                                    {% for label, value in [
-                                        ('PVCs', profile.quota_hard_json.get('persistentvolumeclaims')),
-                                        ('Total Storage', profile.quota_hard_json.get('requests.storage'))
-                                        ] %}
-                                        <div class="bg-surface-card p-3">
-                                            <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
-                                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value or 'Not Managed' }}</dd>
-                                        </div>
+                            <form method="post"
+                                  action="{{ url_for('tenant.rollout_resource_profile_route', profile_id=profile.id) }}"
+                                  class="grid min-w-0 gap-2 sm:grid-cols-[minmax(15rem,1fr)_auto] lg:min-w-[30rem]">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <select name="tenant_id"
+                                        required
+                                        class="{{ form_field.select_classes() }}">
+                                    <option value="">Select Tenant</option>
+                                    {% for target in rollout_targets %}
+                                        <option value="{{ target.tenant_id }}"
+                                                {% if target.provider_key != 'native_kubernetes' %}disabled{% endif %}>
+                                            {{ target.tenant_name }} · {{ target.namespaces }} NS · {{ target.outdated }} pending{{ ' · Capsule workflow' if target.provider_key != 'native_kubernetes' else '' }}
+                                        </option>
                                     {% endfor %}
-                                </dl>
-                            </div>
-                            <div class="overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle">
-                                <div class="bg-surface-elevated px-3 py-2.5">
-                                    <p class="text-xs font-semibold text-content-primary">Per-PVC Policy</p>
-                                </div>
-                                <dl class="grid gap-px sm:grid-cols-2">
-                                    {% for label, value in [
-                                        ('Min PVC Size', storage_policy.get('min')),
-                                        ('Max PVC Size', storage_policy.get('max'))
-                                        ] %}
-                                        <div class="bg-surface-card p-3">
-                                            <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
-                                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value or 'Not Managed' }}</dd>
-                                        </div>
-                                    {% endfor %}
-                                </dl>
-                            </div>
+                                </select>
+                                <button type="submit"
+                                        {% if not can_manage %}disabled aria-disabled="true"{% endif %}
+                                        class="{{ action_button.classes('secondary') }}">
+                                    <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                                    Rollout
+                                </button>
+                            </form>
                         </div>
                     </section>
-                    <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                        <h3 class="text-sm font-semibold text-content-primary">Object Limits</h3>
-                        <dl class="mt-4 grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-3">
-                            {% for label, value in [
-                                ('Services', profile.quota_hard_json.get('services')),
-                                ('ConfigMaps', profile.quota_hard_json.get('configmaps')),
-                                ('Secrets', profile.quota_hard_json.get('secrets'))
-                                ] %}
-                                <div class="bg-surface-card p-3">
-                                    <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
-                                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value or 'Not Managed' }}</dd>
-                                </div>
-                            {% endfor %}
-                        </dl>
-                    </section>
-                    <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                        <h3 class="text-sm font-semibold text-content-primary">Container Defaults</h3>
-                        <dl class="mt-4 grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
-                            {% for label, value in [
-                                ('CPU Request', default_requests.get('cpu')),
-                                ('CPU Limit', defaults.get('cpu')),
-                                ('Memory Request', default_requests.get('memory')),
-                                ('Memory Limit', defaults.get('memory'))
-                                ] %}
-                                <div class="bg-surface-card p-3">
-                                    <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
-                                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value or 'Not Managed' }}</dd>
-                                </div>
-                            {% endfor %}
-                        </dl>
-                    </section>
-                    {{ advanced_profile_controls.render_view(profile.advanced_controls_json or {}, 'resource-profile-view-' ~ profile.id) }}
                 {% endif %}
             </div>
             <footer class="flex shrink-0 flex-col-reverse gap-2 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
@@ -399,15 +531,13 @@
                 <button type="button"
                         data-kaori-dialog-close
                         class="{{ action_button.classes('secondary') }}">Close</button>
-                {% if editable %}
-                    <button type="submit"
-                            form="resource-profile-update-form-{{ profile.id }}"
-                            {% if not can_manage %}disabled aria-disabled="true"{% endif %}
-                            class="{{ action_button.classes('primary') }}">
-                        <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
-                        Save Changes
-                    </button>
-                {% endif %}
+                <button type="submit"
+                        form="resource-profile-update-form-{{ profile.id }}"
+                        {% if not can_manage %}disabled aria-disabled="true"{% endif %}
+                        class="{{ action_button.classes('primary') }}">
+                    <i data-lucide="{{ 'save' if editable else 'history' }}" class="h-4 w-4" aria-hidden="true"></i>
+                    {{ 'Save Changes' if editable else 'Save New Version' }}
+                </button>
             </footer>
         </section>
     </dialog>
