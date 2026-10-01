@@ -154,12 +154,10 @@
                                 <div class="mt-2 flex min-w-0 items-start gap-1.5">
                                     <p class="min-w-0 text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ runtime_state.summary }}</p>
                                     {% if runtime_state.lifecycle_context and runtime_state.lifecycle_context.readiness_reasons %}
-                                        {{ info_tip.render(
-                                            'kubernetes-runtime-primary-finding-info',
-                                            'Lifecycle and capability detail',
-                                            items=runtime_state.lifecycle_context.readiness_reasons,
-                                            placement='right'
-                                        ) }}
+                                        {{ info_tip.render('kubernetes-runtime-primary-finding-info',
+                                                                                'Lifecycle and capability detail',
+                                                                                items=runtime_state.lifecycle_context.readiness_reasons,
+                                                                                placement='right') }}
                                     {% endif %}
                                 </div>
                             </div>
