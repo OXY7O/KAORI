@@ -95,7 +95,7 @@
                         <td class="{{ table_ui.cell_classes() }} align-middle">
                             <div class="flex flex-wrap items-center gap-2">
                                 {{ table_label.status_label(profile_class_labels.get(profile.profile_class, profile.profile_class|replace('_', ' ')|title), 'info' if profile.profile_class == 'custom' else 'normal') }}
-                                {{ table_label.status_label('Editable' if profile.profile_class == 'custom' else 'Locked', 'info' if profile.profile_class == 'custom' else 'unknown') }}
+                                {{ table_label.status_label('Editable Values' if profile.profile_class == 'custom' else 'Versioned Controls', 'info' if profile.profile_class == 'custom' else 'maintenance') }}
                                 {{ table_label.status_label('Enabled' if profile.enabled else 'Disabled', 'normal' if profile.enabled else 'unknown') }}
                             </div>
                             <p class="mt-1 text-xs text-content-muted">
@@ -105,7 +105,7 @@
                                 {% elif profile.profile_class == 'custom' %}
                                     Independent Custom
                                 {% else %}
-                                    KAORI preset · Locked
+                                    KAORI preset · Fixed values
                                 {% endif %}
                             </p>
                         </td>
@@ -128,10 +128,10 @@
                                     data-kaori-dialog-open
                                     data-dialog-target="resource-profile-manage-{{ profile.id }}"
                                     class="{{ table_ui.action_classes() }}">
-                                <i data-lucide="{{ 'settings-2' if profile.profile_class == 'custom' else 'eye' }}"
+                                <i data-lucide="settings-2"
                                    class="h-4 w-4"
                                    aria-hidden="true"></i>
-                                {{ 'Manage' if profile.profile_class == 'custom' else 'View' }}
+                                Manage
                             </button>
                         </td>
                     </tr>
