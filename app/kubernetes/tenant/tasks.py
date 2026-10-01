@@ -215,16 +215,10 @@ def sync_tenant_inventory_task(
         snapshot['capsule_shared_allocation_drift_count'] = len(capsule_shared_drift['drifted_intent_ids'])
         snapshot['capsule_shared_allocation_drift_ids'] = capsule_shared_drift['drifted_intent_ids']
         snapshot['capsule_shared_allocation_restored_ids'] = capsule_shared_drift['restored_intent_ids']
-        snapshot['capsule_shared_allocation_observation_error_count'] = len(
-            capsule_shared_drift['observation_errors']
-        )
-        snapshot['capsule_tenant_quota_drift_count'] = len(
-            capsule_tenant_quota_drift['drifted_tenant_ids']
-        )
+        snapshot['capsule_shared_allocation_observation_error_count'] = len(capsule_shared_drift['observation_errors'])
+        snapshot['capsule_tenant_quota_drift_count'] = len(capsule_tenant_quota_drift['drifted_tenant_ids'])
         snapshot['capsule_tenant_quota_drift_ids'] = capsule_tenant_quota_drift['drifted_tenant_ids']
-        snapshot['capsule_tenant_quota_observation_error_count'] = len(
-            capsule_tenant_quota_drift['observation_errors']
-        )
+        snapshot['capsule_tenant_quota_observation_error_count'] = len(capsule_tenant_quota_drift['observation_errors'])
 
         allocation_exceptions = [
             {
@@ -253,10 +247,9 @@ def sync_tenant_inventory_task(
         capsule_shared_exceptions = [
             {
                 'cluster_id': '',
-                'namespace': f"Tenant/{item.get('tenant_id', '')}",
+                'namespace': f'Tenant/{item.get("tenant_id", "")}',
                 'reason': (
-                    'Capsule shared allocation observation failed: '
-                    + str(item.get('reason') or 'unknown error')
+                    'Capsule shared allocation observation failed: ' + str(item.get('reason') or 'unknown error')
                 ),
             }
             for item in capsule_shared_drift['observation_errors']
@@ -264,11 +257,8 @@ def sync_tenant_inventory_task(
         capsule_tenant_quota_exceptions = [
             {
                 'cluster_id': '',
-                'namespace': f"Tenant/{item.get('tenant_id', '')}",
-                'reason': (
-                    'Capsule Tenant quota observation failed: '
-                    + str(item.get('reason') or 'unknown error')
-                ),
+                'namespace': f'Tenant/{item.get("tenant_id", "")}',
+                'reason': ('Capsule Tenant quota observation failed: ' + str(item.get('reason') or 'unknown error')),
             }
             for item in capsule_tenant_quota_drift['observation_errors']
         ]
