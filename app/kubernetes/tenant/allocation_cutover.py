@@ -214,6 +214,30 @@ def _verify_existing(existing: Any, expected: dict[str, str] | None, *, kind: st
             )
 
 
+def _mutate_namespace_ownership(
+    api: Any,
+    record: TenantNamespace,
+    *,
+    profile: TenantResourceProfile,
+) -> None:
+    existing = api.read_namespace(record.namespace)
+    metadata = getattr(existing, 'metadata', None)
+    labels = dict(getattr(metadata, 'labels', None) or {})
+    owner = str(labels.get(_MANAGED_BY_KEY) or '')
+    if owner and owner != _MANAGED_BY_VALUE:
+        raise ValueError(f'Namespace is managed by {owner}; governance takeover fails closed.')
+
+    desired_labels = {**labels, **_labels(record, profile)}
+    body = {
+        'metadata': {
+            'name': record.namespace,
+            'resourceVersion': _metadata_value(metadata, 'resource_version') or None,
+            'labels': desired_labels,
+        }
+    }
+    api.patch_namespace(name=record.namespace, body=body)
+
+
 def _read_quota(api: Any, *, namespace: str, name: str) -> Any | None:
     try:
         return api.read_namespaced_resource_quota(name, namespace)
@@ -468,6 +492,11 @@ def reconcile_adopted_native_allocation(
         )
 
         mutation_started = True
+        _mutate_namespace_ownership(
+            api,
+            record,
+            profile=profile,
+        )
         quota_name = _mutate_quota(
             api,
             record,
@@ -577,6 +606,7 @@ def reconcile_adopted_native_allocation(
     )
     evidence.pop('allocation_drift', None)
     evidence.pop('allocation_reconcile_failure', None)
+    record.ownership_status = TenantOwnershipStatus.MANAGED.value
     record.resource_profile = profile
     record.resource_profile_id = profile.id
     record.resource_profile_version = resource_profile_version
@@ -591,7 +621,7 @@ def reconcile_adopted_native_allocation(
     record.last_reconciled_at = now
     record.provisioning_status = 'ready'
     record.provisioning_message = (
-        'KAORI Managed allocation verified against Native Kubernetes provider read-back. '
-        'Namespace lifecycle ownership remains adopted.'
+        'KAORI Managed namespace allocation verified against Native Kubernetes provider read-back. '
+        'Adoption origin remains retained in evidence.'
     )
     return record
