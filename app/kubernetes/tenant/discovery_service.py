@@ -878,10 +878,10 @@ def adopt_discovered_tenant_committed(
                     'profile_version': int(profile.version or 1),
                     'provider_value_change_requested': False,
                     'effective_values_preserved': True,
-                    'provider_mutation_performed': True,
+                    'provider_mutation_performed': shared_profile is not None,
                     'taken_over_at': datetime.now(UTC).isoformat(),
                 },
-                'provider_mutation_performed': True,
+                'provider_mutation_performed': shared_profile is not None,
             }
         )
         tenant.provider_evidence_json = tenant_evidence
@@ -962,8 +962,8 @@ def adopt_discovered_tenant_committed(
             namespace_record_item.ownership_status = TenantOwnershipStatus.ADOPTED.value
             namespace_record_item.provisioning_status = TenantNamespaceProvisioningStatus.READY.value
             namespace_record_item.provisioning_message = (
-                'Adopted Baseline · Observed. Capsule remains provider authority; allocation is read-only until '
-                'governance cutover.'
+                'Adopted · Provider Mirrored Policy. Capsule remains authoritative; supported Namespace '
+                'Container/PVC policy is committed in KAORI without claiming controller-owned write authority.'
                 if allocation['control_state'] == 'observed'
                 else 'Adopted Baseline · Control Unavailable. Capsule allocation authority requires review.'
             )
@@ -995,8 +995,6 @@ def adopt_discovered_tenant_committed(
             db.session.add(namespace_record_item)
             adopted_namespaces.append(namespace_record_item)
 
-        from app.kubernetes.tenant.allocation_cutover import reconcile_adopted_namespace_policy
-
         for record in adopted_namespaces:
             observation_value = (record.provisioning_evidence_json or {}).get('allocation')
             observation = dict(observation_value) if isinstance(observation_value, Mapping) else {}
@@ -1011,13 +1009,30 @@ def adopt_discovered_tenant_committed(
                     record,
                     observation,
                 )
-                reconcile_adopted_namespace_policy(
-                    record,
-                    profile=policy_profile,
-                    resource_profile_version=int(policy_profile.version or 1),
-                    limit_defaults=dict(policy_profile.limit_defaults_json or {}),
-                    storage_policy=dict(policy_profile.storage_policy_json or {}),
-                    operation='capsule_adoption_policy_takeover',
+                record.resource_profile = policy_profile
+                record.resource_profile_id = policy_profile.id
+                record.resource_profile_version = int(policy_profile.version or 1)
+                record.allocation_quota_json = {}
+                record.allocation_limit_defaults_json = dict(policy_profile.limit_defaults_json or {})
+                record.allocation_storage_policy_json = dict(policy_profile.storage_policy_json or {})
+                evidence = dict(record.provisioning_evidence_json or {})
+                evidence.update(
+                    {
+                        'allocation_control_state': 'provider_mirrored_policy',
+                        'provider_policy_mirror': {
+                            'profile_id': policy_profile.public_id,
+                            'profile_version': int(policy_profile.version or 1),
+                            'authority': 'capsule',
+                            'source': 'capsule_generated_namespace_policy',
+                            'provider_mutation_performed': False,
+                            'mirrored_at': datetime.now(UTC).isoformat(),
+                        },
+                    }
+                )
+                record.provisioning_evidence_json = evidence
+                record.provisioning_message = (
+                    'Capsule-generated Container/PVC policy is mirrored into KAORI. '
+                    'It is not treated as KAORI drift because no admitted Capsule source-write authority exists.'
                 )
 
         shared_profile = _take_over_capsule_allocation(
