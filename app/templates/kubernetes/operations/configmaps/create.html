@@ -47,19 +47,17 @@
             <section class="{{ configmap_ui.surface_shell_classes(configmap_main_classes, true) }}"
                      data-kubernetes-operation-form="configmap-create">
                 {% set configmap_create_info = [
-                    'Cluster and Namespace are live Kubernetes targets; Namespace options are loaded from the selected registered cluster.',
-                    'ConfigMap Name must be DNS-compatible and stable. Create never overwrites an existing ConfigMap.',
-                    'Immutable prevents later mutation of this ConfigMap; changing immutable configuration requires a new object.'
+                    "Cluster and Namespace are live Kubernetes targets; Namespace options are loaded from the selected registered cluster.",
+                    "ConfigMap Name must be DNS-compatible and stable. Create never overwrites an existing ConfigMap.",
+                    "Immutable prevents later mutation of this ConfigMap; changing immutable configuration requires a new object."
                 ] %}
-                {{ configmap_ui.section_header(
-                    'file-plus-2',
-                    'ConfigMap Definition',
-                    'Choose the live target, define application configuration data, and validate the exact create-only object before persistence.',
-                    info_id='configmap-create-guidance-tip',
-                    info_title='ConfigMap creation guide',
-                    info_text='Target, identity, and lifecycle guidance for this create-only workflow.',
-                    info_items=configmap_create_info
-                ) }}
+                {{ configmap_ui.section_header('file-plus-2',
+                                'ConfigMap Definition',
+                                'Choose the live target, define application configuration data, and validate the exact create-only object before persistence.',
+                                info_id='configmap-create-guidance-tip',
+                                info_title='ConfigMap creation guide',
+                                info_text='Target, identity, and lifecycle guidance for this create-only workflow.',
+                                info_items=configmap_create_info) }}
                 <div class="space-y-6 p-5 sm:p-6">
                     <section>
                         <div class="mb-4 flex items-start gap-3">
