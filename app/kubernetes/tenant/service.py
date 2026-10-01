@@ -1916,10 +1916,13 @@ def get_resource_profile_registry_context(
         }
         for profile in items
     }
+    profile_rollout_targets = _resource_profile_rollout_targets(profile_ids)
 
     return {
         'profiles': items,
         'profile_dependencies': profile_dependencies,
+        'profile_rollout_targets': profile_rollout_targets,
+        'resource_profile_presets': RESOURCE_PROFILE_PRESETS,
         'profile_pagination': pagination,
         'profile_registry_filters': {
             'search': normalized_search,
