@@ -228,12 +228,13 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'step="0.01"' in capacity
     assert 'placeholder="2048"' in capacity
     assert '2048 GiB = 2 TiB' in capacity
-    assert 'Compute refresh required' in capacity
+    assert 'Compute evidence required' in capacity
     assert 'Logical storage policy remains active' in capacity
     assert 'Budget · Storage' in capacity
     assert 'Committed · Storage' in capacity
     assert 'Headroom · Storage' in capacity
     assert capacity.count('Logical budget only.') == 1
+    assert 'mt-2 grid gap-3 lg:grid-cols-[minmax(14rem,22rem)_minmax(0,1fr)] lg:items-center' in capacity
     assert "form_field.help('Enter GiB" not in capacity
     assert 'item.display.budget.pods' in capacity
     assert 'item.display.headroom.storage' in capacity
