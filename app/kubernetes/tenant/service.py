@@ -969,14 +969,14 @@ def _namespace_allocation_values(
                 if resource in preset_group:
                     limits.setdefault(group, {})[resource] = preset_group[resource]
         quota, limits = validate_profile_spec(quota, limits)
-        storage_policy = validate_storage_policy(profile.storage_policy_json or {})
+        storage_policy = validate_storage_policy(getattr(profile, 'storage_policy_json', {}) or {})
         return quota, limits, storage_policy, False
 
     quota, limits = validate_profile_spec(
         profile.quota_hard_json or {},
         profile.limit_defaults_json or {},
     )
-    storage_policy = validate_storage_policy(profile.storage_policy_json or {})
+    storage_policy = validate_storage_policy(getattr(profile, 'storage_policy_json', {}) or {})
     return quota, limits, storage_policy, True
 
 
@@ -1062,7 +1062,7 @@ def update_resource_profile(profile_id: int, source: Mapping[str, Any]) -> tuple
     contract_changed = (
         quota != (profile.quota_hard_json or {})
         or limits != (profile.limit_defaults_json or {})
-        or storage_policy != (profile.storage_policy_json or {})
+        or storage_policy != (getattr(profile, 'storage_policy_json', {}) or {})
         or advanced_controls != (profile.advanced_controls_json or {})
     )
 
@@ -1874,7 +1874,7 @@ def get_namespace_registry_context(
             str(profile.id): {
                 'quota': profile.quota_hard_json or {},
                 'limits': profile.limit_defaults_json or {},
-                'storage_policy': profile.storage_policy_json or {},
+                'storage_policy': getattr(profile, 'storage_policy_json', {}) or {},
                 'version': (
                     int(RESOURCE_PROFILE_PRESETS[profile.profile_class]['version'])
                     if profile.profile_class in RESOURCE_PROFILE_PRESETS
@@ -1980,7 +1980,7 @@ def get_tenant_context() -> dict[str, Any]:
             str(profile.id): {
                 'quota': profile.quota_hard_json or {},
                 'limits': profile.limit_defaults_json or {},
-                'storage_policy': profile.storage_policy_json or {},
+                'storage_policy': getattr(profile, 'storage_policy_json', {}) or {},
                 'version': (
                     int(RESOURCE_PROFILE_PRESETS[profile.profile_class]['version'])
                     if profile.profile_class in RESOURCE_PROFILE_PRESETS
