@@ -305,6 +305,35 @@ def test_native_observation_normalizes_pvc_storage_limitrange_as_managed_policy(
 
 
 
+
+def test_native_observation_rejects_noncanonical_pvc_default_fields() -> None:
+    pvc_limit = SimpleNamespace(
+        type='PersistentVolumeClaim',
+        default={'storage': '10Gi'},
+        default_request={'storage': '1Gi'},
+        max={'storage': '10Gi'},
+        min={'storage': '1Gi'},
+        max_limit_request_ratio={},
+    )
+    api = FakeCoreApi(
+        limit_ranges={
+            'api-prod': [
+                SimpleNamespace(
+                    metadata=_metadata('legacy-pvc-policy'),
+                    spec=SimpleNamespace(limits=[pvc_limit]),
+                )
+            ]
+        }
+    )
+
+    observed = observe_native_namespace_allocation(api, 'api-prod')
+
+    assert observed['control_state'] == 'control_unavailable'
+    assert observed['storage_policy'] == {'min': '1Gi', 'max': '10Gi'}
+    assert 'LimitRange/legacy-pvc-policy:pvc.default.storage' in observed['unsupported_dimensions']
+    assert 'LimitRange/legacy-pvc-policy:pvc.default_request.storage' in observed['unsupported_dimensions']
+    assert observed['external_constraint_details'][0]['constraint_type'] == 'unsupported_pvc_limit_range'
+
 def test_capsule_tenant_resource_quota_defaults_scope_to_tenant() -> None:
     client = FakeClient(FakeCoreApi())
     tenant_item = {
