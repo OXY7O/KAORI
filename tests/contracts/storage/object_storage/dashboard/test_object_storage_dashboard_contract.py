@@ -67,10 +67,15 @@ def test_dashboard_matches_kubernetes_operational_layout_concept() -> None:
     signal_overview = read('app/templates/storage/object_storage/dashboard/partials/_signal_overview.html')
     kubernetes_content = read('app/templates/kubernetes/dashboard/partials/_content.html')
 
+    framework = read('app/templates/components/operational_dashboard_workspace.html')
+
     for label in ('Operations Overview', 'Capacity & Demand', 'Signals & Actions', 'Reporting'):
-        assert label in content
-        assert label in kubernetes_content
-    assert 'components/workspace_tabs.html' in content
+        assert label in framework
+    assert 'components/operational_dashboard_workspace.html' in content
+    assert 'components/operational_dashboard_workspace.html' in kubernetes_content
+    assert 'dashboard_workspace.controller(' in content
+    assert 'dashboard_workspace.navigation(' in content
+    assert 'dashboard_workspace.panel(' in content
     assert 'storage/object_storage/dashboard/partials/_hero.html' in content
     assert 'storage/object_storage/dashboard/partials/_signal_overview.html' in content
     assert (
@@ -86,6 +91,8 @@ def test_dashboard_matches_kubernetes_operational_layout_concept() -> None:
     assert 'page_hero.operational_dashboard(' in hero
     assert 'No live provider query on page load' in page_hero
     assert 'class="mt-5 space-y-5"' in content
+    assert 'data-kaori-dashboard-framework="operational-v1"' in framework
+    assert 'workspace_tabs.render(standard_tabs' in framework
 
 
 def test_dashboard_sections_are_object_storage_specific_and_committed_evidence_owned() -> None:

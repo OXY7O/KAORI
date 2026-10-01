@@ -17,11 +17,16 @@ def test_dashboard_uses_shared_workspace_tabs_and_persists_url_state() -> None:
     routes = read('app/kubernetes/dashboard/routes.py')
     schema = read('app/kubernetes/dashboard/schema.py')
 
-    assert '{% import "components/workspace_tabs.html" as workspace_tabs %}' in source
-    assert 'workspace_tabs.render(' in source
-    assert "url.searchParams.set('tab', tab)" in source
-    assert "window.history.replaceState({}, '', url)" in source
-    assert 'id="dashboard-active-tab"' in source
+    framework = read('app/templates/components/operational_dashboard_workspace.html')
+
+    assert 'components/operational_dashboard_workspace.html' in source
+    assert 'dashboard_workspace.controller(' in source
+    assert 'dashboard_workspace.navigation(' in source
+    assert source.count('dashboard_workspace.panel(') == 4
+    assert 'workspace_tabs.render(standard_tabs' in framework
+    assert "url.searchParams.set('tab', tab)" in framework
+    assert "window.history.replaceState({}, '', url)" in framework
+    assert 'id="{{ input_id }}"' in framework
     assert 'hx-include="#dashboard-active-tab"' in selector
     assert "DASHBOARD_TABS = {'overview', 'capacity', 'signals', 'reporting'}" in routes
     assert "active_tab: str = 'overview'" in schema
@@ -31,9 +36,12 @@ def test_dashboard_uses_integrated_tabs_and_equal_height_peer_content() -> None:
     source = read('app/templates/kubernetes/dashboard/partials/_content.html')
     grid = read('app/templates/components/peer_content_grid.html')
     tabs = read('app/templates/components/workspace_tabs.html')
+    framework = read('app/templates/components/operational_dashboard_workspace.html')
     integrated_tabs = tabs.split('{% macro render(', 1)[1].split('{%- endmacro %}', 1)[0]
 
     assert '{% import "components/peer_content_grid.html" as peer_content_grid %}' in source
+    assert 'components/operational_dashboard_workspace.html' in source
+    assert 'data-kaori-dashboard-framework="operational-v1"' in framework
     assert source.count('peer_content_grid.layout_classes()') == 4
     assert "column_classes('primary', 'seven-five')" in source
     assert "column_classes('secondary', 'seven-five')" in source
@@ -49,9 +57,9 @@ def test_dashboard_uses_integrated_tabs_and_equal_height_peer_content() -> None:
     assert 'shadow-sm' not in integrated_tabs
     assert 'border-b border-outline-subtle' in integrated_tabs
     assert 'data-kaori-tab-variant="integrated-workspace"' in integrated_tabs
-    assert 'id="kubernetes-dashboard-panel-capacity"' in source
-    assert 'id="kubernetes-dashboard-panel-signals"' in source
-    assert 'id="kubernetes-dashboard-panel-reporting"' in source
+    assert "dashboard_workspace.panel('capacity'" in source
+    assert "dashboard_workspace.panel('signals'" in source
+    assert "'reporting'," in source
 
 
 def test_dashboard_sections_use_the_canonical_operational_section_card() -> None:

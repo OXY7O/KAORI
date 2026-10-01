@@ -26,6 +26,8 @@ OBJECT_REPORTING_SUMMARY = OBJECT_DASHBOARD_DIR / 'partials' / '_reporting_summa
 OBJECT_DASHBOARD_SERVICE = ROOT / 'app' / 'storage' / 'object_storage' / 'dashboard' / 'service.py'
 PAGE_HERO = ROOT / 'app' / 'templates' / 'components' / 'page_hero.html'
 WORKSPACE_TABS = ROOT / 'app' / 'templates' / 'components' / 'workspace_tabs.html'
+DASHBOARD_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_dashboard_workspace.html'
+REPORTING_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'reporting_dashboard_workspace.html'
 METRIC_CARD = ROOT / 'app' / 'templates' / 'components' / 'operational_metric_card.html'
 TENANT_SETUP_WORKSPACE = (
     ROOT / 'app' / 'templates' / 'kubernetes' / 'tenant' / 'partials' / '_tenant_setup_workspace.html'
@@ -64,9 +66,7 @@ SECTION_PARTIALS = (
     '_top_consumers.html',
     '_alerts_summary.html',
     '_recommended_actions.html',
-    '_reporting_summary.html',
     '_alert_response_guidance.html',
-    '_reporting_guidance.html',
     '_section_loading.html',
 )
 
@@ -163,7 +163,8 @@ def _verify_dashboard_hero_profile(hero: str, object_hero: str, page_hero: str) 
             'page_hero.operational_dashboard(',
             "dashboard_state = 'blocked' if cluster_onboarding.is_blocked else 'normal'",
             "'Committed Snapshots'",
-            'Kubernetes Operations Dashboard',
+            'Kubernetes Operations',
+            "'Dashboard'",
             "'Open Cluster Integrations'",
             "url_for('integrations.kubernetes')",
         ),
@@ -174,7 +175,8 @@ def _verify_dashboard_hero_profile(hero: str, object_hero: str, page_hero: str) 
         (
             'page_hero.operational_dashboard(',
             "'Committed Snapshots'",
-            'Object Storage Operations Dashboard',
+            'Object Storage Operations',
+            "'Dashboard'",
         ),
         'Object Storage dashboard Hero profile consumer',
     )
@@ -213,6 +215,8 @@ def verify() -> None:
     object_dashboard_service = _read(OBJECT_DASHBOARD_SERVICE)
     page_hero = _read(PAGE_HERO)
     workspace_tabs = _read(WORKSPACE_TABS)
+    dashboard_workspace = _read(DASHBOARD_WORKSPACE)
+    reporting_workspace = _read(REPORTING_WORKSPACE)
     metric_card = _read(METRIC_CARD)
     tenant_setup_workspace = _read(TENANT_SETUP_WORKSPACE)
     kpi_cards = _read(KPI_CARDS)
@@ -278,21 +282,18 @@ def verify() -> None:
     _require(
         content,
         (
-            'import "components/workspace_tabs.html" as workspace_tabs',
+            'components/operational_dashboard_workspace.html',
+            'dashboard_workspace.controller(',
+            'dashboard_workspace.navigation(',
+            'dashboard_workspace.panel(',
             'import "components/peer_content_grid.html" as peer_content_grid',
-            "('overview', 'Operations Overview', 'activity')",
-            "('capacity', 'Capacity & Demand', 'gauge')",
-            "('signals', 'Signals & Actions', 'bell-ring')",
-            "('reporting', 'Reporting', 'file-text')",
-            'workspace_tabs.render(',
-            'moveTab(currentTab, direction, prefix)',
-            "url.searchParams.set('tab', tab)",
-            "window.history.replaceState({}, '', url)",
             'peer_content_grid.layout_classes()',
             'hx-trigger="revealed"',
         ),
         'dashboard composition',
     )
+    if content.count('dashboard_workspace.panel(') != 4:
+        raise AssertionError('dashboard composition: expected four canonical framework panels')
     if content.count('peer_content_grid.layout_classes()') != 4:
         raise AssertionError('dashboard composition: expected four canonical peer-content grids')
 
@@ -300,17 +301,33 @@ def verify() -> None:
         object_content,
         (
             'storage/object_storage/dashboard/partials/_hero.html',
-            "('overview', 'Operations Overview', 'activity')",
-            "('capacity', 'Capacity & Demand', 'gauge')",
-            "('signals', 'Signals & Actions', 'bell-ring')",
-            "('reporting', 'Reporting', 'file-text')",
-            'workspace_tabs.render(',
-            'moveTab(currentTab, direction, prefix)',
-            "url.searchParams.set('tab', tab)",
+            'components/operational_dashboard_workspace.html',
+            'dashboard_workspace.controller(',
+            'dashboard_workspace.navigation(',
+            'dashboard_workspace.panel(',
+            'dashboard_workspace.standard_tabs',
             'hx-trigger="revealed"',
             'class="mt-5 space-y-5"',
         ),
         'Object Storage dashboard family composition',
+    )
+
+    _require(
+        dashboard_workspace,
+        (
+            'data-kaori-dashboard-framework="operational-v1"',
+            "('overview', 'Operations Overview', 'activity')",
+            "('capacity', 'Capacity & Demand', 'gauge')",
+            "('signals', 'Signals & Actions', 'bell-ring')",
+            "('reporting', 'Reporting', 'file-text')",
+            'workspace_tabs.render(standard_tabs',
+            'moveTab(currentTab, direction, prefix)',
+            "url.searchParams.set('tab', tab)",
+            "window.history.replaceState({}, '', url)",
+            'role="tabpanel"',
+            'x-bind:hidden=',
+        ),
+        'shared operational dashboard workspace',
     )
 
     _require(
@@ -359,7 +376,8 @@ def verify() -> None:
         _require(
             source,
             (
-                'components/numbered_governance_steps.html',
+                'components/operational_dashboard_workspace.html',
+            'components/reporting_dashboard_workspace.html',
                 'alert_response_steps',
                 'Controlled Response Flow',
                 "'Validate'",
@@ -381,30 +399,32 @@ def verify() -> None:
         _require(
             source,
             (
-                'components/numbered_governance_steps.html',
-                'reporting_steps',
-                'Controlled Reporting Flow',
-                "'Validate'",
-                "'Select'",
-                "'Create'",
-                "'Generate'",
-                "'Schedule'",
-                "'Retain'",
-                'approved output',
+                'components/reporting_dashboard_workspace.html',
+                'reporting_workspace.guidance(',
             ),
             owner,
         )
-        if 'components/operational_flow_steps.html' in source:
-            raise AssertionError(f'{owner}: Controlled Reporting Flow must use the shared numbered governance sequence')
+
     _require(
-        reporting_guidance,
-        ('stored artifact', 'Reporting Control', 'Reporting Tip'),
-        'Kubernetes format-neutral reporting guidance',
-    )
-    _require(
-        object_reporting_guidance,
-        ('Reporting Control', 'Reporting Tip'),
-        'Object Storage reporting control',
+        reporting_workspace,
+        (
+            'reporting_steps',
+            'Reporting Workflow',
+            'Scope Bound',
+            'Evidence Backed',
+            'Review First',
+            'Governed Flow',
+            'Execution Mode',
+            "'Validate'",
+            "'Select'",
+            "'Create'",
+            "'Generate'",
+            "'Schedule'",
+            "'Retain'",
+            'Reporting Tip',
+            'reporting.latest_reports[:4]',
+        ),
+        'shared reporting dashboard workspace',
     )
     for owner, source in (
         ('Kubernetes alert response guidance', alert_guidance),
@@ -419,20 +439,6 @@ def verify() -> None:
             ),
             f'{owner} detailed step copy',
         )
-    for owner, source in (
-        ('Kubernetes reporting guidance', reporting_guidance),
-        ('Object Storage reporting guidance', object_reporting_guidance),
-    ):
-        _require(
-            source,
-            (
-                'committed evidence freshness',
-                'generation intent',
-                'retention or audit evidence',
-            ),
-            f'{owner} detailed step copy',
-        )
-
     _require(
         alert_summary,
         ('up to five recent cases', 'dashboard.alerts_snapshot.items[:5]'),
@@ -464,25 +470,27 @@ def verify() -> None:
 
     _require(
         reporting_summary,
-        ('Up to five latest generated report records.', 'reporting.latest_reports[:5]'),
-        'Kubernetes Recent Report Activity preview',
+        ('reporting_workspace.summary(',),
+        'Kubernetes Recent Report Activity consumer',
     )
     _require(
         reporting_builder,
-        ('query_all(Report, selected_cluster_id, limit=5)',),
+        ('query_all(Report, selected_cluster_id, limit=4)',),
         'Kubernetes Recent Report Activity builder',
     )
     _require(
         object_reporting_summary,
-        (
-            'Up to five latest generated Object Storage report records.',
-            'reporting.latest_reports[:5]',
-        ),
-        'Object Storage Recent Report Activity preview',
+        ('reporting_workspace.summary(',),
+        'Object Storage Recent Report Activity consumer',
+    )
+    _require(
+        reporting_workspace,
+        ('reporting.latest_reports[:4]',),
+        'shared Recent Report Activity preview',
     )
     _require(
         object_dashboard_service,
-        ('recent = reports_query.order_by(Report.created_at.desc()).limit(5).all()',),
+        ('recent = reports_query.order_by(Report.created_at.desc()).limit(4).all()',),
         'Object Storage Recent Report Activity builder',
     )
     for owner, source in (
@@ -500,14 +508,8 @@ def verify() -> None:
         ),
         'Object Storage compact alert guidance',
     )
-    if reporting_guidance.index('Reporting Control') >= reporting_guidance.index('Controlled Reporting Flow'):
-        raise AssertionError('Kubernetes reporting guidance must place Reporting Control before the controlled flow')
-    if object_reporting_guidance.index('Reporting Control') >= object_reporting_guidance.index(
-        'Controlled Reporting Flow'
-    ):
-        raise AssertionError(
-            'Object Storage reporting guidance must place Reporting Control before the controlled flow'
-        )
+    if reporting_workspace.index('Review First') >= reporting_workspace.index('Governed Flow'):
+        raise AssertionError('shared reporting workspace must present review guardrails before the governed flow')
 
     for dashboard_dir in (DASHBOARD_DIR, OBJECT_DASHBOARD_DIR):
         dashboard_source = '\n'.join(path.read_text(encoding='utf-8') for path in sorted(dashboard_dir.rglob('*.html')))
@@ -604,7 +606,7 @@ def verify() -> None:
         readme,
         (
             'read-only operational projection over committed KAORI data',
-            'OPERATIONAL_DASHBOARD.md` v1.5',
+            'OPERATIONAL_DASHBOARD.md` v1.7',
             'page_hero.operational_dashboard(...)',
             'Arrow Left/Right, Home, and End keyboard navigation',
             'artifact-format neutral',
@@ -615,7 +617,7 @@ def verify() -> None:
     _require(
         standard,
         (
-            '# KAORI Operational Dashboard Pattern v1.6',
+            '# KAORI Operational Dashboard Pattern v1.7',
             'Operational Dashboard Hero Profile',
             'page_hero.operational_dashboard(...)',
             'Active Scope',
@@ -699,8 +701,8 @@ def verify() -> None:
     print(
         'KAORI operational dashboard standard passed: shared Hero profile parity, canonical composition, '
         'snapshot-only web boundary, authorization-first lazy sections, URL-backed keyboard-accessible tabs, '
-        'shared style ownership, numbered response/reporting guidance, five-record alert/report previews, '
-        'behavioral release evidence, documentation, and quality-gate enforcement match v1.6.'
+        'shared style ownership, shared dashboard/reporting frameworks, five-record alert previews, four-record report previews, '
+        'behavioral release evidence, documentation, and quality-gate enforcement match v1.7.'
     )
 
 
