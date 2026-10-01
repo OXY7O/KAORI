@@ -434,3 +434,15 @@ def test_generate_report_final_submit_is_backend_authoritative() -> None:
     assert 'generateButton.disabled = false' in runtime
     assert 'create_report_request()/validate_form_state() is authoritative' in runtime
     assert "if (!overallRequestReady) {\n                event.preventDefault()" not in runtime
+
+
+def test_generate_report_review_recomputes_live_readiness_state() -> None:
+    runtime = read(RUNTIME)
+
+    assert "if (currentWizardStep === 5) {" in runtime
+    assert "syncClusterGuard()" in runtime
+    assert "clusterSelect.addEventListener('input', syncClusterSelection)" in runtime
+    assert "clusterSelect.addEventListener('change', syncClusterSelection)" in runtime
+
+    update_section = runtime[runtime.index("function updateSelectedSectionFromCheckbox"):runtime.index("function syncSectionCount")]
+    assert "syncClusterGuard()" in update_section

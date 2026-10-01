@@ -282,6 +282,7 @@
             }
             setSelectedSections(Array.from(selected))
             syncSectionCount()
+            syncClusterGuard()
         }
 
         function syncSectionCount() {
@@ -728,6 +729,12 @@
             const nextStep = Math.min(5, Math.max(1, step))
             if (nextStep > highestVisitedWizardStep) return
             currentWizardStep = nextStep
+            if (currentWizardStep === 5) {
+                // Recompute from the live form before rendering Review & Queue.
+                // This prevents stale readiness copy after the user has already
+                // selected a valid cluster/system and report sections.
+                syncClusterGuard()
+            }
             wizardPanels.forEach(function (panel) {
                 panel.classList.toggle('hidden', Number(panel.dataset.wizardPanel) !== currentWizardStep)
             })
@@ -803,10 +810,12 @@
             syncForm()
             showWizardStep(1, false)
         })
-        clusterSelect.addEventListener('change', function () {
+        function syncClusterSelection() {
             updateNamespaceOptions('')
             syncClusterGuard()
-        })
+        }
+        clusterSelect.addEventListener('input', syncClusterSelection)
+        clusterSelect.addEventListener('change', syncClusterSelection)
         if (objectStorageSystemSelect) objectStorageSystemSelect.addEventListener('change', syncClusterGuard)
         if (outputFormatSelect) outputFormatSelect.addEventListener('change', syncOutputFormatMode)
         if (periodSelect) {
@@ -826,6 +835,7 @@
                 setSelectedSections(allSections)
                 renderSectionList()
                 syncReportTypeSummary()
+                syncClusterGuard()
             })
         }
         if (resetDefaultSectionsButton) {
@@ -833,6 +843,7 @@
                 setSelectedSections(defaultSectionsByReportType[reportTypeSelect.value] || [])
                 renderSectionList()
                 syncReportTypeSummary()
+                syncClusterGuard()
             })
         }
         if (wizardBackButton) {
