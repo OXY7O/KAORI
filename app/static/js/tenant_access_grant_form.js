@@ -1,6 +1,5 @@
 ;(() => {
-    const selectedOption = (select) =>
-        select instanceof HTMLSelectElement ? select.selectedOptions[0] || null : null
+    const selectedOption = (select) => (select instanceof HTMLSelectElement ? select.selectedOptions[0] || null : null)
 
     const optionText = (select, fallback = '—') => {
         const option = selectedOption(select)
@@ -71,7 +70,7 @@
             namespace,
             environmentCount,
             namespaceCount,
-        },
+        }
     ) => {
         const profile = form.querySelector('[data-access-profile]')
         const scope = form.querySelector('[data-access-scope]')
@@ -105,14 +104,11 @@
         let providerMessage =
             'Select a Membership to resolve provider authority. KAORI validates Tenant and scope before commit.'
         if (tenantId && providerKey && providerKey !== 'native_kubernetes') {
-            providerMessage =
-                `${tenantName} uses Capsule authority. Access Grant reconciliation is not admitted yet, so provider mutation remains blocked.`
+            providerMessage = `${tenantName} uses Capsule authority. Access Grant reconciliation is not admitted yet, so provider mutation remains blocked.`
         } else if (tenantId && scopeValue === 'namespace' && namespaceCount === 0) {
-            providerMessage =
-                `No governed Namespace exists in ${tenantName}. Provision a Namespace before applying Namespace-scoped access.`
+            providerMessage = `No governed Namespace exists in ${tenantName}. Provision a Namespace before applying Namespace-scoped access.`
         } else if (tenantId && scopeValue === 'environment' && environmentCount === 0) {
-            providerMessage =
-                `No governed Environment target is available in ${tenantName}. The grant remains blocked until a valid target exists.`
+            providerMessage = `No governed Environment target is available in ${tenantName}. The grant remains blocked until a valid target exists.`
         } else if (tenantId) {
             providerMessage =
                 'Native Kubernetes authority selected. KAORI commits the grant and reconciles namespaced RBAC only within this Tenant and scope.'

@@ -37,10 +37,7 @@
         const previewRect = preview.getBoundingClientRect()
         const placement = root.dataset.kaoriInfoTipPlacement || 'left'
 
-        let left =
-            placement === 'right'
-                ? triggerRect.left
-                : triggerRect.right - previewRect.width
+        let left = placement === 'right' ? triggerRect.left : triggerRect.right - previewRect.width
         left = Math.min(
             Math.max(left, viewportMargin),
             Math.max(viewportMargin, window.innerWidth - previewRect.width - viewportMargin)
@@ -107,10 +104,7 @@
         const related = event.relatedTarget
         const root = event.target.closest?.(rootSelector)
         if (root instanceof HTMLElement && active.root === root) {
-            if (
-                related instanceof Node &&
-                (active.root.contains(related) || active.preview.contains(related))
-            ) {
+            if (related instanceof Node && (active.root.contains(related) || active.preview.contains(related))) {
                 return
             }
             hideActive()
@@ -118,10 +112,7 @@
         }
 
         if (active.preview.contains(event.target)) {
-            if (
-                related instanceof Node &&
-                (active.preview.contains(related) || active.root.contains(related))
-            ) {
+            if (related instanceof Node && (active.preview.contains(related) || active.root.contains(related))) {
                 return
             }
             hideActive()
@@ -141,10 +132,7 @@
         if (!(trigger instanceof HTMLElement) || trigger !== active.trigger) return
 
         const related = event.relatedTarget
-        if (
-            related instanceof Node &&
-            (active.root.contains(related) || active.preview.contains(related))
-        ) {
+        if (related instanceof Node && (active.root.contains(related) || active.preview.contains(related))) {
             return
         }
         hideActive()
