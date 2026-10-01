@@ -163,7 +163,7 @@ def _observed_source(observation: dict[str, Any], kind: str) -> dict[str, str] |
 def _expected_source(record: TenantNamespace, kind: str) -> dict[str, str] | None:
     evidence = dict(record.provisioning_evidence_json or {})
     managed_names = evidence.get('managed_resource_names')
-    if allocation_control_state(record) == 'kaori_managed' and isinstance(managed_names, dict):
+    if allocation_control_state(record) in {'kaori_managed', 'kaori_managed_policy'} and isinstance(managed_names, dict):
         name = str(managed_names.get('quota' if kind == 'ResourceQuota' else 'limit_range') or '').strip()
         if name:
             return {'kind': kind, 'name': name, 'uid': '', 'resource_version': ''}
@@ -468,12 +468,7 @@ def reconcile_adopted_namespace_policy(
         raise ValueError(
             'Capsule namespace policy takeover requires at most one authoritative LimitRange source.'
         )
-    limit_expected = limit_sources[0] if limit_sources else None
-
-    if record.effective_hash and str(before.get('effective_hash') or '') != str(record.effective_hash):
-        raise ValueError(
-            'Live namespace policy changed since adoption observation; refresh Discovery before takeover.'
-        )
+    limit_expected = _expected_source(record, 'LimitRange')
 
     mutation_started = False
     try:
