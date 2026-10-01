@@ -270,7 +270,7 @@ def test_native_observation_fails_closed_on_unsupported_limit_range_constraints(
 
 
 
-def test_native_observation_maps_pvc_storage_limitrange_without_claiming_quota_authority():
+def test_native_observation_normalizes_pvc_storage_limitrange_as_managed_policy():
     pvc_limit = SimpleNamespace(
         type='PersistentVolumeClaim',
         default={},
@@ -296,11 +296,11 @@ def test_native_observation_maps_pvc_storage_limitrange_without_claiming_quota_a
     assert observed['unsupported_dimensions'] == []
     assert observed['quota'] == {}
     assert observed['limits'] == {}
-    assert observed['external_constraint_details'] == observed['external_limit_constraints']
-    constraint = observed['external_limit_constraints'][0]
-    assert constraint['constraint_type'] == 'pvc_storage_limit_range'
-    assert constraint['fields']['min']['storage'] == '2Gi'
-    assert constraint['fields']['max']['storage'] == '50Gi'
+    assert observed['storage_policy'] == {'min': '2Gi', 'max': '50Gi'}
+    assert observed['external_constraint_details'] == []
+    assert observed['external_limit_constraints'] == []
+    assert any(item['key'] == 'pvc.min.storage' and item['value'] == '2Gi' for item in observed['display_values'])
+    assert any(item['key'] == 'pvc.max.storage' and item['value'] == '50Gi' for item in observed['display_values'])
 
 
 
@@ -393,6 +393,10 @@ def test_capsule_tenant_quota_maps_namespace_pvc_limitrange_as_preserved_constra
     assert observed['authority_ambiguous_dimensions'] == []
     assert observed['external_constraints'] == []
     assert observed['correlated_namespaces'][0]['allocation']['unsupported_dimensions'] == []
+    assert observed['correlated_namespaces'][0]['allocation']['storage_policy'] == {
+        'min': '1Gi',
+        'max': '100Gi',
+    }
 
     constraint = observed['external_constraint_details'][0]
     assert constraint['constraint_type'] == 'pvc_storage_limit_range'
@@ -432,4 +436,34 @@ def test_capsule_scoped_resource_quota_item_blocks_governance_authority() -> Non
     assert any(
         'Tenant.spec.resourceQuotas.items[0].scopes' in item
         for item in observed['authority_unsupported_dimensions']
+    )
+
+
+def test_native_observation_rejects_ambiguous_pvc_storage_policy_sources() -> None:
+    def pvc_limit(name: str, minimum: str):
+        return SimpleNamespace(
+            metadata=_metadata(name),
+            spec=SimpleNamespace(
+                limits=[
+                    SimpleNamespace(
+                        type='PersistentVolumeClaim',
+                        default={},
+                        default_request={},
+                        min={'storage': minimum},
+                        max={},
+                        max_limit_request_ratio={},
+                    )
+                ]
+            ),
+        )
+
+    api = FakeCoreApi(limit_ranges={'api-prod': [pvc_limit('a', '1Gi'), pvc_limit('b', '2Gi')]})
+
+    observed = observe_native_namespace_allocation(api, 'api-prod')
+
+    assert observed['control_state'] == 'control_unavailable'
+    assert observed['storage_policy'] == {}
+    assert any(
+        'pvc.min.storage is defined by multiple LimitRange sources' in item
+        for item in observed['ambiguous_dimensions']
     )
