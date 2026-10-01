@@ -270,7 +270,7 @@ Provider observation
 → Reapply KAORI Intent OR Accept Provider State
 ```
 
-Adoption itself is always read-only. Supported provider values are captured into a provider-equivalent Custom baseline profile and Namespace allocation snapshot. Therefore an unchanged adopted workload starts with desired values equivalent to the live provider instead of manufacturing drift.
+Adoption itself is always read-only. Supported provider values are captured only into the committed observed Namespace baseline. During an explicit governance cutover, the operator can choose **Use current provider baseline**; KAORI then materializes a Custom Resource Profile from that snapshot inside the same governed transaction. Therefore an unchanged takeover starts with desired values equivalent to the live provider without turning adoption itself into KAORI-authored desired intent or manufacturing drift.
 
 For Native Kubernetes allocation governance, ResourceQuota, Container LimitRange defaults, and admitted PersistentVolumeClaim LimitRange storage fields share the same lifecycle. Manual provider changes after takeover are dimension-level drift.
 
