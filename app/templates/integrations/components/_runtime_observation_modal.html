@@ -27,7 +27,7 @@
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Runtime Decision</p>
                                 <h3 class="mt-1 text-lg font-semibold text-content-primary">{{ row.effective_status_label }}</h3>
-                                <p class="mt-2 max-w-3xl text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ row.summary }}</p>
+                                <p class="mt-2 max-w-4xl text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ row.decision_summary|default(row.summary, true) }}</p>
                             </div>
                         </div>
                         <span class="shrink-0">{{ integration_status(health_tone, row.effective_status_label, display='indicator') }}</span>
