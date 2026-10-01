@@ -143,7 +143,7 @@ def _merge_limit_sources(
                             unsupported.append(f'{source_name}:pvc.{field}.{key}')
                             unsupported_fields.setdefault(field, {})[str(key)] = rendered
                             continue
-                        if field == 'max_limit_request_ratio':
+                        if field not in {'min', 'max'}:
                             unsupported.append(f'{source_name}:pvc.{field}.storage')
                             unsupported_fields.setdefault(field, {})['storage'] = rendered
                             continue
@@ -311,10 +311,8 @@ def _display_values(
     storage_labels = {
         'min': 'Min PVC Size',
         'max': 'Max PVC Size',
-        'default_request': 'PVC Default Request',
-        'default': 'PVC Default Limit',
     }
-    for field in ('min', 'max', 'default_request', 'default'):
+    for field in ('min', 'max'):
         if field in (storage_policy or {}):
             rows.append({
                 'key': f'pvc.{field}.storage',
