@@ -255,15 +255,20 @@
         const currentProfile = form.querySelector('[data-tenant-allocation-current-profile]')
         const currentCpu = form.querySelector('[data-tenant-allocation-current-cpu]')
         const currentMemory = form.querySelector('[data-tenant-allocation-current-memory]')
+        const currentPods = form.querySelector('[data-tenant-allocation-current-pods]')
+        const currentStorage = form.querySelector('[data-tenant-allocation-current-storage]')
         const currentPvcMin = form.querySelector('[data-tenant-allocation-current-pvc-min]')
         const currentPvcMax = form.querySelector('[data-tenant-allocation-current-pvc-max]')
         const proposedProfile = form.querySelector('[data-tenant-allocation-proposed-profile]')
         const proposedCpu = form.querySelector('[data-tenant-allocation-proposed-cpu]')
         const proposedMemory = form.querySelector('[data-tenant-allocation-proposed-memory]')
+        const proposedPods = form.querySelector('[data-tenant-allocation-proposed-pods]')
+        const proposedStorage = form.querySelector('[data-tenant-allocation-proposed-storage]')
         const proposedPvcMin = form.querySelector('[data-tenant-allocation-proposed-pvc-min]')
         const proposedPvcMax = form.querySelector('[data-tenant-allocation-proposed-pvc-max]')
 
         const requestValue = (valueSet, resource) => valueSet?.quota?.[`requests.${resource}`] || 'Unbounded'
+        const quotaValue = (valueSet, field) => valueSet?.quota?.[field] || 'Unbounded'
         const storageValue = (valueSet, field) => valueSet?.storage_policy?.[field] || 'Unbounded'
 
         const renderAllocationChange = ({preferCurrentProfile = false} = {}) => {
@@ -293,11 +298,15 @@
             }
             if (currentCpu) currentCpu.textContent = current ? requestValue(current, 'cpu') : '—'
             if (currentMemory) currentMemory.textContent = current ? requestValue(current, 'memory') : '—'
+            if (currentPods) currentPods.textContent = current ? quotaValue(current, 'pods') : '—'
+            if (currentStorage) currentStorage.textContent = current ? requestValue(current, 'storage') : '—'
             if (currentPvcMin) currentPvcMin.textContent = current ? storageValue(current, 'min') : '—'
             if (currentPvcMax) currentPvcMax.textContent = current ? storageValue(current, 'max') : '—'
             if (proposedProfile) proposedProfile.textContent = proposed ? proposedLabel : '—'
             if (proposedCpu) proposedCpu.textContent = proposed ? requestValue(proposed, 'cpu') : '—'
             if (proposedMemory) proposedMemory.textContent = proposed ? requestValue(proposed, 'memory') : '—'
+            if (proposedPods) proposedPods.textContent = proposed ? quotaValue(proposed, 'pods') : '—'
+            if (proposedStorage) proposedStorage.textContent = proposed ? requestValue(proposed, 'storage') : '—'
             if (proposedPvcMin) proposedPvcMin.textContent = proposed ? storageValue(proposed, 'min') : '—'
             if (proposedPvcMax) proposedPvcMax.textContent = proposed ? storageValue(proposed, 'max') : '—'
         }
