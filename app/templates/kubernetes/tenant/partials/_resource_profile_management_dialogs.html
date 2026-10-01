@@ -259,25 +259,52 @@
                         </div>
                     </div>
                     <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                        <h3 class="text-sm font-semibold text-content-primary">Quota Guardrails</h3>
+                        <h3 class="text-sm font-semibold text-content-primary">Compute &amp; Workload</h3>
                         <dl class="mt-4 grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:grid-cols-5">
                             {% for label, value in [
                                 ('CPU Requests', profile.quota_hard_json.get('requests.cpu')),
                                 ('CPU Limits', profile.quota_hard_json.get('limits.cpu')),
                                 ('Memory Requests', profile.quota_hard_json.get('requests.memory')),
                                 ('Memory Limits', profile.quota_hard_json.get('limits.memory')),
-                                ('Pods', profile.quota_hard_json.get('pods')),
+                                ('Pods', profile.quota_hard_json.get('pods'))
+                                ] %}
+                                <div class="bg-surface-card p-3">
+                                    <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
+                                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value or 'Not Managed' }}</dd>
+                                </div>
+                            {% endfor %}
+                        </dl>
+                    </section>
+                    <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                        <h3 class="text-sm font-semibold text-content-primary">Storage Guardrails</h3>
+                        {% set storage_policy = profile.storage_policy_json or {} %}
+                        <dl class="mt-4 grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:grid-cols-3">
+                            {% for label, value in [
                                 ('PVCs', profile.quota_hard_json.get('persistentvolumeclaims')),
-                                ('Storage', profile.quota_hard_json.get('requests.storage')),
+                                ('Total Storage', profile.quota_hard_json.get('requests.storage')),
+                                ('Min PVC Size', storage_policy.get('min')),
+                                ('Max PVC Size', storage_policy.get('max')),
+                                ('PVC Default Request', storage_policy.get('default_request')),
+                                ('PVC Default Limit', storage_policy.get('default'))
+                                ] %}
+                                <div class="bg-surface-card p-3">
+                                    <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
+                                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value or 'Not Managed' }}</dd>
+                                </div>
+                            {% endfor %}
+                        </dl>
+                    </section>
+                    <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                        <h3 class="text-sm font-semibold text-content-primary">Object Limits</h3>
+                        <dl class="mt-4 grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-3">
+                            {% for label, value in [
                                 ('Services', profile.quota_hard_json.get('services')),
                                 ('ConfigMaps', profile.quota_hard_json.get('configmaps')),
                                 ('Secrets', profile.quota_hard_json.get('secrets'))
                                 ] %}
                                 <div class="bg-surface-card p-3">
                                     <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
-                                    <dd class="mt-1 text-sm font-semibold text-content-primary">
-                                        {{ value or 'Not Managed' }}
-                                    </dd>
+                                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value or 'Not Managed' }}</dd>
                                 </div>
                             {% endfor %}
                         </dl>
@@ -293,9 +320,7 @@
                                 ] %}
                                 <div class="bg-surface-card p-3">
                                     <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
-                                    <dd class="mt-1 text-sm font-semibold text-content-primary">
-                                        {{ value or '—' }}
-                                    </dd>
+                                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value or 'Not Managed' }}</dd>
                                 </div>
                             {% endfor %}
                         </dl>
