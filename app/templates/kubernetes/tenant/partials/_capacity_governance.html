@@ -328,8 +328,12 @@
                                                 <div class="flex min-w-0 items-center gap-2">
                                                     <i data-lucide="boxes" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                                                     <p class="text-xs text-content-secondary">
-                                                        <span class="font-semibold text-content-primary">{{ item.committed_namespace_count }}</span>
-                                                        governed namespace{{ '' if item.committed_namespace_count == 1 else 's' }}
+                                                        {% if item.committed_namespace_count %}
+                                                            <span class="font-semibold text-content-primary">{{ item.committed_namespace_count }}</span>
+                                                            governed namespace{{ '' if item.committed_namespace_count == 1 else 's' }}
+                                                        {% else %}
+                                                            No governed namespaces
+                                                        {% endif %}
                                                     </p>
                                                 </div>
                                                 <p class="text-xs text-content-muted">Storage is logical admission capacity.</p>

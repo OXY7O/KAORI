@@ -217,6 +217,7 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert "('Budget', 'gauge', item.display.budget" in capacity
     assert "('Committed', 'layers-3', item.display.committed" in capacity
     assert "('Headroom', 'chart-no-axes-combined', item.display.headroom" in capacity
+    assert 'No governed namespaces' in capacity
     assert "dialog_id = 'capacity-budget-details-'" in capacity
     assert 'space-y-3 p-4' not in capacity
     assert 'section class="space-y-5"' in capacity
