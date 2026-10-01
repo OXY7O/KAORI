@@ -1314,10 +1314,10 @@ def test_legacy_allocation_adoption_is_observed_and_held_until_cutover() -> None
     assert 'allocation = observe_capsule_tenant_allocation' in discovery_service
     assert "namespace_record.desired_hash = None" in discovery_service
     assert "namespace_record.effective_hash = str(allocation['effective_hash'])" in discovery_service
-    assert 'def _create_adopted_baseline_profile(' in discovery_service
-    assert 'profile.storage_policy_json = dict(allocation.get(' in discovery_service
-    assert 'namespace_record.resource_profile = baseline_profile' in discovery_service
+    assert 'def _create_adopted_baseline_profile(' not in discovery_service
     assert 'namespace_record.allocation_storage_policy_json' in discovery_service
+    assert 'def _materialize_adopted_baseline_profile(' in service
+    assert "profile_selector == 'adopted_baseline'" in service
     assert "'allocation_baseline': allocation" in discovery_service
     assert "TenantOwnershipStatus.ADOPTED.value" in discovery_service
 
@@ -1374,6 +1374,8 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     script = read('app/static/js/tenant_resource_profile_presets.js')
     assert 'preferCurrentProfile' in script
     assert 'current?.profile_id' in script
+    assert "profileSelect.value = 'adopted_baseline'" in script
+    assert "profileSelect?.value === 'adopted_baseline'" in script
     assert "valueSet?.storage_policy?.[field]" in script
 
     assert "@tenant_bp.post('/namespace-allocation/cutover')" in routes
@@ -1388,6 +1390,7 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert 'Adopted Baseline · Observed' in cutover_ui
     assert 'KAORI Managed' in cutover_ui
     assert 'Cut Over Governance' in cutover_ui
+    assert 'Use current provider baseline · Custom' in cutover_ui
     assert 'Provider-equivalent baseline; selecting the same profile keeps current values unchanged during takeover.' in cutover_ui
     assert 'data-tenant-allocation-current-pvc-min' in cutover_ui
     assert 'data-tenant-allocation-current-pvc-max' in cutover_ui
