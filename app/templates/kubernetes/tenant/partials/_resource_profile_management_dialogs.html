@@ -160,29 +160,53 @@
                         </section>
                         <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                             <h3 class="text-sm font-semibold text-content-primary">Storage Guardrails</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Namespace storage quota plus per-PVC LimitRange policy.</p>
-                            <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                {% set storage_policy = profile.storage_policy_json or {} %}
-                                {% for name, label, value, placeholder, managed in [
-                                    ('persistentvolumeclaims', 'PVCs', profile.quota_hard_json.get('persistentvolumeclaims') or '', '10', 'persistentvolumeclaims' in (profile.quota_hard_json or {})),
-                                    ('requests_storage', 'Total Storage', profile.quota_hard_json.get('requests.storage') or '', '100Gi', 'requests.storage' in (profile.quota_hard_json or {})),
-                                    ('pvc_min_storage', 'Min PVC Size', storage_policy.get('min') or '', '1Gi', 'min' in storage_policy),
-                                    ('pvc_max_storage', 'Max PVC Size', storage_policy.get('max') or '', '10Gi', 'max' in storage_policy),
-                                    ('pvc_default_request_storage', 'PVC Default Request', storage_policy.get('default_request') or '', '1Gi', 'default_request' in storage_policy),
-                                    ('pvc_default_storage', 'PVC Default Limit', storage_policy.get('default') or '', '10Gi', 'default' in storage_policy)
-                                    ] %}
-                                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                                        <span class="flex min-h-6 items-center justify-between gap-2">
-                                            <label class="text-xs font-semibold text-content-primary">{{ label }}</label>
-                                            <label class="inline-flex items-center gap-1.5 text-[11px] font-medium text-content-muted">
-                                                <input type="checkbox" name="control_{{ name }}" value="1" {% if managed %}checked{% endif %}
-                                                       class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
-                                                Managed
-                                            </label>
-                                        </span>
-                                        <input name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" class="{{ form_field.input_classes() }}">
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Namespace quota and per-PVC request bounds are managed independently.</p>
+                            {% set storage_policy = profile.storage_policy_json or {} %}
+                            <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                                <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
+                                    <p class="text-xs font-semibold text-content-primary">Namespace Quota</p>
+                                    <p class="mt-1 text-[11px] leading-4 text-content-muted">Claim count and cumulative requested storage.</p>
+                                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                                        {% for name, label, value, placeholder, managed in [
+                                            ('persistentvolumeclaims', 'PVCs', profile.quota_hard_json.get('persistentvolumeclaims') or '', '10', 'persistentvolumeclaims' in (profile.quota_hard_json or {})),
+                                            ('requests_storage', 'Total Storage', profile.quota_hard_json.get('requests.storage') or '', '100Gi', 'requests.storage' in (profile.quota_hard_json or {}))
+                                            ] %}
+                                            <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                                <span class="flex min-h-6 items-center justify-between gap-2">
+                                                    <label class="text-xs font-semibold text-content-primary">{{ label }}</label>
+                                                    <label class="inline-flex items-center gap-1.5 text-[11px] font-medium text-content-muted">
+                                                        <input type="checkbox" name="control_{{ name }}" value="1" {% if managed %}checked{% endif %}
+                                                               class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                                        Managed
+                                                    </label>
+                                                </span>
+                                                <input name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" class="{{ form_field.input_classes() }}">
+                                            </div>
+                                        {% endfor %}
                                     </div>
-                                {% endfor %}
+                                </div>
+                                <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
+                                    <p class="text-xs font-semibold text-content-primary">Per-PVC Policy</p>
+                                    <p class="mt-1 text-[11px] leading-4 text-content-muted">Minimum and maximum storage request accepted per PVC.</p>
+                                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                                        {% for name, label, value, placeholder, managed in [
+                                            ('pvc_min_storage', 'Min PVC Size', storage_policy.get('min') or '', '1Gi', 'min' in storage_policy),
+                                            ('pvc_max_storage', 'Max PVC Size', storage_policy.get('max') or '', '10Gi', 'max' in storage_policy)
+                                            ] %}
+                                            <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                                <span class="flex min-h-6 items-center justify-between gap-2">
+                                                    <label class="text-xs font-semibold text-content-primary">{{ label }}</label>
+                                                    <label class="inline-flex items-center gap-1.5 text-[11px] font-medium text-content-muted">
+                                                        <input type="checkbox" name="control_{{ name }}" value="1" {% if managed %}checked{% endif %}
+                                                               class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                                        Managed
+                                                    </label>
+                                                </span>
+                                                <input name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" class="{{ form_field.input_classes() }}">
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
                             </div>
                         </section>
                         <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
@@ -244,9 +268,9 @@
                         Existing Namespace allocations keep their committed source version and effective snapshot. This edit changes only the reusable Custom contract used by future allocation or explicit allocation-change workflows.
                     </div>
                 {% else %}
-                    <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-4 py-3">
+                    <div class="rounded-xl border border-brand-outline bg-kaori-primary/15 px-4 py-3 dark:bg-kaori-primary/25">
                         <div class="flex items-start gap-3">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-primary/15 text-kaori-primary dark:bg-kaori-primary/25"
                                   aria-hidden="true">
                                 <i data-lucide="lock-keyhole" class="h-4 w-4"></i>
                             </span>
@@ -278,21 +302,40 @@
                     <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                         <h3 class="text-sm font-semibold text-content-primary">Storage Guardrails</h3>
                         {% set storage_policy = profile.storage_policy_json or {} %}
-                        <dl class="mt-4 grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:grid-cols-3">
-                            {% for label, value in [
-                                ('PVCs', profile.quota_hard_json.get('persistentvolumeclaims')),
-                                ('Total Storage', profile.quota_hard_json.get('requests.storage')),
-                                ('Min PVC Size', storage_policy.get('min')),
-                                ('Max PVC Size', storage_policy.get('max')),
-                                ('PVC Default Request', storage_policy.get('default_request')),
-                                ('PVC Default Limit', storage_policy.get('default'))
-                                ] %}
-                                <div class="bg-surface-card p-3">
-                                    <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
-                                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value or 'Not Managed' }}</dd>
+                        <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                            <div class="overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle">
+                                <div class="bg-surface-elevated px-3 py-2.5">
+                                    <p class="text-xs font-semibold text-content-primary">Namespace Quota</p>
                                 </div>
-                            {% endfor %}
-                        </dl>
+                                <dl class="grid gap-px sm:grid-cols-2">
+                                    {% for label, value in [
+                                        ('PVCs', profile.quota_hard_json.get('persistentvolumeclaims')),
+                                        ('Total Storage', profile.quota_hard_json.get('requests.storage'))
+                                        ] %}
+                                        <div class="bg-surface-card p-3">
+                                            <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
+                                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value or 'Not Managed' }}</dd>
+                                        </div>
+                                    {% endfor %}
+                                </dl>
+                            </div>
+                            <div class="overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle">
+                                <div class="bg-surface-elevated px-3 py-2.5">
+                                    <p class="text-xs font-semibold text-content-primary">Per-PVC Policy</p>
+                                </div>
+                                <dl class="grid gap-px sm:grid-cols-2">
+                                    {% for label, value in [
+                                        ('Min PVC Size', storage_policy.get('min')),
+                                        ('Max PVC Size', storage_policy.get('max'))
+                                        ] %}
+                                        <div class="bg-surface-card p-3">
+                                            <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
+                                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value or 'Not Managed' }}</dd>
+                                        </div>
+                                    {% endfor %}
+                                </dl>
+                            </div>
+                        </div>
                     </section>
                     <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                         <h3 class="text-sm font-semibold text-content-primary">Object Limits</h3>
