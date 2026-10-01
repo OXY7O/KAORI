@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import uuid
 from collections.abc import Mapping
 from typing import Any
 
@@ -1325,54 +1326,87 @@ def change_native_namespace_allocation_committed(source: Mapping[str, Any]) -> T
         raise
 
 
+def _materialize_adopted_baseline_profile(record: TenantNamespace) -> TenantResourceProfile:
+    evidence = record.provisioning_evidence_json or {}
+    allocation = evidence.get('allocation')
+    allocation = dict(allocation) if isinstance(allocation, Mapping) else {}
+    lineage = allocation.get('profile_lineage')
+    lineage = dict(lineage) if isinstance(lineage, Mapping) else {}
+
+    profile = TenantResourceProfile()
+    profile.public_id = str(uuid.uuid4())
+    profile.name = f'Adopted {record.namespace} Baseline · {record.id}'
+    profile.profile_class = TenantResourceProfileClass.CUSTOM.value
+    profile.version = 1
+    profile.base_preset_class = (
+        str(lineage.get('profile_class') or '').strip()
+        if lineage.get('kind') == 'kaori_preset'
+        else None
+    )
+    profile.base_preset_version = (
+        int(lineage.get('profile_version'))
+        if profile.base_preset_class and lineage.get('profile_version') is not None
+        else None
+    )
+    profile.description = (
+        'Explicit governance-cutover profile materialized from the adopted provider baseline. '
+        'No provider value change is requested by this baseline.'
+    )
+    profile.quota_hard_json = dict(record.allocation_quota_json or {})
+    profile.limit_defaults_json = dict(record.allocation_limit_defaults_json or {})
+    profile.storage_policy_json = dict(record.allocation_storage_policy_json or {})
+    profile.advanced_controls_json = {}
+    profile.enabled = True
+    db.session.add(profile)
+    db.session.flush()
+    return profile
+
+
 def cutover_adopted_namespace_allocation(source: Mapping[str, Any]) -> TenantNamespace:
-    try:
-        namespace_id = int(_text(source, 'tenant_namespace_id'))
-        profile_id = int(_text(source, 'resource_profile_id'))
-    except ValueError as exc:
-        raise ValueError('Select an adopted Tenant namespace and Resource Profile for governance cutover.') from exc
-
+    namespace_id = _integer(source, 'tenant_namespace_id')
     record = db.session.get(TenantNamespace, namespace_id)
-    profile = db.session.get(TenantResourceProfile, profile_id)
     if record is None:
-        raise ValueError('Selected Tenant namespace no longer exists.')
-    if profile is None or not profile.enabled:
-        raise ValueError('Selected Resource Profile is unavailable.')
-    if record.environment.tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
-        raise ValueError('Tenant is not Ready; allocation governance cutover is unavailable during teardown.')
+        raise ValueError('Select an adopted Tenant namespace.')
 
+    profile_selector = _text(source, 'resource_profile_id')
+    if profile_selector == 'adopted_baseline':
+        profile = _materialize_adopted_baseline_profile(record)
+    else:
+        profile_id = _integer(source, 'resource_profile_id')
+        profile = db.session.get(TenantResourceProfile, profile_id)
+        if profile is None or not profile.enabled:
+            raise ValueError('Select an enabled Resource Profile.')
+
+    if record.ownership_status != TenantOwnershipStatus.ADOPTED.value:
+        raise ValueError('Allocation governance cutover requires an Adopted Tenant namespace.')
+    tenant = record.environment.tenant
+    if tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
+        raise ValueError('Tenant is not Ready; allocation governance cutover is frozen during teardown.')
+    attachment_controls = _validate_resource_profile_attachment_controls(profile, tenant)
     cutover = build_allocation_cutover_state(record)
     if not cutover['supported']:
         raise ValueError(str(cutover['reason']))
 
-    attachment_controls = _validate_resource_profile_attachment_controls(profile, record.environment.tenant)
     quota, limits, storage_policy, customized = _namespace_allocation_values(profile)
     capacity_decision = enforce_existing_namespace_allocation_preflight(
         record=record,
         profile=profile,
         quota_hard=quota,
     )
-    profile_version = (
-        int(RESOURCE_PROFILE_PRESETS[profile.profile_class]['version'])
-        if profile.profile_class in RESOURCE_PROFILE_PRESETS
-        else profile.version
-    )
+    if capacity_decision.decision != TenantCapacityDecisionState.ALLOW.value:
+        raise ValueError(_capacity_decision_message(capacity_decision))
 
-    try:
-        reconcile_adopted_native_allocation(
-            record,
-            profile=profile,
-            resource_profile_version=profile_version,
-            allocation_customized=customized,
-            capacity_decision_id=capacity_decision.id,
-            quota_hard=quota,
-            limit_defaults=limits,
-            storage_policy=storage_policy,
-            operation='allocation_governance_cutover',
-        )
-    except (ApiException, ValueError):
-        db.session.commit()
-        raise
+    reconcile_adopted_native_allocation(
+        record,
+        profile=profile,
+        resource_profile_version=profile.version,
+        allocation_customized=customized,
+        capacity_decision_id=capacity_decision.id,
+        quota_hard=quota,
+        limit_defaults=limits,
+        storage_policy=storage_policy,
+        operation='allocation_governance_cutover',
+    )
     evidence = dict(record.provisioning_evidence_json or {})
     evidence['advanced_profile_controls'] = {
         'source_profile_id': profile.public_id,
@@ -1380,6 +1414,13 @@ def cutover_adopted_namespace_allocation(source: Mapping[str, Any]) -> TenantNam
         'provider_key': record.environment.tenant.provider_key,
         'controls': attachment_controls,
     }
+    if profile_selector == 'adopted_baseline':
+        evidence['baseline_profile_materialization'] = {
+            'profile_id': profile.public_id,
+            'profile_version': profile.version,
+            'source': 'adopted_provider_baseline',
+            'provider_value_change_requested': False,
+        }
     record.provisioning_evidence_json = evidence
     db.session.commit()
     return record
