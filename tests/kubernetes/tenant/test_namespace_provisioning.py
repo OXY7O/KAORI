@@ -66,6 +66,7 @@ def _desired():
             'default': {'cpu': '500m'},
             'default_request': {'cpu': '100m'},
         },
+        'storage_policy': {},
         'provider_key': 'native_kubernetes',
     }
 
@@ -104,7 +105,7 @@ def test_unbounded_allocation_removes_kaori_managed_quota_and_limits() -> None:
     provisioning._upsert_quota(api, desired)
     provisioning._upsert_limit_range(api, desired)
 
-    unbounded = {**desired, 'quota': {}, 'limits': {}}
+    unbounded = {**desired, 'quota': {}, 'limits': {}, 'storage_policy': {}}
     provisioning._upsert_quota(api, unbounded)
     provisioning._upsert_limit_range(api, unbounded)
 
@@ -132,6 +133,7 @@ def test_desired_contract_can_use_frozen_allocation_snapshot() -> None:
 
     assert desired['quota'] == {'requests.cpu': '3'}
     assert desired['limits'] == {}
+    assert desired['storage_policy'] == {}
 
 
 def test_namespace_delete_observation_surfaces_terminating_finalizers() -> None:
@@ -161,3 +163,33 @@ def test_namespace_delete_observation_requires_provider_absence() -> None:
     assert evidence['observed_absent'] is True
     assert evidence['phase'] == 'Absent'
     assert evidence['finalizers'] == []
+
+
+def test_native_namespace_limitrange_materializes_container_and_pvc_policy() -> None:
+    api = FakeCoreApi()
+    desired = {
+        **_desired(),
+        'storage_policy': {
+            'min': '1Gi',
+            'max': '10Gi',
+            'default_request': '2Gi',
+            'default': '8Gi',
+        },
+    }
+
+    provisioning._upsert_namespace(api, desired)
+    provisioning._upsert_quota(api, desired)
+    provisioning._upsert_limit_range(api, desired)
+
+    limit_range = api.limits[('payments-dev', 'kaori-tenant-limits')]
+    items = {item.type: item for item in limit_range.spec.limits}
+
+    assert set(items) == {'Container', 'PersistentVolumeClaim'}
+    assert items['PersistentVolumeClaim'].min == {'storage': '1Gi'}
+    assert items['PersistentVolumeClaim'].max == {'storage': '10Gi'}
+    assert items['PersistentVolumeClaim'].default_request == {'storage': '2Gi'}
+    assert items['PersistentVolumeClaim'].default == {'storage': '8Gi'}
+
+    effective = provisioning._effective_contract(api, desired)
+    assert effective['storage_policy'] == desired['storage_policy']
+    assert effective == desired
