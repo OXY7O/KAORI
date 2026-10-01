@@ -112,9 +112,9 @@
             <aside class="{{ form_context.rail_classes() }}"
                    aria-label="ConfigMap deletion guidance">
                 {% set configmap_delete_flow = [('Select Object', 'Bind one live ConfigMap and its current resourceVersion.'), ('Review Impact', 'Inspect live identity, keys, and best-effort workload references.'), ('Validate Deletion', 'Verify exact name and effective delete authorization without sending DELETE.'), ('Confirm & Delete', 'Use the short-lived validation receipt to remove the same resource once.')] %}
-                {{ info_flow.render('ConfigMap Deletion Flow', 'A destructive path that keeps review, validation, and final confirmation separate.', configmap_delete_flow, icon='trash-2', note='Final deletion is irreversible from KAORI and must target the same validated resourceVersion.', note_icon='triangle-alert', open_by_default=true) }}
+                {{ info_flow.render('ConfigMap Deletion Flow', 'Review, validate, then confirm deletion.', configmap_delete_flow, icon='trash-2', note='Final deletion is irreversible from KAORI and must target the same validated resourceVersion.', note_icon='triangle-alert', open_by_default=true) }}
                 {% set configmap_delete_guardrails = [('eye', 'Live Review', 'The target is loaded directly from Kubernetes before deletion.'), ('shield-check', 'No DELETE in Validation', 'Preflight checks identity and authorization without mutation.'), ('keyboard', 'Exact Confirmation', 'The selected ConfigMap name must be entered exactly.'), ('history', 'Resource Bound', 'The signed receipt binds deletion to the reviewed resourceVersion.')] %}
-                {{ information_guide_card.render('Deletion Safety Contract', 'Destructive controls that remain mandatory through final confirmation.', configmap_delete_guardrails, icon='shield-alert', open_by_default=false) }}
+                {{ information_guide_card.render('Deletion Safety Contract', 'Mandatory controls through final confirmation.', configmap_delete_guardrails, icon='shield-alert', open_by_default=false) }}
             </aside>
         </form>
     </div>
