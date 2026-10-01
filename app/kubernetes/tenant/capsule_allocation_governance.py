@@ -125,11 +125,7 @@ def build_capsule_shared_allocation_cutover_state(tenant: Tenant) -> dict[str, A
     baseline = _allocation_baseline(tenant)
     global_quota = baseline.get('global_resource_quota')
     global_quota = dict(global_quota) if isinstance(global_quota, Mapping) else {}
-    sources = [
-        dict(item)
-        for item in list(global_quota.get('source_resources') or [])
-        if isinstance(item, Mapping)
-    ]
+    sources = [dict(item) for item in list(global_quota.get('source_resources') or []) if isinstance(item, Mapping)]
     reasons: list[str] = []
 
     if tenant.provider_key != 'capsule' or tenant.reconciliation_authority != 'capsule':
@@ -379,12 +375,16 @@ def cutover_capsule_global_quota_allocation(
         cluster = db.session.get(Cluster, tenant.cluster_id)
         if cluster is None:
             raise ValueError('Tenant cluster no longer exists after provider reconciliation.')
-        verified = runtime_adapter.build_client(cluster).custom_objects_api().get_cluster_custom_object(
-            _CAPSULE_GROUP,
-            _REQUIRED_API_VERSION,
-            _GLOBAL_QUOTA_PLURAL,
-            intent.resource_name,
-            _request_timeout=5,
+        verified = (
+            runtime_adapter.build_client(cluster)
+            .custom_objects_api()
+            .get_cluster_custom_object(
+                _CAPSULE_GROUP,
+                _REQUIRED_API_VERSION,
+                _GLOBAL_QUOTA_PLURAL,
+                intent.resource_name,
+                _request_timeout=5,
+            )
         )
         verified_source = _source_reference(verified if isinstance(verified, Mapping) else {})
         intent.reconciliation_evidence_json = {
@@ -507,8 +507,7 @@ def observe_managed_capsule_shared_allocation(
     except ValueError as exc:
         normalized_observed_quota = observed_quota
         blocked_reasons.append(
-            'Observed GlobalResourceQuota contains unsupported or invalid allocation dimensions: '
-            + str(exc)
+            'Observed GlobalResourceQuota contains unsupported or invalid allocation dimensions: ' + str(exc)
         )
 
     current_spec = current.get('spec') if isinstance(current, Mapping) else {}
@@ -577,9 +576,8 @@ def apply_managed_capsule_shared_allocation_drift_observation() -> dict[str, Any
             )
             continue
 
-        prior_drift = (
-            intent.status == TenantAdvancedCapabilityStatus.DRIFTED.value
-            and isinstance(evidence.get('allocation_drift'), Mapping)
+        prior_drift = intent.status == TenantAdvancedCapabilityStatus.DRIFTED.value and isinstance(
+            evidence.get('allocation_drift'), Mapping
         )
         if observation['differences'] or observation['blocked_reasons'] or prior_drift:
             intent.status = TenantAdvancedCapabilityStatus.DRIFTED.value
@@ -680,12 +678,16 @@ def reapply_capsule_shared_allocation_intent(
     cluster = db.session.get(Cluster, intent.tenant.cluster_id)
     if cluster is None:
         raise ValueError('Tenant cluster no longer exists.')
-    verified = runtime_adapter.build_client(cluster).custom_objects_api().get_cluster_custom_object(
-        _CAPSULE_GROUP,
-        _REQUIRED_API_VERSION,
-        _GLOBAL_QUOTA_PLURAL,
-        intent.resource_name,
-        _request_timeout=5,
+    verified = (
+        runtime_adapter.build_client(cluster)
+        .custom_objects_api()
+        .get_cluster_custom_object(
+            _CAPSULE_GROUP,
+            _REQUIRED_API_VERSION,
+            _GLOBAL_QUOTA_PLURAL,
+            intent.resource_name,
+            _request_timeout=5,
+        )
     )
     verified_source = _source_reference(verified if isinstance(verified, Mapping) else {})
     evidence = dict(intent.reconciliation_evidence_json or {})
@@ -829,10 +831,7 @@ def get_capsule_shared_allocation_context(
         .order_by(Tenant.name.asc())
         .all()
     )
-    cutover_state = {
-        tenant.id: build_capsule_shared_allocation_cutover_state(tenant)
-        for tenant in tenants
-    }
+    cutover_state = {tenant.id: build_capsule_shared_allocation_cutover_state(tenant) for tenant in tenants}
     shared_intents = (
         TenantAdvancedCapabilityIntent.query.filter(
             TenantAdvancedCapabilityIntent.resource_kind == 'global_resource_quota',
@@ -846,9 +845,7 @@ def get_capsule_shared_allocation_context(
         for intent in shared_intents
         if (intent.reconciliation_evidence_json or {}).get('allocation_governance_scope') == _SHARED_SCOPE
     ]
-    drifted = [
-        intent for intent in governed if intent.status == TenantAdvancedCapabilityStatus.DRIFTED.value
-    ]
+    drifted = [intent for intent in governed if intent.status == TenantAdvancedCapabilityStatus.DRIFTED.value]
     visible_drifted, drift_pagination = paginate_sequence(
         drifted,
         page=drift_page,
@@ -862,7 +859,6 @@ def get_capsule_shared_allocation_context(
         'capsule_shared_drift_intents': visible_drifted,
         'capsule_shared_drift_pagination': drift_pagination,
         'capsule_shared_drift_state': {
-            str(intent.id): build_capsule_shared_drift_action_state(intent)
-            for intent in visible_drifted
+            str(intent.id): build_capsule_shared_drift_action_state(intent) for intent in visible_drifted
         },
     }
