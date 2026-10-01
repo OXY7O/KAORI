@@ -60,8 +60,8 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'resource-profile-base-tip' not in form
     assert 'KAORI Preset · Fixed' in form
     assert 'data-mode="fixed"' in form
-    assert 'data-[mode=fixed]:border-kaori-primary/20' in form
-    assert 'data-[mode=fixed]:bg-kaori-soft' in form
+    assert 'border border-kaori-primary/20 bg-kaori-soft px-4 py-3 transition-colors' in form
+    assert 'data-[mode=fixed]:bg-kaori-soft' not in form
     assert 'data-[mode=fixed]:bg-kaori-primary/15' not in form
     assert "table_label.special_label('Fixed · Read Only', 'maintenance', 'lock-keyhole')" in form
     assert "table_label.special_label('Custom · Editable', 'maintenance', 'pencil')" in form
@@ -109,8 +109,8 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'data-tenant-advanced-control-group="ingress"' in advanced
     assert 'components/info_tip.html' in advanced
     assert "id_prefix ~ '-overview-tip'" in advanced
-    assert 'Optional governance beyond basic allocation, storage, object limits, and container defaults.' in advanced
-    assert 'Placement is checked at attachment and again before mutation.' in advanced
+    assert 'Scope: optional governance beyond basic allocation, storage, object limits, and container defaults.' in advanced
+    assert 'Provider behavior: the selected Native or Capsule placement is evaluated at attachment and again before mutation' in advanced
     assert "'ingress'" in advanced
     assert 'Ingress exposure governance for namespaces using this profile.' in advanced
     assert "'service-exposure'" in advanced
