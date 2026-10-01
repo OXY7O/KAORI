@@ -42,20 +42,18 @@
             <section class="{{ configmap_ui.surface_shell_classes(configmap_main_classes, true) }}"
                      data-kubernetes-operation-form="configmap-delete">
                 {% set configmap_delete_info = [
-                    'Cluster, Namespace, ConfigMap identity, immutable state, and resourceVersion are read from the selected live Kubernetes target.',
-                    'Validation binds the reviewed target and resourceVersion before the destructive action becomes available.',
-                    'Exact-name confirmation and deletion consequences remain persistent in the form; they are never hidden in this Info Tip.'
+                    "Cluster, Namespace, ConfigMap identity, immutable state, and resourceVersion are read from the selected live Kubernetes target.",
+                    "Validation binds the reviewed target and resourceVersion before the destructive action becomes available.",
+                    "Exact-name confirmation and deletion consequences remain persistent in the form; they are never hidden in this Info Tip."
                 ] %}
-                {{ configmap_ui.section_header(
-                    'trash-2',
-                    'ConfigMap Deletion',
-                    'Select one live ConfigMap, review the represented impact, then validate and confirm removal.',
-                    'critical',
-                    info_id='configmap-delete-guidance-tip',
-                    info_title='ConfigMap deletion guide',
-                    info_text='Live-target selection and validation context for the destructive workflow.',
-                    info_items=configmap_delete_info
-                ) }}
+                {{ configmap_ui.section_header('trash-2',
+                                'ConfigMap Deletion',
+                                'Select one live ConfigMap, review the represented impact, then validate and confirm removal.',
+                                'critical',
+                                info_id='configmap-delete-guidance-tip',
+                                info_title='ConfigMap deletion guide',
+                                info_text='Live-target selection and validation context for the destructive workflow.',
+                                info_items=configmap_delete_info) }}
                 <div class="divide-y divide-outline-subtle">
                     <section class="p-5 sm:p-6">
                         <div class="mb-4 flex items-start gap-3">
