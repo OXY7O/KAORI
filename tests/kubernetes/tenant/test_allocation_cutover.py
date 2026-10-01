@@ -101,7 +101,6 @@ def test_successful_control_state_is_separate_from_namespace_ownership():
     assert state['state'] == 'kaori_managed'
 
 
-
 class _FakeCoreApi:
     def __init__(self):
         self.created_quotas = []
@@ -373,6 +372,7 @@ def test_native_cutover_writes_and_verifies_pvc_storage_policy(monkeypatch) -> N
         'max': '20Gi',
     }
 
+
 def test_storage_only_takeover_keeps_limit_range_and_pvc_policy(monkeypatch) -> None:
     record = _reconcile_record()
     before = {
@@ -409,15 +409,10 @@ def test_storage_only_takeover_keeps_limit_range_and_pvc_policy(monkeypatch) -> 
 
     assert api.created_quotas == []
     assert len(api.created_limit_ranges) == 1
-    pvc_items = [
-        item
-        for item in api.created_limit_ranges[0][1].spec.limits
-        if item.type == 'PersistentVolumeClaim'
-    ]
+    pvc_items = [item for item in api.created_limit_ranges[0][1].spec.limits if item.type == 'PersistentVolumeClaim']
     assert len(pvc_items) == 1
     assert pvc_items[0].min == {'storage': '1Gi'}
     assert pvc_items[0].max == {'storage': '10Gi'}
     assert record.allocation_storage_policy_json == {'min': '1Gi', 'max': '10Gi'}
     assert record.ownership_status == 'managed'
     assert allocation_control_state(record) == 'kaori_managed'
-
