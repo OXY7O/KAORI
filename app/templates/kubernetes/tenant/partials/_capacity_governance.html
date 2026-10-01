@@ -148,7 +148,9 @@
             </div>
         </div>
         <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p class="text-xs leading-5 text-content-muted">Uses fresh committed capacity evidence.</p>
+            <p class="max-w-3xl text-xs leading-5 text-content-muted">
+                Uses fresh committed capacity evidence and recalculates governed CPU, memory, Pod, and logical storage headroom before this cluster policy is saved.
+            </p>
             <button type="submit"
                     {% if not can_manage or not native_available %}disabled aria-disabled="true"{% endif %}
                     class="{{ action_button.classes('primary') }}">
