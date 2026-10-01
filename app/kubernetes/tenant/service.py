@@ -429,6 +429,7 @@ def create_tenant_committed(source: Mapping[str, Any]) -> tuple[Tenant, TenantEn
         _compensate_capsule_create(cleanup_context)
         raise
 
+
 def _control_contract_present(source: Mapping[str, Any]) -> bool:
     return _text(source, 'control_contract_present').lower() in _CONTROL_TRUE_VALUES
 
@@ -1156,7 +1157,6 @@ def update_resource_profile_committed(
     except SQLAlchemyError:
         db.session.rollback()
         raise
-
 
 
 def _resource_profile_rollout_targets(profile_ids: list[int]) -> dict[int, list[dict[str, Any]]]:

@@ -319,6 +319,7 @@ def test_accept_provider_state_commits_live_allocation_without_provider_write(mo
     assert record.provisioning_evidence_json['allocation']['provenance'] == 'accepted_provider_state'
     assert 'allocation_drift' not in record.provisioning_evidence_json
 
+
 def test_pvc_storage_policy_drift_is_dimension_level_and_bidirectional() -> None:
     record = _record()
     observation = {
@@ -420,4 +421,3 @@ def test_capsule_provider_mirrored_pvc_policy_updates_committed_profile_without_
     assert record.provisioning_evidence_json['allocation_control_state'] == 'provider_mirrored_policy'
     assert record.provisioning_evidence_json['provider_policy_mirror']['provider_values_changed'] is True
     assert 'allocation_drift' not in record.provisioning_evidence_json
-
