@@ -9,7 +9,6 @@
     'decision_search': capacity_decision_filters.search,
     'decision_result': capacity_decision_filters.decision
 } %}
-
 <section id="{{ registry_id }}"
          class="{{ table_ui.block_classes(allow_overflow=true) }}"
          aria-label="Tenant capacity decisions">
@@ -19,13 +18,12 @@
                         registry_id,
                         loading_id,
                         capacity_decision_pagination.per_page,
-                        table_ui.action_classes(),
-                        query_params={'view': 'decisions'},
-                        page_param='decision_page',
-                        per_page_param='decision_per_page') }}
+                        table_ui.action_classes() ,
+            query_params={'view': 'decisions'},
+            page_param='decision_page',
+            per_page_param='decision_per_page') }}
         {% endif %}
     {% endset %}
-
     {% set title_info %}
         {{ info_tip.render('tenant-capacity-decision-tip',
                 'Capacity decision',
@@ -36,17 +34,15 @@
                 ],
                 placement='right') }}
     {% endset %}
-
     {{ table_ui.inventory_block_header('shield-check',
-            'Capacity Decisions',
-            'Committed capacity-admission evidence from governed allocation changes.',
-            loading_id,
-            'Refreshing Capacity Decisions',
-            none,
-            none,
-            header_actions=header_actions,
-            title_extra=title_info) }}
-
+        'Capacity Decisions',
+        'Committed capacity-admission evidence from governed allocation changes.',
+        loading_id,
+        'Refreshing Capacity Decisions',
+        none,
+        none,
+        header_actions=header_actions,
+        title_extra=title_info) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
             'tenant.namespace_provisioning',
@@ -64,21 +60,22 @@
                         name="decision_result"
                         class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Decisions</option>
-                    <option value="allow" {% if capacity_decision_filters.decision == 'allow' %}selected{% endif %}>Allow</option>
-                    <option value="block" {% if capacity_decision_filters.decision == 'block' %}selected{% endif %}>Block</option>
+                    <option value="allow"
+                            {% if capacity_decision_filters.decision == 'allow' %}selected{% endif %}>Allow</option>
+                    <option value="block"
+                            {% if capacity_decision_filters.decision == 'block' %}selected{% endif %}>Block</option>
                 </select>
             </div>
             <div>
                 <label for="capacity-decision-search"
                        class="{{ table_ui.filter_label_classes() }}">Search</label>
                 {{ table_ui.search_field('decision_search',
-                    capacity_decision_filters.search,
-                    'Namespace, cluster, operation, or state',
-                    id='capacity-decision-search') }}
+                                capacity_decision_filters.search,
+                                'Namespace, cluster, operation, or state',
+                                id='capacity-decision-search') }}
             </div>
         {% endcall %}
     </div>
-
     <table class="{{ table_ui.table_classes('table-fixed') }}">
         <caption class="sr-only">Tenant Capacity Decisions from committed KAORI evidence.</caption>
         <thead class="{{ table_ui.head_classes() }}">
@@ -121,8 +118,8 @@
                                 <p class="mt-1 text-xs text-content-muted">Observed / legacy decision</p>
                             {% endif %}
                             <p class="mt-1 truncate text-xs text-content-muted"
-                               title="{{ decision.operation|replace('_', ' ')|title }}">
-                                {{ decision.operation|replace('_', ' ')|title }}
+                               title="{{ decision.operation|replace('_', ' ') |title }}">
+                                {{ decision.operation|replace('_', ' ') |title }}
                             </p>
                         </div>
                     </td>
@@ -150,18 +147,17 @@
             {% endfor %}
         </tbody>
     </table>
-
     {% if capacity_decision_pagination.total_items > 0 %}
         {{ registry_ui.footer('tenant.namespace_provisioning',
-                    registry_id,
-                    loading_id,
-                    capacity_decision_pagination,
-                    query_params,
-                    capacity_decision_pagination.allowed_per_page,
-                    resource_label='Decisions',
-                    rows_aria_label='Capacity Decision rows per page',
-                    control_name='capacity-decisions',
-                    page_param='decision_page',
-                    per_page_param='decision_per_page') }}
+                registry_id,
+                loading_id,
+                capacity_decision_pagination,
+                query_params,
+                capacity_decision_pagination.allowed_per_page,
+                resource_label='Decisions',
+                rows_aria_label='Capacity Decision rows per page',
+                control_name='capacity-decisions',
+                page_param='decision_page',
+                per_page_param='decision_per_page') }}
     {% endif %}
 </section>
