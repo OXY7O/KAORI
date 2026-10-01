@@ -251,7 +251,7 @@ def _mutate_quota(
     existing = _read_quota(api, namespace=record.namespace, name=name)
     _verify_existing(existing, expected, kind='ResourceQuota', managed=managed)
 
-    if not desired and not storage_policy:
+    if not desired:
         if existing is not None:
             api.delete_namespaced_resource_quota(
                 name=name,
@@ -323,7 +323,7 @@ def _mutate_limit_range(
     existing = _read_limit_range(api, namespace=record.namespace, name=name)
     _verify_existing(existing, expected, kind='LimitRange', managed=managed)
 
-    if not desired:
+    if not desired and not storage_policy:
         if existing is not None:
             api.delete_namespaced_limit_range(
                 name=name,
