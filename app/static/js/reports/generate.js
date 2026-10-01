@@ -128,9 +128,12 @@
 
         function setReadinessItemTone(icon, status, isReady) {
             if (icon) {
-                icon.className = isReady
-                    ? 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal'
-                    : 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning'
+                icon.setAttribute(
+                    'class',
+                    isReady
+                        ? 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal'
+                        : 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning'
+                )
             }
 
             if (!status) {
@@ -144,9 +147,12 @@
             const statusIcon = status.querySelector('[data-readiness-status-icon]')
             if (statusIcon) {
                 statusIcon.setAttribute('data-lucide', isReady ? 'check' : 'triangle-alert')
-                statusIcon.className = isReady
-                    ? 'h-3 w-3 shrink-0 text-status-normal'
-                    : 'h-3 w-3 shrink-0 text-status-warning'
+                statusIcon.setAttribute(
+                    'class',
+                    isReady
+                        ? 'h-3 w-3 shrink-0 text-status-normal'
+                        : 'h-3 w-3 shrink-0 text-status-warning'
+                )
             }
         }
 
@@ -201,9 +207,12 @@
             }
             if (readinessOverallIcon) {
                 readinessOverallIcon.setAttribute('data-lucide', isReady ? 'circle-check' : 'triangle-alert')
-                readinessOverallIcon.className = isReady
-                    ? 'h-3 w-3 shrink-0 text-status-normal'
-                    : 'h-3 w-3 shrink-0 text-status-warning'
+                readinessOverallIcon.setAttribute(
+                    'class',
+                    isReady
+                        ? 'h-3 w-3 shrink-0 text-status-normal'
+                        : 'h-3 w-3 shrink-0 text-status-warning'
+                )
             }
             if (readinessOverallLabel) {
                 readinessOverallLabel.textContent = isReady ? 'Ready to Queue' : 'Action Required'
@@ -215,9 +224,12 @@
             }
             if (readinessSummaryIcon) {
                 readinessSummaryIcon.setAttribute('data-lucide', isReady ? 'circle-check' : 'circle-alert')
-                readinessSummaryIcon.className = isReady
-                    ? 'mt-0.5 h-4 w-4 shrink-0 text-status-normal'
-                    : 'mt-0.5 h-4 w-4 shrink-0 text-status-warning'
+                readinessSummaryIcon.setAttribute(
+                    'class',
+                    isReady
+                        ? 'mt-0.5 h-4 w-4 shrink-0 text-status-normal'
+                        : 'mt-0.5 h-4 w-4 shrink-0 text-status-warning'
+                )
             }
             if (readinessSummaryText) {
                 readinessSummaryText.textContent = isReady
@@ -231,9 +243,12 @@
             }
             if (previewEligibilityIcon) {
                 previewEligibilityIcon.setAttribute('data-lucide', isReady ? 'circle-check' : 'triangle-alert')
-                previewEligibilityIcon.className = isReady
-                    ? 'h-3 w-3 shrink-0 text-status-normal'
-                    : 'h-3 w-3 shrink-0 text-status-warning'
+                previewEligibilityIcon.setAttribute(
+                    'class',
+                    isReady
+                        ? 'h-3 w-3 shrink-0 text-status-normal'
+                        : 'h-3 w-3 shrink-0 text-status-warning'
+                )
             }
             if (previewEligibilityLabel) {
                 previewEligibilityLabel.textContent = isReady ? 'Ready to Queue' : 'Action Required'

@@ -448,3 +448,16 @@ def test_generate_report_review_recomputes_live_readiness_state() -> None:
 
     update_section = runtime[runtime.index("function updateSelectedSectionFromCheckbox"):runtime.index("function syncSectionCount")]
     assert "syncClusterGuard()" in update_section
+
+
+def test_generate_report_runtime_updates_lucide_svg_classes_safely() -> None:
+    runtime = read(RUNTIME)
+
+    # Lucide replaces <i> nodes with <svg>; Firefox exposes SVGElement.className
+    # as an SVGAnimatedString, so direct assignment throws a getter-only error.
+    assert "statusIcon.className =" not in runtime
+    assert "readinessOverallIcon.className =" not in runtime
+    assert "readinessSummaryIcon.className =" not in runtime
+    assert "previewEligibilityIcon.className =" not in runtime
+    assert "statusIcon.setAttribute(\n                    'class'," in runtime
+    assert "readinessSummaryIcon.setAttribute(\n                    'class'," in runtime
