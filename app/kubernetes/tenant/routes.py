@@ -1121,7 +1121,7 @@ def adopt_discovered_tenant_route():
             status='error',
             title='Tenant Adoption Requires Attention',
             message=str(exc),
-            detail='Discovery adoption is fail-closed and never changes provider resources on validation failure.',
+            detail='Discovery adoption is fail-closed. Governance takeover occurs only after provider-equivalent validation and read-back.',
             metadata={
                 'cluster_id': request.form.get('cluster_id'),
                 'provider_key': request.form.get('provider_key'),
@@ -1133,10 +1133,10 @@ def adopt_discovered_tenant_route():
         _record(
             event_type='kubernetes_tenant_discovery_adopted',
             status='success',
-            title='Tenant Adopted · Observed',
+            title='Tenant Adopted · Managed',
             message=(
-                f'{tenant.name} is adopted into KAORI. Existing provider allocation remains read-only '
-                'until explicit governance cutover.'
+                f'{tenant.name} is adopted into KAORI with supported governance controls managed immediately. '
+                'Observed provider values are preserved as the initial managed baseline.'
             ),
             detail=(
                 f'{environment.environment.title()} · '
@@ -1150,7 +1150,7 @@ def adopt_discovered_tenant_route():
                 'tenant_generation': tenant.generation,
                 'namespace_id': namespace.id if namespace is not None else None,
                 'operation': 'adopt_discovered_tenant',
-                'provider_mutation_performed': False,
+                'provider_mutation_performed': True,
             },
         )
     return _tenant_section_redirect('discovery')
