@@ -654,8 +654,7 @@ def operations():
             {
                 'operations_drift_rows': drift_context['namespaces'],
                 'operations_allocation_drift_state': {
-                    str(item.id): build_allocation_drift_action_state(item)
-                    for item in drift_context['namespaces']
+                    str(item.id): build_allocation_drift_action_state(item) for item in drift_context['namespaces']
                 },
                 'operations_drift_pagination': drift_context['namespace_pagination'],
                 'operations_drift_filters': drift_context['namespace_registry_filters'],
@@ -1371,12 +1370,13 @@ def rollout_resource_profile_route(profile_id: int):
         _record(
             event_type='kubernetes_tenant_resource_profile_rollout_completed',
             status=status,
-            title='Resource Profile Rollout Completed' if not failed else 'Resource Profile Rollout Partially Completed',
+            title='Resource Profile Rollout Completed'
+            if not failed
+            else 'Resource Profile Rollout Partially Completed',
             message=(
                 f'{summary["profile_name"]} v{summary["profile_version"]}: '
                 f'{summary["updated"]} Namespace(s) updated, '
-                f'{summary["already_current"]} already current'
-                + (f', {len(failed)} blocked.' if failed else '.')
+                f'{summary["already_current"]} already current' + (f', {len(failed)} blocked.' if failed else '.')
             ),
             detail=f'Tenant {summary["tenant_name"]}',
             metadata={
@@ -1834,8 +1834,7 @@ def reapply_namespace_allocation_route(namespace_id: int):
             title='Reapply KAORI Intent Failed',
             message=str(exc),
             detail=(
-                'Committed desired allocation remains unchanged; review fresh provider drift evidence '
-                'before retrying.'
+                'Committed desired allocation remains unchanged; review fresh provider drift evidence before retrying.'
             ),
             metadata={
                 'tenant_namespace_id': namespace_id,
