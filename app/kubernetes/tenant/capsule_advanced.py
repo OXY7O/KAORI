@@ -298,9 +298,7 @@ def _write_custom_object(api, intent: TenantAdvancedCapabilityIntent, descriptor
         if expected_uid and current_uid and expected_uid != current_uid:
             raise ValueError('Capsule provider resource UID changed; refresh provider evidence before mutation.')
         if expected_rv and current_rv and expected_rv != current_rv:
-            raise ValueError(
-                'Capsule provider resourceVersion changed; refresh provider evidence before mutation.'
-            )
+            raise ValueError('Capsule provider resourceVersion changed; refresh provider evidence before mutation.')
         if current_rv:
             body.setdefault('metadata', {})['resourceVersion'] = current_rv
 
