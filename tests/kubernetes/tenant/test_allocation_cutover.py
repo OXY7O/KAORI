@@ -163,6 +163,7 @@ def _reconcile_record():
         resource_profile_version=None,
         allocation_quota_json={},
         allocation_limit_defaults_json={},
+        allocation_storage_policy_json={},
         allocation_customized=False,
         capacity_decision_id=None,
     )
@@ -204,6 +205,7 @@ def test_verified_native_cutover_marks_only_allocation_control_managed(monkeypat
         'effective_hash': 'before-hash',
         'quota': {'requests.cpu': '1'},
         'limits': {},
+        'storage_policy': {},
         'source_resources': [],
     }
     after = {
@@ -212,6 +214,7 @@ def test_verified_native_cutover_marks_only_allocation_control_managed(monkeypat
         'effective_hash': 'after-hash',
         'quota': {'requests.cpu': '2'},
         'limits': {},
+        'storage_policy': {},
         'source_resources': [],
     }
     _install_reconcile_fakes(monkeypatch, [before, after])
@@ -244,6 +247,7 @@ def test_readback_mismatch_never_marks_failed_cutover_managed(monkeypatch):
         'effective_hash': 'before-hash',
         'quota': {'requests.cpu': '1'},
         'limits': {},
+        'storage_policy': {},
         'source_resources': [],
     }
     mismatched = {
@@ -252,6 +256,7 @@ def test_readback_mismatch_never_marks_failed_cutover_managed(monkeypatch):
         'effective_hash': 'unexpected-hash',
         'quota': {'requests.cpu': '3'},
         'limits': {},
+        'storage_policy': {},
         'source_resources': [],
     }
     _install_reconcile_fakes(monkeypatch, [before, mismatched])
@@ -286,6 +291,7 @@ def test_live_hash_change_blocks_cutover_before_provider_mutation(monkeypatch):
         'effective_hash': 'changed-out-of-band',
         'quota': {'requests.cpu': '2'},
         'limits': {},
+        'storage_policy': {},
         'source_resources': [],
     }
     api = _install_reconcile_fakes(monkeypatch, [changed_before])
@@ -306,3 +312,50 @@ def test_live_hash_change_blocks_cutover_before_provider_mutation(monkeypatch):
     assert api.created_limit_ranges == []
     assert allocation_control_state(record) == 'adopted_observed'
     assert record.desired_hash is None
+
+
+def test_native_cutover_writes_and_verifies_pvc_storage_policy(monkeypatch) -> None:
+    record = _reconcile_record()
+    before = {
+        'control_state': 'observed',
+        'control_reason': '',
+        'effective_hash': 'before-hash',
+        'quota': {'requests.cpu': '2'},
+        'limits': {},
+        'storage_policy': {'min': '1Gi', 'max': '10Gi'},
+        'source_resources': [],
+    }
+    after = {
+        'control_state': 'observed',
+        'control_reason': '',
+        'effective_hash': 'after-hash',
+        'quota': {'requests.cpu': '2'},
+        'limits': {},
+        'storage_policy': {'min': '2Gi', 'max': '20Gi'},
+        'source_resources': [],
+    }
+    api = _install_reconcile_fakes(monkeypatch, [before, after])
+
+    reconcile_adopted_native_allocation(
+        record,
+        profile=_profile(),
+        resource_profile_version=1,
+        allocation_customized=True,
+        capacity_decision_id=124,
+        quota_hard={'requests.cpu': '2'},
+        limit_defaults={},
+        storage_policy={'min': '2Gi', 'max': '20Gi'},
+        operation='allocation_governance_cutover',
+    )
+
+    assert record.allocation_storage_policy_json == {'min': '2Gi', 'max': '20Gi'}
+    assert len(api.created_limit_ranges) == 1
+    limit_range = api.created_limit_ranges[0][1]
+    pvc_items = [item for item in limit_range.spec.limits if item.type == 'PersistentVolumeClaim']
+    assert len(pvc_items) == 1
+    assert pvc_items[0].min == {'storage': '2Gi'}
+    assert pvc_items[0].max == {'storage': '20Gi'}
+    assert record.provisioning_evidence_json['allocation_history'][-1]['to']['storage_policy'] == {
+        'min': '2Gi',
+        'max': '20Gi',
+    }
