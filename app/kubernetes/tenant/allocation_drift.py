@@ -429,7 +429,7 @@ def _profile_matches_observation(
         profile.quota_hard_json or {},
         profile.limit_defaults_json or {},
     )
-    profile_storage = validate_storage_policy(profile.storage_policy_json or {})
+    profile_storage = validate_storage_policy(getattr(profile, 'storage_policy_json', {}) or {})
     return not _dimension_rows(
         profile_quota,
         profile_limits,
