@@ -343,10 +343,7 @@ def _committed_allocation_with_tenant_override(
         namespace_count=namespace_count,
     )
     committed = _add_capacity_vectors(committed, override)
-    if any(
-        value is None
-        for value in (override.cpu, override.memory_bytes, override.pods, override.storage_bytes)
-    ):
+    if any(value is None for value in (override.cpu, override.memory_bytes, override.pods)):
         unbounded.append(f'Tenant/{tenant.id} Capsule resourceQuotas scope={scope}')
     return committed, len(rows), unbounded
 
@@ -680,7 +677,7 @@ def _aggregate_committed_allocation(
 
     def add_vector(vector: CapacityVector, label: str) -> None:
         values = (vector.cpu, vector.memory_bytes, vector.pods, vector.storage_bytes)
-        if any(value is None for value in values):
+        if any(value is None for value in values[:3]):
             unbounded.append(label)
         for index, value in enumerate(values):
             if totals[index] is not None:
