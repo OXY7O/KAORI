@@ -300,6 +300,29 @@ Native reconciliation materializes Container and PersistentVolumeClaim items in 
 
 During Native adoption, supported PVC storage fields are normalized into `storage_policy`; only unsupported fields such as unsupported resources or PVC max-limit/request-ratio remain external constraints. During Capsule adoption, supported values are still captured in the Namespace baseline but remain provider-owned evidence when Capsule has no admitted storage-policy mutation authority.
 
+
+
+## Profile control categories
+
+The operator-facing profile hierarchy is intentionally ordered from basic to advanced:
+
+1. **Basic Resources** — CPU requests/limits, memory requests/limits, and Pods.
+2. **Storage Guardrails** — PVC count, total storage quota, and per-PVC min/max/default/defaultRequest policy.
+3. **Object Limits** — Services, ConfigMaps, and Secrets.
+4. **Container Defaults** — Container LimitRange defaults for CPU and memory.
+5. **Advanced Controls** — exposure, hostname, managed TLS/registry, and provider-specific capability values.
+
+Each Managed dimension is part of the committed profile contract. Storage Guardrails are first-class desired state rather than observational annotations.
+
+### Bidirectional managed state
+
+For Native Kubernetes, adopted ResourceQuota, Container LimitRange, and PVC LimitRange values are imported into an auto-materialized Custom profile, written back with equivalent effective values through the admitted Native path, and read back before KAORI marks control Managed. Later drift is resolved explicitly in either direction:
+
+- **Reapply KAORI Intent** restores the committed profile values to Kubernetes and verifies read-back.
+- **Accept Provider State** promotes the current provider values into committed KAORI intent and updates an auto-imported profile/version when applicable.
+
+For Capsule, writable quota authority uses the Capsule reconciliation path. Controller-generated Namespace Container/PVC policy is not patched through Native APIs; it is maintained as **provider-mirrored policy** and refreshed during Tenant Sync so changes do not create false drift.
+
 ## Advanced profile controls
 
 Resource Profiles persist **advanced control intent and its non-secret configuration values** in addition to allocation and Container LimitRange dimensions. This is an operator-editable reusable contract, not a status/TODO matrix and not an issue-reference UI.
