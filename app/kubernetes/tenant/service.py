@@ -1196,7 +1196,13 @@ def _resource_profile_rollout_targets(profile_ids: list[int]) -> dict[int, list[
             func.count(TenantNamespace.id),
             func.sum(
                 case(
-                    (TenantNamespace.resource_profile_version != TenantResourceProfile.version, 1),
+                    (
+                        or_(
+                            TenantNamespace.resource_profile_version.is_(None),
+                            TenantNamespace.resource_profile_version != TenantResourceProfile.version,
+                        ),
+                        1,
+                    ),
                     else_=0,
                 )
             ),
