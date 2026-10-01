@@ -53,16 +53,32 @@ def test_budget_subtracts_reserve_headroom_and_unmanaged_commitments() -> None:
     gib = Decimal(1024**3)
 
     budget = build_tenant_allocation_budget(
-        allocatable=CapacityVector(cpu=Decimal('100'), memory_bytes=Decimal('200') * gib),
-        reserve=CapacityVector(cpu=Decimal('10'), memory_bytes=Decimal('20') * gib),
+        allocatable=CapacityVector(
+            cpu=Decimal('100'),
+            memory_bytes=Decimal('200') * gib,
+            pods=Decimal('500'),
+        ),
+        reserve=CapacityVector(
+            cpu=Decimal('10'),
+            memory_bytes=Decimal('20') * gib,
+            pods=Decimal('25'),
+        ),
         safety_headroom_percent=Decimal('10'),
-        unmanaged=CapacityVector(cpu=Decimal('5'), memory_bytes=Decimal('10') * gib),
+        unmanaged=CapacityVector(
+            cpu=Decimal('5'),
+            memory_bytes=Decimal('10') * gib,
+            pods=Decimal('15'),
+        ),
+        logical_storage_budget=Decimal('2000') * gib,
     )
 
     assert budget.allocatable.cpu == Decimal('100')
     assert budget.safety_headroom.cpu == Decimal('10')
+    assert budget.safety_headroom.pods == Decimal('50')
     assert budget.available.cpu == Decimal('75')
     assert budget.available.memory_bytes == Decimal('150') * gib
+    assert budget.available.pods == Decimal('410')
+    assert budget.available.storage_bytes == Decimal('2000') * gib
 
 
 def test_capacity_state_uses_governed_headroom_thresholds() -> None:
@@ -198,6 +214,7 @@ def test_committed_capacity_snapshot_uses_ready_worker_allocatable_units() -> No
             'capacity_summary': {
                 'cpu': {'capacity_evidence_available': True, 'capacity': 12.5},
                 'memory': {'capacity_evidence_available': True, 'capacity': 32},
+                'pods': {'capacity_evidence_available': True, 'capacity': 440},
             }
         },
         snapshot=None,
@@ -211,6 +228,8 @@ def test_committed_capacity_snapshot_uses_ready_worker_allocatable_units() -> No
     assert vector is not None
     assert vector.cpu == Decimal('12.5')
     assert vector.memory_bytes == Decimal(32 * 1024**3)
+    assert vector.pods == Decimal('440')
+    assert vector.storage_bytes is None
 
 
 def test_stale_committed_capacity_snapshot_fails_closed() -> None:
@@ -286,14 +305,26 @@ def test_unknown_evidence_blocks_positive_existing_allocation_change() -> None:
     assert decision.state == 'Unknown'
 
 
-def _capacity_row(tenant_id: str, namespace: str, cpu: str, memory: str):
+def _capacity_row(
+    tenant_id: str,
+    namespace: str,
+    cpu: str,
+    memory: str,
+    *,
+    pods: str = '10',
+    storage: str | None = None,
+):
+    quota = {
+        'requests.cpu': cpu,
+        'requests.memory': memory,
+        'pods': pods,
+    }
+    if storage is not None:
+        quota['requests.storage'] = storage
     return SimpleNamespace(
         namespace=namespace,
         environment=SimpleNamespace(tenant_id=tenant_id),
-        allocation_quota_json={
-            'requests.cpu': cpu,
-            'requests.memory': memory,
-        },
+        allocation_quota_json=quota,
     )
 
 
@@ -310,6 +341,7 @@ def test_shared_tenant_allocation_is_counted_once_instead_of_per_namespace() -> 
             'capsule-api': {
                 'requests.cpu': '4',
                 'requests.memory': '8Gi',
+                'pods': '10',
             }
         },
     )
@@ -332,6 +364,7 @@ def test_shared_and_namespace_commitments_can_coexist_without_double_counting() 
             'capsule-api': {
                 'requests.cpu': '4',
                 'requests.memory': '8Gi',
+                'pods': '10',
             }
         },
     )
@@ -360,6 +393,7 @@ def test_capsule_tenant_scope_quota_is_counted_once() -> None:
         {
             'requests.cpu': '4',
             'requests.memory': '8Gi',
+            'pods': '10',
         },
         scope='Tenant',
         namespace_count=3,
@@ -374,6 +408,7 @@ def test_capsule_namespace_scope_quota_is_counted_per_correlated_namespace() -> 
         {
             'requests.cpu': '4',
             'requests.memory': '8Gi',
+            'pods': '10',
         },
         scope='Namespace',
         namespace_count=3,
@@ -381,3 +416,100 @@ def test_capsule_namespace_scope_quota_is_counted_per_correlated_namespace() -> 
 
     assert vector.cpu == Decimal('12')
     assert vector.memory_bytes == Decimal(24 * 1024**3)
+
+def test_quota_request_vector_includes_pods_and_storage_commitment() -> None:
+    gib = Decimal(1024**3)
+
+    vector = quota_request_vector(
+        {
+            'requests.cpu': '2',
+            'requests.memory': '4Gi',
+            'pods': '20',
+            'requests.storage': '100Gi',
+        }
+    )
+
+    assert vector.pods == Decimal('20')
+    assert vector.storage_bytes == Decimal('100') * gib
+
+
+def test_preflight_blocks_projected_pod_shortfall() -> None:
+    decision = evaluate_allocation_preflight(
+        budget=CapacityVector(
+            cpu=Decimal('10'),
+            memory_bytes=Decimal('100'),
+            pods=Decimal('100'),
+        ),
+        committed_before=CapacityVector(
+            cpu=Decimal('4'),
+            memory_bytes=Decimal('40'),
+            pods=Decimal('95'),
+        ),
+        current_allocation=CapacityVector(
+            cpu=Decimal('0'),
+            memory_bytes=Decimal('0'),
+            pods=Decimal('0'),
+        ),
+        proposed_allocation=CapacityVector(
+            cpu=Decimal('1'),
+            memory_bytes=Decimal('10'),
+            pods=Decimal('10'),
+        ),
+        capacity_evidence_available=True,
+    )
+
+    assert decision.allowed is False
+    assert decision.shortfall.pods == Decimal('5')
+
+
+def test_preflight_blocks_projected_logical_storage_shortfall() -> None:
+    gib = Decimal(1024**3)
+    decision = evaluate_allocation_preflight(
+        budget=CapacityVector(
+            cpu=Decimal('10'),
+            memory_bytes=Decimal('100'),
+            pods=Decimal('100'),
+            storage_bytes=Decimal('500') * gib,
+        ),
+        committed_before=CapacityVector(
+            cpu=Decimal('4'),
+            memory_bytes=Decimal('40'),
+            pods=Decimal('40'),
+            storage_bytes=Decimal('480') * gib,
+        ),
+        current_allocation=CapacityVector(
+            cpu=Decimal('0'),
+            memory_bytes=Decimal('0'),
+            pods=Decimal('0'),
+            storage_bytes=Decimal('0'),
+        ),
+        proposed_allocation=CapacityVector(
+            cpu=Decimal('1'),
+            memory_bytes=Decimal('10'),
+            pods=Decimal('10'),
+            storage_bytes=Decimal('50') * gib,
+        ),
+        capacity_evidence_available=True,
+    )
+
+    assert decision.allowed is False
+    assert decision.shortfall.storage_bytes == Decimal('30') * gib
+
+
+def test_storage_budget_is_optional_without_claiming_physical_capacity() -> None:
+    gib = Decimal(1024**3)
+    budget = build_tenant_allocation_budget(
+        allocatable=CapacityVector(
+            cpu=Decimal('10'),
+            memory_bytes=Decimal('32') * gib,
+            pods=Decimal('100'),
+        ),
+        reserve=CapacityVector(cpu=Decimal('1'), memory_bytes=Decimal('2') * gib, pods=Decimal('5')),
+        safety_headroom_percent=Decimal('10'),
+        unmanaged=CapacityVector(cpu=Decimal('0'), memory_bytes=Decimal('0'), pods=Decimal('0')),
+        logical_storage_budget=None,
+    )
+
+    assert budget.available.storage_bytes is None
+    assert budget.logical_storage_budget is None
+
