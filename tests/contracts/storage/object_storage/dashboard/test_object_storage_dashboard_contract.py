@@ -114,8 +114,8 @@ def test_dashboard_sections_are_object_storage_specific_and_committed_evidence_o
     assert 'Alert Interpretation & Response' in response
     assert 'Recommended Actions' in actions
     assert 'storage/object_storage/dashboard/partials/_reporting_summary.html' in reporting
-    assert 'Reporting Summary' in reporting_summary
-    assert 'Reporting Interpretation & Next Steps' in reporting_guidance
+    assert 'reporting_workspace.summary(' in reporting_summary
+    assert 'reporting_workspace.guidance(' in reporting_guidance
 
     assert 'storage/object_storage/dashboard/partials/_system_health.html' in overview
     for token in (
@@ -277,11 +277,12 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     assert 'recent = reports_query.order_by(Report.created_at.desc()).limit(5).all()' in service
     assert 'Reporting Summary' in reporting_workspace
     assert 'Recent Report Activity' in reporting_workspace
-    assert 'Reporting Interpretation & Next Steps' in reporting_workspace
-    assert 'Reporting Control' in reporting_workspace
-    assert 'KAORI Reporting Workflow' in reporting_workspace
-    assert 'Lifecycle Intent' in reporting_workspace
-    assert '6 Steps' in reporting_workspace
+    assert 'Reporting Workflow' in reporting_workspace
+    assert 'Scope Bound' in reporting_workspace
+    assert 'Evidence Backed' in reporting_workspace
+    assert 'Review First' in reporting_workspace
+    assert 'Governed Flow' in reporting_workspace
+    assert 'Execution Mode' in reporting_workspace
     assert 'components/numbered_governance_steps.html' not in reporting_workspace
     assert 'components/operational_flow_steps.html' not in reporting_workspace
     assert 'components/reporting_dashboard_workspace.html' in kubernetes_reporting

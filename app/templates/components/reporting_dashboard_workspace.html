@@ -1,13 +1,11 @@
-{% import "components/operational_callout.html" as operational_callout %}
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/table_label.html" as table_label %}
 
 {#
-  Shared compact reporting dashboard presentation.
+  Shared reporting dashboard presentation for Kubernetes and Object Storage.
 
-  Kubernetes and Object Storage supply only domain-specific reporting data and
-  scope wording. Geometry, hierarchy, lifecycle guidance, and empty states stay
-  centralized here so both operational dashboards remain visually aligned.
+  Domain wrappers supply data and scope wording only. The visual hierarchy,
+  activity presentation, workflow, and execution guidance stay centralized.
 #}
 
 {% macro summary(
@@ -21,7 +19,7 @@
 
     {% call operational_section_card.render(
         'Reporting Summary',
-        domain_label ~ ' report output, reusable definitions, schedules, and recent generation activity.',
+        'Generated output, templates, schedules, and recent activity.',
         'file-chart-column',
         action_href=url_for('reports.overview'),
         action_label='Open Reports Workspace',
@@ -36,13 +34,13 @@
         <section class="grid gap-3 sm:grid-cols-3"
                  aria-label="{{ domain_label }} reporting snapshot">
             {% set reporting_metrics = [
-                ('Generated Reports', reporting.generated_reports, 'files', 'Stored report artifacts.'),
-                ('Report Templates', reporting.templates, 'layout-template', 'Reusable definitions.'),
-                ('Report Schedules', reporting.schedules, 'calendar-clock', 'Recurring plans.')
+                ('Generated Reports', reporting.generated_reports, 'files'),
+                ('Report Templates', reporting.templates, 'layout-template'),
+                ('Report Schedules', reporting.schedules, 'calendar-clock')
             ] %}
-            {% for label, value, icon, description in reporting_metrics %}
+            {% for label, value, icon in reporting_metrics %}
                 <article class="rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
-                    <div class="flex items-start gap-3">
+                    <div class="flex min-w-0 items-center gap-3">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                               aria-hidden="true">
                             <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
@@ -50,7 +48,6 @@
                         <div class="min-w-0">
                             <p class="text-xs font-semibold text-content-secondary">{{ label }}</p>
                             <p class="mt-0.5 text-xl font-semibold text-content-primary">{{ value }}</p>
-                            <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
                         </div>
                     </div>
                 </article>
@@ -58,14 +55,9 @@
         </section>
 
         <section aria-labelledby="reporting-recent-activity-title">
-            <div class="mb-2.5 flex flex-wrap items-end justify-between gap-2">
-                <div class="min-w-0">
-                    <h3 id="reporting-recent-activity-title"
-                        class="text-sm font-semibold text-content-primary">Recent Report Activity</h3>
-                    <p class="mt-0.5 text-xs leading-5 text-content-muted">
-                        Latest generated artifacts for the active {{ scope_label|lower }} scope.
-                    </p>
-                </div>
+            <div class="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+                <h3 id="reporting-recent-activity-title"
+                    class="text-sm font-semibold text-content-primary">Recent Report Activity</h3>
                 {% if reporting.latest_reports %}
                     {{ table_label.metadata_label(
                         table_label.count_text(reporting.latest_reports|length, 'Record'),
@@ -79,7 +71,7 @@
                     {% for report in reporting.latest_reports[:5] %}
                         {% set normalized_status = report.status|default('Unknown', true)|lower %}
                         {% set status_tone = 'normal' if normalized_status in ['completed', 'ready', 'succeeded'] else ('critical' if normalized_status in ['failed', 'error'] else ('info' if normalized_status in ['queued', 'running', 'pending', 'in progress'] else 'unknown')) %}
-                        <article class="flex min-w-0 flex-col gap-2.5 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+                        <article class="flex min-w-0 flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:justify-between">
                             <div class="flex min-w-0 items-center gap-3">
                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                       aria-hidden="true">
@@ -89,7 +81,7 @@
                                     <p class="truncate text-sm font-semibold text-content-primary">{{ report.title }}</p>
                                     <p class="mt-0.5 inline-flex items-center gap-1 text-xs text-content-muted">
                                         <i data-lucide="clock-3" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        {{ report.generated_at }} · Generated Output
+                                        {{ report.generated_at }}
                                     </p>
                                 </div>
                             </div>
@@ -98,7 +90,7 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="rounded-xl border border-dashed border-outline-default bg-surface-elevated p-5">
+                <div class="rounded-xl border border-dashed border-outline-default bg-surface-elevated p-4">
                     <div class="flex min-w-0 items-start gap-3">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                               aria-hidden="true">
@@ -121,72 +113,68 @@
 {%- endmacro %}
 
 
-{% macro guidance(scope_label, evidence_label, narrow_scope_label, one_time_label='one-time reviews') -%}
+{% macro guidance(scope_label, evidence_label, narrow_scope_label) -%}
     {% set reporting_steps = [
-        ('01', 'scan-search', 'Validate', 'Confirm ' ~ scope_label ~ ', reporting period, evidence freshness, and source coverage.'),
-        ('02', 'layout-template', 'Select', 'Choose the approved report type or template and the narrowest ' ~ narrow_scope_label ~ '.'),
-        ('03', 'file-cog', 'Create', 'Save a traceable request with scope, period, ownership, and generation intent.'),
-        ('04', 'file-check-2', 'Generate', 'Render from ' ~ evidence_label ~ ' and review completeness, status, and content.'),
-        ('05', 'calendar-clock', 'Schedule', 'Set cadence and delivery only after the report definition and output are reviewed.'),
-        ('06', 'archive', 'Retain', 'Preserve the artifact, metadata, and retention or audit evidence.')
+        ('01', 'scan-search', 'Validate', 'Confirm scope, period, freshness, and source coverage.'),
+        ('02', 'layout-template', 'Select', 'Choose the approved report and narrowest ' ~ narrow_scope_label ~ '.'),
+        ('03', 'file-cog', 'Create', 'Save a traceable request with scope, period, and ownership.'),
+        ('04', 'file-check-2', 'Generate', 'Render from ' ~ evidence_label ~ ' and review the result.'),
+        ('05', 'calendar-clock', 'Schedule', 'Set cadence and delivery after the output is reviewed.'),
+        ('06', 'archive', 'Retain', 'Preserve the artifact and required audit evidence.')
     ] %}
 
     {% call operational_section_card.render(
-        'Reporting Interpretation & Next Steps',
-        'Validate reporting activity and follow the governed KAORI workflow.',
+        'Reporting Workflow',
+        'From validated scope to retained evidence.',
         'notebook-tabs',
         body_classes='space-y-4 p-5',
         extra_classes='h-full'
         ) %}
 
-        <div class="grid gap-3 sm:grid-cols-2">
-            <article class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
-                <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-status-info-border bg-status-info-soft text-status-info-text"
-                          aria-hidden="true">
-                        <i data-lucide="shield-check" class="h-4 w-4"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <p class="text-sm font-semibold text-content-primary">Reporting Control</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">
-                            Bind output to {{ scope_label }} and {{ evidence_label }}, then review it before sharing, scheduling, or retention.
-                        </p>
+        <section aria-labelledby="reporting-guardrails-title">
+            <h3 id="reporting-guardrails-title"
+                class="sr-only">Reporting Guardrails</h3>
+            <div class="grid overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-3">
+                <div class="bg-surface-elevated p-3.5">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="scan-search"
+                           class="h-4 w-4 shrink-0 text-kaori-primary"
+                           aria-hidden="true"></i>
+                        <p class="text-xs font-semibold text-content-primary">Scope Bound</p>
                     </div>
+                    <p class="mt-1.5 text-xs leading-5 text-content-muted">{{ scope_label }}</p>
                 </div>
-            </article>
-
-            <article class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
-                <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                          aria-hidden="true">
-                        <i data-lucide="workflow" class="h-4 w-4"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <p class="text-sm font-semibold text-content-primary">Lifecycle Intent</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">
-                            Validate once, produce governed output, then schedule or retain only when operationally required.
-                        </p>
+                <div class="bg-surface-elevated p-3.5">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="database-zap"
+                           class="h-4 w-4 shrink-0 text-kaori-primary"
+                           aria-hidden="true"></i>
+                        <p class="text-xs font-semibold text-content-primary">Evidence Backed</p>
                     </div>
+                    <p class="mt-1.5 text-xs leading-5 text-content-muted">{{ evidence_label }}</p>
                 </div>
-            </article>
-        </div>
+                <div class="bg-surface-elevated p-3.5">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="shield-check"
+                           class="h-4 w-4 shrink-0 text-kaori-primary"
+                           aria-hidden="true"></i>
+                        <p class="text-xs font-semibold text-content-primary">Review First</p>
+                    </div>
+                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Before sharing, scheduling, or retention.</p>
+                </div>
+            </div>
+        </section>
 
         <section aria-labelledby="kaori-reporting-workflow-title">
-            <div class="mb-2.5 flex flex-wrap items-end justify-between gap-2">
-                <div class="min-w-0">
-                    <h3 id="kaori-reporting-workflow-title"
-                        class="text-sm font-semibold text-content-primary">KAORI Reporting Workflow</h3>
-                    <p class="mt-0.5 text-xs leading-5 text-content-muted">
-                        Six compact controls from scope validation through lifecycle retention.
-                    </p>
-                </div>
-                {{ table_label.metadata_label('6 Steps', icon='list-checks') }}
+            <div class="mb-2.5">
+                <h3 id="kaori-reporting-workflow-title"
+                    class="text-sm font-semibold text-content-primary">Governed Flow</h3>
             </div>
 
-            <ol class="grid gap-3 sm:grid-cols-2"
-                aria-label="KAORI Reporting Workflow">
+            <ol class="grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-2"
+                aria-label="Governed Reporting Flow">
                 {% for step_number, step_icon, step_title, step_description in reporting_steps %}
-                    <li class="rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
+                    <li class="bg-surface-card p-3.5">
                         <div class="flex min-w-0 items-start gap-3">
                             <span class="inline-flex h-8 min-w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft px-2 text-xs font-semibold text-kaori-primary"
                                   aria-hidden="true">{{ step_number }}</span>
@@ -205,20 +193,32 @@
             </ol>
         </section>
 
-        <aside class="rounded-xl border border-kaori-primary/15 bg-kaori-soft/35 p-3.5"
-               aria-label="Reporting tip">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
-                      aria-hidden="true">
-                    <i data-lucide="lightbulb" class="h-4 w-4"></i>
-                </span>
-                <div class="min-w-0">
-                    <p class="text-sm font-semibold text-content-primary">Reporting Tip</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">
-                        Use schedules for recurring operational evidence. For {{ one_time_label }}, generate manually and verify the stored artifact before sharing or archiving it.
-                    </p>
+        <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-3.5"
+                 aria-labelledby="reporting-execution-mode-title">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div class="shrink-0 sm:w-28">
+                    <p id="reporting-execution-mode-title"
+                       class="text-sm font-semibold text-content-primary">Execution Mode</p>
+                </div>
+                <div class="grid min-w-0 flex-1 gap-2 sm:grid-cols-2">
+                    <div class="flex min-w-0 items-center gap-2 rounded-lg bg-surface-card px-3 py-2.5">
+                        <i data-lucide="play"
+                           class="h-3.5 w-3.5 shrink-0 text-kaori-primary"
+                           aria-hidden="true"></i>
+                        <p class="text-xs text-content-secondary">
+                            <span class="font-semibold text-content-primary">One-time</span> · Generate manually
+                        </p>
+                    </div>
+                    <div class="flex min-w-0 items-center gap-2 rounded-lg bg-surface-card px-3 py-2.5">
+                        <i data-lucide="calendar-clock"
+                           class="h-3.5 w-3.5 shrink-0 text-kaori-primary"
+                           aria-hidden="true"></i>
+                        <p class="text-xs text-content-secondary">
+                            <span class="font-semibold text-content-primary">Recurring</span> · Schedule after review
+                        </p>
+                    </div>
                 </div>
             </div>
-        </aside>
+        </section>
     {% endcall %}
 {%- endmacro %}
