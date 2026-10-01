@@ -1,0 +1,53 @@
+{#
+  Canonical Kubernetes resource-series identity for forecast/utilization charts.
+  Color communicates resource identity only; historical/projection/threshold
+  semantics remain encoded separately by line style.
+#}
+{% macro surface_class(resource_key) -%}
+    {%- if resource_key == 'cpu' -%}bg-status-info
+    {%- elif resource_key == 'memory' -%}bg-kaori-primary
+    {%- elif resource_key == 'storage' -%}bg-status-normal
+    {%- elif resource_key == 'pods' -%}bg-status-warning
+    {%- else -%}bg-content-muted
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro stroke_class(resource_key) -%}
+    {%- if resource_key == 'cpu' -%}stroke-status-info
+    {%- elif resource_key == 'memory' -%}stroke-kaori-primary
+    {%- elif resource_key == 'storage' -%}stroke-status-normal
+    {%- elif resource_key == 'pods' -%}stroke-status-warning
+    {%- else -%}stroke-content-muted
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro swatch(resource_key) -%}
+    <span class="h-0.5 w-5 shrink-0 rounded-full {{ surface_class(resource_key) }}"
+          aria-hidden="true"></span>
+{%- endmacro %}
+
+{% macro marker(resource_key, resource_label) -%}
+    <span class="inline-flex items-center gap-2 text-xs font-semibold text-content-secondary">
+        {{ swatch(resource_key) }}
+        <span>{{ resource_label }}</span>
+    </span>
+{%- endmacro %}
+
+{% macro render_series(series, aria_label='Resource Series Legend') -%}
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-2"
+         aria-label="{{ aria_label }}">
+        {% for item in series %}
+            {{ marker(item.key, item.label) }}
+        {% endfor %}
+    </div>
+{%- endmacro %}
+
+{% macro render_all(aria_label='Resource Series Legend') -%}
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-2"
+         aria-label="{{ aria_label }}">
+        {{ marker('cpu', 'CPU') }}
+        {{ marker('memory', 'Memory') }}
+        {{ marker('storage', 'Storage') }}
+        {{ marker('pods', 'Pods') }}
+    </div>
+{%- endmacro %}
