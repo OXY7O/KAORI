@@ -47,7 +47,7 @@
                 <div class="rounded-xl border border-outline-subtle bg-surface-card p-3">
                     <p class="text-xs text-content-muted">Current Allocation</p>
                     <p class="mt-1 text-sm font-semibold text-content-primary">Adopted Baseline · Observed</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Provider evidence only; no KAORI desired intent yet.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Provider-equivalent baseline; selecting the same profile keeps current values unchanged during takeover.</p>
                 </div>
                 <div class="rounded-xl border border-outline-subtle bg-surface-card p-3">
                     <p class="text-xs text-content-muted">After Verified Cutover</p>
@@ -107,6 +107,16 @@
                             <dd class="mt-1 text-sm font-semibold text-content-primary"
                                 data-tenant-allocation-current-memory>—</dd>
                         </div>
+                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                            <dt class="text-xs text-content-muted">Min PVC size</dt>
+                            <dd class="mt-1 text-sm font-semibold text-content-primary"
+                                data-tenant-allocation-current-pvc-min>—</dd>
+                        </div>
+                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                            <dt class="text-xs text-content-muted">Max PVC size</dt>
+                            <dd class="mt-1 text-sm font-semibold text-content-primary"
+                                data-tenant-allocation-current-pvc-max>—</dd>
+                        </div>
                     </dl>
                 </section>
                 <section class="rounded-xl border border-kaori-primary/20 bg-surface-card p-4"
@@ -127,6 +137,16 @@
                             <dt class="text-xs text-content-muted">Memory requests</dt>
                             <dd class="mt-1 text-sm font-semibold text-content-primary"
                                 data-tenant-allocation-proposed-memory>—</dd>
+                        </div>
+                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                            <dt class="text-xs text-content-muted">Min PVC size</dt>
+                            <dd class="mt-1 text-sm font-semibold text-content-primary"
+                                data-tenant-allocation-proposed-pvc-min>—</dd>
+                        </div>
+                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                            <dt class="text-xs text-content-muted">Max PVC size</dt>
+                            <dd class="mt-1 text-sm font-semibold text-content-primary"
+                                data-tenant-allocation-proposed-pvc-max>—</dd>
                         </div>
                     </dl>
                 </section>
