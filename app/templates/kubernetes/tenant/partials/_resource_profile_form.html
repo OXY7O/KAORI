@@ -30,15 +30,15 @@
                     <h3 id="resource-profile-identity-heading"
                         class="text-sm font-semibold text-content-primary">Identity &amp; Lineage</h3>
                     {{ info_tip.render('resource-profile-identity-tip',
-                            'Resource Profile identity & lineage',
-                            'Define the reusable profile identity, class, and lineage before selecting managed controls.',
-                            [
-                            'Small, Medium, Large, and Extra Large use server-authoritative versioned preset values.',
-                            'Managed toggles choose which supported dimensions KAORI owns and reconciles.',
-                            'Custom is operator-editable and can optionally inherit a preset as its starting lineage.',
-                            'Existing Namespace snapshots remain frozen until an explicit governed allocation change.'
-                            ],
-                            placement='right') }}
+                                        'Resource Profile identity & lineage',
+                                        'Define the reusable profile identity, class, and lineage before selecting managed controls.',
+                                        [
+                                        'Small, Medium, Large, and Extra Large use server-authoritative versioned preset values.',
+                                        'Managed toggles choose which supported dimensions KAORI owns and reconciles.',
+                                        'Custom is operator-editable and can optionally inherit a preset as its starting lineage.',
+                                        'Existing Namespace snapshots remain frozen until an explicit governed allocation change.'
+                                        ],
+                                        placement='right') }}
                 </span>
                 <p class="mt-1 text-xs text-content-muted">Name the contract and choose its governance mode.</p>
             </div>
@@ -95,8 +95,10 @@
                         <i data-lucide="lock-keyhole" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold text-content-primary" data-tenant-profile-mode-title>KAORI Preset · Fixed</p>
-                        <p class="mt-0.5 text-xs text-content-muted" data-tenant-profile-mode-detail>Values are fixed; use Managed toggles to select KAORI-owned dimensions.</p>
+                        <p class="text-xs font-semibold text-content-primary"
+                           data-tenant-profile-mode-title>KAORI Preset · Fixed</p>
+                        <p class="mt-0.5 text-xs text-content-muted"
+                           data-tenant-profile-mode-detail>Values are fixed; use Managed toggles to select KAORI-owned dimensions.</p>
                     </div>
                 </div>
                 <span data-tenant-profile-mode-fixed-label>
@@ -115,14 +117,14 @@
                     <h3 id="resource-profile-compute-heading"
                         class="text-sm font-semibold text-content-primary">Basic Resources</h3>
                     {{ info_tip.render('resource-profile-compute-tip',
-                            'Compute and workload guardrails',
-                            'Core ResourceQuota dimensions for workload compute and pod count.',
-                            [
-                            'CPU/memory requests feed Capacity Governance.',
-                            'Managed means KAORI owns the selected provider dimension after governed attachment.',
-                            'Built-in preset values remain fixed.'
-                            ],
-                            placement='right') }}
+                                        'Compute and workload guardrails',
+                                        'Core ResourceQuota dimensions for workload compute and pod count.',
+                                        [
+                                        'CPU/memory requests feed Capacity Governance.',
+                                        'Managed means KAORI owns the selected provider dimension after governed attachment.',
+                                        'Built-in preset values remain fixed.'
+                                        ],
+                                        placement='right') }}
                 </span>
                 <p class="mt-1 text-xs text-content-muted">Basic profile guardrails for CPU, memory, and pod count.</p>
             </div>
@@ -138,7 +140,8 @@
                          data-tenant-resource-field-wrap
                          data-locked="true">
                         <span class="flex min-h-6 items-center justify-between gap-2">
-                            <label for="resource-profile-{{ field }}" class="text-xs font-semibold text-content-primary">{{ label }}</label>
+                            <label for="resource-profile-{{ field }}"
+                                   class="text-xs font-semibold text-content-primary">{{ label }}</label>
                             <label class="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-content-muted">
                                 <input type="checkbox"
                                        name="control_{{ field }}"
@@ -161,7 +164,6 @@
                 {% endfor %}
             </div>
         </section>
-
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card transition"
                  data-tenant-resource-section
                  aria-labelledby="resource-profile-storage-heading">
@@ -170,14 +172,14 @@
                     <h3 id="resource-profile-storage-heading"
                         class="text-sm font-semibold text-content-primary">Storage Guardrails</h3>
                     {{ info_tip.render('resource-profile-storage-tip',
-                            'Bidirectional storage policy',
-                            'Storage separates namespace-wide quota from per-PVC request bounds.',
-                            [
-                            'PVCs controls claim count; Total Storage controls cumulative requests.storage quota.',
-                            'Min/Max PVC Size map to LimitRange[type=PersistentVolumeClaim].',
-                            'Built-in presets manage both bounds; adoption, drift, reapply, and provider-state acceptance use the same committed values.'
-                            ],
-                            placement='right') }}
+                                        'Bidirectional storage policy',
+                                        'Storage separates namespace-wide quota from per-PVC request bounds.',
+                                        [
+                                        'PVCs controls claim count; Total Storage controls cumulative requests.storage quota.',
+                                        'Min/Max PVC Size map to LimitRange[type=PersistentVolumeClaim].',
+                                        'Built-in presets manage both bounds; adoption, drift, reapply, and provider-state acceptance use the same committed values.'
+                                        ],
+                                        placement='right') }}
                 </span>
                 <p class="mt-1 text-xs text-content-muted">Namespace quota and per-PVC bounds stay distinct but reconcile as one managed storage contract.</p>
             </div>
@@ -196,7 +198,8 @@
                                  data-tenant-resource-field-wrap
                                  data-locked="true">
                                 <span class="flex min-h-6 items-center justify-between gap-2">
-                                    <label for="resource-profile-{{ field }}" class="text-xs font-semibold text-content-primary">{{ label }}</label>
+                                    <label for="resource-profile-{{ field }}"
+                                           class="text-xs font-semibold text-content-primary">{{ label }}</label>
                                     <label class="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-content-muted">
                                         <input type="checkbox"
                                                name="control_{{ field }}"
@@ -234,7 +237,8 @@
                                  data-control-requires-value="true"
                                  data-locked="true">
                                 <span class="flex min-h-6 items-center justify-between gap-2">
-                                    <label for="resource-profile-{{ field }}" class="text-xs font-semibold text-content-primary">{{ label }}</label>
+                                    <label for="resource-profile-{{ field }}"
+                                           class="text-xs font-semibold text-content-primary">{{ label }}</label>
                                     <label class="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-content-muted">
                                         <input type="checkbox"
                                                name="control_{{ field }}"
@@ -258,7 +262,6 @@
                 </div>
             </div>
         </section>
-
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card transition"
                  data-tenant-resource-section
                  aria-labelledby="resource-profile-object-heading">
@@ -267,9 +270,9 @@
                     <h3 id="resource-profile-object-heading"
                         class="text-sm font-semibold text-content-primary">Object Limits</h3>
                     {{ info_tip.render('resource-profile-object-tip',
-                            'Namespace object limits',
-                            'ResourceQuota limits for common namespace objects.',
-                            placement='right') }}
+                                        'Namespace object limits',
+                                        'ResourceQuota limits for common namespace objects.',
+                                        placement='right') }}
                 </span>
                 <p class="mt-1 text-xs text-content-muted">Services, ConfigMaps, and Secrets are isolated from compute/storage for easier ownership review.</p>
             </div>
@@ -283,7 +286,8 @@
                          data-tenant-resource-field-wrap
                          data-locked="true">
                         <span class="flex min-h-6 items-center justify-between gap-2">
-                            <label for="resource-profile-{{ field }}" class="text-xs font-semibold text-content-primary">{{ label }}</label>
+                            <label for="resource-profile-{{ field }}"
+                                   class="text-xs font-semibold text-content-primary">{{ label }}</label>
                             <label class="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-content-muted">
                                 <input type="checkbox"
                                        name="control_{{ field }}"
@@ -314,9 +318,9 @@
                     <h3 id="resource-profile-container-heading"
                         class="text-sm font-semibold text-content-primary">Container Defaults</h3>
                     {{ info_tip.render('resource-profile-limitrange-tip',
-                            'Container LimitRange',
-                            'These defaults are distinct from namespace ResourceQuota and do not change the profile class semantics.',
-                            placement='right') }}
+                                        'Container LimitRange',
+                                        'These defaults are distinct from namespace ResourceQuota and do not change the profile class semantics.',
+                                        placement='right') }}
                 </span>
                 <p class="mt-1 text-xs text-content-muted">Used only when a container omits request/limit values.</p>
             </div>
@@ -354,7 +358,6 @@
             </div>
         </section>
         {{ advanced_profile_controls.render({}, true, 'resource-profile-create') }}
-
     </div>
     <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <p class="max-w-2xl text-xs text-content-muted">Profiles define intent; Namespace allocation is admitted separately.</p>
