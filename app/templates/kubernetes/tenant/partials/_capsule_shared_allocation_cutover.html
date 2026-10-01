@@ -48,7 +48,7 @@
                             {% set state = capsule_shared_cutover_state.get(tenant.id) or {} %}
                             <option value="{{ tenant.id }}"
                                     {% if not state.get('supported') %}disabled{% endif %}>
-                                {{ tenant.name }} · {{ 'Eligible' if state.get('supported') else 'Control Unavailable' }}
+                                {{ tenant.name }} · {{ 'Eligible' if state.get("supported") else 'Control Unavailable' }}
                             </option>
                         {% endfor %}
                     </select>
@@ -81,12 +81,16 @@
                         <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                             <dt class="text-xs text-content-muted">CPU requests</dt>
                             <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-shared-current-cpu>—</dd>
+                                data-tenant-shared-current-cpu>
+                                —
+                            </dd>
                         </div>
                         <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                             <dt class="text-xs text-content-muted">Memory requests</dt>
                             <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-shared-current-memory>—</dd>
+                                data-tenant-shared-current-memory>
+                                —
+                            </dd>
                         </div>
                     </dl>
                 </section>
@@ -102,12 +106,16 @@
                         <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                             <dt class="text-xs text-content-muted">CPU requests</dt>
                             <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-shared-proposed-cpu>—</dd>
+                                data-tenant-shared-proposed-cpu>
+                                —
+                            </dd>
                         </div>
                         <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                             <dt class="text-xs text-content-muted">Memory requests</dt>
                             <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-shared-proposed-memory>—</dd>
+                                data-tenant-shared-proposed-memory>
+                                —
+                            </dd>
                         </div>
                     </dl>
                 </section>
@@ -122,7 +130,7 @@
                             {% if not state.get('supported') %}
                                 <p class="text-xs leading-5">
                                     <span class="font-semibold">{{ tenant.name }}</span>
-                                    · {{ state.get('reason') }}
+                                    · {{ state.get("reason") }}
                                 </p>
                             {% endif %}
                         {% endfor %}
