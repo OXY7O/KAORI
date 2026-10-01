@@ -29,42 +29,63 @@
                                 'Capacity policy',
                                 'Policy values are explicit commitments used with committed cluster capacity evidence.',
                                 [
-                                'Reserve and unmanaged values are request commitments.',
-                                'Safety headroom preserves operational margin.',
+                                'CPU, memory, and Pod budgets derive from Ready-worker allocatable capacity.',
+                                'Reserve and unmanaged values reduce the Tenant budget; safety headroom preserves operational margin.',
+                                'Storage Budget is an explicit logical allocation ceiling and is not presented as physical backend capacity.',
                                 'Selecting an existing cluster reloads its committed policy values.'
                                 ],
                                 placement='right') }}
                     </span>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Define request-budget inputs used before positive Namespace allocation.</p>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Govern CPU, memory, Pod, and logical storage commitment before positive Namespace allocation.</p>
                 </div>
             </div>
         </header>
         <div class="space-y-4 p-5">
-            <div class="grid gap-4 lg:grid-cols-[minmax(16rem,0.8fr)_minmax(0,2.2fr)] lg:items-end">
-                <label class="block">
-                    {{ form_field.label_row("Cluster") }}
-                    <select name="capacity_cluster_id"
-                            required
-                            data-capacity-policy-cluster
-                            class="{{ form_field.select_classes() }}">
-                        <option value="">Select Ready cluster</option>
-                        {% for cluster in ready_clusters %}
-                            <option value="{{ cluster.id }}">{{ cluster.name }} · {{ cluster.environment|title }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-                    {% for name, label, default_value, placeholder in [
-                        ('platform_reserve_cpu', 'Platform Reserve CPU', '0', '500m'),
-                        ('platform_reserve_memory', 'Platform Reserve Memory', '0', '2Gi'),
-                        ('safety_headroom_percent', 'Safety Headroom %', '', '10'),
-                        ('unmanaged_commitment_cpu', 'Unmanaged CPU', '0', '2'),
-                        ('unmanaged_commitment_memory', 'Unmanaged Memory', '0', '8Gi')
+            <label class="block">
+                {{ form_field.label_row("Cluster") }}
+                <select name="capacity_cluster_id"
+                        required
+                        data-capacity-policy-cluster
+                        class="{{ form_field.select_classes() }}">
+                    <option value="">Select Ready cluster</option>
+                    {% for cluster in ready_clusters %}
+                        <option value="{{ cluster.id }}">{{ cluster.name }} · {{ cluster.environment|title }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated">
+                <div class="border-b border-outline-subtle px-4 py-3">
+                    <span class="inline-flex min-h-6 items-center gap-1.5">
+                        <h3 class="text-sm font-semibold text-content-primary">Compute &amp; Pod Budget</h3>
+                        {{ info_tip.render('tenant-capacity-compute-pod-tip',
+                                'Compute and Pod budget',
+                                'CPU, memory, and Pod admission use Ready-worker allocatable capacity as the evidence base.',
+                                [
+                                'Platform Reserve — capacity intentionally kept for platform/system workloads.',
+                                'Safety Headroom — percentage of allocatable capacity kept as operating margin.',
+                                'Unmanaged Commitment — governed commitment outside KAORI Tenant Management; it is not free capacity.',
+                                'Tenant Budget = allocatable - reserve - safety headroom - unmanaged commitment.'
+                                ],
+                                placement='right') }}
+                    </span>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Reserve and unmanaged commitments are explicit inputs; current utilization remains separate Analytics evidence.</p>
+                </div>
+                <div class="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-4">
+                    {% for name, label, default_value, placeholder, input_type in [
+                        ('platform_reserve_cpu', 'Platform Reserve CPU', '0', '8', 'text'),
+                        ('platform_reserve_memory', 'Platform Reserve Memory', '0', '12Gi', 'text'),
+                        ('platform_reserve_pods', 'Platform Reserve Pods', '0', '20', 'number'),
+                        ('safety_headroom_percent', 'Safety Headroom %', '', '10', 'number'),
+                        ('unmanaged_commitment_cpu', 'Unmanaged CPU', '0', '2', 'text'),
+                        ('unmanaged_commitment_memory', 'Unmanaged Memory', '0', '8Gi', 'text'),
+                        ('unmanaged_commitment_pods', 'Unmanaged Pods', '0', '10', 'number')
                         ] %}
                         <label class="block">
                             {{ form_field.label_row(label) }}
                             <input name="{{ name }}"
-                                   {% if name == 'safety_headroom_percent' %}type="number" min="0" max="99"{% endif %}
+                                   type="{{ input_type }}"
+                                   {% if name == 'safety_headroom_percent' %}min="0" max="99"{% elif input_type == 'number' %}min="0"{% endif %}
                                    required
                                    {% if default_value %}value="{{ default_value }}"{% endif %}
                                    data-capacity-policy-field="{{ name }}"
@@ -74,7 +95,39 @@
                         </label>
                     {% endfor %}
                 </div>
-            </div>
+            </section>
+
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated">
+                <div class="border-b border-outline-subtle px-4 py-3">
+                    <span class="inline-flex min-h-6 items-center gap-1.5">
+                        <h3 class="text-sm font-semibold text-content-primary">Storage Budget</h3>
+                        {{ info_tip.render('tenant-capacity-storage-budget-tip',
+                                'Governed storage budget',
+                                'Tenant Storage Budget is a logical admission ceiling for aggregate requests.storage.',
+                                [
+                                'It is configured explicitly until authoritative backend storage capacity is correlated by Kubernetes Storage Analytics.',
+                                'It is not derived from node filesystem capacity, PVC count, or PV/PVC totals.',
+                                'Tenant committed requests.storage is blocked before reconciliation when the projected logical budget would be exceeded.'
+                                ],
+                                placement='right') }}
+                    </span>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Use the amount of persistent storage you intentionally allow Tenant allocations to commit on this cluster.</p>
+                </div>
+                <div class="grid gap-4 p-4 lg:grid-cols-[minmax(14rem,0.45fr)_minmax(0,1.55fr)] lg:items-end">
+                    <label class="block">
+                        {{ form_field.label_row("Tenant Storage Budget") }}
+                        <input name="tenant_storage_budget"
+                               data-capacity-policy-field="tenant_storage_budget"
+                               data-default-value=""
+                               placeholder="2Ti"
+                               class="{{ form_field.input_classes() }}">
+                    </label>
+                    <div class="rounded-lg border border-kaori-primary/20 bg-kaori-soft px-3.5 py-3 text-xs leading-5 text-content-secondary">
+                        <span class="font-semibold text-content-primary">Logical budget only.</span>
+                        Physical/usable storage remains unknown until PV/PVC and backend capacity evidence are correlated in Kubernetes Storage Analytics.
+                    </div>
+                </div>
+            </section>
             <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-3.5 py-3">
                 <div class="flex items-start gap-2.5">
                     <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
@@ -83,7 +136,7 @@
                     </span>
                     <p class="text-xs leading-5 text-content-secondary">
                         <span class="font-semibold text-content-primary">Capacity rule:</span>
-                        Quota enforces limits; admission uses committed requests, not physical reservation.
+                        Quota enforces limits; admission governs CPU, memory, Pods, and logical storage commitment without claiming physical reservation.
                     </p>
                 </div>
             </div>
@@ -130,7 +183,7 @@
         {% endset %}
         {{ table_ui.inventory_block_header('chart-no-axes-combined',
                 'Allocation Budget',
-                'Budget, active committed requests, and remaining headroom by Ready cluster.',
+                'CPU, memory, Pod, and logical storage budget, committed allocation, and remaining headroom.',
                 capacity_loading_id,
                 'Refreshing Allocation Budget',
                 none,
@@ -180,8 +233,24 @@
                             </td>
                             {% for values in [item.display.budget, item.display.committed, item.display.headroom] %}
                                 <td class="{{ table_ui.cell_classes() }} align-middle">
-                                    <p class="text-sm font-semibold text-content-primary">{{ values.cpu }} CPU</p>
-                                    <p class="mt-1 text-xs text-content-muted">{{ values.memory }} memory</p>
+                                    <dl class="grid min-w-[12rem] grid-cols-2 gap-x-4 gap-y-2">
+                                        <div>
+                                            <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">CPU</dt>
+                                            <dd class="mt-0.5 text-xs font-semibold text-content-primary">{{ values.cpu }}</dd>
+                                        </div>
+                                        <div>
+                                            <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Memory</dt>
+                                            <dd class="mt-0.5 text-xs font-semibold text-content-primary">{{ values.memory }}</dd>
+                                        </div>
+                                        <div>
+                                            <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Pods</dt>
+                                            <dd class="mt-0.5 text-xs font-semibold text-content-primary">{{ values.pods }}</dd>
+                                        </div>
+                                        <div>
+                                            <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Storage</dt>
+                                            <dd class="mt-0.5 text-xs font-semibold text-content-primary">{{ values.storage }}</dd>
+                                        </div>
+                                    </dl>
                                 </td>
                             {% endfor %}
                             <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
