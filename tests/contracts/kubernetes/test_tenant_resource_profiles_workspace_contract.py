@@ -208,15 +208,20 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'Headroom</th>' not in capacity
     assert 'State</th>' in capacity
     assert 'Details</th>' in capacity
-    assert 'components/status_detail_dialog.html' in capacity
-    assert 'status_detail_dialog.trigger(' in capacity
-    assert 'status_detail_dialog.render(' in capacity
-    assert "button_text='View More'" in capacity
+    assert 'components/status_detail_dialog.html' not in capacity
+    assert 'data-kaori-dialog-open' in capacity
+    assert 'data-kaori-native-dialog' in capacity
+    assert 'class="{{ table_ui.action_classes() }}"' in capacity
+    assert 'View More' in capacity
+    assert 'lg:grid-cols-3' in capacity
+    assert "('Budget', 'gauge', item.display.budget" in capacity
+    assert "('Committed', 'layers-3', item.display.committed" in capacity
+    assert "('Headroom', 'chart-no-axes-combined', item.display.headroom" in capacity
     assert "dialog_id = 'capacity-budget-details-'" in capacity
     assert 'space-y-3 p-4' not in capacity
     assert 'section class="space-y-5"' in capacity
     assert 'xl:grid-cols-12' not in capacity
-    assert 'Uses fresh committed capacity evidence and recalculates governed CPU, memory, Pod, and logical storage headroom before this cluster policy is saved.' in capacity
+    assert 'Recalculates governed CPU, memory, Pod, and storage headroom before save.' in capacity
     assert 'Quota enforces limits; admission governs CPU, memory, Pods, and logical storage commitment without claiming physical reservation.' not in capacity
     assert 'Compute &amp; Pod Budget' in capacity
     assert 'platform_reserve_pods' in capacity
@@ -234,6 +239,8 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'Committed · Storage' in capacity
     assert 'Headroom · Storage' in capacity
     assert capacity.count('Logical budget only.') == 1
+    assert 'Physical and usable capacity remain separate Storage Analytics evidence.' in capacity
+    assert 'min-h-10 w-full items-center' in capacity
     assert 'mt-2 grid gap-3 lg:grid-cols-[minmax(14rem,22rem)_minmax(0,1fr)] lg:items-center' in capacity
     assert "form_field.help('Enter GiB" not in capacity
     assert 'item.display.budget.pods' in capacity
