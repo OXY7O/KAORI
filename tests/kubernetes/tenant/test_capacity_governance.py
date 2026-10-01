@@ -1,6 +1,7 @@
 from decimal import Decimal
 from types import SimpleNamespace
 
+import app.kubernetes.tenant.capacity_governance as capacity_governance
 from app.kubernetes.analytics.materialization.service import SnapshotResult
 from app.kubernetes.tenant.capacity import (
     CapacityVector,
@@ -13,6 +14,7 @@ from app.kubernetes.tenant.capacity import (
 from app.kubernetes.tenant.capacity_governance import (
     _aggregate_committed_allocation,
     _capacity_vector,
+    build_capacity_governance_summary,
     _capsule_tenant_quota_vector,
     _committed_evidence_reason,
     _logical_storage_budget_vector,
