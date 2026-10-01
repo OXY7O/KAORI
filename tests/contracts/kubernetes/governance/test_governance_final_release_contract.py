@@ -25,8 +25,6 @@ def test_tls_routes_own_authorized_clusterless_handling() -> None:
     )
 
 
-
-
 def test_governance_overview_is_domain_first_and_child_capability_evidence_stays_out() -> None:
     routes = read('app/kubernetes/governance/routes.py')
     overview = read('app/templates/kubernetes/governance/overview/index.html')
