@@ -70,10 +70,11 @@ def test_namespace_allocation_uses_canonical_builtin_snapshot() -> None:
         limit_defaults_json={'default': {'cpu': '99'}},
     )
 
-    quota, limits, customized = _namespace_allocation_values(profile)
+    quota, limits, storage_policy, customized = _namespace_allocation_values(profile)
 
     assert quota == RESOURCE_PROFILE_PRESETS['standard']['quota']
     assert limits == RESOURCE_PROFILE_PRESETS['standard']['limits']
+    assert storage_policy == {}
     assert customized is False
 
 
@@ -84,10 +85,11 @@ def test_namespace_allocation_uses_committed_custom_profile_snapshot() -> None:
         limit_defaults_json={'default': {'cpu': '750m'}},
     )
 
-    quota, limits, customized = _namespace_allocation_values(profile)
+    quota, limits, storage_policy, customized = _namespace_allocation_values(profile)
 
     assert quota == {'requests.cpu': '3'}
     assert limits == {'default': {'cpu': '750m'}}
+    assert storage_policy == {}
     assert customized is True
 
 
@@ -134,7 +136,7 @@ def test_namespace_builtin_snapshot_uses_stored_control_mask_with_canonical_valu
         limit_defaults_json={'default': {'cpu': '999'}},
     )
 
-    quota, limits, customized = _namespace_allocation_values(profile)
+    quota, limits, storage_policy, customized = _namespace_allocation_values(profile)
 
     assert quota == {
         'requests.cpu': RESOURCE_PROFILE_PRESETS['standard']['quota']['requests.cpu'],
@@ -143,6 +145,7 @@ def test_namespace_builtin_snapshot_uses_stored_control_mask_with_canonical_valu
     assert limits == {
         'default': {'cpu': RESOURCE_PROFILE_PRESETS['standard']['limits']['default']['cpu']}
     }
+    assert storage_policy == {}
     assert customized is False
 
 def test_advanced_profile_controls_persist_real_values() -> None:
@@ -249,3 +252,33 @@ def test_capsule_advanced_control_requires_specific_capsule_capability() -> None
     assert state['capsule_resource_pools']['requested'] is True
     assert state['capsule_resource_pools']['configuration']['resource_name'] == 'team-pool'
 
+
+
+def test_custom_profile_storage_policy_is_managed_and_validated() -> None:
+    from app.kubernetes.tenant.service import _storage_policy_values
+
+    policy = _storage_policy_values(
+        {
+            'control_contract_present': '1',
+            'control_pvc_min_storage': '1',
+            'pvc_min_storage': '1Gi',
+            'control_pvc_max_storage': '1',
+            'pvc_max_storage': '10Gi',
+            'control_pvc_default_request_storage': '1',
+            'pvc_default_request_storage': '2Gi',
+        }
+    )
+
+    assert policy == {
+        'min': '1Gi',
+        'max': '10Gi',
+        'default_request': '2Gi',
+    }
+
+
+def test_storage_policy_rejects_min_greater_than_max() -> None:
+    import pytest
+    from app.kubernetes.tenant.validation import validate_storage_policy
+
+    with pytest.raises(ValueError, match='minimum storage cannot exceed maximum storage'):
+        validate_storage_policy({'min': '20Gi', 'max': '10Gi'})
