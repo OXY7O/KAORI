@@ -203,15 +203,21 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'capacity_search' in capacity
     assert 'capacity_page' in capacity
     assert 'capacity_per_page' in capacity
-    assert 'Budget</th>' in capacity
-    assert 'Committed</th>' in capacity
-    assert 'Headroom</th>' in capacity
+    assert 'Budget</th>' not in capacity
+    assert 'Committed</th>' not in capacity
+    assert 'Headroom</th>' not in capacity
     assert 'State</th>' in capacity
+    assert 'Details</th>' in capacity
+    assert 'components/status_detail_dialog.html' in capacity
+    assert 'status_detail_dialog.trigger(' in capacity
+    assert 'status_detail_dialog.render(' in capacity
+    assert "button_text='View More'" in capacity
+    assert "dialog_id = 'capacity-budget-details-'" in capacity
     assert 'space-y-3 p-4' not in capacity
     assert 'section class="space-y-5"' in capacity
     assert 'xl:grid-cols-12' not in capacity
     assert 'Uses fresh committed capacity evidence and recalculates governed CPU, memory, Pod, and logical storage headroom before this cluster policy is saved.' in capacity
-    assert 'Quota enforces limits; admission governs CPU, memory, Pods, and logical storage commitment without claiming physical reservation.' in capacity
+    assert 'Quota enforces limits; admission governs CPU, memory, Pods, and logical storage commitment without claiming physical reservation.' not in capacity
     assert 'Compute &amp; Pod Budget' in capacity
     assert 'platform_reserve_pods' in capacity
     assert 'unmanaged_commitment_pods' in capacity
@@ -221,14 +227,16 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'min="0.01"' in capacity
     assert 'step="0.01"' in capacity
     assert 'placeholder="2048"' in capacity
-    assert '2048 = 2 TiB' in capacity
-    assert 'Compute evidence required' in capacity
-    assert 'CPU, memory, and Pods wait for a fresh Capacity Analytics snapshot.' in capacity
-    assert 'Logical storage remains governed independently.' in capacity
-    assert 'Storage · Logical' in capacity
-    assert 'Logical budget only.' in capacity
-    assert 'values.pods' in capacity
-    assert 'values.storage' in capacity
+    assert '2048 GiB = 2 TiB' in capacity
+    assert 'Compute refresh required' in capacity
+    assert 'Logical storage policy remains active' in capacity
+    assert 'Budget · Storage' in capacity
+    assert 'Committed · Storage' in capacity
+    assert 'Headroom · Storage' in capacity
+    assert capacity.count('Logical budget only.') == 1
+    assert "form_field.help('Enter GiB" not in capacity
+    assert 'item.display.budget.pods' in capacity
+    assert 'item.display.headroom.storage' in capacity
     assert "action_button.classes('primary')" in capacity
     assert "action_button.classes('primary', full=true)" not in capacity
     assert 'components/info_tip.html' in capacity
