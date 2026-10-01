@@ -710,6 +710,7 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     routes = read('app/kubernetes/tenant/routes.py')
     admin = read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
     service = read('app/kubernetes/tenant/discovery_service.py')
+    cutover = read('app/kubernetes/tenant/allocation_cutover.py')
     template = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
     preflight = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
     preflight_error = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight_error.html')
@@ -730,8 +731,9 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert "'Managed'" in service
     assert "'Blocked'" in service
 
-    # Discovery/adoption may create KAORI database records, but it must never
-    # create, patch, or delete provider objects.
+    # Registry enumeration stays read-only; provider mutation begins only after
+    # explicit human Adopt & Manage submission and live revalidation.
+    discovery_only = service.split('def adopt_discovered_tenant_committed', 1)[0]
     for provider_mutation in (
         'create_namespace(',
         'patch_namespace(',
@@ -740,16 +742,22 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
         'patch_cluster_custom_object(',
         'delete_cluster_custom_object(',
     ):
-        assert provider_mutation not in service
-    assert "'provider_mutation_performed': False" in service
+        assert provider_mutation not in discovery_only
+
+    assert 'reconcile_adopted_native_allocation(' in service
+    assert 'reconcile_adopted_namespace_policy(' in service
+    assert '_take_over_capsule_allocation(' in service
+    assert 'cutover_capsule_global_quota_allocation(' in service
+    assert 'cutover_capsule_tenant_resource_quota(' in service
+    assert "'provider_mutation_performed': True" in service
     assert 'TenantOwnershipStatus.ADOPTED.value' in service
+    assert "record.ownership_status = TenantOwnershipStatus.MANAGED.value" in cutover
 
     assert 'Tenant Discovery' in template
     assert 'Live Status' in template
     assert 'KAORI Classification' in template
     assert 'Governed Tenant' in template
-    # Discovery registry stays lightweight. Deep allocation/capability inspection
-    # is loaded only after the operator explicitly requests Adoption Preflight.
+
     discovery_context_source = service.split('def get_tenant_adoption_preflight_context', 1)[0]
     assert 'observe_native_namespace_allocation(' not in discovery_context_source
     assert 'observe_capsule_tenant_allocation(' not in discovery_context_source
@@ -776,8 +784,6 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'Live provider values' in preflight
     assert 'max-w-5xl' in preflight
     assert 'max-w-[1240px]' not in preflight
-    assert "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.15fr)]" in preflight
-    assert "lg:grid-cols-[minmax(0,1.3fr)_minmax(420px,0.9fr)]" not in preflight
     assert 'grid grid-cols-3 gap-px border-t border-outline-subtle bg-outline-subtle' in preflight
     assert 'divide-y divide-outline-subtle overflow-hidden rounded-xl border border-outline-subtle bg-surface-card' in preflight
     assert '[grid-template-columns:repeat(auto-fit,minmax(9rem,1fr))]' in preflight
@@ -787,32 +793,28 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert "'requests.memory': 'Memory Requests'" in preflight
     assert "'limits.memory': 'Memory Limits'" in preflight
     assert "'pods': 'Pods'" in preflight
-    assert "{% set quota_order = [" in preflight
-    assert "{% for key in quota_order if key in allocation.shared_quota %}" in preflight
-    assert 'Observed allocation contains unsupported or ambiguous dimensions; governance cutover must fail closed.' in preflight
     assert 'Namespace Coverage' in preflight
     assert 'Proposed KAORI Mapping' in preflight
     assert 'Adoption Result' in preflight
     assert 'Governance Checks' in preflight
     assert 'Technical Evidence' in preflight
     assert 'Human confirmation.' in preflight
-    assert 'No provider mutation.' in preflight
-    assert 'Adopt as Observed' in preflight
-    assert 'Adopt as' in preflight
-    assert 'remains authoritative' in preflight
-    assert 'KAORI records identity, provider lineage, and read-only allocation evidence without changing existing provider resources.' in preflight
-    assert 'Commits identity, provider lineage, Namespace evidence, and observed allocation.' in preflight
-    assert 'Read-only until governance cutover.' in preflight
-    assert 'Next: review governance cutover.' in preflight
-    assert 'tenant-adoption-control-tip' in preflight
-    assert 'Allocation control' in preflight
+
+    assert 'Adopt & Manage' in preflight
+    assert 'Managed after Adopt' in preflight
+    assert 'Adopt as <span class="font-semibold text-content-primary">Managed</span>' in preflight
+    assert 'remains execution authority' in preflight
+    assert 'imports the current provider values as the initial contract' in preflight
+    assert 'verifies an equivalent write/read-back' in preflight
+    assert 'Equivalent provider takeover only; effective values are preserved.' in preflight
+    assert 'Adopt as Observed' not in preflight
+    assert 'Observed · Read Only' not in preflight
+    assert 'No provider mutation.' not in preflight
+    assert 'Next: review governance cutover.' not in preflight
 
     assert 'components/info_tip.html' in template
     assert 'components/status_detail_dialog.html' not in template
     assert 'tenant-discovery-status-tip' in template
-    assert 'tenant-discovery-live-' not in template
-    assert 'tenant-discovery-classification-' not in template
-    assert 'tenant-discovery-action-' not in template
     assert 'Discovery status' in template
     assert 'Provider Missing' in template
     assert "page_param='discovery_page'" in template
@@ -826,7 +828,6 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'htmx:afterSwap' in modal_js
     assert 'data-tenant-adoption-close' in modal_js
     assert 'htmx:afterRequest' in modal_js
-
 
 def test_decommissioned_tenant_and_namespace_identity_can_be_recreated_as_new_generation() -> None:
     models = read('app/models/tenant.py')
