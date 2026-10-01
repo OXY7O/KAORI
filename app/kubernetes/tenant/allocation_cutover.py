@@ -236,6 +236,16 @@ def _mutate_namespace_ownership(
         }
     }
     api.patch_namespace(name=record.namespace, body=body)
+    verified = api.read_namespace(record.namespace)
+    verified_labels = dict(getattr(getattr(verified, 'metadata', None), 'labels', None) or {})
+    if (
+        verified_labels.get(_MANAGED_BY_KEY) != _MANAGED_BY_VALUE
+        or verified_labels.get(_TENANT_ID_KEY) != record.environment.tenant.id
+        or verified_labels.get(_PROFILE_ID_KEY) != profile.public_id
+    ):
+        raise ValueError(
+            'Namespace ownership metadata did not survive provider read-back; governance takeover fails closed.'
+        )
 
 
 def _read_quota(api: Any, *, namespace: str, name: str) -> Any | None:
@@ -284,10 +294,11 @@ def _mutate_quota(
             )
         return name
 
+    existing_labels = dict(getattr(getattr(existing, 'metadata', None), 'labels', None) or {})
     metadata = V1ObjectMeta(
         name=name,
         namespace=record.namespace,
-        labels=_labels(record, profile),
+        labels={**existing_labels, **_labels(record, profile)},
         resource_version=(
             _metadata_value(getattr(existing, 'metadata', None), 'resource_version')
             if existing
@@ -356,10 +367,11 @@ def _mutate_limit_range(
             )
         return name
 
+    existing_labels = dict(getattr(getattr(existing, 'metadata', None), 'labels', None) or {})
     metadata = V1ObjectMeta(
         name=name,
         namespace=record.namespace,
-        labels=_labels(record, profile),
+        labels={**existing_labels, **_labels(record, profile)},
         resource_version=(
             _metadata_value(getattr(existing, 'metadata', None), 'resource_version')
             if existing
