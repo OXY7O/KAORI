@@ -122,22 +122,22 @@
         </section>
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card transition"
                  data-tenant-resource-section
-                 aria-labelledby="resource-profile-quota-heading">
+                 aria-labelledby="resource-profile-compute-heading">
             <div class="border-b border-outline-subtle px-4 py-3.5">
                 <span class="inline-flex min-h-6 items-center gap-1.5">
-                    <h3 id="resource-profile-quota-heading"
-                        class="text-sm font-semibold text-content-primary">Quota Guardrails</h3>
-                    {{ info_tip.render('resource-profile-quota-tip',
-                            'Quota semantics',
-                            'These values become the reusable quota contract for the selected profile.',
+                    <h3 id="resource-profile-compute-heading"
+                        class="text-sm font-semibold text-content-primary">Compute &amp; Workload</h3>
+                    {{ info_tip.render('resource-profile-compute-tip',
+                            'Compute and workload guardrails',
+                            'Core ResourceQuota dimensions for workload compute and pod count.',
                             [
-                            'CPU/memory requests are the baseline capacity-admission commitment dimensions.',
-                            'PVC/storage remains quota evidence; physical storage admission requires separate capability evidence.',
-                            'Built-in preset values are read-only in normal workflows.'
+                            'CPU/memory requests feed Capacity Governance.',
+                            'Managed means KAORI owns the selected provider dimension after governed attachment.',
+                            'Built-in preset values remain fixed.'
                             ],
                             placement='right') }}
                 </span>
-                <p class="mt-1 text-xs text-content-muted">Namespace quota; CPU/memory requests feed Capacity Governance.</p>
+                <p class="mt-1 text-xs text-content-muted">Basic profile guardrails for CPU, memory, and pod count.</p>
             </div>
             <div class="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5">
                 {% for field, label, placeholder in [
@@ -145,18 +145,13 @@
                     ('limits_cpu', 'CPU Limits', '4'),
                     ('requests_memory', 'Memory Requests', '4Gi'),
                     ('limits_memory', 'Memory Limits', '8Gi'),
-                    ('pods', 'Pods', '20'),
-                    ('persistentvolumeclaims', 'PVCs', '10'),
-                    ('requests_storage', 'Storage', '100Gi'),
-                    ('services', 'Services', '10'),
-                    ('configmaps', 'ConfigMaps', '50'),
-                    ('secrets', 'Secrets', '50')
+                    ('pods', 'Pods', '20')
                     ] %}
-                    <label class="block rounded-lg border border-kaori-primary/20 bg-surface-card p-3 transition data-[locked=true]:border-outline-subtle data-[locked=true]:bg-surface-elevated"
-                           data-tenant-resource-field-wrap
-                           data-locked="true">
+                    <div class="block rounded-lg border border-kaori-primary/20 bg-surface-card p-3 transition data-[locked=true]:border-outline-subtle data-[locked=true]:bg-surface-elevated"
+                         data-tenant-resource-field-wrap
+                         data-locked="true">
                         <span class="flex min-h-6 items-center justify-between gap-2">
-                            <span class="text-xs font-semibold text-content-primary">{{ label }}</span>
+                            <label for="resource-profile-{{ field }}" class="text-xs font-semibold text-content-primary">{{ label }}</label>
                             <label class="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-content-muted">
                                 <input type="checkbox"
                                        name="control_{{ field }}"
@@ -167,14 +162,120 @@
                                 Managed
                             </label>
                         </span>
-                        <input name="{{ field }}"
+                        <input id="resource-profile-{{ field }}"
+                               name="{{ field }}"
                                placeholder="{{ placeholder }}"
                                data-tenant-resource-field="{{ field }}"
                                data-locked="true"
                                readonly
                                aria-readonly="true"
                                class="{{ form_field.input_classes() }} transition data-[locked=true]:cursor-not-allowed data-[locked=true]:border-dashed data-[locked=true]:border-outline-default data-[locked=true]:bg-surface-card data-[locked=true]:text-content-muted data-[locked=true]:shadow-none data-[locked=true]:focus:border-outline-default data-[locked=true]:focus:ring-0">
-                    </label>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card transition"
+                 data-tenant-resource-section
+                 aria-labelledby="resource-profile-storage-heading">
+            <div class="border-b border-outline-subtle px-4 py-3.5">
+                <span class="inline-flex min-h-6 items-center gap-1.5">
+                    <h3 id="resource-profile-storage-heading"
+                        class="text-sm font-semibold text-content-primary">Storage Guardrails</h3>
+                    {{ info_tip.render('resource-profile-storage-tip',
+                            'Bidirectional storage policy',
+                            'Storage combines namespace quota and per-PVC LimitRange policy in one Resource Profile category.',
+                            [
+                            'PVCs controls claim count; Storage controls total requests.storage quota.',
+                            'Min/Max PVC Size and defaults map to LimitRange[type=PersistentVolumeClaim].',
+                            'Adoption captures supported live PVC policy into a provider-equivalent baseline before takeover.'
+                            ],
+                            placement='right') }}
+                </span>
+                <p class="mt-1 text-xs text-content-muted">Quota plus per-PVC policy; managed values participate in adopt, drift, reapply, and provider-state acceptance.</p>
+            </div>
+            <div class="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                {% for field, label, placeholder, default_managed, requires_preset_value in [
+                    ('persistentvolumeclaims', 'PVCs', '10', true, false),
+                    ('requests_storage', 'Total Storage', '100Gi', true, false),
+                    ('pvc_min_storage', 'Min PVC Size', '1Gi', false, true),
+                    ('pvc_max_storage', 'Max PVC Size', '10Gi', false, true),
+                    ('pvc_default_request_storage', 'PVC Default Request', '1Gi', false, true),
+                    ('pvc_default_storage', 'PVC Default Limit', '10Gi', false, true)
+                    ] %}
+                    <div class="block rounded-lg border border-kaori-primary/20 bg-surface-card p-3 transition data-[locked=true]:border-outline-subtle data-[locked=true]:bg-surface-elevated"
+                         data-tenant-resource-field-wrap
+                         data-control-requires-value="{{ 'true' if requires_preset_value else 'false' }}"
+                         data-locked="true">
+                        <span class="flex min-h-6 items-center justify-between gap-2">
+                            <label for="resource-profile-{{ field }}" class="text-xs font-semibold text-content-primary">{{ label }}</label>
+                            <label class="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-content-muted">
+                                <input type="checkbox"
+                                       name="control_{{ field }}"
+                                       value="1"
+                                       {% if default_managed %}checked{% endif %}
+                                       data-tenant-resource-control="{{ field }}"
+                                       class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                Managed
+                            </label>
+                        </span>
+                        <input id="resource-profile-{{ field }}"
+                               name="{{ field }}"
+                               placeholder="{{ placeholder }}"
+                               data-tenant-resource-field="{{ field }}"
+                               data-locked="true"
+                               readonly
+                               aria-readonly="true"
+                               class="{{ form_field.input_classes() }} transition data-[locked=true]:cursor-not-allowed data-[locked=true]:border-dashed data-[locked=true]:border-outline-default data-[locked=true]:bg-surface-card data-[locked=true]:text-content-muted data-[locked=true]:shadow-none data-[locked=true]:focus:border-outline-default data-[locked=true]:focus:ring-0">
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card transition"
+                 data-tenant-resource-section
+                 aria-labelledby="resource-profile-object-heading">
+            <div class="border-b border-outline-subtle px-4 py-3.5">
+                <span class="inline-flex min-h-6 items-center gap-1.5">
+                    <h3 id="resource-profile-object-heading"
+                        class="text-sm font-semibold text-content-primary">Object Limits</h3>
+                    {{ info_tip.render('resource-profile-object-tip',
+                            'Namespace object limits',
+                            'ResourceQuota limits for common namespace objects.',
+                            placement='right') }}
+                </span>
+                <p class="mt-1 text-xs text-content-muted">Services, ConfigMaps, and Secrets are isolated from compute/storage for easier ownership review.</p>
+            </div>
+            <div class="grid gap-3 p-4 sm:grid-cols-3">
+                {% for field, label, placeholder in [
+                    ('services', 'Services', '10'),
+                    ('configmaps', 'ConfigMaps', '50'),
+                    ('secrets', 'Secrets', '50')
+                    ] %}
+                    <div class="block rounded-lg border border-kaori-primary/20 bg-surface-card p-3 transition data-[locked=true]:border-outline-subtle data-[locked=true]:bg-surface-elevated"
+                         data-tenant-resource-field-wrap
+                         data-locked="true">
+                        <span class="flex min-h-6 items-center justify-between gap-2">
+                            <label for="resource-profile-{{ field }}" class="text-xs font-semibold text-content-primary">{{ label }}</label>
+                            <label class="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-content-muted">
+                                <input type="checkbox"
+                                       name="control_{{ field }}"
+                                       value="1"
+                                       checked
+                                       data-tenant-resource-control="{{ field }}"
+                                       class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                Managed
+                            </label>
+                        </span>
+                        <input id="resource-profile-{{ field }}"
+                               name="{{ field }}"
+                               placeholder="{{ placeholder }}"
+                               data-tenant-resource-field="{{ field }}"
+                               data-locked="true"
+                               readonly
+                               aria-readonly="true"
+                               class="{{ form_field.input_classes() }} transition data-[locked=true]:cursor-not-allowed data-[locked=true]:border-dashed data-[locked=true]:border-outline-default data-[locked=true]:bg-surface-card data-[locked=true]:text-content-muted data-[locked=true]:shadow-none data-[locked=true]:focus:border-outline-default data-[locked=true]:focus:ring-0">
+                    </div>
                 {% endfor %}
             </div>
         </section>
