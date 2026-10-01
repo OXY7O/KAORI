@@ -180,9 +180,7 @@ class _FakeClient:
 
 def test_external_namespace_constraint_does_not_block_tenant_quota_cutover() -> None:
     tenant = _tenant(
-        external_constraints=[
-            'Namespace/partner-dev: LimitRange/capsule-partner-0/type=PersistentVolumeClaim'
-        ]
+        external_constraints=['Namespace/partner-dev: LimitRange/capsule-partner-0/type=PersistentVolumeClaim']
     )
 
     state = build_capsule_tenant_quota_cutover_state(tenant)
@@ -194,9 +192,7 @@ def test_external_namespace_constraint_does_not_block_tenant_quota_cutover() -> 
 
 
 def test_authoritative_unsupported_field_blocks_tenant_quota_cutover() -> None:
-    tenant = _tenant(
-        blockers=['Tenant.spec.resourceQuotas.items[0].scopeSelector']
-    )
+    tenant = _tenant(blockers=['Tenant.spec.resourceQuotas.items[0].scopeSelector'])
 
     state = build_capsule_tenant_quota_cutover_state(tenant)
 
