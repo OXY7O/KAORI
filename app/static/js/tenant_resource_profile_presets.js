@@ -54,7 +54,13 @@
         const customModeLabel = form.querySelector('[data-tenant-profile-mode-custom-label]')
         const modeIcon = form.querySelector('[data-tenant-profile-mode-icon] [data-lucide]')
 
-        if (modeBanner) modeBanner.dataset.mode = readonly ? 'fixed' : 'custom'
+        if (modeBanner) {
+            modeBanner.dataset.mode = readonly ? 'fixed' : 'custom'
+            modeBanner.classList.toggle('border-kaori-primary/20', readonly)
+            modeBanner.classList.toggle('bg-kaori-soft', readonly)
+            modeBanner.classList.toggle('border-outline-subtle', !readonly)
+            modeBanner.classList.toggle('bg-surface-card', !readonly)
+        }
         if (modeTitle) modeTitle.textContent = readonly ? 'KAORI Preset · Fixed' : 'Custom · Editable'
         if (modeDetail) {
             modeDetail.textContent = readonly
