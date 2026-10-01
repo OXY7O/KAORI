@@ -1865,6 +1865,7 @@ def get_namespace_registry_context(
                 ),
                 'quota': record.allocation_quota_json or {},
                 'limits': record.allocation_limit_defaults_json or {},
+                'storage_policy': record.allocation_storage_policy_json or {},
                 'control_state': allocation_control_state(record),
             }
             for record in namespace_options
@@ -1873,6 +1874,7 @@ def get_namespace_registry_context(
             str(profile.id): {
                 'quota': profile.quota_hard_json or {},
                 'limits': profile.limit_defaults_json or {},
+                'storage_policy': profile.storage_policy_json or {},
                 'version': (
                     int(RESOURCE_PROFILE_PRESETS[profile.profile_class]['version'])
                     if profile.profile_class in RESOURCE_PROFILE_PRESETS
@@ -1970,6 +1972,7 @@ def get_tenant_context() -> dict[str, Any]:
                 'profile_version': record.resource_profile_version,
                 'quota': record.allocation_quota_json or {},
                 'limits': record.allocation_limit_defaults_json or {},
+                'storage_policy': record.allocation_storage_policy_json or {},
             }
             for record in namespaces
         },
@@ -1977,6 +1980,7 @@ def get_tenant_context() -> dict[str, Any]:
             str(profile.id): {
                 'quota': profile.quota_hard_json or {},
                 'limits': profile.limit_defaults_json or {},
+                'storage_policy': profile.storage_policy_json or {},
                 'version': (
                     int(RESOURCE_PROFILE_PRESETS[profile.profile_class]['version'])
                     if profile.profile_class in RESOURCE_PROFILE_PRESETS
