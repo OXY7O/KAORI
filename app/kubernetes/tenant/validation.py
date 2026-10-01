@@ -22,7 +22,7 @@ SUPPORTED_QUOTA_KEYS = frozenset(
 )
 COUNT_QUOTA_KEYS = frozenset({'pods', 'persistentvolumeclaims', 'services', 'configmaps', 'secrets'})
 SUPPORTED_LIMIT_KEYS = frozenset({'cpu', 'memory'})
-SUPPORTED_STORAGE_POLICY_FIELDS = frozenset({'min', 'max', 'default', 'default_request'})
+SUPPORTED_STORAGE_POLICY_FIELDS = frozenset({'min', 'max'})
 _NAMESPACE_RE = re.compile(r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')
 
 
@@ -101,19 +101,6 @@ def validate_storage_policy(
                 raise
             raise ValueError('PVC min/max must be valid Kubernetes storage quantities') from exc
 
-    default_request = normalized.get('default_request')
-    default_limit = normalized.get('default')
-    if minimum and default_request:
-        if Decimal(parse_quantity(default_request)) < Decimal(parse_quantity(minimum)):
-            raise ValueError('PVC default request cannot be smaller than minimum storage')
-    if maximum and default_request:
-        if Decimal(parse_quantity(default_request)) > Decimal(parse_quantity(maximum)):
-            raise ValueError('PVC default request cannot exceed maximum storage')
-    if minimum and default_limit:
-        if Decimal(parse_quantity(default_limit)) < Decimal(parse_quantity(minimum)):
-            raise ValueError('PVC default limit cannot be smaller than minimum storage')
-    if maximum and default_limit:
-        if Decimal(parse_quantity(default_limit)) > Decimal(parse_quantity(maximum)):
-            raise ValueError('PVC default limit cannot exceed maximum storage')
+
 
     return normalized
