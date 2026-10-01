@@ -68,10 +68,10 @@
                                         {{ table_label.status_label(row.resource_kind, 'info') }}
                                     </div>
                                     <p class="mt-1 text-sm text-content-secondary">
-                                        Adopt as <span class="font-semibold text-content-primary">Observed</span>
+                                        Adopt as <span class="font-semibold text-content-primary">Managed</span>
                                         <span class="text-content-muted">·</span>
-                                        {{ 'Capsule' if row.provider_key == 'capsule' else 'Native Kubernetes' }} remains authoritative.
-                                        KAORI records identity, provider lineage, and read-only allocation evidence without changing existing provider resources.
+                                        {{ 'Capsule' if row.provider_key == 'capsule' else 'Native Kubernetes' }} remains execution authority.
+                                        KAORI imports the current provider values as the initial contract, verifies an equivalent write/read-back, then owns supported governance controls without changing effective limits.
                                     </p>
                                 </div>
                             </div>
@@ -88,7 +88,7 @@
                                     <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Allocation</dt>
                                     <dd class="mt-1.5">
                                         {% if allocation.control_state == 'observed' %}
-                                            {{ table_label.special_label('Observed · Read Only', 'info', 'eye') }}
+                                            {{ table_label.special_label('Managed after Adopt', 'normal', 'shield-check') }}
                                         {% else %}
                                             {{ table_label.special_label('Control Unavailable', 'warning', 'shield-alert') }}
                                         {% endif %}
@@ -129,7 +129,7 @@
                                 <div class="min-w-0">
                                     <p class="text-sm font-semibold text-content-primary">After adoption</p>
                                     <p class="mt-1 text-xs leading-5 text-content-muted">
-                                        Ownership → <span class="font-semibold text-content-primary">Adopted / Observed</span>.
+                                        Ownership → <span class="font-semibold text-content-primary">Adopted / Managed</span>.
                                         {% if allocation.control_state == 'observed' %}
                                             Next: review governance cutover.
                                         {% else %}
@@ -555,7 +555,7 @@
                 </div>
                 <footer class="sticky bottom-0 flex flex-col gap-3 border-t border-outline-subtle bg-surface-card px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                     <p class="text-xs leading-5 text-content-muted">
-                        <span class="font-semibold text-content-primary">No provider mutation.</span>
+                        <span class="font-semibold text-content-primary">Equivalent provider takeover only; effective values are preserved.</span>
                         This action registers the existing object as Adopted / Observed.
                     </p>
                     <div class="flex flex-col-reverse gap-2 sm:flex-row">
@@ -564,7 +564,7 @@
                                 class="{{ action_button.classes('secondary') }}">Cancel</button>
                         <button type="submit" class="{{ action_button.classes('primary') }}">
                             <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
-                            Adopt as Observed
+                            Adopt & Manage
                         </button>
                     </div>
                 </footer>
