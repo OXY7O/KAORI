@@ -403,9 +403,11 @@ def test_resource_profile_storage_policy_is_persisted_and_bidirectional() -> Non
     assert "storage_policy=dict(record.allocation_storage_policy_json or {})" in drift
     assert 'record.allocation_storage_policy_json = storage_policy' in drift
 
-    assert 'def _create_adopted_baseline_profile(' in adoption
-    assert 'profile.storage_policy_json = dict(allocation.get(' in adoption
+    assert 'def _create_adopted_baseline_profile(' not in adoption
     assert 'namespace_record.allocation_storage_policy_json' in adoption
+    assert 'def _materialize_adopted_baseline_profile(' in service
+    assert "profile_selector == 'adopted_baseline'" in service
+    assert 'profile.storage_policy_json = dict(record.allocation_storage_policy_json or {})' in service
 
     for label in ('Compute &amp; Workload', 'Storage Guardrails', 'Object Limits', 'Container Defaults'):
         assert label in form
