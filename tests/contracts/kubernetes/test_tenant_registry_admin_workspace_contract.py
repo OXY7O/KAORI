@@ -781,6 +781,10 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'After adoption' in preflight
     assert 'Provider &amp; Live Context' in preflight
     assert 'Allocation Overview' in preflight
+    assert 'lg:grid-cols-2' in preflight
+    assert 'lg:col-span-2' in preflight
+    assert 'lg:max-w-[62%]' in preflight
+    assert 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.15fr)]' not in preflight
     assert 'Effective Allocation' in preflight
     assert 'Live provider values' in preflight
     assert 'max-w-5xl' in preflight
