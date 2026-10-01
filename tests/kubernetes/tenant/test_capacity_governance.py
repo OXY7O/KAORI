@@ -534,3 +534,56 @@ def test_logical_storage_budget_remains_available_without_compute_capacity_snaps
     assert budget.pods is None
     assert budget.storage_bytes == Decimal('2048') * gib
 
+def test_missing_compute_snapshot_keeps_logical_storage_budget_visible(monkeypatch) -> None:
+    gib = Decimal(1024**3)
+    policy = SimpleNamespace(
+        cluster_id='cluster-1',
+        platform_reserve_cpu='0',
+        platform_reserve_memory='0',
+        platform_reserve_pods=0,
+        safety_headroom_percent=10,
+        unmanaged_commitment_cpu='0',
+        unmanaged_commitment_memory='0',
+        unmanaged_commitment_pods=0,
+        tenant_storage_budget='2048Gi',
+    )
+
+    monkeypatch.setattr(
+        capacity_governance.TenantCapacityPolicy,
+        'query',
+        SimpleNamespace(filter_by=lambda **kwargs: SimpleNamespace(first=lambda: policy)),
+    )
+    monkeypatch.setattr(
+        capacity_governance,
+        '_read_capacity_snapshot',
+        lambda cluster_id: SnapshotResult(
+            context={},
+            snapshot=None,
+            state='missing',
+            stale=False,
+        ),
+    )
+    monkeypatch.setattr(
+        capacity_governance,
+        '_committed_tenant_allocation',
+        lambda cluster_id: (
+            CapacityVector(
+                cpu=Decimal('0'),
+                memory_bytes=Decimal('0'),
+                pods=Decimal('0'),
+                storage_bytes=Decimal('100') * gib,
+            ),
+            1,
+            [],
+        ),
+    )
+
+    summary = build_capacity_governance_summary('cluster-1')
+
+    assert summary['state'] == 'Unknown'
+    assert summary['display']['budget']['cpu'] == 'N/A'
+    assert summary['display']['budget']['memory'] == 'N/A'
+    assert summary['display']['budget']['pods'] == 'N/A'
+    assert summary['display']['budget']['storage'] == '2048.00 GiB'
+    assert summary['display']['headroom']['storage'] == '1948.00 GiB'
+
