@@ -68,13 +68,14 @@ def test_namespace_allocation_uses_canonical_builtin_snapshot() -> None:
         profile_class='standard',
         quota_hard_json={'requests.cpu': '99'},
         limit_defaults_json={'default': {'cpu': '99'}},
+        storage_policy_json=dict(RESOURCE_PROFILE_PRESETS['standard']['storage_policy']),
     )
 
     quota, limits, storage_policy, customized = _namespace_allocation_values(profile)
 
     assert quota == RESOURCE_PROFILE_PRESETS['standard']['quota']
     assert limits == RESOURCE_PROFILE_PRESETS['standard']['limits']
-    assert storage_policy == {}
+    assert storage_policy == RESOURCE_PROFILE_PRESETS['standard']['storage_policy']
     assert customized is False
 
 
@@ -97,10 +98,17 @@ def test_namespace_allocation_uses_committed_custom_profile_snapshot() -> None:
 def test_extra_large_preset_exposes_canonical_fixed_values() -> None:
     extra_large = RESOURCE_PROFILE_PRESETS['extra_large']
 
-    assert extra_large['version'] == 1
+    assert extra_large['version'] == 2
     assert extra_large['quota']['requests.cpu'] == '8'
     assert extra_large['quota']['requests.memory'] == '16Gi'
     assert extra_large['quota']['requests.storage'] == '400Gi'
+    assert extra_large['storage_policy'] == {'min': '1Gi', 'max': '10Gi'}
+
+
+def test_all_builtin_presets_manage_canonical_pvc_bounds() -> None:
+    for preset in RESOURCE_PROFILE_PRESETS.values():
+        assert preset['version'] == 2
+        assert preset['storage_policy'] == {'min': '1Gi', 'max': '10Gi'}
 
 
 def test_builtin_preset_control_mask_keeps_values_fixed_and_omits_unmanaged_dimensions() -> None:
@@ -134,6 +142,7 @@ def test_namespace_builtin_snapshot_uses_stored_control_mask_with_canonical_valu
         profile_class='standard',
         quota_hard_json={'requests.cpu': '999', 'pods': '999'},
         limit_defaults_json={'default': {'cpu': '999'}},
+        storage_policy_json={'min': '1Gi'},
     )
 
     quota, limits, storage_policy, customized = _namespace_allocation_values(profile)
@@ -145,7 +154,7 @@ def test_namespace_builtin_snapshot_uses_stored_control_mask_with_canonical_valu
     assert limits == {
         'default': {'cpu': RESOURCE_PROFILE_PRESETS['standard']['limits']['default']['cpu']}
     }
-    assert storage_policy == {}
+    assert storage_policy == {'min': '1Gi'}
     assert customized is False
 
 def test_advanced_profile_controls_persist_real_values() -> None:
@@ -264,15 +273,12 @@ def test_custom_profile_storage_policy_is_managed_and_validated() -> None:
             'pvc_min_storage': '1Gi',
             'control_pvc_max_storage': '1',
             'pvc_max_storage': '10Gi',
-            'control_pvc_default_request_storage': '1',
-            'pvc_default_request_storage': '2Gi',
         }
     )
 
     assert policy == {
         'min': '1Gi',
         'max': '10Gi',
-        'default_request': '2Gi',
     }
 
 
