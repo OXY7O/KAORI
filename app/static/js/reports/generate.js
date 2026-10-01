@@ -188,8 +188,9 @@
             })
         }
 
-        function syncOverallReadiness(isReady) {
+        function syncOverallReadiness(isReady, blockers = []) {
             overallRequestReady = isReady
+            const missingRequirements = blockers.length ? blockers.join(' and ') : 'required request inputs'
             const readyStatusClasses =
                 'inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border border-status-normal-border bg-status-normal-soft px-2 py-0.5 text-xs font-semibold leading-4 text-status-normal-text'
             const warningStatusClasses =
@@ -222,7 +223,7 @@
                 readinessSummaryText.textContent = isReady
                     ? 'Scope and artifact requirements are valid. The request is ready to queue.'
                     : storageGenerationReady
-                      ? 'Resolve the required scope or section checks before creating the request.'
+                      ? `Complete ${missingRequirements} before creating the request.`
                       : 'Artifact storage is unavailable. Restore storage connectivity before creating a report.'
             }
             if (previewEligibilityStatus) {
@@ -250,7 +251,7 @@
                 previewNextStepDescription.textContent = isReady
                     ? 'The governed request will be saved and queued on the canonical Reports worker.'
                     : storageGenerationReady
-                      ? 'Resolve the required scope or section selection before continuing.'
+                      ? `Complete ${missingRequirements} before continuing.`
                       : 'Restore artifact storage connectivity before creating and queueing a report.'
             }
             syncWizardNavigation()
@@ -587,17 +588,35 @@
             }
         }
 
+        function scopeSelectionIsReady() {
+            const reportType = getReportTypeOption()
+            const scopeType =
+                reportType && reportType.scope_asset_type ? reportType.scope_asset_type : 'kubernetes_cluster'
+
+            if (scopeType === 'object_storage_system') {
+                return Boolean(objectStorageSystemSelect && objectStorageSystemSelect.value)
+            }
+            if (reportType && reportType.requires_cluster === false) {
+                return true
+            }
+            return Boolean(clusterSelect && clusterSelect.value)
+        }
+
         function syncClusterGuard() {
             const reportType = getReportTypeOption()
             const scopeType =
                 reportType && reportType.scope_asset_type ? reportType.scope_asset_type : 'kubernetes_cluster'
             const objectStorageScope = scopeType === 'object_storage_system'
             const hasSelectedSections = getSelectedSections().length > 0
-            const clusterReady = hasRegisteredClusters && Boolean(clusterSelect.value)
-            const objectStorageReady =
-                hasObjectStorageSystems && objectStorageSystemSelect && Boolean(objectStorageSystemSelect.value)
-            const scopeReady = objectStorageScope ? objectStorageReady : clusterReady
+            const scopeReady = scopeSelectionIsReady()
             const shouldBlock = !scopeReady || !hasSelectedSections || !storageGenerationReady
+            const readinessBlockers = []
+            if (!scopeReady) {
+                readinessBlockers.push(objectStorageScope ? 'Object Storage system scope' : 'Kubernetes cluster scope')
+            }
+            if (!hasSelectedSections) {
+                readinessBlockers.push('report section selection')
+            }
 
             if (wizardScopeValidation) {
                 wizardScopeValidation.classList.toggle('hidden', scopeReady)
@@ -653,7 +672,7 @@
             if (previewCluster) previewCluster.textContent = objectStorageScope ? systemLabel : clusterLabel
             if (previewNamespace) previewNamespace.textContent = objectStorageScope ? 'System Scope' : namespaceValue
 
-            syncOverallReadiness(!shouldBlock)
+            syncOverallReadiness(!shouldBlock, readinessBlockers)
             if (window.lucide) window.lucide.createIcons()
             if (!generateButton) return
             generateButton.disabled = shouldBlock
@@ -666,11 +685,7 @@
         }
 
         function wizardScopeIsReady() {
-            const reportType = getReportTypeOption()
-            if (reportType.scope_asset_type === 'object_storage_system') {
-                return hasObjectStorageSystems && Boolean(objectStorageSystemSelect && objectStorageSystemSelect.value)
-            }
-            return hasRegisteredClusters && Boolean(clusterSelect.value)
+            return scopeSelectionIsReady()
         }
 
         function wizardArtifactIsReady() {

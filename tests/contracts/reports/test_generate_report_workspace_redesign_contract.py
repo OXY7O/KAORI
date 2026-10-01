@@ -413,3 +413,16 @@ def test_generate_report_readiness_badges_use_shared_semantic_border_authority()
     assert 'border-status-warning-border' not in readiness
     assert 'function setReadinessItemTone' in runtime
     assert 'function syncOverallReadiness' in runtime
+
+
+def test_generate_report_readiness_uses_live_scope_selection_instead_of_bootstrap_counts() -> None:
+    runtime = read(RUNTIME)
+    service = read(SERVICE)
+
+    assert 'function scopeSelectionIsReady()' in runtime
+    assert "return Boolean(objectStorageSystemSelect && objectStorageSystemSelect.value)" in runtime
+    assert "if (reportType && reportType.requires_cluster === false)" in runtime
+    assert "return Boolean(clusterSelect && clusterSelect.value)" in runtime
+    assert "return hasRegisteredClusters && Boolean(clusterSelect.value)" not in runtime
+    assert "hasObjectStorageSystems && Boolean(objectStorageSystemSelect && objectStorageSystemSelect.value)" not in runtime
+    assert "if not bool(report_context.get('requires_cluster', True)):" in service

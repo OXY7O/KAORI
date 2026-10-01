@@ -60,7 +60,7 @@
                             {{ integration_ui.palette_icon("workflow", "brand", size="sm") }}
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">Binding Workflow</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Select the consumer, establish resolver preference and identity isolation, then validate the asset-scoped evidence before the binding becomes eligible.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">Select the consumer, set resolver preference and identity isolation, then validate the asset-scoped evidence for eligibility.</p>
                             </div>
                         </div>
                         <div class="mt-3 grid gap-2 sm:grid-cols-3">
@@ -82,7 +82,7 @@
                             {{ integration_ui.palette_icon("route", "brand", size="sm") }}
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">Consumer &amp; Resolver Preference</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">The binding is asset-scoped. Resolver role and priority express preference; they do not bypass source readiness or binding validation.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">The binding is asset-scoped. Resolver role and priority set preference without bypassing source readiness or validation.</p>
                             </div>
                         </div>
                         <div class="mt-4 grid gap-4 sm:grid-cols-2">
@@ -219,7 +219,7 @@
                     </section>
                     <div class="mt-5">
                         {{ operational_callout.render('Source-Owned Mutation Boundary',
-                                                'Create, update, validate, and remove this binding from the Observability source workspace. Kubernetes and Object Storage asset-owner pages expose binding evidence read-only.',
+                                                'Manage this binding from the Observability source workspace. Kubernetes and Object Storage asset-owner pages expose its evidence read-only.',
                                                 'shield-check',
                                                 tone='info') }}
                     </div>
@@ -232,7 +232,7 @@
                 {% endif %}
             </div>
             <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-subtle px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-                <p class="min-w-0 flex-1 text-xs leading-5 text-content-muted">Saving creates asset-scoped evidence in Validation Required. Validate the binding before consumer eligibility is granted.</p>
+                <p class="min-w-0 flex-1 text-xs leading-5 text-content-muted">Saving creates asset-scoped evidence in Validation Required. Validate it before consumer eligibility.</p>
                 <div class="flex shrink-0 items-center justify-end gap-2">
                     <button type="button"
                             data-kaori-dialog-close

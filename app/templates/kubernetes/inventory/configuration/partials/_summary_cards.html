@@ -7,7 +7,7 @@
     ('lock-keyhole', 'Immutable Objects', inventory.immutable_items, 'Objects configured as immutable.', 'info' if inventory.immutable_items > 0 else ('brand' if has_inventory else 'unknown')),
     ('key-square', 'Keyless Objects', inventory.keyless_items, 'Objects with no key names represented in the committed snapshot.', 'info' if inventory.keyless_items > 0 else ('normal' if has_inventory else 'unknown')),
     ('link-2', 'Current Pod References', inventory.current_reference_items, 'Objects referenced by at least one Pod in the committed Pod snapshot.', 'normal' if inventory.current_reference_items > 0 else ('brand' if has_inventory else 'unknown')),
-    ('circle-help', 'Reference Evidence Gaps', inventory.reference_not_reported_items, 'Objects whose Pod reference state cannot be established because Pod collection evidence is unavailable.', 'warning' if inventory.reference_not_reported_items > 0 else ('normal' if has_inventory else 'unknown'))
+    ('circle-help', 'Reference Evidence Gaps', inventory.reference_not_reported_items, 'Objects with unresolved Pod references because Pod collection evidence is unavailable.', 'warning' if inventory.reference_not_reported_items > 0 else ('normal' if has_inventory else 'unknown'))
 ] %}
 {% call operational_section_card.render(
     'Configuration Reference Posture',

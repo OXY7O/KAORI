@@ -668,6 +668,8 @@ def _get_object_storage_system_options() -> list[dict[str, str]]:
 def _scope_is_ready(form_state: dict[str, Any], report_context: dict[str, Any]) -> bool:
     if report_context.get('scope_asset_type') == OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
         return bool(str(form_state.get('object_storage_system_id') or '').strip())
+    if not bool(report_context.get('requires_cluster', True)):
+        return True
     return bool(str(form_state.get('cluster_id') or '').strip())
 
 

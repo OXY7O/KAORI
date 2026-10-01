@@ -287,7 +287,7 @@ def _operational_context(
     if state_label == 'Progressing':
         return {
             'title': 'Validate Rollout Progress',
-            'description': 'Confirm updated and available replicas continue moving toward the desired state within the configured deadline.',
+            'description': 'Confirm updated and available replicas progress toward the desired state within the configured deadline.',
             'icon': 'loader-circle',
             'tone': 'warning',
         }
