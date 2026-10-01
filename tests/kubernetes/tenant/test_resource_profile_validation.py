@@ -1,6 +1,6 @@
 import pytest
 
-from app.kubernetes.tenant.validation import validate_namespace_name, validate_profile_spec
+from app.kubernetes.tenant.validation import validate_namespace_name, validate_profile_spec, validate_storage_policy
 
 
 def test_namespace_name_uses_dns_label_contract() -> None:
@@ -43,3 +43,13 @@ def test_resource_profile_allows_explicitly_unbounded_dimensions() -> None:
 
     assert quota == {}
     assert limits == {}
+
+
+def test_pvc_storage_policy_uses_min_max_only() -> None:
+    assert validate_storage_policy({'min': '1Gi', 'max': '10Gi'}) == {
+        'min': '1Gi',
+        'max': '10Gi',
+    }
+
+    with pytest.raises(ValueError, match='unsupported PVC storage policy field'):
+        validate_storage_policy({'default_request': '1Gi'})
