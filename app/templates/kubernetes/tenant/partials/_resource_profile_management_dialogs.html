@@ -102,6 +102,7 @@
                           action="{{ url_for('tenant.update_resource_profile_route', profile_id=profile.id) }}"
                           class="space-y-5">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="control_contract_present" value="1">
                         <input type="hidden" name="advanced_control_contract_present" value="1">
                         <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                             <h3 class="text-sm font-semibold text-content-primary">Identity &amp; State</h3>
@@ -133,28 +134,77 @@
                             </div>
                         </section>
                         <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                            <h3 class="text-sm font-semibold text-content-primary">Quota Guardrails</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">ResourceQuota values for future governed allocations.</p>
+                            <h3 class="text-sm font-semibold text-content-primary">Compute &amp; Workload</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">CPU, memory, and pod ResourceQuota controls.</p>
                             <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                                {% for name, label, value, placeholder in [
-                                    ('requests_cpu', 'CPU Requests', profile.quota_hard_json.get('requests.cpu') or '', '2'),
-                                    ('limits_cpu', 'CPU Limits', profile.quota_hard_json.get('limits.cpu') or '', '4'),
-                                    ('requests_memory', 'Memory Requests', profile.quota_hard_json.get('requests.memory') or '', '4Gi'),
-                                    ('limits_memory', 'Memory Limits', profile.quota_hard_json.get('limits.memory') or '', '8Gi'),
-                                    ('pods', 'Pods', profile.quota_hard_json.get('pods') or '', '20'),
-                                    ('persistentvolumeclaims', 'PVCs', profile.quota_hard_json.get('persistentvolumeclaims') or '', '10'),
-                                    ('requests_storage', 'Storage', profile.quota_hard_json.get('requests.storage') or '', '100Gi'),
-                                    ('services', 'Services', profile.quota_hard_json.get('services') or '', '10'),
-                                    ('configmaps', 'ConfigMaps', profile.quota_hard_json.get('configmaps') or '', '50'),
-                                    ('secrets', 'Secrets', profile.quota_hard_json.get('secrets') or '', '50')
+                                {% for name, label, value, placeholder, managed in [
+                                    ('requests_cpu', 'CPU Requests', profile.quota_hard_json.get('requests.cpu') or '', '2', 'requests.cpu' in (profile.quota_hard_json or {})),
+                                    ('limits_cpu', 'CPU Limits', profile.quota_hard_json.get('limits.cpu') or '', '4', 'limits.cpu' in (profile.quota_hard_json or {})),
+                                    ('requests_memory', 'Memory Requests', profile.quota_hard_json.get('requests.memory') or '', '4Gi', 'requests.memory' in (profile.quota_hard_json or {})),
+                                    ('limits_memory', 'Memory Limits', profile.quota_hard_json.get('limits.memory') or '', '8Gi', 'limits.memory' in (profile.quota_hard_json or {})),
+                                    ('pods', 'Pods', profile.quota_hard_json.get('pods') or '', '20', 'pods' in (profile.quota_hard_json or {}))
                                     ] %}
-                                    <label class="block">
-                                        {{ form_field.label_row(label) }}
-                                        <input name="{{ name }}"
-                                               value="{{ value }}"
-                                               placeholder="{{ placeholder }}"
-                                               class="{{ form_field.input_classes() }}">
-                                    </label>
+                                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                        <span class="flex min-h-6 items-center justify-between gap-2">
+                                            <label class="text-xs font-semibold text-content-primary">{{ label }}</label>
+                                            <label class="inline-flex items-center gap-1.5 text-[11px] font-medium text-content-muted">
+                                                <input type="checkbox" name="control_{{ name }}" value="1" {% if managed %}checked{% endif %}
+                                                       class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                                Managed
+                                            </label>
+                                        </span>
+                                        <input name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" class="{{ form_field.input_classes() }}">
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </section>
+                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                            <h3 class="text-sm font-semibold text-content-primary">Storage Guardrails</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Namespace storage quota plus per-PVC LimitRange policy.</p>
+                            <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {% set storage_policy = profile.storage_policy_json or {} %}
+                                {% for name, label, value, placeholder, managed in [
+                                    ('persistentvolumeclaims', 'PVCs', profile.quota_hard_json.get('persistentvolumeclaims') or '', '10', 'persistentvolumeclaims' in (profile.quota_hard_json or {})),
+                                    ('requests_storage', 'Total Storage', profile.quota_hard_json.get('requests.storage') or '', '100Gi', 'requests.storage' in (profile.quota_hard_json or {})),
+                                    ('pvc_min_storage', 'Min PVC Size', storage_policy.get('min') or '', '1Gi', 'min' in storage_policy),
+                                    ('pvc_max_storage', 'Max PVC Size', storage_policy.get('max') or '', '10Gi', 'max' in storage_policy),
+                                    ('pvc_default_request_storage', 'PVC Default Request', storage_policy.get('default_request') or '', '1Gi', 'default_request' in storage_policy),
+                                    ('pvc_default_storage', 'PVC Default Limit', storage_policy.get('default') or '', '10Gi', 'default' in storage_policy)
+                                    ] %}
+                                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                        <span class="flex min-h-6 items-center justify-between gap-2">
+                                            <label class="text-xs font-semibold text-content-primary">{{ label }}</label>
+                                            <label class="inline-flex items-center gap-1.5 text-[11px] font-medium text-content-muted">
+                                                <input type="checkbox" name="control_{{ name }}" value="1" {% if managed %}checked{% endif %}
+                                                       class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                                Managed
+                                            </label>
+                                        </span>
+                                        <input name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" class="{{ form_field.input_classes() }}">
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </section>
+                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                            <h3 class="text-sm font-semibold text-content-primary">Object Limits</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Namespace object ResourceQuota controls.</p>
+                            <div class="mt-4 grid gap-4 sm:grid-cols-3">
+                                {% for name, label, value, placeholder, managed in [
+                                    ('services', 'Services', profile.quota_hard_json.get('services') or '', '10', 'services' in (profile.quota_hard_json or {})),
+                                    ('configmaps', 'ConfigMaps', profile.quota_hard_json.get('configmaps') or '', '50', 'configmaps' in (profile.quota_hard_json or {})),
+                                    ('secrets', 'Secrets', profile.quota_hard_json.get('secrets') or '', '50', 'secrets' in (profile.quota_hard_json or {}))
+                                    ] %}
+                                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                        <span class="flex min-h-6 items-center justify-between gap-2">
+                                            <label class="text-xs font-semibold text-content-primary">{{ label }}</label>
+                                            <label class="inline-flex items-center gap-1.5 text-[11px] font-medium text-content-muted">
+                                                <input type="checkbox" name="control_{{ name }}" value="1" {% if managed %}checked{% endif %}
+                                                       class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                                Managed
+                                            </label>
+                                        </span>
+                                        <input name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" class="{{ form_field.input_classes() }}">
+                                    </div>
                                 {% endfor %}
                             </div>
                         </section>
