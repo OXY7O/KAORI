@@ -19,17 +19,17 @@
                 <span class="inline-flex min-h-6 items-center gap-1.5">
                     <h2 class="text-base font-semibold text-content-primary">Add Tenant</h2>
                     {{ info_tip.render('tenant-setup-form-tip',
-                            'Tenant setup',
-                            'Create Native or supported Capsule Tenants directly. Existing Capsule Tenants use Discovery → Adoption.',
-                            [
-                            'Slug is derived from the Tenant name when omitted.',
-                            'Only Ready clusters are eligible for creation.',
-                            'Capsule capability and admission are validated when Add Tenant is submitted.',
-                            'Capsule requires Owner Kind and Owner Subject for every new Tenant.',
-                            'Existing Capsule Tenant CRs use Discovery → Adoption.',
-                            'Namespace, membership, access, and credentials are governed in later workflow steps.'
-                            ],
-                            placement='right') }}
+                                        'Tenant setup',
+                                        'Create Native or supported Capsule Tenants directly. Existing Capsule Tenants use Discovery → Adoption.',
+                                        [
+                                        'Slug is derived from the Tenant name when omitted.',
+                                        'Only Ready clusters are eligible for creation.',
+                                        'Capsule capability and admission are validated when Add Tenant is submitted.',
+                                        'Capsule requires Owner Kind and Owner Subject for every new Tenant.',
+                                        'Existing Capsule Tenant CRs use Discovery → Adoption.',
+                                        'Namespace, membership, access, and credentials are governed in later workflow steps.'
+                                        ],
+                                        placement='right') }}
                 </span>
                 <p class="mt-1 text-sm leading-6 text-content-secondary">Bind one Tenant and initial environment to a Ready cluster.</p>
             </div>

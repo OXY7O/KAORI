@@ -12,7 +12,8 @@
             </span>
             <div>
                 <div class="flex flex-wrap items-center gap-2">
-                    <h2 id="allocation-cutover-heading" class="text-base font-semibold text-content-primary">Allocation Governance Cutover</h2>
+                    <h2 id="allocation-cutover-heading"
+                        class="text-base font-semibold text-content-primary">Allocation Governance Cutover</h2>
                     {{ table_label.special_label('Explicit Takeover', 'info', 'shield-check') }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-secondary">Move only the allocation contract from Adopted / Observed to KAORI Managed after authority, capacity, ownership, and provider read-back checks succeed.</p>
@@ -67,7 +68,7 @@
                             {% set cutover = namespace_cutover_state.get(item.id|string) or {} %}
                             <option value="{{ item.id }}"
                                     {% if not cutover.get('supported') %}disabled{% endif %}>
-                                {{ item.namespace }} · {{ item.environment.tenant.name }} · {{ 'Eligible' if cutover.get('supported') else 'Control Unavailable' }}
+                                {{ item.namespace }} · {{ item.environment.tenant.name }} · {{ 'Eligible' if cutover.get("supported") else 'Control Unavailable' }}
                             </option>
                         {% endfor %}
                     </select>
@@ -101,22 +102,30 @@
                         <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                             <dt class="text-xs text-content-muted">CPU requests</dt>
                             <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-allocation-current-cpu>—</dd>
+                                data-tenant-allocation-current-cpu>
+                                —
+                            </dd>
                         </div>
                         <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                             <dt class="text-xs text-content-muted">Memory requests</dt>
                             <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-allocation-current-memory>—</dd>
+                                data-tenant-allocation-current-memory>
+                                —
+                            </dd>
                         </div>
                         <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                             <dt class="text-xs text-content-muted">Min PVC size</dt>
                             <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-allocation-current-pvc-min>—</dd>
+                                data-tenant-allocation-current-pvc-min>
+                                —
+                            </dd>
                         </div>
                         <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                             <dt class="text-xs text-content-muted">Max PVC size</dt>
                             <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-allocation-current-pvc-max>—</dd>
+                                data-tenant-allocation-current-pvc-max>
+                                —
+                            </dd>
                         </div>
                     </dl>
                 </section>
@@ -132,22 +141,30 @@
                         <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                             <dt class="text-xs text-content-muted">CPU requests</dt>
                             <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-allocation-proposed-cpu>—</dd>
+                                data-tenant-allocation-proposed-cpu>
+                                —
+                            </dd>
                         </div>
                         <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                             <dt class="text-xs text-content-muted">Memory requests</dt>
                             <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-allocation-proposed-memory>—</dd>
+                                data-tenant-allocation-proposed-memory>
+                                —
+                            </dd>
                         </div>
                         <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                             <dt class="text-xs text-content-muted">Min PVC size</dt>
                             <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-allocation-proposed-pvc-min>—</dd>
+                                data-tenant-allocation-proposed-pvc-min>
+                                —
+                            </dd>
                         </div>
                         <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                             <dt class="text-xs text-content-muted">Max PVC size</dt>
                             <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-allocation-proposed-pvc-max>—</dd>
+                                data-tenant-allocation-proposed-pvc-max>
+                                —
+                            </dd>
                         </div>
                     </dl>
                 </section>
@@ -160,7 +177,7 @@
                         {% for item in namespace_cutover_options %}
                             {% set cutover = namespace_cutover_state.get(item.id|string) or {} %}
                             {% if not cutover.get('supported') %}
-                                <p class="text-xs leading-5"><span class="font-semibold">{{ item.namespace }}</span> · {{ cutover.get('authority')|default('Unknown', true)|replace('_', ' ')|title }} · {{ cutover.get('reason') }}</p>
+                                <p class="text-xs leading-5"><span class="font-semibold">{{ item.namespace }}</span> · {{ cutover.get("authority") |default('Unknown', true)|replace('_', ' ')|title }} · {{ cutover.get("reason") }}</p>
                             {% endif %}
                         {% endfor %}
                     </div>

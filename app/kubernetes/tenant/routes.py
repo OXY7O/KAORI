@@ -98,9 +98,9 @@ from app.kubernetes.tenant.overview import dispatch_tenant_inventory_sync
 from app.kubernetes.tenant.service import (
     TenantStateConflictError,
     change_native_namespace_allocation_committed,
-    cutover_adopted_namespace_allocation_committed,
     create_resource_profile_committed,
     create_tenant_committed,
+    cutover_adopted_namespace_allocation_committed,
     delete_resource_profile_committed,
     get_capacity_decision_registry_context,
     get_namespace_registry_context,

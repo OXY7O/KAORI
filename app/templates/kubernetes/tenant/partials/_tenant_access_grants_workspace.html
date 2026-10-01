@@ -27,14 +27,14 @@
                         <span class="inline-flex min-h-6 items-center gap-1.5">
                             <h3 class="text-base font-semibold text-content-primary">Apply Access Grant</h3>
                             {{ info_tip.render('access-grant-form-tip',
-                                            'Access Grant rules',
-                                            'An Access Grant binds one committed Tenant principal to one versioned access profile and explicit scope.',
-                                            [
-                                            'Built-in profiles are code-owned security contracts.',
-                                            'Cross-Tenant references fail closed.',
-                                            'Effective access is verified from Kubernetes RBAC.'
-                                            ],
-                                            placement='right') }}
+                                                        'Access Grant rules',
+                                                        'An Access Grant binds one committed Tenant principal to one versioned access profile and explicit scope.',
+                                                        [
+                                                        'Built-in profiles are code-owned security contracts.',
+                                                        'Cross-Tenant references fail closed.',
+                                                        'Effective access is verified from Kubernetes RBAC.'
+                                                        ],
+                                                        placement='right') }}
                         </span>
                         <p class="mt-1 text-sm leading-6 text-content-secondary">Select one principal, profile, and the narrowest required scope.</p>
                     </div>
@@ -46,14 +46,14 @@
                         <span class="inline-flex min-h-6 items-center gap-1.5">
                             <span class="text-xs font-semibold text-content-primary">Membership</span>
                             {{ info_tip.render('access-membership-tip',
-                                                'Tenant Membership',
-                                                'Choose the active Tenant principal that will receive this authorization.',
-                                                [
-                                                'The Membership fixes the Tenant boundary before scope selection.',
-                                                'User, Group, and ServiceAccount principals keep their existing identity authority.',
-                                                'Cross-Tenant targets are filtered out and rejected server-side.'
-                                                ],
-                                                placement='right') }}
+                                                        'Tenant Membership',
+                                                        'Choose the active Tenant principal that will receive this authorization.',
+                                                        [
+                                                        'The Membership fixes the Tenant boundary before scope selection.',
+                                                        'User, Group, and ServiceAccount principals keep their existing identity authority.',
+                                                        'Cross-Tenant targets are filtered out and rejected server-side.'
+                                                        ],
+                                                        placement='right') }}
                         </span>
                         <select name="membership_id"
                                 data-access-membership
@@ -72,21 +72,20 @@
                             {% endfor %}
                         </select>
                     </label>
-
                     <div class="grid gap-4 sm:grid-cols-2">
                         <label class="block">
                             <span class="inline-flex min-h-6 items-center gap-1.5">
                                 <span class="text-xs font-semibold text-content-primary">Access Profile</span>
                                 {{ info_tip.render('access-profile-tip',
-                                                        'Access Profile',
-                                                        'Choose the least-privilege contract that matches the principal.',
-                                                        [
-                                                        'Viewer — read-only workload and namespace visibility.',
-                                                        'Operator — manage workloads and application resources; no Secrets write.',
-                                                        'Tenant Admin — Operator permissions plus namespaced Secret management.',
-                                                        'Deployer — automation profile for ServiceAccount memberships only.'
-                                                        ],
-                                                        placement='right') }}
+                                                                'Access Profile',
+                                                                'Choose the least-privilege contract that matches the principal.',
+                                                                [
+                                                                'Viewer — read-only workload and namespace visibility.',
+                                                                'Operator — manage workloads and application resources; no Secrets write.',
+                                                                'Tenant Admin — Operator permissions plus namespaced Secret management.',
+                                                                'Deployer — automation profile for ServiceAccount memberships only.'
+                                                                ],
+                                                                placement='right') }}
                             </span>
                             <select name="access_profile"
                                     data-access-profile
@@ -100,20 +99,19 @@
                                 {% endfor %}
                             </select>
                         </label>
-
                         <label class="block">
                             <span class="inline-flex min-h-6 items-center gap-1.5">
                                 <span class="text-xs font-semibold text-content-primary">Scope</span>
                                 {{ info_tip.render('access-scope-tip',
-                                                        'Access scope',
-                                                        'Scope controls how many governed namespaces receive the selected profile.',
-                                                        [
-                                                        'Namespace — exactly one namespace; narrowest choice.',
-                                                        'Environment — every governed namespace in one Tenant environment.',
-                                                        'Tenant — every governed namespace in the selected Tenant; no target field.',
-                                                        'Tenant scope still uses namespaced RBAC; it does not grant cluster-wide access.'
-                                                        ],
-                                                        placement='right') }}
+                                                                'Access scope',
+                                                                'Scope controls how many governed namespaces receive the selected profile.',
+                                                                [
+                                                                'Namespace — exactly one namespace; narrowest choice.',
+                                                                'Environment — every governed namespace in one Tenant environment.',
+                                                                'Tenant — every governed namespace in the selected Tenant; no target field.',
+                                                                'Tenant scope still uses namespaced RBAC; it does not grant cluster-wide access.'
+                                                                ],
+                                                                placement='right') }}
                             </span>
                             <select name="scope_type"
                                     data-access-scope
@@ -125,7 +123,6 @@
                             </select>
                         </label>
                     </div>
-
                     <label class="block" data-access-environment-field hidden>
                         {{ form_field.label_row('Environment Target', 'Filtered by Membership Tenant', 'info') }}
                         <select name="tenant_environment_id"
@@ -156,7 +153,6 @@
                             {% endfor %}
                         </select>
                     </label>
-
                     <div data-access-provider-warning
                          hidden
                          class="flex items-start gap-2.5 rounded-lg border border-status-warning-border bg-status-warning-soft px-3.5 py-3 text-status-warning-text">
@@ -168,7 +164,6 @@
                         </p>
                     </div>
                 </div>
-
                 <aside class="flex min-h-[14rem] flex-1 flex-col overflow-hidden rounded-xl border border-kaori-primary/20 bg-kaori-soft"
                        data-access-grant-context
                        aria-labelledby="access-grant-context-heading">
@@ -187,22 +182,30 @@
                         <div class="min-w-0 bg-surface-card/85 px-4 py-3">
                             <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Principal</dt>
                             <dd class="mt-1 truncate text-xs font-semibold text-content-primary"
-                                data-access-context-principal>Select Membership</dd>
+                                data-access-context-principal>
+                                Select Membership
+                            </dd>
                         </div>
                         <div class="min-w-0 bg-surface-card/85 px-4 py-3">
                             <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Tenant</dt>
                             <dd class="mt-1 truncate text-xs font-semibold text-content-primary"
-                                data-access-context-tenant>Not resolved</dd>
+                                data-access-context-tenant>
+                                Not resolved
+                            </dd>
                         </div>
                         <div class="min-w-0 bg-surface-card/85 px-4 py-3">
                             <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Profile</dt>
                             <dd class="mt-1 truncate text-xs font-semibold text-content-primary"
-                                data-access-context-profile>—</dd>
+                                data-access-context-profile>
+                                —
+                            </dd>
                         </div>
                         <div class="min-w-0 bg-surface-card/85 px-4 py-3">
                             <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Effective Scope</dt>
                             <dd class="mt-1 truncate text-xs font-semibold text-content-primary"
-                                data-access-context-scope>Namespace · target pending</dd>
+                                data-access-context-scope>
+                                Namespace · target pending
+                            </dd>
                         </div>
                     </dl>
                     <div class="mt-auto flex items-start gap-2.5 border-t border-kaori-primary/15 px-4 py-3.5">

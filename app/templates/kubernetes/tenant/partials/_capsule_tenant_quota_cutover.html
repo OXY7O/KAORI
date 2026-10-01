@@ -31,7 +31,6 @@
                 'Every write requires provider read-back before KAORI commits effective state.'
                 ]) }}
     </header>
-
     <div class="grid gap-5 p-5 xl:grid-cols-2">
         <form method="post"
               action="{{ url_for('tenant.cutover_capsule_tenant_quota_route') }}"
@@ -40,60 +39,60 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="flex-1 p-4">
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                    <p class="text-sm font-semibold text-content-primary">Adopted → KAORI Managed</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Explicitly take over allocation governance for an observed legacy Tenant quota.</p>
+                    <div>
+                        <p class="text-sm font-semibold text-content-primary">Adopted → KAORI Managed</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Explicitly take over allocation governance for an observed legacy Tenant quota.</p>
+                    </div>
+                    {{ table_label.special_label('Cutover', 'warning', 'arrow-right-left') }}
                 </div>
-                {{ table_label.special_label('Cutover', 'warning', 'arrow-right-left') }}
-            </div>
-            <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                <label class="block">
-                    {{ form_field.label_row("Capsule Tenant") }}
-                    <select name="tenant_id"
-                            required
-                            data-tenant-quota-tenant
-                            class="{{ form_field.select_classes() }}">
-                        <option value="">Select adopted Tenant quota</option>
-                        {% for tenant in capsule_tenant_quota_cutover_tenants %}
-                            {% set state = capsule_tenant_quota_cutover_state.get(tenant.id) or {} %}
-                            <option value="{{ tenant.id }}"
-                                    {% if not state.get('supported') %}disabled{% endif %}>
-                                {{ tenant.name }} · {{ 'Eligible' if state.get('supported') else 'Control Unavailable' }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <label class="block">
-                    {{ form_field.label_row("Governed Resource Profile") }}
-                    <select name="resource_profile_id"
-                            required
-                            data-tenant-quota-profile
-                            class="{{ form_field.select_classes() }}">
-                        <option value="">Select Resource Profile</option>
-                        {% for profile in profiles if profile.enabled %}
-                            <option value="{{ profile.id }}">
-                                {{ profile.name }} · {{ 'KAORI Preset · Locked' if profile.profile_class != 'custom' else 'Custom · Editable' }} · v{{ profile.version }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </label>
-            </div>
-            <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                <div class="rounded-lg bg-surface-elevated p-3">
-                    <p class="text-xs text-content-muted">Observed Authority</p>
-                    <p class="mt-1 text-sm font-semibold text-content-primary"
-                       data-tenant-quota-current-source>—</p>
-                    <p class="mt-1 text-xs text-content-muted"
-                       data-tenant-quota-current-scope>—</p>
+                <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                    <label class="block">
+                        {{ form_field.label_row("Capsule Tenant") }}
+                        <select name="tenant_id"
+                                required
+                                data-tenant-quota-tenant
+                                class="{{ form_field.select_classes() }}">
+                            <option value="">Select adopted Tenant quota</option>
+                            {% for tenant in capsule_tenant_quota_cutover_tenants %}
+                                {% set state = capsule_tenant_quota_cutover_state.get(tenant.id) or {} %}
+                                <option value="{{ tenant.id }}"
+                                        {% if not state.get('supported') %}disabled{% endif %}>
+                                    {{ tenant.name }} · {{ 'Eligible' if state.get("supported") else 'Control Unavailable' }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label class="block">
+                        {{ form_field.label_row("Governed Resource Profile") }}
+                        <select name="resource_profile_id"
+                                required
+                                data-tenant-quota-profile
+                                class="{{ form_field.select_classes() }}">
+                            <option value="">Select Resource Profile</option>
+                            {% for profile in profiles if profile.enabled %}
+                                <option value="{{ profile.id }}">
+                                    {{ profile.name }} · {{ 'KAORI Preset · Locked' if profile.profile_class != 'custom' else 'Custom · Editable' }} · v{{ profile.version }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </label>
                 </div>
-                <div class="rounded-lg bg-surface-elevated p-3">
-                    <p class="text-xs text-content-muted">Proposed Contract</p>
-                    <p class="mt-1 text-sm font-semibold text-content-primary"
-                       data-tenant-quota-proposed-profile>—</p>
-                    <p class="mt-1 text-xs text-content-muted"
-                       data-tenant-quota-proposed-summary>—</p>
+                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div class="rounded-lg bg-surface-elevated p-3">
+                        <p class="text-xs text-content-muted">Observed Authority</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary"
+                           data-tenant-quota-current-source>—</p>
+                        <p class="mt-1 text-xs text-content-muted"
+                           data-tenant-quota-current-scope>—</p>
+                    </div>
+                    <div class="rounded-lg bg-surface-elevated p-3">
+                        <p class="text-xs text-content-muted">Proposed Contract</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary"
+                           data-tenant-quota-proposed-profile>—</p>
+                        <p class="mt-1 text-xs text-content-muted"
+                           data-tenant-quota-proposed-summary>—</p>
+                    </div>
                 </div>
-            </div>
             </div>
             <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-elevated px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="min-w-0">
@@ -108,7 +107,6 @@
                 </button>
             </footer>
         </form>
-
         <form method="post"
               action="{{ url_for('tenant.change_capsule_tenant_quota_route') }}"
               data-tenant-quota-managed-form
@@ -116,47 +114,45 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="flex-1 p-4">
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                    <p class="text-sm font-semibold text-content-primary">Managed Allocation Change</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Change a governed Capsule Tenant quota through the same authority and verification path.</p>
+                    <div>
+                        <p class="text-sm font-semibold text-content-primary">Managed Allocation Change</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Change a governed Capsule Tenant quota through the same authority and verification path.</p>
+                    </div>
+                    {{ table_label.special_label('KAORI Managed', 'normal', 'shield-check') }}
                 </div>
-                {{ table_label.special_label('KAORI Managed', 'normal', 'shield-check') }}
-            </div>
-            <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                <label class="block">
-                    {{ form_field.label_row("Managed Capsule Tenant") }}
-                    <select name="tenant_id"
-                            required
-                            data-tenant-quota-managed-tenant
-                            class="{{ form_field.select_classes() }}">
-                        <option value="">Select managed Tenant</option>
-                        {% for tenant in capsule_tenant_quota_managed %}
-                            <option value="{{ tenant.id }}">{{ tenant.name }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <label class="block">
-                    {{ form_field.label_row("New Resource Profile") }}
-                    <select name="resource_profile_id"
-                            required
-                            data-tenant-quota-managed-profile
-                            class="{{ form_field.select_classes() }}">
-                        <option value="">Select Resource Profile</option>
-                        {% for profile in profiles if profile.enabled %}
-                            <option value="{{ profile.id }}">
-                                {{ profile.name }} · {{ 'KAORI Preset · Locked' if profile.profile_class != 'custom' else 'Custom · Editable' }} · v{{ profile.version }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </label>
-            </div>
-            <div class="mt-4 rounded-lg bg-surface-elevated p-3">
-                <p class="text-xs text-content-muted">Current Managed Contract</p>
-                <p class="mt-1 text-sm font-semibold text-content-primary"
-                   data-tenant-quota-managed-current>—</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted"
-                   data-tenant-quota-managed-summary>—</p>
-            </div>
+                <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                    <label class="block">
+                        {{ form_field.label_row("Managed Capsule Tenant") }}
+                        <select name="tenant_id"
+                                required
+                                data-tenant-quota-managed-tenant
+                                class="{{ form_field.select_classes() }}">
+                            <option value="">Select managed Tenant</option>
+                            {% for tenant in capsule_tenant_quota_managed %}<option value="{{ tenant.id }}">{{ tenant.name }}</option>{% endfor %}
+                        </select>
+                    </label>
+                    <label class="block">
+                        {{ form_field.label_row("New Resource Profile") }}
+                        <select name="resource_profile_id"
+                                required
+                                data-tenant-quota-managed-profile
+                                class="{{ form_field.select_classes() }}">
+                            <option value="">Select Resource Profile</option>
+                            {% for profile in profiles if profile.enabled %}
+                                <option value="{{ profile.id }}">
+                                    {{ profile.name }} · {{ 'KAORI Preset · Locked' if profile.profile_class != 'custom' else 'Custom · Editable' }} · v{{ profile.version }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                </div>
+                <div class="mt-4 rounded-lg bg-surface-elevated p-3">
+                    <p class="text-xs text-content-muted">Current Managed Contract</p>
+                    <p class="mt-1 text-sm font-semibold text-content-primary"
+                       data-tenant-quota-managed-current>—</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted"
+                       data-tenant-quota-managed-summary>—</p>
+                </div>
             </div>
             <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-elevated px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="min-w-0">
@@ -172,7 +168,6 @@
             </footer>
         </form>
     </div>
-
     {% if capsule_tenant_quota_blocked_cutover_tenants %}
         <div class="border-t border-kaori-primary/15 px-5 py-4">
             <div class="rounded-xl border border-outline-subtle bg-status-warning-soft p-4 text-status-warning-text">
@@ -182,12 +177,12 @@
                         {% set state = capsule_tenant_quota_cutover_state.get(tenant.id) or {} %}
                         <p class="text-xs leading-5">
                             <span class="font-semibold">{{ tenant.name }}</span>
-                            · {{ state.get('reason') }}
+                            · {{ state.get("reason") }}
                         </p>
                         {% if state.get('external_constraints') %}
                             <p class="text-xs leading-5">
                                 <span class="font-semibold">{{ tenant.name }} external constraints</span>
-                                · {{ state.get('external_constraints')|join(' · ') }}
+                                · {{ state.get("external_constraints") |join(' · ') }}
                             </p>
                         {% endif %}
                     {% endfor %}

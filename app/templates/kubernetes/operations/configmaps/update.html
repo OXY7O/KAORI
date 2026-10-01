@@ -43,19 +43,17 @@
             <section class="{{ configmap_ui.surface_shell_classes(configmap_main_classes, true) }}"
                      data-kubernetes-operation-form="configmap-update">
                 {% set configmap_update_info = [
-                    'Cluster, Namespace, ConfigMap identity, immutable state, and resourceVersion are loaded from the selected live Kubernetes target.',
-                    'Merge preserves keys that are not submitted. Replace removes keys omitted from the proposed form and requires explicit full-replacement confirmation.',
-                    'Changing the target, update mode, or proposed data invalidates the previous validation and requires a new preview.'
+                    "Cluster, Namespace, ConfigMap identity, immutable state, and resourceVersion are loaded from the selected live Kubernetes target.",
+                    "Merge preserves keys that are not submitted. Replace removes keys omitted from the proposed form and requires explicit full-replacement confirmation.",
+                    "Changing the target, update mode, or proposed data invalidates the previous validation and requires a new preview."
                 ] %}
-                {{ configmap_ui.section_header(
-                    'file-pen-line',
-                    'ConfigMap Update',
-                    'Select one live ConfigMap, edit the intended state, then validate the exact effective change before apply.',
-                    info_id='configmap-update-guidance-tip',
-                    info_title='ConfigMap update guide',
-                    info_text='Live-target and update-mode semantics for this controlled mutation.',
-                    info_items=configmap_update_info
-                ) }}
+                {{ configmap_ui.section_header('file-pen-line',
+                                'ConfigMap Update',
+                                'Select one live ConfigMap, edit the intended state, then validate the exact effective change before apply.',
+                                info_id='configmap-update-guidance-tip',
+                                info_title='ConfigMap update guide',
+                                info_text='Live-target and update-mode semantics for this controlled mutation.',
+                                info_items=configmap_update_info) }}
                 <div class="divide-y divide-outline-subtle">
                     <section class="p-5 sm:p-6">
                         <div class="mb-4 flex items-start gap-3">

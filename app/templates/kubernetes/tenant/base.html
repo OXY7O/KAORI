@@ -57,17 +57,17 @@
                     </aside>
                 {% else %}
                     {% set tenant_context_metrics = [
-                                        ('server', 'Ready Clusters', ready_clusters|length, 'Native provider targets', true),
-                                        ('circle-check', 'Ready Namespaces', ready_namespace_count, 'Verified committed state')
-                                    ] %}
+                                            ('server', 'Ready Clusters', ready_clusters|length, 'Native provider targets', true),
+                                            ('circle-check', 'Ready Namespaces', ready_namespace_count, 'Verified committed state')
+                                        ] %}
                     {{ page_hero.context_card('Tenant context',
-                                    'Provider Readiness',
-                                    'Native Kubernetes',
-                                    'Ready',
-                                    'normal',
-                                    tenant_context_metrics,
-                                    'Open Cluster Integrations',
-                                    url_for('integrations.kubernetes') ,
+                                        'Provider Readiness',
+                                        'Native Kubernetes',
+                                        'Ready',
+                                        'normal',
+                                        tenant_context_metrics,
+                                        'Open Cluster Integrations',
+                                        url_for('integrations.kubernetes') ,
                     'server-cog'
                     ) }}
                 {% endif %}

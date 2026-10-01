@@ -26,15 +26,15 @@
                     <span class="inline-flex min-h-6 items-center gap-1.5">
                         <h2 class="text-base font-semibold text-content-primary">Capacity Policy</h2>
                         {{ info_tip.render('tenant-capacity-policy-tip',
-                                'Capacity policy',
-                                'Policy values are explicit commitments used with committed cluster capacity evidence.',
-                                [
-                                'CPU, memory, and Pod budgets derive from Ready-worker allocatable capacity.',
-                                'Reserve and unmanaged values reduce the Tenant budget; safety headroom preserves operational margin.',
-                                'Storage Budget is an explicit logical allocation ceiling and is not presented as physical backend capacity.',
-                                'Selecting an existing cluster reloads its committed policy values.'
-                                ],
-                                placement='right') }}
+                                                'Capacity policy',
+                                                'Policy values are explicit commitments used with committed cluster capacity evidence.',
+                                                [
+                                                'CPU, memory, and Pod budgets derive from Ready-worker allocatable capacity.',
+                                                'Reserve and unmanaged values reduce the Tenant budget; safety headroom preserves operational margin.',
+                                                'Storage Budget is an explicit logical allocation ceiling and is not presented as physical backend capacity.',
+                                                'Selecting an existing cluster reloads its committed policy values.'
+                                                ],
+                                                placement='right') }}
                     </span>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Govern CPU, memory, Pod, and logical storage commitment before positive Namespace allocation.</p>
                 </div>
@@ -53,21 +53,20 @@
                     {% endfor %}
                 </select>
             </label>
-
             <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated">
                 <div class="border-b border-outline-subtle px-4 py-3">
                     <span class="inline-flex min-h-6 items-center gap-1.5">
                         <h3 class="text-sm font-semibold text-content-primary">Compute &amp; Pod Budget</h3>
                         {{ info_tip.render('tenant-capacity-compute-pod-tip',
-                                'Compute and Pod budget',
-                                'CPU, memory, and Pod admission use Ready-worker allocatable capacity as the evidence base.',
-                                [
-                                'Platform Reserve — capacity intentionally kept for platform/system workloads.',
-                                'Safety Headroom — percentage of allocatable capacity kept as operating margin.',
-                                'Unmanaged Commitment — governed commitment outside KAORI Tenant Management; it is not free capacity.',
-                                'Tenant Budget = allocatable - reserve - safety headroom - unmanaged commitment.'
-                                ],
-                                placement='right') }}
+                                                'Compute and Pod budget',
+                                                'CPU, memory, and Pod admission use Ready-worker allocatable capacity as the evidence base.',
+                                                [
+                                                'Platform Reserve — capacity intentionally kept for platform/system workloads.',
+                                                'Safety Headroom — percentage of allocatable capacity kept as operating margin.',
+                                                'Unmanaged Commitment — governed commitment outside KAORI Tenant Management; it is not free capacity.',
+                                                'Tenant Budget = allocatable - reserve - safety headroom - unmanaged commitment.'
+                                                ],
+                                                placement='right') }}
                     </span>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Reserve and unmanaged commitments are explicit inputs; current utilization remains separate Analytics evidence.</p>
                 </div>
@@ -96,22 +95,21 @@
                     {% endfor %}
                 </div>
             </section>
-
             <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated">
                 <div class="border-b border-outline-subtle px-4 py-3">
                     <span class="inline-flex min-h-6 items-center gap-1.5">
                         <h3 class="text-sm font-semibold text-content-primary">Storage Budget</h3>
                         {{ info_tip.render('tenant-capacity-storage-budget-tip',
-                                'Governed storage budget',
-                                'Tenant Storage Budget is a logical admission ceiling for aggregate requests.storage.',
-                                [
-                                'Enter the ceiling in GiB; for example, 2048 GiB = 2 TiB.',
-                                'The logical budget remains governable even when compute Capacity Analytics is unavailable.',
-                                'Physical and usable backend capacity remain separate Kubernetes Storage Analytics evidence.',
-                                'The budget is not derived from node filesystem capacity, PVC count, or PV/PVC totals.',
-                                'Projected Tenant requests.storage is blocked before reconciliation when the logical ceiling would be exceeded.'
-                                ],
-                                placement='right') }}
+                                                'Governed storage budget',
+                                                'Tenant Storage Budget is a logical admission ceiling for aggregate requests.storage.',
+                                                [
+                                                'Enter the ceiling in GiB; for example, 2048 GiB = 2 TiB.',
+                                                'The logical budget remains governable even when compute Capacity Analytics is unavailable.',
+                                                'Physical and usable backend capacity remain separate Kubernetes Storage Analytics evidence.',
+                                                'The budget is not derived from node filesystem capacity, PVC count, or PV/PVC totals.',
+                                                'Projected Tenant requests.storage is blocked before reconciliation when the logical ceiling would be exceeded.'
+                                                ],
+                                                placement='right') }}
                     </span>
                 </div>
                 <div class="p-4">
@@ -131,7 +129,9 @@
                                   aria-hidden="true">GiB</span>
                         </div>
                         <div class="flex min-h-10 w-full items-center gap-2 rounded-lg border border-kaori-primary/15 bg-kaori-soft px-3 text-xs text-content-secondary">
-                            <i data-lucide="database" class="h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                            <i data-lucide="database"
+                               class="h-3.5 w-3.5 shrink-0 text-kaori-primary"
+                               aria-hidden="true"></i>
                             <p><span class="font-semibold text-content-primary">Logical budget only.</span> Physical and usable capacity remain separate Storage Analytics evidence.</p>
                         </div>
                     </div>
@@ -165,20 +165,19 @@
                 per_page_param='capacity_per_page'
                 ) }}
             {% endif %}
-
         {% endset %}
         {% set title_info %}
             {{ info_tip.render('allocation-budget-status-tip',
-                    'Allocation Budget status',
-                    'Capacity state uses committed Budget, active request commitments, and remaining Headroom.',
-                    [
-                    'Healthy — sufficient governed headroom remains.',
-                    'Near Capacity / Critical — headroom is narrowing.',
-                    'Exhausted — committed requests reached the budget.',
-                    'Overcommitted — commitments exceed the governed budget.',
-                    'Unknown — required capacity evidence is incomplete or stale.'
-                    ],
-                    placement='right') }}
+                        'Allocation Budget status',
+                        'Capacity state uses committed Budget, active request commitments, and remaining Headroom.',
+                        [
+                        'Healthy — sufficient governed headroom remains.',
+                        'Near Capacity / Critical — headroom is narrowing.',
+                        'Exhausted — committed requests reached the budget.',
+                        'Overcommitted — commitments exceed the governed budget.',
+                        'Unknown — required capacity evidence is incomplete or stale.'
+                        ],
+                        placement='right') }}
         {% endset %}
         {{ table_ui.inventory_block_header('chart-no-axes-combined',
                 'Allocation Budget',
@@ -228,7 +227,7 @@
                             <td class="{{ table_ui.cell_classes() }} align-middle">
                                 <div class="flex flex-wrap items-center gap-2">
                                     {{ table_label.status_label('Current' if item.snapshot_state == 'current' else item.snapshot_state|title,
-                                                                'normal' if item.snapshot_state == 'current' else 'warning') }}
+                                                                        'normal' if item.snapshot_state == 'current' else 'warning') }}
                                     <span class="text-xs font-semibold text-content-primary">
                                         {{ 'Capacity Analytics' if item.snapshot_state == 'current' else 'Compute evidence required' }}
                                     </span>
@@ -240,9 +239,7 @@
                                     {% endif %}
                                 </p>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }} align-middle">
-                                {{ table_label.status_label(item.state, state_tone) }}
-                            </td>
+                            <td class="{{ table_ui.cell_classes() }} align-middle">{{ table_label.status_label(item.state, state_tone) }}</td>
                             <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
                                 <div class="ml-auto w-fit">
                                     <button type="button"
@@ -256,7 +253,6 @@
                                         View More
                                     </button>
                                 </div>
-
                                 <dialog id="{{ dialog_id }}"
                                         data-kaori-native-dialog
                                         aria-labelledby="{{ dialog_id }}-title"
@@ -292,14 +288,13 @@
                                                 </button>
                                             </div>
                                         </header>
-
                                         <div class="min-h-0 overflow-y-auto bg-surface-page p-5 sm:p-6">
                                             <div class="grid gap-4 lg:grid-cols-3">
                                                 {% for title, icon, values, tone in [
                                                     ('Budget', 'gauge', item.display.budget, 'default'),
                                                     ('Committed', 'layers-3', item.display.committed, 'default'),
                                                     ('Headroom', 'chart-no-axes-combined', item.display.headroom, 'kaori')
-                                                ] %}
+                                                    ] %}
                                                     <section class="overflow-hidden rounded-xl border {{ 'border-kaori-primary/20' if tone == 'kaori' else 'border-outline-subtle' }} bg-surface-card">
                                                         <div class="flex items-center gap-2 border-b {{ 'border-kaori-primary/15 bg-kaori-soft' if tone == 'kaori' else 'border-outline-subtle bg-surface-elevated' }} px-4 py-3">
                                                             <i data-lucide="{{ icon }}"
@@ -313,20 +308,23 @@
                                                                 ('Memory', values.memory),
                                                                 ('Pods', values.pods),
                                                                 ('Storage', values.storage)
-                                                            ] %}
+                                                                ] %}
                                                                 <div class="bg-surface-card px-4 py-3">
                                                                     <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">{{ label }}</dt>
-                                                                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value }}</dd>
+                                                                    <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                                                        {{ value }}
+                                                                    </dd>
                                                                 </div>
                                                             {% endfor %}
                                                         </dl>
                                                     </section>
                                                 {% endfor %}
                                             </div>
-
                                             <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-outline-subtle bg-surface-card px-4 py-3">
                                                 <div class="flex min-w-0 items-center gap-2">
-                                                    <i data-lucide="boxes" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                                    <i data-lucide="boxes"
+                                                       class="h-4 w-4 shrink-0 text-kaori-primary"
+                                                       aria-hidden="true"></i>
                                                     <p class="text-xs text-content-secondary">
                                                         {% if item.committed_namespace_count %}
                                                             <span class="font-semibold text-content-primary">{{ item.committed_namespace_count }}</span>
@@ -339,13 +337,10 @@
                                                 <p class="text-xs text-content-muted">Storage is logical admission capacity.</p>
                                             </div>
                                         </div>
-
                                         <footer class="flex shrink-0 items-center justify-end border-t border-outline-subtle bg-surface-card px-5 py-3 sm:px-6">
                                             <button type="button"
                                                     data-kaori-dialog-close
-                                                    class="{{ action_button.classes('secondary') }}">
-                                                Close
-                                            </button>
+                                                    class="{{ action_button.classes('secondary') }}">Close</button>
                                         </footer>
                                     </section>
                                 </dialog>

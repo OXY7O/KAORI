@@ -14,13 +14,13 @@ from app.kubernetes.tenant.capacity import (
 from app.kubernetes.tenant.capacity_governance import (
     _aggregate_committed_allocation,
     _capacity_vector,
-    build_capacity_governance_summary,
     _capsule_tenant_quota_vector,
     _committed_evidence_reason,
     _logical_storage_budget_vector,
     _optional_positive_gib_quantity,
     _quantity_gib_text,
     _unknown_evidence_decision,
+    build_capacity_governance_summary,
 )
 
 

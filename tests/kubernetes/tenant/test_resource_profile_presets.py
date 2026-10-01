@@ -1,7 +1,6 @@
 from types import SimpleNamespace
 
 from app.kubernetes.tenant.service import (
-    RESOURCE_PROFILE_ADVANCED_CONTROLS,
     RESOURCE_PROFILE_PRESETS,
     _advanced_profile_controls,
     _namespace_allocation_values,
@@ -285,6 +284,7 @@ def test_custom_profile_storage_policy_is_managed_and_validated() -> None:
 
 def test_storage_policy_rejects_min_greater_than_max() -> None:
     import pytest
+
     from app.kubernetes.tenant.validation import validate_storage_policy
 
     with pytest.raises(ValueError, match='minimum storage cannot exceed maximum storage'):

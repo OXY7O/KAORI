@@ -10,14 +10,11 @@
             dashboard.active_tab,
             'kubernetes-dashboard',
             input_id='dashboard-active-tab'
-        ) %}
+            ) %}
             {% include "kubernetes/dashboard/partials/_signal_overview.html" %}
             <div class="mt-5 space-y-5">
-                {{ dashboard_workspace.navigation(
-                    'kubernetes-dashboard',
-                    'Kubernetes Dashboard Sections'
-                ) }}
-
+                {{ dashboard_workspace.navigation('kubernetes-dashboard',
+                                'Kubernetes Dashboard Sections') }}
                 {% call dashboard_workspace.panel('overview', dashboard.active_tab, 'kubernetes-dashboard') %}
                     <div id="dashboard-cluster-health-section"
                          hx-get="{{ url_for('kubernetes_dashboard.section', section='cluster_health') }}?{{ dashboard_cluster_query }}"
@@ -46,7 +43,6 @@
                         </div>
                     </div>
                 {% endcall %}
-
                 {% call dashboard_workspace.panel('capacity', dashboard.active_tab, 'kubernetes-dashboard') %}
                     <div class="{{ peer_content_grid.layout_classes() }}">
                         <div class="{{ peer_content_grid.column_classes('primary') }}">
@@ -84,7 +80,6 @@
                         {% endwith %}
                     </div>
                 {% endcall %}
-
                 {% call dashboard_workspace.panel('signals', dashboard.active_tab, 'kubernetes-dashboard') %}
                     <div class="{{ peer_content_grid.layout_classes() }}">
                         <div class="{{ peer_content_grid.column_classes('primary') }}">
@@ -113,13 +108,12 @@
                         {% endwith %}
                     </div>
                 {% endcall %}
-
                 {% call dashboard_workspace.panel(
                     'reporting',
                     dashboard.active_tab,
                     'kubernetes-dashboard',
                     extra_classes=''
-                ) %}
+                    ) %}
                     <div class="{{ peer_content_grid.layout_classes() }}">
                         <div class="{{ peer_content_grid.column_classes('primary', 'seven-five') }}">
                             {% include "kubernetes/dashboard/partials/_reporting_summary.html" %}

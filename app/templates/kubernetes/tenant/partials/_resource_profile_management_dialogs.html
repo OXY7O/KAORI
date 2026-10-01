@@ -3,7 +3,7 @@
 {% import "components/form_field.html" as form_field %}
 {% import "components/table_label.html" as table_label %}
 {% import "kubernetes/tenant/partials/_resource_profile_advanced_controls.html" as advanced_profile_controls %}
-{% set profile_class_labels = {'small': 'Small', 'standard': 'Medium', 'large': 'Large', 'extra_large': 'Extra Large', 'custom': 'Custom'} %}
+{% set profile_class_labels = {"small": "Small", "standard": "Medium", "large": "Large", "extra_large": "Extra Large", "custom": "Custom"} %}
 {% for profile in profiles %}
     {% set usage = profile_dependencies.get(profile.id) %}
     {% set editable = profile.profile_class == 'custom' %}
@@ -52,7 +52,7 @@
                     <div class="bg-surface-card p-3.5">
                         <dt class="text-xs uppercase tracking-wide text-content-muted">Contract</dt>
                         <dd class="mt-1 text-sm font-semibold text-content-primary">
-                            {{ profile_class_labels.get(profile.profile_class, profile.profile_class|replace('_', ' ')|title) }} · v{{ profile.version }}
+                            {{ profile_class_labels.get(profile.profile_class, profile.profile_class|replace('_', ' ') |title) }} · v{{ profile.version }}
                         </dd>
                         <dd class="mt-1 text-xs text-content-muted">
                             {{ 'Operator managed' if editable else 'Fixed values · Versioned controls' }}
@@ -62,7 +62,7 @@
                         <dt class="text-xs uppercase tracking-wide text-content-muted">Lineage</dt>
                         <dd class="mt-1 text-sm font-semibold text-content-primary">
                             {% if editable and profile.base_preset_class %}
-                                Based on {{ profile_class_labels.get(profile.base_preset_class, profile.base_preset_class|replace('_', ' ')|title) }}
+                                Based on {{ profile_class_labels.get(profile.base_preset_class, profile.base_preset_class|replace('_', ' ') |title) }}
                             {% elif editable %}
                                 Independent Custom
                             {% else %}
@@ -148,12 +148,18 @@
                                         <span class="flex min-h-6 items-center justify-between gap-2">
                                             <label class="text-xs font-semibold text-content-primary">{{ label }}</label>
                                             <label class="inline-flex items-center gap-1.5 text-[11px] font-medium text-content-muted">
-                                                <input type="checkbox" name="control_{{ name }}" value="1" {% if managed %}checked{% endif %}
+                                                <input type="checkbox"
+                                                       name="control_{{ name }}"
+                                                       value="1"
+                                                       {% if managed %}checked{% endif %}
                                                        class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
                                                 Managed
                                             </label>
                                         </span>
-                                        <input name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" class="{{ form_field.input_classes() }}">
+                                        <input name="{{ name }}"
+                                               value="{{ value }}"
+                                               placeholder="{{ placeholder }}"
+                                               class="{{ form_field.input_classes() }}">
                                     </div>
                                 {% endfor %}
                             </div>
@@ -175,12 +181,18 @@
                                                 <span class="flex min-h-6 items-center justify-between gap-2">
                                                     <label class="text-xs font-semibold text-content-primary">{{ label }}</label>
                                                     <label class="inline-flex items-center gap-1.5 text-[11px] font-medium text-content-muted">
-                                                        <input type="checkbox" name="control_{{ name }}" value="1" {% if managed %}checked{% endif %}
+                                                        <input type="checkbox"
+                                                               name="control_{{ name }}"
+                                                               value="1"
+                                                               {% if managed %}checked{% endif %}
                                                                class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
                                                         Managed
                                                     </label>
                                                 </span>
-                                                <input name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" class="{{ form_field.input_classes() }}">
+                                                <input name="{{ name }}"
+                                                       value="{{ value }}"
+                                                       placeholder="{{ placeholder }}"
+                                                       class="{{ form_field.input_classes() }}">
                                             </div>
                                         {% endfor %}
                                     </div>
@@ -197,12 +209,18 @@
                                                 <span class="flex min-h-6 items-center justify-between gap-2">
                                                     <label class="text-xs font-semibold text-content-primary">{{ label }}</label>
                                                     <label class="inline-flex items-center gap-1.5 text-[11px] font-medium text-content-muted">
-                                                        <input type="checkbox" name="control_{{ name }}" value="1" {% if managed %}checked{% endif %}
+                                                        <input type="checkbox"
+                                                               name="control_{{ name }}"
+                                                               value="1"
+                                                               {% if managed %}checked{% endif %}
                                                                class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
                                                         Managed
                                                     </label>
                                                 </span>
-                                                <input name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" class="{{ form_field.input_classes() }}">
+                                                <input name="{{ name }}"
+                                                       value="{{ value }}"
+                                                       placeholder="{{ placeholder }}"
+                                                       class="{{ form_field.input_classes() }}">
                                             </div>
                                         {% endfor %}
                                     </div>
@@ -222,12 +240,18 @@
                                         <span class="flex min-h-6 items-center justify-between gap-2">
                                             <label class="text-xs font-semibold text-content-primary">{{ label }}</label>
                                             <label class="inline-flex items-center gap-1.5 text-[11px] font-medium text-content-muted">
-                                                <input type="checkbox" name="control_{{ name }}" value="1" {% if managed %}checked{% endif %}
+                                                <input type="checkbox"
+                                                       name="control_{{ name }}"
+                                                       value="1"
+                                                       {% if managed %}checked{% endif %}
                                                        class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
                                                 Managed
                                             </label>
                                         </span>
-                                        <input name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" class="{{ form_field.input_classes() }}">
+                                        <input name="{{ name }}"
+                                               value="{{ value }}"
+                                               placeholder="{{ placeholder }}"
+                                               class="{{ form_field.input_classes() }}">
                                     </div>
                                 {% endfor %}
                             </div>
@@ -280,11 +304,14 @@
                           class="space-y-5">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="profile_name" value="{{ profile.name }}">
-                        <input type="hidden" name="profile_enabled" value="{{ 'enabled' if profile.enabled else 'disabled' }}">
-                        <input type="hidden" name="profile_description" value="{{ profile.description or '' }}">
+                        <input type="hidden"
+                               name="profile_enabled"
+                               value="{{ 'enabled' if profile.enabled else 'disabled' }}">
+                        <input type="hidden"
+                               name="profile_description"
+                               value="{{ profile.description or '' }}">
                         <input type="hidden" name="control_contract_present" value="1">
                         <input type="hidden" name="advanced_control_contract_present" value="1">
-
                         <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-4 py-3">
                             <div class="flex items-start gap-3">
                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
@@ -301,7 +328,6 @@
                                 {{ table_label.special_label('Versioned', 'maintenance', 'history') }}
                             </div>
                         </div>
-
                         <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                             <div class="flex items-center justify-between gap-3">
                                 <div>
@@ -317,7 +343,7 @@
                                     ('requests_memory', 'Memory Requests', 'requests.memory'),
                                     ('limits_memory', 'Memory Limits', 'limits.memory'),
                                     ('pods', 'Pods', 'pods')
-                                ] %}
+                                    ] %}
                                     <label class="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
                                         <span class="min-w-0">
                                             <span class="block text-xs font-semibold text-content-primary">{{ label }}</span>
@@ -335,7 +361,6 @@
                                 {% endfor %}
                             </div>
                         </section>
-
                         <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                             <div class="flex items-center justify-between gap-3">
                                 <div>
@@ -351,14 +376,16 @@
                                         {% for field, label, quota_key in [
                                             ('persistentvolumeclaims', 'PVCs', 'persistentvolumeclaims'),
                                             ('requests_storage', 'Total Storage', 'requests.storage')
-                                        ] %}
+                                            ] %}
                                             <label class="flex items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3">
                                                 <span>
                                                     <span class="block text-xs font-semibold text-content-primary">{{ label }}</span>
                                                     <span class="mt-1 block text-sm font-semibold text-content-primary">{{ preset_quota.get(quota_key) or '—' }}</span>
                                                 </span>
                                                 <span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-content-muted">
-                                                    <input type="checkbox" name="control_{{ field }}" value="1"
+                                                    <input type="checkbox"
+                                                           name="control_{{ field }}"
+                                                           value="1"
                                                            {% if quota_key in (profile.quota_hard_json or {}) %}checked{% endif %}
                                                            class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
                                                     Managed
@@ -373,14 +400,16 @@
                                         {% for field, label, policy_key in [
                                             ('pvc_min_storage', 'Min PVC Size', 'min'),
                                             ('pvc_max_storage', 'Max PVC Size', 'max')
-                                        ] %}
+                                            ] %}
                                             <label class="flex items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3">
                                                 <span>
                                                     <span class="block text-xs font-semibold text-content-primary">{{ label }}</span>
                                                     <span class="mt-1 block text-sm font-semibold text-content-primary">{{ preset_storage.get(policy_key) or '—' }}</span>
                                                 </span>
                                                 <span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-content-muted">
-                                                    <input type="checkbox" name="control_{{ field }}" value="1"
+                                                    <input type="checkbox"
+                                                           name="control_{{ field }}"
+                                                           value="1"
                                                            {% if policy_key in (profile.storage_policy_json or {}) %}checked{% endif %}
                                                            class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
                                                     Managed
@@ -391,7 +420,6 @@
                                 </div>
                             </div>
                         </section>
-
                         <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                             <div class="flex items-center justify-between gap-3">
                                 <div>
@@ -405,14 +433,16 @@
                                     ('services', 'Services', 'services'),
                                     ('configmaps', 'ConfigMaps', 'configmaps'),
                                     ('secrets', 'Secrets', 'secrets')
-                                ] %}
+                                    ] %}
                                     <label class="flex items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
                                         <span>
                                             <span class="block text-xs font-semibold text-content-primary">{{ label }}</span>
                                             <span class="mt-1 block text-sm font-semibold text-content-primary">{{ preset_quota.get(quota_key) or '—' }}</span>
                                         </span>
                                         <span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-content-muted">
-                                            <input type="checkbox" name="control_{{ field }}" value="1"
+                                            <input type="checkbox"
+                                                   name="control_{{ field }}"
+                                                   value="1"
                                                    {% if quota_key in (profile.quota_hard_json or {}) %}checked{% endif %}
                                                    class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
                                             Managed
@@ -421,7 +451,6 @@
                                 {% endfor %}
                             </div>
                         </section>
-
                         <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                             <div class="flex items-center justify-between gap-3">
                                 <div>
@@ -436,7 +465,7 @@
                                     ('default_cpu', 'CPU Limit', 'default', 'cpu'),
                                     ('default_request_memory', 'Memory Request', 'default_request', 'memory'),
                                     ('default_memory', 'Memory Limit', 'default', 'memory')
-                                ] %}
+                                    ] %}
                                     {% set preset_group = preset_limits.get(group, {}) %}
                                     {% set managed_group = (profile.limit_defaults_json or {}).get(group, {}) %}
                                     <label class="flex items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
@@ -445,7 +474,9 @@
                                             <span class="mt-1 block text-sm font-semibold text-content-primary">{{ preset_group.get(resource) or '—' }}</span>
                                         </span>
                                         <span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-content-muted">
-                                            <input type="checkbox" name="control_{{ field }}" value="1"
+                                            <input type="checkbox"
+                                                   name="control_{{ field }}"
+                                                   value="1"
                                                    {% if resource in managed_group %}checked{% endif %}
                                                    class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
                                             Managed
@@ -454,7 +485,6 @@
                                 {% endfor %}
                             </div>
                         </section>
-
                         {{ advanced_profile_controls.render(profile.advanced_controls_json or {}, true, 'resource-profile-edit-' ~ profile.id, false) }}
                     </form>
                 {% endif %}
@@ -464,7 +494,8 @@
                         <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                             <div class="min-w-0">
                                 <div class="flex items-center gap-2">
-                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
                                         <i data-lucide="refresh-cw" class="h-4 w-4"></i>
                                     </span>
                                     <div>
@@ -480,9 +511,7 @@
                                   action="{{ url_for('tenant.rollout_resource_profile_route', profile_id=profile.id) }}"
                                   class="grid min-w-0 gap-2 sm:grid-cols-[minmax(15rem,1fr)_auto] lg:min-w-[30rem]">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <select name="tenant_id"
-                                        required
-                                        class="{{ form_field.select_classes() }}">
+                                <select name="tenant_id" required class="{{ form_field.select_classes() }}">
                                     <option value="">Select Tenant</option>
                                     {% for target in rollout_targets %}
                                         <option value="{{ target.tenant_id }}"
@@ -534,7 +563,9 @@
                         form="resource-profile-update-form-{{ profile.id }}"
                         {% if not can_manage %}disabled aria-disabled="true"{% endif %}
                         class="{{ action_button.classes('primary') }}">
-                    <i data-lucide="{{ 'save' if editable else 'history' }}" class="h-4 w-4" aria-hidden="true"></i>
+                    <i data-lucide="{{ 'save' if editable else 'history' }}"
+                       class="h-4 w-4"
+                       aria-hidden="true"></i>
                     {{ 'Save Changes' if editable else 'Save New Version' }}
                 </button>
             </footer>

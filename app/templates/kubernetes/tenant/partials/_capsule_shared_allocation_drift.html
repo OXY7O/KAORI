@@ -32,11 +32,11 @@
                         <td class="{{ table_ui.cell_classes() }}">
                             {{ table_label.special_label('Capsule GlobalResourceQuota', 'info', 'shield-check') }}
                             <p class="mt-2 text-xs text-content-muted">
-                                {{ source.get('kind')|default('GlobalResourceQuota', true) }}/{{ source.get('name')|default(intent.resource_name, true) }}
+                                {{ source.get("kind") |default('GlobalResourceQuota', true) }}/{{ source.get("name") |default(intent.resource_name, true) }}
                             </p>
                             <p class="mt-1 max-w-[360px] break-all text-xs leading-5 text-content-muted">
-                                UID {{ source.get('uid')|default('Unknown', true) }}
-                                · resourceVersion {{ source.get('resource_version')|default('Unknown', true) }}
+                                UID {{ source.get("uid") |default('Unknown', true) }}
+                                · resourceVersion {{ source.get("resource_version") |default('Unknown', true) }}
                             </p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
@@ -51,9 +51,7 @@
                                         </p>
                                     {% endfor %}
                                     {% if drift.get('differences', [])|length > 4 %}
-                                        <p class="text-xs text-content-muted">
-                                            +{{ drift.get('differences', [])|length - 4 }} more changed dimensions
-                                        </p>
+                                        <p class="text-xs text-content-muted">+{{ drift.get('differences', []) |length - 4 }} more changed dimensions</p>
                                     {% endif %}
                                 </div>
                             {% elif drift.get('observed_matches_desired') %}
@@ -62,9 +60,7 @@
                                 </p>
                             {% endif %}
                             {% if state.get('blocked_reason') %}
-                                <p class="mt-2 max-w-[420px] text-xs leading-5 text-status-warning-text">
-                                    {{ state.get('blocked_reason') }}
-                                </p>
+                                <p class="mt-2 max-w-[420px] text-xs leading-5 text-status-warning-text">{{ state.get("blocked_reason") }}</p>
                             {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
@@ -90,7 +86,7 @@
                             {% else %}
                                 {{ table_label.special_label('Control Unavailable', 'warning', 'shield-alert') }}
                                 <p class="mt-2 max-w-[280px] text-right text-xs leading-5 text-content-muted">
-                                    {{ state.get('blocked_reason') or 'Capsule reconciliation is unavailable.' }}
+                                    {{ state.get("blocked_reason") or 'Capsule reconciliation is unavailable.' }}
                                 </p>
                             {% endif %}
                         </td>

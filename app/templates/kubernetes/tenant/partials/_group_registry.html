@@ -12,7 +12,8 @@
     'group_enabled': group_filters.enabled,
     'group_search': group_filters.search
 } %}
-<section id="{{ registry_id }}" class="{{ table_ui.block_classes(allow_overflow=true) }}">
+<section id="{{ registry_id }}"
+         class="{{ table_ui.block_classes(allow_overflow=true) }}">
     {% set header_actions %}
         {% if group_filters.tenant_id or group_filters.enabled or group_filters.search %}
             {{ registry_ui.clear_filters_link('tenant.tenants',
@@ -36,8 +37,7 @@
                 'Reactivate restores a retired binding for future use.',
                 'Routine hard delete is intentionally absent so Membership, Access Grant, and audit lineage remain queryable.'
                 ],
-                placement='right'
-        ) }}
+                placement='right') }}
     {% endset %}
     {{ table_ui.inventory_block_header('users',
         'Tenant Group Registry',

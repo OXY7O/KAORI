@@ -64,7 +64,6 @@
             <div class="space-y-5 p-4 sm:p-5">
                 {% if active_namespace_view == 'allocation' %}
                     {% include "kubernetes/tenant/partials/_allocation_change.html" %}
-
                     <details class="group overflow-visible rounded-xl border border-outline-subtle bg-surface-card"
                              data-tenant-native-cutover-workspace>
                         <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 marker:hidden">
@@ -86,7 +85,6 @@
                             {% include "kubernetes/tenant/partials/_allocation_cutover.html" %}
                         </div>
                     </details>
-
                     <details class="group overflow-visible rounded-xl border border-outline-subtle bg-surface-card"
                              data-tenant-capsule-allocation-workspace>
                         <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 marker:hidden">
@@ -118,7 +116,8 @@
             </div>
             <script type="application/json" id="tenant-resource-profile-presets">{{ resource_profile_presets|tojson }}</script>
             <script type="application/json" id="tenant-namespace-allocation-profiles">{{ namespace_allocation_profiles|tojson }}</script>
-            <script type="application/json" id="tenant-environment-advanced-control-state">{{ tenant_environment_advanced_control_state|tojson }}</script>
+            <script type="application/json"
+                    id="tenant-environment-advanced-control-state">{{ tenant_environment_advanced_control_state|tojson }}</script>
             <script type="application/json" id="tenant-namespace-allocation-state">{{ namespace_allocation_state|tojson }}</script>
             <script type="application/json" id="tenant-capsule-shared-allocation-state">{{ capsule_shared_cutover_state|tojson }}</script>
             <script type="application/json" id="tenant-capsule-tenant-quota-state">{{ capsule_tenant_quota_cutover_state|tojson }}</script>

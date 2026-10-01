@@ -92,10 +92,9 @@
                     {% set allocation_drift = allocation_state.get('drift') or {} %}
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }}">
-                            {{ table_ui.title_cell(
-                                item.namespace,
-                                'Allocation contract divergent' if allocation_state.get('is_allocation_drift') else 'Provider object missing or divergent',
-                                'triangle-alert'
+                            {{ table_ui.title_cell(item.namespace,
+                                                        'Allocation contract divergent' if allocation_state.get('is_allocation_drift') else 'Provider object missing or divergent',
+                            'triangle-alert'
                             ) }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
@@ -121,7 +120,7 @@
                                         {% endfor %}
                                         {% if allocation_drift.get('differences', [])|length > 4 %}
                                             <p class="text-xs text-content-muted">
-                                                +{{ allocation_drift.get('differences', [])|length - 4 }} more changed dimensions
+                                                +{{ allocation_drift.get('differences', []) |length - 4 }} more changed dimensions
                                             </p>
                                         {% endif %}
                                     </div>
@@ -132,21 +131,21 @@
                                 {% endif %}
                                 {% set observed = allocation_drift.get('observed') or {} %}
                                 <p class="mt-2 max-w-[420px] text-xs leading-5 text-content-muted">
-                                    Authority {{ allocation_drift.get('authority')|default('Unknown', true)|replace('_', ' ')|title }}
-                                    · observed {{ allocation_drift.get('observed_at')|default('Unknown', true) }}
+                                    Authority {{ allocation_drift.get("authority") |default('Unknown', true)|replace('_', ' ')|title }}
+                                    · observed {{ allocation_drift.get("observed_at") |default('Unknown', true) }}
                                 </p>
                                 {% if observed.get('source_resources') %}
                                     <div class="mt-2 space-y-1">
                                         {% for source in observed.get('source_resources', [])[:3] %}
                                             <p class="max-w-[420px] break-all text-xs leading-5 text-content-muted">
-                                                {{ source.get('kind')|default('Resource', true) }}/{{ source.get('name')|default('unknown', true) }}
-                                                · UID {{ source.get('uid')|default('Unknown', true) }}
-                                                · resourceVersion {{ source.get('resource_version')|default('Unknown', true) }}
+                                                {{ source.get("kind") |default('Resource', true) }}/{{ source.get("name") |default('unknown', true) }}
+                                                · UID {{ source.get("uid") |default('Unknown', true) }}
+                                                · resourceVersion {{ source.get("resource_version") |default('Unknown', true) }}
                                             </p>
                                         {% endfor %}
                                         {% if observed.get('source_resources', [])|length > 3 %}
                                             <p class="text-xs text-content-muted">
-                                                +{{ observed.get('source_resources', [])|length - 3 }} more provider source(s)
+                                                +{{ observed.get('source_resources', []) |length - 3 }} more provider source(s)
                                             </p>
                                         {% endif %}
                                     </div>
@@ -179,7 +178,7 @@
                                 {% else %}
                                     {{ table_label.special_label('Control Unavailable', 'warning', 'shield-alert') }}
                                     <p class="mt-2 max-w-[280px] text-right text-xs leading-5 text-content-muted">
-                                        {{ allocation_state.get('blocked_reason') or 'Provider reconciliation is unavailable.' }}
+                                        {{ allocation_state.get("blocked_reason") or 'Provider reconciliation is unavailable.' }}
                                     </p>
                                 {% endif %}
                             {% elif can_manage

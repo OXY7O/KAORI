@@ -47,12 +47,10 @@
                             {% if capability_navigation %}
                                 <div class="mb-4 min-w-0"
                                      data-kaori-capability-navigation="{{ capability_navigation.key }}">
-                                    {{ workspace_tabs.render_navigation(
-                                        capability_navigation.tabs,
-                                        capability_navigation.active_key,
-                                        prefix='detail-' ~ capability_navigation.key,
-                                        aria_label=capability_navigation.label ~ ' views'
-                                    ) }}
+                                    {{ workspace_tabs.render_navigation(capability_navigation.tabs,
+                                                                        capability_navigation.active_key,
+                                                                        prefix='detail-' ~ capability_navigation.key,
+                                                                        aria_label=capability_navigation.label ~ ' views') }}
                                 </div>
                             {% endif %}
                         {% endblock page_capability_navigation %}

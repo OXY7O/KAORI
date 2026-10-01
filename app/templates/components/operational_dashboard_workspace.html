@@ -1,5 +1,4 @@
 {% import "components/workspace_tabs.html" as workspace_tabs %}
-
 {#
   Canonical KAORI Operational Dashboard workspace framework.
 
@@ -11,31 +10,21 @@
   copying Alpine state, URL synchronization, keyboard navigation, tab lists,
   or tab-panel geometry.
 #}
-
-{% set standard_tabs = [
-    ('overview', 'Operations Overview', 'activity'),
-    ('capacity', 'Capacity & Demand', 'gauge'),
-    ('signals', 'Signals & Actions', 'bell-ring'),
-    ('reporting', 'Reporting', 'file-text')
-] %}
-
+{% set standard_tabs = [('overview', 'Operations Overview', 'activity'), ('capacity', 'Capacity & Demand', 'gauge'), ('signals', 'Signals & Actions', 'bell-ring'), ('reporting', 'Reporting', 'file-text')] %}
 {% macro controller(active_tab, prefix, input_id='dashboard-active-tab') -%}
-    <div data-kaori-dashboard-framework="operational-v1"
-         data-dashboard-prefix="{{ prefix }}"
-         x-data="{ activeTab: '{{ active_tab }}', allowedTabs: [{% for tab in standard_tabs %}'{{ tab[0] }}'{% if not loop.last %}, {% endif %}{% endfor %}], setTab(tab) { if (!this.allowedTabs.includes(tab)) return; this.activeTab = tab; const url = new URL(window.location.href); url.searchParams.set('tab', tab); window.history.replaceState({}, '', url); }, moveTab(currentTab, direction, prefix) { const currentIndex = this.allowedTabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.allowedTabs.length - 1; else nextIndex = (currentIndex + direction + this.allowedTabs.length) % this.allowedTabs.length; const nextTab = this.allowedTabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); } }"
-         x-on:popstate.window="activeTab = allowedTabs.includes(new URL(window.location.href).searchParams.get('tab')) ? new URL(window.location.href).searchParams.get('tab') : 'overview'">
-        <input id="{{ input_id }}"
-               type="hidden"
-               name="tab"
-               x-model="activeTab" />
+    <div data-kaori-dashboard-framework="operational-v1" data-dashboard-prefix="{{ prefix }}" x-data="{ activeTab: '{{ active_tab }}', allowedTabs: [
+        {% for tab in standard_tabs %}
+            '{{ tab[0] }}'
+            {% if not loop.last %},{% endif %}
+        {% endfor %}
+        ], setTab(tab) { if (!this.allowedTabs.includes(tab)) return; this.activeTab = tab; const url = new URL(window.location.href); url.searchParams.set('tab', tab); window.history.replaceState({}, '', url); }, moveTab(currentTab, direction, prefix) { const currentIndex = this.allowedTabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.allowedTabs.length - 1; else nextIndex = (currentIndex + direction + this.allowedTabs.length) % this.allowedTabs.length; const nextTab = this.allowedTabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); } }" x-on:popstate.window="activeTab = allowedTabs.includes(new URL(window.location.href).searchParams.get('tab')) ? new URL(window.location.href).searchParams.get('tab') : 'overview'">
+        <input id="{{ input_id }}" type="hidden" name="tab" x-model="activeTab" />
         {{ caller() }}
     </div>
 {%- endmacro %}
-
 {% macro navigation(prefix, aria_label) -%}
     {{ workspace_tabs.render(standard_tabs, prefix=prefix, aria_label=aria_label) }}
 {%- endmacro %}
-
 {% macro panel(tab_key, active_tab, prefix, extra_classes='space-y-5') -%}
     <div id="{{ prefix }}-panel-{{ tab_key }}"
          role="tabpanel"
@@ -43,7 +32,5 @@
          {% if tab_key != active_tab %}x-cloak hidden{% endif %}
          x-show="activeTab === '{{ tab_key }}'"
          x-bind:hidden="activeTab !== '{{ tab_key }}'"
-         class="{{ extra_classes }}">
-        {{ caller() }}
-    </div>
+         class="{{ extra_classes }}">{{ caller() }}</div>
 {%- endmacro %}

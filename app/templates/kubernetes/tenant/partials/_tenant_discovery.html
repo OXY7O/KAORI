@@ -12,7 +12,8 @@
     'discovery_management': tenant_discovery_filters.management,
     'discovery_search': tenant_discovery_filters.search
 } %}
-<section id="{{ registry_id }}" class="{{ table_ui.block_classes(allow_overflow=true) }}">
+<section id="{{ registry_id }}"
+         class="{{ table_ui.block_classes(allow_overflow=true) }}">
     {% set header_actions %}
         {% if tenant_discovery_filters.cluster_id or tenant_discovery_filters.provider or tenant_discovery_filters.management or tenant_discovery_filters.search %}
             {{ registry_ui.clear_filters_link('tenant.tenants',
@@ -37,8 +38,7 @@
                 'Blocked — adoption fails closed until eligibility is resolved.',
                 'Provider Missing — KAORI ownership exists but the provider object is absent.'
                 ],
-                placement='right'
-        ) }}
+                placement='right') }}
     {% endset %}
     {{ table_ui.inventory_block_header('radar',
         'Tenant Discovery',
@@ -167,10 +167,7 @@
                                 {% elif row.management_status == 'Discovered' and can_manage %}
                                     <button type="button"
                                             data-tenant-adoption-load
-                                            hx-get="{{ url_for('tenant.tenant_adoption_preflight_route',
-                                                cluster_id=row.cluster_id,
-                                                provider_key=row.provider_key,
-                                                resource_name=row.resource_name) }}"
+                                            hx-get="{{ url_for('tenant.tenant_adoption_preflight_route', cluster_id=row.cluster_id, provider_key=row.provider_key, resource_name=row.resource_name) }}"
                                             hx-target="#tenant-adoption-preflight-slot"
                                             hx-swap="innerHTML"
                                             hx-indicator="#tenant-discovery-loading"
@@ -214,5 +211,5 @@
                 page_param='discovery_page',
                 per_page_param='discovery_per_page') }}
     {% endif %}
-<div id="tenant-adoption-preflight-slot" aria-live="polite"></div>
+    <div id="tenant-adoption-preflight-slot" aria-live="polite"></div>
 </section>
