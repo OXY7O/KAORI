@@ -71,7 +71,7 @@
                                         Adopt as <span class="font-semibold text-content-primary">Managed</span>
                                         <span class="text-content-muted">·</span>
                                         {{ 'Capsule' if row.provider_key == 'capsule' else 'Native Kubernetes' }} remains execution authority.
-                                        KAORI imports the current provider values as the initial contract, verifies an equivalent write/read-back, then owns supported governance controls without changing effective limits.
+                                        KAORI imports current provider values as the initial contract. Controls with admitted write authority use equivalent write/read-back; controller-owned constraints are mirrored without false drift.
                                     </p>
                                 </div>
                             </div>
@@ -555,7 +555,7 @@
                 </div>
                 <footer class="sticky bottom-0 flex flex-col gap-3 border-t border-outline-subtle bg-surface-card px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                     <p class="text-xs leading-5 text-content-muted">
-                        <span class="font-semibold text-content-primary">Equivalent provider takeover only; effective values are preserved.</span>
+                        <span class="font-semibold text-content-primary">Managed takeover where authority exists; provider-owned constraints stay mirrored.</span>
                         This action registers the existing object as Adopted / Observed.
                     </p>
                     <div class="flex flex-col-reverse gap-2 sm:flex-row">
