@@ -21,6 +21,7 @@ def _record(*, drift=None, provider_key='native_kubernetes', authority='native_k
         version=1,
         quota_hard_json={},
         limit_defaults_json={},
+        storage_policy_json={},
     )
     return SimpleNamespace(
         id=7,
@@ -39,6 +40,7 @@ def _record(*, drift=None, provider_key='native_kubernetes', authority='native_k
             'default_request': {'cpu': '100m', 'memory': '128Mi'},
             'default': {'cpu': '500m', 'memory': '512Mi'},
         },
+        allocation_storage_policy_json={'min': '1Gi', 'max': '10Gi'},
         provisioning_status='drifted',
         allocation_customized=False,
         capacity_decision_id=None,
@@ -68,6 +70,7 @@ def test_allocation_diff_is_dimension_level_and_quantity_aware():
             'default_request': {'cpu': '100m', 'memory': '128Mi'},
             'default': {'cpu': '500m', 'memory': '1Gi'},
         },
+        'storage_policy': {'min': '1Gi', 'max': '10Gi'},
     }
 
     differences = allocation_differences(record, observation)
@@ -167,6 +170,7 @@ def test_reapply_capacity_preflight_uses_live_provider_allocation_as_current(mon
         'effective_hash': 'provider-hash',
         'quota': {'requests.cpu': '1'},
         'limits': {},
+        'storage_policy': {'min': '1Gi', 'max': '10Gi'},
         'source_resources': [],
     }
     captured = {}
@@ -202,6 +206,7 @@ def test_reapply_capacity_preflight_uses_live_provider_allocation_as_current(mon
     assert captured['current'] == {'requests.cpu': '1'}
     assert captured['proposed']['requests.cpu'] == '2'
     assert captured['reconcile']['capacity_decision_id'] == 88
+    assert captured['reconcile']['storage_policy'] == {'min': '1Gi', 'max': '10Gi'}
     assert captured['reconcile']['expected_observed_hash'] == 'provider-hash'
     assert captured['reconcile']['failure_status'] == 'drifted'
 
@@ -262,6 +267,7 @@ def test_accept_provider_state_commits_live_allocation_without_provider_write(mo
         'effective_hash': 'provider-hash',
         'quota': {'requests.cpu': '3'},
         'limits': {},
+        'storage_policy': {'min': '2Gi', 'max': '20Gi'},
         'source_resources': [
             {
                 'kind': 'ResourceQuota',
@@ -298,6 +304,7 @@ def test_accept_provider_state_commits_live_allocation_without_provider_write(mo
     assert captured['current']['requests.cpu'] == '2'
     assert captured['proposed']['requests.cpu'] == '3'
     assert record.allocation_quota_json == {'requests.cpu': '3'}
+    assert record.allocation_storage_policy_json == {'min': '2Gi', 'max': '20Gi'}
     assert record.desired_hash == 'provider-hash'
     assert record.effective_hash == 'provider-hash'
     assert record.provisioning_status == 'ready'
@@ -305,3 +312,28 @@ def test_accept_provider_state_commits_live_allocation_without_provider_write(mo
     assert record.provisioning_evidence_json['provider_mutation_performed'] is False
     assert record.provisioning_evidence_json['allocation']['provenance'] == 'accepted_provider_state'
     assert 'allocation_drift' not in record.provisioning_evidence_json
+
+
+def test_pvc_storage_policy_drift_is_dimension_level_and_bidirectional() -> None:
+    record = _record()
+    observation = {
+        'quota': dict(record.allocation_quota_json),
+        'limits': dict(record.allocation_limit_defaults_json),
+        'storage_policy': {'min': '2Gi', 'max': '20Gi'},
+    }
+
+    differences = allocation_differences(record, observation)
+    by_dimension = {item['dimension']: item for item in differences}
+
+    assert by_dimension == {
+        'pvc.max.storage': {
+            'dimension': 'pvc.max.storage',
+            'kaori_value': '10Gi',
+            'provider_value': '20Gi',
+        },
+        'pvc.min.storage': {
+            'dimension': 'pvc.min.storage',
+            'kaori_value': '1Gi',
+            'provider_value': '2Gi',
+        },
+    }
