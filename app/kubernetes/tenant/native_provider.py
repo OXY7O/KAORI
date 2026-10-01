@@ -42,7 +42,9 @@ def effective_native_connection_readiness(connection: KubernetesConnection | Any
     if explicit:
         return explicit
     cluster = getattr(connection, 'cluster', None)
-    return 'ready' if str(getattr(cluster, 'status', '') or '').strip().lower() == 'connected' else 'validation_required'
+    return (
+        'ready' if str(getattr(cluster, 'status', '') or '').strip().lower() == 'connected' else 'validation_required'
+    )
 
 
 def tenant_workspace_connection_available(connection: KubernetesConnection | Any | None) -> bool:
