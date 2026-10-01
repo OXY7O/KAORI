@@ -149,9 +149,7 @@
                 statusIcon.setAttribute('data-lucide', isReady ? 'check' : 'triangle-alert')
                 statusIcon.setAttribute(
                     'class',
-                    isReady
-                        ? 'h-3 w-3 shrink-0 text-status-normal'
-                        : 'h-3 w-3 shrink-0 text-status-warning'
+                    isReady ? 'h-3 w-3 shrink-0 text-status-normal' : 'h-3 w-3 shrink-0 text-status-warning'
                 )
             }
         }
@@ -209,9 +207,7 @@
                 readinessOverallIcon.setAttribute('data-lucide', isReady ? 'circle-check' : 'triangle-alert')
                 readinessOverallIcon.setAttribute(
                     'class',
-                    isReady
-                        ? 'h-3 w-3 shrink-0 text-status-normal'
-                        : 'h-3 w-3 shrink-0 text-status-warning'
+                    isReady ? 'h-3 w-3 shrink-0 text-status-normal' : 'h-3 w-3 shrink-0 text-status-warning'
                 )
             }
             if (readinessOverallLabel) {
@@ -245,9 +241,7 @@
                 previewEligibilityIcon.setAttribute('data-lucide', isReady ? 'circle-check' : 'triangle-alert')
                 previewEligibilityIcon.setAttribute(
                     'class',
-                    isReady
-                        ? 'h-3 w-3 shrink-0 text-status-normal'
-                        : 'h-3 w-3 shrink-0 text-status-warning'
+                    isReady ? 'h-3 w-3 shrink-0 text-status-normal' : 'h-3 w-3 shrink-0 text-status-warning'
                 )
             }
             if (previewEligibilityLabel) {

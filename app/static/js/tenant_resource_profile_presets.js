@@ -276,14 +276,11 @@
         const quotaValue = (valueSet, field) => valueSet?.quota?.[field] || 'Unbounded'
         const storageValue = (valueSet, field) => valueSet?.storage_policy?.[field] || 'Unbounded'
 
-        const renderAllocationChange = ({preferCurrentProfile = false} = {}) => {
+        const renderAllocationChange = ({ preferCurrentProfile = false } = {}) => {
             const current = namespaces[namespaceSelect?.value] || null
 
             if (preferCurrentProfile && current && profileSelect) {
-                if (
-                    current.profile_id &&
-                    profileSelect.querySelector(`option[value="${current.profile_id}"]`)
-                ) {
+                if (current.profile_id && profileSelect.querySelector(`option[value="${current.profile_id}"]`)) {
                     profileSelect.value = String(current.profile_id)
                 } else if (profileSelect.querySelector('option[value="adopted_baseline"]')) {
                     profileSelect.value = 'adopted_baseline'
@@ -291,9 +288,7 @@
             }
 
             const proposed =
-                profileSelect?.value === 'adopted_baseline'
-                    ? current
-                    : profiles[profileSelect?.value] || null
+                profileSelect?.value === 'adopted_baseline' ? current : profiles[profileSelect?.value] || null
             const proposedLabel = profileSelect?.selectedOptions?.[0]?.textContent?.trim() || '—'
 
             if (currentProfile) {
@@ -316,9 +311,9 @@
             if (proposedPvcMax) proposedPvcMax.textContent = proposed ? storageValue(proposed, 'max') : '—'
         }
 
-        namespaceSelect?.addEventListener('change', () => renderAllocationChange({preferCurrentProfile: true}))
+        namespaceSelect?.addEventListener('change', () => renderAllocationChange({ preferCurrentProfile: true }))
         profileSelect?.addEventListener('change', () => renderAllocationChange())
-        renderAllocationChange({preferCurrentProfile: true})
+        renderAllocationChange({ preferCurrentProfile: true })
     }
 
     const initSharedAllocationForm = (form) => {
@@ -474,9 +469,10 @@
                 .join(' · ')
         }
         if (key === 'capsule_namespace_controls') {
-            const optionCount = value.namespace_options && typeof value.namespace_options === 'object'
-                ? Object.keys(value.namespace_options).length
-                : 0
+            const optionCount =
+                value.namespace_options && typeof value.namespace_options === 'object'
+                    ? Object.keys(value.namespace_options).length
+                    : 0
             return `Tenant prefix ${value.force_tenant_prefix ? 'On' : 'Off'} · ${optionCount} namespace option${optionCount === 1 ? '' : 's'}`
         }
         if (key === 'capsule_resource_rules') {
