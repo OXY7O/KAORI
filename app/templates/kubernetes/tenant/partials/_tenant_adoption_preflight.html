@@ -393,21 +393,10 @@
                                                                 {{ pvc_max if pvc_max is not none and pvc_max != '' else 'Not declared' }}
                                                             </dd>
                                                         </div>
-                                                        {% if fields.get('default_request') and fields.default_request.get('storage') %}
-                                                            <div class="bg-surface-card px-3 py-2.5">
-                                                                <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Default Request</dt>
-                                                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ fields.default_request.storage }}</dd>
-                                                            </div>
-                                                        {% endif %}
-                                                        {% if fields.get('default') and fields.default.get('storage') %}
-                                                            <div class="bg-surface-card px-3 py-2.5">
-                                                                <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Default Limit</dt>
-                                                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ fields.default.storage }}</dd>
-                                                            </div>
-                                                        {% endif %}
+
                                                     </dl>
                                                     <p class="mt-3 text-xs leading-5 text-content-muted">
-                                                        Per-PVC LimitRange policy becomes Storage Guardrails on adoption.
+                                                        Supported Min/Max PVC bounds become Storage Guardrails on adoption.
                                                         {% if row.provider_key == 'native_kubernetes' %}
                                                             KAORI verifies the same values by managed write/read-back.
                                                         {% else %}
