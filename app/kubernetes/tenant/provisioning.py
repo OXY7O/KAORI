@@ -190,12 +190,6 @@ def _limit_items(desired: dict[str, Any]) -> list[V1LimitRangeItem]:
                 type='PersistentVolumeClaim',
                 min={'storage': storage['min']} if storage.get('min') else None,
                 max={'storage': storage['max']} if storage.get('max') else None,
-                default={'storage': storage['default']} if storage.get('default') else None,
-                default_request=(
-                    {'storage': storage['default_request']}
-                    if storage.get('default_request')
-                    else None
-                ),
             )
         )
     return items
@@ -259,8 +253,6 @@ def _effective_contract(api, desired: dict[str, Any]) -> dict[str, Any]:
         for field, value in (
             ('min', getattr(pvc_item, 'min', None)),
             ('max', getattr(pvc_item, 'max', None)),
-            ('default', getattr(pvc_item, 'default', None)),
-            ('default_request', getattr(pvc_item, 'default_request', None)),
         ):
             storage = dict(value or {}).get('storage')
             if storage not in (None, ''):
