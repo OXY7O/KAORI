@@ -688,6 +688,13 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     assert 'get_capacity_decision_registry_context(' in routes
     assert "request.args.get('decision_per_page', 5" in routes
 
+    namespace_page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
+    assert 'data-tenant-native-cutover-workspace' in namespace_page
+    assert 'Adopted Native Governance Cutover' in namespace_page
+    assert 'data-tenant-capsule-allocation-workspace' in namespace_page
+    assert 'Capsule Allocation Governance' in namespace_page
+    assert namespace_page.index('_allocation_change.html') < namespace_page.index('_allocation_cutover.html')
+
 def test_committed_tenant_snapshot_is_separate_from_lazy_live_provider_connectivity() -> None:
     routes = read('app/kubernetes/tenant/routes.py')
     live_service = read('app/kubernetes/tenant/live_connection.py')
