@@ -106,6 +106,18 @@ class _FakeCoreApi:
     def __init__(self):
         self.created_quotas = []
         self.created_limit_ranges = []
+        self.patched_namespaces = []
+
+    def read_namespace(self, name):
+        return SimpleNamespace(
+            metadata=SimpleNamespace(
+                labels={},
+                resource_version='1',
+            )
+        )
+
+    def patch_namespace(self, name, body):
+        self.patched_namespaces.append((name, body))
 
     def read_namespaced_resource_quota(self, name, namespace):
         return None
