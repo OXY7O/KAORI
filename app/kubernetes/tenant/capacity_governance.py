@@ -77,10 +77,16 @@ def upsert_capacity_policy(source: Mapping[str, Any]) -> TenantCapacityPolicy:
         label='Unmanaged commitment memory',
     )
     unmanaged_pods = _nonnegative_integer(source.get('unmanaged_commitment_pods'), label='Unmanaged commitment Pods')
-    tenant_storage_budget = _optional_positive_quantity(
-        source.get('tenant_storage_budget'),
-        label='Tenant Storage Budget',
-    )
+    if 'tenant_storage_budget_gib' in source:
+        tenant_storage_budget = _optional_positive_gib_quantity(
+            source.get('tenant_storage_budget_gib'),
+            label='Tenant Storage Budget',
+        )
+    else:
+        tenant_storage_budget = _optional_positive_quantity(
+            source.get('tenant_storage_budget'),
+            label='Tenant Storage Budget',
+        )
     safety_headroom_percent = _percent(source.get('safety_headroom_percent'))
 
     policy = TenantCapacityPolicy.query.filter_by(cluster_id=cluster.id).first()
@@ -142,6 +148,8 @@ def build_capacity_governance_summary(cluster_id: str) -> dict[str, Any]:
 
     capacity, capacity_reason = _capacity_vector(snapshot_result)
     if capacity is None:
+        logical_budget = _logical_storage_budget_vector(policy)
+        logical_headroom = _headroom(logical_budget, committed)
         return {
             'cluster_id': cluster_id,
             'state': 'Unknown',
@@ -152,11 +160,11 @@ def build_capacity_governance_summary(cluster_id: str) -> dict[str, Any]:
             'committed_namespace_count': committed_count,
             'committed': _vector_json(committed),
             'budget': None,
-            'headroom': None,
+            'headroom': _vector_json(logical_headroom),
             'display': {
                 'committed': _vector_display(committed),
-                'budget': _vector_display(CapacityVector(cpu=None, memory_bytes=None)),
-                'headroom': _vector_display(CapacityVector(cpu=None, memory_bytes=None)),
+                'budget': _vector_display(logical_budget),
+                'headroom': _vector_display(logical_headroom),
             },
         }
 
@@ -865,6 +873,40 @@ def _nonnegative_quantity(value: object | None, *, label: str) -> str:
     return rendered
 
 
+def _optional_positive_gib_quantity(value: object | None, *, label: str) -> str | None:
+    rendered = str(value or '').strip()
+    if not rendered:
+        return None
+    try:
+        parsed = Decimal(rendered)
+    except (InvalidOperation, TypeError, ValueError) as exc:
+        raise ValueError(f'{label} must be a positive numeric GiB value.') from exc
+    if parsed <= _ZERO:
+        raise ValueError(f'{label} must be greater than zero when configured.')
+    return f'{format(parsed.normalize(), "f")}Gi'
+
+
+def _quantity_gib_text(value: object | None) -> str | None:
+    if value in (None, ''):
+        return None
+    gib = _quantity(value) / _GIB
+    return format(gib.normalize(), 'f')
+
+
+def _logical_storage_budget_vector(policy: TenantCapacityPolicy) -> CapacityVector:
+    storage_budget = (
+        _quantity(policy.tenant_storage_budget)
+        if policy.tenant_storage_budget not in (None, '')
+        else None
+    )
+    return CapacityVector(
+        cpu=None,
+        memory_bytes=None,
+        pods=None,
+        storage_bytes=storage_budget,
+    )
+
+
 def _optional_positive_quantity(value: object | None, *, label: str) -> str | None:
     rendered = str(value or '').strip()
     if not rendered:
@@ -913,6 +955,7 @@ def _policy_json(policy: TenantCapacityPolicy) -> dict[str, Any]:
         'unmanaged_commitment_memory': policy.unmanaged_commitment_memory,
         'unmanaged_commitment_pods': policy.unmanaged_commitment_pods,
         'tenant_storage_budget': policy.tenant_storage_budget,
+        'tenant_storage_budget_gib': _quantity_gib_text(policy.tenant_storage_budget),
     }
 
 
