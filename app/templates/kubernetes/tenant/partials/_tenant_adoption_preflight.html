@@ -345,14 +345,14 @@
 
                     {% if allocation.external_constraint_details or allocation.external_constraints %}
                         <section>
-                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Provider Constraints</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Storage &amp; Provider Constraints</p>
                             <div class="mt-2 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                                 <div class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
-                                        <p class="text-sm font-semibold text-content-primary">Observed outside allocation authority</p>
-                                        <p class="mt-1 text-xs text-content-muted">Preserved as provider evidence; not rewritten by Tenant quota governance.</p>
+                                        <p class="text-sm font-semibold text-content-primary">Imported provider policy</p>
+                                        <p class="mt-1 text-xs text-content-muted">Supported storage policy becomes committed profile state; unsupported external constraints remain provider evidence.</p>
                                     </div>
-                                    {{ table_label.special_label('Observed · Preserved', 'info', 'eye') }}
+                                    {{ table_label.special_label('Imported on Adopt', 'normal', 'shield-check') }}
                                 </div>
 
                                 {% if allocation.external_constraint_details %}
@@ -366,6 +366,11 @@
                                                             <div class="flex flex-wrap items-center gap-2">
                                                                 <p class="text-sm font-semibold text-content-primary">PVC Storage Constraint</p>
                                                                 {{ table_label.special_label('Mapped', 'normal', 'check') }}
+                                                        {% if row.provider_key == 'native_kubernetes' %}
+                                                            {{ table_label.special_label('Managed on Adopt', 'normal', 'shield-check') }}
+                                                        {% else %}
+                                                            {{ table_label.special_label('Provider Mirrored', 'info', 'refresh-cw') }}
+                                                        {% endif %}
                                                             </div>
                                                             <p class="mt-1 truncate text-xs text-content-muted">
                                                                 {{ constraint.namespace }} · LimitRange/{{ constraint.name }}
@@ -401,7 +406,14 @@
                                                             </div>
                                                         {% endif %}
                                                     </dl>
-                                                    <p class="mt-3 text-xs leading-5 text-content-muted">Provider LimitRange per-PVC bounds. Separate from PVC count and total storage quota.</p>
+                                                    <p class="mt-3 text-xs leading-5 text-content-muted">
+                                                        Per-PVC LimitRange policy becomes Storage Guardrails on adoption.
+                                                        {% if row.provider_key == 'native_kubernetes' %}
+                                                            KAORI verifies the same values by managed write/read-back.
+                                                        {% else %}
+                                                            Capsule-generated values stay provider-mirrored and sync into KAORI without false drift.
+                                                        {% endif %}
+                                                    </p>
                                                 </article>
                                             {% endif %}
                                         {% endfor %}
