@@ -444,7 +444,7 @@ def reconcile_native_namespace(record: TenantNamespace) -> TenantNamespace:
         or record.allocation_storage_policy_json is None
     ):
         quota, limits = validate_profile_spec(profile.quota_hard_json or {}, profile.limit_defaults_json or {})
-        storage_policy = validate_storage_policy(profile.storage_policy_json or {})
+        storage_policy = validate_storage_policy(getattr(profile, 'storage_policy_json', {}) or {})
         record.resource_profile_version = record.resource_profile_version or profile.version
         record.allocation_quota_json = quota
         record.allocation_limit_defaults_json = limits
