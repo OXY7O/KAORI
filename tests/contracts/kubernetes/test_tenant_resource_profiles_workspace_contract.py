@@ -211,7 +211,15 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'section class="space-y-5"' in capacity
     assert 'xl:grid-cols-12' not in capacity
     assert 'Uses fresh committed capacity evidence.' in capacity
-    assert 'Quota enforces limits; admission uses committed requests, not physical reservation.' in capacity
+    assert 'Quota enforces limits; admission governs CPU, memory, Pods, and logical storage commitment without claiming physical reservation.' in capacity
+    assert 'Compute &amp; Pod Budget' in capacity
+    assert 'platform_reserve_pods' in capacity
+    assert 'unmanaged_commitment_pods' in capacity
+    assert 'Tenant Storage Budget' in capacity
+    assert 'tenant_storage_budget' in capacity
+    assert 'Logical budget only.' in capacity
+    assert 'values.pods' in capacity
+    assert 'values.storage' in capacity
     assert "action_button.classes('primary')" in capacity
     assert "action_button.classes('primary', full=true)" not in capacity
     assert 'components/info_tip.html' in capacity
@@ -237,7 +245,9 @@ def test_capacity_commitment_excludes_deprovisioned_history_and_preserves_unknow
     assert 'TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in governance
     assert 'def _committed_evidence_reason(' in governance
     assert 'unbounded_namespaces: list[str] | None = None' in governance
-    assert 'Unbounded or missing CPU/memory request commitment on active Namespace(s):' in governance
+    assert 'Unbounded or missing governed' in governance
+    assert "('Pods', governed.pods, committed.pods)" in governance
+    assert "('storage', governed.storage_bytes, committed.storage_bytes)" in governance
     assert 'Apply a bounded Resource Profile allocation before positive changes.' in governance
     assert "state = 'Unknown' if commitment_reason" in governance
     assert 'commitment_reason or _state_reason(state)' in governance
