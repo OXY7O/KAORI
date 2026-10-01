@@ -134,7 +134,7 @@
                             </div>
                         </section>
                         <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                            <h3 class="text-sm font-semibold text-content-primary">Compute &amp; Workload</h3>
+                            <h3 class="text-sm font-semibold text-content-primary">Basic Resources</h3>
                             <p class="mt-1 text-xs leading-5 text-content-muted">CPU, memory, and pod ResourceQuota controls.</p>
                             <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                                 {% for name, label, value, placeholder, managed in [
@@ -259,7 +259,7 @@
                         </div>
                     </div>
                     <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                        <h3 class="text-sm font-semibold text-content-primary">Compute &amp; Workload</h3>
+                        <h3 class="text-sm font-semibold text-content-primary">Basic Resources</h3>
                         <dl class="mt-4 grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:grid-cols-5">
                             {% for label, value in [
                                 ('CPU Requests', profile.quota_hard_json.get('requests.cpu')),
