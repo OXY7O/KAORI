@@ -833,6 +833,80 @@ def _tenant_capability_statuses(tenant: Tenant) -> dict[str, str]:
     }
 
 
+def resource_profile_base_control_state(
+    profile: TenantResourceProfile,
+    *,
+    provider_key: str,
+) -> dict[str, dict[str, Any]]:
+    configured = {
+        'resource_quota': bool(profile.quota_hard_json or {}),
+        'container_defaults': bool(profile.limit_defaults_json or {}),
+        'pvc_storage_policy': bool(getattr(profile, 'storage_policy_json', {}) or {}),
+    }
+    supported = {
+        'native_kubernetes': {
+            'resource_quota': True,
+            'container_defaults': True,
+            'pvc_storage_policy': True,
+        },
+        'capsule': {
+            'resource_quota': True,
+            'container_defaults': False,
+            'pvc_storage_policy': False,
+        },
+    }.get(provider_key, {})
+    labels = {
+        'resource_quota': 'ResourceQuota',
+        'container_defaults': 'Container Defaults',
+        'pvc_storage_policy': 'PVC Storage Guardrails',
+    }
+    return {
+        key: {
+            'key': key,
+            'label': labels[key],
+            'configured': value,
+            'state': (
+                'managed'
+                if value and supported.get(key) is True
+                else 'unsupported'
+                if value
+                else 'off'
+            ),
+            'reason': (
+                'Configured profile control is supported by the authoritative provider path.'
+                if value and supported.get(key) is True
+                else (
+                    f'{labels[key]} is configured but the {provider_key.replace("_", " ")} attachment path '
+                    'has no admitted write/read-back authority for this control.'
+                )
+                if value
+                else 'Not configured in this Resource Profile.'
+            ),
+        }
+        for key, value in configured.items()
+    }
+
+
+def _validate_resource_profile_base_controls(
+    profile: TenantResourceProfile,
+    tenant: Tenant,
+) -> dict[str, dict[str, Any]]:
+    state = resource_profile_base_control_state(profile, provider_key=tenant.provider_key)
+    unsupported = [
+        item['label']
+        for item in state.values()
+        if item['configured'] and item['state'] == 'unsupported'
+    ]
+    if unsupported:
+        raise ValueError(
+            'Resource Profile contains controls without admitted '
+            f'{tenant.provider_key.replace("_", " ")} authority: '
+            + ', '.join(unsupported)
+            + '. Disable those Managed dimensions or use a compatible provider placement.'
+        )
+    return state
+
+
 def resource_profile_attachment_controls(
     profile: TenantResourceProfile,
     tenant: Tenant,
@@ -1182,6 +1256,7 @@ def provision_native_namespace(source: Mapping[str, Any]) -> TenantNamespace:
         + 1
     )
 
+    _validate_resource_profile_base_controls(profile, tenant)
     attachment_controls = _validate_resource_profile_attachment_controls(profile, tenant)
     quota, limits, storage_policy, customized = _namespace_allocation_values(profile)
     capacity_decision = enforce_namespace_allocation_preflight(
@@ -1262,6 +1337,7 @@ def change_native_namespace_allocation(source: Mapping[str, Any]) -> TenantNames
             'Adopted Baseline allocations are read-only until explicit Allocation Governance Cutover is completed.'
         )
 
+    _validate_resource_profile_base_controls(profile, record.environment.tenant)
     attachment_controls = _validate_resource_profile_attachment_controls(profile, record.environment.tenant)
     quota, limits, storage_policy, customized = _namespace_allocation_values(profile)
     capacity_decision = enforce_existing_namespace_allocation_preflight(
@@ -1391,6 +1467,7 @@ def cutover_adopted_namespace_allocation(source: Mapping[str, Any]) -> TenantNam
         if profile is None or not profile.enabled:
             raise ValueError('Select an enabled Resource Profile.')
 
+    _validate_resource_profile_base_controls(profile, tenant)
     attachment_controls = _validate_resource_profile_attachment_controls(profile, tenant)
     quota, limits, storage_policy, customized = _namespace_allocation_values(profile)
     capacity_decision = enforce_existing_namespace_allocation_preflight(
