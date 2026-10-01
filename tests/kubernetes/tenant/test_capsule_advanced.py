@@ -101,7 +101,6 @@ def test_self_service_namespace_creation_is_not_an_executable_resource_kind() ->
         CapsuleAdvancedResourceKind('self_service_namespace')
 
 
-
 class _ExistingGlobalQuotaApi:
     def __init__(self, *, resource_version='8'):
         self.resource_version = resource_version
