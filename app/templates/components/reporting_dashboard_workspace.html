@@ -1,13 +1,11 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/table_label.html" as table_label %}
-
 {#
   Shared reporting dashboard presentation for Kubernetes and Object Storage.
 
   Domain wrappers supply data and scope wording only. The visual hierarchy,
   activity presentation, workflow, and execution guidance stay centralized.
 #}
-
 {% macro summary(
     reporting,
     domain_label,
@@ -16,7 +14,6 @@
     empty_description='Generate the first report to establish reporting activity for this scope.'
     ) -%}
     {% set source_available = reporting.source_status|default('Unavailable', true)|lower == 'available' %}
-
     {% call operational_section_card.render(
         'Reporting Summary',
         'Generated output, templates, schedules, and recent activity.',
@@ -24,20 +21,19 @@
         action_href=url_for('reports.overview'),
         action_label='Open Reports Workspace',
         header_badge=table_label.status_label(
-            reporting.source_status|default('Unavailable', true),
-            tone='normal' if source_available else 'unknown'
+        reporting.source_status|default('Unavailable', true),
+        tone='normal' if source_available else 'unknown'
         ),
         body_classes='space-y-4 p-5',
         extra_classes='h-full'
         ) %}
-
         <section class="grid gap-3 sm:grid-cols-3"
                  aria-label="{{ domain_label }} reporting snapshot">
             {% set reporting_metrics = [
-                ('Generated Reports', reporting.generated_reports, 'files'),
-                ('Report Templates', reporting.templates, 'layout-template'),
-                ('Report Schedules', reporting.schedules, 'calendar-clock')
-            ] %}
+                            ('Generated Reports', reporting.generated_reports, 'files'),
+                            ('Report Templates', reporting.templates, 'layout-template'),
+                            ('Report Schedules', reporting.schedules, 'calendar-clock')
+                        ] %}
             {% for label, value, icon in reporting_metrics %}
                 <article class="rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
                     <div class="flex min-w-0 items-center gap-3">
@@ -53,19 +49,16 @@
                 </article>
             {% endfor %}
         </section>
-
         <section aria-labelledby="reporting-recent-activity-title">
             <div class="mb-2.5 flex flex-wrap items-center justify-between gap-2">
                 <h3 id="reporting-recent-activity-title"
                     class="text-sm font-semibold text-content-primary">Recent Report Activity</h3>
                 {% if reporting.latest_reports %}
-                    {{ table_label.metadata_label(
-                        table_label.count_text(reporting.latest_reports|length, 'Record'),
-                        icon='history'
+                    {{ table_label.metadata_label(table_label.count_text(reporting.latest_reports|length, 'Record') ,
+                    icon='history'
                     ) }}
                 {% endif %}
             </div>
-
             {% if reporting.latest_reports %}
                 <div class="divide-y divide-outline-subtle border-y border-outline-subtle">
                     {% for report in reporting.latest_reports[:4] %}
@@ -109,7 +102,6 @@
                 </div>
             {% endif %}
         </section>
-
         <aside class="rounded-xl border border-kaori-primary/15 bg-kaori-soft/35 p-3.5"
                aria-label="Reporting summary tip">
             <div class="flex min-w-0 items-start gap-3">
@@ -127,18 +119,15 @@
         </aside>
     {% endcall %}
 {%- endmacro %}
-
-
 {% macro guidance(scope_label, evidence_label, narrow_scope_label) -%}
     {% set reporting_steps = [
-        ('01', 'scan-search', 'Validate', 'Confirm scope, period, freshness, and source coverage.'),
-        ('02', 'layout-template', 'Select', 'Choose the approved report and narrowest ' ~ narrow_scope_label ~ '.'),
-        ('03', 'file-cog', 'Create', 'Save a traceable request with scope, period, and ownership.'),
-        ('04', 'file-check-2', 'Generate', 'Render from ' ~ evidence_label ~ ' and review the result.'),
-        ('05', 'calendar-clock', 'Schedule', 'Set cadence and delivery after the output is reviewed.'),
-        ('06', 'archive', 'Retain', 'Preserve the artifact and required audit evidence.')
-    ] %}
-
+            ('01', 'scan-search', 'Validate', 'Confirm scope, period, freshness, and source coverage.'),
+            ('02', 'layout-template', 'Select', 'Choose the approved report and narrowest ' ~ narrow_scope_label ~ '.'),
+            ('03', 'file-cog', 'Create', 'Save a traceable request with scope, period, and ownership.'),
+            ('04', 'file-check-2', 'Generate', 'Render from ' ~ evidence_label ~ ' and review the result.'),
+            ('05', 'calendar-clock', 'Schedule', 'Set cadence and delivery after the output is reviewed.'),
+            ('06', 'archive', 'Retain', 'Preserve the artifact and required audit evidence.')
+        ] %}
     {% call operational_section_card.render(
         'Reporting Workflow',
         'From validated scope to retained evidence.',
@@ -146,10 +135,8 @@
         body_classes='space-y-4 p-5',
         extra_classes='h-full'
         ) %}
-
         <section aria-labelledby="reporting-guardrails-title">
-            <h3 id="reporting-guardrails-title"
-                class="sr-only">Reporting Guardrails</h3>
+            <h3 id="reporting-guardrails-title" class="sr-only">Reporting Guardrails</h3>
             <div class="grid overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-3">
                 <div class="bg-surface-elevated p-3.5">
                     <div class="flex items-center gap-2">
@@ -180,13 +167,11 @@
                 </div>
             </div>
         </section>
-
         <section aria-labelledby="kaori-reporting-workflow-title">
             <div class="mb-2.5">
                 <h3 id="kaori-reporting-workflow-title"
                     class="text-sm font-semibold text-content-primary">Governed Flow</h3>
             </div>
-
             <ol class="grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-2"
                 aria-label="Governed Reporting Flow">
                 {% for step_number, step_icon, step_title, step_description in reporting_steps %}
@@ -208,7 +193,6 @@
                 {% endfor %}
             </ol>
         </section>
-
         <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-3.5"
                  aria-labelledby="reporting-execution-mode-title">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
