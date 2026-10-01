@@ -29,18 +29,18 @@
                         <td class="{{ table_ui.cell_classes() }}">
                             {{ table_ui.title_cell(tenant.name, 'Capsule Tenant quota allocation', 'shield-alert') }}
                             <p class="mt-1 text-xs text-content-muted">
-                                Scope {{ drift.get('observed_scope') or governance.get('scope') or 'Tenant' }}
+                                Scope {{ drift.get("observed_scope") or governance.get('scope') or 'Tenant' }}
                             </p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             {{ table_label.special_label('Capsule Tenant Resource Quotas', 'info', 'shield-check') }}
                             <p class="mt-2 text-xs text-content-muted">
-                                {{ source.get('kind')|default('Tenant', true) }}/{{ source.get('name')|default(tenant.provider_reference, true) }}
-                                · {{ source.get('api_version')|default('Unknown API', true) }}
+                                {{ source.get("kind") |default('Tenant', true) }}/{{ source.get("name") |default(tenant.provider_reference, true) }}
+                                · {{ source.get("api_version") |default('Unknown API', true) }}
                             </p>
                             <p class="mt-1 max-w-[360px] break-all text-xs leading-5 text-content-muted">
-                                UID {{ source.get('uid')|default('Unknown', true) }}
-                                · resourceVersion {{ source.get('resource_version')|default('Unknown', true) }}
+                                UID {{ source.get("uid") |default('Unknown', true) }}
+                                · resourceVersion {{ source.get("resource_version") |default('Unknown', true) }}
                             </p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
@@ -55,9 +55,7 @@
                                         </p>
                                     {% endfor %}
                                     {% if drift.get('differences', [])|length > 4 %}
-                                        <p class="text-xs text-content-muted">
-                                            +{{ drift.get('differences', [])|length - 4 }} more changed dimensions
-                                        </p>
+                                        <p class="text-xs text-content-muted">+{{ drift.get('differences', []) |length - 4 }} more changed dimensions</p>
                                     {% endif %}
                                 </div>
                             {% elif drift.get('observed_matches_desired') %}
@@ -67,18 +65,16 @@
                             {% endif %}
                             {% if drift.get('desired_scope') and drift.get('observed_scope') and drift.get('desired_scope') != drift.get('observed_scope') %}
                                 <p class="mt-2 text-xs leading-5 text-status-warning-text">
-                                    Scope changed · KAORI {{ drift.get('desired_scope') }} → Provider {{ drift.get('observed_scope') }}
+                                    Scope changed · KAORI {{ drift.get("desired_scope") }} → Provider {{ drift.get("observed_scope") }}
                                 </p>
                             {% endif %}
                             {% if drift.get('external_constraints') %}
                                 <p class="mt-2 max-w-[420px] text-xs leading-5 text-content-muted">
-                                    External constraints preserved · {{ drift.get('external_constraints')|join(' · ') }}
+                                    External constraints preserved · {{ drift.get("external_constraints") |join(' · ') }}
                                 </p>
                             {% endif %}
                             {% if state.get('blocked_reason') %}
-                                <p class="mt-2 max-w-[420px] text-xs leading-5 text-status-warning-text">
-                                    {{ state.get('blocked_reason') }}
-                                </p>
+                                <p class="mt-2 max-w-[420px] text-xs leading-5 text-status-warning-text">{{ state.get("blocked_reason") }}</p>
                             {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
@@ -104,7 +100,7 @@
                             {% else %}
                                 {{ table_label.special_label('Control Unavailable', 'warning', 'shield-alert') }}
                                 <p class="mt-2 max-w-[280px] text-right text-xs leading-5 text-content-muted">
-                                    {{ state.get('blocked_reason') or 'Capsule Tenant quota reconciliation is unavailable.' }}
+                                    {{ state.get("blocked_reason") or 'Capsule Tenant quota reconciliation is unavailable.' }}
                                 </p>
                             {% endif %}
                         </td>
