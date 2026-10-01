@@ -20,7 +20,7 @@ from kubernetes.utils.quantity import parse_quantity
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
 from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
-from app.kubernetes.tenant.validation import COUNT_QUOTA_KEYS, validate_profile_spec
+from app.kubernetes.tenant.validation import COUNT_QUOTA_KEYS, validate_profile_spec, validate_storage_policy
 from app.models import Cluster
 from app.models.tenant import TenantNamespace, TenantOwnershipStatus, TenantResourceProfile
 
@@ -251,7 +251,7 @@ def _mutate_quota(
     existing = _read_quota(api, namespace=record.namespace, name=name)
     _verify_existing(existing, expected, kind='ResourceQuota', managed=managed)
 
-    if not desired:
+    if not desired and not storage_policy:
         if existing is not None:
             api.delete_namespaced_resource_quota(
                 name=name,
@@ -278,16 +278,35 @@ def _mutate_quota(
     return name
 
 
-def _limit_items(desired: dict[str, dict[str, str]]) -> list[V1LimitRangeItem]:
-    if not desired:
-        return []
-    return [
-        V1LimitRangeItem(
-            type='Container',
-            default=desired.get('default') or None,
-            default_request=desired.get('default_request') or None,
+def _limit_items(
+    desired: dict[str, dict[str, str]],
+    storage_policy: dict[str, str],
+) -> list[V1LimitRangeItem]:
+    items: list[V1LimitRangeItem] = []
+    if desired:
+        items.append(
+            V1LimitRangeItem(
+                type='Container',
+                default=desired.get('default') or None,
+                default_request=desired.get('default_request') or None,
+            )
         )
-    ]
+    storage = validate_storage_policy(storage_policy)
+    if storage:
+        items.append(
+            V1LimitRangeItem(
+                type='PersistentVolumeClaim',
+                min={'storage': storage['min']} if storage.get('min') else None,
+                max={'storage': storage['max']} if storage.get('max') else None,
+                default={'storage': storage['default']} if storage.get('default') else None,
+                default_request=(
+                    {'storage': storage['default_request']}
+                    if storage.get('default_request')
+                    else None
+                ),
+            )
+        )
+    return items
 
 
 def _mutate_limit_range(
@@ -295,6 +314,7 @@ def _mutate_limit_range(
     record: TenantNamespace,
     *,
     desired: dict[str, dict[str, str]],
+    storage_policy: dict[str, str],
     expected: dict[str, str] | None,
     managed: bool,
     profile: TenantResourceProfile,
@@ -324,7 +344,7 @@ def _mutate_limit_range(
     )
     body = V1LimitRange(
         metadata=metadata,
-        spec=V1LimitRangeSpec(limits=_limit_items(desired)),
+        spec=V1LimitRangeSpec(limits=_limit_items(desired, storage_policy)),
     )
     if existing is None:
         api.create_namespaced_limit_range(namespace=record.namespace, body=body)
@@ -370,6 +390,22 @@ def _limits_equal(
     return True
 
 
+def _storage_policy_equal(
+    observed: dict[str, str],
+    desired: dict[str, str],
+) -> bool:
+    if set(observed) != set(desired):
+        return False
+    for field in observed:
+        try:
+            if parse_quantity(str(observed[field])) != parse_quantity(str(desired[field])):
+                return False
+        except (InvalidOperation, TypeError, ValueError):
+            if str(observed[field]) != str(desired[field]):
+                return False
+    return True
+
+
 def reconcile_adopted_native_allocation(
     record: TenantNamespace,
     *,
@@ -379,7 +415,8 @@ def reconcile_adopted_native_allocation(
     capacity_decision_id: int | None,
     quota_hard: dict[str, str],
     limit_defaults: dict[str, dict[str, str]],
-    operation: str,
+    storage_policy: dict[str, str] | None = None,
+    operation: str = 'allocation_reconcile',
     expected_observed_hash: str | None = None,
     failure_status: str = 'failed',
 ) -> TenantNamespace:
@@ -389,6 +426,7 @@ def reconcile_adopted_native_allocation(
         raise ValueError(str(eligibility['reason']))
 
     quota, limits = validate_profile_spec(quota_hard, limit_defaults)
+    storage = validate_storage_policy(storage_policy or {})
     cluster = db.session.get(Cluster, record.cluster_id)
     if cluster is None:
         raise ValueError('Tenant namespace cluster no longer exists.')
@@ -442,6 +480,7 @@ def reconcile_adopted_native_allocation(
             api,
             record,
             desired=limits,
+            storage_policy=storage,
             expected=limit_expected,
             managed=managed,
             profile=profile,
@@ -453,9 +492,13 @@ def reconcile_adopted_native_allocation(
                 'Provider mutation completed but effective allocation authority is no longer unambiguous; '
                 'KAORI will not mark cutover successful.'
             )
-        if not _quota_equal(dict(after['quota']), quota) or not _limits_equal(dict(after['limits']), limits):
+        if (
+            not _quota_equal(dict(after['quota']), quota)
+            or not _limits_equal(dict(after['limits']), limits)
+            or not _storage_policy_equal(dict(after.get('storage_policy') or {}), storage)
+        ):
             raise ValueError(
-                'Provider read-back does not match the proposed allocation; '
+                'Provider read-back does not match the proposed allocation/storage policy; '
                 'KAORI will not mark allocation control managed.'
             )
     except (ApiException, ValueError) as exc:
@@ -473,6 +516,7 @@ def reconcile_adopted_native_allocation(
                 'resource_profile_version': resource_profile_version,
                 'quota': quota,
                 'limits': limits,
+                'storage_policy': storage,
             },
             'secret_material_persisted': False,
         }
@@ -500,12 +544,14 @@ def reconcile_adopted_native_allocation(
                 'effective_hash': record.effective_hash,
                 'quota': before['quota'],
                 'limits': before['limits'],
+                'storage_policy': before.get('storage_policy') or {},
             },
             'to': {
                 'control_state': 'kaori_managed',
                 'effective_hash': after['effective_hash'],
                 'quota': after['quota'],
                 'limits': after['limits'],
+                'storage_policy': after.get('storage_policy') or {},
             },
         }
     )
@@ -536,6 +582,7 @@ def reconcile_adopted_native_allocation(
     record.resource_profile_version = resource_profile_version
     record.allocation_quota_json = quota
     record.allocation_limit_defaults_json = limits
+    record.allocation_storage_policy_json = storage
     record.allocation_customized = allocation_customized
     record.capacity_decision_id = capacity_decision_id
     record.provisioning_evidence_json = evidence
