@@ -163,7 +163,7 @@ def _observed_source(observation: dict[str, Any], kind: str) -> dict[str, str] |
 def _expected_source(record: TenantNamespace, kind: str) -> dict[str, str] | None:
     evidence = dict(record.provisioning_evidence_json or {})
     managed_names = evidence.get('managed_resource_names')
-    if allocation_control_state(record) in {'kaori_managed', 'kaori_managed_policy'} and isinstance(managed_names, dict):
+    if allocation_control_state(record) == 'kaori_managed' and isinstance(managed_names, dict):
         name = str(managed_names.get('quota' if kind == 'ResourceQuota' else 'limit_range') or '').strip()
         if name:
             return {'kind': kind, 'name': name, 'uid': '', 'resource_version': ''}
