@@ -691,6 +691,33 @@ def observe_capsule_tenant_allocation(
                     'management_state': 'observed_preserved',
                 }
             )
+        storage_policy = dict(namespace['allocation'].get('storage_policy') or {})
+        if storage_policy:
+            limit_source = next(
+                (
+                    item
+                    for item in namespace['allocation'].get('source_resources') or []
+                    if isinstance(item, Mapping) and item.get('kind') == 'LimitRange'
+                ),
+                {},
+            )
+            external_constraint_details.append(
+                {
+                    'constraint_type': 'pvc_storage_limit_range',
+                    'kind': 'LimitRange',
+                    'name': str(limit_source.get('name') or ''),
+                    'uid': str(limit_source.get('uid') or ''),
+                    'resource_version': str(limit_source.get('resource_version') or ''),
+                    'item_type': 'PersistentVolumeClaim',
+                    'fields': {
+                        field: {'storage': value}
+                        for field, value in storage_policy.items()
+                    },
+                    'namespace': name,
+                    'authority': 'namespace_limit_range',
+                    'management_state': 'observed_preserved',
+                }
+            )
 
     multiple_authority_reason = ''
     if len(authority_paths) > 1:
