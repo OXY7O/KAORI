@@ -109,6 +109,7 @@ from app.kubernetes.tenant.service import (
     get_tenant_registry_context,
     provision_native_namespace_committed,
     reconcile_managed_native_namespace_committed,
+    rollout_resource_profile_to_tenant_committed,
     update_resource_profile_committed,
 )
 from app.kubernetes.tenant.workspace import (
@@ -1338,6 +1339,50 @@ def update_resource_profile_route(profile_id: int):
                 'resource_profile_version': profile.version,
                 'contract_changed': contract_changed,
                 'operation': 'update_resource_profile',
+            },
+        )
+    return redirect(url_for('tenant.resource_profiles', view='profiles'))
+
+
+@tenant_bp.post('/resource-profiles/<int:profile_id>/rollout')
+@permission_required('tenant.manage')
+def rollout_resource_profile_route(profile_id: int):
+    try:
+        _csrf()
+        summary = rollout_resource_profile_to_tenant_committed(
+            profile_id=profile_id,
+            tenant_id=str(request.form.get('tenant_id') or ''),
+        )
+    except ValueError as exc:
+        _record(
+            event_type='kubernetes_tenant_resource_profile_rollout_failed',
+            status='error',
+            title='Resource Profile Rollout Failed',
+            message=str(exc),
+            metadata={'resource_profile_id': profile_id, 'operation': 'rollout_resource_profile'},
+        )
+    else:
+        failed = list(summary.get('failed') or [])
+        status = 'warning' if failed else 'success'
+        _record(
+            event_type='kubernetes_tenant_resource_profile_rollout_completed',
+            status=status,
+            title='Resource Profile Rollout Completed' if not failed else 'Resource Profile Rollout Partially Completed',
+            message=(
+                f'{summary["profile_name"]} v{summary["profile_version"]}: '
+                f'{summary["updated"]} Namespace(s) updated, '
+                f'{summary["already_current"]} already current'
+                + (f', {len(failed)} blocked.' if failed else '.')
+            ),
+            detail=f'Tenant {summary["tenant_name"]}',
+            metadata={
+                'resource_profile_id': summary['profile_id'],
+                'resource_profile_version': summary['profile_version'],
+                'tenant_id': summary['tenant_id'],
+                'updated_namespaces': summary['updated'],
+                'already_current_namespaces': summary['already_current'],
+                'failed_namespaces': failed,
+                'operation': 'rollout_resource_profile',
             },
         )
     return redirect(url_for('tenant.resource_profiles', view='profiles'))
