@@ -333,12 +333,6 @@ def _limit_items(
                 type='PersistentVolumeClaim',
                 min={'storage': storage['min']} if storage.get('min') else None,
                 max={'storage': storage['max']} if storage.get('max') else None,
-                default={'storage': storage['default']} if storage.get('default') else None,
-                default_request=(
-                    {'storage': storage['default_request']}
-                    if storage.get('default_request')
-                    else None
-                ),
             )
         )
     return items
