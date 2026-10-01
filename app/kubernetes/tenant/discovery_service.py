@@ -457,9 +457,7 @@ def get_tenant_adoption_preflight_context(
 
         metadata = getattr(item, 'metadata', None)
         labels = dict(getattr(metadata, 'labels', None) or {})
-        managed_record = _managed_namespace_map([normalized_cluster]).get(
-            (normalized_cluster, normalized_resource)
-        )
+        managed_record = _managed_namespace_map([normalized_cluster]).get((normalized_cluster, normalized_resource))
         provider_status = _namespace_phase(item)
         management_status, eligibility = _native_management(
             namespace=normalized_resource,
@@ -495,14 +493,10 @@ def get_tenant_adoption_preflight_context(
         }
     else:
         capsule_version, item = _read_capsule_tenant(client, normalized_resource)
-        tenant = _managed_capsule_map([normalized_cluster]).get(
-            (normalized_cluster, normalized_resource)
-        )
+        tenant = _managed_capsule_map([normalized_cluster]).get((normalized_cluster, normalized_resource))
         provider_status = _capsule_phase(item)
         management_status = (
-            'Managed'
-            if tenant is not None
-            else ('Blocked' if provider_status == 'Terminating' else 'Discovered')
+            'Managed' if tenant is not None else ('Blocked' if provider_status == 'Terminating' else 'Discovered')
         )
         eligibility = (
             'Already governed by KAORI.'
@@ -835,10 +829,7 @@ def adopt_discovered_tenant_committed(
 
         if allocation['control_state'] != 'observed':
             raise ValueError(
-                str(
-                    allocation.get('control_reason')
-                    or 'Native allocation authority is not safe for managed adoption.'
-                )
+                str(allocation.get('control_reason') or 'Native allocation authority is not safe for managed adoption.')
             )
 
         from app.kubernetes.tenant.allocation_cutover import reconcile_adopted_native_allocation
@@ -978,9 +969,7 @@ def adopt_discovered_tenant_committed(
             )
             namespace_record_item.allocation_customized = True
             namespace_record_item.desired_hash = None
-            namespace_record_item.effective_hash = (
-                str(namespace_allocation.get('effective_hash') or '') or None
-            )
+            namespace_record_item.effective_hash = str(namespace_allocation.get('effective_hash') or '') or None
             namespace_record_item.provider_reference = str(correlated.get('uid') or namespace_name)
             namespace_record_item.last_reconciled_at = now
             namespace_record_item.provisioning_evidence_json = {
