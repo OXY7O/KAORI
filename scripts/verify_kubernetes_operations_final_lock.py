@@ -427,15 +427,12 @@ def main() -> int:
         errors,
     )
     require(
-        'components/info_tip.html' in info_tip
-        or 'aria-haspopup="dialog"' in info_tip,
+        'components/info_tip.html' in info_tip or 'aria-haspopup="dialog"' in info_tip,
         'Shared Info Tip component is unavailable.',
         errors,
     )
     require(
-        'components/info_tip.html' in shared_ui
-        and 'info_id=None' in shared_ui
-        and 'info_items=None' in shared_ui,
+        'components/info_tip.html' in shared_ui and 'info_id=None' in shared_ui and 'info_items=None' in shared_ui,
         'Kubernetes Operation UI must own section-level Info Tip composition.',
         errors,
     )
@@ -463,14 +460,12 @@ def main() -> int:
         errors,
     )
     require(
-        'surface_shell_classes(allow_overflow=true)'
-        in read('app/templates/kubernetes/operations/secrets/reveal.html'),
+        'surface_shell_classes(allow_overflow=true)' in read('app/templates/kubernetes/operations/secrets/reveal.html'),
         'Protected Reveal must allow its header Info Tip to escape the card boundary.',
         errors,
     )
     require(
-        '<section class="overflow-visible rounded-xl border bg-surface-card shadow-sm'
-        in replace_content
+        '<section class="overflow-visible rounded-xl border bg-surface-card shadow-sm' in replace_content
         and 'rounded-t-xl border-b' in replace_content,
         'Secret Replace content guidance must remain visible outside its card while preserving rounded header geometry.',
         errors,
