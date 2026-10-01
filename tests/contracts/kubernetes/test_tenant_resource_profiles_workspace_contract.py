@@ -416,8 +416,16 @@ def test_resource_profile_advanced_controls_are_real_profile_intent_and_placemen
     assert dialogs.count("advanced_profile_controls.render(profile.advanced_controls_json or {}, true, 'resource-profile-edit-' ~ profile.id, false)") >= 2
     assert "advanced_profile_controls.render_view(profile.advanced_controls_json or {}, 'resource-profile-view-' ~ profile.id)" not in dialogs
     assert 'data-tenant-namespace-environment' in namespace_form
+    assert 'Effective Allocation Preview' in namespace_form
+    assert 'data-tenant-value-display' in namespace_form
+    assert 'Quota &amp; Default Details' in namespace_form
+    assert 'data-tenant-allocation-details' in namespace_form
     assert 'Advanced Controls Preview' in namespace_form
+    assert 'data-tenant-namespace-advanced-preview' in namespace_form
+    assert '<details' in namespace_form
     assert 'data-tenant-namespace-advanced-control' in namespace_form
+    assert 'cursor-not-allowed border-dashed' not in namespace_form
+    assert 'Provisioning commits intent and evidence; Sync remains observation-only.' in namespace_form
     assert 'tenant-environment-advanced-control-state' in namespace_page
     assert "const environments = readJson('tenant-environment-advanced-control-state')" in script
     assert "stateLabel.textContent = 'Unavailable'" in script
@@ -496,3 +504,29 @@ def test_resource_profile_storage_policy_is_persisted_and_bidirectional() -> Non
     for label in ('Basic Resources', 'Storage Guardrails', 'Object Limits', 'Container Defaults'):
         assert label in form
         assert label in dialogs
+
+
+
+def test_resource_profile_copy_is_compact_and_version_intent_remains_clear() -> None:
+    dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
+    adoption = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
+
+    assert 'Preset sizing stays fixed. Control changes create a new version; Namespace snapshots stay pinned until rollout.' in dialogs
+    assert 'sizing stays canonical.' in dialogs
+    assert 'Control changes create v{{ (profile.version or 1) + 1 }}; Namespace snapshots stay pinned until rollout.' in dialogs
+    assert 'Managed takeover where authority exists; provider-owned constraints stay mirrored.' not in adoption
+    assert 'Adopt managed authority; keep provider constraints mirrored.' in adoption
+    assert 'Result: Adopted / Observed.' in adoption
+
+
+def test_namespace_allocation_preview_is_snapshot_not_fake_form() -> None:
+    namespace_form = read('app/templates/kubernetes/tenant/partials/_namespace_form.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+
+    assert 'Effective Allocation Preview' in namespace_form
+    assert 'Effective allocation summary' in namespace_form
+    assert 'Quota &amp; Default Details' in namespace_form
+    assert 'data-tenant-value-display' in namespace_form
+    assert 'data-tenant-namespace-advanced-preview' in namespace_form
+    assert "if ('value' in target)" in script
+    assert "target.textContent = value || '—'" in script

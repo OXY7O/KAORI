@@ -27,14 +27,19 @@
         )
 
     const applyValues = (fields, valueSet) => {
-        for (const [name, input] of Object.entries(fields)) {
-            input.value = valueSet ? readPath(valueSet, fieldMap[name]) || '' : ''
+        for (const [name, target] of Object.entries(fields)) {
+            const value = valueSet ? readPath(valueSet, fieldMap[name]) || '' : ''
+            if ('value' in target) {
+                target.value = value
+            } else {
+                target.textContent = value || '—'
+            }
         }
     }
 
     const setReadonly = (form, fields, readonly) => {
         for (const input of Object.values(fields)) {
-            input.readOnly = readonly
+            if ('readOnly' in input) input.readOnly = readonly
             input.setAttribute('aria-readonly', readonly ? 'true' : 'false')
             input.dataset.locked = readonly ? 'true' : 'false'
 

@@ -34,7 +34,7 @@
                                 {% if editable %}
                                     Edit the reusable Custom contract. Allocation changes create the next version for future use; existing Namespace snapshots remain frozen.
                                 {% else %}
-                                    Built-in presets keep fixed canonical sizing values, while Managed dimensions and Advanced Controls can be revised as a new profile version. Existing Namespace snapshots remain pinned until rollout.
+                                    Preset sizing stays fixed. Control changes create a new version; Namespace snapshots stay pinned until rollout.
                                 {% endif %}
                             </p>
                         </div>
@@ -294,9 +294,8 @@
                                 <div class="min-w-0 flex-1">
                                     <p class="text-sm font-semibold text-content-primary">Fixed values · Versioned controls</p>
                                     <p class="mt-1 text-xs leading-5 text-content-secondary">
-                                        Numeric {{ profile_class_labels.get(profile.profile_class, profile.profile_class|title) }} values stay canonical.
-                                        Change Managed dimensions or Advanced Controls here to create v{{ (profile.version or 1) + 1 }} under the same profile identity.
-                                        Existing Namespace snapshots remain unchanged until an explicit rollout.
+                                        {{ profile_class_labels.get(profile.profile_class, profile.profile_class|title) }} sizing stays canonical.
+                                        Control changes create v{{ (profile.version or 1) + 1 }}; Namespace snapshots stay pinned until rollout.
                                     </p>
                                 </div>
                                 {{ table_label.special_label('Versioned', 'maintenance', 'history') }}
