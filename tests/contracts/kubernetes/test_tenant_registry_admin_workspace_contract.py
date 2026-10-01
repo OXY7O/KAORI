@@ -745,7 +745,8 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
         assert provider_mutation not in discovery_only
 
     assert 'reconcile_adopted_native_allocation(' in service
-    assert 'reconcile_adopted_namespace_policy(' in service
+    assert "'allocation_control_state': 'provider_mirrored_policy'" in service
+    assert 'reconcile_adopted_namespace_policy(' not in service
     assert '_take_over_capsule_allocation(' in service
     assert 'cutover_capsule_global_quota_allocation(' in service
     assert 'cutover_capsule_tenant_resource_quota(' in service
