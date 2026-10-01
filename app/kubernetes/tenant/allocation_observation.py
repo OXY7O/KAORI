@@ -13,6 +13,7 @@ from app.kubernetes.tenant.validation import (
     COUNT_QUOTA_KEYS,
     SUPPORTED_LIMIT_KEYS,
     SUPPORTED_QUOTA_KEYS,
+    validate_storage_policy,
 )
 
 _CAPSULE_GROUP = 'capsule.clastix.io'
