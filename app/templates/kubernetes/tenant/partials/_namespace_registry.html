@@ -112,16 +112,21 @@
                         <td class="{{ table_ui.cell_classes() }}">
                             {% set allocation_evidence = (item.provisioning_evidence_json or {}).get('allocation') or {} %}
                             {% set allocation_control = (item.provisioning_evidence_json or {}).get('allocation_control_state') or allocation_evidence.get('control_state') %}
-                            {% set adopted_observed = item.ownership_status == 'adopted' and allocation_evidence.get('provenance') == 'adopted_observed' %}
-                            {% if adopted_observed %}
-                                <p class="text-sm font-semibold text-content-primary">Adopted Baseline · Observed</p>
+                            {% set provider_mirrored = allocation_control == 'provider_mirrored_policy' %}
+                            {% set adopted_observed = item.ownership_status == 'adopted' and allocation_evidence.get('provenance') == 'adopted_observed' and not provider_mirrored %}
+                            {% if provider_mirrored %}
+                                <p class="text-sm font-semibold text-content-primary">{{ item.resource_profile.name if item.resource_profile else 'Imported Provider Policy' }}</p>
+                                <p class="mt-1 text-xs text-content-muted">Snapshot v{{ item.resource_profile_version or '—' }} · Capsule generated policy</p>
+                                <div class="mt-2">{{ table_label.special_label('Provider Mirrored', 'info', 'refresh-cw') }}</div>
+                            {% elif adopted_observed %}
+                                <p class="text-sm font-semibold text-content-primary">Imported Provider Baseline</p>
                                 <p class="mt-1 text-xs text-content-muted">
-                                    {{ (allocation_evidence.get('profile_lineage') or {}).get('label') or 'Custom observed allocation' }}
+                                    {{ (allocation_evidence.get('profile_lineage') or {}).get('label') or 'Observed provider allocation' }}
                                 </p>
                                 {% if allocation_control == 'control_unavailable' %}
                                     <div class="mt-2">{{ table_label.special_label('Control Unavailable', 'warning', 'shield-alert') }}</div>
                                 {% else %}
-                                    <div class="mt-2">{{ table_label.special_label('Read Only', 'info', 'eye') }}</div>
+                                    <div class="mt-2">{{ table_label.special_label('Awaiting Managed Takeover', 'info', 'clock-3') }}</div>
                                 {% endif %}
                             {% else %}
                                 <p class="text-sm font-semibold text-content-primary">{{ item.resource_profile.name if item.resource_profile else 'No profile' }}</p>
