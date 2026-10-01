@@ -749,7 +749,7 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert '_take_over_capsule_allocation(' in service
     assert 'cutover_capsule_global_quota_allocation(' in service
     assert 'cutover_capsule_tenant_resource_quota(' in service
-    assert "'provider_mutation_performed': True" in service
+    assert "'provider_mutation_performed': shared_profile is not None" in service
     assert 'TenantOwnershipStatus.ADOPTED.value' in service
     assert "record.ownership_status = TenantOwnershipStatus.MANAGED.value" in cutover
 
@@ -805,8 +805,9 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'Adopt as <span class="font-semibold text-content-primary">Managed</span>' in preflight
     assert 'remains execution authority' in preflight
     assert 'imports the current provider values as the initial contract' in preflight
-    assert 'verifies an equivalent write/read-back' in preflight
-    assert 'Equivalent provider takeover only; effective values are preserved.' in preflight
+    assert 'Controls with admitted write authority use equivalent write/read-back' in preflight
+    assert 'controller-owned constraints are mirrored without false drift' in preflight
+    assert 'Managed takeover where authority exists; provider-owned constraints stay mirrored.' in preflight
     assert 'Adopt as Observed' not in preflight
     assert 'Observed · Read Only' not in preflight
     assert 'No provider mutation.' not in preflight
