@@ -15,6 +15,9 @@ from app.kubernetes.tenant.capacity_governance import (
     _capacity_vector,
     _capsule_tenant_quota_vector,
     _committed_evidence_reason,
+    _logical_storage_budget_vector,
+    _optional_positive_gib_quantity,
+    _quantity_gib_text,
     _unknown_evidence_decision,
 )
 
@@ -512,4 +515,22 @@ def test_storage_budget_is_optional_without_claiming_physical_capacity() -> None
 
     assert budget.available.storage_bytes is None
     assert budget.logical_storage_budget is None
+
+def test_storage_budget_ui_accepts_numeric_gib_and_persists_canonical_quantity() -> None:
+    assert _optional_positive_gib_quantity('2048', label='Tenant Storage Budget') == '2048Gi'
+    assert _optional_positive_gib_quantity('1536.5', label='Tenant Storage Budget') == '1536.5Gi'
+    assert _quantity_gib_text('2Ti') == '2048'
+    assert _quantity_gib_text('2048Gi') == '2048'
+
+
+def test_logical_storage_budget_remains_available_without_compute_capacity_snapshot() -> None:
+    gib = Decimal(1024**3)
+    policy = SimpleNamespace(tenant_storage_budget='2048Gi')
+
+    budget = _logical_storage_budget_vector(policy)
+
+    assert budget.cpu is None
+    assert budget.memory_bytes is None
+    assert budget.pods is None
+    assert budget.storage_bytes == Decimal('2048') * gib
 
