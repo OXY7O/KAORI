@@ -63,4 +63,3 @@ def test_inventory_lifecycle_lists_kubernetes_tenant_as_an_operational_consumer(
     assert "'Kubernetes Tenant'" in text
     assert "'Committed Tenant intent + provider authority'" in text
     assert 'Tenant ownership, namespace allocations, access grants, credentials, and reconciliation evidence.' in text
-
