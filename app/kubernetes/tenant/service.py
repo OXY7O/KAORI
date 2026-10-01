@@ -75,6 +75,7 @@ RESOURCE_PROFILE_PRESETS: dict[str, dict[str, Any]] = {
             'default_request': {'cpu': '100m', 'memory': '128Mi'},
             'default': {'cpu': '250m', 'memory': '256Mi'},
         },
+        'storage_policy': {},
     },
     'standard': {
         'version': 1,
@@ -94,6 +95,7 @@ RESOURCE_PROFILE_PRESETS: dict[str, dict[str, Any]] = {
             'default_request': {'cpu': '100m', 'memory': '128Mi'},
             'default': {'cpu': '500m', 'memory': '512Mi'},
         },
+        'storage_policy': {},
     },
     'large': {
         'version': 1,
@@ -113,6 +115,7 @@ RESOURCE_PROFILE_PRESETS: dict[str, dict[str, Any]] = {
             'default_request': {'cpu': '250m', 'memory': '256Mi'},
             'default': {'cpu': '1', 'memory': '1Gi'},
         },
+        'storage_policy': {},
     },
     'extra_large': {
         'version': 1,
@@ -132,6 +135,7 @@ RESOURCE_PROFILE_PRESETS: dict[str, dict[str, Any]] = {
             'default_request': {'cpu': '500m', 'memory': '512Mi'},
             'default': {'cpu': '2', 'memory': '2Gi'},
         },
+        'storage_policy': {},
     },
 }
 
