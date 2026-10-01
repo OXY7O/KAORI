@@ -79,6 +79,7 @@
                             data-tenant-allocation-change-profile
                             class="{{ form_field.select_classes() }}">
                         <option value="">Select Resource Profile</option>
+                        <option value="adopted_baseline">Use current provider baseline · Custom</option>
                         {% for profile in profiles if profile.enabled %}
                             <option value="{{ profile.id }}">
                                 {{ profile.name }} · {{ 'KAORI Preset · Locked' if profile.profile_class != 'custom' else 'Custom · Editable' }} · v{{ profile.version }}
