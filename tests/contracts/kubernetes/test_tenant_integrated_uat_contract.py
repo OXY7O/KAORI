@@ -137,3 +137,28 @@ def test_tenant_adoption_preflight_is_compact_and_pvc_bounds_are_explicit() -> N
     assert "pvc_max is not none and pvc_max != ''" in modal
     assert 'Active principals' in tenants
     assert 'Active user, group, and machine principals' not in tenants
+
+def test_managed_adoption_imports_storage_policy_and_verifies_native_takeover() -> None:
+    discovery = _read('app/kubernetes/tenant/discovery_service.py')
+    cutover = _read('app/kubernetes/tenant/allocation_cutover.py')
+    drift = _read('app/kubernetes/tenant/allocation_drift.py')
+    tasks = _read('app/kubernetes/tenant/tasks.py')
+
+    native_start = discovery.index("if provider_key == 'native_kubernetes':")
+    capsule_start = discovery.index("    else:", native_start)
+    native = discovery[native_start:capsule_start]
+
+    assert "namespace_record.allocation_storage_policy_json = dict(allocation.get('storage_policy') or {})" in native
+    assert "storage_policy=dict(profile.storage_policy_json or {})" in native
+    assert "operation='adoption_takeover'" in native
+    assert "'provider_mutation_performed': True" in native
+    assert "'provider_readback_verified':" in native
+    assert 'shared_profile' not in native
+
+    assert "_storage_policy_equal(dict(after.get('storage_policy') or {}), storage)" in cutover
+    assert "record.allocation_storage_policy_json = storage" in cutover
+    assert 'def reapply_kaori_allocation_intent(' in drift
+    assert 'def accept_provider_allocation_state(' in drift
+    assert 'def apply_provider_mirrored_policy_observation()' in drift
+    assert 'apply_provider_mirrored_policy_observation()' in tasks
+
