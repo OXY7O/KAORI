@@ -1281,6 +1281,7 @@ def change_native_namespace_allocation(source: Mapping[str, Any]) -> TenantNames
                 capacity_decision_id=capacity_decision.id,
                 quota_hard=quota,
                 limit_defaults=limits,
+                storage_policy=storage_policy,
                 operation='allocation_change',
             )
         else:
@@ -1289,6 +1290,7 @@ def change_native_namespace_allocation(source: Mapping[str, Any]) -> TenantNames
             record.resource_profile_version = profile_version
             record.allocation_quota_json = quota
             record.allocation_limit_defaults_json = limits
+            record.allocation_storage_policy_json = storage_policy
             record.allocation_customized = customized
             record.capacity_decision_id = capacity_decision.id
             reconcile_native_namespace(record)
