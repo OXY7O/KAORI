@@ -132,7 +132,7 @@ def test_level_three_detail_navigation_replaces_sidebar_level_three() -> None:
     assert "'Resource Profiles'," in model
     assert "'Buckets & Containers'," in model
     assert "'Capacity & Usage'," in model
-    assert "workspace_tabs.render_navigation(" in layout
+    assert 'workspace_tabs.render_navigation(' in layout
 
 
 def test_kubernetes_operations_workflows_keep_the_correct_active_detail_tab() -> None:
