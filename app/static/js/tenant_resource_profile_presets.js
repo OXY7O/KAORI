@@ -10,6 +10,10 @@
         services: ['quota', 'services'],
         configmaps: ['quota', 'configmaps'],
         secrets: ['quota', 'secrets'],
+        pvc_min_storage: ['storage_policy', 'min'],
+        pvc_max_storage: ['storage_policy', 'max'],
+        pvc_default_request_storage: ['storage_policy', 'default_request'],
+        pvc_default_storage: ['storage_policy', 'default'],
         default_request_cpu: ['limits', 'default_request', 'cpu'],
         default_cpu: ['limits', 'default', 'cpu'],
         default_request_memory: ['limits', 'default_request', 'memory'],
@@ -95,6 +99,18 @@
             if (preset) {
                 applyValues(fields, preset)
                 setReadonly(form, fields, true)
+                for (const [name, control] of Object.entries(controls)) {
+                    const wrapper = fields[name]?.closest('[data-tenant-resource-field-wrap]')
+                    if (wrapper?.dataset.controlRequiresValue === 'true') {
+                        const available = readPath(preset, fieldMap[name]) !== undefined
+                        control.checked = available
+                        control.disabled = !available
+                        control.setAttribute('aria-disabled', available ? 'false' : 'true')
+                    } else {
+                        control.disabled = false
+                        control.setAttribute('aria-disabled', 'false')
+                    }
+                }
                 if (basePreset) {
                     basePreset.value = ''
                     basePreset.disabled = true
@@ -105,6 +121,10 @@
             }
 
             setReadonly(form, fields, false)
+            for (const control of Object.values(controls)) {
+                control.disabled = false
+                control.setAttribute('aria-disabled', 'false')
+            }
             if (basePreset) basePreset.disabled = false
             if (basePresetWrapper) basePresetWrapper.hidden = false
             applyValues(fields, basePreset?.value ? presets[basePreset.value] : null)
