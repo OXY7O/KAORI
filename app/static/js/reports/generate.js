@@ -675,13 +675,14 @@
             syncOverallReadiness(!shouldBlock, readinessBlockers)
             if (window.lucide) window.lucide.createIcons()
             if (!generateButton) return
-            generateButton.disabled = shouldBlock
+            // Readiness remains advisory in the browser. The backend owns the
+            // authoritative request validation so stale DOM state cannot block
+            // an otherwise valid report request.
+            generateButton.disabled = false
             const submitVisibilityClass = currentWizardStep === 5 ? 'inline-flex' : 'hidden'
-            generateButton.className = shouldBlock
-                ? submitVisibilityClass +
-                  ' min-h-9 cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-kaori-soft px-5 text-sm font-semibold text-content-muted transition focus:outline-none focus:ring-2 focus:ring-kaori-primary/20'
-                : submitVisibilityClass +
-                  ' min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20'
+            generateButton.className =
+                submitVisibilityClass +
+                ' min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20'
         }
 
         function wizardScopeIsReady() {
@@ -861,10 +862,10 @@
                 }
                 return
             }
-            if (!overallRequestReady) {
-                event.preventDefault()
-                syncWizardNavigation()
-            }
+            // Do not hard-gate the final POST with client-side readiness.
+            // create_report_request()/validate_form_state() is authoritative
+            // and returns concrete scope/section errors when the request is invalid.
+            syncWizardNavigation()
         })
 
         updateNamespaceOptions(initialNamespace)

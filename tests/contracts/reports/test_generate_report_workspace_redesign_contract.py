@@ -426,3 +426,11 @@ def test_generate_report_readiness_uses_live_scope_selection_instead_of_bootstra
     assert "return hasRegisteredClusters && Boolean(clusterSelect.value)" not in runtime
     assert "hasObjectStorageSystems && Boolean(objectStorageSystemSelect && objectStorageSystemSelect.value)" not in runtime
     assert "if not bool(report_context.get('requires_cluster', True)):" in service
+
+
+def test_generate_report_final_submit_is_backend_authoritative() -> None:
+    runtime = read(RUNTIME)
+
+    assert 'generateButton.disabled = false' in runtime
+    assert 'create_report_request()/validate_form_state() is authoritative' in runtime
+    assert "if (!overallRequestReady) {\n                event.preventDefault()" not in runtime
