@@ -114,11 +114,12 @@ def allocation_differences(
     record: TenantNamespace,
     observation: Mapping[str, Any],
 ) -> list[dict[str, str]]:
+    policy_only = allocation_control_state(record) == 'kaori_managed_policy'
     return _dimension_rows(
-        dict(record.allocation_quota_json or {}),
+        {} if policy_only else dict(record.allocation_quota_json or {}),
         dict(record.allocation_limit_defaults_json or {}),
         dict(record.allocation_storage_policy_json or {}),
-        dict(observation.get('quota') or {}),
+        {} if policy_only else dict(observation.get('quota') or {}),
         dict(observation.get('limits') or {}),
         dict(observation.get('storage_policy') or {}),
     )
@@ -132,6 +133,8 @@ def _ownership_findings(record: TenantNamespace, observation: Mapping[str, Any])
         if not isinstance(item, Mapping):
             continue
         kind = str(item.get('kind') or 'Resource')
+        if allocation_control_state(record) == 'kaori_managed_policy' and kind != 'LimitRange':
+            continue
         name = str(item.get('name') or 'unknown')
         manager = str(item.get('managed_by') or '')
         observed_tenant_id = str(item.get('tenant_id') or '')
@@ -211,7 +214,8 @@ def apply_managed_allocation_drift_observation() -> dict[str, Any]:
     errors: list[dict[str, str]] = []
 
     for record in records:
-        if allocation_control_state(record) != 'kaori_managed':
+        control_state = allocation_control_state(record)
+        if control_state not in {'kaori_managed', 'kaori_managed_policy'}:
             continue
 
         evidence = dict(record.provisioning_evidence_json or {})
@@ -224,14 +228,24 @@ def apply_managed_allocation_drift_observation() -> dict[str, Any]:
             continue
 
         tenant = record.environment.tenant
-        if tenant.provider_key != 'native_kubernetes' or tenant.reconciliation_authority != 'native_kubernetes':
+        native_allocation = (
+            control_state == 'kaori_managed'
+            and tenant.provider_key == 'native_kubernetes'
+            and tenant.reconciliation_authority == 'native_kubernetes'
+        )
+        capsule_policy = (
+            control_state == 'kaori_managed_policy'
+            and tenant.provider_key == 'capsule'
+            and tenant.reconciliation_authority == 'capsule'
+        )
+        if not native_allocation and not capsule_policy:
             errors.append(
                 {
                     'tenant_namespace_id': str(record.id),
                     'namespace': record.namespace,
                     'reason': (
-                        'Managed allocation drift observation has no admitted provider adapter for '
-                        f'{tenant.provider_key}/{tenant.reconciliation_authority}.'
+                        'Managed allocation/policy drift observation has no admitted adapter for '
+                        f'{tenant.provider_key}/{tenant.reconciliation_authority}/{control_state}.'
                     ),
                 }
             )
@@ -333,9 +347,20 @@ def build_allocation_drift_action_state(record: TenantNamespace) -> dict[str, An
         blocked.append('Allocation reconciliation requires a committed Drifted Namespace state.')
     if tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
         blocked.append('Tenant is not Ready; allocation reconciliation is unavailable during teardown.')
-    if allocation_control_state(record) != 'kaori_managed':
+    control_state = allocation_control_state(record)
+    if control_state not in {'kaori_managed', 'kaori_managed_policy'}:
         blocked.append('Allocation control is not KAORI Managed.')
-    if tenant.provider_key != 'native_kubernetes' or tenant.reconciliation_authority != 'native_kubernetes':
+    native_allocation = (
+        control_state == 'kaori_managed'
+        and tenant.provider_key == 'native_kubernetes'
+        and tenant.reconciliation_authority == 'native_kubernetes'
+    )
+    capsule_policy = (
+        control_state == 'kaori_managed_policy'
+        and tenant.provider_key == 'capsule'
+        and tenant.reconciliation_authority == 'capsule'
+    )
+    if not native_allocation and not capsule_policy:
         blocked.append('No admitted reconciliation adapter exists for the current provider authority.')
     if record.resource_profile is None:
         blocked.append('Committed Resource Profile lineage is missing.')
@@ -399,6 +424,19 @@ def reapply_kaori_allocation_intent(record: TenantNamespace) -> TenantNamespace:
     # reconcile_adopted_native_allocation protects the write from races that
     # happen after this preflight.
     live = _live_observation_for_action(record, drift)
+    if allocation_control_state(record) == 'kaori_managed_policy':
+        from app.kubernetes.tenant.allocation_cutover import reconcile_adopted_namespace_policy
+
+        reconcile_adopted_namespace_policy(
+            record,
+            profile=profile,
+            resource_profile_version=record.resource_profile_version or profile.version,
+            limit_defaults=dict(record.allocation_limit_defaults_json or {}),
+            storage_policy=dict(record.allocation_storage_policy_json or {}),
+            operation='reapply_kaori_policy_intent',
+        )
+        return record
+
     capacity_decision = enforce_observed_namespace_allocation_preflight(
         record=record,
         profile=profile,
@@ -450,18 +488,21 @@ def accept_provider_allocation_state(record: TenantNamespace) -> TenantNamespace
     if profile is None:
         raise ValueError('Committed Resource Profile lineage is missing.')
     live = _live_observation_for_action(record, drift)
+    policy_only = allocation_control_state(record) == 'kaori_managed_policy'
     quota, limits = validate_profile_spec(
-        dict(live.get('quota') or {}),
+        {} if policy_only else dict(live.get('quota') or {}),
         dict(live.get('limits') or {}),
     )
     storage_policy = validate_storage_policy(dict(live.get('storage_policy') or {}))
 
-    capacity_decision = enforce_observed_namespace_allocation_preflight(
-        record=record,
-        profile=profile,
-        current_quota_hard=record.allocation_quota_json or {},
-        proposed_quota_hard=quota,
-    )
+    capacity_decision = None
+    if not policy_only:
+        capacity_decision = enforce_observed_namespace_allocation_preflight(
+            record=record,
+            profile=profile,
+            current_quota_hard=record.allocation_quota_json or {},
+            proposed_quota_hard=quota,
+        )
 
     now = datetime.now(UTC)
     evidence = dict(record.provisioning_evidence_json or {})
@@ -521,7 +562,7 @@ def accept_provider_allocation_state(record: TenantNamespace) -> TenantNamespace
                 'previous_provenance': previous_provenance,
                 'resource_profile_id': profile.public_id,
                 'resource_profile_version': record.resource_profile_version or profile.version,
-                'capacity_decision_id': capacity_decision.id,
+                'capacity_decision_id': capacity_decision.id if capacity_decision is not None else None,
             },
             'allocation_history': history,
             'provider_mutation_performed': False,
@@ -531,11 +572,33 @@ def accept_provider_allocation_state(record: TenantNamespace) -> TenantNamespace
     evidence.pop('allocation_drift', None)
     evidence.pop('allocation_reconcile_failure', None)
 
+    description = str(profile.description or '')
+    auto_imported_profile = (
+        profile.profile_class == 'custom'
+        and (
+            description.startswith('Explicit governance-cutover profile materialized')
+            or description.startswith('Provider-equivalent namespaced')
+            or description.startswith('Provider-equivalent Capsule')
+        )
+    )
+    if auto_imported_profile:
+        profile.quota_hard_json = quota
+        profile.limit_defaults_json = limits
+        profile.storage_policy_json = storage_policy
+        profile.version = int(profile.version or 1) + 1
+        record.resource_profile_version = profile.version
+        evidence['provider_state_profile_sync'] = {
+            'profile_id': profile.public_id,
+            'profile_version': profile.version,
+            'at': now.isoformat(),
+            'provider_values_accepted': True,
+        }
+
     record.allocation_quota_json = quota
     record.allocation_limit_defaults_json = limits
     record.allocation_storage_policy_json = storage_policy
     record.allocation_customized = not _profile_matches_observation(profile, live)
-    record.capacity_decision_id = capacity_decision.id
+    record.capacity_decision_id = capacity_decision.id if capacity_decision is not None else record.capacity_decision_id
     record.provisioning_evidence_json = evidence
     record.desired_hash = str(live['effective_hash'])
     record.effective_hash = str(live['effective_hash'])
