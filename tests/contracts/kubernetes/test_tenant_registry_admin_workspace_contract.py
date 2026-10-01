@@ -609,6 +609,7 @@ def test_destructive_modal_supports_structured_impact_summary() -> None:
 def test_resource_profile_editability_allocation_change_and_capacity_decisions_follow_kaori_ux() -> None:
     profile_form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
     profile_js = read('app/static/js/tenant_resource_profile_presets.js')
+    namespace_form = read('app/templates/kubernetes/tenant/partials/_namespace_form.html')
     allocation = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
     decisions = read('app/templates/kubernetes/tenant/partials/_capacity_decisions.html')
     service = read('app/kubernetes/tenant/service.py')
@@ -617,37 +618,63 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     assert 'KAORI Preset · Fixed' in profile_form
     assert 'Fixed · Read Only' in profile_form
     assert 'components/table_label.html' in profile_form
-    assert "table_label.special_label('Fixed · Read Only', 'unknown', 'lock-keyhole')" in profile_form
-    assert "table_label.special_label('Custom · Editable', 'maintenance', 'pencil')" in profile_form
-    assert "table_label.special_label('Fixed', 'unknown', 'lock-keyhole')" in profile_form
-    assert "table_label.special_label('Custom', 'maintenance', 'pencil')" in profile_form
-    assert 'data-tenant-resource-mode-fixed' in profile_form
-    assert 'data-tenant-resource-mode-custom hidden' in profile_form
+    assert "table_label.special_label('Fixed · Read Only', 'maintenance', 'lock-keyhole')" in profile_form
+    assert 'data-tenant-profile-mode-fixed-label' in profile_form
     assert 'data-locked="true"' in profile_form
     assert 'data-[locked=true]:cursor-not-allowed' in profile_form
     assert 'data-[locked=true]:border-dashed' in profile_form
     assert "modeTitle.textContent = readonly ? 'KAORI Preset · Fixed' : 'Custom · Editable'" in profile_js
-    assert "fixedLabel.hidden = !readonly" in profile_js
-    assert "customLabel.hidden = readonly" in profile_js
     assert "wrapper.dataset.locked = readonly ? 'true' : 'false'" in profile_js
 
+    assert 'namespace-provisioning-contract-tip' in namespace_form
+    assert '<h2 class="text-base font-semibold text-content-primary">Provision Namespace</h2>' in namespace_form
+    assert 'KAORI will not overwrite a Namespace owned by another controller.' not in namespace_form
+    assert 'Profile Snapshot · Read Only' in namespace_form
+    assert 'Effective Allocation Preview' in namespace_form
+    assert 'Advanced Controls Preview' in namespace_form
+    assert 'Basic Resources' in namespace_form
+    assert 'Storage Guardrails' in namespace_form
+    assert 'Object Limits' in namespace_form
+    assert 'Container Defaults' in namespace_form
+    assert 'pvc_min_storage' in namespace_form
+    assert 'pvc_max_storage' in namespace_form
+    assert 'border-dashed border-outline-default bg-surface-card text-content-muted' in namespace_form
+
     assert 'Allocation Change' in allocation
-    assert 'Change Request' in allocation
-    assert 'Before &amp; After' in allocation
-    assert 'Governed Change' in allocation
-    assert 'Requests must fit the governed budget.' in allocation
-    assert 'Only the admitted provider path is written.' in allocation
-    assert 'Read-back must match before commit.' in allocation
-    assert 'Current allocation stays active until every gate passes.' in allocation
+    assert 'Change Target' in allocation
+    assert 'Managed Contract Comparison' in allocation
+    assert 'Capacity Commitments' in allocation
+    assert 'Per-PVC Policy' in allocation
+    assert 'Governance Gates' in allocation
+    assert 'Capacity Admission' in allocation
+    assert 'Provider Reconcile' in allocation
+    assert 'Read-back &amp; Commit' in allocation
     assert 'data-tenant-allocation-current-cpu' in allocation
+    assert 'data-tenant-allocation-current-memory' in allocation
+    assert 'data-tenant-allocation-current-pods' in allocation
+    assert 'data-tenant-allocation-current-storage' in allocation
+    assert 'data-tenant-allocation-current-pvc-min' in allocation
+    assert 'data-tenant-allocation-current-pvc-max' in allocation
     assert 'data-tenant-allocation-proposed-cpu' in allocation
+    assert 'data-tenant-allocation-proposed-memory' in allocation
+    assert 'data-tenant-allocation-proposed-pods' in allocation
+    assert 'data-tenant-allocation-proposed-storage' in allocation
+    assert 'data-tenant-allocation-proposed-pvc-min' in allocation
+    assert 'data-tenant-allocation-proposed-pvc-max' in allocation
+    assert "const quotaValue = (valueSet, field) => valueSet?.quota?.[field] || 'Unbounded'" in profile_js
+    assert "currentPods.textContent" in profile_js
+    assert "proposedStorage.textContent" in profile_js
 
     assert 'components/table_registry.html' in decisions
     assert 'table_ui.inventory_block_header' in decisions
     assert 'registry_ui.filter_form' in decisions
     assert 'registry_ui.footer' in decisions
-    assert "table_ui.table_classes('min-w-[1180px]')" in decisions
-    assert '>Resource Profile</th>' in decisions
+    assert "table_ui.table_classes('table-fixed')" in decisions
+    assert 'overflow-x-auto' not in decisions
+    assert "min-w-[1180px]" not in decisions
+    assert '>Target</th>' in decisions
+    assert '>Contract</th>' in decisions
+    assert '>Admission</th>' in decisions
     assert '>Recorded</th>' in decisions
     assert 'row.created_at_label' in decisions
     assert 'row.data_cutoff_label' in decisions
@@ -660,7 +687,6 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     assert 'paginate_query(' in service
     assert 'get_capacity_decision_registry_context(' in routes
     assert "request.args.get('decision_per_page', 5" in routes
-
 
 def test_committed_tenant_snapshot_is_separate_from_lazy_live_provider_connectivity() -> None:
     routes = read('app/kubernetes/tenant/routes.py')
