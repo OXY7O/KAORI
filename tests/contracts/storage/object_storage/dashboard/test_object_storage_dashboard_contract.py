@@ -274,7 +274,7 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     assert "'Object Storage'" in reporting_summary
     assert 'components/reporting_dashboard_workspace.html' in reporting_guidance
     assert 'reporting_workspace.guidance(' in reporting_guidance
-    assert 'recent = reports_query.order_by(Report.created_at.desc()).limit(5).all()' in service
+    assert 'recent = reports_query.order_by(Report.created_at.desc()).limit(4).all()' in service
     assert 'Reporting Summary' in reporting_workspace
     assert 'Recent Report Activity' in reporting_workspace
     assert 'Reporting Workflow' in reporting_workspace

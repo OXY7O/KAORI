@@ -278,3 +278,13 @@ def test_dashboard_pattern_is_locked_by_documentation_and_quality_gate() -> None
     assert 'No visual redesign is required' in audit
     assert 'python scripts/verify_operational_dashboard_standard.py' in quality_gate
     assert "-m 'not debug and not e2e and not contract and not migration'" in quality_gate
+
+
+def test_reporting_activity_is_capped_at_four_records() -> None:
+    reporting_service = read('app/kubernetes/dashboard/sections/reporting.py')
+    reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
+
+    assert 'query_all(Report, selected_cluster_id, limit=4)' in reporting_service
+    assert 'reporting.latest_reports[:4]' in reporting_workspace
+    assert 'Before use.' in reporting_workspace
+    assert '<span class="font-semibold text-content-primary">Recurring</span> · Schedule' in reporting_workspace

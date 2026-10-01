@@ -465,7 +465,7 @@ def _reporting(selected: ObjectStorageSystem | None) -> dict[str, Any]:
             ReportSchedule.scope_asset_id == str(selected.id), ReportSchedule.scope_asset_id.is_(None)
         )
         schedules_query = schedules_query.filter(schedule_scope_filter)
-    recent = reports_query.order_by(Report.created_at.desc()).limit(5).all()
+    recent = reports_query.order_by(Report.created_at.desc()).limit(4).all()
     return {
         'source_status': 'Available',
         'generated_reports': reports_query.count(),

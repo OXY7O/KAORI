@@ -68,7 +68,7 @@
 
             {% if reporting.latest_reports %}
                 <div class="divide-y divide-outline-subtle border-y border-outline-subtle">
-                    {% for report in reporting.latest_reports[:5] %}
+                    {% for report in reporting.latest_reports[:4] %}
                         {% set normalized_status = report.status|default('Unknown', true)|lower %}
                         {% set status_tone = 'normal' if normalized_status in ['completed', 'ready', 'succeeded'] else ('critical' if normalized_status in ['failed', 'error'] else ('info' if normalized_status in ['queued', 'running', 'pending', 'in progress'] else 'unknown')) %}
                         <article class="flex min-w-0 flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:justify-between">
@@ -176,7 +176,7 @@
                            aria-hidden="true"></i>
                         <p class="text-xs font-semibold text-content-primary">Review First</p>
                     </div>
-                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Before sharing, scheduling, or retention.</p>
+                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Before use.</p>
                 </div>
             </div>
         </section>
@@ -230,7 +230,7 @@
                            class="h-3.5 w-3.5 shrink-0 text-kaori-primary"
                            aria-hidden="true"></i>
                         <p class="text-xs text-content-secondary">
-                            <span class="font-semibold text-content-primary">Recurring</span> · Schedule after review
+                            <span class="font-semibold text-content-primary">Recurring</span> · Schedule
                         </p>
                     </div>
                 </div>
