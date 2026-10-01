@@ -1367,6 +1367,16 @@ def cutover_adopted_namespace_allocation(source: Mapping[str, Any]) -> TenantNam
     record = db.session.get(TenantNamespace, namespace_id)
     if record is None:
         raise ValueError('Select an adopted Tenant namespace.')
+    if record.ownership_status != TenantOwnershipStatus.ADOPTED.value:
+        raise ValueError('Allocation governance cutover requires an Adopted Tenant namespace.')
+
+    tenant = record.environment.tenant
+    if tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
+        raise ValueError('Tenant is not Ready; allocation governance cutover is frozen during teardown.')
+
+    cutover = build_allocation_cutover_state(record)
+    if not cutover['supported']:
+        raise ValueError(str(cutover['reason']))
 
     profile_selector = _text(source, 'resource_profile_id')
     if profile_selector == 'adopted_baseline':
@@ -1377,16 +1387,7 @@ def cutover_adopted_namespace_allocation(source: Mapping[str, Any]) -> TenantNam
         if profile is None or not profile.enabled:
             raise ValueError('Select an enabled Resource Profile.')
 
-    if record.ownership_status != TenantOwnershipStatus.ADOPTED.value:
-        raise ValueError('Allocation governance cutover requires an Adopted Tenant namespace.')
-    tenant = record.environment.tenant
-    if tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
-        raise ValueError('Tenant is not Ready; allocation governance cutover is frozen during teardown.')
     attachment_controls = _validate_resource_profile_attachment_controls(profile, tenant)
-    cutover = build_allocation_cutover_state(record)
-    if not cutover['supported']:
-        raise ValueError(str(cutover['reason']))
-
     quota, limits, storage_policy, customized = _namespace_allocation_values(profile)
     capacity_decision = enforce_existing_namespace_allocation_preflight(
         record=record,
