@@ -172,6 +172,11 @@ def runtime_observation_state_view(
             message=observation.message or '',
             diagnostics=diagnostics,
         ),
+        'decision_summary': _runtime_decision_summary(
+            integration_type=observation.integration_type,
+            message=observation.message or '',
+            diagnostics=diagnostics,
+        ),
         'latency_ms': observation.latency_ms,
         'latency_display': present_milliseconds(observation.latency_ms),
     }
@@ -244,6 +249,11 @@ def runtime_history_view(
                     else None
                 ),
                 'summary': _runtime_primary_summary(
+                    integration_type=row.integration_type,
+                    message=row.message or '',
+                    diagnostics=diagnostics,
+                ),
+                'decision_summary': _runtime_decision_summary(
                     integration_type=row.integration_type,
                     message=row.message or '',
                     diagnostics=diagnostics,
@@ -347,6 +357,34 @@ def _runtime_primary_summary(
         return _diagnostic_summary(message, label=label)
     return 'No current runtime issue was recorded.'
 
+
+
+def _runtime_decision_summary(
+    *,
+    integration_type: str,
+    message: str,
+    diagnostics: list[dict[str, object]],
+) -> str:
+    """Return the full operator-facing runtime decision without presentation clipping."""
+    priority = {'failed': 0, 'warning': 1, 'pending': 2, 'unknown': 3}
+    candidates = sorted(
+        diagnostics,
+        key=lambda item: priority.get(str(item.get('status') or '').lower(), 9),
+    )
+    for item in candidates:
+        if str(item.get('status') or '').lower() not in priority:
+            continue
+        detail = compact_readiness_reason(str(item.get('detail') or ''))
+        if detail:
+            if integration_type == 'container_orchestrator' and detail.startswith('Provider '):
+                return 'Kubernetes API ' + detail[len('Provider ') :]
+            return detail
+    if message:
+        value = compact_readiness_reason(message)
+        if integration_type == 'container_orchestrator' and value.startswith('Provider '):
+            return 'Kubernetes API ' + value[len('Provider ') :]
+        return value
+    return 'No current runtime issue was recorded.'
 
 def _message_repeats_diagnostic(message: str, diagnostics: list[dict[str, object]]) -> bool:
     normalized = ' '.join(str(message or '').split()).strip().lower()
