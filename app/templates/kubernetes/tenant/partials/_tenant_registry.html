@@ -12,7 +12,8 @@
     'environment': tenant_registry_filters.environment,
     'lifecycle_status': tenant_registry_filters.lifecycle_status
 } %}
-<section id="{{ registry_id }}" class="{{ table_ui.block_classes(allow_overflow=true) }}">
+<section id="{{ registry_id }}"
+         class="{{ table_ui.block_classes(allow_overflow=true) }}">
     {% set header_actions %}
         {% if tenant_registry_filters.search or tenant_registry_filters.cluster_id or tenant_registry_filters.environment or tenant_registry_filters.lifecycle_status %}
             {{ registry_ui.clear_filters_link('tenant.tenants',
@@ -35,8 +36,7 @@
                 'History Retained — decommission is complete and audit history remains.',
                 'Unavailable — no admitted lifecycle action is available.'
                 ],
-                placement='right'
-        ) }}
+                placement='right') }}
     {% endset %}
     {{ table_ui.inventory_block_header('building-2',
         'Tenant Registry',
