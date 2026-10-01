@@ -1334,7 +1334,7 @@ def change_native_namespace_allocation(source: Mapping[str, Any]) -> TenantNames
         raise ValueError('This UAT slice can change only Native Kubernetes Tenant allocations.')
     if allocation_control_state(record) != 'kaori_managed':
         raise ValueError(
-            'Adopted Baseline allocations are read-only until explicit Allocation Governance Cutover is completed.'
+            'This Namespace allocation is not in KAORI Managed control; select a managed Native allocation.'
         )
 
     _validate_resource_profile_base_controls(profile, record.environment.tenant)
@@ -1922,7 +1922,7 @@ def get_namespace_registry_context(
         record
         for record in namespace_options
         if record.ownership_status == TenantOwnershipStatus.ADOPTED.value
-        and allocation_control_state(record) != 'kaori_managed'
+        and allocation_control_state(record) not in {'kaori_managed', 'provider_mirrored_policy'}
         and record.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value
     ]
     namespace_cutover_state = {
@@ -1970,7 +1970,7 @@ def get_namespace_registry_context(
                             ).get('profile_lineage')
                             or {}
                         ).get('label')
-                        or 'Adopted Baseline · Observed'
+                        or 'Imported Provider Baseline'
                     )
                 ),
                 'profile_version': (
