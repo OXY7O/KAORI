@@ -1432,6 +1432,11 @@ def test_managed_allocation_drift_is_observation_only_and_bidirectionally_reconc
 
     assert 'apply_managed_allocation_drift_observation()' in tasks
     assert "snapshot['allocation_drift_count']" in tasks
+    assert 'def apply_provider_mirrored_policy_observation' in drift
+    assert 'provider_mirrored_policy' in drift
+    assert 'apply_provider_mirrored_policy_observation()' in tasks
+    assert "snapshot['provider_mirrored_policy_count']" in tasks
+    assert "snapshot['provider_mirrored_policy_updated_count']" in tasks
 
     assert "@tenant_bp.post('/namespaces/<int:namespace_id>/allocation/reapply')" in routes
     assert "@tenant_bp.post('/namespaces/<int:namespace_id>/allocation/accept-provider-state')" in routes
