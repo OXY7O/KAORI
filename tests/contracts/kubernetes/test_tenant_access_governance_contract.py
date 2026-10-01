@@ -222,6 +222,7 @@ def test_access_profiles_render_in_least_privilege_operator_order() -> None:
 
     assert "profile_order = ('viewer', 'operator', 'tenant_admin', 'deployer')" in service
 
+
 def test_apply_access_grant_form_uses_context_preview_instead_of_redundant_helper_copy() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
     script = read('app/static/js/tenant_access_grant_form.js')
@@ -255,4 +256,3 @@ def test_apply_access_grant_form_uses_context_preview_instead_of_redundant_helpe
     assert 'provider mutation remains blocked.' in script
     assert 'data-access-profile-guidance' not in script
     assert 'data-access-scope-guidance' not in script
-
