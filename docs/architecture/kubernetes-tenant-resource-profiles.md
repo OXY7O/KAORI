@@ -291,14 +291,12 @@ Supported fields map to `LimitRange[type=PersistentVolumeClaim]`:
 | --- | --- |
 | Min PVC Size | `min.storage` |
 | Max PVC Size | `max.storage` |
-| PVC Default Request | `defaultRequest.storage` |
-| PVC Default Limit | `default.storage` |
 
-Validation requires positive Kubernetes quantities, `min <= max`, and optional defaults to remain within the configured bounds.
+Validation requires positive Kubernetes quantities and `min <= max`. KAORI does not model PVC `default` / `defaultRequest` as managed storage controls because Kubernetes documents PersistentVolumeClaim LimitRange governance as minimum/maximum storage request bounds; noncanonical provider fields fail closed as external evidence.
 
 Native reconciliation materializes Container and PersistentVolumeClaim items in the canonical KAORI LimitRange, then reads the provider back before marking the operation successful. Effective hashes and drift comparison include storage policy.
 
-During Native adoption, supported PVC storage fields are normalized into `storage_policy`; only unsupported fields such as unsupported resources or PVC max-limit/request-ratio remain external constraints. During Capsule adoption, supported values are still captured in the Namespace baseline but remain provider-owned evidence when Capsule has no admitted storage-policy mutation authority.
+During Native adoption, PVC `min.storage` and `max.storage` are normalized into `storage_policy`; unsupported resources, PVC defaults, or max-limit/request-ratio remain external constraints and prevent an unsafe takeover. During Capsule adoption, supported values are still captured in the Namespace baseline but remain provider-owned evidence when Capsule has no admitted storage-policy mutation authority.
 
 
 
@@ -307,12 +305,25 @@ During Native adoption, supported PVC storage fields are normalized into `storag
 The operator-facing profile hierarchy is intentionally ordered from basic to advanced:
 
 1. **Basic Resources** — CPU requests/limits, memory requests/limits, and Pods.
-2. **Storage Guardrails** — PVC count, total storage quota, and per-PVC min/max/default/defaultRequest policy.
+2. **Storage Guardrails** — PVC count, total storage quota, and per-PVC min/max request bounds.
 3. **Object Limits** — Services, ConfigMaps, and Secrets.
 4. **Container Defaults** — Container LimitRange defaults for CPU and memory.
 5. **Advanced Controls** — exposure, hostname, managed TLS/registry, and provider-specific capability values.
 
 Each Managed dimension is part of the committed profile contract. Storage Guardrails are first-class desired state rather than observational annotations.
+
+### Built-in storage baseline
+
+Built-in preset version 2 makes per-PVC bounds explicit and Managed by default:
+
+| Profile | PVC count | Total storage | Min PVC | Max PVC |
+| --- | ---: | ---: | ---: | ---: |
+| Small | 5 | 50Gi | 1Gi | 10Gi |
+| Medium | 10 | 100Gi | 1Gi | 10Gi |
+| Large | 20 | 200Gi | 1Gi | 10Gi |
+| Extra Large | 40 | 400Gi | 1Gi | 10Gi |
+
+The fixed 10Gi per-PVC ceiling matches the existing quota ratio: each preset scales PVC count and cumulative storage together while keeping one canonical per-claim bound. Version 1 profile records remain historical snapshots; new built-in profiles use version 2.
 
 ### Bidirectional managed state
 
@@ -412,8 +423,6 @@ PVC storage policy is first-class desired state:
 | Total Storage | `ResourceQuota.hard.requests.storage` |
 | Min PVC Size | `LimitRange[type=PersistentVolumeClaim].min.storage` |
 | Max PVC Size | `LimitRange[type=PersistentVolumeClaim].max.storage` |
-| PVC Default Request | `LimitRange[type=PersistentVolumeClaim].defaultRequest.storage` |
-| PVC Default Limit | `LimitRange[type=PersistentVolumeClaim].default.storage` |
 
 An adopted provider value such as PVC min/max is therefore imported into `storage_policy_json`, written back unchanged during takeover, and verified before the Namespace allocation becomes `kaori_managed`.
 
@@ -429,7 +438,7 @@ Generated LimitRange    → Capsule provider authority + KAORI committed mirror
 KAORI                   → normalization + profile mirror + evidence + safe drift governance
 ```
 
-A Capsule-generated PVC LimitRange is no longer an unstructured external constraint after adoption. Supported min/max/default/defaultRequest values are imported into an auto-generated profile as `provider_mirrored_policy`. Tenant Sync refreshes that committed mirror when Capsule changes the generated policy, so provider-owned PVC changes do not create false KAORI drift.
+A Capsule-generated PVC LimitRange is no longer an unstructured external constraint after adoption. Supported min/max values are imported into an auto-generated profile as `provider_mirrored_policy`. Tenant Sync refreshes that committed mirror when Capsule changes the generated policy, so provider-owned PVC changes do not create false KAORI drift.
 
 True two-way write control is enabled only when the authoritative provider exposes an admitted mutation path. KAORI does not patch a Capsule controller-owned generated LimitRange merely to claim ownership.
 
