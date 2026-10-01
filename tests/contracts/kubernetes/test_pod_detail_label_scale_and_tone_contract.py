@@ -44,6 +44,7 @@ def test_runtime_and_volume_types_use_shared_component_owners() -> None:
     assert 'table_label.metadata_label(volume.type)' in detail_template
     assert 'technical_value.render(volume.source' in detail_template
 
+
 def test_pod_detail_summary_owner_shows_controller_type_without_repeating_name() -> None:
     template = read('app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html')
 
@@ -52,4 +53,3 @@ def test_pod_detail_summary_owner_shows_controller_type_without_repeating_name()
 
     # Full controller identity remains available in the detailed evidence section.
     assert "{{ detail.inventory_row('Owner', pod.owner_display) }}" in template
-
