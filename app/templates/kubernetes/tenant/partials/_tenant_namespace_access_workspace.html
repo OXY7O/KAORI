@@ -13,14 +13,14 @@
                         <h3 id="namespace-access-model-heading"
                             class="text-base font-semibold text-content-primary">Effective Namespace Access</h3>
                         {{ info_tip.render('namespace-access-tip',
-                                    'Effective access evidence',
-                                    'This view explains who or what can access each governed namespace without exposing credentials.',
-                                    [
-                                    'Access is derived from committed Tenant Access Grants and credential lifecycle state.',
-                                    'Kubernetes remains authoritative for effective RBAC evidence.',
-                                    'Token, kubeconfig, private key, certificate, and Secret material are never rendered.'
-                                    ],
-                                    placement='right') }}
+                                                'Effective access evidence',
+                                                'This view explains who or what can access each governed namespace without exposing credentials.',
+                                                [
+                                                'Access is derived from committed Tenant Access Grants and credential lifecycle state.',
+                                                'Kubernetes remains authoritative for effective RBAC evidence.',
+                                                'Token, kubeconfig, private key, certificate, and Secret material are never rendered.'
+                                                ],
+                                                placement='right') }}
                     </span>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">
                         Correlate committed grants and credential lifecycle into one non-secret operator view.
