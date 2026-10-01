@@ -1,5 +1,24 @@
 {% import "components/form_field.html" as form_field %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
+
+{% macro control_heading(id_prefix, key, label, description, scope, effect) -%}
+    <div class="min-w-0">
+        <span class="inline-flex min-h-6 items-center gap-1.5">
+            <p class="text-sm font-semibold text-content-primary">{{ label }}</p>
+            {{ info_tip.render(
+                id_prefix ~ '-' ~ key ~ '-scope-tip',
+                label ~ ' scope & effect',
+                scope,
+                [
+                    'When enabled: ' ~ effect,
+                    'Placement is checked at attachment and again before mutation. Unsupported provider capability becomes Unavailable and fails closed.'
+                ],
+                placement='right') }}
+        </span>
+        <p class="mt-0.5 text-xs text-content-muted">{{ description }}</p>
+    </div>
+{%- endmacro %}
 
 {% macro render(values=none, editable=true, id_prefix='resource-profile-advanced') -%}
     {% set values = values or {} %}
@@ -13,7 +32,19 @@
                         <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0">
-                        <h3 class="text-sm font-semibold text-content-primary">Advanced Controls</h3>
+                        <span class="inline-flex min-h-6 items-center gap-1.5">
+                            <h3 class="text-sm font-semibold text-content-primary">Advanced Controls</h3>
+                            {{ info_tip.render(
+                                id_prefix ~ '-overview-tip',
+                                'Advanced Controls',
+                                'Optional governance beyond basic allocation, storage, object limits, and container defaults.',
+                                [
+                                    'Each enabled control stores reusable non-secret desired state in the Resource Profile.',
+                                    'The selected Native or Capsule placement is evaluated only when the profile is attached to a Tenant Environment.',
+                                    'A control that the authoritative provider cannot enforce becomes Unavailable and blocks the related mutation instead of silently falling back.'
+                                ],
+                                placement='right') }}
+                        </span>
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">Optional policy and provider-specific values.</p>
                     </div>
                 </div>
@@ -35,10 +66,14 @@
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                             <i data-lucide="route" class="h-4 w-4"></i>
                         </span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">Ingress</p>
-                            <p class="mt-0.5 text-xs text-content-muted">Ingress policy enforcement behavior.</p>
-                        </div>
+                        {{ control_heading(
+                            id_prefix,
+                            'ingress',
+                            'Ingress',
+                            'Ingress policy enforcement behavior.',
+                            'Ingress exposure governance for namespaces using this profile.',
+                            'KAORI evaluates the canonical exposure policy. Required mode also requires admission enforcement; Preflight only validates policy without requiring admission enforcement.'
+                        ) }}
                     </div>
                     {{ table_label.status_label('Enabled' if enabled else 'Off', 'normal' if enabled else 'unknown') }}
                 </summary>
@@ -79,10 +114,14 @@
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                             <i data-lucide="network" class="h-4 w-4"></i>
                         </span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">Service Exposure</p>
-                            <p class="mt-0.5 text-xs text-content-muted">Allowed Kubernetes Service and Ingress exposure types.</p>
-                        </div>
+                        {{ control_heading(
+                            id_prefix,
+                            'service-exposure',
+                            'Service Exposure',
+                            'Allowed Kubernetes Service and Ingress exposure types.',
+                            'ClusterIP, Ingress, NodePort, LoadBalancer, and ExternalName exposure decisions for attached namespaces.',
+                            'The profile becomes the reusable allow/deny exposure contract. Provider preflight and admission capability must satisfy the selected policy before mutation.'
+                        ) }}
                     </div>
                     {{ table_label.status_label('Enabled' if enabled else 'Off', 'normal' if enabled else 'unknown') }}
                 </summary>
@@ -142,10 +181,14 @@
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                             <i data-lucide="globe-2" class="h-4 w-4"></i>
                         </span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">Hostname Reservation</p>
-                            <p class="mt-0.5 text-xs text-content-muted">Hostname ownership pattern and match mode.</p>
-                        </div>
+                        {{ control_heading(
+                            id_prefix,
+                            'hostname-reservation',
+                            'Hostname Reservation',
+                            'Hostname ownership pattern and match mode.',
+                            'Exact, wildcard, or regex hostname ownership and collision protection for Tenant exposure.',
+                            'The configured hostname pattern must pass canonical ownership and collision checks before exposure is admitted; conflicting reservations block the mutation.'
+                        ) }}
                     </div>
                     {{ table_label.status_label('Enabled' if enabled else 'Off', 'normal' if enabled else 'unknown') }}
                 </summary>
@@ -196,10 +239,14 @@
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                             <i data-lucide="lock-keyhole" class="h-4 w-4"></i>
                         </span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">Managed TLS</p>
-                            <p class="mt-0.5 text-xs text-content-muted">TLS delivery mode and non-secret resource reference.</p>
-                        </div>
+                        {{ control_heading(
+                            id_prefix,
+                            'managed-tls',
+                            'Managed TLS',
+                            'TLS delivery mode and non-secret resource reference.',
+                            'TLS delivery for attached workloads using platform TLS or namespace compatibility mode.',
+                            'KAORI requests the canonical managed-TLS path and reconciles only non-secret names/references. Secret or private-key material is never stored in the Resource Profile.'
+                        ) }}
                     </div>
                     {{ table_label.status_label('Enabled' if enabled else 'Off', 'normal' if enabled else 'unknown') }}
                 </summary>
@@ -261,10 +308,14 @@
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                             <i data-lucide="package-check" class="h-4 w-4"></i>
                         </span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">Managed Registry</p>
-                            <p class="mt-0.5 text-xs text-content-muted">Registry credential delivery mode and source reference.</p>
-                        </div>
+                        {{ control_heading(
+                            id_prefix,
+                            'managed-registry',
+                            'Managed Registry',
+                            'Registry credential delivery mode and source reference.',
+                            'Private image-registry credential delivery for namespaces attached to this profile.',
+                            'KAORI requests image-pull Secret or external credential-provider delivery through the supported provider path. Credential values are never stored in profile JSON.'
+                        ) }}
                     </div>
                     {{ table_label.status_label('Enabled' if enabled else 'Off', 'normal' if enabled else 'unknown') }}
                 </summary>
@@ -326,10 +377,14 @@
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                             <i data-lucide="folder-cog" class="h-4 w-4"></i>
                         </span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">Capsule Namespace Controls</p>
-                            <p class="mt-0.5 text-xs text-content-muted">Tenant prefix behavior and Capsule namespaceOptions.</p>
-                        </div>
+                        {{ control_heading(
+                            id_prefix,
+                            'capsule-namespace-controls',
+                            'Capsule Namespace Controls',
+                            'Tenant prefix behavior and Capsule namespaceOptions.',
+                            'Capsule Tenant namespace naming and namespaceOptions policy.',
+                            'On Capsule placement, KAORI carries forceTenantPrefix and namespaceOptions as desired Tenant state. The control is unavailable on Native placement.'
+                        ) }}
                     </div>
                     {{ table_label.status_label('Enabled' if enabled else 'Off', 'normal' if enabled else 'unknown') }}
                 </summary>
@@ -376,10 +431,14 @@
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                             <i data-lucide="shield-check" class="h-4 w-4"></i>
                         </span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">Capsule Resource Rules</p>
-                            <p class="mt-0.5 text-xs text-content-muted">Allowed registries, priority classes, storage classes, and rules.</p>
-                        </div>
+                        {{ control_heading(
+                            id_prefix,
+                            'capsule-resource-rules',
+                            'Capsule Resource Rules',
+                            'Allowed registries, priority classes, storage classes, and rules.',
+                            'Capsule Tenant policy for container registries, PriorityClasses, StorageClasses, and admitted rule payloads.',
+                            'The configured values become desired Capsule Tenant resource rules and are reconciled only when the Capsule resource-rules capability is available.'
+                        ) }}
                     </div>
                     {{ table_label.status_label('Enabled' if enabled else 'Off', 'normal' if enabled else 'unknown') }}
                 </summary>
@@ -432,10 +491,14 @@
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                             <i data-lucide="layers-3" class="h-4 w-4"></i>
                         </span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">Capsule Resource Pools</p>
-                            <p class="mt-0.5 text-xs text-content-muted">ResourcePool or ResourcePoolClaim desired specification.</p>
-                        </div>
+                        {{ control_heading(
+                            id_prefix,
+                            'capsule-resource-pools',
+                            'Capsule Resource Pools',
+                            'ResourcePool or ResourcePoolClaim desired specification.',
+                            'Capsule ResourcePool or ResourcePoolClaim association and desired spec.',
+                            'KAORI reconciles the selected pool/claim resource through Capsule authority and verifies provider evidence. The control is unavailable when resource-pool capability is absent.'
+                        ) }}
                     </div>
                     {{ table_label.status_label('Enabled' if enabled else 'Off', 'normal' if enabled else 'unknown') }}
                 </summary>
@@ -494,10 +557,14 @@
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                             <i data-lucide="copy" class="h-4 w-4"></i>
                         </span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">Capsule Replication</p>
-                            <p class="mt-0.5 text-xs text-content-muted">TenantResource or GlobalTenantResource desired specification.</p>
-                        </div>
+                        {{ control_heading(
+                            id_prefix,
+                            'capsule-replication',
+                            'Capsule Replication',
+                            'TenantResource or GlobalTenantResource desired specification.',
+                            'Capsule TenantResource or GlobalTenantResource replication intent.',
+                            'KAORI reconciles the selected replication resource and desired spec through Capsule authority; Native placement never emulates this capability.'
+                        ) }}
                     </div>
                     {{ table_label.status_label('Enabled' if enabled else 'Off', 'normal' if enabled else 'unknown') }}
                 </summary>
@@ -556,10 +623,14 @@
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                             <i data-lucide="octagon-pause" class="h-4 w-4"></i>
                         </span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">Capsule Tenant Cordon</p>
-                            <p class="mt-0.5 text-xs text-content-muted">Cordon and deletion-protection values.</p>
-                        </div>
+                        {{ control_heading(
+                            id_prefix,
+                            'capsule-tenant-cordon',
+                            'Capsule Tenant Cordon',
+                            'Cordon and deletion-protection values.',
+                            'Capsule Tenant spec cordoned and preventDeletion state.',
+                            'KAORI reconciles the selected cordon and deletion-protection flags through Capsule authority. At least one of the two protections must be enabled.'
+                        ) }}
                     </div>
                     {{ table_label.status_label('Enabled' if enabled else 'Off', 'normal' if enabled else 'unknown') }}
                 </summary>
