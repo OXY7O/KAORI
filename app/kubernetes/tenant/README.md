@@ -16,14 +16,16 @@ The approved Tenant destinations are:
 
 ### Resource Profile lifecycle
 
-Resource Profile administration preserves the approved #113 allocation authority:
+Resource Profile administration preserves the approved #113 allocation authority while avoiding profile sprawl:
 
-- **Small / Standard / Large** are KAORI-owned locked presets. Normal operator workflows do not edit or delete them. Their preset name + version is a stable contract identity; mutating a built-in in place would make historical Namespace snapshots, Capacity Decisions, audit evidence, and cross-environment reproduction ambiguous.
-- When a preset is close but not exact, create a **Custom** profile from that Base Preset. KAORI retains the base preset class/version as lineage while the Custom contract owns its independent future versions.
-- **Custom** profiles are operator-managed. Edit may change name, description, enabled state, quota, and Container LimitRange values.
-- A Custom allocation-contract change increments the profile version. Existing Namespace allocations keep their already committed source version and frozen effective allocation snapshot until an explicit governed allocation change.
-- **Hard Delete** is limited to Custom profiles with **zero Namespace references and zero Capacity Decision references**. Both active and historical references count as dependencies so deletion cannot break committed allocation/audit lineage.
-- Disable is available through Custom Edit to stop future selection without removing the profile record.
+- **Small / Medium / Large / Extra Large** keep server-authoritative numeric sizing values fixed. Operators can revise the **Managed ownership mask** and **Advanced Controls**; a contract change increments the same logical profile to the next version.
+- Built-in revision never accepts operator-supplied numeric values. Canonical preset values are rehydrated server-side, so `Small vN` cannot silently redefine Small sizing.
+- **Custom** profiles remain fully operator-managed. Edit may change name, description, enabled state, quota, storage guardrails, Container LimitRange values, and Advanced Controls.
+- Existing Namespace allocations remain pinned to their committed `resource_profile_version` and frozen allocation snapshot after any profile edit.
+- Resource Profile Registry exposes pending rollout state. **Attached Namespace Rollout** applies the current version to active Native Namespace attachments for one selected Tenant; each Namespace independently passes capacity admission, provider mutation, and read-back.
+- A failed Namespace rollout stays on its previous committed version. Capsule attachments continue through Capsule-specific admitted governance paths; the Native rollout action never bypasses Capsule authority.
+- **Hard Delete** remains limited to Custom profiles with **zero Namespace references and zero Capacity Decision references**. Built-in logical profiles cannot be deleted.
+- Disable stops future selection without deleting historical profile identity or evidence.
 
 Namespace Provisioning and Operations follow the same KAORI page hierarchy established by Tenant and Resource Profiles: **Snapshot → Estate → Workspace → focused Content Tabs**. Namespace Provisioning separates Provision Namespace, Allocation Change, and Capacity Decisions while the Namespace Registry uses canonical filters and default-five pagination. Operations separates Provisioning, Runs & Evidence, Drift & Reconcile, and Activity without creating third-level sidebar destinations.
 
