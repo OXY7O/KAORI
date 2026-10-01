@@ -376,8 +376,7 @@ def verify() -> None:
         _require(
             source,
             (
-                'components/operational_dashboard_workspace.html',
-            'components/reporting_dashboard_workspace.html',
+                'components/numbered_governance_steps.html',
                 'alert_response_steps',
                 'Controlled Response Flow',
                 "'Validate'",
@@ -629,6 +628,8 @@ def verify() -> None:
             'Layered release evidence',
             'Registry/Harbor',
             'Source Control/GitHub',
+            'components/operational_dashboard_workspace.html',
+            'components/reporting_dashboard_workspace.html',
             'components/numbered_governance_steps.html',
         ),
         'operational dashboard standard',
