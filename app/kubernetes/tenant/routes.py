@@ -1150,7 +1150,9 @@ def adopt_discovered_tenant_route():
                 'tenant_generation': tenant.generation,
                 'namespace_id': namespace.id if namespace is not None else None,
                 'operation': 'adopt_discovered_tenant',
-                'provider_mutation_performed': True,
+                'provider_mutation_performed': bool(
+                    (tenant.provider_evidence_json or {}).get('provider_mutation_performed')
+                ),
             },
         )
     return _tenant_section_redirect('discovery')
