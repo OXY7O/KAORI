@@ -243,7 +243,7 @@ def test_verified_native_cutover_transfers_namespace_and_allocation_control_to_k
         operation='allocation_governance_cutover',
     )
 
-    assert record.ownership_status == 'adopted'
+    assert record.ownership_status == 'managed'
     assert allocation_control_state(record) == 'kaori_managed'
     assert record.desired_hash == 'after-hash'
     assert record.effective_hash == 'after-hash'
