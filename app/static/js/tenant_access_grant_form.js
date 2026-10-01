@@ -1,16 +1,20 @@
 ;(() => {
-    const profileCopy = {
-        viewer: 'Viewer — read-only visibility for workloads and namespace resources.',
-        operator: 'Operator — workload/application operations without namespaced Secret write access.',
-        tenant_admin: 'Tenant Admin — Operator capabilities plus namespaced Secret management.',
-        deployer: 'Deployer — automation-only profile for ServiceAccount memberships.',
-    }
+    const selectedOption = (select) =>
+        select instanceof HTMLSelectElement ? select.selectedOptions[0] || null : null
 
-    const selectedOption = (select) => (select instanceof HTMLSelectElement ? select.selectedOptions[0] || null : null)
+    const optionText = (select, fallback = '—') => {
+        const option = selectedOption(select)
+        const text = option?.textContent?.trim()
+        return text || fallback
+    }
 
     const clearSelect = (select) => {
         if (!(select instanceof HTMLSelectElement)) return
         select.value = ''
+    }
+
+    const setText = (node, value) => {
+        if (node instanceof HTMLElement) node.textContent = value
     }
 
     const filterTenantOptions = (select, tenantId) => {
@@ -34,7 +38,6 @@
             .trim()
             .toLowerCase()
         const profile = form.querySelector('[data-access-profile]')
-        const guidance = form.querySelector('[data-access-profile-guidance]')
         if (!(profile instanceof HTMLSelectElement)) return
 
         let selectedStillValid = false
@@ -53,13 +56,68 @@
             const firstEligible = [...profile.options].find((option) => !option.disabled)
             profile.value = firstEligible?.value || ''
         }
+    }
 
-        const current = selectedOption(profile)
-        if (guidance) {
-            guidance.textContent = normalizedPrincipalType
-                ? profileCopy[current?.value] || 'Choose the least-privilege profile required by this principal.'
-                : 'Select Membership first; incompatible profiles are filtered automatically.'
+    const syncContext = (
+        form,
+        {
+            membershipOption,
+            tenantId,
+            tenantName,
+            providerKey,
+            principalType,
+            scopeValue,
+            environment,
+            namespace,
+            environmentCount,
+            namespaceCount,
+        },
+    ) => {
+        const profile = form.querySelector('[data-access-profile]')
+        const scope = form.querySelector('[data-access-scope]')
+        const principal = form.querySelector('[data-access-context-principal]')
+        const tenant = form.querySelector('[data-access-context-tenant]')
+        const profileContext = form.querySelector('[data-access-context-profile]')
+        const scopeContext = form.querySelector('[data-access-context-scope]')
+        const providerContext = form.querySelector('[data-access-context-provider]')
+
+        const subjectName = membershipOption?.dataset.subjectName || ''
+        const principalLabel = principalType
+            ? `${subjectName || 'Selected principal'} · ${principalType.replaceAll('_', ' ')}`
+            : 'Select Membership'
+        setText(principal, principalLabel)
+        setText(tenant, tenantId ? tenantName : 'Not resolved')
+        setText(profileContext, optionText(profile, 'No compatible profile'))
+
+        const scopeLabel = optionText(scope, 'Namespace')
+        let targetLabel = 'target pending'
+        if (!tenantId) {
+            targetLabel = 'select Membership first'
+        } else if (scopeValue === 'tenant') {
+            targetLabel = tenantName
+        } else if (scopeValue === 'environment') {
+            targetLabel = environment?.value ? optionText(environment, 'target pending') : 'target pending'
+        } else {
+            targetLabel = namespace?.value ? optionText(namespace, 'target pending') : 'target pending'
         }
+        setText(scopeContext, `${scopeLabel} · ${targetLabel}`)
+
+        let providerMessage =
+            'Select a Membership to resolve provider authority. KAORI validates Tenant and scope before commit.'
+        if (tenantId && providerKey && providerKey !== 'native_kubernetes') {
+            providerMessage =
+                `${tenantName} uses Capsule authority. Access Grant reconciliation is not admitted yet, so provider mutation remains blocked.`
+        } else if (tenantId && scopeValue === 'namespace' && namespaceCount === 0) {
+            providerMessage =
+                `No governed Namespace exists in ${tenantName}. Provision a Namespace before applying Namespace-scoped access.`
+        } else if (tenantId && scopeValue === 'environment' && environmentCount === 0) {
+            providerMessage =
+                `No governed Environment target is available in ${tenantName}. The grant remains blocked until a valid target exists.`
+        } else if (tenantId) {
+            providerMessage =
+                'Native Kubernetes authority selected. KAORI commits the grant and reconciles namespaced RBAC only within this Tenant and scope.'
+        }
+        setText(providerContext, providerMessage)
     }
 
     const syncForm = (form) => {
@@ -71,7 +129,6 @@
         const namespaceField = form.querySelector('[data-access-namespace-field]')
         const environment = form.querySelector('[data-access-environment]')
         const namespace = form.querySelector('[data-access-namespace]')
-        const scopeGuidance = form.querySelector('[data-access-scope-guidance]')
         const providerWarning = form.querySelector('[data-access-provider-warning]')
         const submit = form.querySelector('[data-access-submit]')
 
@@ -117,26 +174,18 @@
             submit.setAttribute('aria-disabled', enabled ? 'false' : 'true')
         }
 
-        if (!scopeGuidance) return
-        if (!tenantId) {
-            scopeGuidance.textContent =
-                'Select Membership first. KAORI will restrict targets to that Membership’s Tenant.'
-        } else if (!providerSupported) {
-            scopeGuidance.textContent =
-                tenantName +
-                ' uses Capsule authority. Access Grant provider reconciliation remains fail-closed until the Capsule access adapter is admitted.'
-        } else if (scopeValue === 'namespace' && namespaceCount === 0) {
-            scopeGuidance.textContent =
-                'No governed namespace exists in ' +
-                tenantName +
-                '. Provision Namespace first, then return to Namespace scope.'
-        } else if (scopeValue === 'tenant') {
-            scopeGuidance.textContent = `Tenant scope — applies the profile across all governed namespaces in ${tenantName}. No target selection is required.`
-        } else if (scopeValue === 'environment') {
-            scopeGuidance.textContent = `Environment scope — choose one environment from ${tenantName}; all governed namespaces in that environment are targeted.`
-        } else {
-            scopeGuidance.textContent = `Namespace scope — choose exactly one namespace from ${tenantName}; this is the narrowest authorization boundary.`
-        }
+        syncContext(form, {
+            membershipOption,
+            tenantId,
+            tenantName,
+            providerKey,
+            principalType,
+            scopeValue,
+            environment,
+            namespace,
+            environmentCount,
+            namespaceCount,
+        })
     }
 
     const init = (root = document) => {
@@ -153,7 +202,9 @@
         if (
             target.matches('[data-access-membership]') ||
             target.matches('[data-access-profile]') ||
-            target.matches('[data-access-scope]')
+            target.matches('[data-access-scope]') ||
+            target.matches('[data-access-environment]') ||
+            target.matches('[data-access-namespace]')
         ) {
             syncForm(form)
         }
