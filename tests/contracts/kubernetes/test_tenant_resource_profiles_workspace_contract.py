@@ -215,8 +215,11 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'Compute &amp; Pod Budget' in capacity
     assert 'platform_reserve_pods' in capacity
     assert 'unmanaged_commitment_pods' in capacity
-    assert 'Tenant Storage Budget' in capacity
-    assert 'tenant_storage_budget' in capacity
+    assert 'Tenant Storage Budget (GiB)' in capacity
+    assert 'name="tenant_storage_budget_gib"' in capacity
+    assert 'type="number"' in capacity
+    assert 'placeholder="2048"' in capacity
+    assert '2048 = 2 TiB' in capacity
     assert 'Logical budget only.' in capacity
     assert 'values.pods' in capacity
     assert 'values.storage' in capacity
@@ -230,6 +233,11 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert "button_text='Status Guide'" not in capacity
     assert 'button_classes=table_ui.action_classes()' not in capacity
     assert 'status_detail_dialog' not in capacity
+
+    governance = read('app/kubernetes/tenant/capacity_governance.py')
+    assert "'tenant_storage_budget_gib': _quantity_gib_text(policy.tenant_storage_budget)" in governance
+    assert 'logical_budget = _logical_storage_budget_vector(policy)' in governance
+    assert 'logical_headroom = _headroom(logical_budget, committed)' in governance
 
     assert 'tenant-capacity-policy-state' in page
     assert "'capacity_policy_state':" in service
