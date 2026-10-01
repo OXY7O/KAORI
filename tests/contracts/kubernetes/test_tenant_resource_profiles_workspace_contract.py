@@ -160,8 +160,9 @@ def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() 
     assert '>Action</th>' in registry
     assert "table_ui.table_classes('min-w-[900px]')" in registry
     assert 'resource-profile-manage-' in registry
-    assert "{{ 'Manage' if profile.profile_class == 'custom' else 'View' }}" in registry
-    assert "{{ table_label.status_label('Editable' if profile.profile_class == 'custom' else 'Locked'" in registry
+    assert '>Manage<' in registry
+    assert 'Versioned Controls' in registry
+    assert 'pending rollout' in registry
     assert '_resource_profile_management_dialogs.html' in registry
     assert 'Requests</th>' not in registry
     assert 'Namespace Quota</th>' not in registry
@@ -242,60 +243,67 @@ def test_capacity_commitment_excludes_deprovisioned_history_and_preserves_unknow
     assert 'commitment_reason or _state_reason(state)' in governance
 
 
-def test_custom_resource_profile_crud_preserves_preset_and_dependency_authority() -> None:
+def test_resource_profile_revision_preserves_fixed_preset_values_and_dependency_authority() -> None:
     service = read('app/kubernetes/tenant/service.py')
     routes = read('app/kubernetes/tenant/routes.py')
     model = read('app/models/tenant.py')
-    readme = read('app/kubernetes/tenant/README.md')
+    docs = read('docs/architecture/kubernetes-tenant-resource-profiles.md')
 
     assert 'def update_resource_profile(profile_id: int' in service
-    assert 'profile.profile_class != TenantResourceProfileClass.CUSTOM.value' in service
-    assert 'Built-in Resource Profiles are locked.' in service
-    assert "enabled_value not in {'enabled', 'disabled'}" in service
-    assert 'contract_changed = quota !=' in service
+    assert 'is_builtin = profile.profile_class in RESOURCE_PROFILE_PRESETS' in service
+    assert '_preset_controlled_values(RESOURCE_PROFILE_PRESETS[profile.profile_class], source)' in service
+    assert '_preset_storage_policy_values(RESOURCE_PROFILE_PRESETS[profile.profile_class], source)' in service
+    assert 'Built-in Resource Profiles are locked.' not in service
     assert 'profile.version = int(profile.version or 1) + 1' in service
+    assert 'profile_version = int(profile.version or 1)' in service
 
-    assert 'def delete_resource_profile(profile_id: int)' in service
-    assert 'def _resource_profile_dependency_counts(profile_id: int)' in service
-    assert 'TenantNamespace.query.filter_by(resource_profile_id=profile_id).count()' in service
-    assert 'TenantCapacityDecision.query.filter_by(resource_profile_id=profile_id).count()' in service
-    assert "if dependencies['total']:" in service
-    assert 'release all Resource Profile dependencies first' in service
+    assert 'def rollout_resource_profile_to_tenant_committed(' in service
+    assert 'def _resource_profile_rollout_targets(' in service
+    assert 'change_native_namespace_allocation_committed(' in service
+    assert "'profile_rollout_targets': profile_rollout_targets" in service
+    assert 'A blocked Namespace stays on its previous committed version.' not in service
 
     assert "@tenant_bp.post('/resource-profiles/<int:profile_id>/edit')" in routes
-    assert "@tenant_bp.post('/resource-profiles/<int:profile_id>/delete')" in routes
-    assert 'update_resource_profile_committed' in routes
-    assert 'delete_resource_profile_committed' in routes
+    assert "@tenant_bp.post('/resource-profiles/<int:profile_id>/rollout')" in routes
+    assert 'rollout_resource_profile_to_tenant_committed' in routes
 
+    assert 'def delete_resource_profile(profile_id: int)' in service
+    assert 'Built-in Resource Profiles are KAORI-owned and cannot be deleted.' in service
     assert "ForeignKey('tenant_resource_profiles.id', ondelete='RESTRICT')" in model
-    assert 'Hard Delete' in readme
-    assert 'zero Namespace references and zero Capacity Decision references' in readme
 
+    assert '### Profile revision and rollout' in docs
+    assert 'same profile identity' in docs
+    assert 'Small-2' in docs
 
 def test_resource_profile_registry_context_exposes_dependency_counts_for_actions() -> None:
     service = read('app/kubernetes/tenant/service.py')
 
     assert "'profile_dependencies': profile_dependencies" in service
+    assert "'profile_rollout_targets': profile_rollout_targets" in service
     assert 'namespace_counts.get(profile.id, 0)' in service
     assert 'capacity_decision_counts.get(profile.id, 0)' in service
 
 
-def test_resource_profile_management_dialogs_explain_preset_lock_and_govern_custom_lifecycle() -> None:
+def test_resource_profile_management_dialogs_support_versioned_builtin_governance_and_rollout() -> None:
     dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
+    advanced = read('app/templates/kubernetes/tenant/partials/_resource_profile_advanced_controls.html')
 
     assert 'data-kaori-native-dialog' in dialogs
     assert 'resource-profile-manage-{{ profile.id }}' in dialogs
     assert 'KAORI Built-in Preset' in dialogs
-    assert 'Why this preset is locked' in dialogs
+    assert 'Fixed values · Versioned controls' in dialogs
+    assert 'Why this preset is locked' not in dialogs
     assert 'border border-kaori-primary/20 bg-kaori-soft px-4 py-3' in dialogs
-    assert 'bg-kaori-primary/15 px-4 py-3 dark:bg-kaori-primary/25' not in dialogs
+    assert 'Save New Version' in dialogs
+    assert 'Attached Namespace Rollout' in dialogs
+    assert "url_for('tenant.rollout_resource_profile_route', profile_id=profile.id)" in dialogs
+    assert 'Each Namespace runs its own capacity admission, provider mutation, and read-back.' in dialogs
+    assert 'Capsule workflow' in dialogs
+
+    assert "advanced_profile_controls.render(profile.advanced_controls_json or {}, true, 'resource-profile-edit-' ~ profile.id, false)" in dialogs
+    assert 'show_tips' in advanced
     assert 'Read-only governance intent grouped by operational scope.' in advanced
-    assert 'same preset identity mean different resources over time' in dialogs
-    assert 'Create a Custom profile from this preset' in dialogs
-    assert "url_for('tenant.update_resource_profile_route'" in dialogs
-    assert 'resource-profile-update-form-{{ profile.id }}' in dialogs
-    assert 'profile_enabled' in dialogs
-    assert 'Existing Namespace allocations keep their committed source version' in dialogs
+
     assert 'resource-profile-delete-modal' in dialogs
     assert 'zero Namespace and zero Capacity Decision references remain' in dialogs
     assert 'KAORI does not detach historical evidence automatically.' in dialogs
@@ -366,8 +374,8 @@ def test_resource_profile_advanced_controls_are_real_profile_intent_and_placemen
     assert "'advanced_controls_json'" in migration
 
     assert 'advanced_control_contract_present' in dialogs
-    assert "advanced_profile_controls.render(profile.advanced_controls_json or {}, true, 'resource-profile-edit-' ~ profile.id, false)" in dialogs
-    assert "advanced_profile_controls.render_view(profile.advanced_controls_json or {}, 'resource-profile-view-' ~ profile.id)" in dialogs
+    assert dialogs.count("advanced_profile_controls.render(profile.advanced_controls_json or {}, true, 'resource-profile-edit-' ~ profile.id, false)") >= 2
+    assert "advanced_profile_controls.render_view(profile.advanced_controls_json or {}, 'resource-profile-view-' ~ profile.id)" not in dialogs
     assert 'data-tenant-namespace-environment' in namespace_form
     assert 'Advanced Controls Preview' in namespace_form
     assert 'data-tenant-namespace-advanced-control' in namespace_form
@@ -446,6 +454,6 @@ def test_resource_profile_storage_policy_is_persisted_and_bidirectional() -> Non
     assert "profile_selector == 'adopted_baseline'" in service
     assert 'profile.storage_policy_json = dict(record.allocation_storage_policy_json or {})' in service
 
-    for label in ('Compute &amp; Workload', 'Storage Guardrails', 'Object Limits', 'Container Defaults'):
+    for label in ('Basic Resources', 'Storage Guardrails', 'Object Limits', 'Container Defaults'):
         assert label in form
         assert label in dialogs
