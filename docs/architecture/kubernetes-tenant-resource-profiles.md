@@ -386,12 +386,37 @@ Configuration validation is server-side. Invalid hostname patterns, unsupported 
 
 KAORI never silently drops an enabled advanced control and never substitutes Native behavior for Capsule-only controls.
 
-### Profile mutability
+### Profile revision and rollout
 
-Small, Medium, Large, and Extra Large retain fixed numeric preset values. Their per-resource Managed ownership mask and selected advanced-control values are committed as part of the created profile contract.
+Resource Profile identity is stable while its contract can advance by version.
 
-Custom profiles can edit both numeric allocation intent and advanced-control values. Changing either increments the Custom profile contract version. Existing Namespace snapshots remain frozen until an explicit governed allocation/attachment workflow changes them.
+- **Small, Medium, Large, Extra Large** keep canonical numeric sizing values fixed. Operators may revise which dimensions are Managed and may revise Advanced Controls. A contract change increments the same profile identity to the next version instead of creating another profile.
+- **Custom** profiles may revise numeric values, Managed dimensions, storage guardrails, Container defaults, and Advanced Controls. Contract changes likewise increment the profile version.
+- Existing Namespace records remain pinned to their committed `resource_profile_version` and allocation snapshot. Editing a profile never mutates attached provider resources implicitly.
+- The Resource Profile Registry exposes pending-rollout state and an explicit **Attached Namespace Rollout** action scoped to one Tenant.
+- Rollout reconciles every active Native Namespace using that profile independently. Each Namespace must pass capacity admission, provider mutation, and read-back. A blocked Namespace remains on its previous committed version.
+- Capsule attachments continue through Capsule-specific admitted governance paths; the Native rollout action never bypasses Capsule authority.
 
+Example:
+
+```text
+Small v2
+Tenant A: NS1, NS2, NS3, NS4
+
+operator disables Managed:
+- CPU Requests
+- CPU Limits
+
+Small v3
+→ profile identity remains Small
+→ NS1..NS4 remain pinned to v2
+→ Rollout Small v3 to Tenant A
+→ each Namespace reconciles independently
+→ successful Namespace snapshots become v3
+→ blocked Namespace remains v2 with explicit evidence
+```
+
+This avoids profile sprawl such as `Small-2` while preserving historical reproducibility and rollback evidence.
 
 ## Bidirectional managed adoption
 
