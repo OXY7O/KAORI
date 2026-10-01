@@ -96,7 +96,7 @@ def _resource_quotas(item: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _quota_for_profile(profile: TenantResourceProfile) -> dict[str, str]:
-    quota, _limits, _customized = _namespace_allocation_values(profile)
+    quota, _limits, _storage_policy, _customized = _namespace_allocation_values(profile)
     return quota
 
 
