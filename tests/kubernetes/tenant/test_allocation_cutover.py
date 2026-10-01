@@ -95,7 +95,7 @@ def test_successful_control_state_is_separate_from_namespace_ownership():
 
     state = build_allocation_cutover_state(record)
 
-    assert record.ownership_status == 'adopted'
+    assert record.ownership_status == 'managed'
     assert allocation_control_state(record) == 'kaori_managed'
     assert state['supported'] is False
     assert state['state'] == 'kaori_managed'
@@ -197,7 +197,7 @@ def _install_reconcile_fakes(monkeypatch, observations):
     return api
 
 
-def test_verified_native_cutover_marks_only_allocation_control_managed(monkeypatch):
+def test_verified_native_cutover_transfers_namespace_and_allocation_control_to_kaori(monkeypatch):
     record = _reconcile_record()
     before = {
         'control_state': 'observed',
@@ -359,3 +359,52 @@ def test_native_cutover_writes_and_verifies_pvc_storage_policy(monkeypatch) -> N
         'min': '2Gi',
         'max': '20Gi',
     }
+
+def test_storage_only_takeover_keeps_limit_range_and_pvc_policy(monkeypatch) -> None:
+    record = _reconcile_record()
+    before = {
+        'control_state': 'observed',
+        'control_reason': '',
+        'effective_hash': 'before-hash',
+        'quota': {},
+        'limits': {},
+        'storage_policy': {'min': '1Gi', 'max': '10Gi'},
+        'source_resources': [],
+    }
+    after = {
+        'control_state': 'observed',
+        'control_reason': '',
+        'effective_hash': 'after-hash',
+        'quota': {},
+        'limits': {},
+        'storage_policy': {'min': '1Gi', 'max': '10Gi'},
+        'source_resources': [],
+    }
+    api = _install_reconcile_fakes(monkeypatch, [before, after])
+
+    reconcile_adopted_native_allocation(
+        record,
+        profile=_profile(),
+        resource_profile_version=1,
+        allocation_customized=True,
+        capacity_decision_id=None,
+        quota_hard={},
+        limit_defaults={},
+        storage_policy={'min': '1Gi', 'max': '10Gi'},
+        operation='adoption_takeover',
+    )
+
+    assert api.created_quotas == []
+    assert len(api.created_limit_ranges) == 1
+    pvc_items = [
+        item
+        for item in api.created_limit_ranges[0][1].spec.limits
+        if item.type == 'PersistentVolumeClaim'
+    ]
+    assert len(pvc_items) == 1
+    assert pvc_items[0].min == {'storage': '1Gi'}
+    assert pvc_items[0].max == {'storage': '10Gi'}
+    assert record.allocation_storage_policy_json == {'min': '1Gi', 'max': '10Gi'}
+    assert record.ownership_status == 'managed'
+    assert allocation_control_state(record) == 'kaori_managed'
+
