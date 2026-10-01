@@ -17,13 +17,16 @@ Normal operational preflight performs no live Prometheus or Kubernetes request.
 
 The baseline capacity source is the committed `analytics.capacity` materialization for the selected cluster with the canonical `24h` parameters.
 
-The required facts are:
+The required schedulable-capacity facts are:
 
 - Ready-worker allocatable CPU;
 - Ready-worker allocatable memory;
+- Ready-worker allocatable Pod slots;
 - snapshot identity;
 - snapshot state;
 - data cutoff.
+
+Persistent-storage physical/backend capacity is deliberately not inferred from this Capacity Analytics snapshot. The logical Tenant Storage Budget is explicit policy until dedicated Kubernetes Storage Analytics provides authoritative PV/PVC/backend correlation.
 
 A positive allocation change fails closed when the required snapshot is missing, invalid, expired, or stale. Refreshing Capacity Analytics is the operator action; #654 does not bypass materialization with a live Metrics Source query.
 
@@ -35,9 +38,12 @@ The policy records:
 
 - platform/system CPU reserve;
 - platform/system memory reserve;
+- platform/system Pod reserve;
 - operational safety headroom percentage;
 - known unmanaged CPU request commitment;
-- known unmanaged memory request commitment.
+- known unmanaged memory request commitment;
+- known unmanaged Pod commitment;
+- optional explicit Tenant Storage Budget.
 
 There is no implicit policy row. An operator must explicitly configure the policy before positive Tenant allocation can be admitted.
 
@@ -47,7 +53,7 @@ Unmanaged commitment is a governed request commitment outside KAORI Tenant Manag
 
 ## Allocation Budget
 
-For each CPU/memory request dimension:
+For CPU, memory, and Pods:
 
 ```text
 Tenant Allocation Budget
@@ -57,22 +63,33 @@ Tenant Allocation Budget
 - known unmanaged commitment
 ```
 
-Safety headroom is calculated from Ready-worker allocatable capacity.
+Safety headroom is calculated from Ready-worker allocatable capacity for all three schedulable dimensions.
 
-A negative result is clamped to zero.
+Storage uses a different contract:
+
+```text
+Tenant Storage Budget
+= explicit operator-governed logical allocation ceiling
+```
+
+It is compared with aggregate committed `requests.storage` and is not presented as physical/backend free space.
+
+A negative derived CPU/memory/Pod result is clamped to zero.
 
 ## Tenant committed allocation
 
 KAORI aggregates the frozen effective namespace allocation snapshots from #113:
 
 - `allocation_quota_json["requests.cpu"]`;
-- `allocation_quota_json["requests.memory"]`.
+- `allocation_quota_json["requests.memory"]`;
+- `allocation_quota_json["pods"]`;
+- `allocation_quota_json["requests.storage"]`.
 
 The aggregate represents governed Tenant request commitment. It does not claim that ResourceQuota reserves scheduler capacity.
 
 Existing namespace allocations remain committed even when provider state is drifted or failed because KAORI must not silently free capacity intent before an explicit governed allocation change.
 
-An unbounded CPU or memory request dimension remains explicit. KAORI does not coerce unbounded to zero. A positive allocation cannot be proven safe while aggregate request commitment is unbounded.
+An unbounded governed dimension remains explicit. KAORI does not coerce unbounded to zero. A positive allocation cannot be proven safe when CPU, memory, Pod, or configured storage-budget commitment is unbounded.
 
 ## Capacity states
 
@@ -117,7 +134,7 @@ A managed namespace changes allocation by selecting another committed Resource P
 
 KAORI evaluates the frozen current namespace allocation against the proposed Resource Profile snapshot before mutating the namespace record or provider state.
 
-The operation is classified from CPU/memory request commitment:
+The operation is classified from governed CPU, memory, Pod, and configured storage commitment:
 
 - `increase` when at least one governed request dimension increases or becomes unbounded;
 - `decrease` when no governed dimension increases and at least one decreases or becomes bounded;
@@ -131,9 +148,13 @@ An allowed change updates the namespace source Resource Profile identity/version
 
 ## Storage
 
-PVC/request-storage quota is retained in Resource Profile allocation evidence, but physical storage admission is not inferred from it.
+`requests.storage` is now a governed **logical allocation dimension** when the cluster policy has a Tenant Storage Budget.
 
-Physical storage governance requires provider/storage capability evidence and remains separate from the baseline CPU/memory request preflight.
+KAORI compares aggregate committed Tenant `requests.storage` with that explicit budget before provider reconciliation.
+
+The logical budget does not claim physical reservation or backend free space. It is an operator-defined admission ceiling that can be deliberately lower than physical capacity.
+
+Physical/usable storage capacity remains a separate evidence problem. Kubernetes Storage Analytics workstream #782 owns future correlation across StorageClass, PV, PVC, Tenant/Namespace, and authoritative storage-backend capacity. Until that evidence exists, KAORI must not derive physical storage headroom from node filesystem metrics, PV totals, or PVC quota.
 
 ## UAT
 
@@ -141,7 +162,7 @@ Staging UAT for #654 must demonstrate:
 
 1. explicit cluster capacity policy configuration;
 2. allowed bounded allocation within fresh committed capacity evidence;
-3. denied allocation with actionable CPU/memory shortfall evidence;
+3. denied allocation with actionable CPU/memory/Pod/logical-storage shortfall evidence;
 4. no Namespace/ResourceQuota/LimitRange mutation after a denied preflight;
 5. Overcommitted state after simulated/real capacity contraction without rewriting existing Tenant allocations;
 6. recovery after capacity increases or Tenant commitment is reduced;
