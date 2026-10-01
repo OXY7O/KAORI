@@ -58,7 +58,7 @@ _ALLOWED_TENANT_PROVIDERS = {'native_kubernetes', 'capsule'}
 
 RESOURCE_PROFILE_PRESETS: dict[str, dict[str, Any]] = {
     'small': {
-        'version': 1,
+        'version': 2,
         'quota': {
             'requests.cpu': '1',
             'limits.cpu': '2',
@@ -75,10 +75,10 @@ RESOURCE_PROFILE_PRESETS: dict[str, dict[str, Any]] = {
             'default_request': {'cpu': '100m', 'memory': '128Mi'},
             'default': {'cpu': '250m', 'memory': '256Mi'},
         },
-        'storage_policy': {},
+        'storage_policy': {'min': '1Gi', 'max': '10Gi'},
     },
     'standard': {
-        'version': 1,
+        'version': 2,
         'quota': {
             'requests.cpu': '2',
             'limits.cpu': '4',
@@ -95,10 +95,10 @@ RESOURCE_PROFILE_PRESETS: dict[str, dict[str, Any]] = {
             'default_request': {'cpu': '100m', 'memory': '128Mi'},
             'default': {'cpu': '500m', 'memory': '512Mi'},
         },
-        'storage_policy': {},
+        'storage_policy': {'min': '1Gi', 'max': '10Gi'},
     },
     'large': {
-        'version': 1,
+        'version': 2,
         'quota': {
             'requests.cpu': '4',
             'limits.cpu': '8',
@@ -115,10 +115,10 @@ RESOURCE_PROFILE_PRESETS: dict[str, dict[str, Any]] = {
             'default_request': {'cpu': '250m', 'memory': '256Mi'},
             'default': {'cpu': '1', 'memory': '1Gi'},
         },
-        'storage_policy': {},
+        'storage_policy': {'min': '1Gi', 'max': '10Gi'},
     },
     'extra_large': {
-        'version': 1,
+        'version': 2,
         'quota': {
             'requests.cpu': '8',
             'limits.cpu': '16',
@@ -135,7 +135,7 @@ RESOURCE_PROFILE_PRESETS: dict[str, dict[str, Any]] = {
             'default_request': {'cpu': '500m', 'memory': '512Mi'},
             'default': {'cpu': '2', 'memory': '2Gi'},
         },
-        'storage_policy': {},
+        'storage_policy': {'min': '1Gi', 'max': '10Gi'},
     },
 }
 
@@ -160,8 +160,6 @@ _PROFILE_LIMIT_FIELDS = {
 _PROFILE_STORAGE_FIELDS = {
     'pvc_min_storage': 'min',
     'pvc_max_storage': 'max',
-    'pvc_default_request_storage': 'default_request',
-    'pvc_default_storage': 'default',
 }
 _CONTROL_TRUE_VALUES = {'1', 'true', 'yes', 'on'}
 
