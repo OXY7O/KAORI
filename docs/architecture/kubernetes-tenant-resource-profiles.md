@@ -237,6 +237,69 @@ KAORI labels managed resources with `app.kubernetes.io/managed-by=kaori`. Existi
 The committed desired contract and verified effective contract are independently hashed. Ready requires hash equality after provider read-back.
 
 
+## Resource Profile control categories
+
+Resource Profile class and control category are separate concepts.
+
+- **Class** chooses the sizing baseline: Small, Medium, Large, Extra Large, or Custom.
+- **Category** groups the provider controls that the profile owns.
+
+The canonical category order is:
+
+1. **Compute & Workload** — CPU requests/limits, memory requests/limits, Pods.
+2. **Storage Guardrails** — PVC count, total `requests.storage`, per-PVC min/max, optional PVC default request/limit.
+3. **Object Limits** — Services, ConfigMaps, Secrets.
+4. **Container Defaults** — Container default request/limit CPU and memory.
+5. **Advanced Controls** — expandable policy/provider-specific controls.
+
+This prevents a second profile taxonomy such as Basic/Advanced classes. A Small profile can enable advanced controls; a Custom profile can use only basic categories. The profile class remains sizing lineage while Managed state remains per control.
+
+### Bidirectional Managed contract
+
+A control is presented as **Managed** only when KAORI has an admitted observation and reconciliation path for the authoritative provider.
+
+```text
+Provider observation
+→ adopted committed baseline
+→ explicit governance takeover
+→ KAORI desired state
+→ authoritative provider reconcile
+→ provider read-back
+→ committed effective evidence
+→ drift observation
+→ Reapply KAORI Intent OR Accept Provider State
+```
+
+Adoption itself is always read-only. Supported provider values are captured into a provider-equivalent Custom baseline profile and Namespace allocation snapshot. Therefore an unchanged adopted workload starts with desired values equivalent to the live provider instead of manufacturing drift.
+
+For Native Kubernetes allocation governance, ResourceQuota, Container LimitRange defaults, and admitted PersistentVolumeClaim LimitRange storage fields share the same lifecycle. Manual provider changes after takeover are dimension-level drift.
+
+For Capsule, Capsule remains the reconciliation authority. A namespaced PVC LimitRange observed underneath a Capsule Tenant is retained in the provider-equivalent baseline/evidence, but it is not presented as Capsule Managed unless Capsule exposes an admitted write/read-back authority for that dimension. KAORI never bypasses Capsule with a Native write merely to make the profile appear fully managed.
+
+### Storage Guardrails
+
+Storage policy is persisted separately from ResourceQuota and Container defaults:
+
+```text
+TenantResourceProfile.storage_policy_json
+TenantNamespace.allocation_storage_policy_json
+```
+
+Supported fields map to `LimitRange[type=PersistentVolumeClaim]`:
+
+| Profile value | Kubernetes field |
+| --- | --- |
+| Min PVC Size | `min.storage` |
+| Max PVC Size | `max.storage` |
+| PVC Default Request | `defaultRequest.storage` |
+| PVC Default Limit | `default.storage` |
+
+Validation requires positive Kubernetes quantities, `min <= max`, and optional defaults to remain within the configured bounds.
+
+Native reconciliation materializes Container and PersistentVolumeClaim items in the canonical KAORI LimitRange, then reads the provider back before marking the operation successful. Effective hashes and drift comparison include storage policy.
+
+During Native adoption, supported PVC storage fields are normalized into `storage_policy`; only unsupported fields such as unsupported resources or PVC max-limit/request-ratio remain external constraints. During Capsule adoption, supported values are still captured in the Namespace baseline but remain provider-owned evidence when Capsule has no admitted storage-policy mutation authority.
+
 ## Advanced profile controls
 
 Resource Profiles persist **advanced control intent and its non-secret configuration values** in addition to allocation and Container LimitRange dimensions. This is an operator-editable reusable contract, not a status/TODO matrix and not an issue-reference UI.
