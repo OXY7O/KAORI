@@ -185,31 +185,42 @@
                             </div>
                             <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                                 <p class="text-xs text-content-muted">Provenance</p>
-                                <p class="mt-1 text-sm font-semibold text-content-primary">Adopted Baseline · Observed</p>
-                                <p class="mt-2 text-xs text-content-muted">Live evidence; not KAORI desired state.</p>
+                                <p class="mt-1 text-sm font-semibold text-content-primary">Imported Provider Baseline</p>
+                                <p class="mt-2 text-xs text-content-muted">Current effective values become the initial committed KAORI contract.</p>
                             </div>
                             <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                                 <div class="flex items-center gap-1.5">
                                     <p class="text-xs text-content-muted">Control State</p>
                                     {{ info_tip.render('tenant-adoption-control-tip',
                                             'Allocation control',
-                                            'Adoption records provider evidence only; it does not create KAORI desired allocation intent.',
+                                            'Adoption imports supported provider values into committed KAORI state and revalidates authority before takeover.',
                                             [
-                                            'Observed · Read Only — authority is recognized, but mutation remains disabled until explicit governance cutover.',
-                                            'Control Unavailable — authority or capability evidence is incomplete, ambiguous, or unsupported.',
-                                            'Provider capability and authority are revalidated before any later governed mutation.'
+                                            'Native Kubernetes — supported quota, Container defaults, and PVC storage policy become KAORI Managed after equivalent provider write/read-back.',
+                                            'Capsule quota — managed only through the admitted Capsule authority.',
+                                            'Capsule-generated Namespace policy — mirrored into KAORI when no admitted source-write authority exists, so provider-owned changes do not create false drift.',
+                                            'Control Unavailable — ambiguous, unsupported, stale, or externally owned state fails closed.'
                                             ],
                                             placement='right') }}
                                 </div>
                                 <div class="mt-2">
                                     {% if allocation.control_state == 'observed' %}
-                                        {{ table_label.special_label('Observed · Read Only', 'info', 'eye') }}
+                                        {% if row.provider_key == 'native_kubernetes' %}
+                                            {{ table_label.special_label('Managed on Adopt', 'normal', 'shield-check') }}
+                                        {% else %}
+                                            {{ table_label.special_label('Managed + Mirrored', 'normal', 'shield-check') }}
+                                        {% endif %}
                                     {% else %}
                                         {{ table_label.special_label('Control Unavailable', 'warning', 'shield-alert') }}
                                     {% endif %}
                                 </div>
                                 {% if allocation.control_state == 'observed' %}
-                                    <p class="mt-2 text-xs text-content-muted">Read-only until governance cutover.</p>
+                                    <p class="mt-2 text-xs text-content-muted">
+                                        {% if row.provider_key == 'native_kubernetes' %}
+                                            Effective values are preserved while KAORI takes supported allocation and PVC policy ownership.
+                                        {% else %}
+                                            Capsule-owned quota uses Capsule mutation authority; generated Namespace constraints remain provider-mirrored unless Capsule exposes an admitted source control.
+                                        {% endif %}
+                                    </p>
                                 {% else %}
                                     <div class="mt-3 rounded-lg border border-outline-subtle bg-status-warning-soft px-3 py-2">
                                         <p class="text-xs leading-5 text-status-warning-text">
@@ -228,7 +239,7 @@
                                     <p class="truncate text-xs text-content-muted">Live provider values</p>
                                 </div>
                                 {% if row.provider_key == 'native_kubernetes' %}
-                                    {{ table_label.metadata_label((allocation.get('profile_lineage') or {}).get('label') or 'Adopted Baseline · Observed', 'layers-3') }}
+                                    {{ table_label.metadata_label((allocation.get('profile_lineage') or {}).get('label') or 'Imported Provider Baseline', 'layers-3') }}
                                 {% else %}
                                     {{ table_label.metadata_label('Scope · ' ~ (allocation.shared_scope|default('Provider', true)), 'scan-search') }}
                                 {% endif %}
