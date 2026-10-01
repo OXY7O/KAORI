@@ -102,12 +102,14 @@ def _merge_limit_sources(
     limit_ranges: list[Any],
 ) -> tuple[
     dict[str, dict[str, str]],
+    dict[str, str],
     list[str],
     list[str],
     list[dict[str, str]],
     list[dict[str, Any]],
 ]:
     candidates: dict[tuple[str, str], list[tuple[str, str]]] = {}
+    storage_candidates: dict[str, list[tuple[str, str]]] = {}
     unsupported: list[str] = []
     source_refs: list[dict[str, str]] = []
     external_constraints: list[dict[str, Any]] = []
@@ -120,7 +122,8 @@ def _merge_limit_sources(
         for item in list(_value(spec, 'limits', []) or []):
             item_type = str(_value(item, 'type', '') or '')
             if item_type == 'PersistentVolumeClaim':
-                pvc_fields: dict[str, dict[str, str]] = {}
+                supported_fields: dict[str, str] = {}
+                unsupported_fields: dict[str, dict[str, str]] = {}
                 for field, attr_names in (
                     ('min', ('min',)),
                     ('max', ('max',)),
@@ -133,26 +136,33 @@ def _merge_limit_sources(
                         candidate = _value(item, attr_name, {}) or {}
                         if candidate:
                             values.update(dict(candidate))
-                    normalized: dict[str, str] = {}
                     for key, raw_value in values.items():
+                        rendered = str(raw_value).strip()
                         if str(key) != 'storage':
                             unsupported.append(f'{source_name}:pvc.{field}.{key}')
+                            unsupported_fields.setdefault(field, {})[str(key)] = rendered
                             continue
-                        normalized['storage'] = str(raw_value).strip()
-                    if normalized:
-                        pvc_fields[field] = normalized
-                external_constraints.append(
-                    {
-                        'constraint_type': 'pvc_storage_limit_range',
-                        'kind': 'LimitRange',
-                        'name': reference['name'],
-                        'uid': reference['uid'],
-                        'resource_version': reference['resource_version'],
-                        'item_type': 'PersistentVolumeClaim',
-                        'fields': pvc_fields,
-                    }
-                )
+                        if field == 'max_limit_request_ratio':
+                            unsupported.append(f'{source_name}:pvc.{field}.storage')
+                            unsupported_fields.setdefault(field, {})['storage'] = rendered
+                            continue
+                        storage_candidates.setdefault(field, []).append((source_name, rendered))
+                        supported_fields[field] = rendered
+
+                if unsupported_fields:
+                    external_constraints.append(
+                        {
+                            'constraint_type': 'unsupported_pvc_limit_range',
+                            'kind': 'LimitRange',
+                            'name': reference['name'],
+                            'uid': reference['uid'],
+                            'resource_version': reference['resource_version'],
+                            'item_type': 'PersistentVolumeClaim',
+                            'fields': unsupported_fields,
+                        }
+                    )
                 continue
+
             if item_type and item_type != 'Container':
                 unsupported.append(f'{source_name}:type={item_type}')
                 continue
@@ -184,7 +194,16 @@ def _merge_limit_sources(
             continue
         limits.setdefault(field, {})[key] = values[0][1]
 
-    return limits, unsupported, ambiguous, source_refs, external_constraints
+    storage_policy: dict[str, str] = {}
+    for field, values in sorted(storage_candidates.items()):
+        if len(values) != 1:
+            source_names = ', '.join(source for source, _value_text in values)
+            ambiguous.append(f'pvc.{field}.storage is defined by multiple LimitRange sources: {source_names}.')
+            continue
+        storage_policy[field] = values[0][1]
+    storage_policy = validate_storage_policy(storage_policy)
+
+    return limits, storage_policy, unsupported, ambiguous, source_refs, external_constraints
 
 
 def _quantity_equivalent(key: str, left: str, right: str) -> bool:
@@ -229,6 +248,7 @@ def _limits_equivalent(
 def profile_lineage_for_observed_allocation(
     quota: Mapping[str, str],
     limits: Mapping[str, Mapping[str, str]],
+    storage_policy: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     from app.kubernetes.tenant.service import RESOURCE_PROFILE_PRESETS
 
@@ -238,7 +258,12 @@ def profile_lineage_for_observed_allocation(
             str(field): {str(key): str(value) for key, value in dict(values).items()}
             for field, values in dict(preset['limits']).items()
         }
-        if _mapping_equivalent(quota, preset_quota) and _limits_equivalent(limits, preset_limits):
+        preset_storage = validate_storage_policy(preset.get('storage_policy') or {})
+        if (
+            _mapping_equivalent(quota, preset_quota)
+            and _limits_equivalent(limits, preset_limits)
+            and _mapping_equivalent(storage_policy or {}, preset_storage)
+        ):
             return {
                 'kind': 'kaori_preset',
                 'profile_class': profile_class,
@@ -256,6 +281,7 @@ def profile_lineage_for_observed_allocation(
 def _display_values(
     quota: Mapping[str, str],
     limits: Mapping[str, Mapping[str, str]],
+    storage_policy: Mapping[str, str] | None = None,
 ) -> list[dict[str, str]]:
     labels = {
         'requests.cpu': 'CPU Requests',
@@ -281,6 +307,19 @@ def _display_values(
         if key in (limits.get(field) or {}):
             compound = f'{field}.{key}'
             rows.append({'key': compound, 'label': labels[compound], 'value': str(limits[field][key])})
+    storage_labels = {
+        'min': 'Min PVC Size',
+        'max': 'Max PVC Size',
+        'default_request': 'PVC Default Request',
+        'default': 'PVC Default Limit',
+    }
+    for field in ('min', 'max', 'default_request', 'default'):
+        if field in (storage_policy or {}):
+            rows.append({
+                'key': f'pvc.{field}.storage',
+                'label': storage_labels[field],
+                'value': str((storage_policy or {})[field]),
+            })
     return rows
 
 
@@ -301,9 +340,14 @@ def _native_observation_from_items(
         quota_sources.append((f'ResourceQuota/{reference["name"] or "unknown"}', dict(hard)))
 
     quota, unsupported_quota, ambiguous_quota = _merge_hard_sources(quota_sources)
-    limits, unsupported_limits, ambiguous_limits, limit_refs, external_limit_constraints = _merge_limit_sources(
-        limit_range_items
-    )
+    (
+        limits,
+        storage_policy,
+        unsupported_limits,
+        ambiguous_limits,
+        limit_refs,
+        external_limit_constraints,
+    ) = _merge_limit_sources(limit_range_items)
     source_resources.extend(limit_refs)
 
     unsupported = sorted(set(unsupported_quota + unsupported_limits))
@@ -314,14 +358,15 @@ def _native_observation_from_items(
         if control_state == 'observed'
         else 'Observed allocation contains unsupported or ambiguous dimensions; governance cutover must fail closed.'
     )
-    lineage = profile_lineage_for_observed_allocation(quota, limits)
-    payload = {'quota': quota, 'limits': limits}
+    lineage = profile_lineage_for_observed_allocation(quota, limits, storage_policy)
+    payload = {'quota': quota, 'limits': limits, 'storage_policy': storage_policy}
 
     return {
         'namespace': namespace,
         'quota': quota,
         'limits': limits,
-        'display_values': _display_values(quota, limits),
+        'storage_policy': storage_policy,
+        'display_values': _display_values(quota, limits, storage_policy),
         'source_resources': source_resources,
         'external_limit_constraints': external_limit_constraints,
         'external_constraint_details': external_limit_constraints,
@@ -332,7 +377,7 @@ def _native_observation_from_items(
         'provenance': 'adopted_observed',
         'profile_lineage': lineage,
         'effective_hash': _canonical_hash(payload),
-        'baseline_kind': 'unbounded' if not quota and not limits else 'allocation',
+        'baseline_kind': 'unbounded' if not quota and not limits and not storage_policy else 'allocation',
         'provider_mutation_performed': False,
         'secret_material_persisted': False,
     }
