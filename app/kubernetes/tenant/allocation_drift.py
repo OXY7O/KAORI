@@ -114,12 +114,11 @@ def allocation_differences(
     record: TenantNamespace,
     observation: Mapping[str, Any],
 ) -> list[dict[str, str]]:
-    policy_only = allocation_control_state(record) == 'kaori_managed_policy'
     return _dimension_rows(
-        {} if policy_only else dict(record.allocation_quota_json or {}),
+        dict(record.allocation_quota_json or {}),
         dict(record.allocation_limit_defaults_json or {}),
         dict(record.allocation_storage_policy_json or {}),
-        {} if policy_only else dict(observation.get('quota') or {}),
+        dict(observation.get('quota') or {}),
         dict(observation.get('limits') or {}),
         dict(observation.get('storage_policy') or {}),
     )
@@ -133,8 +132,6 @@ def _ownership_findings(record: TenantNamespace, observation: Mapping[str, Any])
         if not isinstance(item, Mapping):
             continue
         kind = str(item.get('kind') or 'Resource')
-        if allocation_control_state(record) == 'kaori_managed_policy' and kind != 'LimitRange':
-            continue
         name = str(item.get('name') or 'unknown')
         manager = str(item.get('managed_by') or '')
         observed_tenant_id = str(item.get('tenant_id') or '')
@@ -215,7 +212,7 @@ def apply_managed_allocation_drift_observation() -> dict[str, Any]:
 
     for record in records:
         control_state = allocation_control_state(record)
-        if control_state not in {'kaori_managed', 'kaori_managed_policy'}:
+        if control_state != 'kaori_managed':
             continue
 
         evidence = dict(record.provisioning_evidence_json or {})
@@ -228,24 +225,14 @@ def apply_managed_allocation_drift_observation() -> dict[str, Any]:
             continue
 
         tenant = record.environment.tenant
-        native_allocation = (
-            control_state == 'kaori_managed'
-            and tenant.provider_key == 'native_kubernetes'
-            and tenant.reconciliation_authority == 'native_kubernetes'
-        )
-        capsule_policy = (
-            control_state == 'kaori_managed_policy'
-            and tenant.provider_key == 'capsule'
-            and tenant.reconciliation_authority == 'capsule'
-        )
-        if not native_allocation and not capsule_policy:
+        if tenant.provider_key != 'native_kubernetes' or tenant.reconciliation_authority != 'native_kubernetes':
             errors.append(
                 {
                     'tenant_namespace_id': str(record.id),
                     'namespace': record.namespace,
                     'reason': (
-                        'Managed allocation/policy drift observation has no admitted adapter for '
-                        f'{tenant.provider_key}/{tenant.reconciliation_authority}/{control_state}.'
+                        'Managed allocation drift observation has no admitted provider adapter for '
+                        f'{tenant.provider_key}/{tenant.reconciliation_authority}.'
                     ),
                 }
             )
@@ -322,6 +309,134 @@ def apply_managed_allocation_drift_observation() -> dict[str, Any]:
     }
 
 
+def apply_provider_mirrored_policy_observation() -> dict[str, Any]:
+    """Refresh provider-owned Capsule Namespace policy mirrors without creating drift."""
+
+    records = (
+        TenantNamespace.query.filter(
+            TenantNamespace.provisioning_status.in_(
+                (
+                    TenantNamespaceProvisioningStatus.READY.value,
+                    TenantNamespaceProvisioningStatus.DRIFTED.value,
+                )
+            )
+        )
+        .order_by(TenantNamespace.cluster_id.asc(), TenantNamespace.id.asc())
+        .all()
+    )
+    clients: dict[str, Any] = {}
+    mirrored_ids: list[int] = []
+    updated_ids: list[int] = []
+    errors: list[dict[str, str]] = []
+    now = datetime.now(UTC)
+
+    for record in records:
+        evidence = dict(record.provisioning_evidence_json or {})
+        if str(evidence.get('allocation_control_state') or '') != 'provider_mirrored_policy':
+            continue
+
+        tenant = record.environment.tenant
+        if tenant.provider_key != 'capsule' or tenant.reconciliation_authority != 'capsule':
+            errors.append(
+                {
+                    'tenant_namespace_id': str(record.id),
+                    'namespace': record.namespace,
+                    'reason': 'Provider-mirrored Namespace policy requires Capsule authority.',
+                }
+            )
+            continue
+
+        try:
+            cluster_id = str(record.cluster_id)
+            client = clients.get(cluster_id)
+            if client is None:
+                cluster = db.session.get(Cluster, record.cluster_id)
+                if cluster is None:
+                    raise ValueError('Tenant namespace cluster no longer exists.')
+                client = runtime_adapter.build_client(cluster)
+                clients[cluster_id] = client
+
+            observation = observe_native_namespace_allocation(
+                client.core_api(),
+                record.namespace,
+            )
+            if observation.get('unsupported_dimensions') or observation.get('ambiguous_dimensions'):
+                raise ValueError(
+                    'Capsule-generated Namespace policy contains unsupported or ambiguous dimensions.'
+                )
+
+            limits = validate_profile_spec({}, dict(observation.get('limits') or {}))[1]
+            storage_policy = validate_storage_policy(dict(observation.get('storage_policy') or {}))
+        except (ApiException, OSError, RuntimeError, ValueError) as exc:
+            errors.append(
+                {
+                    'tenant_namespace_id': str(record.id),
+                    'namespace': record.namespace,
+                    'reason': str(exc)[:500],
+                }
+            )
+            continue
+
+        mirrored_ids.append(record.id)
+        changed = (
+            limits != dict(record.allocation_limit_defaults_json or {})
+            or storage_policy != dict(record.allocation_storage_policy_json or {})
+        )
+
+        record.allocation_quota_json = {}
+        record.allocation_limit_defaults_json = limits
+        record.allocation_storage_policy_json = storage_policy
+        record.effective_hash = str(observation.get('effective_hash') or '') or record.effective_hash
+        record.desired_hash = record.effective_hash
+        record.last_reconciled_at = now
+        record.provisioning_status = TenantNamespaceProvisioningStatus.READY.value
+        record.provisioning_message = (
+            'Capsule-generated Container/PVC policy is mirrored from provider authority; '
+            'provider-owned changes update committed KAORI state without false drift.'
+        )
+
+        profile = record.resource_profile
+        if profile is not None:
+            profile_changed = (
+                limits != dict(profile.limit_defaults_json or {})
+                or storage_policy != dict(getattr(profile, 'storage_policy_json', {}) or {})
+            )
+            if profile_changed:
+                profile.limit_defaults_json = limits
+                profile.storage_policy_json = storage_policy
+                profile.version = int(profile.version or 1) + 1
+                record.resource_profile_version = profile.version
+
+        evidence['allocation_control_state'] = 'provider_mirrored_policy'
+        evidence['allocation'] = {
+            **dict(observation),
+            'provenance': 'provider_mirrored_policy',
+            'quota_authority': 'capsule',
+            'policy_authority': 'capsule_generated_namespace_policy',
+            'resource_profile_id': profile.public_id if profile is not None else None,
+            'resource_profile_version': record.resource_profile_version,
+        }
+        evidence['provider_policy_mirror'] = {
+            **dict(evidence.get('provider_policy_mirror') or {}),
+            'mirrored_at': now.isoformat(),
+            'provider_mutation_performed': False,
+            'provider_values_changed': changed,
+        }
+        evidence.pop('allocation_drift', None)
+        record.provisioning_evidence_json = evidence
+        if changed:
+            updated_ids.append(record.id)
+
+    if mirrored_ids:
+        db.session.flush()
+    return {
+        'mirrored_namespace_ids': mirrored_ids,
+        'updated_namespace_ids': updated_ids,
+        'observation_errors': errors,
+        'provider_mutation_performed': False,
+    }
+
+
 def _drift_evidence(record: TenantNamespace) -> dict[str, Any]:
     evidence = dict(record.provisioning_evidence_json or {})
     drift = evidence.get('allocation_drift')
@@ -347,20 +462,9 @@ def build_allocation_drift_action_state(record: TenantNamespace) -> dict[str, An
         blocked.append('Allocation reconciliation requires a committed Drifted Namespace state.')
     if tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
         blocked.append('Tenant is not Ready; allocation reconciliation is unavailable during teardown.')
-    control_state = allocation_control_state(record)
-    if control_state not in {'kaori_managed', 'kaori_managed_policy'}:
+    if allocation_control_state(record) != 'kaori_managed':
         blocked.append('Allocation control is not KAORI Managed.')
-    native_allocation = (
-        control_state == 'kaori_managed'
-        and tenant.provider_key == 'native_kubernetes'
-        and tenant.reconciliation_authority == 'native_kubernetes'
-    )
-    capsule_policy = (
-        control_state == 'kaori_managed_policy'
-        and tenant.provider_key == 'capsule'
-        and tenant.reconciliation_authority == 'capsule'
-    )
-    if not native_allocation and not capsule_policy:
+    if tenant.provider_key != 'native_kubernetes' or tenant.reconciliation_authority != 'native_kubernetes':
         blocked.append('No admitted reconciliation adapter exists for the current provider authority.')
     if record.resource_profile is None:
         blocked.append('Committed Resource Profile lineage is missing.')
@@ -424,19 +528,6 @@ def reapply_kaori_allocation_intent(record: TenantNamespace) -> TenantNamespace:
     # reconcile_adopted_native_allocation protects the write from races that
     # happen after this preflight.
     live = _live_observation_for_action(record, drift)
-    if allocation_control_state(record) == 'kaori_managed_policy':
-        from app.kubernetes.tenant.allocation_cutover import reconcile_adopted_namespace_policy
-
-        reconcile_adopted_namespace_policy(
-            record,
-            profile=profile,
-            resource_profile_version=record.resource_profile_version or profile.version,
-            limit_defaults=dict(record.allocation_limit_defaults_json or {}),
-            storage_policy=dict(record.allocation_storage_policy_json or {}),
-            operation='reapply_kaori_policy_intent',
-        )
-        return record
-
     capacity_decision = enforce_observed_namespace_allocation_preflight(
         record=record,
         profile=profile,
@@ -488,21 +579,18 @@ def accept_provider_allocation_state(record: TenantNamespace) -> TenantNamespace
     if profile is None:
         raise ValueError('Committed Resource Profile lineage is missing.')
     live = _live_observation_for_action(record, drift)
-    policy_only = allocation_control_state(record) == 'kaori_managed_policy'
     quota, limits = validate_profile_spec(
-        {} if policy_only else dict(live.get('quota') or {}),
+        dict(live.get('quota') or {}),
         dict(live.get('limits') or {}),
     )
     storage_policy = validate_storage_policy(dict(live.get('storage_policy') or {}))
 
-    capacity_decision = None
-    if not policy_only:
-        capacity_decision = enforce_observed_namespace_allocation_preflight(
-            record=record,
-            profile=profile,
-            current_quota_hard=record.allocation_quota_json or {},
-            proposed_quota_hard=quota,
-        )
+    capacity_decision = enforce_observed_namespace_allocation_preflight(
+        record=record,
+        profile=profile,
+        current_quota_hard=record.allocation_quota_json or {},
+        proposed_quota_hard=quota,
+    )
 
     now = datetime.now(UTC)
     evidence = dict(record.provisioning_evidence_json or {})
@@ -562,7 +650,7 @@ def accept_provider_allocation_state(record: TenantNamespace) -> TenantNamespace
                 'previous_provenance': previous_provenance,
                 'resource_profile_id': profile.public_id,
                 'resource_profile_version': record.resource_profile_version or profile.version,
-                'capacity_decision_id': capacity_decision.id if capacity_decision is not None else None,
+                'capacity_decision_id': capacity_decision.id,
             },
             'allocation_history': history,
             'provider_mutation_performed': False,
@@ -598,7 +686,7 @@ def accept_provider_allocation_state(record: TenantNamespace) -> TenantNamespace
     record.allocation_limit_defaults_json = limits
     record.allocation_storage_policy_json = storage_policy
     record.allocation_customized = not _profile_matches_observation(profile, live)
-    record.capacity_decision_id = capacity_decision.id if capacity_decision is not None else record.capacity_decision_id
+    record.capacity_decision_id = capacity_decision.id
     record.provisioning_evidence_json = evidence
     record.desired_hash = str(live['effective_hash'])
     record.effective_hash = str(live['effective_hash'])
