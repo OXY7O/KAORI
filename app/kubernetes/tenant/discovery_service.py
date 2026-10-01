@@ -609,7 +609,7 @@ def _read_capsule_tenant(client, name: str) -> tuple[str, dict[str, Any]]:
 def adopt_discovered_tenant_committed(
     source: Mapping[str, Any],
 ) -> tuple[Tenant, TenantEnvironment, TenantNamespace | None]:
-    """Adopt an existing provider object without mutating Kubernetes or Capsule."""
+    """Adopt provider state into KAORI and take over supported governance without changing effective values."""
 
     cluster_id = str(source.get('cluster_id') or '').strip()
     provider_key = str(source.get('provider_key') or '').strip().lower()
@@ -744,6 +744,60 @@ def adopt_discovered_tenant_committed(
             'secret_material_persisted': False,
         }
         db.session.add(namespace_record)
+        db.session.flush()
+
+        if allocation['control_state'] != 'observed':
+            raise ValueError(
+                str(
+                    allocation.get('control_reason')
+                    or 'Native allocation authority is not safe for managed adoption.'
+                )
+            )
+
+        from app.kubernetes.tenant.allocation_cutover import reconcile_adopted_native_allocation
+        from app.kubernetes.tenant.capacity_governance import enforce_existing_namespace_allocation_preflight
+        from app.kubernetes.tenant.service import _materialize_adopted_baseline_profile
+
+        profile = _materialize_adopted_baseline_profile(namespace_record)
+        capacity_decision = enforce_existing_namespace_allocation_preflight(
+            record=namespace_record,
+            profile=profile,
+            quota_hard=profile.quota_hard_json or {},
+        )
+        if str(capacity_decision.decision) != 'allow':
+            raise ValueError(
+                'Adoption cannot take governance ownership because capacity admission did not allow '
+                'the observed provider baseline.'
+            )
+
+        reconcile_adopted_native_allocation(
+            namespace_record,
+            profile=profile,
+            resource_profile_version=int(profile.version or 1),
+            allocation_customized=True,
+            capacity_decision_id=capacity_decision.id,
+            quota_hard=dict(profile.quota_hard_json or {}),
+            limit_defaults=dict(profile.limit_defaults_json or {}),
+            storage_policy=dict(profile.storage_policy_json or {}),
+            operation='adoption_takeover',
+        )
+
+        tenant_evidence = dict(tenant.provider_evidence_json or {})
+        tenant_evidence.update(
+            {
+                'allocation_control_state': 'kaori_managed',
+                'adoption_takeover': {
+                    'profile_id': profile.public_id,
+                    'profile_version': int(profile.version or 1),
+                    'provider_value_change_requested': False,
+                    'effective_values_preserved': True,
+                    'provider_mutation_performed': True,
+                    'taken_over_at': datetime.now(UTC).isoformat(),
+                },
+                'provider_mutation_performed': True,
+            }
+        )
+        tenant.provider_evidence_json = tenant_evidence
 
     else:
         capsule_version, item = _read_capsule_tenant(client, resource_name)
