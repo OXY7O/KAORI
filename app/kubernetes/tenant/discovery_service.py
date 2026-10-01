@@ -28,8 +28,6 @@ from app.models.tenant import (
     TenantNamespace,
     TenantNamespaceProvisioningStatus,
     TenantOwnershipStatus,
-    TenantResourceProfile,
-    TenantResourceProfileClass,
 )
 
 _SYSTEM_NAMESPACES = frozenset({'default', 'kube-system', 'kube-public', 'kube-node-lease'})
@@ -88,48 +86,6 @@ def _native_management(
     if external_manager and external_manager.lower() != 'kaori':
         return 'Blocked', f'Provider resource declares external manager {external_manager}.'
     return 'Discovered', 'Candidate for governed adoption preflight; no provider mutation has occurred.'
-
-
-def _create_adopted_baseline_profile(
-    *,
-    namespace: str,
-    provider_uid: str,
-    allocation: Mapping[str, Any],
-) -> TenantResourceProfile:
-    lineage = allocation.get('profile_lineage')
-    lineage = dict(lineage) if isinstance(lineage, Mapping) else {}
-    base_class = (
-        str(lineage.get('profile_class') or '').strip()
-        if lineage.get('kind') == 'kaori_preset'
-        else ''
-    )
-    base_version = lineage.get('profile_version') if base_class else None
-
-    name_base = f'Adopted {namespace} Baseline'
-    suffix = str(provider_uid or '').strip()[:8]
-    name = f'{name_base} · {suffix}' if suffix else name_base
-    duplicate = TenantResourceProfile.query.filter_by(name=name).first()
-    if duplicate is not None:
-        name = f'{name_base} · {str(datetime.now(UTC).timestamp()).replace(".", "")[-8:]}'
-
-    profile = TenantResourceProfile()
-    profile.name = name
-    profile.profile_class = TenantResourceProfileClass.CUSTOM.value
-    profile.version = 1
-    profile.base_preset_class = base_class or None
-    profile.base_preset_version = int(base_version) if base_version is not None else None
-    profile.description = (
-        'Provider-equivalent adopted baseline. Adoption performed no provider mutation; '
-        'future changes require governed cutover/reconciliation.'
-    )
-    profile.quota_hard_json = dict(allocation.get('quota') or {})
-    profile.limit_defaults_json = dict(allocation.get('limits') or {})
-    profile.storage_policy_json = dict(allocation.get('storage_policy') or {})
-    profile.advanced_controls_json = {}
-    profile.enabled = True
-    db.session.add(profile)
-    db.session.flush()
-    return profile
 
 
 def _managed_namespace_map(cluster_ids: list[str]) -> dict[tuple[str, str], TenantNamespace]:
@@ -730,11 +686,6 @@ def adopt_discovered_tenant_committed(
         provider_uid = str(getattr(metadata, 'uid', None) or resource_name)
         resource_version = str(getattr(metadata, 'resource_version', None) or '')
         allocation = observe_native_namespace_allocation(client.core_api(), resource_name)
-        baseline_profile = _create_adopted_baseline_profile(
-            namespace=resource_name,
-            provider_uid=provider_uid,
-            allocation=allocation,
-        )
 
         tenant.provider_key = 'native_kubernetes'
         tenant.provider_state = 'native'
@@ -773,9 +724,6 @@ def adopt_discovered_tenant_committed(
             if allocation['control_state'] == 'observed'
             else 'Adopted Baseline · Control Unavailable. Review ambiguous or unsupported allocation evidence.'
         )
-        namespace_record.resource_profile = baseline_profile
-        namespace_record.resource_profile_id = baseline_profile.id
-        namespace_record.resource_profile_version = baseline_profile.version
         namespace_record.allocation_quota_json = dict(allocation['quota'])
         namespace_record.allocation_limit_defaults_json = dict(allocation['limits'])
         namespace_record.allocation_storage_policy_json = dict(allocation.get('storage_policy') or {})
@@ -865,11 +813,6 @@ def adopt_discovered_tenant_committed(
                 namespace=namespace_name,
             )
             namespace_allocation = dict(correlated.get('allocation') or {})
-            baseline_profile = _create_adopted_baseline_profile(
-                namespace=namespace_name,
-                provider_uid=str(correlated.get('uid') or namespace_name),
-                allocation=namespace_allocation,
-            )
             namespace_record_item = TenantNamespace()
             namespace_record_item.environment = environment
             namespace_record_item.cluster_id = cluster.id
@@ -883,9 +826,6 @@ def adopt_discovered_tenant_committed(
                 if allocation['control_state'] == 'observed'
                 else 'Adopted Baseline · Control Unavailable. Capsule allocation authority requires review.'
             )
-            namespace_record_item.resource_profile = baseline_profile
-            namespace_record_item.resource_profile_id = baseline_profile.id
-            namespace_record_item.resource_profile_version = baseline_profile.version
             namespace_record_item.allocation_quota_json = dict(namespace_allocation.get('quota') or {})
             namespace_record_item.allocation_limit_defaults_json = dict(namespace_allocation.get('limits') or {})
             namespace_record_item.allocation_storage_policy_json = dict(
