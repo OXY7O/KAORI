@@ -244,6 +244,7 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     reporting = read('app/templates/storage/object_storage/dashboard/partials/_reporting.html')
     reporting_summary = read('app/templates/storage/object_storage/dashboard/partials/_reporting_summary.html')
     reporting_guidance = read('app/templates/storage/object_storage/dashboard/partials/_reporting_guidance.html')
+    reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
     kubernetes_signals = read('app/templates/kubernetes/dashboard/partials/_content.html')
     kubernetes_reporting = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
     service = read('app/storage/object_storage/dashboard/service.py')
@@ -268,17 +269,21 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
 
     assert "peer_content_grid.column_classes('primary', 'seven-five')" in reporting
     assert "peer_content_grid.column_classes('secondary', 'seven-five')" in reporting
-    assert 'Reporting Summary' in reporting_summary
-    assert 'Recent Report Activity' in reporting_summary
-    assert 'Up to five latest generated Object Storage report records.' in reporting_summary
-    assert 'reporting.latest_reports[:5]' in reporting_summary
+    assert 'components/reporting_dashboard_workspace.html' in reporting_summary
+    assert 'reporting_workspace.summary(' in reporting_summary
+    assert "'Object Storage'" in reporting_summary
+    assert 'components/reporting_dashboard_workspace.html' in reporting_guidance
+    assert 'reporting_workspace.guidance(' in reporting_guidance
     assert 'recent = reports_query.order_by(Report.created_at.desc()).limit(5).all()' in service
-    assert 'Reporting Interpretation & Next Steps' in reporting_guidance
-    assert 'Reporting Control' in reporting_guidance
-    assert 'Controlled Reporting Flow' in reporting_guidance
-    assert 'components/numbered_governance_steps.html' in reporting_guidance
-    assert 'components/operational_flow_steps.html' not in reporting_guidance
-    assert 'reporting_steps' in reporting_guidance
-    assert 'Controlled Reporting Flow' in kubernetes_reporting
-    assert 'components/numbered_governance_steps.html' in kubernetes_reporting
-    assert 'components/operational_flow_steps.html' not in kubernetes_reporting
+    assert 'Reporting Summary' in reporting_workspace
+    assert 'Recent Report Activity' in reporting_workspace
+    assert 'Reporting Interpretation & Next Steps' in reporting_workspace
+    assert 'Reporting Control' in reporting_workspace
+    assert 'Governed Reporting Loop' in reporting_workspace
+    assert 'Prepare' in reporting_workspace
+    assert 'Produce' in reporting_workspace
+    assert 'Govern' in reporting_workspace
+    assert 'components/numbered_governance_steps.html' not in reporting_workspace
+    assert 'components/operational_flow_steps.html' not in reporting_workspace
+    assert 'components/reporting_dashboard_workspace.html' in kubernetes_reporting
+    assert 'reporting_workspace.guidance(' in kubernetes_reporting

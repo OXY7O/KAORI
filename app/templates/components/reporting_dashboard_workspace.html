@@ -1,0 +1,225 @@
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/table_label.html" as table_label %}
+
+{% macro summary(
+    reporting,
+    domain_label,
+    scope_label,
+    empty_title='No Generated Reports',
+    empty_description='Generate the first report to establish reporting activity for this scope.'
+    ) -%}
+    {% set source_available = reporting.source_status|default('Unavailable', true)|lower == 'available' %}
+    {% call operational_section_card.render(
+        'Reporting Summary',
+        domain_label ~ ' report output, reusable definitions, schedules, and recent generation activity.',
+        'file-chart-column',
+        action_href=url_for('reports.overview'),
+        action_label='Open Reports Workspace',
+        header_badge=table_label.status_label(
+            reporting.source_status|default('Unavailable', true),
+            tone='normal' if source_available else 'unknown'
+        ),
+        body_classes='flex flex-1 flex-col gap-4 p-5',
+        extra_classes='flex h-full flex-col'
+        ) %}
+        <div class="grid shrink-0 gap-3 sm:grid-cols-3">
+            {% set reporting_metrics = [
+                ('Generated Reports', reporting.generated_reports, 'files', 'Stored ' ~ domain_label ~ ' report artifacts in the active scope.'),
+                ('Report Templates', reporting.templates, 'layout-template', 'Reusable approved ' ~ domain_label ~ ' report definitions.'),
+                ('Report Schedules', reporting.schedules, 'calendar-clock', 'Recurring plans for automatic report generation.')
+            ] %}
+            {% for label, value, icon, description in reporting_metrics %}
+                <article class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                        </span>
+                        <span class="rounded-md bg-surface-card px-2 py-1 text-xs font-medium text-content-muted">
+                            {{ scope_label }}
+                        </span>
+                    </div>
+                    <p class="mt-3 text-xs font-semibold text-content-secondary">{{ label }}</p>
+                    <p class="mt-1 text-2xl font-semibold text-content-primary">{{ value }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                </article>
+            {% endfor %}
+        </div>
+
+        <section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated"
+                 aria-labelledby="reporting-recent-activity-title">
+            <div class="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="history" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h3 id="reporting-recent-activity-title"
+                                class="text-sm font-semibold text-content-primary">Recent Report Activity</h3>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">
+                                Latest generated report artifacts for the active {{ scope_label|lower }} scope.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {% if reporting.latest_reports %}
+                    {{ table_label.metadata_label(
+                        table_label.count_text(reporting.latest_reports|length, 'Record'),
+                        icon='files'
+                    ) }}
+                {% endif %}
+            </div>
+
+            {% if reporting.latest_reports %}
+                <div class="grid flex-1 auto-rows-fr divide-y divide-outline-subtle">
+                    {% for report in reporting.latest_reports[:5] %}
+                        {% set normalized_status = report.status|default('Unknown', true)|lower %}
+                        {% set status_tone = 'normal' if normalized_status in ['completed', 'ready', 'succeeded'] else ('critical' if normalized_status in ['failed', 'error'] else ('info' if normalized_status in ['queued', 'running', 'pending', 'in progress'] else 'unknown')) %}
+                        <article class="flex min-w-0 flex-col justify-center gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="file-check-2" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="break-words text-sm font-semibold text-content-primary">{{ report.title }}</p>
+                                    <p class="mt-1 inline-flex items-center gap-1 text-xs text-content-muted">
+                                        <i data-lucide="clock-3" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                        {{ report.generated_at }} · Generated Output
+                                    </p>
+                                </div>
+                            </div>
+                            {{ table_label.status_label(report.status, tone=status_tone, size='detail') }}
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="flex flex-1 items-center justify-center p-5">
+                    <div class="w-full rounded-xl border border-dashed border-outline-default bg-surface-card p-6 text-center">
+                        <span class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="file-plus-2" class="h-5 w-5"></i>
+                        </span>
+                        <p class="mt-3 text-sm font-semibold text-content-primary">{{ empty_title }}</p>
+                        <p class="mx-auto mt-1 max-w-lg text-xs leading-5 text-content-muted">{{ empty_description }}</p>
+                        <a href="{{ url_for('reports.generate_report') }}"
+                           class="mt-4 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-kaori-primary/20 bg-kaori-soft px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                            <i data-lucide="plus" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                            Create Report Request
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </section>
+    {% endcall %}
+{%- endmacro %}
+
+{% macro guidance(scope_label, evidence_label, narrow_scope_label, one_time_label='one-time reviews') -%}
+    {% set reporting_phases = [
+        (
+            'Prepare',
+            'Establish the reporting boundary before output is created.',
+            [
+                ('01', 'scan-search', 'Validate', 'Confirm the selected ' ~ scope_label ~ ', reporting period, ' ~ evidence_label ~ ' freshness, and required source coverage.'),
+                ('02', 'layout-template', 'Select', 'Choose the approved report type or template and the narrowest ' ~ narrow_scope_label ~ ' that matches the operational question.')
+            ]
+        ),
+        (
+            'Produce',
+            'Create a traceable request and render governed output.',
+            [
+                ('03', 'file-cog', 'Create', 'Save the report request with scope, period, ownership, and generation intent.'),
+                ('04', 'file-check-2', 'Generate', 'Render from ' ~ evidence_label ~ ', then review completeness, status, and content before approval.')
+            ]
+        ),
+        (
+            'Govern',
+            'Control recurrence and preserve the resulting evidence.',
+            [
+                ('05', 'calendar-clock', 'Schedule', 'For recurring evidence, set cadence and delivery only after the report definition and output are reviewed.'),
+                ('06', 'archive', 'Retain', 'Preserve the artifact, generation metadata, and retention or audit evidence according to lifecycle policy.')
+            ]
+        )
+    ] %}
+
+    {% call operational_section_card.render(
+        'Reporting Interpretation & Next Steps',
+        'Validate reporting activity and follow the governed KAORI workflow.',
+        'notebook-tabs',
+        body_classes='flex flex-1 flex-col gap-4 p-5',
+        extra_classes='flex h-full flex-col'
+        ) %}
+        {{ operational_callout.render(
+            'Reporting Control',
+            'Reports use the selected ' ~ scope_label ~ ' and ' ~ evidence_label ~ '. Review the artifact before scheduling, sharing, or retention.',
+            icon='shield-check',
+            tone='info',
+            extra_classes='shrink-0'
+        ) }}
+
+        <section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated"
+                 aria-labelledby="governed-reporting-loop-title">
+            <div class="shrink-0 border-b border-outline-subtle px-4 py-3.5">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="workflow" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 id="governed-reporting-loop-title"
+                            class="text-sm font-semibold text-content-primary">Governed Reporting Loop</h3>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">
+                            Prepare the boundary, produce the artifact, then govern its recurring lifecycle.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <ol class="grid flex-1 auto-rows-fr gap-3 p-3"
+                aria-label="Governed Reporting Loop">
+                {% for phase_title, phase_description, phase_steps in reporting_phases %}
+                    <li class="rounded-xl border border-outline-subtle bg-surface-card p-3.5">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">{{ phase_title }}</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ phase_description }}</p>
+                            </div>
+                            <span class="shrink-0 rounded-md bg-kaori-soft px-2 py-1 text-xs font-semibold text-kaori-primary">
+                                {{ loop.index }}/3
+                            </span>
+                        </div>
+
+                        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                            {% for step_number, step_icon, step_title, step_description in phase_steps %}
+                                <div class="flex min-w-0 items-start gap-3 rounded-lg bg-surface-elevated p-3">
+                                    <span class="inline-flex h-8 min-w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft px-2 text-xs font-semibold text-kaori-primary"
+                                          aria-hidden="true">{{ step_number }}</span>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2">
+                                            <i data-lucide="{{ step_icon }}"
+                                               class="h-3.5 w-3.5 shrink-0 text-kaori-primary"
+                                               aria-hidden="true"></i>
+                                            <p class="text-sm font-semibold text-content-primary">{{ step_title }}</p>
+                                        </div>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ step_description }}</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ol>
+        </section>
+
+        {{ operational_callout.render(
+            'Reporting Tip',
+            'Use schedules for recurring operational evidence. For ' ~ one_time_label ~ ', generate the report manually and verify the stored artifact before sharing or archiving it.',
+            icon='lightbulb',
+            tone='info',
+            extra_classes='shrink-0'
+        ) }}
+    {% endcall %}
+{%- endmacro %}

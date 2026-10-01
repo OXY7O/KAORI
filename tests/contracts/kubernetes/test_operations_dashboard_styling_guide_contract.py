@@ -65,9 +65,7 @@ def test_dashboard_sections_use_the_canonical_operational_section_card() -> None
         '_top_consumers.html',
         '_alerts_summary.html',
         '_recommended_actions.html',
-        '_reporting_summary.html',
         '_alert_response_guidance.html',
-        '_reporting_guidance.html',
         '_section_loading.html',
     ]
 
@@ -75,6 +73,14 @@ def test_dashboard_sections_use_the_canonical_operational_section_card() -> None
         source = (DASHBOARD_TEMPLATES / 'partials' / name).read_text(encoding='utf-8')
         assert 'components/operational_section_card.html' in source, name
         assert 'operational_section_card.render(' in source, name
+
+    reporting_summary = read('app/templates/kubernetes/dashboard/partials/_reporting_summary.html')
+    reporting_guidance = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
+    reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
+    assert 'components/reporting_dashboard_workspace.html' in reporting_summary
+    assert 'components/reporting_dashboard_workspace.html' in reporting_guidance
+    assert 'components/operational_section_card.html' in reporting_workspace
+    assert reporting_workspace.count('operational_section_card.render(') == 2
 
     component = read('app/templates/components/operational_section_card.html')
     assert 'text-base font-semibold' in component
@@ -88,6 +94,7 @@ def test_primary_and_peer_operational_flows_are_static_and_controlled_flows_reus
     numbered_steps = read('app/templates/components/numbered_governance_steps.html')
     alert_guidance = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     reporting_guidance = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
+    reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
     capacity = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
     contract = read('docs/design/components/OPERATIONAL_FLOW_STEPS.md')
 
@@ -99,12 +106,13 @@ def test_primary_and_peer_operational_flows_are_static_and_controlled_flows_reus
     assert 'divide-y divide-outline-subtle' in numbered_steps
     assert 'components/numbered_governance_steps.html' in alert_guidance
     assert 'components/operational_flow_steps.html' not in alert_guidance
-    assert 'components/numbered_governance_steps.html' not in reporting_guidance
-    assert 'components/operational_flow_steps.html' not in reporting_guidance
-    assert 'reporting_steps' in reporting_guidance
-    assert 'KAORI Reporting Workflow' in reporting_guidance
-    assert 'sm:grid-cols-2' in reporting_guidance
-    assert 'auto-rows-fr' in reporting_guidance
+    assert 'components/reporting_dashboard_workspace.html' in reporting_guidance
+    assert 'components/numbered_governance_steps.html' not in reporting_workspace
+    assert 'components/operational_flow_steps.html' not in reporting_workspace
+    assert 'reporting_phases' in reporting_workspace
+    assert 'Governed Reporting Loop' in reporting_workspace
+    assert 'sm:grid-cols-2' in reporting_workspace
+    assert 'auto-rows-fr' in reporting_workspace
     assert 'components/operational_flow_steps.html' in capacity
     assert 'components/context_guidance_card.html' not in alert_guidance
     assert 'components/context_guidance_card.html' not in reporting_guidance
@@ -209,23 +217,24 @@ def test_dashboard_restores_card_grid_freshness_and_visible_action_flows() -> No
     capacity = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
     alert = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     reporting = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
+    reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
 
     assert "body_classes='grid gap-3 p-5 sm:grid-cols-2'" in freshness
     assert 'bg-surface-elevated p-3.5' in freshness
     assert 'Recommended Capacity Action Flow' in capacity
     assert 'Controlled Alert Response Flow' in alert
-    assert 'KAORI Reporting Workflow' in reporting
-    assert "body_classes='flex flex-1 flex-col gap-5 p-5'" in reporting
-    assert "extra_classes='flex h-full flex-col'" in reporting
-    assert 'Reporting Tip' in reporting
-    assert 'Use schedules for recurring operational evidence.' in reporting
-    assert "icon='lightbulb'" in reporting
+    assert 'components/reporting_dashboard_workspace.html' in reporting
+    assert 'Governed Reporting Loop' in reporting_workspace
+    assert "body_classes='flex flex-1 flex-col gap-4 p-5'" in reporting_workspace
+    assert "extra_classes='flex h-full flex-col'" in reporting_workspace
+    assert 'Reporting Tip' in reporting_workspace
+    assert 'Use schedules for recurring operational evidence.' in reporting_workspace
+    assert "icon='lightbulb'" in reporting_workspace
     assert '<details' not in alert
-    assert '<details' not in reporting
+    assert '<details' not in reporting_workspace
     assert "extra_classes='h-full'" in freshness
     assert "extra_classes='h-full'" in capacity
     assert "extra_classes='h-full'" in alert
-    assert "extra_classes='h-full'" in reporting
 
 
 def test_dashboard_tabs_support_canonical_keyboard_navigation() -> None:
