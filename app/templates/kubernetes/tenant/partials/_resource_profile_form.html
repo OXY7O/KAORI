@@ -17,20 +17,7 @@
                 <i data-lucide="layers-3" class="h-5 w-5"></i>
             </span>
             <div>
-                <span class="inline-flex min-h-6 items-center gap-1.5">
-                    <h2 class="text-base font-semibold text-content-primary">Create Resource Profile</h2>
-                    {{ info_tip.render('resource-profile-contract-tip',
-                            'Resource Profile contract',
-                            'A Resource Profile is reusable desired allocation intent; a namespace receives a frozen effective snapshot when provisioned.',
-                            [
-                            'Small, Medium, Large, and Extra Large are locked KAORI presets.',
-                            'Managed toggles choose which fixed dimensions KAORI owns and enforces.',
-                            'Custom is the only operator-editable class.',
-                            'Blank supported quota dimensions mean unbounded; zero remains a distinct explicit value.',
-                            'Capacity admission is evaluated separately before provider reconciliation.'
-                            ],
-                            placement='right') }}
-                </span>
+                <h2 class="text-base font-semibold text-content-primary">Create Resource Profile</h2>
                 <p class="mt-1 text-sm text-content-secondary">Define one reusable quota and Container LimitRange contract.</p>
             </div>
         </div>
@@ -39,11 +26,23 @@
         <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4"
                  aria-labelledby="resource-profile-identity-heading">
             <div>
-                <h3 id="resource-profile-identity-heading"
-                    class="text-sm font-semibold text-content-primary">Identity &amp; Lineage</h3>
+                <span class="inline-flex min-h-6 items-center gap-1.5">
+                    <h3 id="resource-profile-identity-heading"
+                        class="text-sm font-semibold text-content-primary">Identity &amp; Lineage</h3>
+                    {{ info_tip.render('resource-profile-identity-tip',
+                            'Resource Profile identity & lineage',
+                            'Define the reusable profile identity, class, and lineage before selecting managed controls.',
+                            [
+                            'Small, Medium, Large, and Extra Large use server-authoritative versioned preset values.',
+                            'Managed toggles choose which supported dimensions KAORI owns and reconciles.',
+                            'Custom is operator-editable and can optionally inherit a preset as its starting lineage.',
+                            'Existing Namespace snapshots remain frozen until an explicit governed allocation change.'
+                            ],
+                            placement='right') }}
+                </span>
                 <p class="mt-1 text-xs text-content-muted">Name the contract and choose its governance mode.</p>
             </div>
-            <div class="mt-4 grid gap-4 lg:grid-cols-4">
+            <div class="mt-4 grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(14rem,1fr))]">
                 <label class="block">
                     {{ form_field.label_row("Profile Name") }}
                     <input name="profile_name"
@@ -53,14 +52,7 @@
                            class="{{ form_field.input_classes() }}">
                 </label>
                 <label class="block">
-                    <span class="inline-flex min-h-6 items-center gap-1.5">
-                        <span class="text-xs font-semibold text-content-primary">Class</span>
-                        {{ info_tip.render('resource-profile-class-tip',
-                                                'Profile class',
-                                                'Built-in classes use server-authoritative values. Choose Custom when the allocation must differ.',
-                                                ['Small / Medium / Large / Extra Large — locked versioned presets.', 'Managed toggles select the enforced subset without changing preset values.', 'Custom — operator-managed validated values.'],
-                                                placement='right') }}
-                    </span>
+                    {{ form_field.label_row("Class") }}
                     <select name="profile_class"
                             required
                             data-tenant-profile-class
@@ -73,13 +65,7 @@
                     </select>
                 </label>
                 <label class="block" data-tenant-base-preset-wrapper hidden>
-                    <span class="inline-flex min-h-6 items-center gap-1.5">
-                        <span class="text-xs font-semibold text-content-primary">Base Preset</span>
-                        {{ info_tip.render('resource-profile-base-tip',
-                                                'Custom base preset',
-                                                'Optional starting values for a Custom profile. KAORI retains the preset class/version as lineage evidence.',
-                                                placement='right') }}
-                    </span>
+                    {{ form_field.label_row("Base Preset") }}
                     <select name="base_preset_class"
                             data-tenant-base-preset
                             disabled
@@ -99,10 +85,11 @@
                            class="{{ form_field.input_classes() }}">
                 </label>
             </div>
-            <div class="mt-4 flex flex-col gap-3 rounded-xl border border-outline-subtle bg-surface-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-                 data-tenant-profile-mode-banner>
+            <div class="mt-4 flex flex-col gap-3 rounded-xl border border-outline-subtle bg-surface-card px-4 py-3 transition-colors data-[mode=fixed]:border-brand-outline data-[mode=fixed]:bg-kaori-primary/15 dark:data-[mode=fixed]:bg-kaori-primary/25 sm:flex-row sm:items-center sm:justify-between"
+                 data-tenant-profile-mode-banner
+                 data-mode="fixed">
                 <div class="flex min-w-0 items-center gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-hover text-content-muted"
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-primary/15 text-kaori-primary dark:bg-kaori-primary/25"
                           data-tenant-profile-mode-icon
                           aria-hidden="true">
                         <i data-lucide="lock-keyhole" class="h-4 w-4"></i>
@@ -113,7 +100,7 @@
                     </div>
                 </div>
                 <span data-tenant-profile-mode-fixed-label>
-                    {{ table_label.special_label('Fixed · Read Only', 'unknown', 'lock-keyhole') }}
+                    {{ table_label.special_label('Fixed · Read Only', 'maintenance', 'lock-keyhole') }}
                 </span>
                 <span data-tenant-profile-mode-custom-label hidden>
                     {{ table_label.special_label('Custom · Editable', 'maintenance', 'pencil') }}
@@ -184,51 +171,91 @@
                         class="text-sm font-semibold text-content-primary">Storage Guardrails</h3>
                     {{ info_tip.render('resource-profile-storage-tip',
                             'Bidirectional storage policy',
-                            'Storage combines namespace quota and per-PVC LimitRange policy in one Resource Profile category.',
+                            'Storage separates namespace-wide quota from per-PVC request bounds.',
                             [
-                            'PVCs controls claim count; Storage controls total requests.storage quota.',
-                            'Min/Max PVC Size and defaults map to LimitRange[type=PersistentVolumeClaim].',
-                            'Adoption captures supported live PVC policy into a provider-equivalent baseline before takeover.'
+                            'PVCs controls claim count; Total Storage controls cumulative requests.storage quota.',
+                            'Min/Max PVC Size map to LimitRange[type=PersistentVolumeClaim].',
+                            'Built-in presets manage both bounds; adoption, drift, reapply, and provider-state acceptance use the same committed values.'
                             ],
                             placement='right') }}
                 </span>
-                <p class="mt-1 text-xs text-content-muted">Quota plus per-PVC policy; managed values participate in adopt, drift, reapply, and provider-state acceptance.</p>
+                <p class="mt-1 text-xs text-content-muted">Namespace quota and per-PVC bounds stay distinct but reconcile as one managed storage contract.</p>
             </div>
-            <div class="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                {% for field, label, placeholder, default_managed, requires_preset_value in [
-                    ('persistentvolumeclaims', 'PVCs', '10', true, false),
-                    ('requests_storage', 'Total Storage', '100Gi', true, false),
-                    ('pvc_min_storage', 'Min PVC Size', '1Gi', false, true),
-                    ('pvc_max_storage', 'Max PVC Size', '10Gi', false, true),
-                    ('pvc_default_request_storage', 'PVC Default Request', '1Gi', false, true),
-                    ('pvc_default_storage', 'PVC Default Limit', '10Gi', false, true)
-                    ] %}
-                    <div class="block rounded-lg border border-kaori-primary/20 bg-surface-card p-3 transition data-[locked=true]:border-outline-subtle data-[locked=true]:bg-surface-elevated"
-                         data-tenant-resource-field-wrap
-                         data-control-requires-value="{{ 'true' if requires_preset_value else 'false' }}"
-                         data-locked="true">
-                        <span class="flex min-h-6 items-center justify-between gap-2">
-                            <label for="resource-profile-{{ field }}" class="text-xs font-semibold text-content-primary">{{ label }}</label>
-                            <label class="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-content-muted">
-                                <input type="checkbox"
-                                       name="control_{{ field }}"
-                                       value="1"
-                                       {% if default_managed %}checked{% endif %}
-                                       data-tenant-resource-control="{{ field }}"
-                                       class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
-                                Managed
-                            </label>
-                        </span>
-                        <input id="resource-profile-{{ field }}"
-                               name="{{ field }}"
-                               placeholder="{{ placeholder }}"
-                               data-tenant-resource-field="{{ field }}"
-                               data-locked="true"
-                               readonly
-                               aria-readonly="true"
-                               class="{{ form_field.input_classes() }} transition data-[locked=true]:cursor-not-allowed data-[locked=true]:border-dashed data-[locked=true]:border-outline-default data-[locked=true]:bg-surface-card data-[locked=true]:text-content-muted data-[locked=true]:shadow-none data-[locked=true]:focus:border-outline-default data-[locked=true]:focus:ring-0">
+            <div class="grid gap-4 p-4 lg:grid-cols-2">
+                <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
+                    <div>
+                        <p class="text-xs font-semibold text-content-primary">Namespace Quota</p>
+                        <p class="mt-1 text-[11px] leading-4 text-content-muted">Claim count and cumulative requested storage.</p>
                     </div>
-                {% endfor %}
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                        {% for field, label, placeholder in [
+                            ('persistentvolumeclaims', 'PVCs', '10'),
+                            ('requests_storage', 'Total Storage', '100Gi')
+                            ] %}
+                            <div class="block rounded-lg border border-kaori-primary/20 bg-surface-card p-3 transition data-[locked=true]:border-outline-subtle data-[locked=true]:bg-surface-card"
+                                 data-tenant-resource-field-wrap
+                                 data-locked="true">
+                                <span class="flex min-h-6 items-center justify-between gap-2">
+                                    <label for="resource-profile-{{ field }}" class="text-xs font-semibold text-content-primary">{{ label }}</label>
+                                    <label class="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-content-muted">
+                                        <input type="checkbox"
+                                               name="control_{{ field }}"
+                                               value="1"
+                                               checked
+                                               data-tenant-resource-control="{{ field }}"
+                                               class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                        Managed
+                                    </label>
+                                </span>
+                                <input id="resource-profile-{{ field }}"
+                                       name="{{ field }}"
+                                       placeholder="{{ placeholder }}"
+                                       data-tenant-resource-field="{{ field }}"
+                                       data-locked="true"
+                                       readonly
+                                       aria-readonly="true"
+                                       class="{{ form_field.input_classes() }} transition data-[locked=true]:cursor-not-allowed data-[locked=true]:border-dashed data-[locked=true]:border-outline-default data-[locked=true]:bg-surface-card data-[locked=true]:text-content-muted data-[locked=true]:shadow-none data-[locked=true]:focus:border-outline-default data-[locked=true]:focus:ring-0">
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
+                    <div>
+                        <p class="text-xs font-semibold text-content-primary">Per-PVC Policy</p>
+                        <p class="mt-1 text-[11px] leading-4 text-content-muted">Admission bounds applied to each PVC storage request.</p>
+                    </div>
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                        {% for field, label, placeholder in [
+                            ('pvc_min_storage', 'Min PVC Size', '1Gi'),
+                            ('pvc_max_storage', 'Max PVC Size', '10Gi')
+                            ] %}
+                            <div class="block rounded-lg border border-kaori-primary/20 bg-surface-card p-3 transition data-[locked=true]:border-outline-subtle data-[locked=true]:bg-surface-card"
+                                 data-tenant-resource-field-wrap
+                                 data-control-requires-value="true"
+                                 data-locked="true">
+                                <span class="flex min-h-6 items-center justify-between gap-2">
+                                    <label for="resource-profile-{{ field }}" class="text-xs font-semibold text-content-primary">{{ label }}</label>
+                                    <label class="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-content-muted">
+                                        <input type="checkbox"
+                                               name="control_{{ field }}"
+                                               value="1"
+                                               data-tenant-resource-control="{{ field }}"
+                                               class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                        Managed
+                                    </label>
+                                </span>
+                                <input id="resource-profile-{{ field }}"
+                                       name="{{ field }}"
+                                       placeholder="{{ placeholder }}"
+                                       data-tenant-resource-field="{{ field }}"
+                                       data-locked="true"
+                                       readonly
+                                       aria-readonly="true"
+                                       class="{{ form_field.input_classes() }} transition data-[locked=true]:cursor-not-allowed data-[locked=true]:border-dashed data-[locked=true]:border-outline-default data-[locked=true]:bg-surface-card data-[locked=true]:text-content-muted data-[locked=true]:shadow-none data-[locked=true]:focus:border-outline-default data-[locked=true]:focus:ring-0">
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
         </section>
 
