@@ -103,23 +103,29 @@
                         <h3 class="text-sm font-semibold text-content-primary">Storage Budget</h3>
                         {{ info_tip.render('tenant-capacity-storage-budget-tip',
                                 'Governed storage budget',
-                                'Tenant Storage Budget is a logical admission ceiling for aggregate requests.storage.',
+                                'Tenant Storage Budget is a logical admission ceiling for aggregate requests.storage, entered in GiB.',
                                 [
-                                'It is configured explicitly until authoritative backend storage capacity is correlated by Kubernetes Storage Analytics.',
+                                'Enter a numeric GiB budget. KAORI canonicalizes it for Kubernetes quantity arithmetic and evidence.',
+                                'It stays governable even when compute-capacity Analytics evidence is unavailable.',
+                                'Authoritative physical/backend storage remains a separate Kubernetes Storage Analytics concern.',
                                 'It is not derived from node filesystem capacity, PVC count, or PV/PVC totals.',
                                 'Tenant committed requests.storage is blocked before reconciliation when the projected logical budget would be exceeded.'
                                 ],
                                 placement='right') }}
                     </span>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Use the amount of persistent storage you intentionally allow Tenant allocations to commit on this cluster.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Enter the logical Tenant storage ceiling in GiB; for example, 2048 = 2 TiB.</p>
                 </div>
                 <div class="grid gap-4 p-4 lg:grid-cols-[minmax(14rem,0.45fr)_minmax(0,1.55fr)] lg:items-end">
                     <label class="block">
-                        {{ form_field.label_row("Tenant Storage Budget") }}
-                        <input name="tenant_storage_budget"
-                               data-capacity-policy-field="tenant_storage_budget"
+                        {{ form_field.label_row("Tenant Storage Budget (GiB)") }}
+                        <input name="tenant_storage_budget_gib"
+                               type="number"
+                               min="0.01"
+                               step="0.01"
+                               inputmode="decimal"
+                               data-capacity-policy-field="tenant_storage_budget_gib"
                                data-default-value=""
-                               placeholder="2Ti"
+                               placeholder="2048"
                                class="{{ form_field.input_classes() }}">
                     </label>
                     <div class="rounded-lg border border-kaori-primary/20 bg-kaori-soft px-3.5 py-3 text-xs leading-5 text-content-secondary">
