@@ -357,3 +357,64 @@ KAORI never silently drops an enabled advanced control and never substitutes Nat
 Small, Medium, Large, and Extra Large retain fixed numeric preset values. Their per-resource Managed ownership mask and selected advanced-control values are committed as part of the created profile contract.
 
 Custom profiles can edit both numeric allocation intent and advanced-control values. Changing either increments the Custom profile contract version. Existing Namespace snapshots remain frozen until an explicit governed allocation/attachment workflow changes them.
+
+
+## Bidirectional managed adoption
+
+Discovery remains read-only until the operator submits **Adopt & Manage**. The adoption mutation then uses an observe → import → equivalent write → read-back sequence:
+
+1. observe the live provider contract and its authority;
+2. import supported values into committed KAORI profile/control state;
+3. write the same effective values through the admitted provider path;
+4. require provider read-back equality;
+5. mark the supported control surface Managed only after verification.
+
+This means adoption does not intentionally change effective limits, but it does establish KAORI governance ownership. Unsupported, ambiguous, externally owned, stale, or capability-unavailable controls fail closed instead of entering a partially managed state.
+
+### Native Kubernetes
+
+For an adopted Native Namespace, the imported baseline includes:
+
+- Namespace identity and KAORI ownership labels;
+- ResourceQuota dimensions;
+- Container LimitRange defaults;
+- PVC storage policy from `LimitRange[type=PersistentVolumeClaim]`;
+- provider source UID/resourceVersion and reconciliation evidence.
+
+PVC storage policy is first-class desired state:
+
+| Resource Profile field | Kubernetes authority |
+| --- | --- |
+| PVCs | `ResourceQuota.hard.persistentvolumeclaims` |
+| Total Storage | `ResourceQuota.hard.requests.storage` |
+| Min PVC Size | `LimitRange[type=PersistentVolumeClaim].min.storage` |
+| Max PVC Size | `LimitRange[type=PersistentVolumeClaim].max.storage` |
+| PVC Default Request | `LimitRange[type=PersistentVolumeClaim].defaultRequest.storage` |
+| PVC Default Limit | `LimitRange[type=PersistentVolumeClaim].default.storage` |
+
+An adopted provider value such as PVC min/max is therefore imported into `storage_policy_json`, written back unchanged during takeover, and verified before the Namespace allocation becomes `kaori_managed`.
+
+### Capsule mixed authority
+
+Capsule remains the authoritative execution path for Tenant/shared quota. KAORI never replaces Capsule quota with a Native namespaced ResourceQuota.
+
+Where correlated Namespaces expose supported Container/PVC LimitRange policy, KAORI manages that namespaced policy through Kubernetes while retaining Capsule authority for Tenant quota. The committed state records the split explicitly:
+
+```text
+Tenant/shared quota     → Capsule authority
+Namespace LimitRange    → Kubernetes namespaced policy authority
+KAORI                   → desired state + orchestration + evidence + drift governance
+```
+
+A Capsule-generated PVC LimitRange is no longer evidence-only after successful managed adoption. Its supported min/max/default/defaultRequest values are imported into an auto-generated profile, written back equivalently, and monitored as `kaori_managed_policy`.
+
+### Two-way drift governance
+
+Once a control is Managed, sync/observation remains read-only and records drift. Explicit operator actions provide both directions:
+
+- **Reapply KAORI Intent** — write committed KAORI values back through the admitted provider authority and require read-back.
+- **Accept Provider State** — perform no redundant provider write; import the fresh provider values as the new committed KAORI intent.
+
+For auto-imported adoption profiles, Accept Provider State also advances the profile version and updates its committed quota/Container/PVC policy values. This prevents the profile from retaining stale PVC min/max values after provider-state acceptance.
+
+Adoption origin remains retained as audit evidence even when operational ownership becomes Managed.
