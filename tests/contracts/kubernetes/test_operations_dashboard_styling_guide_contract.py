@@ -99,9 +99,12 @@ def test_primary_and_peer_operational_flows_are_static_and_controlled_flows_reus
     assert 'divide-y divide-outline-subtle' in numbered_steps
     assert 'components/numbered_governance_steps.html' in alert_guidance
     assert 'components/operational_flow_steps.html' not in alert_guidance
-    assert 'components/numbered_governance_steps.html' in reporting_guidance
+    assert 'components/numbered_governance_steps.html' not in reporting_guidance
     assert 'components/operational_flow_steps.html' not in reporting_guidance
     assert 'reporting_steps' in reporting_guidance
+    assert 'KAORI Reporting Workflow' in reporting_guidance
+    assert 'sm:grid-cols-2' in reporting_guidance
+    assert 'auto-rows-fr' in reporting_guidance
     assert 'components/operational_flow_steps.html' in capacity
     assert 'components/context_guidance_card.html' not in alert_guidance
     assert 'components/context_guidance_card.html' not in reporting_guidance
@@ -211,7 +214,9 @@ def test_dashboard_restores_card_grid_freshness_and_visible_action_flows() -> No
     assert 'bg-surface-elevated p-3.5' in freshness
     assert 'Recommended Capacity Action Flow' in capacity
     assert 'Controlled Alert Response Flow' in alert
-    assert 'Controlled Reporting Flow' in reporting
+    assert 'KAORI Reporting Workflow' in reporting
+    assert "body_classes='flex flex-1 flex-col gap-5 p-5'" in reporting
+    assert "extra_classes='flex h-full flex-col'" in reporting
     assert 'Reporting Tip' in reporting
     assert 'Use schedules for recurring operational evidence.' in reporting
     assert "icon='lightbulb'" in reporting
