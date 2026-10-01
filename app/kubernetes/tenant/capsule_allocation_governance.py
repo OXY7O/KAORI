@@ -244,7 +244,7 @@ def _live_global_resource_quota(
 
 
 def _profile_quota(profile: TenantResourceProfile) -> dict[str, str]:
-    quota, _limits, _customized = _namespace_allocation_values(profile)
+    quota, _limits, _storage_policy, _customized = _namespace_allocation_values(profile)
     return quota
 
 
