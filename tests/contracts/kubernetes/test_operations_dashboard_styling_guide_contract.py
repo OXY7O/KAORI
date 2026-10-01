@@ -230,6 +230,8 @@ def test_dashboard_restores_card_grid_freshness_and_visible_action_flows() -> No
     assert 'Review First' in reporting_workspace
     assert 'Governed Flow' in reporting_workspace
     assert 'Execution Mode' in reporting_workspace
+    assert 'Reporting Tip' in reporting_workspace
+    assert 'Use templates for repeatable report structure.' in reporting_workspace
     assert "body_classes='space-y-4 p-5'" in reporting_workspace
     assert "extra_classes='h-full'" in reporting_workspace
     assert '<details' not in alert

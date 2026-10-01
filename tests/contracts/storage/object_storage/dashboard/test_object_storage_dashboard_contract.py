@@ -283,6 +283,8 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     assert 'Review First' in reporting_workspace
     assert 'Governed Flow' in reporting_workspace
     assert 'Execution Mode' in reporting_workspace
+    assert 'Reporting Tip' in reporting_workspace
+    assert 'Use templates for repeatable report structure.' in reporting_workspace
     assert 'components/numbered_governance_steps.html' not in reporting_workspace
     assert 'components/operational_flow_steps.html' not in reporting_workspace
     assert 'components/reporting_dashboard_workspace.html' in kubernetes_reporting

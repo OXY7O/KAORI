@@ -109,6 +109,22 @@
                 </div>
             {% endif %}
         </section>
+
+        <aside class="rounded-xl border border-kaori-primary/15 bg-kaori-soft/35 p-3.5"
+               aria-label="Reporting summary tip">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="lightbulb" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-content-primary">Reporting Tip</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        Use templates for repeatable report structure. Add schedules only after a manual report has been reviewed and accepted.
+                    </p>
+                </div>
+            </div>
+        </aside>
     {% endcall %}
 {%- endmacro %}
 
