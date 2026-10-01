@@ -67,6 +67,7 @@ def upsert_capacity_policy(source: Mapping[str, Any]) -> TenantCapacityPolicy:
 
     reserve_cpu = _nonnegative_quantity(source.get('platform_reserve_cpu'), label='Platform reserve CPU')
     reserve_memory = _nonnegative_quantity(source.get('platform_reserve_memory'), label='Platform reserve memory')
+    reserve_pods = _nonnegative_integer(source.get('platform_reserve_pods'), label='Platform reserve Pods')
     unmanaged_cpu = _nonnegative_quantity(
         source.get('unmanaged_commitment_cpu'),
         label='Unmanaged commitment CPU',
@@ -74,6 +75,11 @@ def upsert_capacity_policy(source: Mapping[str, Any]) -> TenantCapacityPolicy:
     unmanaged_memory = _nonnegative_quantity(
         source.get('unmanaged_commitment_memory'),
         label='Unmanaged commitment memory',
+    )
+    unmanaged_pods = _nonnegative_integer(source.get('unmanaged_commitment_pods'), label='Unmanaged commitment Pods')
+    tenant_storage_budget = _optional_positive_quantity(
+        source.get('tenant_storage_budget'),
+        label='Tenant Storage Budget',
     )
     safety_headroom_percent = _percent(source.get('safety_headroom_percent'))
 
@@ -85,9 +91,12 @@ def upsert_capacity_policy(source: Mapping[str, Any]) -> TenantCapacityPolicy:
 
     policy.platform_reserve_cpu = reserve_cpu
     policy.platform_reserve_memory = reserve_memory
+    policy.platform_reserve_pods = reserve_pods
     policy.safety_headroom_percent = safety_headroom_percent
     policy.unmanaged_commitment_cpu = unmanaged_cpu
     policy.unmanaged_commitment_memory = unmanaged_memory
+    policy.unmanaged_commitment_pods = unmanaged_pods
+    policy.tenant_storage_budget = tenant_storage_budget
     db.session.flush()
     return policy
 
@@ -152,7 +161,11 @@ def build_capacity_governance_summary(cluster_id: str) -> dict[str, Any]:
         }
 
     budget = _budget(policy, capacity)
-    commitment_reason = _committed_evidence_reason(committed, unbounded_namespaces)
+    commitment_reason = _committed_evidence_reason(
+        committed,
+        unbounded_namespaces,
+        budget=budget.available,
+    )
     state = 'Unknown' if commitment_reason else classify_capacity_state(budget=budget.available, committed=committed)
     return {
         'cluster_id': cluster_id,
@@ -184,7 +197,7 @@ def enforce_namespace_allocation_preflight(
         tenant_environment=tenant_environment,
         profile=profile,
         namespace=namespace,
-        current=CapacityVector(cpu=_ZERO, memory_bytes=_ZERO),
+        current=CapacityVector(cpu=_ZERO, memory_bytes=_ZERO, pods=_ZERO, storage_bytes=_ZERO),
         proposed=quota_request_vector(quota_hard),
         operation='create',
     )
@@ -260,10 +273,12 @@ def enforce_shared_tenant_allocation_preflight(
 
 def _scale_capacity_vector(vector: CapacityVector, factor: int) -> CapacityVector:
     if factor <= 0:
-        return CapacityVector(cpu=_ZERO, memory_bytes=_ZERO)
+        return CapacityVector(cpu=_ZERO, memory_bytes=_ZERO, pods=_ZERO, storage_bytes=_ZERO)
     return CapacityVector(
         cpu=vector.cpu * factor if vector.cpu is not None else None,
         memory_bytes=vector.memory_bytes * factor if vector.memory_bytes is not None else None,
+        pods=vector.pods * factor if vector.pods is not None else None,
+        storage_bytes=vector.storage_bytes * factor if vector.storage_bytes is not None else None,
     )
 
 
@@ -273,6 +288,12 @@ def _add_capacity_vectors(left: CapacityVector, right: CapacityVector) -> Capaci
         memory_bytes=(
             left.memory_bytes + right.memory_bytes
             if left.memory_bytes is not None and right.memory_bytes is not None
+            else None
+        ),
+        pods=(left.pods + right.pods) if left.pods is not None and right.pods is not None else None,
+        storage_bytes=(
+            left.storage_bytes + right.storage_bytes
+            if left.storage_bytes is not None and right.storage_bytes is not None
             else None
         ),
     )
@@ -322,10 +343,11 @@ def _committed_allocation_with_tenant_override(
         namespace_count=namespace_count,
     )
     committed = _add_capacity_vectors(committed, override)
-    if override.cpu is None or override.memory_bytes is None:
-        unbounded.append(
-            f'Tenant/{tenant.id} Capsule resourceQuotas scope={scope}'
-        )
+    if any(
+        value is None
+        for value in (override.cpu, override.memory_bytes, override.pods, override.storage_bytes)
+    ):
+        unbounded.append(f'Tenant/{tenant.id} Capsule resourceQuotas scope={scope}')
     return committed, len(rows), unbounded
 
 
@@ -418,10 +440,14 @@ def _enforce_allocation_preflight(
         )
     else:
         budget = _budget(policy, capacity)
-        if committed.cpu is None or committed.memory_bytes is None:
+        commitment_reason = _committed_evidence_reason(
+            committed,
+            unbounded_namespaces,
+            budget=budget.available,
+        )
+        if commitment_reason:
             pure = _unknown_evidence_decision(
-                reason=_committed_evidence_reason(committed, unbounded_namespaces)
-                or 'Committed Tenant allocation is incomplete; positive allocation cannot be proven safe.',
+                reason=commitment_reason,
                 committed=committed,
                 current=current,
                 proposed=proposed,
@@ -545,25 +571,34 @@ def _capacity_vector(result: SnapshotResult) -> tuple[CapacityVector | None, str
 
     cpu = summary.get('cpu')
     memory = summary.get('memory')
-    if not isinstance(cpu, dict) or not isinstance(memory, dict):
-        return None, 'Committed Capacity Analytics evidence is missing CPU or memory capacity.'
+    pods = summary.get('pods')
+    if not isinstance(cpu, dict) or not isinstance(memory, dict) or not isinstance(pods, dict):
+        return None, 'Committed Capacity Analytics evidence is missing CPU, memory, or Pod capacity.'
 
-    if cpu.get('capacity_evidence_available') is not True or memory.get('capacity_evidence_available') is not True:
+    if any(
+        resource.get('capacity_evidence_available') is not True
+        for resource in (cpu, memory, pods)
+    ):
         return (
             None,
-            'Committed Capacity Analytics evidence does not contain Ready-worker CPU and memory allocatable capacity.',
+            'Committed Capacity Analytics evidence does not contain Ready-worker CPU, memory, and Pod allocatable capacity.',
         )
 
     try:
         cpu_value = Decimal(str(cpu['capacity']))
         memory_value = Decimal(str(memory['capacity'])) * _GIB
+        pods_value = Decimal(str(pods['capacity']))
     except (InvalidOperation, KeyError, TypeError, ValueError):
-        return None, 'Committed Capacity Analytics CPU or memory capacity is invalid.'
-    if cpu_value <= _ZERO or memory_value <= _ZERO:
-        return None, 'Committed Capacity Analytics CPU or memory allocatable capacity is not positive.'
+        return None, 'Committed Capacity Analytics CPU, memory, or Pod capacity is invalid.'
+    if cpu_value <= _ZERO or memory_value <= _ZERO or pods_value <= _ZERO:
+        return None, 'Committed Capacity Analytics CPU, memory, or Pod allocatable capacity is not positive.'
 
-    return CapacityVector(cpu=cpu_value, memory_bytes=memory_value), ''
-
+    return CapacityVector(
+        cpu=cpu_value,
+        memory_bytes=memory_value,
+        pods=pods_value,
+        storage_bytes=None,
+    ), ''
 
 def _canonical_shared_allocation_quota(
     cluster_id: str,
@@ -639,39 +674,40 @@ def _aggregate_committed_allocation(
     shared_quota_by_tenant: Mapping[str, Mapping[str, object]],
     ambiguous_shared_tenants: list[str] | None = None,
 ) -> tuple[CapacityVector, list[str]]:
-    cpu_total: Decimal | None = _ZERO
-    memory_total: Decimal | None = _ZERO
+    totals: list[Decimal | None] = [_ZERO, _ZERO, _ZERO, _ZERO]
     unbounded: list[str] = []
     shared_tenant_ids = set(shared_quota_by_tenant)
+
+    def add_vector(vector: CapacityVector, label: str) -> None:
+        values = (vector.cpu, vector.memory_bytes, vector.pods, vector.storage_bytes)
+        if any(value is None for value in values):
+            unbounded.append(label)
+        for index, value in enumerate(values):
+            if totals[index] is not None:
+                totals[index] = totals[index] + value if value is not None else None
 
     for row in rows:
         tenant_id = str(row.environment.tenant_id)
         if tenant_id in shared_tenant_ids:
             continue
-        vector = quota_request_vector(row.allocation_quota_json or {})
-        if vector.cpu is None or vector.memory_bytes is None:
-            unbounded.append(row.namespace)
-        if cpu_total is not None:
-            cpu_total = cpu_total + vector.cpu if vector.cpu is not None else None
-        if memory_total is not None:
-            memory_total = memory_total + vector.memory_bytes if vector.memory_bytes is not None else None
+        add_vector(quota_request_vector(row.allocation_quota_json or {}), row.namespace)
 
     for tenant_id, quota in shared_quota_by_tenant.items():
-        vector = quota_request_vector(quota)
-        if vector.cpu is None or vector.memory_bytes is None:
-            unbounded.append(f'Tenant/{tenant_id} shared allocation')
-        if cpu_total is not None:
-            cpu_total = cpu_total + vector.cpu if vector.cpu is not None else None
-        if memory_total is not None:
-            memory_total = memory_total + vector.memory_bytes if vector.memory_bytes is not None else None
+        add_vector(
+            quota_request_vector(quota),
+            f'Tenant/{tenant_id} shared allocation',
+        )
 
     for tenant_id in ambiguous_shared_tenants or []:
         unbounded.append(f'Tenant/{tenant_id} ambiguous shared allocation')
-        cpu_total = None
-        memory_total = None
+        totals = [None, None, None, None]
 
-    return CapacityVector(cpu=cpu_total, memory_bytes=memory_total), unbounded
-
+    return CapacityVector(
+        cpu=totals[0],
+        memory_bytes=totals[1],
+        pods=totals[2],
+        storage_bytes=totals[3],
+    ), unbounded
 
 def _committed_tenant_allocation(
     cluster_id: str,
@@ -703,37 +739,56 @@ def _committed_tenant_allocation(
 def _committed_evidence_reason(
     committed: CapacityVector,
     unbounded_namespaces: list[str] | None = None,
+    *,
+    budget: CapacityVector | None = None,
 ) -> str | None:
-    if committed.cpu is None or committed.memory_bytes is None:
-        names = list(unbounded_namespaces or [])
-        if names:
-            visible = ', '.join(names[:3])
-            suffix = f' +{len(names) - 3} more' if len(names) > 3 else ''
-            return (
-                'Unbounded or missing CPU/memory request commitment on active Namespace(s): '
-                f'{visible}{suffix}. Apply a bounded Resource Profile allocation before positive changes.'
-            )
+    governed = budget or CapacityVector(cpu=_ZERO, memory_bytes=_ZERO)
+    required = (
+        ('CPU', governed.cpu, committed.cpu),
+        ('memory', governed.memory_bytes, committed.memory_bytes),
+        ('Pods', governed.pods, committed.pods),
+        ('storage', governed.storage_bytes, committed.storage_bytes),
+    )
+    missing = [label for label, limit, value in required if limit is not None and value is None]
+    if not missing:
+        return None
+
+    names = list(unbounded_namespaces or [])
+    dimensions = ', '.join(missing)
+    if names:
+        visible = ', '.join(names[:3])
+        suffix = f' +{len(names) - 3} more' if len(names) > 3 else ''
         return (
-            'At least one active Tenant namespace has an unbounded or missing CPU/memory request commitment; '
-            'Committed and Headroom cannot be proven until the allocation contract is bounded.'
+            f'Unbounded or missing governed {dimensions} commitment on active Namespace(s): '
+            f'{visible}{suffix}. Apply a bounded Resource Profile allocation before positive changes.'
         )
-    return None
+    return (
+        f'At least one active Tenant allocation has unbounded or missing governed {dimensions} commitment; '
+        'Committed and Headroom cannot be proven until the allocation contract is bounded.'
+    )
 
 
 def _budget(policy: TenantCapacityPolicy, capacity: CapacityVector) -> TenantAllocationBudget:
+    storage_budget = (
+        _quantity(policy.tenant_storage_budget)
+        if policy.tenant_storage_budget not in (None, '')
+        else None
+    )
     return build_tenant_allocation_budget(
         allocatable=capacity,
         reserve=CapacityVector(
             cpu=_quantity(policy.platform_reserve_cpu),
             memory_bytes=_quantity(policy.platform_reserve_memory),
+            pods=Decimal(policy.platform_reserve_pods),
         ),
         safety_headroom_percent=Decimal(policy.safety_headroom_percent),
         unmanaged=CapacityVector(
             cpu=_quantity(policy.unmanaged_commitment_cpu),
             memory_bytes=_quantity(policy.unmanaged_commitment_memory),
+            pods=Decimal(policy.unmanaged_commitment_pods),
         ),
+        logical_storage_budget=storage_budget,
     )
-
 
 def _unknown_evidence_decision(
     *,
@@ -754,8 +809,8 @@ def _unknown_evidence_decision(
             else f'{reason} This non-increasing allocation change is allowed because it does not add commitment.'
         ),
         projected_committed=projected,
-        projected_headroom=CapacityVector(cpu=None, memory_bytes=None),
-        shortfall=CapacityVector(cpu=None, memory_bytes=None),
+        projected_headroom=CapacityVector(cpu=None, memory_bytes=None, pods=None, storage_bytes=None),
+        shortfall=CapacityVector(cpu=None, memory_bytes=None, pods=None, storage_bytes=None),
         positive_change=positive_change,
     )
 
@@ -768,6 +823,12 @@ def _project(
     return CapacityVector(
         cpu=_project_dimension(committed.cpu, current.cpu, proposed.cpu),
         memory_bytes=_project_dimension(committed.memory_bytes, current.memory_bytes, proposed.memory_bytes),
+        pods=_project_dimension(committed.pods, current.pods, proposed.pods),
+        storage_bytes=_project_dimension(
+            committed.storage_bytes,
+            current.storage_bytes,
+            proposed.storage_bytes,
+        ),
     )
 
 
@@ -785,6 +846,8 @@ def _headroom(budget: CapacityVector, committed: CapacityVector) -> CapacityVect
     return CapacityVector(
         cpu=_difference(budget.cpu, committed.cpu),
         memory_bytes=_difference(budget.memory_bytes, committed.memory_bytes),
+        pods=_difference(budget.pods, committed.pods),
+        storage_bytes=_difference(budget.storage_bytes, committed.storage_bytes),
     )
 
 
@@ -803,6 +866,26 @@ def _nonnegative_quantity(value: object | None, *, label: str) -> str:
     if parsed < _ZERO:
         raise ValueError(f'{label} cannot be negative.')
     return rendered
+
+
+def _optional_positive_quantity(value: object | None, *, label: str) -> str | None:
+    rendered = str(value or '').strip()
+    if not rendered:
+        return None
+    try:
+        parsed = Decimal(parse_quantity(rendered))
+    except (InvalidOperation, TypeError, ValueError) as exc:
+        raise ValueError(f'{label} must be a valid Kubernetes resource quantity.') from exc
+    if parsed <= _ZERO:
+        raise ValueError(f'{label} must be greater than zero when configured.')
+    return rendered
+
+
+def _nonnegative_integer(value: object | None, *, label: str) -> int:
+    rendered = str(value or '0').strip() or '0'
+    if not rendered.isdigit():
+        raise ValueError(f'{label} must be a non-negative integer.')
+    return int(rendered)
 
 
 def _quantity(value: object) -> Decimal:
@@ -827,9 +910,12 @@ def _policy_json(policy: TenantCapacityPolicy) -> dict[str, Any]:
         'cluster_id': policy.cluster_id,
         'platform_reserve_cpu': policy.platform_reserve_cpu,
         'platform_reserve_memory': policy.platform_reserve_memory,
+        'platform_reserve_pods': policy.platform_reserve_pods,
         'safety_headroom_percent': policy.safety_headroom_percent,
         'unmanaged_commitment_cpu': policy.unmanaged_commitment_cpu,
         'unmanaged_commitment_memory': policy.unmanaged_commitment_memory,
+        'unmanaged_commitment_pods': policy.unmanaged_commitment_pods,
+        'tenant_storage_budget': policy.tenant_storage_budget,
     }
 
 
@@ -839,6 +925,7 @@ def _budget_json(budget: TenantAllocationBudget) -> dict[str, Any]:
         'reserve': _vector_json(budget.reserve),
         'safety_headroom': _vector_json(budget.safety_headroom),
         'unmanaged': _vector_json(budget.unmanaged),
+        'logical_storage_budget_bytes': _decimal_text(budget.logical_storage_budget),
         'available': _vector_json(budget.available),
     }
 
@@ -847,6 +934,8 @@ def _vector_json(vector: CapacityVector) -> dict[str, str | None]:
     return {
         'cpu': _decimal_text(vector.cpu),
         'memory_bytes': _decimal_text(vector.memory_bytes),
+        'pods': _decimal_text(vector.pods),
+        'storage_bytes': _decimal_text(vector.storage_bytes),
     }
 
 
@@ -854,6 +943,8 @@ def _vector_display(vector: CapacityVector) -> dict[str, str]:
     return {
         'cpu': _display_cpu(vector.cpu),
         'memory': _display_memory(vector.memory_bytes),
+        'pods': _display_pods(vector.pods),
+        'storage': _display_storage(vector.storage_bytes),
     }
 
 
@@ -863,6 +954,14 @@ def _display_cpu(value: Decimal | None) -> str:
 
 def _display_memory(value: Decimal | None) -> str:
     return 'N/A' if value is None else f'{(value / _GIB).quantize(Decimal("0.01"))} GiB'
+
+
+def _display_pods(value: Decimal | None) -> str:
+    return 'N/A' if value is None else f'{value.quantize(Decimal("1"))} pods'
+
+
+def _display_storage(value: Decimal | None) -> str:
+    return 'Not Governed' if value is None else f'{(value / _GIB).quantize(Decimal("0.01"))} GiB'
 
 
 def _decimal_text(value: Decimal | None) -> str | None:
@@ -879,11 +978,11 @@ def _datetime_text(value: datetime | None) -> str | None:
 
 def _state_reason(state: str) -> str:
     return {
-        'Healthy': 'Governed Tenant allocation retains more than 40% request-budget headroom.',
-        'Near Capacity': 'Governed Tenant allocation has 40% or less request-budget headroom.',
-        'Critical': 'Governed Tenant allocation has 15% or less request-budget headroom.',
-        'Exhausted': 'Governed Tenant allocation has no remaining request-budget headroom.',
-        'Overcommitted': 'Committed Tenant allocation exceeds the governed request budget.',
+        'Healthy': 'Governed Tenant allocation retains more than 40% capacity-budget headroom.',
+        'Near Capacity': 'Governed Tenant allocation has 40% or less capacity-budget headroom.',
+        'Critical': 'Governed Tenant allocation has 15% or less capacity-budget headroom.',
+        'Exhausted': 'Governed Tenant allocation has no remaining capacity-budget headroom.',
+        'Overcommitted': 'Committed Tenant allocation exceeds the governed capacity budget.',
         'Unknown': 'Required capacity or commitment evidence is incomplete.',
     }[state]
 
