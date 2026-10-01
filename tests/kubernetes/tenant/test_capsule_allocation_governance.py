@@ -84,9 +84,7 @@ def test_admitted_global_resource_quota_is_eligible_for_capsule_cutover(monkeypa
 
 def test_tenant_spec_resource_quotas_remains_control_unavailable(monkeypatch):
     _no_existing_intent(monkeypatch)
-    state = build_capsule_shared_allocation_cutover_state(
-        _tenant(authority='capsule_tenant_resource_quotas')
-    )
+    state = build_capsule_shared_allocation_cutover_state(_tenant(authority='capsule_tenant_resource_quotas'))
 
     assert state['supported'] is False
     assert state['state'] == 'control_unavailable'
@@ -95,9 +93,7 @@ def test_tenant_spec_resource_quotas_remains_control_unavailable(monkeypatch):
 
 def test_degraded_shared_global_quota_capability_fails_closed(monkeypatch):
     _no_existing_intent(monkeypatch)
-    state = build_capsule_shared_allocation_cutover_state(
-        _tenant(capability='degraded')
-    )
+    state = build_capsule_shared_allocation_cutover_state(_tenant(capability='degraded'))
 
     assert state['supported'] is False
     assert 'shared_global_quota capability is unavailable or degraded' in state['reason']
@@ -130,9 +126,7 @@ def test_multiple_global_resource_quota_sources_fail_closed(monkeypatch):
 
 def test_unsupported_capsule_api_version_fails_closed(monkeypatch):
     _no_existing_intent(monkeypatch)
-    state = build_capsule_shared_allocation_cutover_state(
-        _tenant(served_version='v1beta1')
-    )
+    state = build_capsule_shared_allocation_cutover_state(_tenant(served_version='v1beta1'))
 
     assert state['supported'] is False
     assert 'requires served capsule.clastix.io/v1beta2' in state['reason']
@@ -249,7 +243,6 @@ def test_capsule_shared_reconcile_blocks_when_provider_degrades():
     assert state['reapply_supported'] is False
     assert state['accept_supported'] is False
     assert 'Capsule provider is degraded or unavailable' in state['blocked_reason']
-
 
 
 def test_capsule_shared_observation_blocks_selector_drift(monkeypatch):
