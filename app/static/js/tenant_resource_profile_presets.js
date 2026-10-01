@@ -256,15 +256,21 @@
         const renderAllocationChange = ({preferCurrentProfile = false} = {}) => {
             const current = namespaces[namespaceSelect?.value] || null
 
-            if (
-                preferCurrentProfile &&
-                current?.profile_id &&
-                profileSelect?.querySelector(`option[value="${current.profile_id}"]`)
-            ) {
-                profileSelect.value = String(current.profile_id)
+            if (preferCurrentProfile && current && profileSelect) {
+                if (
+                    current.profile_id &&
+                    profileSelect.querySelector(`option[value="${current.profile_id}"]`)
+                ) {
+                    profileSelect.value = String(current.profile_id)
+                } else if (profileSelect.querySelector('option[value="adopted_baseline"]')) {
+                    profileSelect.value = 'adopted_baseline'
+                }
             }
 
-            const proposed = profiles[profileSelect?.value] || null
+            const proposed =
+                profileSelect?.value === 'adopted_baseline'
+                    ? current
+                    : profiles[profileSelect?.value] || null
             const proposedLabel = profileSelect?.selectedOptions?.[0]?.textContent?.trim() || '—'
 
             if (currentProfile) {
