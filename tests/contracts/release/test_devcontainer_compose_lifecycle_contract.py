@@ -88,9 +88,9 @@ def test_devcontainer_workers_wait_for_current_migration_head_before_starting() 
     assert 'WAIT_FOR_DB: "false"' in workspace
     assert 'WAIT_FOR_SCHEMA' not in workspace
 
-    assert "ScriptDirectory.from_config" in wait_script
+    assert 'ScriptDirectory.from_config' in wait_script
     assert "SELECT to_regclass('public.alembic_version')" in wait_script
-    assert "SELECT version_num FROM alembic_version" in wait_script
+    assert 'SELECT version_num FROM alembic_version' in wait_script
     assert 'current_heads == expected_heads' in wait_script
     assert "_env_bool('WAIT_FOR_SCHEMA')" in wait_script
 
