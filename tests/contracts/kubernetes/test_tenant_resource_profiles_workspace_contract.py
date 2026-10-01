@@ -47,10 +47,13 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
 
     assert 'Create Resource Profile' in form
     assert 'Identity &amp; Lineage' in form
-    assert 'Quota Guardrails' in form
+    assert 'Compute &amp; Workload' in form
+    assert 'Storage Guardrails' in form
+    assert 'Object Limits' in form
     assert 'Container Defaults' in form
     assert 'lg:grid-cols-4' in form
     assert 'lg:grid-cols-5' in form
+    assert 'xl:grid-cols-6' in form
     assert 'xl:grid-cols-12' not in form
     assert 'KAORI Preset · Fixed' in form
     assert 'components/table_label.html' in form
@@ -62,7 +65,9 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'bg-surface-card transition' in form
     assert 'data-[locked=true]:cursor-not-allowed' in form
     assert 'resource-profile-contract-tip' in form
-    assert 'resource-profile-quota-tip' in form
+    assert 'resource-profile-compute-tip' in form
+    assert 'resource-profile-storage-tip' in form
+    assert 'resource-profile-object-tip' in form
     assert 'resource-profile-limitrange-tip' in form
     assert "placement='right'" in form
     assert 'inline-flex min-h-6 items-center gap-1.5' in form
@@ -73,6 +78,13 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'data-tenant-base-preset' in form
     assert 'data-tenant-resource-field="{{ field }}"' in form
     assert 'data-tenant-resource-control="{{ field }}"' in form
+    assert 'pvc_min_storage' in form
+    assert 'pvc_max_storage' in form
+    assert 'pvc_default_request_storage' in form
+    assert 'pvc_default_storage' in form
+    assert "pvc_min_storage: ['storage_policy', 'min']" in script
+    assert "pvc_max_storage: ['storage_policy', 'max']" in script
+    assert "wrapper?.dataset.controlRequiresValue === 'true'" in script
     assert 'control_contract_present' in form
     assert '>Medium</option>' in form
     assert '>Extra Large</option>' in form
@@ -351,3 +363,50 @@ def test_tenant_provider_unavailable_copy_is_compact_and_uses_standard_hero_acti
     assert 'blocked_action_label' in blocked
     assert 'action_label=None' in hero
     assert 'context_single_action_classes()' in hero
+
+
+def test_resource_profile_storage_policy_is_persisted_and_bidirectional() -> None:
+    model = read('app/models/tenant.py')
+    migration = read('migrations/versions/20261001_profile_storage_policy.py')
+    service = read('app/kubernetes/tenant/service.py')
+    provisioning = read('app/kubernetes/tenant/provisioning.py')
+    observation = read('app/kubernetes/tenant/allocation_observation.py')
+    cutover = read('app/kubernetes/tenant/allocation_cutover.py')
+    drift = read('app/kubernetes/tenant/allocation_drift.py')
+    adoption = read('app/kubernetes/tenant/discovery_service.py')
+    form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
+    dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
+
+    assert 'storage_policy_json: Mapped[dict]' in model
+    assert 'allocation_storage_policy_json: Mapped[dict | None]' in model
+    assert "'storage_policy_json'" in migration
+    assert "'allocation_storage_policy_json'" in migration
+
+    assert 'def _storage_policy_values(' in service
+    assert 'profile.storage_policy_json = storage_policy' in service
+    assert 'storage_policy=storage_policy' in service
+    assert "'storage_policy': profile.storage_policy_json or {}" in service
+
+    assert "type='PersistentVolumeClaim'" in provisioning
+    assert "'storage_policy': normalized_storage" in provisioning
+    assert 'record.allocation_storage_policy_json = normalized_storage' in provisioning
+
+    assert "'storage_policy': storage_policy" in observation
+    assert "f'pvc.{field}.storage is defined by multiple LimitRange sources" in observation
+    assert "payload = {'quota': quota, 'limits': limits, 'storage_policy': storage_policy}" in observation
+
+    assert 'def _storage_policy_equal(' in cutover
+    assert 'not _storage_policy_equal' in cutover
+    assert 'record.allocation_storage_policy_json = storage' in cutover
+
+    assert "dict(record.allocation_storage_policy_json or {})" in drift
+    assert "storage_policy=dict(record.allocation_storage_policy_json or {})" in drift
+    assert 'record.allocation_storage_policy_json = storage_policy' in drift
+
+    assert 'def _create_adopted_baseline_profile(' in adoption
+    assert 'profile.storage_policy_json = dict(allocation.get(' in adoption
+    assert 'namespace_record.allocation_storage_policy_json' in adoption
+
+    for label in ('Compute &amp; Workload', 'Storage Guardrails', 'Object Limits', 'Container Defaults'):
+        assert label in form
+        assert label in dialogs
