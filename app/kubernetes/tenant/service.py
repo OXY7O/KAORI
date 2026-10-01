@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from kubernetes.client.rest import ApiException
-from sqlalchemy import func, or_
+from sqlalchemy import case, func, or_
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.common.pagination import paginate_query
@@ -1270,6 +1270,8 @@ def rollout_resource_profile_to_tenant_committed(
     if not records:
         raise ValueError('No active Namespace attachment uses this Resource Profile for the selected Tenant.')
 
+    desired_quota, desired_limits, desired_storage, _ = _namespace_allocation_values(profile)
+
     summary: dict[str, Any] = {
         'profile_id': profile.public_id,
         'profile_name': profile.name,
@@ -1285,9 +1287,9 @@ def rollout_resource_profile_to_tenant_committed(
     for record in records:
         if (
             int(record.resource_profile_version or 0) == int(profile.version or 1)
-            and dict(record.allocation_quota_json or {}) == _namespace_allocation_values(profile)[0]
-            and dict(record.allocation_limit_defaults_json or {}) == _namespace_allocation_values(profile)[1]
-            and dict(record.allocation_storage_policy_json or {}) == _namespace_allocation_values(profile)[2]
+            and dict(record.allocation_quota_json or {}) == desired_quota
+            and dict(record.allocation_limit_defaults_json or {}) == desired_limits
+            and dict(record.allocation_storage_policy_json or {}) == desired_storage
         ):
             summary['already_current'] += 1
             continue
