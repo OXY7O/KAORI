@@ -47,14 +47,12 @@ def test_current_page_defers_long_diagnostic_detail_to_runtime_observation_modal
 def test_runtime_copy_and_extended_lifecycle_summary_are_compact() -> None:
     source = _source()
     messages = (
-        ROOT
-        / 'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/messages.py'
+        ROOT / 'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/messages.py'
     ).read_text(encoding='utf-8')
 
     assert 'Review persisted runtime health, diagnostics, lifecycle context, and validation boundaries.' in source
     assert (
-        'Runtime health gates current operation; '
-        'Full Validation readiness remains independently evaluated.'
+        'Runtime health gates current operation; Full Validation readiness remains independently evaluated.'
     ) in source
     assert 'uses KAORI Extended support. Upgrade recommended.' in messages
     assert 'Optional capability access is limited; core Kubernetes readiness is unaffected.' in messages
