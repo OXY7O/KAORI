@@ -456,9 +456,7 @@
                                 {% if allocation.authority_ambiguous_dimensions %}
                                     <p class="mt-2 text-xs leading-5">Ambiguous authority: {{ allocation.authority_ambiguous_dimensions|join(" · ") }}</p>
                                 {% endif %}
-                                {% if allocation.error %}
-                                    <p class="mt-2 text-xs leading-5">Observation error: {{ allocation.error }}</p>
-                                {% endif %}
+                                {% if allocation.error %}<p class="mt-2 text-xs leading-5">Observation error: {{ allocation.error }}</p>{% endif %}
                             </div>
                         </section>
                     {% endif %}
