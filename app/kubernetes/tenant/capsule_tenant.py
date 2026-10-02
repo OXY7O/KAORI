@@ -234,7 +234,7 @@ def qualify_capsule_tenant_adoption(
             _request_timeout=5,
         )
         admission_verified = True
-    except Exception as exc:
+    except ApiException as exc:
         admission_error = str(exc)[:700]
 
     try:
@@ -252,7 +252,7 @@ def qualify_capsule_tenant_adoption(
         if admission_error:
             evidence['adoption_admission_dry_run_error'] = admission_error
         return binding.state.value, evidence
-    except Exception as exc:
+    except ApiException as exc:
         # Adoption itself remains observation-only and may preserve identity
         # while capability execution fails closed. Do not convert an
         # unproven provider into healthy Capsule authority.
