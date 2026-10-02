@@ -92,12 +92,17 @@ def test_tenant_overview_uses_tls_style_collection_snapshot_and_contextual_sync_
     sync_workspace = (ROOT / 'app/templates/kubernetes/tenant/partials/_sync_workspace.html').read_text(
         encoding='utf-8'
     )
+    snapshot_context = (ROOT / 'app/templates/kubernetes/tenant/partials/_collection_snapshot_context.html').read_text(
+        encoding='utf-8'
+    )
     live_state = (ROOT / 'app/templates/kubernetes/tenant/partials/_sync_live_state.html').read_text(encoding='utf-8')
 
     assert 'kubernetes/tenant/partials/_sync_workspace.html' in overview
-    assert 'components/snapshot_context_bar.html' in sync_workspace
-    assert "title='Tenant Collection Snapshot'" in sync_workspace
-    assert "latest_supporting='Source: '" in sync_workspace
+    assert 'kubernetes/tenant/partials/_collection_snapshot_context.html' in sync_workspace
+    assert 'components/snapshot_context_bar.html' in snapshot_context
+    assert 'snapshot_context.render' in snapshot_context
+    assert "title='Tenant Collection Snapshot'" in snapshot_context
+    assert "latest_supporting='Source: '" in snapshot_context
     assert 'Tenant Inventory Operations' in live_state
     assert 'Automatic Sync' in sync_workspace
     assert 'Last Successful' in sync_workspace
@@ -131,7 +136,9 @@ def test_tenant_overview_keeps_multicluster_posture_compact_and_canonical() -> N
     assert "table_ui.table_classes('min-w-[900px]')" in cluster_estate
     assert 'table_ui.cluster_identity_with_status(' in cluster_estate
     assert 'macro cluster_identity_with_status' in table
-    assert 'status_indicator_label(row.provider_status|title, row.provider_tone)' in cluster_estate
+    assert 'row.provider_status|title' in cluster_estate
+    assert 'row.provider_tone' in cluster_estate
+    assert 'status_indicator_label(status_text, status_tone)' in table
     assert 'pagination_ui.footer_classes()' in cluster_estate
     assert 'pagination.allowed_per_page' in cluster_estate
     assert 'hx-get="{{ url_for(\'tenant.cluster_estate\') }}"' in cluster_estate
@@ -185,6 +192,9 @@ def test_tenant_overview_uses_shared_kaori_components() -> None:
     sync_workspace = (ROOT / 'app/templates/kubernetes/tenant/partials/_sync_workspace.html').read_text(
         encoding='utf-8'
     )
+    snapshot_context = (ROOT / 'app/templates/kubernetes/tenant/partials/_collection_snapshot_context.html').read_text(
+        encoding='utf-8'
+    )
 
     assert 'components/operational_section_card.html' in overview
     assert 'components/resource_posture_grid.html' in overview
@@ -199,8 +209,9 @@ def test_tenant_overview_uses_shared_kaori_components() -> None:
     assert 'components/table.html' in cluster_estate
     assert 'components/pagination.html' in cluster_estate
     assert 'components/action_button.html' in sync_workspace
-    assert 'components/snapshot_context_bar.html' in sync_workspace
-    assert 'snapshot_context.render' in sync_workspace
+    assert 'kubernetes/tenant/partials/_collection_snapshot_context.html' in sync_workspace
+    assert 'components/snapshot_context_bar.html' in snapshot_context
+    assert 'snapshot_context.render' in snapshot_context
 
 
 def test_tenant_hero_identity_is_non_redundant() -> None:

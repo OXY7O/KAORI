@@ -67,42 +67,45 @@ Resource Profile mutability is visible before an operator opens the detail dialo
 
 - **KAORI Preset · Locked** — Small, Medium, Large, and Extra Large are code-owned/versioned baselines. Registry action is **View**. Numeric values are immutable; Managed toggles select the KAORI-owned subset.
 - **Custom · Editable** — operator-managed reusable allocation contract. Registry action is **Manage**.
-- **Adopted Baseline · Observed** is allocation provenance, not a new built-in preset class. During #768 governed adoption, KAORI reads the live legacy ResourceQuota/LimitRange or admitted Capsule allocation evidence, commits the observed snapshot, and performs no provider mutation. It remains read-only until explicit allocation-governance cutover.
-- If an observed baseline semantically matches a versioned Small/Standard/Large preset, KAORI records that preset only as lineage. The adopted Namespace still remains **Observed**, not KAORI-managed.
-- A non-matching legacy allocation is preserved as a custom observed baseline snapshot without silently creating or mutating a reusable Custom Resource Profile.
-- Unsupported dimensions, conflicting quota owners, ambiguous Capsule authority, or Capsule shared/global quota paths that do not yet have an admitted mutation contract are surfaced as **Control Unavailable**. Adoption may retain the provider evidence, but governed mutation fails closed.
+- **Adopted Baseline · Observed** remains allocation provenance, not a new built-in preset class. Provider observation is always the first step and records the live baseline without mutation.
+- Under **#777 managed adoption**, a new human-confirmed adoption proceeds from that observed baseline into a **provider-equivalent managed takeover** when every requested control has an admitted authoritative mutation path. KAORI materializes the observed values into committed profile/control state, writes the same effective values through that authority, and requires provider read-back before allocation control becomes **KAORI Managed**.
+- Native takeover keeps Namespace lifecycle ownership **Adopted** while allocation control becomes `kaori_managed`; these two ownership dimensions remain independently auditable.
+- Capsule takeover preserves mixed authority. Admitted shared allocation can become KAORI Managed, while Capsule-generated per-Namespace policy without an approved source-write contract is committed as `provider_mirrored_policy` and refreshed from provider authority.
+- Unsupported dimensions, conflicting quota owners, ambiguous authority, stale evidence, or missing capability fail adoption closed instead of leaving a partially managed takeover.
 
 Editing a Custom Resource Profile changes the reusable contract version only. It never silently rewrites an existing Namespace allocation snapshot.
 
-## Adopted allocation governance cutover
+## Managed adoption and legacy allocation governance cutover
 
-Issue #769 owns the explicit transition from an observed legacy allocation to KAORI-managed allocation intent. Namespace lifecycle ownership and allocation reconciliation ownership are separate contracts:
+#777 supersedes evidence-only onboarding for new managed adoptions. The explicit human **Adopt & Manage** submission is the governance boundary: live state is re-read, capacity/authority checks run, equivalent provider values are written only through the admitted authority, and read-back must succeed before KAORI commits managed allocation control.
+
+Existing Adopted / Observed records created under the earlier #768 contract remain valid historical state. #769's explicit Allocation Governance Cutover remains the compatibility path for those records:
 
 ```text
-Namespace ownership: Adopted
+Namespace lifecycle ownership: Adopted
 Allocation control: Adopted / Observed → KAORI Managed
 ```
 
-A successful allocation cutover does **not** relabel an adopted Namespace as KAORI-created or transfer Namespace deletion/lifecycle ownership. It authorizes KAORI to govern only the admitted allocation resources.
+Neither managed adoption nor legacy cutover relabels an adopted Namespace as KAORI-created or transfers Namespace deletion/lifecycle ownership. They authorize KAORI to govern only the admitted allocation controls.
 
-For the Native Kubernetes path, cutover performs:
+For the Native Kubernetes managed-takeover/cutover path, KAORI:
 
-1. read the committed Adopted / Observed allocation and provider UID/resourceVersion evidence;
-2. compare the selected Resource Profile with the observed allocation;
-3. run the existing #654 capacity admission;
-4. re-read provider allocation and reject stale committed evidence;
-5. verify ResourceQuota / LimitRange source ownership, UID, and resourceVersion before the first provider write;
-6. patch the single authoritative legacy ResourceQuota / LimitRange in place, or create the canonical KAORI resource only when that resource type was absent;
-7. read back the effective allocation;
-8. mark `allocation_control_state=kaori_managed` only when provider read-back semantically equals the proposed contract.
+1. reads fresh provider allocation plus UID/resourceVersion evidence;
+2. materializes or selects the intended Resource Profile while preserving observed lineage;
+3. runs the existing #654 capacity admission;
+4. rejects stale or ambiguous provider evidence before the first write;
+5. verifies authoritative ResourceQuota / LimitRange ownership;
+6. writes only the admitted allocation resources, preserving equivalent effective values during adoption;
+7. reads back the effective allocation;
+8. marks `allocation_control_state=kaori_managed` only when provider read-back semantically matches the committed contract.
 
-The initial cutover supports at most one authoritative ResourceQuota and one Container LimitRange. Multiple legacy sources, unsupported LimitRange constraints, foreign controller ownership, stale UID/resourceVersion evidence, or ambiguous authority remain **Control Unavailable** until the operator resolves the provider state.
+Multiple legacy sources, unsupported LimitRange constraints, foreign controller ownership, stale UID/resourceVersion evidence, or ambiguous authority remain **Control Unavailable** and fail managed adoption/cutover closed.
 
-After successful cutover, subsequent allocation changes continue through the governed capacity/preflight and provider-verification path while Namespace `ownership_status` remains `adopted`.
+After successful takeover, subsequent allocation changes continue through the governed capacity/preflight and provider-verification path while Namespace `ownership_status` remains `adopted`.
 
-Capsule is fail-closed. KAORI does not bypass Capsule by writing Native ResourceQuota when the adopted Tenant's effective allocation authority is Capsule. #771 admits exactly one shared Capsule allocation path: an unambiguous `GlobalResourceQuota` served through `capsule.clastix.io/v1beta2` while committed Capsule evidence reports `shared_global_quota=available`. The existing #124 CustomObjects executor remains the provider mutation primitive. `Tenant.spec.resourceQuotas`, multiple GlobalResourceQuota sources, unsupported selectors/dimensions, degraded Capsule, and unsupported API versions remain **Control Unavailable**.
+Capsule remains authoritative and fail-closed. KAORI never substitutes Native ResourceQuota writes for Capsule-owned allocation. Admitted Capsule shared-allocation controls use the existing capability-gated provider executor; Capsule-generated per-Namespace Container/PVC policy stays `provider_mirrored_policy` until an approved Capsule source-write contract exists.
 
-Provider mutation failure never marks the allocation KAORI Managed. Failure evidence records the proposed contract and whether provider mutation may have started so later sync/drift reconciliation can determine the effective provider state without pretending the transaction succeeded.
+Provider mutation or read-back failure never marks the allocation KAORI Managed. Failure evidence records the attempted contract and provider outcome so later sync/drift reconciliation can reason from committed evidence without pretending the transaction succeeded.
 
 ## Managed allocation drift and bidirectional reconciliation
 
