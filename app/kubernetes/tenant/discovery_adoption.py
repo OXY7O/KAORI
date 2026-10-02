@@ -372,9 +372,7 @@ def _finalize_capsule_takeover(
                 'provider_value_change_requested': False,
                 'effective_values_preserved': True,
                 'namespaced_policy_profiles': [
-                    record.resource_profile.public_id
-                    for record in records
-                    if record.resource_profile is not None
+                    record.resource_profile.public_id for record in records if record.resource_profile is not None
                 ],
                 'provider_mutation_performed': True,
                 'taken_over_at': datetime.now(UTC).isoformat(),
@@ -390,7 +388,10 @@ def _adopt_capsule(context: _AdoptionContext) -> tuple[TenantEnvironment, Tenant
     status = _capsule_phase(item)
     if status == 'Terminating':
         raise ValueError('The Capsule Tenant is terminating and cannot be adopted.')
-    if _managed_capsule_map([str(context.cluster.id)]).get((str(context.cluster.id), context.resource_name)) is not None:
+    if (
+        _managed_capsule_map([str(context.cluster.id)]).get((str(context.cluster.id), context.resource_name))
+        is not None
+    ):
         raise ValueError('This Capsule Tenant is already governed by KAORI.')
 
     metadata = item.get('metadata') or {}
