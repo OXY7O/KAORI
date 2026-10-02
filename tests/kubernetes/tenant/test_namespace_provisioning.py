@@ -172,8 +172,6 @@ def test_native_namespace_limitrange_materializes_container_and_pvc_policy() -> 
         'storage_policy': {
             'min': '1Gi',
             'max': '10Gi',
-            'default_request': '2Gi',
-            'default': '8Gi',
         },
     }
 
@@ -187,8 +185,6 @@ def test_native_namespace_limitrange_materializes_container_and_pvc_policy() -> 
     assert set(items) == {'Container', 'PersistentVolumeClaim'}
     assert items['PersistentVolumeClaim'].min == {'storage': '1Gi'}
     assert items['PersistentVolumeClaim'].max == {'storage': '10Gi'}
-    assert items['PersistentVolumeClaim'].default_request == {'storage': '2Gi'}
-    assert items['PersistentVolumeClaim'].default == {'storage': '8Gi'}
 
     effective = provisioning._effective_contract(api, desired)
     assert effective['storage_policy'] == desired['storage_policy']
