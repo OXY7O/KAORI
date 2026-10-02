@@ -114,82 +114,103 @@ def _tenant_section_redirect(section: str):
     return response
 
 
+def _query_int(name: str, default: int = 1) -> int:
+    return request.args.get(name, default, type=int) or default
+
+
+def _query_text(name: str) -> str:
+    return str(request.args.get(name) or '')
+
+
+def _registry_section_context() -> dict[str, Any]:
+    return get_tenant_registry_context(
+        page=_query_int('page'),
+        per_page=_query_int('per_page', 5),
+        search=_query_text('search'),
+        cluster_id=_query_text('cluster_id'),
+        environment=_query_text('environment'),
+        lifecycle_status=_query_text('lifecycle_status'),
+    )
+
+
+def _discovery_section_context() -> dict[str, Any]:
+    return get_tenant_discovery_context(
+        page=_query_int('discovery_page'),
+        per_page=_query_int('discovery_per_page', 5),
+        cluster_id=_query_text('discovery_cluster_id'),
+        provider=_query_text('discovery_provider'),
+        management=_query_text('discovery_management'),
+        search=_query_text('discovery_search'),
+    )
+
+
+def _memberships_section_context() -> dict[str, Any]:
+    return {
+        **get_membership_registry_context(
+            page=_query_int('membership_page'),
+            per_page=_query_int('membership_per_page', 5),
+            tenant_id=_query_text('membership_tenant_id'),
+            principal_type=_query_text('membership_principal_type'),
+            status=_query_text('membership_status'),
+            search=_query_text('membership_search'),
+        ),
+        **get_group_registry_context(
+            page=_query_int('group_page'),
+            per_page=_query_int('group_per_page', 5),
+            tenant_id=_query_text('group_tenant_id'),
+            enabled=_query_text('group_enabled'),
+            search=_query_text('group_search'),
+        ),
+    }
+
+
+def _access_grants_section_context() -> dict[str, Any]:
+    return get_access_grant_registry_context(
+        page=_query_int('grant_page'),
+        per_page=_query_int('grant_per_page', 5),
+        tenant_id=_query_text('grant_tenant_id'),
+        status=_query_text('grant_status'),
+        reconciliation_status=_query_text('grant_reconciliation_status'),
+        scope_type=_query_text('grant_scope_type'),
+        search=_query_text('grant_search'),
+    )
+
+
+def _credentials_section_context() -> dict[str, Any]:
+    return get_credential_registry_context(
+        page=_query_int('credential_page'),
+        per_page=_query_int('credential_per_page', 5),
+        tenant_id=_query_text('credential_tenant_id'),
+        credential_type=_query_text('credential_type'),
+        status=_query_text('credential_status'),
+        search=_query_text('credential_search'),
+    )
+
+
+def _namespace_access_section_context() -> dict[str, Any]:
+    return get_namespace_access_registry_context(
+        page=_query_int('namespace_access_page'),
+        per_page=_query_int('namespace_access_per_page', 5),
+        tenant_id=_query_text('namespace_access_tenant_id'),
+        environment=_query_text('namespace_access_environment'),
+        credential_status=_query_text('namespace_access_status'),
+        search=_query_text('namespace_access_search'),
+    )
+
+
+_TENANT_SECTION_CONTEXT_BUILDERS = {
+    'registry': _registry_section_context,
+    'discovery': _discovery_section_context,
+    'memberships': _memberships_section_context,
+    'access-grants': _access_grants_section_context,
+    'credentials': _credentials_section_context,
+    'namespace-access': _namespace_access_section_context,
+}
+
+
 def _tenant_active_section_context(section: str) -> dict[str, Any]:
-    if section == 'registry':
-        return {
-            **get_tenant_registry_context(
-                page=request.args.get('page', 1, type=int) or 1,
-                per_page=request.args.get('per_page', 5, type=int) or 5,
-                search=str(request.args.get('search') or ''),
-                cluster_id=str(request.args.get('cluster_id') or ''),
-                environment=str(request.args.get('environment') or ''),
-                lifecycle_status=str(request.args.get('lifecycle_status') or ''),
-            ),
-        }
-    if section == 'discovery':
-        return {
-            **get_tenant_discovery_context(
-                page=request.args.get('discovery_page', 1, type=int) or 1,
-                per_page=request.args.get('discovery_per_page', 5, type=int) or 5,
-                cluster_id=str(request.args.get('discovery_cluster_id') or ''),
-                provider=str(request.args.get('discovery_provider') or ''),
-                management=str(request.args.get('discovery_management') or ''),
-                search=str(request.args.get('discovery_search') or ''),
-            ),
-        }
-    if section == 'memberships':
-        return {
-            **get_membership_registry_context(
-                page=request.args.get('membership_page', 1, type=int) or 1,
-                per_page=request.args.get('membership_per_page', 5, type=int) or 5,
-                tenant_id=str(request.args.get('membership_tenant_id') or ''),
-                principal_type=str(request.args.get('membership_principal_type') or ''),
-                status=str(request.args.get('membership_status') or ''),
-                search=str(request.args.get('membership_search') or ''),
-            ),
-            **get_group_registry_context(
-                page=request.args.get('group_page', 1, type=int) or 1,
-                per_page=request.args.get('group_per_page', 5, type=int) or 5,
-                tenant_id=str(request.args.get('group_tenant_id') or ''),
-                enabled=str(request.args.get('group_enabled') or ''),
-                search=str(request.args.get('group_search') or ''),
-            ),
-        }
-    if section == 'access-grants':
-        return {
-            **get_access_grant_registry_context(
-                page=request.args.get('grant_page', 1, type=int) or 1,
-                per_page=request.args.get('grant_per_page', 5, type=int) or 5,
-                tenant_id=str(request.args.get('grant_tenant_id') or ''),
-                status=str(request.args.get('grant_status') or ''),
-                reconciliation_status=str(request.args.get('grant_reconciliation_status') or ''),
-                scope_type=str(request.args.get('grant_scope_type') or ''),
-                search=str(request.args.get('grant_search') or ''),
-            ),
-        }
-    if section == 'credentials':
-        return {
-            **get_credential_registry_context(
-                page=request.args.get('credential_page', 1, type=int) or 1,
-                per_page=request.args.get('credential_per_page', 5, type=int) or 5,
-                tenant_id=str(request.args.get('credential_tenant_id') or ''),
-                credential_type=str(request.args.get('credential_type') or ''),
-                status=str(request.args.get('credential_status') or ''),
-                search=str(request.args.get('credential_search') or ''),
-            ),
-        }
-    if section == 'namespace-access':
-        return get_namespace_access_registry_context(
-            page=request.args.get('namespace_access_page', 1, type=int) or 1,
-            per_page=request.args.get('namespace_access_per_page', 5, type=int) or 5,
-            tenant_id=str(request.args.get('namespace_access_tenant_id') or ''),
-            environment=str(request.args.get('namespace_access_environment') or ''),
-            credential_status=str(request.args.get('namespace_access_status') or ''),
-            search=str(request.args.get('namespace_access_search') or ''),
-        )
-    return {}
-
-
+    builder = _TENANT_SECTION_CONTEXT_BUILDERS.get(section)
+    return builder() if builder is not None else {}
 def _required_int(name: str) -> int:
     value = str(request.form.get(name) or '').strip()
     if not value:
