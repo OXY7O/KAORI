@@ -4,6 +4,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 DEVELOPER_WORKFLOW = ROOT / '.github/workflows/developer-check.yml'
+PLANNER = ROOT / 'scripts/developer_check_plan.py'
 QUALITY_WORKFLOW = ROOT / '.github/workflows/quality.yml'
 DELIVERY = ROOT / 'docs/engineering/KAORI_DELIVERY_WORKFLOW.md'
 TELEGRAM = ROOT / '.github/workflows/telegram-github-actions.yml'
