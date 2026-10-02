@@ -216,9 +216,9 @@ def test_tenant_readiness_matches_runtime_fallback_and_blocker_distinguishes_val
     assert 'Alertmanager' not in service
 
     assert 'registered_cluster_count = cluster_onboarding.cluster_count|default(0)' in base
-    assert 'Cluster Validation Required' in base
+    assert 'Provider Operations Restricted' in base
     assert 'Registered Clusters' in base
-    assert 'Tenant requires a Ready integration' in base
+    assert 'Provider mutations require a Ready Kubernetes integration.' in base
 
     assert 'blocked_cluster_value' in hero_blocker
     assert 'blocked_cluster_supporting' in hero_blocker
