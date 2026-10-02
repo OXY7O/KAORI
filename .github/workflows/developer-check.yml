@@ -242,7 +242,7 @@ jobs:
     needs: route
     if: ${{ needs.route.result == 'success' }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
-    timeout-minutes: 10
+    timeout-minutes: 20
     outputs:
       image: ${{ steps.toolchain.outputs.image }}
     steps:
