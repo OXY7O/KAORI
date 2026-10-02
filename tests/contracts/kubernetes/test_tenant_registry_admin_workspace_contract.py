@@ -1459,7 +1459,7 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert 'namespace_cutover_state' in service
     script = read('app/static/js/tenant_resource_profile_presets.js')
     assert 'preferCurrentProfile' in script
-    assert 'current?.profile_id' in script
+    assert 'current.profile_id' in script
     assert "profileSelect.value = 'adopted_baseline'" in script
     assert "profileSelect?.value === 'adopted_baseline'" in script
     assert 'valueSet?.storage_policy?.[field]' in script
@@ -1613,8 +1613,8 @@ def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -
     assert 'Capsule Shared Allocation Drift' in drift_ui
     assert 'Reapply KAORI Intent' in drift_ui
     assert 'Accept Provider State' in drift_ui
-    assert "source.get('uid')" in drift_ui
-    assert "source.get('resource_version')" in drift_ui
+    assert 'source.get("uid")' in drift_ui
+    assert 'source.get("resource_version")' in drift_ui
     assert 'ops_capsule_shared_page' in routes
     assert 'ops_capsule_shared_per_page' in routes
 
@@ -1651,7 +1651,7 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
     assert 'def observe_capsule_tenant_resource_quota' in observer
     assert "scope = str(resource_quotas.get('scope') or 'Tenant')" in observer
     assert "'authority_unsupported_dimensions': authority['unsupported']" in observer
-    assert "'external_constraints': external_constraints" in observer
+    assert "'external_constraint_details': namespace['details']" in observer
 
     assert 'def _apply_capsule_allocation_capability_state' in adoption
     assert "capability = 'tenant_resource_quotas'" in adoption
