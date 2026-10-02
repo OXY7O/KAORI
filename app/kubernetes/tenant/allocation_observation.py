@@ -286,15 +286,21 @@ def profile_lineage_for_observed_allocation(
             for field, values in dict(preset['limits']).items()
         }
         preset_storage = validate_storage_policy(preset.get('storage_policy') or {})
-        if (
-            _mapping_equivalent(quota, preset_quota)
-            and _limits_equivalent(limits, preset_limits)
-            and _mapping_equivalent(storage_policy or {}, preset_storage)
-        ):
+        quota_and_limits_match = _mapping_equivalent(quota, preset_quota) and _limits_equivalent(
+            limits, preset_limits
+        )
+        if quota_and_limits_match and _mapping_equivalent(storage_policy or {}, preset_storage):
             return {
                 'kind': 'kaori_preset',
                 'profile_class': profile_class,
                 'profile_version': int(preset['version']),
+                'label': f'{profile_class.title()} · KAORI Preset',
+            }
+        if quota_and_limits_match and not storage_policy:
+            return {
+                'kind': 'kaori_preset',
+                'profile_class': profile_class,
+                'profile_version': 1,
                 'label': f'{profile_class.title()} · KAORI Preset',
             }
     return {
