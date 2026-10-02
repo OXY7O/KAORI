@@ -178,7 +178,7 @@ def test_managed_adoption_imports_storage_policy_and_verifies_native_takeover() 
     assert 'shared_profile' not in native
 
     assert "_storage_policy_equal(dict(after.get('storage_policy') or {}), prepared.storage)" in cutover
-    assert 'record.allocation_storage_policy_json = storage' in cutover
+    assert 'record.allocation_storage_policy_json = prepared.storage' in cutover
     assert 'def reapply_kaori_allocation_intent(' in drift
     assert 'def accept_provider_allocation_state(' in drift
     assert 'def apply_provider_mirrored_policy_observation()' in drift
