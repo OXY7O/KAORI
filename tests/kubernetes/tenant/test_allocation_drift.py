@@ -34,6 +34,7 @@ def _record(
     )
     return SimpleNamespace(
         id=7,
+        cluster_id='cluster-a',
         namespace='api-prod',
         environment=SimpleNamespace(tenant=tenant),
         resource_profile=profile,
