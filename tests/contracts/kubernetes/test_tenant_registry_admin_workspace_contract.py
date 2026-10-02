@@ -32,11 +32,11 @@ def tenant_service_source() -> str:
 
 
 def tenant_discovery_source() -> str:
-    return tenant_discovery_source() + '\n' + read('app/kubernetes/tenant/discovery_adoption.py')
+    return read('app/kubernetes/tenant/discovery_service.py') + '\n' + read('app/kubernetes/tenant/discovery_adoption.py')
 
 
 def allocation_observation_source() -> str:
-    return allocation_observation_source() + '\n' + read('app/kubernetes/tenant/capsule_allocation_observation.py')
+    return read('app/kubernetes/tenant/allocation_observation.py') + '\n' + read('app/kubernetes/tenant/capsule_allocation_observation.py')
 
 
 def test_tenants_page_keeps_summary_above_the_tabbed_workspace() -> None:
