@@ -13,6 +13,8 @@ from app.common.pagination import paginate_sequence
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
 from app.kubernetes.tenant.capacity_governance import enforce_shared_tenant_allocation_preflight
+from app.kubernetes.tenant.capsule_advanced import reconcile_capsule_advanced_intent
+from app.kubernetes.tenant.capsule_advanced_service import _provider_from_committed_evidence
 from app.kubernetes.tenant.capsule_allocation_governance_support import (
     _allocation_baseline,
     _canonical_hash,
@@ -24,8 +26,6 @@ from app.kubernetes.tenant.capsule_allocation_governance_support import (
     _source_reference,
     _tenant_evidence,
 )
-from app.kubernetes.tenant.capsule_advanced import reconcile_capsule_advanced_intent
-from app.kubernetes.tenant.capsule_advanced_service import _provider_from_committed_evidence
 from app.kubernetes.tenant.service import (
     _namespace_allocation_values,
     _validate_resource_profile_attachment_controls,
