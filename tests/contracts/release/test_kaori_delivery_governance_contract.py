@@ -9,6 +9,7 @@ LABEL_CATALOG = ROOT / 'docs/engineering/KAORI_GITHUB_LABEL_CATALOG.md'
 ISSUE_DIR = ROOT / '.github/ISSUE_TEMPLATE'
 QUALITY_WORKFLOW = ROOT / '.github/workflows/quality.yml'
 DEVELOPER_WORKFLOW = ROOT / '.github/workflows/developer-check.yml'
+PLANNER = ROOT / 'scripts' / 'resolve_developer_check_plan.py'
 PR_TEMPLATE = ROOT / '.github/PULL_REQUEST_TEMPLATE.md'
 CI_CD_DOC = ROOT / 'docs/setup/GITHUB_ACTIONS_CI_CD.md'
 RECOVERY_DOC = ROOT / 'docs/deployment/CI_CD_RECOVERY_CONTRACT.md'
@@ -247,20 +248,19 @@ def test_work_branches_use_targeted_checks_before_ready_admission() -> None:
     assert 'uses: ./.github/workflows/quality.yml' in developer
 
     assert 'Every `kaori/*` branch except `kaori/staging` is a work branch.' in workflow
-    assert (
-        'Work branches use path-aware Developer Check / targeted validation while Draft and on the exact Ready head.'
-        in workflow
-    )
-    assert 'Comprehensive validation authority begins at the Ready/frozen-candidate boundary' in workflow
+    assert 'Work branches use the shared Developer Validation Plan' in workflow
+    assert 'Candidate Freeze is the single convergence boundary' in workflow
 
 
 def test_draft_developer_check_is_path_aware_and_non_authoritative() -> None:
     source = read(DEVELOPER_WORKFLOW)
+    planner = read(PLANNER)
 
     assert 'name: Developer Check' in source
     assert 'name: Route Checks' in source
-    assert 'name: Developer Check' in source
-    assert 'wide=true' in source
+    assert 'python3 scripts/resolve_developer_check_plan.py' in source
+    assert 'wide = True' in planner
+    assert 'tests/contracts/release' in planner
     assert 'scripts/quality_gate.sh --static' not in source
     assert 'run-runtime-validation.sh' not in source
 

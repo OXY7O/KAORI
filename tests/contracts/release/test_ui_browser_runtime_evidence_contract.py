@@ -9,9 +9,10 @@ def _read(path: str) -> str:
 
 def test_developer_check_routes_ui_tests_and_retains_browser_evidence() -> None:
     workflow = _read('.github/workflows/developer-check.yml')
+    planner = _read('scripts/resolve_developer_check_plan.py')
 
-    assert 'tests/ui/*)' in workflow
-    assert 'selected_tests[tests/ui]=1' in workflow
+    assert "if path.startswith('tests/ui/'):" in planner
+    assert 'frontend = True' in planner
     assert 'tmp/ci-artifacts/test-output/ui-browser' in workflow
     assert 'Upload Browser Diagnostics' in workflow
 

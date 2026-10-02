@@ -59,8 +59,8 @@ def test_developer_check_normalizes_parent_child_test_paths() -> None:
     source = read(PLANNER)
 
     assert 'def _normalize_test_paths' in source
-    assert 'candidate.startswith(parent + "/")' in source
-    assert 'parent.startswith(candidate + "/")' in source
+    assert "candidate.startswith(parent + '/')" in source
+    assert "parent.startswith(candidate + '/')" in source
 
 
 def test_developer_check_parallel_lanes_fail_closed_into_one_aggregate() -> None:
@@ -121,10 +121,9 @@ def test_developer_check_routes_changed_paths_and_fails_safe_for_authority_chang
         'docs/architecture/code-health-debt-baseline.json',
         'tests/contracts/release/',
         'docs/engineering/KAORI_DELIVERY_WORKFLOW.md',
-        'tests/reports',
-        'tests/kubernetes',
-        'tests/storage',
-        'tests/access',
+        "SOURCE_TEST_DOMAINS",
+        "'kubernetes': 'kubernetes'",
+        "domain_root = f'tests/{test_domain}'",
         'tests/contracts/release',
         'tests/migrations',
     ):
@@ -213,10 +212,10 @@ def test_delivery_standard_codifies_pre_ready_and_batch_repair() -> None:
     for token in (
         'Developer Check',
         'Pre-Ready',
-        'path-aware',
+        'capability-aware',
         'batch repair',
-        'frozen final candidate',
-        'one fresh Full Admission',
+        'Candidate Freeze',
+        'one governed Full Admission',
         'Vault Management',
         'small issue',
     ):

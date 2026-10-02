@@ -38,7 +38,7 @@ def load_policy() -> ModuleType:
 
 def test_delivery_governance_authorizes_tree_fingerprint_reuse_without_weakening_uat() -> None:
     source = read(DELIVERY)
-    assert '**Governance Version:** 2.1' in source
+    assert '**Governance Version:** 2.2' in source
     assert 'Full Admission' in source
     assert 'exact evidence reuse' in source.lower()
     assert 'authority fingerprint' in source.lower()
