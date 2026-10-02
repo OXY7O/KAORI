@@ -27,7 +27,7 @@ def load_form(name: str) -> dict:
 def test_delivery_workflow_locks_current_lifecycle_branch_and_uat_authority() -> None:
     source = read(WORKFLOW)
     for token in (
-        '**Governance Version:** 2.1',
+        '**Governance Version:** 2.2',
         'Inbox',
         'Backlog',
         'Ready',

@@ -46,6 +46,28 @@ Equivalent terminal launch inside the Dev Container:
 flask --app run:app run --host=0.0.0.0 --port=5000 --debug
 ```
 
+## Engineering Evolution v2 development tracks
+
+The canonical Dev Container is a first-class KAORI development feedback environment, not a separate delivery authority. KAORI supports two context-dependent tracks:
+
+- **Local-First / Dev Container** for large features, repeated UI/UX review, provider workflows, and substantial refactoring where remote CI would otherwise become the interactive loop.
+- **GitHub-First** for bounded fixes and small changes where Draft PR Developer Check feedback remains proportional.
+
+Both tracks converge at **Candidate Freeze** and then use the same exact-head Developer Check, Full Admission, `kaori/staging`, UAT, promotion, and release authorities.
+
+Before Local-First review, synchronize staging and resolve the same capability-aware plan consumed by GitHub:
+
+```bash
+git fetch origin kaori/staging
+python scripts/resolve_developer_check_plan.py \
+  --base-ref origin/kaori/staging \
+  --head-ref HEAD
+```
+
+The plan reports changed capabilities and focused test paths. Execute the listed existing KAORI validators/tests in the Dev Container; do not create alternate local-only validation rules. Local results accelerate feedback but do not replace GitHub admission evidence.
+
+A VS Code task named **KAORI: Developer Validation Plan** runs the planner against `origin/kaori/staging...HEAD`. Refresh the remote staging ref before relying on that task for candidate review.
+
 ## Daily workflow
 
 Python and Jinja changes are visible immediately through the bind-mounted source.

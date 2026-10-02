@@ -4,6 +4,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 DEVELOPER_WORKFLOW = ROOT / '.github/workflows/developer-check.yml'
+PLANNER = ROOT / 'scripts' / 'resolve_developer_check_plan.py'
 QUALITY_WORKFLOW = ROOT / '.github/workflows/quality.yml'
 DELIVERY = ROOT / 'docs/engineering/KAORI_DELIVERY_WORKFLOW.md'
 TELEGRAM = ROOT / '.github/workflows/telegram-github-actions.yml'
@@ -55,13 +56,11 @@ def test_work_branch_developer_check_is_separate_from_governed_admission() -> No
 
 
 def test_developer_check_normalizes_parent_child_test_paths() -> None:
-    source = read(DEVELOPER_WORKFLOW)
+    source = read(PLANNER)
 
-    assert 'Collapse child selections when their canonical parent is already selected.' in source
-    assert '[[ "$selected_path" == tests/contracts/* ]]' in source
-    assert 'unset "selected_tests[$selected_path]"' in source
-    assert 'mapfile -t sorted_test_paths' in source
-
+    assert 'def _normalize_test_paths' in source
+    assert 'candidate.startswith(parent + "/")' in source
+    assert 'parent.startswith(candidate + "/")' in source
 
 def test_developer_check_parallel_lanes_fail_closed_into_one_aggregate() -> None:
     source = read(DEVELOPER_WORKFLOW)
@@ -99,45 +98,36 @@ def test_ready_full_admission_is_strictly_downstream_of_developer_check() -> Non
 
 
 def test_developer_check_routes_changed_paths_and_fails_safe_for_authority_changes() -> None:
-    source = read(DEVELOPER_WORKFLOW)
+    workflow = read(DEVELOPER_WORKFLOW)
+    planner = read(PLANNER)
+
+    assert 'python scripts/resolve_developer_check_plan.py' in workflow
+    assert 'selected_tests[' not in workflow
 
     for token in (
-        '.github/*',
-        'requirements/*',
+        'AUTHORITY_EXACT_PATHS',
+        'AUTHORITY_PREFIXES',
+        '.github/',
+        'requirements/',
         'scripts/ci_admission.py',
         'scripts/ci_admission_policy.py',
         'scripts/quality_gate.sh',
+        'scripts/resolve_developer_check_plan.py',
         'scripts/verify_analytics_pdf_publication.py',
         'scripts/verify_pre_release_type_safety.py',
         'scripts/verify_code_health.py',
         'scripts/verify_code_health_baseline_integrity.py',
         'docs/architecture/code-health-debt-baseline.json',
-        'tests/contracts/release/*',
+        'tests/contracts/release/',
         'docs/engineering/KAORI_DELIVERY_WORKFLOW.md',
-        'wide=true',
-        'reports=true',
-        'selected_tests',
-        'selected_tests[tests/contracts]=1',
-        'selected_tests[tests/migrations]=1',
         'tests/reports',
-        'tests/contracts/reports',
-        'tests/contracts/analytics',
-        'tests/contracts/platform_operations',
         'tests/kubernetes',
         'tests/storage',
         'tests/access',
+        'tests/contracts/release',
+        'tests/migrations',
     ):
-        assert token in source
-
-    for redundant_pattern in (
-        '.github/*|.github/ci/*',
-        'app/templates/*|app/*/templates/*|app/*/templates/**/*',
-        'app/static/*|app/static/**/*',
-        'frontend/*|frontend/**/*',
-        'migrations/*|migrations/**/*',
-    ):
-        assert redundant_pattern not in source
-
+        assert token in planner
 
 def test_developer_check_uses_existing_validation_commands() -> None:
     source = read(DEVELOPER_WORKFLOW)

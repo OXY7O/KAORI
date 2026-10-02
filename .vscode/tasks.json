@@ -26,6 +26,12 @@
       "problemMatcher": []
     },
     {
+      "label": "KAORI: Developer Validation Plan",
+      "type": "shell",
+      "command": "python scripts/resolve_developer_check_plan.py --base-ref origin/kaori/staging --head-ref HEAD",
+      "problemMatcher": []
+    },
+    {
       "label": "KAORI: Ruff Check",
       "type": "shell",
       "command": "ruff check app tests scripts",

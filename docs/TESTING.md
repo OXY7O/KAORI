@@ -7,6 +7,21 @@ python scripts/verify_final_release.py --all --runtime
 ```
 
 
+## Development validation planning
+
+Developer-time test selection is impact-aware. `scripts/resolve_developer_check_plan.py` is the single routing authority for both Local-First Dev Container feedback and GitHub Developer Check.
+
+```bash
+git fetch origin kaori/staging
+python scripts/resolve_developer_check_plan.py \
+  --base-ref origin/kaori/staging \
+  --head-ref HEAD
+```
+
+The planner chooses the narrowest existing capability test boundary and falls back conservatively when a stable nested boundary does not exist. Validation-authority changes select release-contract and migration coverage during Developer Check rather than replaying every contract family during each development iteration.
+
+This optimization applies only to development feedback. **Full Admission remains comprehensive** and is the final-candidate authority that protects against incomplete impact analysis.
+
 ## Practical test commands
 
 Use the narrowest owning test first, then broaden the evidence before release.
