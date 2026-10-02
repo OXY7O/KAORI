@@ -1,174 +1,69 @@
 from __future__ import annotations
 
-import hashlib
-import json
 from collections.abc import Mapping
 from copy import deepcopy
 from datetime import UTC, datetime
-from decimal import InvalidOperation
 from typing import Any
 
 from kubernetes.client.rest import ApiException
-from kubernetes.utils.quantity import parse_quantity
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.common.pagination import paginate_sequence
 from app.extensions.db import db
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
-from app.kubernetes.tenant.allocation_observation import (
-    observe_capsule_tenant_allocation,
-    observe_capsule_tenant_resource_quota,
-)
 from app.kubernetes.tenant.capacity_governance import enforce_capsule_tenant_resource_quota_preflight
-from app.kubernetes.tenant.capsule_provider import (
-    CapsuleTenantProvider,
-    discover_capsule,
-    require_capsule_capability,
+from app.kubernetes.tenant.capsule_tenant_quota_contract import (
+    _AUTHORITY,
+    _CAPABILITY,
+    _CONTROL_DRIFTED,
+    _CONTROL_MANAGED,
+)
+from app.kubernetes.tenant.capsule_tenant_quota_provider import (
+    _live_allocation,
+    _patch_resource_quotas,
+    _prove_mutation_capability,
+    _prove_read_capability,
+    _read_live_tenant,
+    _verify_effective,
+)
+from app.kubernetes.tenant.capsule_tenant_quota_support import (
+    _GovernanceCommitContext,
+    _allocation_baseline,
+    _baseline_source,
+    _baseline_tenant_quota,
+    _canonical_hash,
+    _capsule_capability_state,
+    _commit_governance as _commit_governance_impl,
+    _desired_resource_quotas,
+    _governance,
+    _lineage_profile,
+    _managed_state,
+    _namespace_count,
+    _profile,
+    _profile_matches_quota,
+    _quota_contract_from_observation,
+    _quota_differences,
+    _quota_for_profile,
+    _record_failure,
+    _resource_quota_authority_context,
+    _resource_quotas,
 )
 from app.kubernetes.tenant.providers import TenantProviderState
-from app.kubernetes.tenant.service import (
-    _namespace_allocation_values,
-    _validate_resource_profile_attachment_controls,
-    resource_profile_attachment_controls,
-)
-from app.kubernetes.tenant.validation import COUNT_QUOTA_KEYS, SUPPORTED_QUOTA_KEYS, validate_profile_spec
-from app.models import Cluster
+from app.kubernetes.tenant.service import _validate_resource_profile_attachment_controls
+from app.kubernetes.tenant.validation import validate_profile_spec
 from app.models.tenant import (
     Tenant,
     TenantLifecycleStatus,
     TenantResourceProfile,
 )
 
-_CAPSULE_GROUP = 'capsule.clastix.io'
-_CAPSULE_PLURAL = 'tenants'
-_AUTHORITY = 'capsule_tenant_resource_quotas'
-_CAPABILITY = 'tenant_resource_quotas'
-_CONTROL_MANAGED = 'kaori_managed'
-_CONTROL_DRIFTED = 'drifted'
 
 
 class CapsuleTenantQuotaStateConflictError(RuntimeError):
     """Committed Capsule Tenant quota governance changed while applying an action."""
 
 
-def _canonical_hash(payload: object) -> str:
-    rendered = json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=True)
-    return hashlib.sha256(rendered.encode()).hexdigest()
-
-
-def _tenant_evidence(tenant: Tenant) -> dict[str, Any]:
-    return deepcopy(tenant.provider_evidence_json or {})
-
-
-def _allocation_baseline(tenant: Tenant) -> dict[str, Any]:
-    baseline = _tenant_evidence(tenant).get('allocation_baseline')
-    return dict(baseline) if isinstance(baseline, Mapping) else {}
-
-
-def _governance(tenant: Tenant) -> dict[str, Any]:
-    value = _tenant_evidence(tenant).get('allocation_governance')
-    return dict(value) if isinstance(value, Mapping) else {}
-
-
-def _capsule_capability_state(tenant: Tenant, capability: str) -> str:
-    capsule = _tenant_evidence(tenant).get('capsule')
-    capabilities = capsule.get('capabilities') if isinstance(capsule, Mapping) else None
-    return str(capabilities.get(capability) or '') if isinstance(capabilities, Mapping) else ''
-
-
-def _provider_source(item: Mapping[str, Any], *, api_version: str) -> dict[str, str]:
-    metadata = item.get('metadata') if isinstance(item, Mapping) else {}
-    metadata = metadata if isinstance(metadata, Mapping) else {}
-    return {
-        'kind': 'Tenant',
-        'name': str(metadata.get('name') or ''),
-        'uid': str(metadata.get('uid') or ''),
-        'resource_version': str(metadata.get('resourceVersion') or ''),
-        'api_version': api_version,
-    }
-
-
-def _resource_quotas(item: Mapping[str, Any]) -> dict[str, Any]:
-    spec = item.get('spec') if isinstance(item, Mapping) else {}
-    spec = spec if isinstance(spec, Mapping) else {}
-    value = spec.get('resourceQuotas')
-    return deepcopy(dict(value)) if isinstance(value, Mapping) else {}
-
-
-def _quota_for_profile(profile: TenantResourceProfile) -> dict[str, str]:
-    quota, _limits, _storage_policy, _customized = _namespace_allocation_values(profile)
-    return quota
-
-
-def _quantity_equal(key: str, left: object, right: object) -> bool:
-    left_text = str(left)
-    right_text = str(right)
-    if key in COUNT_QUOTA_KEYS:
-        try:
-            return int(left_text) == int(right_text)
-        except (TypeError, ValueError):
-            return False
-    try:
-        return parse_quantity(left_text) == parse_quantity(right_text)
-    except (InvalidOperation, TypeError, ValueError):
-        return left_text == right_text
-
-
-def _quota_differences(
-    desired: Mapping[str, object],
-    observed: Mapping[str, object],
-) -> list[dict[str, str]]:
-    differences: list[dict[str, str]] = []
-    for key in sorted(set(desired) | set(observed)):
-        desired_value = desired.get(key)
-        observed_value = observed.get(key)
-        if desired_value is None or observed_value is None:
-            if desired_value != observed_value:
-                differences.append(
-                    {
-                        'dimension': key,
-                        'kaori_value': str(desired_value) if desired_value is not None else 'Unbounded',
-                        'provider_value': str(observed_value) if observed_value is not None else 'Unbounded',
-                    }
-                )
-            continue
-        if not _quantity_equal(key, desired_value, observed_value):
-            differences.append(
-                {
-                    'dimension': key,
-                    'kaori_value': str(desired_value),
-                    'provider_value': str(observed_value),
-                }
-            )
-    return differences
-
-
-def _profile_matches_quota(profile: TenantResourceProfile, quota: Mapping[str, object]) -> bool:
-    return not _quota_differences(_quota_for_profile(profile), quota)
-
-
-def _managed_state(tenant: Tenant) -> bool:
-    governance = _governance(tenant)
-    return governance.get('authority') == _AUTHORITY and governance.get('control_state') in {
-        _CONTROL_MANAGED,
-        _CONTROL_DRIFTED,
-    }
-
-
-def _baseline_tenant_quota(tenant: Tenant) -> dict[str, Any]:
-    value = _allocation_baseline(tenant).get('tenant_resource_quota')
-    return dict(value) if isinstance(value, Mapping) else {}
-
-
-def _baseline_source(tenant: Tenant) -> dict[str, str]:
-    evidence = _tenant_evidence(tenant)
-    return {
-        'kind': 'Tenant',
-        'name': str(evidence.get('resource_name') or tenant.provider_reference or tenant.slug),
-        'uid': str(evidence.get('provider_uid') or ''),
-        'resource_version': str(evidence.get('resource_version') or ''),
-        'api_version': str(evidence.get('provider_api_version') or ''),
-    }
+def _commit_governance(tenant: Tenant, **values: Any) -> None:
+    _commit_governance_impl(tenant, _GovernanceCommitContext(**values))
 
 
 def build_capsule_tenant_quota_cutover_state(tenant: Tenant) -> dict[str, Any]:
@@ -230,358 +125,6 @@ def build_capsule_tenant_quota_cutover_state(tenant: Tenant) -> dict[str, Any]:
         'external_constraints': list(baseline.get('external_constraints') or []),
         'correlated_namespace_count': len(list(baseline.get('correlated_namespaces') or [])),
     }
-
-
-def _cluster_client(tenant: Tenant):
-    cluster = db.session.get(Cluster, tenant.cluster_id)
-    if cluster is None:
-        raise ValueError('Tenant cluster no longer exists.')
-    return cluster, runtime_adapter.build_client(cluster)
-
-
-def _read_live_tenant(
-    tenant: Tenant,
-    *,
-    expected_source: Mapping[str, Any],
-    require_resource_version_match: bool,
-) -> tuple[dict[str, Any], dict[str, str], Any]:
-    _cluster, client = _cluster_client(tenant)
-    api = client.custom_objects_api()
-    name = str(expected_source.get('name') or tenant.provider_reference or '').strip()
-    api_version = str(
-        expected_source.get('api_version') or _tenant_evidence(tenant).get('provider_api_version') or ''
-    ).strip()
-    if not name or not api_version:
-        raise ValueError('Committed Capsule Tenant provider identity is incomplete.')
-
-    try:
-        item = api.get_cluster_custom_object(
-            _CAPSULE_GROUP,
-            api_version,
-            _CAPSULE_PLURAL,
-            name,
-            _request_timeout=5,
-        )
-    except ApiException as exc:
-        if exc.status == 404:
-            raise ValueError('Authoritative Capsule Tenant CR is no longer present.') from exc
-        raise
-    if not isinstance(item, dict):
-        raise ValueError('Capsule Tenant provider response is invalid.')
-
-    source = _provider_source(item, api_version=api_version)
-    expected_uid = str(expected_source.get('uid') or '')
-    expected_rv = str(expected_source.get('resource_version') or '')
-    if expected_uid and source['uid'] and expected_uid != source['uid']:
-        raise ValueError('Capsule Tenant UID changed; refresh provider evidence before mutation.')
-    if (
-        require_resource_version_match
-        and expected_rv
-        and source['resource_version']
-        and expected_rv != source['resource_version']
-    ):
-        raise ValueError('Capsule Tenant resourceVersion changed; run Tenant Sync and review current provider state.')
-    return item, source, client
-
-
-def _prove_mutation_capability(
-    tenant: Tenant,
-    *,
-    item: Mapping[str, Any],
-    source: Mapping[str, str],
-    client: Any,
-) -> None:
-    if tenant.provider_state != TenantProviderState.CAPSULE.value:
-        raise ValueError('Capsule provider is degraded or unavailable.')
-    api_version = source['api_version']
-    resource_quotas = _resource_quotas(item)
-    if not resource_quotas:
-        raise ValueError('Capsule Tenant resourceQuotas are no longer present.')
-
-    api = client.custom_objects_api()
-    try:
-        api.patch_cluster_custom_object(
-            _CAPSULE_GROUP,
-            api_version,
-            _CAPSULE_PLURAL,
-            source['name'],
-            {
-                'metadata': {
-                    'name': source['name'],
-                    'resourceVersion': source['resource_version'],
-                },
-                'spec': {'resourceQuotas': resource_quotas},
-            },
-            dry_run='All',
-            _request_timeout=5,
-        )
-        snapshot = discover_capsule(
-            api.api_client,
-            probes={'admission_enforcement': True},
-        )
-        provider = CapsuleTenantProvider(snapshot=snapshot)
-        binding = provider.validate_binding(cluster_id=str(tenant.cluster_id))
-        if binding.state is not TenantProviderState.CAPSULE:
-            raise ValueError('Capsule Tenant quota mutation is unavailable while provider authority is degraded.')
-        require_capsule_capability(
-            provider,
-            cluster_id=str(tenant.cluster_id),
-            capability=_CAPABILITY,
-        )
-    except ApiException as exc:
-        raise ValueError(f'Capsule Tenant quota mutation preflight failed: {str(exc)[:700]}') from exc
-
-
-def _prove_read_capability(tenant: Tenant, *, client: Any) -> None:
-    if tenant.provider_state != TenantProviderState.CAPSULE.value:
-        raise ValueError('Capsule provider is degraded or unavailable.')
-    snapshot = discover_capsule(client.custom_objects_api().api_client)
-    status = snapshot.capabilities.get(_CAPABILITY)
-    status_value = str(getattr(status, 'value', status) or '')
-    if status_value != 'available':
-        raise ValueError('Capsule tenant_resource_quotas capability is unavailable in the live served CRD schema.')
-
-
-def _live_allocation(
-    tenant: Tenant,
-    *,
-    item: Mapping[str, Any],
-    client: Any,
-) -> tuple[dict[str, Any], dict[str, Any]]:
-    allocation = observe_capsule_tenant_allocation(
-        client,
-        tenant_name=str(tenant.provider_reference or tenant.slug),
-        tenant_item=item,
-    )
-    if allocation.get('allocation_authority') != _AUTHORITY:
-        raise ValueError(
-            'Capsule allocation authority changed; Tenant.spec.resourceQuotas is no longer the single authoritative path.'
-        )
-    blockers = list(allocation.get('authority_unsupported_dimensions') or []) + list(
-        allocation.get('authority_ambiguous_dimensions') or []
-    )
-    if blockers:
-        raise ValueError('Capsule Tenant quota authority requires review: ' + '; '.join(str(item) for item in blockers))
-    tenant_quota = allocation.get('tenant_resource_quota')
-    if not isinstance(tenant_quota, Mapping):
-        raise ValueError('Capsule Tenant resource quota observation is unavailable.')
-    scope = str(tenant_quota.get('scope') or 'Tenant')
-    if scope not in {'Tenant', 'Namespace'}:
-        raise ValueError('Capsule Tenant resource quota scope is unsupported.')
-    quota = tenant_quota.get('quota')
-    if not isinstance(quota, Mapping):
-        raise ValueError('Capsule Tenant resource quota values are unavailable.')
-    validate_profile_spec(dict(quota), {})
-    return dict(tenant_quota), allocation
-
-
-def _desired_resource_quotas(
-    current: Mapping[str, Any],
-    proposed_quota: Mapping[str, object],
-    *,
-    scope: str,
-) -> dict[str, Any]:
-    desired = deepcopy(dict(current))
-    desired['scope'] = scope
-    raw_items = desired.get('items')
-    items = (
-        [deepcopy(dict(item)) for item in raw_items if isinstance(item, Mapping)] if isinstance(raw_items, list) else []
-    )
-    if not items:
-        items = [{'hard': {}}]
-
-    owner_index: dict[str, int] = {}
-    for index, item in enumerate(items):
-        hard = item.get('hard')
-        hard = dict(hard) if isinstance(hard, Mapping) else {}
-        for key in hard:
-            if key in SUPPORTED_QUOTA_KEYS and key not in owner_index:
-                owner_index[str(key)] = index
-        item['hard'] = {str(key): str(value) for key, value in hard.items() if key not in SUPPORTED_QUOTA_KEYS}
-
-    for key, value in proposed_quota.items():
-        index = owner_index.get(str(key), 0)
-        hard = items[index].get('hard')
-        hard = dict(hard) if isinstance(hard, Mapping) else {}
-        hard[str(key)] = str(value)
-        items[index]['hard'] = hard
-
-    desired['items'] = items
-    return desired
-
-
-def _patch_resource_quotas(
-    tenant: Tenant,
-    *,
-    current_source: Mapping[str, str],
-    desired_resource_quotas: Mapping[str, Any],
-    client: Any,
-) -> tuple[dict[str, Any], dict[str, str], dict[str, Any]]:
-    api = client.custom_objects_api()
-    api.patch_cluster_custom_object(
-        _CAPSULE_GROUP,
-        current_source['api_version'],
-        _CAPSULE_PLURAL,
-        current_source['name'],
-        {
-            'metadata': {
-                'name': current_source['name'],
-                'resourceVersion': current_source['resource_version'],
-            },
-            'spec': {'resourceQuotas': deepcopy(dict(desired_resource_quotas))},
-        },
-        _request_timeout=5,
-    )
-    verified = api.get_cluster_custom_object(
-        _CAPSULE_GROUP,
-        current_source['api_version'],
-        _CAPSULE_PLURAL,
-        current_source['name'],
-        _request_timeout=5,
-    )
-    if not isinstance(verified, dict):
-        raise ValueError('Capsule Tenant read-back response is invalid.')
-    verified_source = _provider_source(verified, api_version=current_source['api_version'])
-    verified_quota = observe_capsule_tenant_resource_quota(verified)
-    if not isinstance(verified_quota, Mapping):
-        raise ValueError('Capsule Tenant read-back does not contain resourceQuotas.')
-    return verified, verified_source, dict(verified_quota)
-
-
-def _verify_effective(
-    *,
-    desired_resource_quotas: Mapping[str, Any],
-    desired_quota: Mapping[str, object],
-    desired_scope: str,
-    verified_quota: Mapping[str, Any],
-) -> None:
-    observed_quota = verified_quota.get('quota')
-    observed_scope = str(verified_quota.get('scope') or 'Tenant')
-    if not isinstance(observed_quota, Mapping):
-        raise ValueError('Capsule Tenant read-back quota values are unavailable.')
-    differences = _quota_differences(desired_quota, observed_quota)
-    if observed_scope != desired_scope or differences:
-        raise ValueError('Capsule Tenant provider read-back does not match the proposed governed allocation.')
-    if verified_quota.get('unsupported_dimensions') or verified_quota.get('ambiguous_dimensions'):
-        raise ValueError('Capsule Tenant read-back contains unsupported or ambiguous quota semantics.')
-    if _canonical_hash(_resource_quota_authority_context(desired_resource_quotas)) != _canonical_hash(
-        _resource_quota_authority_context(_quota_contract_from_observation(verified_quota))
-    ):
-        raise ValueError('Capsule Tenant read-back changed non-hard resourceQuotas authority fields.')
-
-
-def _quota_contract_from_observation(observation: Mapping[str, Any]) -> dict[str, Any]:
-    return {
-        'scope': str(observation.get('scope') or 'Tenant'),
-        'items': deepcopy(list(observation.get('items') or [])),
-    }
-
-
-def _resource_quota_authority_context(payload: Mapping[str, Any]) -> dict[str, Any]:
-    context = deepcopy(dict(payload))
-    items = context.get('items')
-    normalized_items: list[dict[str, Any]] = []
-    for item in items if isinstance(items, list) else []:
-        if not isinstance(item, Mapping):
-            continue
-        copy = deepcopy(dict(item))
-        copy.pop('hard', None)
-        normalized_items.append(copy)
-    context['items'] = normalized_items
-    return context
-
-
-def _allocation_scope(scope: str) -> str:
-    return 'tenant_shared' if scope == 'Tenant' else 'tenant_namespace_template'
-
-
-def _namespace_count(allocation: Mapping[str, Any]) -> int:
-    return len(list(allocation.get('correlated_namespaces') or []))
-
-
-def _commit_governance(
-    tenant: Tenant,
-    *,
-    profile: TenantResourceProfile,
-    desired_resource_quotas: Mapping[str, Any],
-    effective_resource_quotas: Mapping[str, Any],
-    desired_quota: Mapping[str, object],
-    effective_quota: Mapping[str, object],
-    scope: str,
-    source: Mapping[str, str],
-    capacity_decision_id: int,
-    external_constraints: list[str],
-    namespace_count: int,
-    provenance: str,
-    provider_mutation_performed: bool,
-    history: list[dict[str, Any]] | None = None,
-) -> None:
-    evidence = _tenant_evidence(tenant)
-    governance = {
-        'authority': _AUTHORITY,
-        'capability': _CAPABILITY,
-        'control_state': _CONTROL_MANAGED,
-        'allocation_scope': _allocation_scope(scope),
-        'scope': scope,
-        'resource_profile_id': profile.public_id,
-        'resource_profile_version': profile.version,
-        'allocation_customized': not _profile_matches_quota(profile, effective_quota),
-        'capacity_decision_id': capacity_decision_id,
-        'desired_resource_quotas': deepcopy(dict(desired_resource_quotas)),
-        'effective_resource_quotas': deepcopy(dict(effective_resource_quotas)),
-        'desired_quota': {str(key): str(value) for key, value in desired_quota.items()},
-        'effective_quota': {str(key): str(value) for key, value in effective_quota.items()},
-        'desired_hash': _canonical_hash(desired_resource_quotas),
-        'effective_hash': _canonical_hash(effective_resource_quotas),
-        'provider_source': dict(source),
-        'external_constraints': list(external_constraints),
-        'correlated_namespace_count': namespace_count,
-        'provenance': provenance,
-        'advanced_profile_controls': resource_profile_attachment_controls(profile, tenant),
-        'history': list(history or []),
-        'updated_at': datetime.now(UTC).isoformat(),
-        'provider_mutation_performed': provider_mutation_performed,
-        'secret_material_persisted': False,
-    }
-    evidence['allocation_governance'] = governance
-    evidence['allocation_control_state'] = _CONTROL_MANAGED
-    evidence['resource_version'] = source.get('resource_version')
-    evidence['provider_uid'] = source.get('uid') or evidence.get('provider_uid')
-    tenant.provider_evidence_json = evidence
-
-
-def _record_failure(
-    tenant: Tenant,
-    *,
-    operation: str,
-    error: Exception,
-    provider_mutation_may_have_started: bool,
-) -> None:
-    evidence = _tenant_evidence(tenant)
-    evidence['allocation_governance_failure'] = {
-        'authority': _AUTHORITY,
-        'operation': operation,
-        'at': datetime.now(UTC).isoformat(),
-        'error': str(error)[:1000],
-        'provider_mutation_may_have_started': provider_mutation_may_have_started,
-        'secret_material_persisted': False,
-    }
-    tenant.provider_evidence_json = evidence
-
-
-def _profile(profile_id: int) -> TenantResourceProfile:
-    profile = db.session.get(TenantResourceProfile, profile_id)
-    if profile is None or not profile.enabled:
-        raise ValueError('Selected Resource Profile is unavailable.')
-    return profile
-
-
-def _lineage_profile(tenant: Tenant) -> TenantResourceProfile:
-    profile_public_id = _governance(tenant).get('resource_profile_id')
-    profile = TenantResourceProfile.query.filter_by(public_id=profile_public_id).first()
-    if profile is None or not profile.enabled:
-        raise ValueError('Committed Resource Profile lineage is unavailable for Capsule Tenant quota reconciliation.')
-    return profile
 
 
 def cutover_capsule_tenant_resource_quota(
