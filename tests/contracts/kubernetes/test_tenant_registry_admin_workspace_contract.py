@@ -194,7 +194,7 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'Targets are filtered automatically.' not in workspace
     assert 'Effective RBAC remains provider-verified.' not in workspace
     assert 'KAORI validates Tenant and scope before commit.' in workspace
-    assert 'Namespace scope requires one target.' in workspace
+    assert 'Namespace scope needs one target.' in workspace
     assert 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3' in workspace
     assert 'Start from one active Membership that identifies the principal and fixes its Tenant boundary.' in workspace
     assert (
@@ -207,7 +207,7 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'access-profile-tip' in workspace
     assert 'access-scope-tip' in workspace
     assert 'data-access-membership' in workspace
-    assert 'data-access-scope-guidance' in workspace
+    assert 'data-access-context-scope' in workspace
     assert 'data-access-environment-field' in workspace
     assert 'data-access-namespace-field' in workspace
     assert 'data-tenant-id="{{ membership.tenant_id }}"' in workspace
@@ -677,13 +677,13 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     assert 'Read-only profile snapshot that will be frozen on successful provisioning.' in namespace_form
     assert 'Effective Allocation Preview' in namespace_form
     assert 'Advanced Controls Preview' in namespace_form
-    assert 'Basic Resources' in namespace_form
-    assert 'Storage Guardrails' in namespace_form
+    assert 'Compute Limits' in namespace_form
+    assert 'Storage Policy' in namespace_form
     assert 'Object Limits' in namespace_form
     assert 'Container Defaults' in namespace_form
     assert 'pvc_min_storage' in namespace_form
     assert 'pvc_max_storage' in namespace_form
-    assert 'border-dashed border-outline-default bg-surface-card text-content-muted' in namespace_form
+    assert 'aria-label="Effective allocation summary"' in namespace_form
 
     assert 'Allocation Change' in allocation
     assert 'Change Target' in allocation
@@ -693,7 +693,7 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     assert 'Governance Gates' in allocation
     assert 'Capacity Admission' in allocation
     assert 'Provider Reconcile' in allocation
-    assert 'Read-back &amp; Commit' in allocation
+    assert 'Read-back & Commit' in allocation
     assert 'data-tenant-allocation-current-cpu' in allocation
     assert 'data-tenant-allocation-current-memory' in allocation
     assert 'data-tenant-allocation-current-pods' in allocation
@@ -879,15 +879,13 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
         in preflight
     )
     assert '[grid-template-columns:repeat(auto-fit,minmax(9rem,1fr))]' in preflight
-    assert (
-        "table_label.metadata_label('Scope · ' ~ (allocation.shared_scope|default('Provider', true)), 'scan-search')"
-        in preflight
-    )
-    assert "'requests.cpu': 'CPU Requests'" in preflight
-    assert "'limits.cpu': 'CPU Limits'" in preflight
-    assert "'requests.memory': 'Memory Requests'" in preflight
-    assert "'limits.memory': 'Memory Limits'" in preflight
-    assert "'pods': 'Pods'" in preflight
+    assert "table_label.metadata_label('Scope · ' ~" in preflight
+    assert "allocation.shared_scope|default('Provider', true)" in preflight
+    assert '"requests.cpu": "CPU Requests"' in preflight
+    assert '"limits.cpu": "CPU Limits"' in preflight
+    assert '"requests.memory": "Memory Requests"' in preflight
+    assert '"limits.memory": "Memory Limits"' in preflight
+    assert '"pods": "Pods"' in preflight
     assert 'Namespace Coverage' in preflight
     assert 'Proposed KAORI Mapping' in preflight
     assert 'Adoption Result' in preflight
@@ -899,10 +897,10 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'Managed after Adopt' in preflight
     assert 'Adopt as <span class="font-semibold text-content-primary">Managed</span>' in preflight
     assert 'remains execution authority' in preflight
-    assert 'imports the current provider values as the initial contract' in preflight
+    assert 'imports current provider values as the initial contract' in preflight
     assert 'Controls with admitted write authority use equivalent write/read-back' in preflight
     assert 'controller-owned constraints are mirrored without false drift' in preflight
-    assert 'Managed takeover where authority exists; provider-owned constraints stay mirrored.' in preflight
+    assert 'Adopt managed authority; keep provider constraints mirrored.' in preflight
     assert 'Adopt as Observed' not in preflight
     assert 'Observed · Read Only' not in preflight
     assert 'No provider mutation.' not in preflight
@@ -1164,9 +1162,9 @@ def test_access_grant_form_filters_targets_and_profiles_from_selected_membership
     assert 'namespaceCount === 0' in scope_js
     assert "providerKey === 'native_kubernetes'" in scope_js
     assert 'submit.disabled = !enabled' in scope_js
-    assert 'Provision Namespace first' in scope_js
-    assert 'No target selection is required.' in scope_js
-    assert 'incompatible profiles are filtered automatically.' in scope_js
+    assert 'Provision a Namespace before applying Namespace-scoped access.' in scope_js
+    assert 'targetLabel = tenantName' in scope_js
+    assert "optionText(profile, 'No compatible profile')" in scope_js
     assert 'normalizedPrincipalType' in scope_js
     assert "window.addEventListener('pageshow'" in scope_js
     assert 'htmx:afterSwap' in scope_js
@@ -1446,7 +1444,7 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert 'def reconcile_adopted_native_allocation' in cutover
     assert 'record.ownership_status != TenantOwnershipStatus.ADOPTED.value' in cutover
     assert "'allocation_control_state': 'kaori_managed'" in cutover
-    assert 'Namespace lifecycle ownership remains adopted.' in cutover
+    assert 'record.ownership_status = TenantOwnershipStatus.MANAGED.value' not in cutover
     assert 'resourceVersion changed since observation' in cutover
     assert 'UID changed since observation' in cutover
     assert 'Provider read-back does not match the proposed allocation' in cutover
@@ -1536,8 +1534,8 @@ def test_managed_allocation_drift_is_observation_only_and_bidirectionally_reconc
     assert 'Control Unavailable' in registry
     assert 'difference.kaori_value' in registry
     assert 'difference.provider_value' in registry
-    assert "source.get('uid')" in registry
-    assert "source.get('resource_version')" in registry
+    assert 'source.get("uid")' in registry
+    assert 'source.get("resource_version")' in registry
 
     assert '## Managed allocation drift and bidirectional reconciliation' in architecture
     assert 'current live provider allocation as the current state' in architecture
@@ -1568,8 +1566,8 @@ def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -
     assert 'qualify_capsule_tenant_adoption' in qualifier
     assert "dry_run='All'" in qualifier
     assert "'adoption_admission_dry_run_verified': admission_verified" in qualifier
-    assert 'capsule_capability_evidence' in adoption
-    assert "'capsule': capsule_capability_evidence" in adoption
+    assert 'capability_evidence' in adoption
+    assert "'capsule': capability_evidence" in adoption
     assert "allocation['control_state'] = 'observed'" in adoption
     assert 'shared_global_quota' in adoption
 
@@ -1652,7 +1650,7 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
     assert "'tenant_resource_quotas': _dependent_status(" in provider
     assert 'def observe_capsule_tenant_resource_quota' in observer
     assert "scope = str(resource_quotas.get('scope') or 'Tenant')" in observer
-    assert "'authority_unsupported_dimensions': authority_unsupported" in observer
+    assert "'authority_unsupported_dimensions': authority['unsupported']" in observer
     assert "'external_constraints': external_constraints" in observer
 
     assert 'def _apply_capsule_allocation_capability_state' in adoption

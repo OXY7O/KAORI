@@ -12,7 +12,9 @@ def test_auth_setup_warning_border_uses_shared_semantic_authority() -> None:
     source = TARGET_PATH.read_text(encoding='utf-8')
 
     assert '{% import "components/operational_callout.html" as operational_callout %}' in source
-    assert "operational_callout.semantic_border_classes('warning')" in source
+    assert '{% call operational_callout.render(' in source
+    assert 'tone="warning"' in source
+    assert 'variant="semantic"' in source
     assert 'border-status-warning-border' not in source
 
 

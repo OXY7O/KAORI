@@ -17,7 +17,8 @@ def test_reports_overview_uses_canonical_hero_and_two_block_body() -> None:
     source = read(OVERVIEW / 'index.html')
 
     assert 'data-reports-overview-layout="operational-full-width"' in source
-    assert 'Operational Reporting' in source
+    assert "page_hero.intro('file-text', 'Reports', 'file-text')" in source
+    assert '<h1 class="{{ page_hero.title_classes() }}">Overview</h1>' in source
     assert 'Reports Overview' in source
     assert 'page_hero.shell_classes()' in source
     assert 'page_hero.layout_classes()' in source

@@ -199,7 +199,7 @@ def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() 
     assert '>Action</th>' in registry
     assert "table_ui.table_classes('min-w-[900px]')" in registry
     assert 'resource-profile-manage-' in registry
-    assert '>Manage<' in registry
+    assert 'data-dialog-target="resource-profile-manage-{{ profile.id }}"' in registry
     assert 'Versioned Controls' in registry
     assert 'pending rollout' in registry
     assert '_resource_profile_management_dialogs.html' in registry
@@ -278,16 +278,16 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert '2048 GiB = 2 TiB' in capacity
     assert 'Compute evidence required' in capacity
     assert 'Logical storage policy remains active' in capacity
-    assert 'Budget · Storage' in capacity
-    assert 'Committed · Storage' in capacity
-    assert 'Headroom · Storage' in capacity
+    assert "('Storage', values.storage)" in capacity
+    assert 'Storage is logical admission capacity.' in capacity
+    assert 'Budget, committed allocation, and remaining headroom.' in capacity
     assert capacity.count('Logical budget only.') == 1
     assert 'Physical and usable capacity remain separate Storage Analytics evidence.' in capacity
     assert 'min-h-10 w-full items-center' in capacity
     assert 'mt-2 grid gap-3 lg:grid-cols-[minmax(14rem,22rem)_minmax(0,1fr)] lg:items-center' in capacity
     assert "form_field.help('Enter GiB" not in capacity
-    assert 'item.display.budget.pods' in capacity
-    assert 'item.display.headroom.storage' in capacity
+    assert 'values.pods' in capacity
+    assert 'values.storage' in capacity
     assert "action_button.classes('primary')" in capacity
     assert "action_button.classes('primary', full=true)" not in capacity
     assert 'components/info_tip.html' in capacity
@@ -447,12 +447,13 @@ def test_resource_profile_advanced_controls_are_real_profile_intent_and_placemen
     assert 'Reference only. Secret/private-key material is never stored in the profile.' not in advanced
     assert 'Reference only. Registry credentials are not stored in Resource Profile JSON.' not in advanced
     assert 'advanced_control_capsule_namespace_controls_namespace_options_json' in advanced
-    assert 'advanced_control_capsule_resource_rules_storage_classes' in advanced
+    assert 'name="advanced_control_capsule_resource_rules_{{ field }}"' in advanced
+    assert "('storage_classes', 'Storage Classes')" in advanced
     assert 'advanced_control_capsule_resource_pools_spec_json' in advanced
     assert 'advanced_control_capsule_replication_spec_json' in advanced
     assert 'advanced_control_capsule_tenant_cordon_prevent_deletion' in advanced
-    assert 'Secret/private-key material is never stored in the profile.' in advanced
-    assert 'Registry credentials are not stored in Resource Profile JSON.' in advanced
+    assert 'Secret or private-key material is never stored in the Resource Profile.' in advanced
+    assert 'Credential values are never stored in profile JSON.' in advanced
     assert 'const initAdvancedControls = (container) =>' in script
     assert "scope.querySelectorAll('[data-tenant-advanced-controls]').forEach(initAdvancedControls)" in script
     assert 'const advancedControlSummary = (key, value) =>' in script
@@ -540,7 +541,7 @@ def test_resource_profile_storage_policy_is_persisted_and_bidirectional() -> Non
     assert 'def _storage_policy_values(' in service
     assert 'profile.storage_policy_json = storage_policy' in service
     assert 'storage_policy=storage_policy' in service
-    assert "'storage_policy': profile.storage_policy_json or {}" in service
+    assert "'storage_policy': getattr(profile, 'storage_policy_json', {}) or {}" in service
 
     assert "type='PersistentVolumeClaim'" in provisioning
     assert "'storage_policy': normalized_storage" in provisioning
@@ -559,7 +560,7 @@ def test_resource_profile_storage_policy_is_persisted_and_bidirectional() -> Non
     assert 'record.allocation_storage_policy_json = storage_policy' in drift
 
     assert 'def _create_adopted_baseline_profile(' not in adoption
-    assert 'namespace_record.allocation_storage_policy_json' in adoption
+    assert 'record.allocation_storage_policy_json' in adoption
     assert 'def _materialize_adopted_baseline_profile(' in service
     assert "profile_selector == 'adopted_baseline'" in service
     assert 'profile.storage_policy_json = dict(record.allocation_storage_policy_json or {})' in service

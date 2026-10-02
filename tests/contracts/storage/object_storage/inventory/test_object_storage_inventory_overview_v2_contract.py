@@ -18,7 +18,8 @@ def test_object_storage_overview_is_high_level_fleet_composition() -> None:
     assert '_summary_cards.html' in index
     assert '_systems_snapshot.html' not in index
     assert 'resource_detail_modal.inventory_host(' not in index
-    assert 'Object Storage Overview' in hero
+    assert "page_hero.intro('database-zap', 'Object Storage Inventory', 'database')" in hero
+    assert '<h1 class="{{ page_hero.title_classes() }}">Overview</h1>' in hero
     assert 'Review inventory coverage across registered Object Storage systems.' in hero
     assert 'Systems Registered' in hero
     assert 'Inventory Assets' in hero
