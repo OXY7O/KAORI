@@ -7,6 +7,22 @@ def _read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
+def _routes_source() -> str:
+    return '\n'.join(
+        _read(path)
+        for path in (
+            'app/kubernetes/tenant/routes.py',
+            'app/kubernetes/tenant/route_common.py',
+            'app/kubernetes/tenant/routes_access.py',
+            'app/kubernetes/tenant/routes_credentials.py',
+        )
+    )
+
+
+def _discovery_source() -> str:
+    return _discovery_source() + '\n' + _read('app/kubernetes/tenant/discovery_adoption.py')
+
+
 def test_tenant_workspace_uses_only_approved_sidebar_destinations() -> None:
     menu = _read('app/templates/components/navigation/tenant_menu.html')
     for endpoint, label in (
@@ -39,7 +55,7 @@ def test_tenant_workspace_reads_committed_cross_child_state() -> None:
 
 
 def test_tenant_tenants_surface_exposes_governed_access_and_credential_lifecycle_without_secrets() -> None:
-    routes = _read('app/kubernetes/tenant/routes.py')
+    routes = _routes_source()
     page = _read('app/templates/kubernetes/tenant/tenants.html')
     admin = _read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
     memberships = _read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
@@ -141,7 +157,7 @@ def test_tenant_adoption_preflight_is_compact_and_pvc_bounds_are_explicit() -> N
 
 
 def test_managed_adoption_imports_storage_policy_and_verifies_native_takeover() -> None:
-    discovery = _read('app/kubernetes/tenant/discovery_service.py')
+    discovery = _discovery_source()
     cutover = _read('app/kubernetes/tenant/allocation_cutover.py')
     drift = _read('app/kubernetes/tenant/allocation_drift.py')
     tasks = _read('app/kubernetes/tenant/tasks.py')
