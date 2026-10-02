@@ -34,7 +34,6 @@ DARK_TOKEN_VALUES = {
     '--kaori-outline-subtle': '#2b2535',
     '--kaori-outline-default': '#373043',
     '--kaori-outline-strong': '#4b4258',
-    '--kaori-brand-domain-panel': '#2f1a4f',
 }
 
 STYLE_TOKENS = (
@@ -48,7 +47,6 @@ STYLE_TOKENS = (
     '.kaori-hero-panel',
     '.kaori-hero-tile',
     '.kaori-hero-chip',
-    '.kaori-brand-domain-panel',
     '.sidebar-parent-active',
     '.sidebar-parent-active-icon',
     '.sidebar-item-idle',
@@ -70,7 +68,7 @@ DOC_TOKENS = (
     'sidebar-parent-active',
     'kaori-hero-shell',
     'The only approved exception is the canonical dark Hero gradient',
-    'Deep Violet contextual surfaces',
+    'Soft Violet contextual surfaces',
     'components/related_page_card.html',
     'scripts/verify_dark_mode_standard.py',
 )
@@ -115,8 +113,6 @@ def _verify_contrast() -> None:
         ('primary on card', '#f5f3f7', '#1d1925', 4.5),
         ('muted on card', '#9d95a7', '#1d1925', 4.5),
         ('sidebar muted on sidebar', '#b9b1c4', '#171321', 4.5),
-        ('brand foreground on contextual Violet', '#ffffff', '#2f1a4f', 4.5),
-        ('brand muted on contextual Violet', '#ddd7e6', '#2f1a4f', 4.5),
     )
     failures = []
     for label, foreground, background, minimum in checks:
@@ -196,16 +192,23 @@ def verify() -> None:
     _require_tokens(
         related_page_card,
         (
-            'kaori-brand-domain-panel',
-            'text-brand-foreground',
-            'text-brand-foreground-muted',
-            'bg-brand-surface',
-            'bg-brand-surface-strong',
+            'data-kaori-related-workspace-card',
+            'bg-kaori-soft',
+            'border-kaori-primary/20',
+            'text-kaori-primary',
+            'text-content-primary',
+            'text-content-secondary',
+            'bg-surface-card',
+            'bg-kaori-primary',
         ),
-        'Related Page Card contextual Violet surface',
+        'Related Page Card soft Violet contextual surface',
     )
-    if 'dark:bg-surface-card' in related_page_card:
-        raise AssertionError('Related Page Card must remain deep Violet in dark mode, not collapse to a neutral card')
+    for retired in ('kaori-brand-domain-panel', 'text-brand-foreground', 'text-brand-foreground-muted'):
+        if retired in related_page_card:
+            raise AssertionError(f'Related Page Card: retired solid-Violet token remains: {retired}')
+    for retired in ('--kaori-brand-domain-panel', '.kaori-brand-domain-panel'):
+        if retired in styles:
+            raise AssertionError(f'frontend/styles.css: retired Related Workspace token remains: {retired}')
     _require_tokens(workspace_card, ('kaori-workspace-card',), 'Welcome workspace card')
 
     if OBSOLETE_TOPBAR.exists():
