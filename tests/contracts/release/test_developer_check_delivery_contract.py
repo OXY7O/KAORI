@@ -101,7 +101,7 @@ def test_developer_check_routes_changed_paths_and_fails_safe_for_authority_chang
     workflow = read(DEVELOPER_WORKFLOW)
     planner = read(PLANNER)
 
-    assert 'python scripts/resolve_developer_check_plan.py' in workflow
+    assert 'python3 scripts/resolve_developer_check_plan.py' in workflow
     assert 'selected_tests[' not in workflow
 
     for token in (
