@@ -959,4 +959,3 @@ def reconcile_managed_native_namespace_committed(*, namespace_id: int) -> Tenant
 
 
 _ALLOWED_PAGE_SIZES = (5, 10, 25, 50)
-
