@@ -832,9 +832,7 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert '_take_over_capsule_allocation(' in service
     assert 'cutover_capsule_global_quota_allocation(' in service
     assert 'cutover_capsule_tenant_resource_quota(' in service
-    capsule_takeover = service[
-        service.index('def _finalize_capsule_takeover(') : service.index('def _adopt_capsule(')
-    ]
+    capsule_takeover = service[service.index('def _finalize_capsule_takeover(') : service.index('def _adopt_capsule(')]
     assert "'provider_mutation_performed': True" in capsule_takeover
     assert 'TenantOwnershipStatus.ADOPTED.value' in service
     assert 'record.ownership_status = TenantOwnershipStatus.MANAGED.value' not in cutover

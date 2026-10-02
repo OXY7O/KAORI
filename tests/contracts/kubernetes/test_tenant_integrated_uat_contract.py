@@ -183,5 +183,3 @@ def test_managed_adoption_imports_storage_policy_and_verifies_native_takeover() 
     assert 'def accept_provider_allocation_state(' in drift
     assert 'def apply_provider_mirrored_policy_observation()' in drift
     assert 'apply_provider_mirrored_policy_observation()' in tasks
-
-
